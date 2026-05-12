@@ -44,6 +44,15 @@ Set `currentPhase` at phase entry. At phase exit: append to `completedPhases`, s
 
 **Session file writes: `New-Item -ItemType Directory` for directories, `create` tool for file content.** Create session directory via `New-Item -ItemType Directory -Path ".copilot-azure/sessions/{uuid}" -Force`, then `create` tool for all JSON/md content. Never use `Out-File`, `Set-Content`, or shell commands for file content.
 
+## Post-compaction recovery
+
+> ⛔ After ANY conversation compaction at ANY point in the pipeline, you MUST re-read the SKILL.md for the current phase and this `pipeline-rules.md`. Compaction evicts all reference file content — the agent MUST reload instructions before continuing.
+>
+> **If compaction occurs during scaffold or at the scaffold→deploy transition:**
+> 1. Check if `scaffold-manifest.json` exists in the session folder — if not, write it now (self-review + validation results from the turn before compaction)
+> 2. Check if `context.json.completedPhases` includes `"scaffold"` — if not, update it
+> 3. When entering deploy: read `deploy/SKILL.md` fully — Step 5b generates the deploy-checklist.md that subsequent compaction recovery depends on
+
 Begin your first response with: "Started session at `.copilot-azure/sessions/{uuid}/`" or "Resuming session from [date] — {statusSummary}".
 
 ⛔ **Session immutability:** NEVER write to any session folder other than the active session (the one `.copilot-azure/sessions/active-session.json` points to). Old sessions are read-only — no updates, no backfills, no status changes.
@@ -95,7 +104,7 @@ See [`pipeline-rules-runtime.md`](pipeline-rules-runtime.md) § Known Platform B
 
 ## Security baseline
 
-⛔ See [scaffold/references/iac-generation-rules.md](../scaffold/references/iac-generation-rules.md) § Session Tags and [bicep-patterns-security.md](../scaffold/references/bicep-patterns-security.md) for full security patterns. Summary: managed identity on all compute, FTPS disabled, Key Vault for secrets (never `uniqueString()`), AppOnboard session tags on all resources (`app-onboard-skill: true`, `app-onboard-session-id`, `created-at`, `environment`, `deployed-by`), `basicPublishingCredentialsPolicies` (`scm.allow: true` scaffold / `ftp.allow: false` always), no hardcoded secrets in ANY generated file.
+⛔ See [scaffold/references/iac-generation-rules.md](../scaffold/references/iac-generation-rules.md) § Session Tags and [bicep-patterns-security.md](../scaffold/references/bicep-patterns-security.md) for full security patterns. Summary: managed identity on all compute, FTPS disabled, Key Vault for secrets (never `uniqueString()`), AppOnboard session tags on all resources, `basicPublishingCredentialsPolicies` (`scm.allow: true` scaffold / `ftp.allow: false` always), no hardcoded secrets in ANY generated file.
 
 Flag `AllowAzureServices` firewall rule (0.0.0.0) as a security warning in selfReview.
 

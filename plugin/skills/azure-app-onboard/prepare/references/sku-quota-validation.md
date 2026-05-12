@@ -133,3 +133,34 @@ When the scaffold deploy gate (Step 12.5 in [validation-and-manifest.md](../../s
 3. **Pass** → update `prepare-plan.json.quotaValidation` with `{ verified: true, method: "cli", verifiedRegion: "{region}" }` and proceed to the gate.
 4. **Fail** → present the user with the blocked SKU and alternatives. If user picks an alternate SKU/region, update `prepare-plan.json` and re-scaffold.
 5. **`az rest` itself fails** (auth/network) → display: "⚠️ Quota could not be verified — deploy may fail if quota is insufficient. Request increases at https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas." and proceed.
+
+## Sub-Agent Delegation Protocol
+
+When delegating quota validation to a sub-agent from prepare/SKILL.md Step 5:
+
+**Provide to the sub-agent:**
+- `context.json.azure.subscriptionId`
+- SKU list from Step 4 (`prepare-plan.json.services[].sku`)
+- User's preferred region (or default `eastus2`)
+- Fallback regions: `eastus`, `westus2`, `centralus`, `westeurope`
+- List of managed database/restricted-offer services in the plan
+- Full content of this file (sku-quota-validation.md) verbatim
+
+**Sub-agent prompt template:**
+
+> "Follow the procedures in sku-quota-validation.md to validate quota for every compute SKU in the plan across the region list. For each managed database or restricted-offer service (PostgreSQL, MySQL), also run the offer restriction check. Return: per-SKU per-region availability (limit AND usage), the first viable region where ALL SKUs have capacity (verifiedRegion), offerRestrictions[] for any blocked services, and overall status (success/blocked/degraded). If all regions are blocked for any SKU, return status: BLOCKED with the SKU name and available alternatives. ≤500 tokens."
+
+**Expected output schema:**
+```jsonc
+{
+  "status": "success" | "blocked" | "degraded",
+  "verifiedRegion": "eastus2",
+  "quotas": [{ "resource": "...", "region": "...", "required": 1, "available": 3, "sufficient": true }],
+  "offerRestrictions": [{ "provider": "...", "region": "...", "restricted": false, "reason": "..." }]
+}
+```
+
+**How parent consumes results:**
+- `success` → use `verifiedRegion` for all downstream steps. Write `quotas[]` and `quotaValidation` to `prepare-plan.json`
+- `blocked` → present blocked SKU and alternatives to user. Re-invoke sub-agent with updated inputs if user picks alternate
+- `degraded` (some checks failed but viable region found) → proceed with warnings in `assumptions[]`

@@ -50,7 +50,7 @@ Evaluate a user's repository for build health, app completeness, and Azure deplo
 
 **If called by orchestrator (`azure-app-onboard`):** Session already exists — read `context.json` and proceed to Step 2.
 
-**If entered directly:** Follow session creation from [session-protocol.md](../azure-app-onboard/references/session-protocol.md). Set `currentPhase: "prereq"`, `completedPhases: []`.
+**If entered directly:** Follow session creation from [session-protocol.md](references/session-protocol.md). Set `currentPhase: "prereq"`, `completedPhases: []`.
 
 ### Step 2: Scan Workspace
 

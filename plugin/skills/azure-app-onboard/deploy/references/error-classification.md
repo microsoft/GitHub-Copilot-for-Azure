@@ -55,9 +55,7 @@ User's environment prevents deployment. No automated fix.
 
 **Flow:** Deploy detects blocker → halts → presents error + remediation command → waits for user action.
 
-> ⛔ **AADSTS530084 special handling:** This error means the user's org has a token protection conditional access policy. The `azurerm` Terraform provider internally re-requests access tokens in a way that violates device-binding requirements. Regular `az` CLI commands work fine because they use the bound token directly. **Never fall back to imperative CLI commands** (`az group create`, `az webapp create`, `az appservice plan create`, etc.) — instead, offer to re-scaffold as Bicep and deploy via `az deployment group create`.
->
-> **This applies to ALL Terraform authentication failures**, not just AADSTS530084. If Terraform's `azurerm` provider cannot authenticate for any reason (insufficient permissions, token errors, conditional access), classify as `ENVIRONMENT_BLOCKING` and present the three options above. Do NOT attempt imperative CLI resource creation as a workaround.
+> ⛔ **AADSTS530084 / ALL Terraform auth failures:** This applies to ALL `azurerm` provider authentication failures — not just AADSTS530084. If the provider cannot authenticate for any reason (token protection, insufficient permissions, conditional access), classify as `ENVIRONMENT_BLOCKING`. **Never fall back to imperative CLI commands** (`az group create`, `az webapp create`, etc.) — offer to re-scaffold as Bicep and deploy via `az deployment group create`. See [pipeline-rules-runtime.md](../../references/pipeline-rules-runtime.md) § Known Platform Bugs for workarounds.
 
 ## Healing Trace
 
@@ -75,7 +73,9 @@ Each attempt logged to `deploy-result.json.healingAttempts[]`:
 
 > ⛔ **Orphan RG tracking.** See [`deploy-safety.md`](deploy-safety.md) § Artifact Reconciliation for full orphan RG protocol.
 
-After 3 failed cycles: write `partial: true` to `deploy-result.json`, surface remaining errors to user. ⛔ **Read [iac-resources.md](../../references/iac-resources.md)** for external documentation and validation tool links to help diagnose persistent errors. Do NOT auto-rollback.
+> ⛔ **Repeat failure (same error 2+ times):** Read [iac-resources.md](../../references/iac-resources.md) § Deploy Troubleshooting and `fetch_webpage` the matching URL with the error message. Apply the documented fix instead of retrying blind.
+
+After 3 failed cycles: write `partial: true` to `deploy-result.json`, surface remaining errors to user. Do NOT auto-rollback.
 
 ## Known Platform Bugs
 

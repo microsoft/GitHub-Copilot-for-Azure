@@ -4,8 +4,9 @@
 
 Assess whether the repository can feasibly be deployed to Azure and whether a preparation plan can be created.
 
-> ⛔ **You MUST read all parts in order:**
-> 1. [component-mapping.md](component-mapping.md) — Steps 1–2: Component→Azure mapping, existing infrastructure detection, Terraform provider classification, compose service extraction
+> ⛔ **You MUST read the following in order. Skip items marked conditional if the condition is not met:**
+>
+> 1. [component-mapping.md](component-mapping.md) — Steps 1–2: Component→Azure mapping, existing infrastructure detection, Terraform provider classification, compose service extraction. **Conditional: monorepo only (>1 project manifest found).** For single-component repos, skip to Step 3.
 > 2. [dependency-compatibility.md](dependency-compatibility.md) — Step 3: Cloud SDK deps, EOL runtimes/frameworks, archived repos, vulnerable apps, platform deps, Dockerfile analysis, native module detection
 > 3. Steps 4–5 below
 

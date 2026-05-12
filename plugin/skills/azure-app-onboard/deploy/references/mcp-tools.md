@@ -30,16 +30,6 @@ Phase-exclusive tool parameters for the deploy phase. For shared tools (`subscri
 | `monitor_workspace_list` | *(none)* | `subscription` | ✅ |
 | `monitor_workspace_log_query` | `resource-group`, `workspace`, `table`, `query` (KQL or "recent"\|"errors") | `hours`, `limit`, `subscription` | ✅ |
 | `monitor_resource_log_query` | `resource-id` (full ARM ID), `table`, `query` | `hours`, `limit`, `subscription` | ✅ |
-| `monitor_table_list` | `resource-group`, `workspace`, `table-type` | `subscription` | ✅ |
-| `monitor_table_type_list` | `resource-group`, `workspace` | `subscription` | ✅ |
-| `monitor_healthmodels_entity_get` | `resource-group`, `entity`, `health-model` | `subscription` | ✅ |
-| `monitor_webtests_get` | *(none)* | `webtest-resource`, `resource-group`, `subscription` | ✅ |
-| `monitor_webtests_createorupdate` | `webtest-resource`, `resource-group` | `request-url`, `appinsights-component`, `location`, `webtest-locations`, `frequency`, `timeout`, `enabled`, `expected-status-code`, `follow-redirects`, `headers`, `http-verb`, `ssl-check`, `retry-enabled` | ❌ (destructive) |
-| `monitor_instrumentation_orchestrator-start` | `workspace-path` | — | ❌ (local-only) |
-| `monitor_instrumentation_orchestrator-next` | `session-id`, `completion-note` | — | ❌ (local-only) |
-| `monitor_instrumentation_get-learning-resource` | *(none)* | `path` | ✅ (local-only) |
-| `monitor_instrumentation_send-brownfield-analysis` | `session-id`, `findings-json` | — | ❌ (local-only) |
-| `monitor_instrumentation_send-enhancement-select` | `session-id`, `enhancement-keys` | — | ❌ (local-only) |
 
 ## `mcp_azure_mcp_appservice` (hierarchical)
 

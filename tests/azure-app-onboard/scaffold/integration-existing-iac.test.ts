@@ -97,7 +97,7 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
               depth: 1,
             });
           },
-          prompt: "Can Azure automatically figure out how my app should be deployed?",
+          prompt: "I just signed up for Azure. What's the fastest way to bring my app over?",
           followUp: [
             "What infrastructure does my project already have?",
             "Should I use azd or deploy from scratch?",

@@ -50,7 +50,7 @@ metadata:
 |---|------|--------|-----------|
 | 1 | **Session check + Azure login** | Create/resume session, verify Azure CLI auth, resolve subscription + user identity | ⛔ Read [session-protocol.md](references/session-protocol.md) |
 | 2 | **Gather intent (quick probe)** | Scan workspace, present detected stack + preliminary Azure services, write `context.json.quickProbe`, ask ≤2-6 questions | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 1 — contains probe budget, workspace-detection gate, existing IaC detection, and artifact schema |
-| 3 | **Prereq scan** | **Before invoking, ensure `context.json.quickProbe` is written** with populated `manifests[]`, `importSamples[]`, `dockerfiles[]`, `missingFiles[]` — prereq reuses these to skip re-reading files the probe already extracted. Invoke `{"skill": "azure-app-onboard-prereq"}`. Write `prereq-output.json`. If prereq returns `overallHealth: "blocked"` with unsupported stack/EOL runtime, HALT — do NOT proceed to prepare | ⛔ MANDATORY — do NOT skip. See [azure-app-onboard-prereq/SKILL.md](../azure-app-onboard-prereq/SKILL.md) |
+| 3 | **Prereq scan** | ⛔ **MANDATORY — do NOT skip.** Before invoking, ensure `context.json.quickProbe` is written with populated `manifests[]`, `importSamples[]`, `dockerfiles[]`, `missingFiles[]` — prereq reuses these to skip re-reading files the probe already extracted. Invoke `{"skill": "azure-app-onboard-prereq"}`. Write `prereq-output.json`. If prereq returns `overallHealth: "blocked"` with unsupported stack/EOL runtime, HALT — do NOT proceed to prepare | |
 | 4 | **Refine intent (scan-informed)** | Compare prereq results vs probe, resolve remaining questions, check azd routing | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 2 |
 | 5 | **Plan architecture** | Set `currentPhase: "prepare"`. Write `prepare-plan.json`. ⛔ Self-check: have you read `pipeline-rules.md` and `session-protocol.md`? If not, read them NOW before proceeding | ⛔ Read [prepare/SKILL.md](prepare/SKILL.md) |
 | 6 | **Scaffold approval gate** | Display plan for user approval BEFORE generating any files | ⛔ Read [approval-gates.md](references/approval-gates.md) § Scaffold Gate |
@@ -77,7 +77,9 @@ metadata:
 
 | Sub-Skill | Phase | Reference |
 |-----------|-------|-----------|
-| **prereq** | 1 — Discover | [azure-app-onboard-prereq/SKILL.md](../azure-app-onboard-prereq/SKILL.md) |
+| **prereq** | 1 — Discover | Invoke `{"skill": "azure-app-onboard-prereq"}` |
 | **prepare** | 2 — Architect | [prepare/SKILL.md](prepare/SKILL.md) |
 | **scaffold** | 3 — Scaffold | [scaffold/SKILL.md](scaffold/SKILL.md) |
 | **deploy** | 4 — Deploy | [deploy/SKILL.md](deploy/SKILL.md) |
+
+> **Shared references** (used by sub-skills): [iac-resources.md](references/iac-resources.md) · [mcp-tool-reference.md](references/mcp-tool-reference.md) · [session-schemas-prepare.ts](references/session-schemas-prepare.ts)

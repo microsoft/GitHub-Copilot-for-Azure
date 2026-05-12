@@ -121,8 +121,8 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Critical Safety Rules (⛔) ──────────────────────────────
 
   describe("Critical Safety Rules", () => {
-    test("pricing_get requires --sku on every call", () => {
-      expect(skill.content).toMatch(/pricing_get.*requires.*--sku/is);
+    test("pricing_get requires --sku when querying by armSkuName", () => {
+      expect(skill.content).toMatch(/pricing_get.*use.*--sku/is);
     });
 
     test("quota anti-patterns: never use az appservice list-locations or mcp_azure_mcp_quota", () => {

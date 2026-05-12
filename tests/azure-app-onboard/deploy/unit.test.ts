@@ -69,9 +69,6 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       }
     });
 
-    test("has References section", () => {
-      expect(skill.content).toMatch(/## References/);
-    });
   });
 
   // ── Workflow Step Coverage ───────────────────────────────────
@@ -105,7 +102,6 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       "deploy-safety.md",
       "error-classification.md",
       "health-check-patterns.md",
-      "mcp-tools.md",
       "portal-links.md",
       "preflight-checks.md",
     ];
@@ -135,7 +131,8 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
     });
 
     test("audit log must be incremental, not batched", () => {
-      expect(skill.content).toMatch(/INCREMENTAL.*NOT BATCHED/i);
+      expect(skill.content).toMatch(/Audit log.*INCREMENTAL/i);
+      expect(skill.content).toMatch(/Do NOT defer to phase exit/i);
     });
 
     test("healing loop: ask after 3 attempts, then every 5", () => {
@@ -146,20 +143,18 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       expect(skill.content).toMatch(/DISTRIBUTED.*not batched/i);
     });
 
-    test("prohibits async/background shells for variable setup", () => {
-      expect(skill.content).toMatch(/NEVER use async\/background shells/i);
+    test("references deploy-safety.md for shell and secret rules", () => {
+      expect(skill.content).toMatch(/Read.*deploy-safety\.md/i);
+      expect(skill.content).toMatch(/shell execution rules.*sync vs async/i);
+      expect(skill.content).toMatch(/secret generation patterns/i);
+      const safety = readFileSync(path.join(SKILL_DIR, "references", "deploy-safety.md"), "utf-8");
+      expect(safety).toMatch(/NEVER use async\/background shells/i);
+      expect(safety).toMatch(/Generate secrets ONCE/i);
+      expect(safety).toMatch(/az webapp deploy.*does NOT support.*--track-status/i);
     });
 
-    test("secrets must be generated once and reused", () => {
-      expect(skill.content).toMatch(/Generate secrets ONCE/i);
-    });
-
-    test("az webapp deploy does not support --track-status", () => {
-      expect(skill.content).toMatch(/az webapp deploy.*does NOT support.*--track-status/i);
-    });
-
-    test("post-compaction recovery rule exists", () => {
-      expect(skill.content).toMatch(/post-compaction recovery/i);
+    test("post-compaction re-read rule exists", () => {
+      expect(skill.content).toMatch(/Post-compaction.*re-read.*deploy-checklist\.md/i);
     });
 
     test("return to orchestrator — do not start new phases", () => {

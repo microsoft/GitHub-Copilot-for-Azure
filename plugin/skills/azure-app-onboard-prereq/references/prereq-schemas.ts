@@ -5,10 +5,10 @@
  *
  * Shared types used across phases (AppOnboardComponent, PostDeployRecommendation,
  * DetectedService, AppOnboardContext) are defined in:
- *   ../../azure-app-onboard/references/session-schemas.ts
+ *   session-schemas.ts (local copy in this skill's references/)
  *
  * Context schema (AppOnboardContext, AppOnboardIntent, QuickProbeResult) is defined in:
- *   ../../azure-app-onboard/references/session-schemas.ts
+ *   session-schemas.ts (local copy in this skill's references/)
  */
 
 // ─── prereq-output.json ──────────────────────────────────────────────────────

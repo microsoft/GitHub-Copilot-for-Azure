@@ -143,21 +143,16 @@ describeIntegration(`${SKILL_NAME}_scaffold - Integration Tests`, () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          // Golden prompt (prompts.json) + workspace with no existing IaC
-          // followUp pushes past prepare/approval into scaffold phase
+          // Delegation-only test — validates routing, not the full scaffold pipeline.
+          // No follow-ups: shouldEarlyTerminateForSkillInvocation fires after routing.
           const agentMetadata = await agent.run({
             setup: async (workspace: string) => {
               await cloneRepo({ repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app", targetDir: workspace, branch: "main", depth: 1 });
             },
             prompt: "I built a side project and want to get it live on Azure",
-            followUp: [
-              "Go with recommended options.",
-              "Yes, generate the infrastructure code.",
-            ],
             nonInteractive: true,
             preserveWorkspace: true,
             shouldEarlyTerminate: (metadata) =>
-              shouldEarlyTerminateForScaffoldOutput(metadata) ||
               shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
           });
 

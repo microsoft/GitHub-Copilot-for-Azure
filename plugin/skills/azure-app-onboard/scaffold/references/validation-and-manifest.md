@@ -8,7 +8,7 @@ Do NOT auto-generate workflow files or create branches/PRs. Scaffold only writes
 
 > ⛔ **Validation MUST happen BEFORE the manifest is written.** The manifest requires `validationResult` — you cannot write it without completing validation first. Do NOT write `scaffold-manifest.json` until validation has run.
 
-> ⛔ **Do NOT call `{"skill": "azure-validate"}`, `{"skill": "azure-deploy"}`, or any other top-level skill during scaffold or deploy.** Loading a top-level skill hijacks the conversation — the skill's own "Next" instructions chain away from the AppOnboard pipeline, bypassing deploy-result.json, deploy-audit.log, portal links, and SCM re-disable. Use CLI validation directly. This rule is in pipeline-rules.md and is non-negotiable.
+> ⛔ **Do NOT call `{"skill": "azure-validate"}`, `{"skill": "azure-deploy"}`, `{"skill": "azure-prepare"}`, or any other skill during scaffold or deploy.** Loading a skill hijacks the conversation — the skill's own "Next" instructions chain away from the AppOnboard pipeline, bypassing deploy-result.json, deploy-audit.log, portal links, and SCM re-disable. Use CLI validation directly. This rule is in pipeline-rules.md and is non-negotiable.
 
 Run these checks directly. All must pass.
 
@@ -75,3 +75,4 @@ Present the user with: files generated, selfReview findings, **validation result
 > 1. `scaffold-manifest.json` written with `files[]`, `selfReview.findings[]`, AND `validationResult`
 > 2. `context.json`: `"scaffold"` appended to `completedPhases`, `currentPhase` → `"deploy"`, `lastModifiedUtc` updated
 > 3. `deployment-summary.md` written to session folder using [`deployment-summary-template.md`](../../references/deployment-summary-template.md) — status `Scaffolded`, sections 1–5 populated from plan + manifest
+> 4. `deploy-checklist.md` written to session folder using [`deploy-checklist-template.md`](../../deploy/references/deploy-checklist-template.md) — fill in real values from `prepare-plan.json`, `scaffold-manifest.json`, and `prereq-output.json`, delete sections that don't apply to this deployment's compute target. **This MUST be written at scaffold exit, NOT deferred to deploy Step 5b** — if context compaction hits at the scaffold/deploy boundary, the deploy phase can recover by reading this checklist.

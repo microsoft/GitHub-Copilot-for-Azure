@@ -59,7 +59,7 @@ If any ❌ FAIL exists:
 
 > ⛔ **`fixesApplied` requires re-evaluation evidence.** Before writing `readiness.status: "fixesApplied"`, verify you printed the `🔄 Re-evaluation complete` line from Step 6.5. If you applied a fix but did NOT re-run the full 3-axis scan, you MUST go back and run it now. Do NOT write `fixesApplied` based on static grep alone — the re-scan catches issues the original scan missed (B7).
 
-Update `prereq-output.json` and `context.json` with final verdicts per `AppOnboardContext` in [`session-schemas.ts`](../../azure-app-onboard/references/session-schemas.ts) (already loaded). Set `readiness.status` per component:
+Update `prereq-output.json` and `context.json` with final verdicts per `AppOnboardContext` in [`session-schemas.ts`](session-schemas.ts) (already loaded). Set `readiness.status` per component:
 - All PASS → `ready`
 - Fixes applied and **re-eval passed** (Step 6.5 printed `🔄 Re-evaluation complete — ✅ N issues resolved, ❌ 0 remaining`) → `fixesApplied`
 - Unresolved FAILs → `needsFixes`

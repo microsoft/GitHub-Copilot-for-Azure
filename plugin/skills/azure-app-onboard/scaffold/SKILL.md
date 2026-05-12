@@ -89,26 +89,3 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
 ## Error Handling
 
 ⛔ **You MUST read [error-handling.md](references/error-handling.md) when any error occurs during scaffold** — it contains remediation procedures for missing plans, existing IaC conflicts, MCP failures, FLAGGED findings, and malformed session state.
-
----
-
-## References
-
-Linked from workflow steps above. Read when executing the corresponding step.
-
-| Step | Reference | Content |
-|------|-----------|--------|
-| 5–8 (Generate) | [iac-generation-rules.md](references/iac-generation-rules.md) | Session tags, sub-agent delegation, security patterns, Dockerfiles, telemetry |
-| 5 (Generate) | [bicep-patterns.md](references/bicep-patterns.md) | File structure, naming, tags, security defaults, data modules (default path) |
-| 5 (Generate) | [bicep-app-service.md](references/bicep-app-service.md) | App Service module template, SCM/FTP auth, native module deploy strategy |
-| 5 (Generate) | [bicep-container-apps.md](references/bicep-container-apps.md) | Two-phase ACR wiring, ingress, secretRef, image parameter, multi-container DNS |
-| 5 (Generate) | [terraform-patterns.md](references/terraform-patterns.md) | Terraform skeleton, provider config, naming, security defaults (TF path only) |
-| 7 (Security) | [rbac-roles.md](references/rbac-roles.md) | Common RBAC role GUIDs, Cosmos DB data-plane RBAC, delegation |
-| 9 (Self-review) | [self-review-procedure.md](references/self-review-procedure.md) | Sub-agent prompt, L1–L4 orchestration, FLAGGED halt rule |
-| 9 (Self-review) | [self-review-checklist.md](references/self-review-checklist.md) | Per-layer check tables for both IaC formats |
-| 9 (Self-review) | [waf-checklist.md](references/waf-checklist.md) | Per-pillar checklist with SKU thresholds |
-| 10–12.5 (Validate) | [validation-and-manifest.md](references/validation-and-manifest.md) | CI/CD, validation, manifest, deploy gate, phase exit |
-| Healing | [scaffold-healing-rules.md](references/scaffold-healing-rules.md) | Escalation cadence, PLAN_LEVEL_CHANGE, artifact consistency |
-| Healing | [self-healing.md](references/self-healing.md) | FIXABLE vs BLOCKING classification, auto-fix strategies |
-| 10 (CI/CD) | [cicd-pipelines.md](references/cicd-pipelines.md) | GitHub Actions workflows for Terraform + Bicep, OIDC auth |
-| Errors | [error-handling.md](references/error-handling.md) | Missing plans, existing IaC, MCP failures, malformed state |

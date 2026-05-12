@@ -37,10 +37,9 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       expect(skill.metadata).toHaveProperty("metadata");
     });
 
-    test("description does NOT contain routing phrases", () => {
+    test("description does NOT contain top-level routing phrases", () => {
       const desc = skill.metadata.description;
-      expect(desc).not.toMatch(/\bUSE FOR\b/);
-      expect(desc).not.toMatch(/\bDO NOT USE FOR\b/);
+      expect(desc).not.toMatch(/\bUSE FOR\b(?!:)/);  // "USE FOR:" in WHEN clause is ok
     });
   });
 
@@ -66,10 +65,9 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       expect(skill.content).toMatch(/### VALIDATE/);
     });
 
-    test("has Self-Healing Loop, Error Handling, and References sections", () => {
+    test("has Self-Healing Loop and Error Handling sections", () => {
       expect(skill.content).toMatch(/## Self-Healing Loop/);
       expect(skill.content).toMatch(/## Error Handling/);
-      expect(skill.content).toMatch(/## References/);
     });
   });
 
@@ -113,8 +111,6 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       "scaffold-healing-rules.md",
       "self-healing.md",
       "error-handling.md",
-      "rbac-roles.md",
-      "cicd-pipelines.md",
     ];
 
     test.each(allRefs)("reference file exists and is linked: %s", (filename) => {

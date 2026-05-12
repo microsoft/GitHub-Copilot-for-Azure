@@ -7,62 +7,36 @@ Look up when stuck after 3 tries, edge cases, or validating generated code again
 | Resource | URL | Use When |
 |----------|-----|----------|
 | Bicep Documentation | https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/ | Syntax, file structure, deployment scopes, install |
-| Bicep Best Practices | https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/best-practices | Naming, parameters, resource definitions, modules |
 | Azure Resource Reference | https://learn.microsoft.com/en-us/azure/templates/ | Resource properties, API versions, schema per type |
-| Bicep GitHub Repo | https://github.com/Azure/bicep | Release notes, roadmap, issue tracking, CLI reference |
-| Bicep Registry Modules | https://github.com/Azure/bicep-registry-modules | Microsoft-maintained reusable Bicep modules |
 
 ## Terraform
 
 | Resource | URL | Use When |
 |----------|-----|----------|
-| HashiCorp Developer Docs | https://developer.hashicorp.com/terraform/docs | HCL syntax, provider config, built-in functions |
 | Terraform Registry — azurerm | https://registry.terraform.io/providers/hashicorp/azurerm/latest | Resource type properties, argument reference, import blocks |
-| Terraform Registry — azapi | https://registry.terraform.io/providers/azure/azapi/latest | Bleeding-edge resources not yet in azurerm; maps to ARM REST APIs |
-| HCL Language Reference | https://developer.hashicorp.com/terraform/language | Expressions, modules, state management, backends |
-| Azure Resource Reference | https://learn.microsoft.com/en-us/azure/templates/ | Side-by-side Bicep + ARM + Terraform AzAPI schema per resource type |
+| Terraform Registry — azapi | https://registry.terraform.io/providers/azure/azapi/latest | Preview resources not yet in azurerm; maps to ARM REST APIs |
 
-**Key providers:** `hashicorp/azurerm` (standard), `azure/azapi` (ARM-direct for preview resources)
+## Validation Tools
 
-## Pre-Validated Module Libraries
-
-| Resource | URL | Use When |
-|----------|-----|----------|
-| Azure Verified Modules (AVM) | https://aka.ms/AVM | Production-ready Bicep + Terraform modules; Microsoft-endorsed |
-| AVM Bicep Index | https://azure.github.io/Azure-Verified-Modules/indexes/bicep/ | Browse available Bicep resource/pattern modules |
-| AVM Terraform Index | https://azure.github.io/Azure-Verified-Modules/indexes/terraform/ | Browse available Terraform resource/pattern modules |
-
-## Security & Architecture
-
-| Resource | URL | Use When |
-|----------|-----|----------|
-| Azure Well-Architected Framework | https://learn.microsoft.com/en-us/azure/well-architected/ | WAF pillar alignment (Reliability, Security, Cost, Ops, Performance) |
-| WAF Service Guides | https://learn.microsoft.com/en-us/azure/well-architected/service-guides/ | Per-service WAF checklists |
-| Azure Security Baseline (MCSB) | https://learn.microsoft.com/en-us/security/benchmark/azure/ | Security control domains, MCSB recommendations |
+| Tool | Format | Purpose |
+|------|--------|---------|
+| `bicep build` | Bicep | Syntax + schema validation |
+| `az deployment group create --what-if` | Bicep | ARM-level dry run with change preview |
+| `terraform validate` | Terraform | Syntax + schema validation |
+| `terraform plan` | Terraform | Provider-level dry run |
 
 ## Deploy Troubleshooting
 
-> ⛔ **Primary lookup path:** Call `mcp_azure_mcp_documentation` with the error message or error code first. Use the table below as fallback when MCP is unavailable or returns no results.
+> ⛔ **Primary lookup path:** Call `mcp_azure_mcp_documentation` with the error message first. Use the table below as fallback when MCP is unavailable or returns no results.
+>
+> **On repeat failures (same error 2+ consecutive attempts):** `fetch_webpage` the matching URL below with the error message as query. Apply the documented fix — do not retry the same approach.
 
 | Resource | URL | Use When |
 |----------|-----|----------|
 | Common ARM Deployment Errors | https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/common-deployment-errors | `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, any ARM error code |
-| ARM Troubleshooting Hub | https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/ | General deployment failure triage, what-if issues, template debugging |
 | App Service Troubleshooting | https://learn.microsoft.com/en-us/troubleshoot/azure/app-service/ | Startup crashes, Kudu/Oryx build failures, health probe issues |
-| App Service Diagnostics | https://learn.microsoft.com/en-us/azure/app-service/overview-diagnostics | Portal diagnostics tool, runtime issue triage |
 | App Service Zip Deploy Guide | https://learn.microsoft.com/en-us/azure/app-service/deploy-zip | Zip deploy, SCM_DO_BUILD_DURING_DEPLOYMENT, Kudu publish API |
 | Container Apps Troubleshooting | https://learn.microsoft.com/en-us/azure/container-apps/troubleshooting | Revision failures, ingress errors, secret resolution, image pull failures |
-
-## Validation & Quality Tools
-
-| Tool | Purpose | Format |
-|------|---------|--------|
-| `terraform validate` | Syntax + schema validation (catches unknown resources/attributes) | Terraform |
-| `terraform plan` | Provider-level dry run (catches SKU, region, auth errors) | Terraform |
-| `bicep build` | Syntax + schema validation (catches invalid API versions, types) | Bicep |
-| `az deployment group create --what-if` | ARM-level dry run with change preview | Bicep |
-| PSRule for Azure | Static analysis + policy compliance for Bicep | Bicep |
-| TFLint | Catches deprecated syntax, naming violations | Terraform |
-| Checkov | Security misconfiguration scanner | Both |
+| Quota Increase Portal | https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas | Direct link for quota increase requests |
 
 > **Source:** All URLs validated 2026-04-25. All are official (Microsoft Learn, HashiCorp Developer, GitHub/Azure).
