@@ -64,24 +64,24 @@ Primary query method: Azure Resource Graph via `az graph query` (requires `az ex
 
 ### Phase 2: Assess Reliability
 
-Run checks from each reference document:
+Two-step assessment: **platform-level discovery first, then per-service deep dive.**
 
-| Check Category | Reference |
+**Step 1 — Platform discovery (find what's there).** Use these to enumerate resources in scope and detect cross-cutting reliability gaps:
+
+| Platform check | Reference |
 |---|---|
-| Zone Redundancy (Compute) | [references/zone-redundancy-checks.md](references/zone-redundancy-checks.md) |
-| Storage Redundancy | [references/storage-redundancy-checks.md](references/storage-redundancy-checks.md) |
-| Multi-Region & Failover | [references/multi-region-checks.md](references/multi-region-checks.md) |
-| Health Probes & Monitoring | [references/health-probe-checks.md](references/health-probe-checks.md) |
+| Zone redundancy — discovery | [references/zone-redundancy-checks.md](references/zone-redundancy-checks.md) |
+| Storage redundancy (cross-service) | [references/storage-redundancy-checks.md](references/storage-redundancy-checks.md) |
+| Multi-region & global load balancers | [references/multi-region-checks.md](references/multi-region-checks.md) |
+| Front Door / Traffic Manager / App Insights probes | [references/health-probe-checks.md](references/health-probe-checks.md) |
 
-### Service-Specific References
+**Step 2 — Per-service deep dive.** For each compute resource discovered in Step 1, load the matching service reference. The service reference is the single source of truth for that service's plan/SKU rules, assessment queries, CLI commands, IaC patches (Bicep + Terraform + AVM), and reporting hints.
 
-For service-specific assessment criteria, configuration commands, IaC patterns, and gotchas:
-
-| Service | Reference |
+| Service detected | Reference |
 |---|---|
-| Azure Functions | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
-| Azure Container Apps | [references/services/container-apps/reliability.md](references/services/container-apps/reliability.md) |
-| Azure App Service | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
+| Azure Functions (`microsoft.web/serverfarms` with `kind contains 'functionapp'`) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
+| Azure App Service (`microsoft.web/serverfarms`, other kinds) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
+| Azure Container Apps (`microsoft.app/managedenvironments` + `microsoft.app/containerapps`) | [references/services/container-apps/reliability.md](references/services/container-apps/reliability.md) |
 
 ### Phase 3: Generate Reliability Checklist
 
@@ -164,12 +164,16 @@ How would you like to apply these changes?
 
 Run fixes against live resources using `az` CLI commands. **Quick wins first, then ask before the slow storage migration.**
 
+The exact CLI commands per service live in the per-service references — pick the one(s) matching the resources discovered in Phase 2:
+
 | Fix | Reference |
 |---|---|
-| Enable zone redundancy | [references/configure-zone-redundancy.md](references/configure-zone-redundancy.md) |
-| Upgrade storage replication | [references/configure-storage.md](references/configure-storage.md) |
-| Configure health probes | [references/configure-health-probes.md](references/configure-health-probes.md) |
-| Set up multi-region | [references/configure-multi-region.md](references/configure-multi-region.md) |
+| Enable zone redundancy / configure health probes (Functions) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
+| Enable zone redundancy / configure health probes (App Service) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
+| Enable zone redundancy / configure probes (Container Apps) | [references/services/container-apps/reliability.md](references/services/container-apps/reliability.md) |
+| Upgrade storage replication (cross-service) | [references/configure-storage.md](references/configure-storage.md) |
+| Set up multi-region (cross-service) | [references/configure-multi-region.md](references/configure-multi-region.md) |
+| Platform overview / verification | [references/configure-zone-redundancy.md](references/configure-zone-redundancy.md), [references/configure-health-probes.md](references/configure-health-probes.md) |
 
 **Execution order — always quick wins first:**
 
@@ -226,10 +230,14 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 
 **Step 3: Apply patches in two deploys (quick wins first)**
 
-| IaC Type | Reference |
+The IaC patching framework (detection, AVM-module guidance, deploy-order rule, storage SKU patch) lives in:
+
+| IaC Type | Framework reference |
 |---|---|
 | Bicep | [references/iac-patching-bicep.md](references/iac-patching-bicep.md) |
 | Terraform | [references/iac-patching-terraform.md](references/iac-patching-terraform.md) |
+
+The actual **per-service compute patches** (Function App plan ZR, App Service Plan ZR, Container Apps environment ZR + probes, etc.) live in the per-service references — load the matching service file from Phase 2 for the exact Bicep / Terraform / AVM snippets.
 
 **Deploy 1 — Quick wins only.** Patch the 🟢 Safe items (zone redundancy on compute, health probes on Premium / Dedicated, Container Apps probes). Do **NOT** include the storage SKU patch in this deploy.
 
