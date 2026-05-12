@@ -1,13 +1,6 @@
 ---
 name: azure-reliability
-description: >-
-  Assess and improve the reliability posture of Azure Functions apps: zone redundancy,
-  ZRS storage, health probes, multi-region failover. Scans deployed resources,
-  presents a feature-pivoted checklist, then drives staged remediation (CLI or IaC patches)
-  end-to-end with user confirmation. WHEN: "assess reliability", "check reliability",
-  "zone redundant", "multi-region failover", "high availability", "disaster recovery",
-  "single points of failure", "reliability posture". Currently Functions-only; App Service
-  and Container Apps support is planned but not yet shipped.
+description: "Assess and improve the reliability posture of Azure Functions: zone redundancy, ZRS storage, health probes, multi-region failover. Scans deployed resources, presents a feature-pivoted checklist, then drives staged remediation (CLI or IaC patches) end-to-end with user confirmation. WHEN: \"assess reliability\", \"check reliability\", \"zone redundant\", \"multi-region failover\", \"high availability\", \"disaster recovery\", \"single points of failure\", \"reliability posture\"."
 license: MIT
 metadata:
   author: Microsoft
@@ -86,11 +79,15 @@ Two-step assessment: **platform-level discovery first, then per-service deep div
 
 **Step 2 — Per-service deep dive.** For each compute resource discovered in Step 1, load the matching service reference. The service reference is the single source of truth for that service's plan/SKU rules, assessment queries, CLI commands, IaC patches (Bicep + Terraform + AVM), and reporting hints.
 
+This skill version ships **only the Azure Functions** per-service reference. Other compute services are listed below explicitly so the dispatch logic is unambiguous: if a resource matches an unsupported row, do **not** attempt to load a reference, fabricate CLI commands, or generate IaC patches for it.
+
 | Service detected | Reference |
 |---|---|
 | Azure Functions (`microsoft.web/serverfarms` with `kind contains 'functionapp'`) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
+| Azure App Service (non-Functions sites: `microsoft.web/sites` without `kind contains 'functionapp'`, `microsoft.web/serverfarms` without `kind contains 'functionapp'`) | ⚪ Not yet shipped — planned for a future version |
+| Azure Container Apps (`microsoft.app/containerapps`, `microsoft.app/managedenvironments`) | ⚪ Not yet shipped — planned for a future version |
 
-> **Out of scope (this version):** Azure App Service (non-Functions sites) and Azure Container Apps deep-dive references are not yet shipped. If those resources appear in scope, surface them in the discovery summary, mark them as `⚪ not assessed (planned)` in the Phase 3 table, and skip the per-service remediation steps for them. Do **not** attempt to fabricate CLI commands or IaC patches for those services.
+> **Handling unsupported services:** If a resource matches an unsupported row above, surface it in the discovery summary, mark it as `⚪ not assessed (planned)` in the Phase 3 table, and skip the per-service remediation steps for it. Do **not** attempt to fabricate CLI commands or IaC patches for those services.
 
 ### Phase 3: Generate Reliability Checklist
 

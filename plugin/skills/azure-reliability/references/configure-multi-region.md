@@ -440,7 +440,6 @@ PRIMARY_APP="func-api-32mpw2gtw7lye"
 RESOURCE_TOKEN=$(openssl rand -hex 6)
 SECONDARY_APP="func-api-${RESOURCE_TOKEN}"
 FRONT_DOOR_NAME="afd-${RESOURCE_TOKEN}"
-SUBSCRIPTION="5ff08f93-4d06-4e84-8e8b-dfaed5a56ee8"
 
 # Step 1: Create secondary RG
 az group create --name $SECONDARY_RG --location $SECONDARY_LOCATION
