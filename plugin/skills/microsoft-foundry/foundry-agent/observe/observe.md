@@ -93,7 +93,7 @@ Example custom evaluator for Phase 2:
 name: behavioral_adherence
 promptText: |
   Given the query, response, and expected behavior, rate how well
-  the response fulfills the expected behavior.
+  the response fulfills the expected behavior (1-5).
   ## Query
   {{query}}
   ## Response
