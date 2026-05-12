@@ -59,7 +59,74 @@ jobs:
           cp allowed-skill-names.json "$TARGET_DIR/allowed-skill-names.json"
           cp allowed-plugin-file-references.json "$TARGET_DIR/allowed-plugin-file-references.json"
 
-      # 5. Commit and push changes
+      # 5. Update changelog in target repo when resources are synced
+      - name: Update changelog in target repo
+        env:
+          SOURCE_REPO: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_SERVER_URL: ${{ github.server_url }}
+        run: |
+          if git -C mcp-repo diff --quiet -- \
+            servers/Azure.Mcp.Server/src/Resources/allowed-skill-names.json \
+            servers/Azure.Mcp.Server/src/Resources/allowed-plugin-file-references.json; then
+            echo "No resource changes detected; skipping changelog update."
+            exit 0
+          fi
+
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          changelog_path = Path("mcp-repo/servers/Azure.Mcp.Server/CHANGELOG.md")
+          text = changelog_path.read_text(encoding="utf-8")
+          source_repo = os.environ["SOURCE_REPO"]
+          source_sha = os.environ["SOURCE_SHA"]
+          source_server_url = os.environ["SOURCE_SERVER_URL"]
+          entry = (
+              f"- Synced `allowed-skill-names.json` and `allowed-plugin-file-references.json` "
+              f"from [GitHub-Copilot-for-Azure]({source_server_url}/{source_repo}) at commit "
+              f"`{source_sha}`."
+          )
+
+          if entry in text:
+              raise SystemExit(0)
+
+          unreleased_heading = "## Unreleased"
+          other_changes_heading = "### Other Changes"
+
+          if unreleased_heading not in text:
+              first_version_idx = text.find("\n## ")
+              new_section = (
+                  f"\n{unreleased_heading}\n\n"
+                  f"{other_changes_heading}\n\n"
+                  f"{entry}\n"
+              )
+              if first_version_idx == -1:
+                  text = text.rstrip() + "\n" + new_section
+              else:
+                  text = text[:first_version_idx] + new_section + text[first_version_idx:]
+          else:
+              start = text.index(unreleased_heading)
+              end = text.find("\n## ", start + len(unreleased_heading))
+              if end == -1:
+                  end = len(text)
+
+              section = text[start:end]
+              if other_changes_heading in section:
+                  marker = f"{other_changes_heading}\n\n"
+                  if marker in section:
+                      section = section.replace(marker, f"{marker}{entry}\n", 1)
+                  else:
+                      heading_idx = section.index(other_changes_heading) + len(other_changes_heading)
+                      section = section[:heading_idx] + f"\n\n{entry}" + section[heading_idx:]
+              else:
+                  section = section.rstrip() + f"\n\n{other_changes_heading}\n\n{entry}\n"
+              text = text[:start] + section + text[end:]
+
+          changelog_path.write_text(text, encoding="utf-8")
+          PY
+
+      # 6. Commit and push changes
       - name: Commit and push changes
         id: commit
         working-directory: mcp-repo
@@ -72,7 +139,8 @@ jobs:
 
           git add -- \
             servers/Azure.Mcp.Server/src/Resources/allowed-skill-names.json \
-            servers/Azure.Mcp.Server/src/Resources/allowed-plugin-file-references.json
+            servers/Azure.Mcp.Server/src/Resources/allowed-plugin-file-references.json \
+            servers/Azure.Mcp.Server/CHANGELOG.md
           if git diff --cached --quiet; then
             echo "No changes to sync."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
@@ -82,7 +150,7 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # 6. Create or update Pull Request in microsoft/mcp
+      # 7. Create or update Pull Request in microsoft/mcp
       - name: Create or update Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
