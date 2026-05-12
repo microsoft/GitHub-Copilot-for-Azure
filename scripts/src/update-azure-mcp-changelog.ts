@@ -6,6 +6,7 @@ import * as path from "node:path";
 const UNRELEASED_HEADING = "## Unreleased";
 const OTHER_CHANGES_HEADING = "### Other Changes";
 const VERSION_HEADING_PREFIX = "\n## ";
+const VERSION_HEADING_PATTERN = /(^|\n)## /;
 
 function buildEntry(sourceRepo: string, sourceSha: string, sourceServerUrl: string): string {
   return `- Synced \`allowed-skill-names.json\` and \`allowed-plugin-file-references.json\` from [GitHub-Copilot-for-Azure](${sourceServerUrl}/${sourceRepo}) at commit \`${sourceSha}\`.`;
@@ -30,8 +31,15 @@ function updateChangelog(
   }
 
   if (!text.includes(UNRELEASED_HEADING)) {
-    const firstVersionIdx = text.indexOf(VERSION_HEADING_PREFIX);
-    const newSection = `\n${UNRELEASED_HEADING}\n\n${OTHER_CHANGES_HEADING}\n\n${entry}\n`;
+    const firstVersionMatch = VERSION_HEADING_PATTERN.exec(text);
+    const firstVersionIdx =
+      firstVersionMatch === null
+        ? -1
+        : firstVersionMatch.index + firstVersionMatch[0].length - "## ".length;
+    const newSection =
+      firstVersionIdx === 0
+        ? `${UNRELEASED_HEADING}\n\n${OTHER_CHANGES_HEADING}\n\n${entry}\n`
+        : `\n${UNRELEASED_HEADING}\n\n${OTHER_CHANGES_HEADING}\n\n${entry}\n`;
     if (firstVersionIdx === -1) {
       text = ensureTrailingNewline(text.trimEnd()) + newSection;
     } else {
