@@ -73,58 +73,12 @@ jobs:
             exit 0
           fi
 
-          python - <<'PY'
-          import os
-          from pathlib import Path
-
-          changelog_path = Path("mcp-repo/servers/Azure.Mcp.Server/CHANGELOG.md")
-          text = changelog_path.read_text(encoding="utf-8")
-          source_repo = os.environ["SOURCE_REPO"]
-          source_sha = os.environ["SOURCE_SHA"]
-          source_server_url = os.environ["SOURCE_SERVER_URL"]
-          entry = (
-              f"- Synced `allowed-skill-names.json` and `allowed-plugin-file-references.json` "
-              f"from [GitHub-Copilot-for-Azure]({source_server_url}/{source_repo}) at commit "
-              f"`{source_sha}`."
-          )
-
-          if entry in text:
-              raise SystemExit(0)
-
-          unreleased_heading = "## Unreleased"
-          other_changes_heading = "### Other Changes"
-
-          if unreleased_heading not in text:
-              first_version_idx = text.find("\n## ")
-              new_section = (
-                  f"\n{unreleased_heading}\n\n"
-                  f"{other_changes_heading}\n\n"
-                  f"{entry}\n"
-              )
-              if first_version_idx == -1:
-                  text = text.rstrip() + "\n" + new_section
-              else:
-                  text = text[:first_version_idx] + new_section + text[first_version_idx:]
-          else:
-              start = text.index(unreleased_heading)
-              end = text.find("\n## ", start + len(unreleased_heading))
-              if end == -1:
-                  end = len(text)
-
-              section = text[start:end]
-              if other_changes_heading in section:
-                  marker = f"{other_changes_heading}\n\n"
-                  if marker in section:
-                      section = section.replace(marker, f"{marker}{entry}\n", 1)
-                  else:
-                      heading_idx = section.index(other_changes_heading) + len(other_changes_heading)
-                      section = section[:heading_idx] + f"\n\n{entry}" + section[heading_idx:]
-              else:
-                  section = section.rstrip() + f"\n\n{other_changes_heading}\n\n{entry}\n"
-              text = text[:start] + section + text[end:]
-
-          changelog_path.write_text(text, encoding="utf-8")
-          PY
+          cd source-repo/scripts
+          npm run updateAzureMcpChangelog -- \
+            ../../mcp-repo/servers/Azure.Mcp.Server/CHANGELOG.md \
+            "$SOURCE_REPO" \
+            "$SOURCE_SHA" \
+            "$SOURCE_SERVER_URL"
 
       # 6. Commit and push changes
       - name: Commit and push changes
