@@ -307,6 +307,20 @@ describe("observe - Unit Tests", () => {
       expect(observeContent).toMatch(/per-query behavioral rubric/i);
     });
 
+    test("requires custom evaluator prompts to use result/reason output contract", () => {
+      const setupContent = fs.readFileSync(
+        path.join(REFERENCES_PATH, "deploy-and-setup.md"),
+        "utf-8"
+      );
+
+      expect(observeContent).toMatch(/custom evaluator output contract/i);
+      expect(observeContent).toContain("`result` plus `reason`");
+      expect(observeContent).toMatch(/score.*reasoning/i);
+      expect(observeContent).toMatch(/duplicate `OUTPUT FORMAT` blocks/i);
+      expect(setupContent).toMatch(/runtime-enforced JSON fields are `result` and `reason`/i);
+      expect(setupContent).toMatch(/omit conflicting output JSON schemas/i);
+    });
+
     test("documents LLM judge knowledge-cutoff mitigation for real-time data", () => {
       const analyzeContent = fs.readFileSync(
         path.join(REFERENCES_PATH, "analyze-results.md"),
