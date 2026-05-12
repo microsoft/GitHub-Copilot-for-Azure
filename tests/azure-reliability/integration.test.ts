@@ -60,7 +60,7 @@ const describeIntegration = skipTests ? describe.skip : describe;
 
 const e2eDeployTimeoutMs = 60 * 60 * 1000; // 1 hour (clone + first deploy + assess + patch + second deploy + re-assess)
 
-describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   describe("e2e-zone-redundancy-fix", () => {
