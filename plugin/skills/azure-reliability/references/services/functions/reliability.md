@@ -62,6 +62,15 @@ az resource update \
   --set properties.siteConfig.minimumElasticInstanceCount=2
 ```
 
+### Consumption (Y1) — upgrade path required
+
+Consumption (Y1) plans do **not** support zone redundancy. The user must upgrade the plan first:
+
+- **Recommended:** Upgrade to **Flex Consumption** — similar serverless model, supports ZR, no per-app minimum cost.
+- **Alternative:** Upgrade to **Premium (EP1+)** — more control, higher base cost (always-ready instances charged 24/7).
+
+⚠️ Inform the user of cost implications **before** initiating any plan change.
+
 ## Configure: Health Endpoint
 
 Flex Consumption does NOT support platform health check (`healthCheckPath`). Instead, add an HTTP endpoint in code:

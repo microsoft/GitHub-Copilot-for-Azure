@@ -89,6 +89,8 @@ az containerapp create \
 3. **Switch traffic** (update DNS/Front Door origins)
 4. **Delete old environment** after verification
 
+> ⛔ **Before deleting the old environment, check it for other apps/jobs first** — Container Apps environments are often shared across multiple apps. Run `az containerapp list --environment <old-env-name> --resource-group <rg>` to confirm nothing else is still using it.
+
 **Migration checklist:**
 - [ ] All container apps
 - [ ] Environment certificates & custom domains
