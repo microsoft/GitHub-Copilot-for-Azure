@@ -1,10 +1,10 @@
 name: Run Skill Evaluations
 on:
-  # pull_request:
-  #   paths:
-  #     - 'plugin/skills/**'
-  #     - 'evals/**'
-  #     - '.vally.yaml'
+  pull_request:
+    paths:
+      - 'plugin/skills/**'
+      - 'evals/**'
+      - '.vally.yaml'
   workflow_dispatch:
     inputs:
       suite:
