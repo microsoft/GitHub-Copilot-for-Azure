@@ -58,7 +58,7 @@ if (skipTests && skipReason) {
 }
 const describeIntegration = skipTests ? describe.skip : describe;
 
-const e2eDeployTimeoutMs = 30 * 60 * 1000; // 30 minutes (clone + assess + deploy + re-assess)
+const e2eDeployTimeoutMs = 60 * 60 * 1000; // 1 hour (clone + first deploy + assess + patch + second deploy + re-assess)
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const agent = useAgentRunner();
