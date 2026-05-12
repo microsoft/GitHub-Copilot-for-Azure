@@ -23,7 +23,7 @@ Scan the workspace for project files to determine the technology stack. ⛔ **Do
 | `Cargo.toml` | Rust | cargo |
 | `Gemfile` | Ruby | bundler |
 | `composer.json` | PHP | composer |
-| `docker-compose.yml` / `compose.yml` | (dependency source) | Not a build system — parse `services:` for infrastructure dependencies (see [deployability-check.md § Compose](deployability-check.md)) |
+| `docker-compose.yml` / `compose.yml` | (dependency source) | Not a build system — infrastructure dependencies parsed during deployability check (Step 3.3) |
 | `build.gradle` + `com.google.cloud.tools.jib` | Java (Jib) | gradle + jib plugin |
 
 **Modern package manager lockfiles:** `uv.lock` → uv (`uv sync`), `bun.lock` / `bun.lockb` → bun (`bun install`). Detect alongside standard lockfiles.
@@ -60,7 +60,7 @@ Scan source files to detect packages imported in code but missing from the depen
 | File location | Severity | Why |
 |---|---|---|
 | Build-time config (`next.config.*`, `webpack.config.*`, `vite.config.*`, `babel.config.*`, `postcss.config.*`, `tailwind.config.*`) | ❌ FAIL | Build will crash — `Cannot find module` at config load time. Offer to add to `package.json`. |
-| Entry point or source code (`src/**`, `app/**`, `pages/**`, `lib/**`) | 🔧 Highly Recommended Fix | App may crash at runtime. Offer to add to `package.json`. |
+| Entry point or source code (`src/**`, `app/**`, `pages/**`, `lib/**`) | 🔧 Recommended Fix | App may crash at runtime. Offer to add to `package.json`. |
 | Test files only (`test/**`, `tests/**`, `__tests__/**`, `*.test.*`, `*.spec.*`) | ⚠️ WARN | Doesn't affect deployment |
 
 **Python:**
@@ -79,6 +79,8 @@ Scan `*.py` for `import {pkg}` / `from {pkg} import`, cross-reference against `r
 | Only Dockerfile found | ⚠️ WARN | Build depends on container — note this |
 
 **Dependency vintage check:** If ALL pinned dependencies are 5+ years old AND the ecosystem has known breaking changes (e.g., Werkzeug 0.x→1.x removed `werkzeug.contrib`, MarkupSafe <1.0 has no Python 3.10+ wheels, `itsdangerous<1.0` API completely changed), classify as ❌ FAIL — `pip install` / `npm install` WILL fail on Azure's current runtimes. Check: grep for imports from removed modules (e.g., `werkzeug.contrib.*`, `flask.ext.*`). If found → ❌ FAIL with "imports from removed module — dependency chain incompatible with modern runtime."
+
+**Transitive dependency check (post-migration):** After upgrading dependencies during 🔶 Major Migration, run `pip install -r requirements.txt` (user consent is already granted for migration) to catch transitive deps that new versions require but old versions bundled inline. These won't appear in any import statement — only `pip install` reveals them. If install fails, read the error, add the missing package to requirements, and retry. Also run `python -c "from app import create_app"` (or equivalent entry-point import) to catch import-time validation errors (e.g., WTForms `Email()` requires `email-validator` at class definition time, not at call time).
 
 **F1 viability signal:** While evaluating dependencies, also check `f1Viable` per the heuristics in [dependency-compatibility.md § F1 Viability](dependency-compatibility.md). A dependency vintage ❌ FAIL that requires 🔶 Major Migration (>5 files) should set `f1Viable: false` — the migration + Oryx rebuild will exhaust F1's CPU budget.
 
@@ -105,4 +107,4 @@ Scan `*.py` for `import {pkg}` / `from {pkg} import`, cross-reference against `r
 
 ## Native Module Detection
 
-See [deployability-check.md § Native Module Detection](deployability-check.md) for the canonical detection procedure, edge cases, and package table. Results go to `buildRequirements.hasNativeModules`.
+See [dependency-compatibility.md § Native Module Detection](dependency-compatibility.md) for the canonical detection procedure, edge cases, and package table. Results go to `buildRequirements.hasNativeModules`.

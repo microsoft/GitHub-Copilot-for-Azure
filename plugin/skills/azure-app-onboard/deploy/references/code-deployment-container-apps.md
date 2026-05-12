@@ -80,7 +80,7 @@ az containerapp update --subscription {subscriptionId} -g {rg} -n {ca} --source 
 
 > ⛔ **`az containerapp revision restart` does NOT re-resolve KV secrets.** Container Apps caches KV-backed `secretRef` values at revision *creation* time. To pick up updated KV secrets, create a NEW revision by redeploying Bicep (preferred) or `az containerapp update --revision-suffix rev{timestamp}`. Do NOT use `revision restart` for KV secret rotation — it only restarts the container with the same cached values.
 
-> ⛔ **KV secretRef requires managed identity + role to exist first.** Phase 1 of the two-phase deploy creates the Container App with a placeholder image. KV `secretRef` cannot be used in Phase 1 because the Container App's managed identity doesn't exist yet (CA not created → no principalId → role assignment fails → KV access denied). Use inline `@secure()` parameters or hardcoded env vars in Phase 1. After Phase 1 completes and RBAC propagates (~60s), Phase 2 can use KV secretRef.
+> ⛔ **KV secretRef AND ACR registries require managed identity + roles to exist first.** Phase 1 of the two-phase deploy creates the Container App with a placeholder image, `registries: []`, and `secrets: []`. Both KV `secretRef` and ACR `registries` with `identity: 'system'` fail in Phase 1 because the CA's managed identity doesn't exist yet (no principalId → AcrPull/KV role assignment fails → "Operation expired"). After Phase 1 completes and RBAC propagates (~60s), Phase 2 redeploys with ACR registries + KV secretRef + real image + correct `targetPort`.
 
 ## Config-File Apps (Go/Viper, Spring Boot, etc.)
 

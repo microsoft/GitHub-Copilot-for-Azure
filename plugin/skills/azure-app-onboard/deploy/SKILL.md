@@ -50,11 +50,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 4 when `scaffold-manife
 
 > ⛔ **Re-read checklist after every long-running command.** After `az deployment`, `az webapp deploy`, `az acr build`, and after each failed health check — you MUST read the generated `deploy-checklist.md` in the session folder. This is the single rule that prevents healing loops from losing critical instructions.
 
-> ⛔ **NEVER use async/background shells for variable setup.** Use sync shells so state (variables, passwords) persists across commands. Async shells exit after the command and lose all state.
-
-> ⛔ **Generate secrets ONCE — reuse everywhere.** For PostgreSQL + Key Vault deployments: generate the password ONCE using `openssl rand -base64 32`, pass to BOTH `az deployment sub create --parameters pgAdminPassword={value}` AND `az keyvault secret set --value {value}` IN THE SAME shell command block. NEVER generate separate passwords — shell variables don't persist across Copilot CLI tool calls.
-
-> ⛔ **`az webapp deploy` does NOT support `--track-status`.** This flag does not exist. Do not add it to any `az webapp deploy` command.
+> ⛔ **Read [`deploy-safety.md`](references/deploy-safety.md) and [`blocked-patterns.md`](references/blocked-patterns.md) before running any commands** — they contain shell execution rules (sync vs async), secret generation patterns, and every command the agent is forbidden from executing.
 
 | # | Step | Action | Artifact to Write | Reference |
 |---|------|--------|-------------------|-----------|

@@ -25,11 +25,12 @@ import {
   getAllAssistantMessages,
 } from "../../utils/evaluate";
 import type { AgentMetadata } from "../../utils/agent-runner";
-
-const SKILL_NAME = "azure-app-onboard"; // Route to parent — parent delegates to prepare
-const RUNS_PER_PROMPT = 1;
-const invocationRateThreshold = 0.8;
-const testTimeoutMs = 1800000; // 30 minutes
+import {
+  SKILL_NAME,
+  RUNS_PER_PROMPT,
+  invocationRateThreshold,
+  testTimeoutMs,
+} from "../app-onboard-test-helpers";
 
 /**
  * Early terminate once the agent presents a plan with cost/service info

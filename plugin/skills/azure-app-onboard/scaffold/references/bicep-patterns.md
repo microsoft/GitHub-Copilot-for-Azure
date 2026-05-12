@@ -2,7 +2,7 @@
 
 Bicep default-path patterns for AppOnboard scaffold. Used as the primary IaC format. For the alternative Terraform path (existing `.tf` files or user override), scaffold uses `mcp_azure_mcp_azureterraformbestpractices` output patterns.
 
-> **Source:** Adapted from [`azure-prepare/references/recipes/bicep/patterns.md`](../../azure-prepare/references/recipes/bicep/patterns.md). See [Bicep best practices](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/best-practices) for updates.
+> **Source:** Adapted from Azure Bicep best practices. See [Bicep best practices](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/best-practices) for updates.
 
 ## File Structure
 
@@ -86,16 +86,16 @@ module resources './modules/resources.bicep' = {
 
 ## Naming Convention (Bicep)
 
-```bicep
-var resourceToken = uniqueString(subscription().id, resourceGroup().id, location)
+The prepare phase generates final resource names in `prepare-plan.json.naming.resources[]`. Scaffold MUST use those exact names as Bicep parameters — do NOT re-derive them with `take()`, `uniqueString()`, or string manipulation.
 
-// Pattern: {prefix}{name}{token} — enforce per-resource max length
-var kvName = 'kv-${take(environmentName, 10)}-${resourceToken}'    // Key Vault ≤24 chars
-var storName = 'st${take(environmentName, 8)}${resourceToken}'     // Storage ≤24 chars, alphanumeric only
-var acrName = replace('cr${environmentName}${resourceToken}', '-', '')  // ACR ≤50 chars, alphanumeric only
+```bicep
+// Names come from prepare-plan.json.naming.resources[] — passed as parameters
+param kvName string      // e.g. 'kv-myapp-dev-a1d5'
+param storName string    // e.g. 'stmyappdeva1d5'
+param acrName string     // e.g. 'crmyappdeva1d5'
 ```
 
-Cross-reference naming with [prepare/references/naming-patterns.md](../../prepare/references/naming-patterns.md) — Bicep names must match `prepare-plan.json.naming.resources[]`.
+The prepare phase handles length constraints and character restrictions per resource type — see [naming-patterns.md](../../prepare/references/naming-patterns.md).
 
 ## Compute-Target Patterns
 

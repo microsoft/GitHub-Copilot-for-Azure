@@ -1,5 +1,7 @@
 # Approval Gates — Steps 6 & 8
 
+> **Gate summary:** AppOnboard has **2 approval gates**: (1) **Scaffold Gate** (orchestrator Step 6) — approve architecture plan before generating IaC, (2) **Deploy Gate** (orchestrator Step 8 / deploy/SKILL.md Step 4) — approve cost + resource summary before `az deployment`. Both are mandatory and SEPARATE — scaffold approval does NOT imply deploy approval.
+
 ## Scaffold Approval Gate (Step 6)
 
 Display the architecture plan for user approval BEFORE generating any files:
@@ -61,11 +63,11 @@ If "Run manually" is selected → point to [deployment-summary-template.md](depl
 
 If validation failed or any FLAGGED findings exist at L1 (Security) or L3 (Hallucination), block **Yes** until resolved.
 
-Only after user approves: set `currentPhase: "deploy"`.
+Only after user approves: proceed to deploy sub-skill (Step 9) — the deploy sub-skill sets `currentPhase: "deploy"` at its Step 1.
 
 > ⛔ **Before entering deploy:** scaffold references (bicep-patterns, self-review, waf-checklist) are no longer needed — let context compaction clear them. After ANY mid-session compaction during deploy, re-read `deploy/SKILL.md` Steps 4-8 before continuing. **You MUST read [`deploy/SKILL.md`](../deploy/SKILL.md) before executing any deployment, preflight check, or health verification.** Do not skip — the sub-skill contains preflight checks, error classification tables, and health-check patterns required for safe deployment. Follow its workflow. You MUST write `deploy-result.json` to the session folder.
 
-> ⛔ **Deploy via `az deployment sub create` — NEVER `azd up`.** AppOnboard's deploy phase uses `az deployment sub create` for IaC and `az acr build` for Container Apps code deploy. Do NOT run `azd up`, `azd provision`, or `azd deploy`. Repos with existing `azure.yaml` are routed to `azure-prepare` at Step 4 — if you reach this step, either the user chose "Start fresh" or the repo has no azd setup. Either way, deploy via `az deployment sub create`. If you find a AppOnboard-generated `azure.yaml` in the workspace, DELETE it before deploying.
+> ⛔ **Deploy via `az deployment sub create` — see [pipeline-rules.md § azure.yaml prohibition](pipeline-rules.md) for full rules.** If you find an AppOnboard-generated `azure.yaml` in the workspace, DELETE it before deploying.
 
 > ⛔ **Container Apps code deploy is NOT optional.** After IaC deploys placeholder images, you MUST complete the full code deploy: (1) `az acr build` per component, (2) update Bicep image params, (3) `az deployment sub create`, (4) health check. Presenting "Next Steps" with manual CLI commands for code deploy is a VIOLATION — the user expects end-to-end deployment. Post-deploy "Next Steps" contain ONLY skill-based suggestions (`azure-compliance`, `azure-resource-visualizer` — see [pipeline-rules.md](pipeline-rules.md)), not core deployment tasks. If `buildRequirements.hasBuildKitSyntax == true`, create `Dockerfile.azure` files BEFORE building.
 

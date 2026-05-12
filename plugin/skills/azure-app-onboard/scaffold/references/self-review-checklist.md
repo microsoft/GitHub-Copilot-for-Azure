@@ -13,7 +13,7 @@ Extract every security claim from the generated IaC and check for internal contr
 | Key Vault referenced but RBAC not granted | `@Microsoft.KeyVault(...)` but no `roleAssignment` for app identity |
 | ⛔ Role assignment scope targets wrong resource | `scope: resourceGroup()` on resource-specific roles → `FLAGGED`. Must scope to specific resource. |
 | `principalType` missing on role assignments | Causes intermittent 30s+ delays |
-| ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute resources (App Service, Container Apps, Functions) MUST have `identity: { type: 'SystemAssigned' }` (Bicep) or `identity { type = "SystemAssigned" }` (Terraform). If missing → `FLAGGED`. Not optional, not a suggestion. |
+| ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute resources (App Service, Container Apps, Functions) MUST have `identity: { type: 'SystemAssigned' }` (Bicep) or `identity { type = "SystemAssigned" }` (Terraform). If missing → `FLAGGED`. **Exception:** F1/D1 SKU on Linux — MI sidecar causes OOM; omit identity block and mark as `PLAUSIBLE` with note "F1/D1 Linux — MI excluded per bicep-patterns-security.md." |
 | SQL firewall `0.0.0.0/0` (AllowAzureServices) without private endpoint | ⛔ **FLAGGED** — prefer managed identity + private endpoint. If AllowAzureServices genuinely needed, mark as `PLAUSIBLE` with note explaining why. |
 | ⛔ SCM/FTP auth policy missing on App Service | ⛔ **MANDATORY FAIL** — ALL App Service MUST have `basicPublishingCredentialsPolicies`: `scm.allow: true` (scaffold), `ftp.allow: false` (always). Missing → `FLAGGED`. |
 

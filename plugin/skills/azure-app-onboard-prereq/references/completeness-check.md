@@ -96,7 +96,7 @@ For apps with HTML files: verify CSS/JS/image references resolve to files that e
 |---------|---------|
 | All referenced CSS/JS/image assets found | ✅ PASS |
 | `<link rel="icon">` or `<link rel="shortcut icon">` with broken `href` | ⚠️ WARN — cosmetic only, page renders correctly |
-| Any other broken `<link href>`, `<script src>`, `<img src>` reference | ❌ FAIL (🔧 Highly Recommended) — list each broken reference with the HTML file and line. The site renders without styles or scripts — users see a broken page. Prereq should offer to fix. |
+| Any other broken `<link href>`, `<script src>`, `<img src>` reference | ❌ FAIL (🔧 Recommended Fix) — list each broken reference with the HTML file and line. The site renders without styles or scripts — users see a broken page. Prereq should offer to fix. |
 | No HTML files | ✅ PASS — not applicable |
 
 ### 7. Container Readiness
@@ -113,9 +113,9 @@ For apps with HTML files: verify CSS/JS/image references resolve to files that e
 | Multi-process container detected (`supervisord`, `s6-overlay`, `tini` + daemon, multiple CMD/ENTRYPOINT) | ⚠️ WARN — health probes and scaling may not work as expected |
 | No Dockerfile | ✅ PASS — not applicable |
 
-### Deterministic Sub-Checks (Always Fire)
+### Stack-Specific Mandatory Checks (Always Evaluate)
 
-These checks produce consistent results regardless of scan order. Always evaluate these for matching stacks:
+These checks ALWAYS run for matching stacks, regardless of scan order or prior findings:
 
 | Stack | Condition | Verdict | Always |
 |-------|-----------|---------|--------|
@@ -126,22 +126,22 @@ These checks produce consistent results regardless of scan order. Always evaluat
 | Node.js (Express) | `cookie.secure` or `cookie: { secure: true }` in Express session config without `trust proxy` setting | ⚠️ WARN `W-TRUST-PROXY` — "Express behind Azure proxy: `trust proxy` must be set when using secure cookies. Without it, `req.protocol` is always `http` and secure cookies are never sent." | Yes |
 | Any | README.md missing or <50 bytes | ⚠️ WARN | Yes |
 
-> **Do not short-circuit.** Iterate ALL sub-checks (1–7 + deterministic) for every component. A scan that finds 1/8 real issues has failed its purpose.
+> **Do not short-circuit.** Iterate ALL sub-checks (1–7 + mandatory) for every component. A scan that finds 1/8 real issues has failed its purpose.
 
-**Scan depth rule:** Evaluate ALL 7 checks + ALL applicable deterministic sub-checks per component. Track count: "Evaluated N/N checks for component {name}." Skipped checks require reason.
+**Scan depth rule:** Evaluate ALL 7 checks + ALL applicable mandatory sub-checks per component. Track count: "Evaluated N/N checks for component {name}." Skipped checks require reason.
 
-> ⛔ **Scan completeness self-check — MANDATORY.** Verify: "Evaluated {N}/7 checks + {M}/4 deterministic sub-checks for component {name}." If N < 7, go back. Every check MUST have explicit PASS/WARN/FAIL. This line MUST appear in `prereq-output.json` per component.
+> ⛔ **Scan completeness self-check — MANDATORY.** Verify: "Evaluated {N}/7 checks + {M}/4 mandatory sub-checks for component {name}." If N < 7, go back. Every check MUST have explicit PASS/WARN/FAIL. This line MUST appear in `prereq-output.json` per component.
 
 ## Verdict → Severity Tier Mapping
 
 | Check | ❌ FAIL Condition | Severity Tier |
 |-------|------------------|---------------|
 | 1. Entry Point | No entry point | ❌ Critical (app crashes on startup) |
-| 2. Dependency Manifest | No manifest found (non-static) | 🔧 Highly Recommended |
-| 3. Configuration | Hardcoded secrets in source | 🔧 Highly Recommended |
+| 2. Dependency Manifest | No manifest found (non-static) | 🔧 Recommended Fix |
+| 3. Configuration | Hardcoded secrets in source | 🔧 Recommended Fix |
 | 5. Listening Port | Web app with no port binding | ❌ Critical (502 on every request) |
-| 6. Static Asset Integrity | Broken CSS/JS/image references | 🔧 Highly Recommended |
-| 7. Container Readiness | Dockerfile EXPOSE port mismatch | 🔧 Highly Recommended |
-| Deterministic | `express-session` without external store | ⚠️ Warning |
+| 6. Static Asset Integrity | Broken CSS/JS/image references | 🔧 Recommended Fix |
+| 7. Container Readiness | Dockerfile EXPOSE port mismatch | 🔧 Recommended Fix |
+| Mandatory | `express-session` without external store | ⚠️ Warning |
 
 All ⚠️ WARN verdicts (sparse README, no `.dockerignore`, no `engines` field, no health endpoint, etc.) are **Warning** tier — informational, non-blocking, NEVER included in fix plans, NEVER counted as blockers.

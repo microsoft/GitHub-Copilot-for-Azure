@@ -6,7 +6,7 @@ Rules for generating infrastructure code, Dockerfiles, security verification, an
 
 For each service in `services[]`:
 
-> **Sub-agent delegation:** If using a sub-agent or background task for IaC generation, you MUST include these artifacts **verbatim** (not summarized) in the sub-agent prompt: (1) full `prepare-plan.json` content (services, naming, quotas, cost, deploymentVariables), (2) the 5-tag block from `bicep-patterns.md` (exact definition: `app-onboard-skill: 'true'`, NOT the skill name), (3) the `ScaffoldManifest` interface from `session-schemas-deploy.ts`, (4) all module patterns from the loaded compute-target file (`bicep-container-apps.md` or `bicep-app-service.md`). Sub-agents lacking these produce non-compliant artifacts (wrong tag values, broken resource references, missing RBAC). Self-review (Step 9) remains mandatory after sub-agent returns.
+> **Sub-agent delegation:** If using a sub-agent or background task for IaC generation, you MUST include these artifacts **verbatim** (not summarized) in the sub-agent prompt: (1) full `prepare-plan.json` content (services, naming, quotas, cost, deploymentVariables), (2) the 5-tag block from `bicep-patterns.md` (exact definition: `app-onboard-skill: 'true'`, NOT the skill name), (3) the `ScaffoldManifest` interface from `session-schemas-deploy.ts`, (4) all module patterns from the loaded compute-target file (`bicep-container-apps.md` or `bicep-app-service.md`), (5) **for Container Apps: the two-phase wiring rules** — Phase 1 MUST use `registries: []`, `secrets: []`, placeholder `targetPort: 80`, and the MCR placeholder image. Phase 2 adds ACR registries + KV secretRefs + real port after RBAC propagates. Sub-agents that include `registries` or KV `secretRef` in Phase 1 cause "Operation expired" failures. Sub-agents lacking these produce non-compliant artifacts (wrong tag values, broken resource references, missing RBAC). Self-review (Step 9) remains mandatory after sub-agent returns.
 
 > **PostgreSQL wiring:** Include firewall rule + extension allow-list — see [`bicep-patterns-data.md`](bicep-patterns-data.md) (loaded at Step 4 if PostgreSQL in plan). **BuildKit Dockerfiles:** Generate `Dockerfile.azure` for ACR compatibility — see [code-deployment-container-apps.md § BuildKit](../../deploy/references/code-deployment-container-apps.md).
 
@@ -61,6 +61,15 @@ Critical patterns for every App Service Bicep:
 ## Step 6 — Generate Dockerfiles
 
 For `context.json.components[]` needing containerization without existing Dockerfiles.
+
+### Cloud SDK Swaps (execute before Dockerfile generation)
+
+If `prereq-output.json.cloudSdkSwaps[]` is non-empty, execute swaps per component BEFORE generating Dockerfiles (Dockerfiles may depend on the updated manifests):
+
+1. **Replace imports** — swap `sourcePackage` → `azurePackage` in source files
+2. **Update initialization** — replace cloud-specific clients (e.g., `DynamoDBClient` → `CosmosClient`) using `azureService`
+3. **Update manifests** — remove `sourcePackage`, add `azurePackage` to `package.json`/`requirements.txt`
+4. **Update env vars** — replace cloud-specific vars (e.g., `AWS_REGION` → `AZURE_COSMOS_ENDPOINT`), add to IaC `appSettings`/`env`
 
 > ⛔ **After cloud SDK swaps** (per `prereq-output.json.cloudSdkSwaps[]`), if >3 files or >2 packages changed, present: **"I've replaced {N} cloud SDK dependencies with Azure equivalents. Want me to install dependencies, build, and run tests to verify? (Yes / Skip)"** If Yes: run `npm install` → `npm run build` → `npm test` (or stack equivalent), fix errors (max 2 attempts). If Skip: proceed — ACR/Oryx will catch issues at deploy time.
 

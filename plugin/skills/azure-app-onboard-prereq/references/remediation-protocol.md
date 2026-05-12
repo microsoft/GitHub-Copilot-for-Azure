@@ -55,7 +55,7 @@ If any ❌ FAIL exists:
 
 ## Write Final State (Step 7)
 
-> ⛔ **Components MUST be written to BOTH files.** Write detected components to `prereq-output.json.components[]` AND copy them to `context.json.components[]`. Downstream phases (prepare, scaffold) read `context.json.components[]` — if it's empty, they have no components to map.
+> ⛔ **Components MUST be written to BOTH files.** Write detected components to `prereq-output.json.components[]` AND copy them to `context.json.components[]`. **`context.json.components[]` is the authoritative source** for downstream phases (prepare, scaffold). `prereq-output.json.components[]` is the prereq-phase snapshot at exit — downstream phases read `context.json`.
 
 > ⛔ **`fixesApplied` requires re-evaluation evidence.** Before writing `readiness.status: "fixesApplied"`, verify you printed the `🔄 Re-evaluation complete` line from Step 6.5. If you applied a fix but did NOT re-run the full 3-axis scan, you MUST go back and run it now. Do NOT write `fixesApplied` based on static grep alone — the re-scan catches issues the original scan missed (B7).
 

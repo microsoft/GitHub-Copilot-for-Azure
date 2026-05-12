@@ -30,11 +30,11 @@ import {
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import type { AgentMetadata } from "../../utils/agent-runner";
+import { testTimeoutMs } from "../app-onboard-test-helpers";
 
 const SKILL_NAME = "azure-app-onboard"; // Route to parent — parent delegates to scaffold
 const RUNS_PER_PROMPT = 1;
 const invocationRateThreshold = 0.8;
-const testTimeoutMs = 1800000; // 30 minutes
 
 /**
  * Early terminate once the agent produces IaC generation or scaffold-manifest signals

@@ -15,18 +15,9 @@ After IaC deployment creates the Azure resources, deploy application code.
 > }
 > ```
 >
-> If `az webapp deploy` reports "Build successful. Time: 0(s)" for an app that needs dependency installation, the setting wasn't active. Re-set it, wait, and retry. If the 0-second build persists after 2 retries, fall back to Kudu zipdeploy (`/api/zipdeploy`):
+> If `az webapp deploy` reports "Build successful. Time: 0(s)", the app needs Oryx but OneDeploy skipped it. See **Step 6b** for the runtime decision rule — Python, Node.js, Ruby, and PHP apps must use Kudu zipdeploy as the primary method.
 >
-> ```powershell
-> $creds = az webapp deployment list-publishing-credentials --subscription {sub} -g {rg} -n {app} --query "{user:publishingUserName, pass:publishingPassword}" -o json | ConvertFrom-Json
-> $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($creds.user):$($creds.pass)"))
-> Invoke-WebRequest -Uri "https://{app}.scm.azurewebsites.net/api/zipdeploy?isAsync=true" -Method POST -InFile app.zip -Headers @{Authorization="Basic $auth"} -ContentType "application/zip"
-> ```
-> Poll `https://{app}.scm.azurewebsites.net/api/deployments/latest` until `complete: true`.
->
-> ⛔ **F1 tier + large dependency trees: startup timeout risk.** Oryx may compress installed dependencies into `output.tar.zst`. On F1 (shared CPU, 1GB RAM), the container can time out decompressing at startup. Set `ORYX_DISABLE_COMPRESSION=true` (prevents tarball creation entirely) and `WEBSITES_CONTAINER_START_TIME_LIMIT=1800`. If still timing out, recommend upgrading to B1 at the healing gate.
->
-> ⛔ **Python apps: `az webapp deploy --type zip` may not trigger Oryx.** OneDeploy can extract files without running the Oryx build pipeline, even with `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. If deploy completes but `antenv/` is absent from `/home/site/wwwroot/`, fall back to Kudu `/api/zipdeploy` (code block above) — it reliably triggers Oryx. Do not retry OneDeploy for this case.
+> ⛔ **Oryx compression causes startup failures on ALL tiers.** Oryx compresses installed dependencies into `output.tar.zst` by default. At container startup, the runtime must extract this tarball before the app can start. Extraction can fail silently (files stuck in staging path), time out (F1 shared CPU), or leave `wwwroot` empty (app crashes with `ModuleNotFoundError`). **Always set `ORYX_DISABLE_COMPRESSION=true`** in Bicep app settings — this writes dependencies directly to `wwwroot` during deploy, eliminating the runtime extraction step. Also set `WEBSITES_CONTAINER_START_TIME_LIMIT=1800` for safety. Both settings should be in `prepare-plan.json.deployStrategy.requiredAppSettings` and encoded in Bicep at scaffold time.
 
 ## App Service — Pre-Deploy Verification (Step 6a)
 
@@ -67,14 +58,57 @@ az rest --method put --url "/subscriptions/{sub}/resourceGroups/{rg}/providers/M
 
 Log this command in `deploy-audit.log`.
 
-| Method | Command | Auth | Use when |
-|--------|---------|------|----------|
-| **`az webapp deploy`** (preferred) | `az webapp deploy --subscription {subscriptionId} --resource-group {rg} --name {app} --src-path app.zip --type zip` | SCM basic auth (CLI-managed) | Always |
-| GitHub Actions | `azure/webapps-deploy@v3` with managed identity | Managed identity | CI/CD pipeline |
+⛔ **OneDeploy (`az webapp deploy`) NEVER triggers Oryx — for ANY runtime.** It calls `/api/publish?type=zip`, a file-copy mechanism: unzip → overwrite `wwwroot` → restart. No `pip install`, `npm install`, `bundle install`, or any Oryx build step runs, regardless of `SCM_DO_BUILD_DURING_DEPLOYMENT`. This is by-design Azure behavior.
+
+**Choose deploy method by runtime:**
+
+| Runtime | Needs Oryx? | Deploy method |
+|---|---|---|
+| Python | Yes (`pip install`, venv) | **Kudu zipdeploy** (`/api/zipdeploy`) |
+| Node.js (server-side) | Yes (`npm install`, `npm run build`) | **Kudu zipdeploy** |
+| Ruby | Yes (`bundle install`) | **Kudu zipdeploy** |
+| PHP | Yes (`composer install`) | **Kudu zipdeploy** |
+| .NET / Java | No (ships compiled artifacts) | `az webapp deploy` (OneDeploy) |
+| Static front-end (pre-built `/dist`) | No (CI already built it) | `az webapp deploy` (OneDeploy) |
+
+**OneDeploy command** (.NET/Java/static only): `az webapp deploy --subscription {subscriptionId} --resource-group {rg} --name {app} --src-path app.zip --type zip`
+
+**GitHub Actions:** `azure/webapps-deploy@v3` with managed identity — for CI/CD pipelines.
 
 ⛔ **NEVER use `az webapp deployment source config-zip`** — deprecated, fragile, and requires manual credential management.
 
 ⛔ **`az webapp deploy` does NOT support `--track-status`** — this flag does not exist. Omit it.
+
+### Kudu Zipdeploy (Oryx-Dependent Runtimes)
+
+For apps needing server-side package installation (Python, Node.js, Ruby, PHP), use Kudu zipdeploy directly:
+
+```powershell
+# Get publishing credentials
+$creds = az webapp deployment list-publishing-credentials --subscription {sub} -g {rg} -n {app} --query "{user:publishingUserName, pass:publishingPassword}" -o json | ConvertFrom-Json
+$auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($creds.user):$($creds.pass)"))
+
+# Deploy via Kudu zipdeploy (triggers Oryx pip install)
+Invoke-WebRequest -Uri "https://{app}.scm.azurewebsites.net/api/zipdeploy?isAsync=true" -Method POST -InFile $zipPath -Headers @{Authorization="Basic $auth"} -ContentType "application/zip" -UseBasicParsing
+
+# Poll until build completes
+for ($i = 1; $i -le 40; $i++) {
+  Start-Sleep -Seconds 15
+  $resp = Invoke-WebRequest -Uri "https://{app}.scm.azurewebsites.net/api/deployments/latest" -Headers @{Authorization="Basic $auth"} -UseBasicParsing
+  $deploy = $resp.Content | ConvertFrom-Json
+  if ($deploy.complete -eq $true) { break }
+}
+```
+
+Prerequisites:
+- `SCM_DO_BUILD_DURING_DEPLOYMENT=true` must be set (verified in Step 6a)
+- Runtime manifest must be at the zip root — Oryx detects the runtime from it:
+  - Python: `requirements.txt` (or `pyproject.toml`)
+  - Node.js: `package.json` (+ lockfile)
+  - Ruby: `Gemfile`
+  - PHP: `composer.json`
+- Do NOT pre-install packages locally — let Oryx run the install remotely
+- Log the Kudu deploy command in `deploy-audit.log`
 
 > **SCM auth lifecycle (REST API toggle — no Bicep edits):**
 >

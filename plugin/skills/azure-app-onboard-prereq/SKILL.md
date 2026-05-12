@@ -13,8 +13,6 @@ Evaluate a user's repository for build health, app completeness, and Azure deplo
 
 > **Orchestrator relationship:** Called by `azure-app-onboard` at Step 3, or used standalone for code readiness checks. When called by the orchestrator, return control to `azure-app-onboard` after writing artifacts — do NOT invoke downstream phases directly.
 
-Phase 1 of 4 in AppOnboard pipeline. Session: `.copilot-azure/sessions/{session-id}/`. Reads `context.json`. Writes `components[]`, `repo{}`, `detectedInfra[]`. Produces `prereq-output.json`. Schema: `session-schemas.ts` — `AppOnboardContext`, `PrereqOutput`. Direct entry supported.
-
 ## When NOT to Use
 
 | Signal | Redirect |
@@ -30,7 +28,7 @@ Phase 1 of 4 in AppOnboard pipeline. Session: `.copilot-azure/sessions/{session-
 > Under NO circumstances may you run `npm install`, `npm test`, `npx jest`, `pip install`, `pytest`, `dotnet build`, `dotnet restore`, `dotnet test`, `go mod download`, `cargo build`, or ANY package-manager install, build, or test command during the prereq phase. The prereq phase is read-only evaluation + static-only verification.
 
 1. **Read-only by default** — Do not modify user code unless asked.
-2. ⛔ **Build/install commands and test suites are FORBIDDEN** on existing code — no `ask_user` override. Limited exception: agent-generated code may be validated via `ask_user` gate (see [remediation-protocol.md](references/remediation-protocol.md))
+2. ⛔ **Build/install commands and test suites are FORBIDDEN** on existing code — no `ask_user` override. Limited exception: when agent created or modified >2 source files AND re-evaluation passed (M=0), the build-validation gate in [remediation-protocol.md § Step 6](references/remediation-protocol.md) allows install/build/test with explicit user approval via `ask_user`.
 3. ⛔ **Every repo goes through the full pipeline (Steps 1–5). No exceptions.** Do not refuse, skip, or short-circuit based on what you recognize. The readiness gate in Step 4 is the ONLY mechanism that halts the pipeline.
 4. ⛔ **Code modifications require `ask_user`** — Dockerfile generation, config changes, scaffolding.
 5. ⛔ **Destructive actions require `ask_user`** — deleting files, overwriting config, provisioning resources, modifying RBAC.
@@ -56,7 +54,7 @@ Phase 1 of 4 in AppOnboard pipeline. Session: `.copilot-azure/sessions/{session-
 
 ### Step 2: Scan Workspace
 
-Scan for project files. Detect components, `repo{}`, `detectedInfra[]`, `detectedServices[]`. Classify Terraform providers. Check CLI availability.
+Scan for project files. Detect components, `repo{}`, `detectedInfra[]`, `detectedServices[]`. Classify Terraform providers. Check CLI availability. For stack or infrastructure detection conflicts, see [conflict-resolution.md](references/conflict-resolution.md).
 
 > ⛔ **Probe data reuse.** If `context.json.quickProbe` exists with populated `manifests[]`: seed components from it, skip re-reading files already captured (`manifests[]`, `dockerfiles[]`, `composeServices[]`, `importSamples[]`). Carry forward `missingFiles[]` as automatic ❌ FAIL, `healthEndpoint: null` as ⚠️ WARN, and `earlyHaltSignal` as 🛑 HALT. Still scan files the probe didn't read (config files, source files beyond import samples, nested manifests the probe missed due to budget cap). The 3-axis evaluation (Steps 3.1–3.3) always runs — probe data accelerates it, doesn't replace it.
 
@@ -101,3 +99,4 @@ Read [remediation-protocol.md](references/remediation-protocol.md) **ONLY IF any
 | Session context | `context.json` → `components[]`, `repo{}`, `detectedInfra[]`, `detectedServices[]` | All downstream phases |
 | Prereq output | `prereq-output.json` | prepare phase (via `azure-app-onboard`) |
 | Readiness report | `.copilot-azure/sessions/{uuid}/readiness-report.md` | User (offline reference) |
+| Schemas | `session-schemas.ts` (`AppOnboardContext`), `prereq-schemas.ts` (`PrereqOutput`, `BuildRequirements`, `CloudSdkSwap`) | Artifact validation |

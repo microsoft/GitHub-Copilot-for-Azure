@@ -18,6 +18,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 
 ## After IaC deployment (Step 6)
 - Verify 5 tags: `az group show -n {rgName} --query tags`
+- ⛔ Do NOT set startup command or app settings via CLI — they are already in Bicep from scaffold. If `az webapp show` doesn't reflect them yet, wait 30s and re-check (ARM propagation delay). Do NOT run `az webapp config` imperatively.
   Required: app-onboard-skill, app-onboard-session-id, created-at, environment, deployed-by
 - Verify portal link is still correct if healing changed the deployment name
 
@@ -28,7 +29,8 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - If 0s persists after 2 retries: fall back to Kudu `/api/zipdeploy`
 - Python: if no `antenv/` after deploy, use Kudu `/api/zipdeploy` immediately (OneDeploy may skip Oryx)
 - Windows zip paths: normalize with `.Replace('\', '/')` before creating zip entries
-- F1 + large deps: set ORYX_DISABLE_COMPRESSION=true and WEBSITES_CONTAINER_START_TIME_LIMIT=1800
+- ⛔ Verify ORYX_DISABLE_COMPRESSION=true is set (prevents output.tar.zst extraction failures at startup — applies to ALL tiers, not just F1)
+- Set WEBSITES_CONTAINER_START_TIME_LIMIT=1800 for safety
 - TypeScript apps: move `typescript` to `dependencies` (not devDependencies) before creating deploy zip
 - Enable SCM before zip deploy, re-disable after: `az rest --method put` → allow:false → verify
 - After deploy: check response body for Azure default page ("Your app service is up and running" = app didn't start)

@@ -101,9 +101,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     });
 
     test("is case insensitive", () => {
-      const result1 = triggerMatcher.shouldTrigger("azure");
-      const result2 = triggerMatcher.shouldTrigger("AZURE");
-      expect(result1.triggered).toBe(result2.triggered);
+      const prompt = "evaluate my repo for Azure deployment readiness";
+      const result1 = triggerMatcher.shouldTrigger(prompt.toLowerCase());
+      const result2 = triggerMatcher.shouldTrigger(prompt.toUpperCase());
+      expect(result1.triggered).toBe(true);
+      expect(result2.triggered).toBe(true);
     });
   });
 });

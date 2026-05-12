@@ -10,8 +10,8 @@ Three patterns — select based on `prereq-output.json.components[].buildRequire
 
 | Pattern | When | `deployStrategy` needed? |
 |---------|------|--------------------------|
-| **A: Oryx auto-build** | No native modules, no Dockerfile | No — Oryx handles build + deploy automatically |
-| **B: Startup-install** | Native modules detected (`hasNativeModules: true`) | Yes — write to `prepare-plan.json.deployStrategy` |
+| **A: Oryx auto-build** | No native modules, no Dockerfile | Yes — startup command + app settings go in Bicep at scaffold time |
+| **B: Startup-install** | Native modules detected (`hasNativeModules: true`) | Yes — startup command + fallback install + app settings in Bicep |
 | **C: Container-only** | Has Dockerfile that runs a server process (Express, Flask, uvicorn, etc.) | No — route to Container Apps (Dockerfile IS the deploy strategy) |
 
 **Additional routing:**
@@ -26,7 +26,35 @@ Three patterns — select based on `prereq-output.json.components[].buildRequire
 
 **Languages:** Node.js, Python, .NET, Go, Java, PHP, Ruby
 
-No `deployStrategy` needed. Oryx detects the stack from project manifests, installs dependencies, and builds automatically during `az webapp deploy --type zip`. This is the default for all components without native modules.
+Oryx detects the stack from project manifests, installs dependencies, and builds automatically during zip deploy.
+
+**Still write `deployStrategy` to `prepare-plan.json`** — even though Oryx auto-detects, the startup command and app settings MUST be in Bicep at scaffold time (not generated at deploy time). This eliminates 5+ imperative CLI commands during deploy.
+
+```json
+"deployStrategy": {
+  "codeDeployPattern": "oryx-auto",
+  "startupCommand": "cd /home/site/wwwroot && {startCommand}",
+  "requiredAppSettings": {
+    "SCM_DO_BUILD_DURING_DEPLOYMENT": "true",
+    "ENABLE_ORYX_BUILD": "true",
+    "ORYX_DISABLE_COMPRESSION": "true"
+  },
+  "reason": "Standard Oryx build — no native modules, no Dockerfile. Compression disabled to prevent output.tar.zst extraction failures at startup."
+}
+```
+
+**Startup command by language** (always prefix with `cd /home/site/wwwroot &&`):
+
+| Language | Start command source | Fallback | Startup command |
+|----------|---------------------|----------|----------------|
+| Node.js | `package.json` → `scripts.start` or `main` field | `index.js` | `cd /home/site/wwwroot && node {entryPoint}` |
+| Python (gunicorn) | `Procfile` or `gunicorn` in requirements | `app.py` | `cd /home/site/wwwroot && gunicorn {module}:{app} --bind 0.0.0.0:$PORT` |
+| Python (uvicorn) | `Procfile` or `uvicorn` in requirements | `main.py` | `cd /home/site/wwwroot && uvicorn {module}:{app} --host 0.0.0.0 --port $PORT` |
+| .NET / Go / Java | Oryx-native | — | Not needed — Oryx handles startup natively |
+
+> ⛔ **Every startup command MUST start with `cd /home/site/wwwroot &&`.** Oryx may run from a staging directory (`/tmp/{hash}/`). Without the `cd`, imports like `from app import create_app` fail with `ModuleNotFoundError`.
+
+Scaffold encodes `startupCommand` → Bicep `appCommandLine`, and `requiredAppSettings` → Bicep `siteConfig.appSettings`. Deploy only does: wait → zip → health check.
 
 ---
 
@@ -55,7 +83,8 @@ Write to `prepare-plan.json.deployStrategy`:
   "requiredAppSettings": {
     "WEBSITES_CONTAINER_START_TIME_LIMIT": "1800",
     "SCM_DO_BUILD_DURING_DEPLOYMENT": "true",
-    "ENABLE_ORYX_BUILD": "true"
+    "ENABLE_ORYX_BUILD": "true",
+    "ORYX_DISABLE_COMPRESSION": "true"
   },
   "reason": "Native module (better-sqlite3 via node-gyp) requires server-side npm install."
 }
@@ -65,20 +94,16 @@ Replace `startupCommand` and `reason` with language-specific values from the ent
 
 ### Entry Point Detection & Startup Commands
 
-Detect the entry point from project manifests before generating the startup command.
+Same startup commands as Pattern A (see table above), but Node.js adds a dependency guard:
 
-| Language | Entry point source | Fallback | Startup command |
-|----------|-------------------|----------|----------------|
-| Node.js | `package.json` → `scripts.start` → `main` field | `index.js` | `cd /home/site/wwwroot && if [ ! -d node_modules ]; then npm install --production; fi && node {entryPoint}` |
-| Python (gunicorn) | `Procfile` → detect `gunicorn` in `requirements.txt` | `app.py` | `pip install -r requirements.txt && gunicorn {module}:{app} --bind 0.0.0.0:$PORT` |
-| Python (uvicorn) | `Procfile` → detect `uvicorn` in `requirements.txt` | `main.py` | `pip install -r requirements.txt && uvicorn {module}:{app} --host 0.0.0.0 --port $PORT` |
-| .NET | Oryx-native | — | Not needed — Oryx handles .NET natively |
-| Go | Oryx-native | — | Not needed — Oryx handles Go natively |
-| Java | Oryx-native | — | Not needed — Oryx handles Java natively |
+| Language | Startup command (Pattern B only — differs from A) |
+|----------|--------------------------------------------------|
+| Node.js | `cd /home/site/wwwroot && if [ ! -d node_modules ]; then npm install --production; fi && node {entryPoint}` |
+| Python / .NET / Go / Java | Same as Pattern A — no guard needed |
 
-> ⛔ **Python: do NOT use `venv` in startup commands.** App Service Linux provides a Python environment. Virtual environments (`.venv`) may not survive slot swaps or certain restarts. Use direct `pip install` — this is the standard Oryx-compatible pattern.
+> ⛔ **Inline commands only.** Never generate a `.sh` startup script file — Windows-created files have CRLF line endings that cause `bash` exit code 2 on Linux.
 
-> ⛔ **Inline commands only.** Never generate a `.sh` startup script file — Windows-created files have CRLF line endings that cause `bash` exit code 2 on Linux. Use the `appCommandLine` Bicep property directly.
+> ⛔ **Python: do NOT use `venv` in startup commands.** App Service Linux provides a Python environment. Virtual environments (`.venv`) may not survive slot swaps or certain restarts.
 
 ### SKU Implications
 

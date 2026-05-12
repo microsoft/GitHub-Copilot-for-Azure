@@ -27,13 +27,16 @@ import {
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import type { AgentMetadata } from "../../utils/agent-runner";
-import { cleanupSessionResourceGroups, assertNoAzdCommands } from "../app-onboard-test-helpers";
+import {
+  SKILL_NAME,
+  RUNS_PER_PROMPT,
+  invocationRateThreshold,
+  cleanupSessionResourceGroups,
+  assertNoAzdCommands,
+} from "../app-onboard-test-helpers";
 import * as fs from "fs";
 import * as path from "path";
 
-const SKILL_NAME = "azure-app-onboard"; // Route to parent — parent delegates to deploy
-const RUNS_PER_PROMPT = 1;
-const invocationRateThreshold = 0.8;
 const testTimeoutMs = 3600000; // 60 minutes — error-classification test needs full pipeline before error injection
 
 /**

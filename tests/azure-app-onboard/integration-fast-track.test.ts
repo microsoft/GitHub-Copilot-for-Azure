@@ -58,8 +58,9 @@ describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
 
         // Should NOT ask about stack/DB/auth (simple static site skips these)
         const asksUnnecessaryQuestions =
-          /what (stack|language|framework|database|auth).*(are you|do you|will you)/i.test(messages) ||
-          /which (database|auth|framework)/i.test(messages);
+          (/what (stack|language|framework|database|auth)/i.test(messages) ||
+          /which (database|auth|framework)/i.test(messages)) &&
+          messages.includes("?");
         if (asksUnnecessaryQuestions) {
           agentMetadata.testComments.push("⚠️ FAST-TRACK VIOLATION: Agent asked unnecessary questions about stack/DB/auth for a simple static site");
         }

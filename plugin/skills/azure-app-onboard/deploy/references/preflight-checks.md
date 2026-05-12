@@ -2,7 +2,7 @@
 
 Pre-deployment validation steps. Run after user approval, before deployment execution.
 
-> **Source:** Adapted from [`azure-deploy/references/pre-deploy-checklist.md`](../../azure-deploy/references/pre-deploy-checklist.md). AppOnboard runs direct deployment (no `azd`).
+> **Source:** Adapted from the azure-deploy pre-deploy checklist. AppOnboard runs direct deployment (no `azd`).
 
 ## Check Sequence
 

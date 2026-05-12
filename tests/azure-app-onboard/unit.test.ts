@@ -6,7 +6,7 @@
  * sub-skill delegation, session-schema linkage.
  */
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadSkill, type LoadedSkill } from "../utils/skill-loader";
@@ -94,20 +94,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   // ── Reference Files ──────────────────────────────────────────
 
   describe("Reference Files", () => {
-    const allRefs = [
-      "approval-gates.md",
-      "azd-template-routing.md",
-      "deployment-summary-template.md",
-      "handoff-protocol.md",
-      "iac-resources.md",
-      "intent-gathering.md",
-      "mcp-tool-reference.md",
-      "pipeline-rules-runtime.md",
-      "pipeline-rules.md",
-      "service-advisor.md",
-      "session-protocol.md",
-      "subscription-resolution.md",
-    ];
+    const allRefs = readdirSync(path.join(SKILL_DIR, "references"))
+      .filter(f => f.endsWith(".md"));
 
     test.each(allRefs)("reference file exists: %s", (filename) => {
       expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);

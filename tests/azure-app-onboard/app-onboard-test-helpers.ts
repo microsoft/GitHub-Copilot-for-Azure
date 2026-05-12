@@ -34,8 +34,8 @@ export const negativeTestTimeoutMs = 900000; // 15 minutes — negative tests wi
  *
  * Use this for tests that assert on pipeline content (service recommendations,
  * dollar amounts, SKU codes) where the agent needs multiple API calls to
- * reach those outputs. Do NOT use shouldEarlyTerminateForSkillInvocation
- * for such tests — it kills the agent immediately after routing.
+ * reach those outputs. Sub-skill tests (deploy, prepare, scaffold) use
+ * shouldEarlyTerminateForSkillInvocation instead — they only need routing confirmation.
  */
 export function shouldEarlyTerminateOnRoutingFailure(agentMetadata: AgentMetadata): boolean {
   if (!isSkillInvoked(agentMetadata, SKILL_NAME)) {
@@ -170,6 +170,17 @@ export function assertDoesNotScaffoldOrDeploy(agentMetadata: AgentMetadata): voi
   }
   expect(hasDeployToolCalls).toBe(false);
   expect(hasScaffoldFileWrites).toBe(false);
+}
+
+/**
+ * Check if a tool call is an IaC file write (create_file/write_file/create targeting main.bicep or main.tf).
+ * Shared helper — eliminates 8+ inline copies of the same filtering logic across scaffold tests.
+ */
+export function isIaCFileWrite(tc: { data: { toolName: string; arguments?: unknown } }): boolean {
+  const toolName = (tc.data.toolName ?? "").toLowerCase();
+  if (toolName !== "create_file" && toolName !== "write_file" && toolName !== "create") return false;
+  const filePath = ((tc.data.arguments as Record<string, unknown>)?.path as string ?? "").toLowerCase();
+  return filePath.includes("main.bicep") || filePath.includes("main.tf");
 }
 
 /**
@@ -1014,7 +1025,7 @@ export function assertAwsMigrationMapping(agentMetadata: AgentMetadata, expected
 export function assertDockerComposeDetected(agentMetadata: AgentMetadata): void {
   const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
   const toolCalls = getToolCalls(agentMetadata);
-  const detectedInMessages = messages.includes("docker-compose") || messages.includes("docker compose") || messages.includes("compose.y");
+  const detectedInMessages = messages.includes("docker-compose") || messages.includes("docker compose") || messages.includes("compose.y"); // matches compose.yml and compose.yaml
   const detectedInTools = toolCalls.some(tc => {
     const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
     return args.includes("docker-compose") || args.includes("compose.y");
@@ -1082,7 +1093,7 @@ export function assertIaCFormat(agentMetadata: AgentMetadata, workspacePath: str
 /**
  * Read a session artifact from the workspace. Returns parsed JSON or null.
  */
-export function readSessionArtifact<T = unknown>(workspacePath: string, artifactName: string): T | null {
+export function readSessionArtifact<T = unknown>(workspacePath: string, artifactName: string): T | null {  
   const sessionDir = path.join(workspacePath, ".copilot-azure", "sessions");
   if (!fs.existsSync(sessionDir)) return null;
   const folders = fs.readdirSync(sessionDir).filter(f =>
@@ -1097,4 +1108,35 @@ export function readSessionArtifact<T = unknown>(workspacePath: string, artifact
     }
   }
   return null;
+}
+
+/**
+ * Assert the agent scanned the workspace (via view/glob/powershell/read_file/list_dir).
+ * Mirrors the Waza `scans_repo` grader: tool_name "view|glob|powershell", min_calls 1.
+ */
+export function assertAgentScannedWorkspace(agentMetadata: AgentMetadata): void {
+  const toolCalls = getToolCalls(agentMetadata);
+  const scanToolNames = ["view", "glob", "powershell", "bash", "read_file", "list_dir"];
+  const hasScanCalls = toolCalls.some(tc => scanToolNames.includes(tc.data.toolName));
+  if (!hasScanCalls) {
+    agentMetadata.testComments.push("❌ SCAN: Agent did not scan workspace (no view/glob/powershell/read_file tool calls)");
+  }
+  expect(hasScanCalls).toBe(true);
+}
+
+/**
+ * Assert the agent did NOT blindly approve or skip to architecture planning.
+ * Mirrors Waza graders: does_not_blindly_approve, does_not_plan_architecture,
+ * does_not_skip_to_architecture — all use the same NOT-match regex.
+ */
+export function assertDoesNotBlindlyApprove(agentMetadata: AgentMetadata): void {
+  const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+  const blindlyApproves =
+    /here('s| is) (the|your) (full )?architecture plan/i.test(messages) ||
+    messages.includes("everything looks good") ||
+    messages.includes("no issues found");
+  if (blindlyApproves) {
+    agentMetadata.testComments.push("❌ BLIND APPROVAL: Agent approved/planned without completing evaluation");
+  }
+  expect(blindlyApproves).toBe(false);
 }

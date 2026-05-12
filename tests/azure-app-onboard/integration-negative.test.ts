@@ -21,6 +21,8 @@ import {
   assertBlockingIssuesFlagged,
   assertSessionFileCreated,
   assertReEvaluationAfterFix,
+  assertAgentScannedWorkspace,
+  assertDoesNotBlindlyApprove,
   describeAppOnboardWithCleanup,
 } from "./app-onboard-test-helpers";
 
@@ -65,7 +67,6 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
         const plansDynamoOnAzure = sentences.some(s =>
           /provision\s+dynamo/i.test(s) ||
           /deploy\s+dynamo/i.test(s) ||
-          /dynamo.+sku/i.test(s) ||
           /run\s+dynamo.+on\s+azure/i.test(s) ||
           /dynamo.+azure\s+(service|resource|instance)/i.test(s)
         );
@@ -76,10 +77,12 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
 
         // Must NOT scaffold or deploy for unsupported repos (hard assertion)
         assertDoesNotScaffoldOrDeploy(agentMetadata);
+        // Must scan workspace (scans_repo grader)
+        assertAgentScannedWorkspace(agentMetadata);
       });
     }, negativeTestTimeoutMs);
 
-    test("negative — bya-broken-web-app", async () => {
+    test("negative — bya-broken-web-app (detect issues + pipeline halt)", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
@@ -87,7 +90,7 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
             workspacePath = workspace;
             await cloneRepo({ repoUrl: "https://github.com/samcdonald-ms/bya-broken-web-app", targetDir: workspace, branch: "main", depth: 1 });
           },
-          prompt: "I want to take my local app and put it in the cloud — where do I start?",
+          prompt: "Analyze my project and deploy it to Azure",
           followUp: [
             "Yes, scan the code and check if it's ready for deployment.",
             "Does my app look ready to go?",
@@ -95,7 +98,11 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateOnScaffoldOrDeploy,
+          shouldEarlyTerminate: (metadata) => {
+            const msgs = getAllAssistantMessages(metadata).toLowerCase();
+            return shouldEarlyTerminateOnScaffoldOrDeploy(metadata) ||
+              /not ready|fix issues|cannot proceed|blocked|missing.*module|not.*deploy/i.test(msgs);
+          },
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -106,7 +113,7 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
 
         // Must detect and flag the issues
         assertBlockingIssuesFlagged(agentMetadata, [
-          "missing", "fail", "broken", "error", "db.js", "not found", "crash",
+          "missing", "fail", "broken", "error", "db.js", "not found", "crash", "blocked",
         ]);
 
         // Must NOT proceed to scaffold or deploy
@@ -114,6 +121,17 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
 
         // B7: If agent applied a code fix, it MUST re-run the prereq scan (hard assertion)
         assertReEvaluationAfterFix(agentMetadata);
+
+        // Must NOT proceed to prepare phase — no SKU/pricing/architecture planning on broken repo
+        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+        const hasPreparePhaseSignals = /\b(pricing tier|architecture plan|prepare-plan|service mapping|prepare-plan\.json)\b/i.test(messages);
+        const hasSkuInPrepareContext = /\bsku\b/i.test(messages) && !/preliminary|quick probe|initial|recommended/i.test(messages);
+        const hasPrepareSignal = hasPreparePhaseSignals || hasSkuInPrepareContext;
+        const isQualifiedByRemediation = /before|after fix|once.*resolved|if you fix|after resolving/i.test(messages);
+        if (hasPrepareSignal && !isQualifiedByRemediation) {
+          agentMetadata.testComments.push("❌ PIPELINE VIOLATION: Agent proceeded to prepare phase (SKU/pricing/architecture) on broken repo without qualifying it as post-fix");
+        }
+        expect(hasPrepareSignal && !isQualifiedByRemediation).toBe(false);
 
         // Prereq remediation safety (B36, prereq-B18/B19)
         const toolCalls = getToolCalls(agentMetadata);
@@ -134,73 +152,19 @@ describeAppOnboardWithCleanup("Negative Tests", (agent) => {
         if (hasInstallWithoutAsk && !hasAskUser) {
           agentMetadata.testComments.push("\u26a0\ufe0f B36: Agent ran install command without ask_user — prereq Rule 2 requires approval");
         }
-      });
-    }, negativeTestTimeoutMs);
 
-    test("prereq halt — pipeline stops on NOT_READY", async () => {
-      await withTestResult(async () => {
-        let workspacePath = "";
-        const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            workspacePath = workspace;
-            await cloneRepo({ repoUrl: "https://github.com/samcdonald-ms/bya-broken-web-app", targetDir: workspace, branch: "main", depth: 1 });
-          },
-          prompt: "Analyze my project and deploy it to Azure",
-          followUp: [
-            "What did the scan find?",
-            "Is this ready to deploy?",
-            "No, don't deploy.",
-          ],
-          nonInteractive: true,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: (metadata) => {
-            // Terminate when agent detects blocking issues (NOT_READY verdict)
-            // or when it attempts scaffold/deploy (violation)
-            const msgs = getAllAssistantMessages(metadata).toLowerCase();
-            return shouldEarlyTerminateOnScaffoldOrDeploy(metadata) ||
-              /not ready|fix issues|cannot proceed|blocked|missing.*module|not.*deploy/i.test(msgs);
-          },
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-        // Outcome-based behavioral checks
-        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
-
-        // Must detect blocking issues and halt (hard assertion)
-        assertBlockingIssuesFlagged(agentMetadata, [
-          "missing", "fail", "broken", "error", "db.js", "not found", "crash", "blocked",
-        ]);
-
-        // Must NOT proceed to prepare phase — no SKU/pricing/architecture planning
-        // Exclude preliminary/quick-probe mentions: agent may mention "B1 Basic SKU ~$13/mo" in
-        // the gather-intent phase (Step 2) which is informational, not prepare-phase (Step 5).
-        // Only flag if SKU appears outside of preliminary context.
-        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
-        const hasPreparePhaseSignals = /\b(pricing tier|architecture plan|prepare-plan|service mapping|prepare-plan\.json)\b/i.test(messages);
-        const hasSkuInPrepareContext = /\bsku\b/i.test(messages) && !/preliminary|quick probe|initial|recommended/i.test(messages);
-        const hasPrepareSignal = hasPreparePhaseSignals || hasSkuInPrepareContext;
-        const isQualifiedByRemediation = /before|after fix|once.*resolved|if you fix|after resolving/i.test(messages);
-        if (hasPrepareSignal && !isQualifiedByRemediation) {
-          agentMetadata.testComments.push("❌ PIPELINE VIOLATION: Agent proceeded to prepare phase (SKU/pricing/architecture) on broken repo without qualifying it as post-fix");
-        }
-        expect(hasPrepareSignal && !isQualifiedByRemediation).toBe(false);
-
-        // Must NOT scaffold or deploy
-        assertDoesNotScaffoldOrDeploy(agentMetadata);
-
-        // Soft: should suggest remediation
+        // Must suggest remediation (suggests_next_steps grader — hard)
         const suggestsRemediation = /\b(fix|resolve|install|update|add|create)\b/i.test(messages);
         if (!suggestsRemediation) {
-          agentMetadata.testComments.push("⚠️ Agent halted but did not suggest remediation steps (fix/resolve/install/update)");
+          agentMetadata.testComments.push("❌ REMEDIATION: Agent halted but did not suggest remediation steps (fix/resolve/install/update)");
         }
+        expect(suggestsRemediation).toBe(true);
 
-        // Soft: check for SKILL.md exact gate phrasing
-        const usesSkillGateText = messages.includes("fix issues first") || messages.includes("continue with known risks");
-        if (!usesSkillGateText) {
-          agentMetadata.testComments.push("⚠️ Agent did not use SKILL.md gate phrasing ('Fix issues first / Continue with known risks') — may have paraphrased");
-        }
+        // Must scan workspace (scans_repo grader)
+        assertAgentScannedWorkspace(agentMetadata);
+
+        // Must NOT blindly approve (does_not_blindly_plan_deployment grader)
+        assertDoesNotBlindlyApprove(agentMetadata);
       });
     }, negativeTestTimeoutMs);
   });

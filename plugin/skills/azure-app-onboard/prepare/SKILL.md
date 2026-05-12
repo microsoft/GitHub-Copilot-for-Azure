@@ -39,14 +39,14 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 
 > ⛔ **`pricing_get`: use `--sku` when querying by `armSkuName`; use `filter`/`meterName` matching for services without `armSkuName`.** For free-tier SKUs, skip the API — see [pricing-guide.md](references/pricing-guide.md).
 
-| Tool | Purpose |
-|------|---------|
-| `mcp_azure_mcp_pricing` → `pricing_get` | Cost estimation (via sub-agent) |
-| `mcp_azure_mcp_policy` | Subscription policy constraints (via sub-agent) |
-| `az rest` | ⛔ Quota validation — sub-agent MUST read [sku-quota-validation.md](references/sku-quota-validation.md) |
-| `mcp_azure_mcp_cloudarchitect` | WAF-aligned architecture design |
-| `mcp_azure_mcp_wellarchitectedframework` | Per-service WAF guidance (via sub-agent) |
-| `mcp_azure_mcp_advisor` | Optimization recommendations (via sub-agent) |
+| Tool | Purpose | Parameters |
+|------|---------|------------|
+| `mcp_azure_mcp_pricing` → `pricing_get` | Cost estimation (via sub-agent) | `sku` (Opt), `service` (Opt), `region` (Opt), `currency` (Opt) — at least one filter required |
+| `mcp_azure_mcp_policy` | Subscription policy constraints (via sub-agent) | `intent` (Required) |
+| `az rest` | ⛔ Quota validation — sub-agent MUST read [sku-quota-validation.md](references/sku-quota-validation.md) | See reference for per-provider URL patterns |
+| `mcp_azure_mcp_cloudarchitect` → `cloudarchitect_design` | WAF-aligned architecture design | `intent` (Required), `answer`, `state` (stateful) |
+| `mcp_azure_mcp_wellarchitectedframework` | Per-service WAF guidance (via sub-agent) | `intent` (Required) |
+| `mcp_azure_mcp_advisor` → `advisor_recommendation_list` | Optimization recommendations (via sub-agent) | `intent` (Required), `subscription` (Opt), `resource-group` (Opt) |
 
 ## Workflow
 
@@ -80,9 +80,9 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 
 > ⛔ **NEVER use `az appservice list-locations`, `az vm list-usage`, `az appservice list-usages`, or `mcp_azure_mcp_quota`.** These are anti-patterns that return misleading results (region availability ≠ quota availability). The ONLY correct method is `az rest` to query the Quota REST API — see `sku-quota-validation.md` for exact URL patterns.
 
-Use a sub-agent to validate quota across candidate regions. Provide: `context.json.azure.subscriptionId`, the SKU list from Step 4, the user's preferred region (or default `eastus2`), fallback regions (`eastus`, `westus2`, `centralus`, `westeurope`), and the list of managed database/restricted-offer services in the plan. Also provide the full content of [references/sku-quota-validation.md](references/sku-quota-validation.md) verbatim. Instruct the sub-agent:
+Use a sub-agent to validate quota across candidate regions. Provide: `context.json.azure.subscriptionId`, the SKU list from Step 4, the user's preferred region (or default `eastus2`), fallback regions (`eastus`, `westus2`, `centralus`, `westeurope`), and the list of managed database/restricted-offer services in the plan. ⛔ Also provide the full content of [references/sku-quota-validation.md](references/sku-quota-validation.md) verbatim — you MUST read it before delegating. Instruct the sub-agent:
 
-> "Validate quota for EVERY compute SKU in the plan across the region list using `az rest` (see sku-quota-validation.md for per-provider URL patterns and JMESPath queries). For EACH SKU, check BOTH the quota limit AND current usage — `limit > 0` with `usage = limit` means FULL, not AVAILABLE. Each provider has a different API shape; follow the exact scripts in sku-quota-validation.md for App Service, Container Apps, and database services. ⛔ NEVER use `az quota list`, `az vm list-usage`, `az appservice list-locations`, or `mcp_azure_mcp_quota` — they return misleading results. For each managed database or restricted-offer service (PostgreSQL, MySQL), also run the offer restriction check using the capabilities API (see sku-quota-validation.md § Offer Restriction Check). Return: per-SKU per-region availability (limit AND usage), the first viable region where ALL SKUs have capacity (verifiedRegion), offerRestrictions[] for any blocked services, and overall status (success/blocked/degraded). If all regions are blocked for any SKU, return status: BLOCKED with the SKU name and available alternatives. ≤500 tokens."
+> "Follow the procedures in sku-quota-validation.md to validate quota for every compute SKU in the plan across the region list. For each managed database or restricted-offer service (PostgreSQL, MySQL), also run the offer restriction check. Return: per-SKU per-region availability (limit AND usage), the first viable region where ALL SKUs have capacity (verifiedRegion), offerRestrictions[] for any blocked services, and overall status (success/blocked/degraded). If all regions are blocked for any SKU, return status: BLOCKED with the SKU name and available alternatives. ≤500 tokens."
 
 **Consume sub-agent results:**
 - If status is `success`: use `verifiedRegion` for all downstream steps. Write `quotas[]` and `quotaValidation` to `prepare-plan.json`.

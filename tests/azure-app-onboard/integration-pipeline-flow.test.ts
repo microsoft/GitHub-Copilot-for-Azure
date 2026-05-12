@@ -2,13 +2,13 @@
  * Integration Tests — Pipeline Flow & Edge Cases
  *
  * Validates end-to-end pipeline behaviors:
- * - Handoff phase (Step 10) — cleanup commands, deployment identity, recommendations
  * - Session resumption — pre-seeded context.json, skip completed phases
- * - Azure.yaml decision gate — existing infra → present choice
- * - User override mid-flow — change IaC format after plan
  * - Intent stall → defaults — vague responses → proceed with assumptions
  *
- * Covers: Gap 3, Gap 4, Gap 5, Gap 9, SKILL.md error handling.
+ * Deploy-specific tests (handoff) moved to deploy/integration-handoff.test.ts
+ * Scaffold-specific tests (IaC override) moved to scaffold/integration-override.test.ts
+ *
+ * Covers: Gap 4, Gap 5, SKILL.md error handling.
  */
 
 import {
@@ -23,65 +23,14 @@ import {
   SKILL_NAME,
   testTimeoutMs,
   shouldEarlyTerminateForPlanPresented,
-  shouldEarlyTerminateOnHandoff,
-  shouldEarlyTerminateOnUserOverride,
   shouldEarlyTerminateOnRoutingFailure,
-  assertHandoffPresented,
   assertSessionFileCreated,
-  assertPhaseArtifactsExist,
   readSessionArtifact,
-  cleanupSessionResourceGroups,
 } from "./app-onboard-test-helpers";
 import * as fs from "fs";
 import * as path from "path";
 
 describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
-  describe("handoff-phase", () => {
-    test("handoff presents cleanup, identity, and recommendations after deploy", async () => {
-      await withTestResult(async () => {
-        let workspacePath = "";
-        const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            workspacePath = workspace;
-            await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
-              targetDir: workspace,
-              branch: "main",
-              depth: 1,
-            });
-          },
-          prompt: "I built a side project and want to get it live on Azure",
-          followUp: [
-            "Just go with defaults, cheapest option.",
-            "Yes, proceed with scaffolding.",
-            "Yes, deploy to Azure now.",
-            "Yes, confirm the deployment.",
-          ],
-          nonInteractive: true,
-          preserveWorkspace: true,
-          followUpTimeout: 1_800_000, // 30 min per follow-up
-          shouldEarlyTerminate: shouldEarlyTerminateOnHandoff,
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-        // Must present handoff content
-        assertHandoffPresented(agentMetadata);
-
-        // Session integrity
-        if (workspacePath) {
-          assertSessionFileCreated(agentMetadata, workspacePath);
-          assertPhaseArtifactsExist(agentMetadata, workspacePath, [
-            "context.json",
-            "prereq-output.json",
-            "prepare-plan.json",
-          ]);
-        }
-      });
-    }, 3600000); // 60 min — full pipeline through handoff
-  });
-
   describe("session-resumption", () => {
     test("agent resumes from pre-seeded session, skips completed phases", async () => {
       await withTestResult(async () => {
@@ -172,68 +121,6 @@ describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
           messages.includes("b1") || messages.includes("app service");
         if (!referencesplanOrScaffold) {
           agentMetadata.testComments.push("⚠️ SESSION RESUMPTION: Agent did not reference existing plan or move to scaffold");
-        }
-
-        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
-      });
-    }, testTimeoutMs);
-  });
-
-  describe("user-override", () => {
-    test("user changes IaC format mid-flow — agent updates plan", async () => {
-      await withTestResult(async () => {
-        let workspacePath = "";
-        const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            workspacePath = workspace;
-            await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
-              targetDir: workspace,
-              branch: "main",
-              depth: 1,
-            });
-          },
-          prompt: "I built a side project and want to get it live on Azure",
-          followUp: [
-            "Go with recommended options.",
-            "Actually, switch to Terraform instead of Bicep.",
-            "No, don't deploy.",
-          ],
-          nonInteractive: true,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateOnUserOverride,
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
-
-        // Soft: should acknowledge the override
-        const acknowledgesOverride =
-          messages.includes("terraform") &&
-          (messages.includes("switch") || messages.includes("change") ||
-           messages.includes("updat") || messages.includes("noted") ||
-           messages.includes("will use terraform"));
-        if (!acknowledgesOverride) {
-          agentMetadata.testComments.push("⚠️ USER OVERRIDE: Agent did not acknowledge switch to Terraform");
-        }
-
-        // Soft: should write override to context.json
-        if (workspacePath) {
-          const ctx = readSessionArtifact<{ overrides?: { iacFormat?: string }[] }>(workspacePath, "context.json");
-          if (ctx && ctx.overrides) {
-            const hasIacOverride = ctx.overrides.some(o => o.iacFormat === "terraform");
-            if (hasIacOverride) {
-              agentMetadata.testComments.push("✅ USER OVERRIDE: context.json.overrides[] contains iacFormat=terraform");
-            }
-          }
-
-          // Check prepare-plan.json reflects Terraform (merged from iac-format-decision test)
-          const plan = readSessionArtifact<{ iacFormat: string }>(workspacePath, "prepare-plan.json");
-          if (plan && plan.iacFormat !== "terraform") {
-            agentMetadata.testComments.push(`⚠️ IAC FORMAT: prepare-plan.json.iacFormat='${plan.iacFormat}' — expected 'terraform' after override`);
-          }
         }
 
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);

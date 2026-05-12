@@ -6,18 +6,27 @@ Container Apps-specific Bicep patterns. For shared patterns (skeleton, naming, t
 
 Container Apps + ACR requires two-phase deployment (circular dependency: CA needs ACR image, ACR needs CA identity for AcrPull):
 
-1. **Phase 1:** Deploy Container App with placeholder image (`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`)
-2. **Phase 2:** Build + push app image to ACR, assign `AcrPull` role to CA's managed identity, update CA with real image
+1. **Phase 1:** Deploy Container App with placeholder image (`mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`). ⛔ **No `registries` block, no KV `secretRef`, no ACR references.** The placeholder image is pulled from MCR (public) — ACR auth is not needed and will fail (AcrPull role doesn't exist yet). KV secrets also fail (identity has no KV role yet). Use `registries: []` and `secrets: []`.
+2. **Phase 2:** Build + push app image to ACR, assign `AcrPull` + KV roles to CA's managed identity, redeploy with real image + `registries` + KV `secretRef` entries.
+
+> ⛔ **Placeholder image listens on port 80, not your app's port.** Set `targetPort` conditionally: `var effectivePort = containerImage == 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' ? 80 : appPort`. Mismatched ports cause "Operation expired" (health probe can't reach container).
 
 ```bicep
-// Phase 1: Placeholder image + managed identity
+// Phase 1: Placeholder image — NO registries, NO secrets
+var isPlaceholder = containerImage == 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
-  identity: {
-    type: 'SystemAssigned'
-  }
+  identity: { type: 'SystemAssigned' }
   properties: {
+    configuration: {
+      registries: isPlaceholder ? [] : [{ server: acr.properties.loginServer, identity: 'system' }]
+      secrets: isPlaceholder ? [] : [ /* KV secretRefs here */ ]
+    }
     template: {
-      containers: [{ image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' }]
+      containers: [{
+        image: containerImage
+        env: [{ name: 'PORT', value: string(isPlaceholder ? 80 : appPort) }]
+      }]
     }
   }
 }
@@ -25,9 +34,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 ## Ingress & Port Mapping
 
-> ⛔ **Port alignment is critical.** Oryx source builds default `PORT=80` for Node.js. If the app listens on a different port (3000, 8080), either:
-> - Set `targetPort: 80` in Bicep (Oryx overrides the app's port), OR
-> - Add `PORT={appPort}` env var to the container config to tell Oryx to use the app's port
+> ⛔ **Port alignment is critical.** The MCR placeholder image (`containerapps-helloworld`) listens on **port 80**. Your app likely listens on a different port (3000, 5000, 8080). If `targetPort` doesn't match the container's listening port, the revision health probe fails with "Operation expired."
+> - **Phase 1 (placeholder):** `targetPort: 80`
+> - **Phase 2 (real image):** `targetPort: {appPort}` (from Dockerfile EXPOSE or app config)
+> - Use a conditional: `targetPort: isPlaceholder ? 80 : appPort`
 
 ```bicep
 properties: {

@@ -71,6 +71,14 @@ All deployment commands logged to `.copilot-azure/sessions/{id}/deploy-audit.log
 - Block decisions are non-negotiable — user must run blocked commands manually outside AppOnboard
 - Audit log survives session — never delete or truncate during normal operation
 
+## Shell Execution Rules
+
+> ⛔ **NEVER use async/background shells for variable setup.** Use sync shells so state (variables, passwords) persists across commands. Async shells exit after the command and lose all state.
+
+> ⛔ **Generate secrets ONCE — reuse everywhere.** For PostgreSQL + Key Vault deployments: generate the password ONCE using `openssl rand -base64 32`, pass to BOTH `az deployment sub create --parameters pgAdminPassword={value}` AND `az keyvault secret set --value {value}` IN THE SAME shell command block. NEVER generate separate passwords — shell variables don't persist across Copilot CLI tool calls.
+
+> ⛔ **`az webapp deploy` does NOT support `--track-status`.** This flag does not exist. Do not add it to any `az webapp deploy` command.
+
 ## Post-Deploy Tag Verification
 
 > ⛔ After `az deployment sub create` or `az rest` deployment completes, verify all 5 AppOnboard tags are present:

@@ -15,7 +15,7 @@ If the app seeds data using a generated secret (admin password, API key), either
 
 ## Security Defaults
 
-> **Source:** Adapted from [`azure-prepare/references/security.md`](../../azure-prepare/references/security.md) + [`azure-prepare/references/auth-best-practices.md`](../../azure-prepare/references/auth-best-practices.md). See [Azure security baseline](https://learn.microsoft.com/en-us/security/benchmark/azure/overview) for updates.
+> **Source:** Adapted from Azure security best practices. See [Azure security baseline](https://learn.microsoft.com/en-us/security/benchmark/azure/overview) for updates.
 
 ### Identity — Managed Identity Everywhere
 

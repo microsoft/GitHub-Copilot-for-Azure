@@ -72,7 +72,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
 
 ### ACTION (Steps 5–10)
 
-> ⛔ **File boundary rule:** NEVER modify files outside `infra/`, `.copilot-azure/`. Do NOT rewrite app source. Do NOT run `npm install` / `pip install` during scaffold — scaffold only writes files.
+> ⛔ **File boundary rule:** NEVER modify files outside `infra/`, `.copilot-azure/`. Do NOT rewrite app source. Do NOT run `npm install` / `pip install` during scaffold — scaffold only writes files. **Exception:** Cloud SDK swaps (iac-generation-rules.md § Step 6) modify app source to replace non-Azure imports, and the post-swap build-validation gate may run install/build/test with explicit user approval.
 
 5. **Generate IaC** — ⛔ **You MUST read [`iac-generation-rules.md`](references/iac-generation-rules.md) before generating any IaC.** It contains session tag requirements, sub-agent delegation rules, security patterns (SCM/FTP auth, managed identity, Key Vault, RBAC), env var completeness, Dockerfile generation (Step 6), secure-by-default verification (Step 7), and telemetry wiring (Step 8). Apply patterns from [bicep-patterns.md](references/bicep-patterns.md) (or [terraform-patterns.md](references/terraform-patterns.md)) + compute-target file loaded at Step 4.
 

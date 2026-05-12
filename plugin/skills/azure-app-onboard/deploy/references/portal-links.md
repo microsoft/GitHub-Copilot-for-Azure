@@ -44,7 +44,7 @@ The portal link stays valid for same-scope retries — ARM overwrites in-place. 
 2. **Read the terminal output** — find the line starting with `LINK=` and extract the URL
 3. **Chat output:** paste the bare URL on its own line — no backticks, no markdown, no emoji on the same line
 
-⛔ **Link must be ctrl+clickable.** The URL MUST be the ONLY content on its line — no emoji, no text, no backticks, no markdown formatting, no `[text](url)` wrapping on the same line. Terminals auto-linkify bare URLs but ONLY when the URL is alone on the line.
+⛔ **Link must be ctrl+clickable.** The URL MUST be the ONLY content on its line — no emoji, no text, no backticks, no markdown formatting, no markdown link syntax on the same line. Terminals auto-linkify bare URLs but ONLY when the URL is alone on the line.
 
 ⛔ **Emit a NEW link whenever deployment name changes.** When healing causes a redeploy with a different `--name`, you MUST re-run the PowerShell snippet with the new name and print the new link:
 ```
