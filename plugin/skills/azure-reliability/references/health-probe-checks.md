@@ -9,8 +9,8 @@ This file covers **global / platform-level** probe checks (Azure Front Door, Tra
 | Service | Reference |
 |---|---|
 | Azure Functions | [services/functions/reliability.md](services/functions/reliability.md) |
-| Azure App Service | [services/app-service/reliability.md](services/app-service/reliability.md) |
-| Azure Container Apps | [services/container-apps/reliability.md](services/container-apps/reliability.md) |
+
+> Azure App Service and Azure Container Apps per-service references are planned but not yet shipped in this skill version.
 
 > **⚠️ Output format:** Use `--query "data[]" -o json` for `az graph query`. Standard `az afd` / `az network traffic-manager` commands work fine with `-o table`.
 
@@ -76,4 +76,4 @@ For the `Multi-region failover` row of the assessment table:
 - ⚠️ Partial — global load balancer exists but has no health probe configured (manual failover only)
 - ❌ — no global load balancer
 
-Per-service `Health probes` row reporting (Functions / App Service / Container Apps) is documented in each service's reliability reference.
+Per-service `Health probes` row reporting for Azure Functions is documented in [services/functions/reliability.md](services/functions/reliability.md). App Service and Container Apps per-service reporting is planned but not yet available.

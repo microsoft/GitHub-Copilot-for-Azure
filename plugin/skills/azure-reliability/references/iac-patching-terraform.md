@@ -28,13 +28,13 @@ Resource definitions may be in module files. Search all `.tf` files for the reso
 
 ## Per-service Terraform patches
 
-The patches for compute (zone redundancy on plans / environments, health check path, container probes, blue/green for Container Apps) live in the per-service references because the SKU rules and resource types differ:
+The patches for compute (zone redundancy on the Function App plan, health check path) live in the per-service references because the SKU rules and resource types differ:
 
 | Service | Reference |
 |---|---|
 | Azure Functions | [services/functions/reliability.md](services/functions/reliability.md) |
-| Azure App Service | [services/app-service/reliability.md](services/app-service/reliability.md) |
-| Azure Container Apps | [services/container-apps/reliability.md](services/container-apps/reliability.md) |
+
+> Azure App Service and Azure Container Apps per-service Terraform patches are planned for a future version of this skill.
 
 The one truly cross-service patch — **storage** — lives below.
 

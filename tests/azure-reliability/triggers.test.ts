@@ -26,18 +26,16 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Check the reliability of my resource group",
       "Is my function app zone redundant?",
       "Make my function app zone redundant",
-      "Set up multi-region failover for my app",
+      "Set up multi-region failover for my Functions app",
       "Check my reliability posture",
       "Find single points of failure in my Azure environment",
-      "Enable high availability for my Azure resources",
+      "Enable high availability for my Azure Functions resources",
       "Check disaster recovery readiness",
-      "Improve my Azure app's resilience",
+      "Improve my Azure Functions app's resilience",
       // Storage redundancy (always paired with reliability/zone keywords)
       "Is my storage zone redundant?",
-      // Specific service prompts
+      // Functions-specific
       "Add zone redundancy to my Azure Functions Premium plan",
-      "Make my App Service plan zone redundant",
-      "Add liveness and readiness probes to my Container App",
       // Multi-region
       "Set up Azure Front Door for failover between regions",
       "How do I make my Azure Functions app multi-region?",

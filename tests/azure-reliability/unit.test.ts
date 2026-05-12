@@ -36,11 +36,15 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(description).toContain("when:");
     });
 
-    test("description mentions all three supported services", () => {
+    test("description scopes the skill to Azure Functions", () => {
       const description = skill.metadata.description.toLowerCase();
+      // Skill is currently Functions-only; App Service / Container Apps support
+      // is acknowledged in the description as planned but not yet shipped.
       expect(description).toContain("functions");
-      expect(description).toContain("container apps");
-      expect(description).toContain("app service");
+      expect(description).toMatch(/functions-only|functions only/);
+      expect(description).not.toMatch(
+        /reliability posture of azure functions, container apps, and app service/
+      );
     });
 
     test("description mentions core reliability features", () => {

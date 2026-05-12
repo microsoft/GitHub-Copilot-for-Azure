@@ -194,4 +194,4 @@ When the parent skill builds the feature-pivoted assessment table, report each F
 
 ## Additional References
 
-- [Reliability in Azure Functions (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/reliability/reliability-functions?pivots=flex-consumption) — official guidance on availability zones, regional resiliency, and disaster recovery for Azure Functions (Flex Consumption pivot).
+- [Reliability in Azure Functions (Microsoft Learn)](https://learn.microsoft.com/en-us/azure/reliability/reliability-functions)
