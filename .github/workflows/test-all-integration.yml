@@ -29,8 +29,8 @@ on:
         required: false
         type: choice
         options:
-          - claude-sonnet-4.5
-          - claude-opus-4.5
+          - claude-sonnet-4.6
+          - claude-opus-4.6
       skill-test-pattern:
         description: 'Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests'
         required: false
@@ -333,6 +333,29 @@ jobs:
           JOB_ID: ${{ github.job }}
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           STORAGE_CONTAINER: ${{ vars.REPORT_STORAGE_CONTAINER || 'integration-reports' }}
+          SKILL: ${{ matrix.skill }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --destination "$STORAGE_CONTAINER" \
+            --destination-path "$PREFIX" \
+            --source reports/test-run-all-integration/ \
+            --auth-mode login \
+            --overwrite
+
+      # Publish reports to the same storage account but a separate container for manual runs.
+      # Note: The managed identity must have write permission to the target storage account.
+      - name: Publish report to Azure Storage (manual run)
+        if: always() && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
+        id: publish-report-manual
+        env:
+          RUN_ID: ${{ github.run_id }}
+          JOB_ID: ${{ github.job }}
+          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports' }}
           SKILL: ${{ matrix.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)

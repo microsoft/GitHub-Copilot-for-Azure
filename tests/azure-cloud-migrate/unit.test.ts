@@ -96,6 +96,21 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
   });
 
+  describe("Spring Boot to Container Apps Scenario", () => {
+    test("includes Spring Boot to Container Apps scenario", () => {
+      expect(skill.content).toContain("Spring Boot");
+      expect(skill.content).toContain("Container Apps");
+    });
+
+    test("references spring-apps-to-aca guide", () => {
+      expect(skill.content).toContain("spring-apps-to-aca.md");
+    });
+
+    test("includes Azure Spring Apps source in scenario table", () => {
+      expect(skill.content).toContain("Azure Spring Apps");
+    });
+  });
+
   describe("AWS Fargate to Container Apps Scenario", () => {
     test("includes Fargate migration scenario", () => {
       expect(skill.content).toContain("Fargate");
