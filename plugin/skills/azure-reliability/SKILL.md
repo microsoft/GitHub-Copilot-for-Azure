@@ -330,7 +330,7 @@ Multi-region is a significant cost/complexity step. Do **NOT** start it automati
 ```
 🟢 Your app is now fully zone-redundant in {region}.
 
-🌟 The next step (optional) is multi-region failover with Azure Front Door:
+The next step (optional) is multi-region failover with Azure Front Door:
    • Deploys compute + storage in a second region (paired region recommended)
    • Adds Azure Front Door for global load balancing with health-probe-driven failover
    • Protects against full region outages
