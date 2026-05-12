@@ -91,13 +91,9 @@ Example custom evaluator for Phase 2:
 
 ```yaml
 name: behavioral_adherence
-scoringType: continuous
-minScore: 0
-maxScore: 1
 promptText: |
   Given the query, response, and expected behavior, rate how well
-  the response fulfills the expected behavior using the configured
-  0-to-1 evaluator result scale.
+  the response fulfills the expected behavior.
   ## Query
   {{query}}
   ## Response
