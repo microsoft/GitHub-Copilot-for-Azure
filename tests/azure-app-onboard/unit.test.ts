@@ -130,7 +130,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test.each([
-      ["prereq", "azure-app-onboard-prereq/SKILL.md"],
+      ["prereq", "{\"skill\": \"azure-app-onboard-prereq\"}"],
       ["prepare", "prepare/SKILL.md"],
       ["scaffold", "scaffold/SKILL.md"],
       ["deploy", "deploy/SKILL.md"],
