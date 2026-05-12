@@ -1,0 +1,24 @@
+Artifact write procedures for the prereq phase exit. Read at Step 4 of the [readiness gate](readiness-gate.md).
+
+## Write Artifacts
+
+> ⛔ **You MUST write all 3 artifacts before exiting the prereq phase.** Do not skip artifact writes — downstream phases (prepare, scaffold, deploy) read these files and will fail or produce incomplete results without them.
+>
+> ⛔ **Use the `create` tool for ALL session file content — NEVER `powershell` for file writes.** Do not use `powershell`, `New-Item`, `Out-File`, `Set-Content`, or any shell command to write `context.json`, `prereq-output.json`, or readiness reports. Shell writes can silently fail or produce malformed JSON. Terminal commands are acceptable ONLY for read-only operations: UUID generation (`[guid]::NewGuid()`), git info (`git remote`, `git branch`, `git rev-parse HEAD`), and file existence checks.
+
+1. **You MUST write `prereq-output.json`** to the session folder. ⛔ **You MUST read [`prereq-schemas.ts`](prereq-schemas.ts)** to get the exact `PrereqOutput` interface — field names, types, and required fields. If that path fails, glob `**/references/prereq-schemas.ts` and use the first match. The prepare phase reads this to select services and SKUs.
+
+   > ⛔ **Warnings MUST persist to downstream phases.** Every ⚠️ WARN finding MUST appear in `prereq-output.json.warnings[]` with `{ "id": "W{N}", "component": "{name}", "axis": "{build|completeness|deployability}", "summary": "{one-line}", "detail": "{actionable detail}" }`. Downstream phases (prepare, scaffold, deploy) read `warnings[]` to: (1) adjust service selection (e.g., no health endpoint → prepare adds health probe config), (2) surface at deploy approval gate, (3) include in handoff recommendations. If `warnings[]` is empty or missing, downstream phases assume zero issues — bugs that were found but not written are invisible.
+   >
+   > ⛔ **Health endpoint warnings are deploy-critical.** If no health endpoint was detected (`/health`, `/healthz`, `/api/health`), write a specific warning: `{ "id": "W-HEALTH", "summary": "No health endpoint detected", "detail": "Azure health probes will return unhealthy. Add a /health route or configure custom probe path in IaC." }`. The deploy phase reads this to configure health probe paths in the deployment. Omitting this warning causes silent health-check failures post-deploy.
+   >
+   > ⛔ **`postDeployRecommendations[]` — convert warnings to structured recommendations.** For each ⚠️ WARN finding, also write a corresponding entry to `prereq-output.json.postDeployRecommendations[]` using the `PostDeployRecommendation` schema from [`session-schemas.ts`](session-schemas.ts): `{ "title": "{one-line action}", "reason": "{why this matters on Azure}", "effort": "low|medium|high", "services": ["{relevant Azure service}"] }`. Examples: no health endpoint → `{ "title": "Add /health endpoint", "reason": "Azure health probes return unhealthy without one", "effort": "low", "services": ["App Service"] }`. SQLite/file-based DB → `{ "title": "Migrate to managed database", "reason": "Data lost on restart — ephemeral on PaaS", "effort": "high", "services": ["Azure SQL", "Cosmos DB"] }`. `express-session` without external store → `{ "title": "Add external session store (Redis)", "reason": "In-memory sessions lost on restart — users logged out on every redeploy", "effort": "medium", "services": ["Azure Cache for Redis"] }`. The prepare phase merges these with its own recommendations — prereq surfaces code-level insights that prepare cannot detect.
+2. **You MUST update `context.json`** per `AppOnboardContext` in [`session-schemas.ts`](session-schemas.ts) (already loaded above) — populate `components[]`, `repo`, `detectedInfra[]`, `detectedServices[]`, and `app.name` (from the primary component's project manifest: `package.json.name`, `pyproject.toml [project].name`, `*.csproj` assembly name, or workspace root directory name as fallback — the prepare phase uses this for resource naming). Append `"prereq"` to `completedPhases`, set `currentPhase` to `null`, update `lastModifiedUtc`.
+3. **You MUST write a readiness report** to `.copilot-azure/sessions/{uuid}/readiness-report.md`. Include: a summary table (Build / Completeness / Deployability verdicts), detected stack per component, and all warnings with actionable detail. Format as clean markdown — no rigid template required. This gives the user an offline-readable record of the evaluation outside of chat history.
+
+> ⛔ **Phase exit — NOT complete until ALL done:**
+> 1. `prereq-output.json` written with `warnings[]` and `postDeployRecommendations[]` populated
+> 2. `context.json` updated: `components[]`, `repo`, `detectedInfra[]`, `detectedServices[]`, `app.name` populated; `"prereq"` in `completedPhases`
+> 3. `readiness-report.md` written to the session folder
+>
+> If ANY item is missing, go back and write it now. Do NOT proceed to Step 5 (Present Findings) with incomplete artifacts.
