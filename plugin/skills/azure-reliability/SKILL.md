@@ -1,6 +1,6 @@
 ---
 name: azure-reliability
-description: "Assess and improve the reliability posture of Azure PaaS applications. Scans deployed resources for zone redundancy, storage replication, multi-region gaps, and single points of failure. Generates a reliability checklist and can configure recommended patterns. Covers Azure Functions, Container Apps, and App Service. WHEN: assess reliability, check reliability, zone redundancy, make app zone redundant, multi-region failover, improve reliability, high availability, disaster recovery, resilience check, single point of failure, reliability posture."
+description: "Assess and improve the reliability posture of Azure Functions, Container Apps, and App Service: zone redundancy, ZRS storage, health probes, multi-region failover. Scans deployed resources, presents a feature-pivoted checklist, then drives staged remediation (CLI or IaC patches) end-to-end with user confirmation. WHEN: \"assess reliability\", \"check reliability\", \"zone redundant\", \"multi-region failover\", \"high availability\", \"disaster recovery\", \"single points of failure\", \"reliability posture\"."
 license: MIT
 metadata:
   author: Microsoft
