@@ -40,6 +40,12 @@ jobs:
       - name: Install vally-cli
         run: npm install --no-save --ignore-scripts @microsoft/vally-cli@^0.4.0
 
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build skills
+        run: npm run build
+
       - name: Lint skill and eval specs
         run: npx @microsoft/vally-cli lint plugin/skills/ --eval evals/ --strict
 
@@ -63,7 +69,9 @@ jobs:
             --runs 1 \
             --output-dir ./results \
             --output jsonl \
-            --threshold 0.8
+            --junit \
+            --threshold 0.8 \
+            --skill-dir output/skills
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
@@ -75,12 +83,13 @@ jobs:
             --output-dir ./results \
             --output jsonl \
             --junit \
-            --threshold 0.8
+            --threshold 0.8 \
+            --skill-dir output/skills
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
       - name: Upload results
-        if: github.event_name != 'pull_request' && always()
+        if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: eval-results
