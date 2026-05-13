@@ -40,7 +40,7 @@ config:
   runs: 3
   timeout: "20m"
   executor: copilot-sdk
-  model: claude-sonnet-4.5
+  model: claude-sonnet-4.6
 
 scoring:
   threshold: 0.6
