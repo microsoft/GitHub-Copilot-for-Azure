@@ -15,7 +15,7 @@ npm install -g @microsoft/vally
 # or, no install: use `npx @microsoft/vally ...` below
 ```
 
-Authentication is handled automatically via your local `gh` CLI session. Environment variables (`COPILOT_GITHUB_TOKEN`) are only required in CI environments.
+Authentication is automatic via your `gh` CLI session locally. In CI, the workflow uses `secrets.COPILOT_GITHUB_TOKEN`.
 
 ## Running a single eval spec
 
