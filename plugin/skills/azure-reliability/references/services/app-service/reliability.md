@@ -5,7 +5,7 @@
 | Plan | Zone Redundancy | Min Instances | Health Check |
 |------|----------------|---------------|--------------|
 | Free/Shared (F1/D1) | ❌ Not supported | N/A | ❌ |
-| Basic (B1/B2/B3) | ❌ Not supported | N/A | ❌ |
+| Basic (B1/B2/B3) | ❌ Not supported | N/A | ✅ |
 | Standard (S1/S2/S3) | ❌ Not supported | N/A | ✅ |
 | Premium v2 (P1v2+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 | ✅ |
 | Premium v3 (P1v3+) | ✅ `zoneRedundant: true` + `capacity: 3` | 3 (recommended) | ✅ |
