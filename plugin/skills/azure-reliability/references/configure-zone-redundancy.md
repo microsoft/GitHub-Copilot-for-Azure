@@ -16,7 +16,7 @@ The `az` CLI commands, plan-upgrade paths, blue/green migration steps, and verif
 | Service | Reference |
 |---|---|
 | Azure Functions (FC1, EP1–EP3) | [services/functions/reliability.md](services/functions/reliability.md) |
-| Azure App Service (P1v2+, P1v3+, ASEv3) | [services/app-service/reliability.md](services/app-service/reliability.md) |
+| Azure App Service (P1v2+, P0v3+, P0v4, ASEv3) | [services/app-service/reliability.md](services/app-service/reliability.md) |
 | Azure Container Apps (environment + apps) | [services/container-apps/reliability.md](services/container-apps/reliability.md) |
 
 ## Verification
