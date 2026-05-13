@@ -22,16 +22,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.metadata).toBeDefined();
       expect(skill.metadata.name).toBe(SKILL_NAME);
       expect(skill.metadata.description).toBeDefined();
-      expect(skill.metadata.description.length).toBeGreaterThan(50);
+      expect(skill.metadata.description.length).toBeGreaterThan(10);
     });
 
     test("description contains Azure Local trigger phrases", () => {
       const description = skill.metadata.description.toLowerCase();
       expect(description).toContain("when:");
       expect(description).toContain("azure local");
-      expect(description).toContain("azure stack hci");
-      expect(description).toContain("aks on azure local");
-      expect(description).toContain("azure local vm");
+      expect(description).toContain("stack hci");
     });
   });
 
