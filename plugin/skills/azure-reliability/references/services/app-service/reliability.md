@@ -145,7 +145,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   location: location
   sku: {
     name: 'P1v3'
-    capacity: 3              // ← ADD (min 3 for ZR on P1v3)
+    capacity: 2              // ← ADD (min 2 for ZR on P1v3)
   }
   properties: {
     reserved: true           // Linux
