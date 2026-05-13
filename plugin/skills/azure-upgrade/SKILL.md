@@ -1,6 +1,6 @@
 ---
 name: azure-upgrade
-description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, migrate hosting plan, change hosting plan, function app SKU, migrate App Service to Container Apps, migrate legacy Azure SDKs for Java, upgrade legacy Azure Java SDK, com.microsoft.azure to com.azure, migrate Azure Cache for Redis (ACR/ACRE) to Azure Managed Redis (AMR). DO NOT USE FOR: Azure Local solution updates, Azure Local upgrades, Lifecycle Manager, or Azure Local release updates; use azure-local."
+description: "Assess and upgrade Azure workloads between plans, tiers, or SKUs, or modernize Azure SDK dependencies in source code. WHEN: upgrade Consumption to Flex Consumption, upgrade Azure Functions plan, change hosting plan, function app SKU, migrate App Service to Container Apps, modernize legacy Azure Java SDKs (com.microsoft.azure to com.azure), migrate Azure Cache for Redis (ACR/ACRE) to Azure Managed Redis (AMR)."
 license: MIT
 compatibility: python3.10+
 metadata:
