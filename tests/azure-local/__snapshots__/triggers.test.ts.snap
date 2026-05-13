@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`azure-local - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
+{
+  "description": "WHEN: Azure Local, Stack HCI, resource",
+  "extractedKeywords": [
+    "aks",
+    "azure",
+    "cli",
+    "deploy",
+    "local",
+    "mcp",
+    "monitor",
+    "networking",
+    "resource",
+    "security",
+    "sql",
+    "stack",
+    "when",
+  ],
+  "name": "azure-local",
+}
+`;
+
+exports[`azure-local - Trigger Tests Trigger Keywords Snapshot skill keywords match snapshot 1`] = `
+[
+  "aks",
+  "azure",
+  "cli",
+  "deploy",
+  "local",
+  "mcp",
+  "monitor",
+  "networking",
+  "resource",
+  "security",
+  "sql",
+  "stack",
+  "when",
+]
+`;

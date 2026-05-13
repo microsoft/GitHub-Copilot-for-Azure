@@ -65,7 +65,7 @@ The Azure MCP Server provides tools for 40+ Azure services:
 - Azure AI Services Speech (speech-to-text, text-to-speech)
 
 ### Compute & Containers
-- Azure App Service, Container Apps, Azure Kubernetes Service (AKS)
+- Azure App Service, Container Apps, Azure Kubernetes Service (AKS), Azure Local
 - Azure Functions, Virtual Desktop
 
 ### Storage & Databases
