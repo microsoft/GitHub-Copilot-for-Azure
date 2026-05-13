@@ -8,7 +8,8 @@
 | Basic (B1/B2/B3) | ❌ Not supported | N/A | ✅ |
 | Standard (S1/S2/S3) | ❌ Not supported | N/A | ✅ |
 | Premium v2 (P1v2+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 | ✅ |
-| Premium v3 (P1v3+) | ✅ `zoneRedundant: true` + `capacity: 3` | 3 (recommended) | ✅ |
+| Premium v3 (P0v3+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 (recommended) | ✅ |
+| Premium v4 (P0v4+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 (recommended) | ✅ |
 | Isolated v2 (I1v2+) | ✅ (ASE is ZR by default) | Per ASE | ✅ |
 
 ## Assessment Queries
