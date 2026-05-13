@@ -10,7 +10,7 @@
 | Premium v2 (P1v2+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 | ✅ |
 | Premium v3 (P0v3+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 (recommended) | ✅ |
 | Premium v4 (P0v4+) | ✅ `zoneRedundant: true` + `capacity: 2` | 2 (recommended) | ✅ |
-| Isolated v2 (I1v2+) | ✅ (ASE is ZR by default) | Per ASE | ✅ |
+| Isolated v2 (I1v2+) | ✅ `zoneRedundant: true` + `capacity: 2`  | 2 | ✅ |
 
 ## Assessment Queries
 
