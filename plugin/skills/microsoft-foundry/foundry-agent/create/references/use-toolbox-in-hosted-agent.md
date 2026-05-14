@@ -3,8 +3,6 @@
 Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. Unlike prompt agents that wire tools directly, hosted agents connect to a single MCP-compatible endpoint that exposes all configured tools. The platform handles credential injection, token refresh, and policy enforcement.
 
 > 📘 For endpoint format, MCP protocol details, auth, OAuth consent handling, testing, and troubleshooting, see [toolbox-reference.md](toolbox-reference.md).
->
-> 📘 For standalone toolbox/tool CRUD (create/update/delete a toolbox or a tool, outside the hosted-agent creation flow), see [toolboxes.md](../../../project/toolboxes.md).
 
 ## Quick Reference
 
@@ -25,7 +23,7 @@ User wants tools in hosted agent
     ▼
 Step 1: Resolve toolbox
     │  ├─ Toolbox already known (inline or project context) → Step 2
-    │  └─ Otherwise → ask one question (user provides / AI creates), then Step 2
+    │  └─ Otherwise → ask user to provide a toolbox endpoint, then Step 2
     │
     ▼
 Step 2: Generate agent code with toolbox integration
@@ -39,12 +37,9 @@ If the user provides a toolbox name or endpoint URL, or the project already refe
 
 Otherwise, ask one question:
 
-> _"Would you like to use your own toolbox (you can create one with the [Foundry Toolkit in VS Code](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)), or should I create one for you?"_
+> _"Would you like to provide your toolbox endpoint? (you can create one with the [Foundry Toolkit in VS Code](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/))"_
 
-| Answer | Action |
-|--------|--------|
-| **Use your own** | User supplies the name/endpoint of an existing toolbox, or creates one with the [Use Tool Catalog to connect tools and Toolboxes in Foundry Toolkit](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or [Foundry Portal](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox) and then shares the name. Proceed to Step 2 once provided. |
-| **AI creates it** | Load [project/toolboxes.md](../../../project/toolboxes.md) and run the toolbox-creation flow there. When it completes, return here and proceed to Step 2 with the new toolbox name/endpoint. |
+Once the user supplies the toolbox name/endpoint — either an existing one or a new one they create via the Foundry Toolkit or Foundry Portal — proceed to Step 2.
 
 > **When asking the question, always include the doc links inline** for the manual options — the [Foundry Toolkit in VS Code](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) and the [Foundry Portal](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox) — so the user knows where to go to create a tool/toolbox themselves. Don't just name the options; render them as clickable links every time.
 

@@ -90,8 +90,6 @@ curl -sS -X POST "$TOOLBOX_URL" \
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"<tool_name>","arguments":{"query":"test"}}}' | jq .
 ```
 
-> ⚠️ **`web_search` is not directly callable from `tools/call`.** It returns `NotFound[404, user=The API deployment for this resource does not exist...]` even when the toolbox is healthy and a model is deployed. The web_search tool depends on the agent runtime to supply the model context for its server-side LLM-assisted query rewriting. Test it via the **responses API** with `tool_choice: "required"` and `tools: [{"type":"web_search"}]` instead — see `/openai/v1/responses` examples in [web-search docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/web-search). Other tool types (`code_interpreter`, `mcp`, `file_search`, `azure_ai_search`) work fine via direct `tools/call`.
-
 > For a Python-based debug client, see the `_McpToolboxClient` class in the [BYO toolbox sample `main.py`](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox/main.py) — it implements `initialize`, `list_tools`, and `call_tool` using raw `httpx` calls.
 
 ## Troubleshooting
