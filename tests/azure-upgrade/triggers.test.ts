@@ -22,8 +22,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe("Should Trigger", () => {
-    // Prompts that SHOULD trigger this skill - Azure-to-Azure upgrade workflows
+    // Prompts that SHOULD trigger this skill - Azure-to-Azure upgrade workflows and Azure SDK modernization
     const shouldTriggerPrompts: string[] = [
+      // Azure service/plan/SKU upgrades
       "Upgrade my function app from Consumption to Flex Consumption",
       "Move my function app to a better plan",
       "Is my function app ready for Flex Consumption?",
@@ -32,6 +33,14 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Change my function app hosting plan",
       "Migrate my Azure Functions from Consumption to Flex Consumption",
       "Assess my function app for upgrade readiness",
+      // Azure SDK source-code modernization (Java legacy → modern)
+      "Migrate legacy Azure SDKs for Java",
+      "Upgrade legacy Azure Java SDK",
+      "Migrate my Java project from com.microsoft.azure to com.azure",
+      // Azure Cache for Redis (ACR/ACRE) → Azure Managed Redis (AMR) migration
+      "Migrate my Azure Cache for Redis to Azure Managed Redis",
+      "Upgrade my Premium P2 Redis cache to AMR",
+      "Migrate my Enterprise_E10 ACRE cache to Azure Managed Redis",
     ];
 
     test.each(shouldTriggerPrompts)(
@@ -54,6 +63,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What is the capital of France?",
       "Help me debug my React application",
       "How do I optimize MySQL queries?",
+      // Generic IaC questions unrelated to Azure upgrades — should NOT trigger
+      "Write me a Bicep template for a storage account",
+      "Author a Terraform module for a virtual network",
     ];
 
     test.each(shouldNotTriggerPrompts)(

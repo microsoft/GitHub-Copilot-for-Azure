@@ -79,6 +79,22 @@ export interface AgentMetadata {
    * Token usage and cost data extracted from assistant.usage and session.shutdown events.
    */
   tokenUsage?: TokenUsage;
+
+  /**
+   * Map from tool name to the number of times that tool was invoked during the run.
+   * Excludes the `skill` pseudo-tool; all other tools (including MCP tools) are included,
+   * keyed by the raw `event.data.toolName`.
+   */
+  toolCounts: Record<string, number>;
+
+  /**
+   * Map from skill name to the sorted, deduped list of files under that skill's
+   * directory (i.e., paths under `output/skills/<skillName>/`) that were referenced
+   * by tool invocations during the run.
+   * Populated from tool arguments that reference files in a skill directory, and may
+   * also include a synthesized `SKILL.md` entry for `skill` tool calls.
+   */
+  skillFiles: Record<string, string[]>;
 }
 
 /**
@@ -118,6 +134,15 @@ export interface AgentRunConfig {
    * Number of milliseconds as timeout for follow ups.
    */
   followUpTimeout?: number;
+
+  /**
+   * Whether to take a screenshot of the application after the agent work.
+   * The predicate function will be called with the agentMetadata. If the return value is true, the agent runner will attempt to take a screenshot of the app. Otherwise, no screenshot will be taken.
+   * If undefined, the agent runner won't attempt to take a screenshot.
+   */
+  takeScreenshot?: {
+    predicate: (agentMetadata: AgentMetadata) => boolean
+  };
 }
 
 interface KeywordOptions {
@@ -132,6 +157,131 @@ interface RunnerCleanup {
   preserveWorkspace?: boolean;
   config?: AgentRunConfig;
   agentMetadata?: AgentMetadata;
+}
+
+/**
+ * Extract file-system paths from the serialized arguments of a tool call that
+ * reference the given `skillDirectory`. Checks common argument keys
+ * (`filePath`, `path`, `file`, `uri`) and also scans the full serialized args
+ * for any substring rooted at the skill directory. Returned paths are
+ * normalized to forward slashes.
+ */
+function extractSkillDirPaths(args: unknown, skillDirectory: string): string[] {
+  const normalizedDir = skillDirectory.replace(/\\/g, "/").replace(/\/+$/, "");
+  const found = new Set<string>();
+
+  let obj: Record<string, unknown> | undefined;
+  if (args && typeof args === "object") {
+    obj = args as Record<string, unknown>;
+  } else if (typeof args === "string") {
+    try {
+      const parsed: unknown = JSON.parse(args);
+      if (parsed && typeof parsed === "object") {
+        obj = parsed as Record<string, unknown>;
+      }
+    } catch { /* ignore */ }
+  }
+
+  if (obj) {
+    for (const key of ["filePath", "path", "file", "uri"]) {
+      const v = obj[key];
+      if (typeof v === "string" && v.length > 0) {
+        const normalized = v.replace(/\\/g, "/");
+        if (normalized.startsWith(normalizedDir + "/")) {
+          found.add(normalized);
+        }
+      }
+    }
+  }
+
+  // Fallback: scan serialized args for any occurrence of the skill directory
+  let serialized: string;
+  if (typeof args === "string") {
+    serialized = args;
+  } else {
+    try {
+      serialized = JSON.stringify(args ?? "");
+    } catch {
+      serialized = String(args ?? "");
+    }
+  }
+  const normalizedSerialized = serialized.replace(/\\\\/g, "/").replace(/\\/g, "/");
+  const needle = normalizedDir + "/";
+  let searchFrom = 0;
+  while (true) {
+    const idx = normalizedSerialized.indexOf(needle, searchFrom);
+    if (idx < 0) break;
+    const tail = normalizedSerialized.slice(idx);
+    const endMatch = tail.match(/^[^"',\s\\]+/);
+    if (endMatch) found.add(endMatch[0]);
+    searchFrom = idx + needle.length;
+  }
+
+  return Array.from(found);
+}
+
+/**
+ * Compute aggregate tool invocation counts and per-skill file-read listings
+ * from the ordered list of session events.
+ *
+ * - `toolCounts` keys are raw `event.data.toolName`, excluding the `skill` pseudo-tool.
+ * - `skillFiles` is populated from any tool invocation whose arguments reference
+ *   a path under the given skill directory (`output/skills/<skill>/...`).
+ */
+function computeToolAndSkillStats(
+  events: SessionEvent[],
+  skillDirectory: string
+): { toolCounts: Record<string, number>; skillFiles: Record<string, string[]> } {
+  const toolCounts: Record<string, number> = {};
+  const skillFilesSet: Record<string, Set<string>> = {};
+
+  const normalizedSkillDir = skillDirectory.replace(/\\/g, "/").replace(/\/+$/, "");
+
+  for (const event of events) {
+    if (event.type !== "tool.execution_start") continue;
+    const toolName = event.data.toolName as string | undefined;
+    if (!toolName) continue;
+
+    if (toolName !== "skill") {
+      toolCounts[toolName] = (toolCounts[toolName] ?? 0) + 1;
+    } else {
+      // The `skill` tool loads <skillDirectory>/<skillName>/SKILL.md internally
+      // via the SDK; no path appears in tool arguments. Synthesize the entry so
+      // SKILL.md is reflected in `skillFiles` for every invoked skill.
+      const args: unknown = event.data.arguments;
+      let skillName: string | undefined;
+      if (args && typeof args === "object") {
+        const v = (args as Record<string, unknown>).skill;
+        if (typeof v === "string") skillName = v;
+      } else if (typeof args === "string") {
+        const stringArgs = args.trim();
+        const m = stringArgs.match(/"skill"\s*:\s*"([^"]+)"/);
+        if (m) {
+          skillName = m[1];
+        } else if (stringArgs) {
+          skillName = stringArgs;
+        }
+      }
+      if (skillName) {
+        (skillFilesSet[skillName] ??= new Set()).add(`${normalizedSkillDir}/${skillName}/SKILL.md`);
+      }
+    }
+
+    for (const filePath of extractSkillDirPaths(event.data.arguments, skillDirectory)) {
+      const relative = filePath.slice(normalizedSkillDir.length + 1);
+      const slashIdx = relative.indexOf("/");
+      if (slashIdx <= 0) continue;
+      const skillName = relative.slice(0, slashIdx);
+      (skillFilesSet[skillName] ??= new Set()).add(filePath);
+    }
+  }
+
+  const skillFiles: Record<string, string[]> = {};
+  for (const skillName of Object.keys(skillFilesSet).sort()) {
+    skillFiles[skillName] = Array.from(skillFilesSet[skillName]).sort();
+  }
+
+  return { toolCounts, skillFiles };
 }
 
 /**
@@ -168,6 +318,36 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
     lines.push(`| Cache Write | ${t.cacheWriteTokens.toLocaleString()} |`);
     lines.push(`| API Calls | ${t.apiCallCount} |`);
     lines.push(`| API Duration | ${(t.totalApiDurationMs / 1000).toFixed(1)}s |`);
+    lines.push("");
+  }
+
+  // Tool invocation counts (excludes the `skill` pseudo-tool)
+  const toolCountEntries = Object.entries(agentMetadata.toolCounts ?? {});
+  if (toolCountEntries.length > 0) {
+    toolCountEntries.sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+    lines.push("# Tool Counts");
+    lines.push("");
+    lines.push("| Tool | Count |");
+    lines.push("|------|-------|");
+    for (const [tool, count] of toolCountEntries) {
+      lines.push(`| ${tool} | ${count} |`);
+    }
+    lines.push("");
+  }
+
+  // Files read from each invoked skill's directory
+  const skillFileEntries = Object.entries(agentMetadata.skillFiles ?? {});
+  if (skillFileEntries.length > 0) {
+    skillFileEntries.sort((a, b) => a[0].localeCompare(b[0]));
+    lines.push("# Skill Files Read");
+    lines.push("");
+    lines.push("| Skill | File |");
+    lines.push("|-------|------|");
+    for (const [skillName, files] of skillFileEntries) {
+      for (const file of files) {
+        lines.push(`| ${skillName} | ${file} |`);
+      }
+    }
     lines.push("");
   }
 
@@ -380,6 +560,8 @@ function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadat
       events: agentMetadata.events,
       testComments: agentMetadata.testComments,
       tokenUsage: agentMetadata.tokenUsage,
+      toolCounts: agentMetadata.toolCounts,
+      skillFiles: agentMetadata.skillFiles,
     };
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
 
@@ -507,6 +689,9 @@ export function useAgentRunner() {
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = config.preserveWorkspace;
 
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
+    entry.agentMetadata = agentMetadata;
+
     try {
       // Run optional setup
       if (config.setup) {
@@ -517,7 +702,7 @@ export function useAgentRunner() {
       const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
       if (process.env.DEBUG && isTest()) {
         cliArgs.push("--log-dir");
-        cliArgs.push(buildLogFilePath());
+        cliArgs.push(buildTestCaseDirPath());
       }
 
       const client = new CopilotClient({
@@ -545,10 +730,12 @@ export function useAgentRunner() {
         disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
       }
 
+      const noSkills = process.env.NO_SKILLS === "true";
+      const model = modelOverride || "claude-sonnet-4.6";
       const session = await client.createSession({
-        model: modelOverride || "claude-sonnet-4.5",
+        model: model,
         onPermissionRequest: approveAll,
-        skillDirectories: [skillDirectory],
+        skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
         mcpServers: {
           azure: {
@@ -561,9 +748,6 @@ export function useAgentRunner() {
         systemMessage: config.systemPrompt
       });
       entry.session = session;
-
-      const agentMetadata: AgentMetadata = { events: [], testComments: [] };
-      entry.agentMetadata = agentMetadata;
 
       const done = new Promise<void>((resolve) => {
         session.on(async (event: SessionEvent) => {
@@ -593,6 +777,13 @@ export function useAgentRunner() {
       await session.send({ prompt: config.prompt });
       await done;
 
+      // Send follow-up prompts before aggregating stats so tool/skill/token
+      // counts include events emitted during follow-up turns.
+      for (const followUpPrompt of config.followUp ?? []) {
+        isComplete = false;
+        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+      }
+
       // Extract token usage from assistant.usage events
       const tokenUsage: TokenUsage = {
         inputTokens: 0,
@@ -601,7 +792,7 @@ export function useAgentRunner() {
         cacheWriteTokens: 0,
         totalApiDurationMs: 0,
         apiCallCount: 0,
-        model: modelOverride || "claude-sonnet-4.5",
+        model: model,
         perCallUsage: [],
       };
 
@@ -640,6 +831,11 @@ export function useAgentRunner() {
 
       agentMetadata.tokenUsage = tokenUsage;
 
+      // Aggregate tool invocation counts and skill-file reads
+      const { toolCounts, skillFiles } = computeToolAndSkillStats(agentMetadata.events, skillDirectory);
+      agentMetadata.toolCounts = toolCounts;
+      agentMetadata.skillFiles = skillFiles;
+
       // Log token usage summary
       if (tokenUsage.apiCallCount > 0) {
         console.log(
@@ -649,17 +845,43 @@ export function useAgentRunner() {
         );
       }
 
-      // Send follow-up prompts
-      for (const followUpPrompt of config.followUp ?? []) {
-        isComplete = false;
-        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+      if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
+        // Resume the session so it can take a different set of skills and mcp servers.
+        // Use playwright mcp server to take a screenshot.
+        const screenshotTimeout = 180000; // 3 minutes
+        const screenshotPath = path.join(buildTestCaseDirPath(), "app-snapshot.jpg");
+        const playwrightSession = await client.resumeSession(session.sessionId, {
+          mcpServers: {
+            playwright: {
+              command: "npx",
+              args: [
+                "@playwright/mcp@0.0.71"
+              ],
+              tools: ["*"]
+            }
+          },
+          onPermissionRequest: approveAll
+        });
+        await playwrightSession.sendAndWait({
+          prompt: `Use playwright mcp tools to take a screenshot of the deployed app. Save the screenshot to this directory at this file location ${screenshotPath}`
+        }, screenshotTimeout);
+
+        // Check if screenshot was successfully created
+        const screenshotExists = fs.existsSync(screenshotPath);
+        agentMetadata.testComments.push(
+          `Screenshot attempt: ${screenshotExists ? "✓ app-snapshot.jpg created successfully" : "✗ app-snapshot.jpg not found after screenshot attempt"}`
+        );
       }
 
       return agentMetadata;
     } catch (error) {
       // Mark as complete to stop event processing
       isComplete = true;
-      console.error("Agent runner error:", error);
+      const errorDetails = error instanceof Error
+        ? (error.message)
+        : String(error);
+      agentMetadata.testComments.push(`❗️Agent runner error: ${errorDetails}`);
+      console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
       if (!isTest()) {
@@ -767,15 +989,15 @@ export function getIntegrationSkipReason(): string | undefined {
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
+const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
 
-function buildShareFilePath(): string {
-  const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName(), `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+function buildTestCaseDirPath(): string {
+  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName());
 }
 
-function buildLogFilePath(): string {
-  const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName());
+function buildShareFilePath(): string {
+  const testCaseArtifactsDir = buildTestCaseDirPath();
+  return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
 }
 
 function isTest(): boolean {

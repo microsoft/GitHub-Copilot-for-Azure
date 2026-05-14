@@ -269,8 +269,15 @@ jobs:
             }
 
             // 2. Integration test schedule coverages all skills
+            // Only consider the active cron schedules from .github/workflows/integration-tests.yml
+            const activeCronSchedules = [
+                '0 5 * * 2-6',
+                '0 8 * * 2-6',
+                '0 12 * * 2-6',
+            ];
             let scheduledSkills = [];
-            Object.values(skillsJson.integrationTestSchedule).forEach(value => {
+            activeCronSchedules.forEach(cron => {
+                const value = skillsJson.integrationTestSchedule[cron];
                 if (value) {
                     value.split(',').forEach(s => scheduledSkills.push(s));
                 }

@@ -1,0 +1,117 @@
+name: Sync skill references to Azure MCP repo
+
+on:
+  schedule:
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-azure-mcp
+  cancel-in-progress: true
+
+jobs:
+  sync-to-azure-mcp:
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the current repo
+      - name: Checkout current repo
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          path: source-repo
+
+      # 2. Setup Node.js and generate JSON files
+      - name: Setup Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: source-repo/scripts/package-lock.json
+
+      - name: Install scripts dependencies
+        working-directory: source-repo/scripts
+        run: npm ci --ignore-scripts
+
+      - name: Generate JSON files
+        working-directory: source-repo/scripts
+        run: npm run generateMcpAllowlists -- ../plugin/skills ${{ github.workspace }}
+
+      # 3. Clone microsoft/mcp and create feature branch
+      - name: Clone microsoft/mcp and create feature branch
+        env:
+          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+        run: |
+          gh repo clone microsoft/mcp mcp-repo -- --branch main --single-branch
+
+          cd mcp-repo
+          BRANCH_NAME="sync/azure-skills-references"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
+
+      # 4. Copy generated JSON files to the target location in microsoft/mcp
+      - name: Copy JSON files to target repo
+        run: |
+          TARGET_DIR="mcp-repo/servers/Azure.Mcp.Server/src/Resources"
+          cp allowed-skill-names.json "$TARGET_DIR/allowed-skill-names.json"
+          cp allowed-plugin-file-references.json "$TARGET_DIR/allowed-plugin-file-references.json"
+
+      # 5. Commit and push changes
+      - name: Commit and push changes
+        id: commit
+        working-directory: mcp-repo
+        env:
+          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+        run: |
+          gh auth setup-git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -- \
+            servers/Azure.Mcp.Server/src/Resources/allowed-skill-names.json \
+            servers/Azure.Mcp.Server/src/Resources/allowed-plugin-file-references.json
+          if git diff --cached --quiet; then
+            echo "No changes to sync."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            git commit -m "Sync skill references from GitHub-Copilot-for-Azure"
+            git push --force origin "$BRANCH_NAME"
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 6. Create or update Pull Request in microsoft/mcp
+      - name: Create or update Pull Request
+        if: steps.commit.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+        run: |
+          cd mcp-repo
+          PR_TITLE="Sync skill references from GitHub-Copilot-for-Azure"
+          PR_BODY="Automated sync of \`allowed-skill-names.json\` and \`allowed-plugin-file-references.json\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
+
+          EXISTING_PR=$(gh pr list \
+            --repo "microsoft/mcp" \
+            --head "$BRANCH_NAME" \
+            --base "main" \
+            --state open \
+            --json number \
+            --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING_PR" ]; then
+            echo "Updating existing PR #$EXISTING_PR"
+            gh pr edit "$EXISTING_PR" \
+              --repo "microsoft/mcp" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+          else
+            echo "Creating new PR"
+            gh pr create \
+              --repo "microsoft/mcp" \
+              --base "main" \
+              --head "$BRANCH_NAME" \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY"
+          fi

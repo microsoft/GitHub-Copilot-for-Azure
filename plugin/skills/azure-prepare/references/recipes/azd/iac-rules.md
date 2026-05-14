@@ -18,11 +18,11 @@ For **Terraform**:
 
 If no pattern module exists for the active provider, default immediately to AVM modules in the same provider order (resource, then utility) instead of using non-AVM modules.
 
-## Retrieval Strategy (Hybrid: azure-documentation MCP + Context7)
+## Retrieval Strategy (azure-documentation MCP primary + optional Context7)
 
 - **Primary (authoritative):** Use `mcp_azure_mcp_documentation` (`azure-documentation`) for current Azure guidance and AVM integration documentation.
 - **Primary (module catalog):** Use `mcp_bicep_list_avm_metadata` plus official AVM indexes to select concrete modules.
-- **Secondary (supplemental):** Use Context7 only for implementation examples when `mcp_azure_mcp_documentation` does not provide enough detail.
+- **Secondary (supplemental):** Use Context7 only for implementation examples when `mcp_azure_mcp_documentation` does not provide enough detail. If Context7 is not available, instruct the user to install it: `npx -y @upstash/context7-mcp@latest`.
 
 ## Validation Plan
 

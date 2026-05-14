@@ -1634,6 +1634,293 @@ function renderConfidenceLevelPanel(
   createItemFilter(section);
 }
 
+// ── Deploy Scenario Retries Panel ───────────────────────────────────────────
+
+/**
+ * Fetch the latest integration test results and render the retry count for
+ * each azure-deploy scenario test case on the main dashboard.
+ */
+async function loadDeployScenarioRetries() {
+  const section = document.getElementById("panel-deploy-retries");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderDeployRetriesPanel(section, [], "skip", null);
+      return;
+    }
+
+    const deployStats = skillResults["azure-deploy"];
+    const counts = (deployStats && deployStats.scenarioDeployRetryCounts) || {};
+
+    const rows = Object.entries(counts).map(function ([name, retries]) {
+      const label = name.replace(/^.*?_-_Integration_Tests_/i, "").replace(/_/g, " ");
+      return { label, retries: /** @type {number} */ (retries) };
+    });
+
+    rows.sort(function (a, b) {
+      return b.retries - a.retries || a.label.localeCompare(b.label);
+    });
+
+    const hasFailing = rows.some(function (r) { return r.retries >= 3; });
+    const hasWarning = rows.some(function (r) { return r.retries > 0 && r.retries < 3; });
+    const overallStatus = rows.length === 0 ? "skip" : hasFailing ? "fail" : hasWarning ? "warn" : "pass";
+
+    renderDeployRetriesPanel(section, rows, overallStatus, latestDate);
+  } catch {
+    renderDeployRetriesPanel(section, [], "skip", null);
+  }
+}
+
+/**
+ * Populate and finalise the deploy scenario retries panel.
+ * @param {HTMLElement} section
+ * @param {Array<{label:string, retries:number}>} rows
+ * @param {string} overallStatus - pass | warn | fail | skip
+ * @param {string|null} dateLabel
+ */
+function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  const total = rows.length;
+  const failing = rows.filter(function (r) { return r.retries >= 3; }).length;
+  const warning = rows.filter(function (r) { return r.retries > 0 && r.retries < 3; }).length;
+  const withRetries = failing + warning;
+  const noRetries = total - withRetries;
+
+  if (total === 0) {
+    itemsEl.appendChild(el("p", "no-data-message", "No deploy scenario data available."));
+  } else {
+    // Summary stat boxes
+    const statsRow = el("div", "stats-row");
+    statsRow.appendChild(statBox(total, "Scenarios"));
+    if (withRetries > 0) {
+      statsRow.appendChild(statBox(withRetries, "With retries"));
+    }
+    statsRow.appendChild(statBox(noRetries, "No retries"));
+    summaryEl.appendChild(statsRow);
+
+    // Table
+    const table = el("table", "deploy-retries-table");
+    table.setAttribute("aria-label", "Deploy scenario retry counts");
+
+    const thead = el("thead");
+    const headerRow = el("tr");
+    const thScenario = el("th", undefined, "Test Scenario");
+    thScenario.setAttribute("scope", "col");
+    const thRetries = el("th", "deploy-retries-num-col", "Retries");
+    thRetries.setAttribute("scope", "col");
+    headerRow.appendChild(thScenario);
+    headerRow.appendChild(thRetries);
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = el("tbody");
+    for (const row of rows) {
+      const rowStatus = row.retries >= 3 ? "fail" : row.retries > 0 ? "warn" : "pass";
+      const tr = el("tr");
+      tr.setAttribute("data-item-status", rowStatus);
+      if (row.retries >= 3) tr.className = "deploy-retries-row-fail";
+      else if (row.retries > 0) tr.className = "deploy-retries-row-warn";
+
+      const tdName = el("td", "deploy-retries-name", row.label);
+      const tdRetries = el("td", "deploy-retries-num-col deploy-retries-count");
+      tdRetries.textContent = String(row.retries);
+      if (row.retries >= 3) {
+        tdRetries.classList.add("deploy-retries-fail");
+      } else if (row.retries > 0) {
+        tdRetries.classList.add("deploy-retries-nonzero");
+      } else {
+        tdRetries.classList.add("deploy-retries-zero");
+      }
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdRetries);
+      tbody.appendChild(tr);
+    }
+    table.appendChild(tbody);
+    itemsEl.appendChild(table);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", overallStatus);
+
+  var summaryText = total === 0
+    ? "No data"
+    : failing > 0
+      ? failing + " scenario" + (failing !== 1 ? "s" : "") + " failed (\u22653 retries)"
+        + (warning > 0 ? ", " + warning + " warned" : "")
+      : withRetries > 0
+        ? withRetries + " scenario" + (withRetries !== 1 ? "s" : "") + " needed retries"
+        : "No retries \u2014 all scenarios passed first try";
+  if (dateLabel) summaryText += " \u2014 " + dateLabel;
+  section.setAttribute("data-summary-text", summaryText);
+
+  var fakeCategory = {
+    status: overallStatus,
+    summary: { total: total, passed: noRetries, failed: failing, warnings: warning, skipped: 0 },
+    items: rows.map(function (r) {
+      return { name: r.label, status: r.retries >= 3 ? "fail" : r.retries > 0 ? "warn" : "pass" };
+    }),
+  };
+
+  setupCollapsible(section, fakeCategory, "deploy-retries");
+  createItemFilter(section);
+}
+
+// ── Integration Test Token Usage Panel ─────────────────────────────────────
+
+/**
+ * Format a token count as a short string: 12.3K, 1.2M, or plain number.
+ * @param {number} n
+ * @returns {string}
+ */
+function formatTokenCount(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return String(n);
+}
+
+/**
+ * Fetch the latest integration test results and render a table of token
+ * usage per non-skill-invocation test, sorted by total tokens descending.
+ */
+async function loadIntegrationTestTokenUsage() {
+  const section = document.getElementById("panel-integration-token-usage");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderIntegrationTokenUsagePanel(section, [], null);
+      return;
+    }
+
+    // Flatten tokenUsageByTest across all skills, computing per-run averages
+    const rows = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const byTest = stats.tokenUsageByTest;
+      if (!byTest) continue;
+      for (const [testName, usage] of Object.entries(byTest)) {
+        const runCount = usage.runCount || 1;
+        rows.push({
+          skillName,
+          testName,
+          inputTokens: Math.round((usage.inputTokens || 0) / runCount),
+          outputTokens: Math.round((usage.outputTokens || 0) / runCount),
+          cacheReadTokens: Math.round((usage.cacheReadTokens || 0) / runCount),
+          cacheWriteTokens: Math.round((usage.cacheWriteTokens || 0) / runCount),
+          totalTokens: Math.round((usage.totalTokens || 0) / runCount),
+        });
+      }
+    }
+
+    // Sort by total tokens descending
+    rows.sort(function (a, b) { return b.totalTokens - a.totalTokens; });
+
+    renderIntegrationTokenUsagePanel(section, rows, latestDate);
+  } catch {
+    renderIntegrationTokenUsagePanel(section, [], null);
+  }
+}
+
+/**
+ * Populate and finalise the integration test token usage panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, testName:string, inputTokens:number, outputTokens:number, cacheReadTokens:number, cacheWriteTokens:number, totalTokens:number}>} rows
+ * @param {string|null} dateLabel
+ */
+function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  if (rows.length === 0) {
+    itemsEl.appendChild(el("p", "no-data-message", "No token usage data available."));
+  } else {
+    // Table
+    const table = el("table", "itoken-table");
+    table.setAttribute("aria-label", "Integration test average token usage");
+
+    const thead = el("thead");
+    const headerRow = el("tr");
+    const thTest = el("th", undefined, "Test");
+    thTest.setAttribute("scope", "col");
+    const thTokens = el("th", "itoken-num-col", "In / Out / Cache Read / Cache Write / Total");
+    thTokens.setAttribute("scope", "col");
+    headerRow.appendChild(thTest);
+    headerRow.appendChild(thTokens);
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = el("tbody");
+    for (const row of rows) {
+      const tr = el("tr");
+      tr.setAttribute("data-item-status", "pass");
+
+      const tdTest = el("td", "itoken-name-col");
+      tdTest.textContent = row.testName;
+      tdTest.setAttribute("title", row.testName);
+
+      const tdTokens = el("td", "itoken-num-col");
+      const spanIn = el("span", "itoken-in", formatTokenCount(row.inputTokens));
+      spanIn.setAttribute("title", row.inputTokens.toLocaleString());
+      const spanOut = el("span", "itoken-out", formatTokenCount(row.outputTokens));
+      spanOut.setAttribute("title", row.outputTokens.toLocaleString());
+      const spanCacheRead = el("span", "itoken-cache-read", formatTokenCount(row.cacheReadTokens));
+      spanCacheRead.setAttribute("title", row.cacheReadTokens.toLocaleString());
+      const spanCacheWrite = el("span", "itoken-cache-write", formatTokenCount(row.cacheWriteTokens));
+      spanCacheWrite.setAttribute("title", row.cacheWriteTokens.toLocaleString());
+      const spanTotal = el("span", "itoken-total", formatTokenCount(row.totalTokens));
+      spanTotal.setAttribute("title", row.totalTokens.toLocaleString());
+      tdTokens.appendChild(spanIn);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanOut);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanCacheRead);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanCacheWrite);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanTotal);
+
+      tr.appendChild(tdTest);
+      tr.appendChild(tdTokens);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    itemsEl.appendChild(table);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", rows.length === 0 ? "skip" : "pass");
+
+  const summaryText = rows.length === 0
+    ? "No data"
+    : rows.length + " tests";
+  const fullSummaryText = dateLabel ? summaryText + " \u2014 " + dateLabel : summaryText;
+  section.setAttribute("data-summary-text", fullSummaryText);
+
+  const fakeCategory = {
+    status: rows.length === 0 ? "skip" : "pass",
+    summary: { total: rows.length, passed: rows.length, failed: 0, warnings: 0, skipped: 0 },
+    items: rows.map(function (r) { return { name: r.testName, status: "pass" }; }),
+  };
+
+  setupCollapsible(section, fakeCategory, "integration-token-usage");
+}
+
 // ── Initialization ──────────────────────────────────────────────────────────
 
 async function init() {
@@ -1680,4 +1967,6 @@ document.addEventListener("DOMContentLoaded", function () {
   loadSkillInvocationRates();
   loadE2EPassRates();
   loadConfidenceLevelPerSkill();
+  loadDeployScenarioRetries();
+  loadIntegrationTestTokenUsage();
 });

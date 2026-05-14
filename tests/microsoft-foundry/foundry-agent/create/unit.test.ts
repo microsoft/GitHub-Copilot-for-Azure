@@ -3,21 +3,14 @@
  * 
  * Test isolated skill logic and validation rules.
  * Tests load the parent microsoft-foundry skill and verify
- * the create.md reference document content directly.
+ * the create-hosted.md reference document content directly.
  */
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CREATE_MD = path.resolve(
-  __dirname,
-  "../../../../output/skills/microsoft-foundry/foundry-agent/create/create.md"
-);
 
 describe("create - Unit Tests", () => {
   let skill: LoadedSkill;
@@ -25,7 +18,10 @@ describe("create - Unit Tests", () => {
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
-    createContent = fs.readFileSync(CREATE_MD, "utf-8");
+    createContent = fs.readFileSync(
+      path.join(skill.path, "foundry-agent", "create", "create-hosted.md"),
+      "utf-8"
+    );
   });
 
   describe("Parent Skill References", () => {
@@ -60,6 +56,17 @@ describe("create - Unit Tests", () => {
     test("supports multiple languages", () => {
       expect(createContent).toContain("Python");
       expect(createContent).toContain("C#");
+    });
+
+    test("documents both hosted-agent protocols", () => {
+      expect(createContent).toContain("responses");
+      expect(createContent).toContain("invocations");
+      expect(createContent).toContain("Protocol consistency");
+    });
+
+    test("distinguishes browse root from the selected sample path", () => {
+      expect(createContent).toContain("sample_browse_path");
+      expect(createContent).toContain("selected_sample_path");
     });
 
     test("contains error handling section", () => {

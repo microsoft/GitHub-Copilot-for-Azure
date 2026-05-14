@@ -1,36 +1,10 @@
 import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
+import type { BlobEntry, BlobTree, BlobTreeNode } from "./shared/blobTree";
 
-const INTEGRATION_REPORTS_CONTAINER_NAME = "integration-reports";
+const INTEGRATION_REPORTS_CONTAINER_NAME = process.env.INTEGRATION_REPORTS_CONTAINER_NAME || "integration-reports";
 
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
-
-export interface BlobEntry {
-    /**
-     * Name of the last segment in the blob path
-     */
-    name: string;
-    /**
-     * Full blob path
-     */
-    blobName: string
-};
-
-/**
- * A nested tree node representing a segment of a blob path.
- * Directories have children; leaf nodes have a `blobName` pointing to the full blob path.
- */
-export interface BlobTreeNode {
-    /** Files directly in this path segment (leaf blobs). */
-    files: BlobEntry[];
-    /** Child path segments, keyed by segment name. */
-    children: Record<string, BlobTreeNode>;
-}
-
-/**
- * Top-level structure: date string (yyyy-mm-dd) → nested tree of path segments.
- */
-export type BlobTree = Record<string, BlobTreeNode>;
 
 function createNode(): BlobTreeNode {
     return { files: [], children: {} };
@@ -123,19 +97,27 @@ export async function enumerateBlobTree(containerClient: ContainerClient, prefix
 }
 
 /**
- * Download a blob's content as a UTF-8 string.
+ * Download a blob's content as a Buffer.
  */
-export async function downloadBlobContent(containerClient: ContainerClient, blobPath: string): Promise<string> {
+export async function downloadBlobBuffer(containerClient: ContainerClient, blobPath: string): Promise<Buffer> {
     const blobClient = containerClient.getBlobClient(blobPath);
     const response = await blobClient.download();
     if (!response.readableStreamBody) {
-        return "";
+        throw new Error(`Blob download did not return a readable stream for path: ${blobPath}`);
     }
     const chunks: Buffer[] = [];
     for await (const chunk of response.readableStreamBody) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
-    return Buffer.concat(chunks).toString("utf-8");
+    return Buffer.concat(chunks);
+}
+
+/**
+ * Download a blob's content as a UTF-8 string.
+ */
+export async function downloadBlobContent(containerClient: ContainerClient, blobPath: string): Promise<string> {
+    const buffer = await downloadBlobBuffer(containerClient, blobPath);
+    return buffer.toString("utf-8");
 }
 
 // --- Integration-reports-specific wrappers ---
@@ -150,6 +132,10 @@ export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
 
 export async function getBlobContent(blobPath: string): Promise<string> {
     return downloadBlobContent(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
+}
+
+export async function getBlobBuffer(blobPath: string): Promise<Buffer> {
+    return downloadBlobBuffer(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
 }
 
 const azureDeploySkillName = "azure-deploy";

@@ -55,6 +55,7 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill descri
     "standard",
     "strategy",
     "upgrade",
+    "vnet",
     "when",
   ],
   "name": "azure-kubernetes",
@@ -114,6 +115,7 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill keywor
   "standard",
   "strategy",
   "upgrade",
+  "vnet",
   "when",
 ]
 `;

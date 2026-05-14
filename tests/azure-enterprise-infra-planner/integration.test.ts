@@ -181,7 +181,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan.",
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
           includeSkills: [SKILL_NAME],
           setup: async (workspace: string) => {
             testWorkspacePath = workspace;
@@ -252,13 +251,18 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             ...FOLLOW_UP_PROMPT,
             "Looks good! Let's make Bicep now."
           ],
-          preserveWorkspace: true,
           includeSkills: [SKILL_NAME],
           setup: async (workspace: string) => {
             testWorkspacePath = workspace;
             // Pre-create infra/ to guide IaC file placement per skill instructions
             fs.mkdirSync(path.join(workspace, "infra", "modules"), { recursive: true });
-          }
+          },
+          shouldEarlyTerminate: () => {
+            if (!testWorkspacePath) {
+              return false;
+            }
+            return fs.existsSync(path.join(testWorkspacePath, "infra", "main.bicep"));
+          },
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
