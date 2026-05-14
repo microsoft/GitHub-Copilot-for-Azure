@@ -213,6 +213,16 @@ resource "azurerm_linux_web_app" "app" {
 }
 ```
 
+## Virtual Network Integration notes
+
+- Subnet sizing is important.  VNet integration consumes IPs during scale-out slot swaps.  
+- Undersized subnet cause scale or deployment failures during regional stress or failover.  Recommend /26 minimum, /24 for larger plans.  Zone Redundant plans require integration subnet to be sized for Zone Redundancy (more IPs).
+- Subnets cannot be resized after assignment without reconfiguring VNET integration.
+- Dependencies reached over private endpoints must have a per-region private endpoint and private DNS Zone.  Sharing a single or global private DNS zone linked to the primary VNET will break failover.
+- Recommend Azure DNS Private Resolver per region, or per-region forwarders.  Verify WEBSITE_DNS_SERVER/WEBSITE_DNS_ALT_SERVER are set with a fallback.
+- For predictable outbound traffic flow during failover, attach NAT Gateway to the subnet in each region to enable partner allow lists to work for all regions.  Use Nat Gateway to avoid SNAT port exhaustion under load.
+- Service Endpoints vs Private Endpoints - Service endpoints are regional and don't failover.  Use Private Endpoints per region for resiliency. 
+
 ## Multi-Region Notes
 
 - App Service supports deployment slots — use slot swap for safe regional deployments
