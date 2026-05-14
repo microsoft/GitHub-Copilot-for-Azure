@@ -46,6 +46,20 @@ az webapp deployment slot list --name <app> --resource-group <rg> \
   --query "[].{name:name, state:state}" -o table
 ```
 
+### Auto Heal
+
+Auto Heal automatically restarts or mitigates your web app when it hits defined thresholds.  Can be configured via Azure Portal, CLI or ARM/Bicep
+
+Azure Portal - App Service -> Diagnose and solve problems -> Auto-heal (under Diagnostic Tools) or directly: App Service -> Configuration -> General settings -> Auto Heal
+
+CLI
+```bash
+az webapp config set --resource-group <rg> --name <app> --auto-heal-enabled true
+
+# Rules must be set via ARM PATCH (CLI doesn't expose autoHealRules directly)
+az rest --method patch \
+  --uri "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Web/sites/{app}/config/web?api-version=2022-03-01" \
+  --body '{"properties":{"autoHealEnabled":true,"autoHealRules":{...}}}'
 ## Configure: Zone Redundancy
 
 ### Upgrade Plan (if needed)
