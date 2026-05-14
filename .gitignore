@@ -77,7 +77,6 @@ _UpgradeReport_Files/
 *.code-workspace
 *.coverage
 *.coveragexml
-*.crt
 *.dbmdl
 *.dbproj.schemaview
 *.dotCover
