@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "0.0.0-placeholder"
-description: "Plan, create, configure, and review production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 provisioning (SKU selection, networking, security, operations) and Day-2 evidence-based posture review against Microsoft Learn best practices, Well-Architected pillars, AKS Checklist, and live diagnostics detectors. WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, rightsize AKS pod, AKS spot nodes, AKS cluster-autoscaler, review AKS, audit AKS cluster, AKS practices review, validate AKS posture, AKS compliance checklist, AKS remediation report."
+description: "Plan, create, configure, and review production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis) and Day-2 posture review and audits. WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, rightsize AKS pod, AKS spot nodes, AKS cluster-autoscaler, review AKS, audit AKS clusters, AKS practices review, AKS checklist, AKS remediation report."
 ---
 
 # Azure Kubernetes Service
