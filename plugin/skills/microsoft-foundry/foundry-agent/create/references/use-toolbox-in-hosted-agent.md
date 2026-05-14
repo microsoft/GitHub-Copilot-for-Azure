@@ -45,7 +45,7 @@ Once the user supplies the toolbox name/endpoint — either an existing one or a
 
 > **Before printing out any step-by-step guidance** for the Foundry Toolkit (VS Code) path, fetch and read [Use Tool Catalog to connect tools and Toolboxes in Foundry Toolkit](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) first, then summarize the relevant steps for them. Don't paraphrase from memory — the Toolkit UI changes; quote the current doc.
 
-> **Available tool types** (for context when discussing what the toolbox will contain): Web Search, Azure AI Search, Code Interpreter, File Search, MCP Server, OpenAPI, Agent-to-Agent (A2A). See [Configure tools](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox#configure-tools).
+> **Available tool types** (for context when discussing what the toolbox will contain): Web Search, Azure AI Search, Code Interpreter, File Search, MCP Server (third-party MCP servers and Microsoft first-party MCP servers, e.g. WorkIQ), OpenAPI, Agent-to-Agent (A2A). See [Configure tools](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox#configure-tools).
 
 ### Step 2: Generate Agent Code with Toolbox
 
