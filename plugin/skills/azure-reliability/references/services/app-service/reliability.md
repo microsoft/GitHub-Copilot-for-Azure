@@ -134,6 +134,20 @@ az webapp deployment slot swap \
   --target-slot production
 ```
 
+## Back Up Support by SKU
+
+| Plan | Automatic Backup | Custom Backup |
+|------|----------------|---------------|
+| Free/Shared (F1/D1) | ❌ Not supported | ❌ Not supported |
+| Basic (B1/B2/B3) | ✅ | ✅ Configuration required  |
+| Standard (S1/S2/S3) | ✅  | ✅  Configuration required  |
+| Premium v2 (P1v2+) | ✅ | ✅  Configuration required  |
+| Premium v3 (P0v3+) | ✅ | ✅  Configuration required  |
+| Premium v4 (P0v4+) | ✅ | ✅  Configuration required  |
+| Isolated v2 (I1v2+) | ✅ | ✅  Configuration required  |
+
+- Automatic backups recommended since requires no configuration and is automatically enabled
+
 ## IaC Patching: Bicep
 
 > **AVM modules:** If the project uses `br/public:avm/res/web/serverfarm` or `br/public:avm/res/web/site`, the parameter names differ from raw ARM (e.g. `zoneRedundant` and `skuCapacity` are top-level params; `siteConfig` is usually preserved). Always grep the actual module call (`Select-String -Path infra -Recurse -Pattern "avm/res/web/" -Context 0,15`) and patch the params already in use. The raw-Bicep examples below show the property paths to translate.
