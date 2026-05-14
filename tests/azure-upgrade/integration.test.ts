@@ -25,6 +25,7 @@
 import * as fs from "fs";
 import * as path from "path";
 
+import { cloneRepo } from "../utils/git-clone";
 import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
@@ -48,6 +49,7 @@ const SKILL_NAME = "azure-upgrade";
 // generous timeout as other migration integration tests.
 const javaMigrationTimeoutMs = 2700000;
 const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
+const JAVA_UPDATE_EXAMPLES_REPO = "https://github.com/weidongxu-microsoft/java-update-examples.git";
 
 // Check if integration tests should be skipped at module level
 const skipTests = shouldSkipIntegrationTests();
@@ -233,21 +235,24 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       return stripXmlComments(fs.readFileSync(pomPath, "utf8"));
     };
 
-    const runJavaMigration = async (fixtureDir: string): Promise<{
+    const runJavaMigration = async (sparseCheckoutPath: string): Promise<{
       agentMetadata: Awaited<ReturnType<typeof agent.run>>;
       workspacePath: string;
     }> => {
       let workspacePath: string | undefined;
       const agentMetadata = await agent.run({
         setup: async (workspace: string) => {
-          workspacePath = workspace;
-          fs.cpSync(
-            `./azure-upgrade/resources/${fixtureDir}/`,
-            workspace,
-            { recursive: true }
-          );
+          await cloneRepo({
+            repoUrl: JAVA_UPDATE_EXAMPLES_REPO,
+            targetDir: workspace,
+            depth: 1,
+            sparseCheckoutPath,
+          });
+          workspacePath = path.join(workspace, ...sparseCheckoutPath.split("/"));
         },
-        prompt: "Migrate my Java project from legacy Azure SDK to modern Azure SDK",
+        prompt:
+          "Migrate my Java project from legacy Azure SDK to modern Azure SDK. " +
+          `The project can be found under ${sparseCheckoutPath}.`,
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         followUpTimeout: javaMigrationTimeoutMs
@@ -262,7 +267,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("migrates legacy file-based Azure auth (client init) to DefaultAzureCredential", async () => {
       await withTestResult(async () => {
-        const { workspacePath } = await runJavaMigration("java-legacy-sdk-client-init");
+        const { workspacePath } = await runJavaMigration("azure-legacy-sdk-update-azure-client-initialization");
 
         const pomNoComments = readPomNoComments(workspacePath);
 
@@ -290,7 +295,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("migrates EventProcessorHost InMemory managers to BlobCheckpointStore", async () => {
       await withTestResult(async () => {
-        const { workspacePath } = await runJavaMigration("java-legacy-sdk-eventhubs");
+        const { workspacePath } = await runJavaMigration("azure-legacy-sdk-update-eventhubs-v3");
 
         const pomNoComments = readPomNoComments(workspacePath);
 
@@ -323,7 +328,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("migrates Batch defineNewApplicationPackage chain to applicationPackages().define()", async () => {
       await withTestResult(async () => {
-        const { workspacePath } = await runJavaMigration("java-legacy-sdk-batch");
+        const { workspacePath } = await runJavaMigration("azure-legacy-sdk-update-batch-java-manage-batch-accounts");
 
         const pomNoComments = readPomNoComments(workspacePath);
 
