@@ -15,39 +15,23 @@ Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. U
 | **C# (.NET) Samples** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/toolbox |
 | **Supported Tool Types & Auth** | https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/toolbox/SUPPORTED_TOOLBOX_TOOLS.md |
 
-## Workflow
+## Resolve Toolbox Endpoint
 
-```
-User wants tools in hosted agent
-    │
-    ▼
-Step 1: Resolve toolbox
-    │  ├─ Toolbox already known (inline or project context) → Step 2
-    │  └─ Otherwise → ask user to provide a toolbox endpoint, then Step 2
-    │
-    ▼
-Step 2: Generate agent code with toolbox integration
-```
-
-After code generation, return to the parent skill's Step 6 (Verify Startup) to run the agent and send a test request. Toolbox auth/connection errors are expected without real Azure credentials — the key validation is that the HTTP server starts and the agent accepts requests.
-
-### Step 1: Resolve Toolbox
-
-If the user provides a toolbox name or endpoint URL, or the project already references a toolbox (e.g., in `.env` or `agent.manifest.yaml`) → proceed to Step 2.
+If the user provides a toolbox name or endpoint URL, or the project already references a toolbox (e.g., in `.env` or `agent.manifest.yaml`) → use it directly.
 
 Otherwise, ask one question:
 
 > _"Would you like to provide your toolbox endpoint? (you can create one with the [Foundry Toolkit in VS Code](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/))"_
 
-Once the user supplies the toolbox name/endpoint — either an existing one or a new one they create via the Foundry Toolkit or Foundry Portal — proceed to Step 2.
+Once the user supplies the toolbox name/endpoint — either an existing one or a new one they create via the Foundry Toolkit or Foundry Portal — set it on the agent (e.g., `FOUNDRY_TOOLBOX_ENDPOINT` in `.env`) and continue with verification.
 
-> **When asking the question, always include the doc links inline** for the manual options — the [Foundry Toolkit in VS Code](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) and the [Foundry Portal](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox) — so the user knows where to go to create a tool/toolbox themselves. Don't just name the options; render them as clickable links every time.
+> **When asking the question, always include the doc links inline** for the manual options — the [Foundry Toolkit in VS Code](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) and the [Foundry Portal](https://ai.azure.com/) — so the user knows where to go to create a tool/toolbox themselves. Don't just name the options; render them as clickable links every time.
 
 > **Before printing out any step-by-step guidance** for the Foundry Toolkit (VS Code) path, fetch and read [Use Tool Catalog to connect tools and Toolboxes in Foundry Toolkit](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) first, then summarize the relevant steps for them. Don't paraphrase from memory — the Toolkit UI changes; quote the current doc.
 
-> **Available tool types** (for context when discussing what the toolbox will contain): Web Search, Azure AI Search, Code Interpreter, File Search, MCP Server (third-party MCP servers and Microsoft first-party MCP servers, e.g. WorkIQ), OpenAPI, Agent-to-Agent (A2A). See [Configure tools](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox#configure-tools).
+> **Available tool types** (for context when discussing what the toolbox will contain): Web Search, Azure AI Search, Code Interpreter, File Search, MCP Server (third-party MCP servers, e.g. GitHub, and Microsoft first-party MCP servers, e.g. WorkIQ), OpenAPI, Agent-to-Agent (A2A). See [Configure tools](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox#configure-tools).
 
-### Step 2: Generate Agent Code with Toolbox
+## Code Integration Patterns
 
 The sample repo provides integration patterns for both Python and C#. Read the sample code and adapt it to the user's project.
 

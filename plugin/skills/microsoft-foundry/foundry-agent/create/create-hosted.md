@@ -88,7 +88,7 @@ If the user has specified what they want the agent to do, choose the most releva
 
 If the requested combination does not have a real sample, say so clearly and suggest the nearest supported lane.
 
-> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples. These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource and must configure its endpoint/auth as described in [references/use-toolbox-in-hosted-agent.md](references/use-toolbox-in-hosted-agent.md) (see Step 1).
+> ⚠️ **Tools:** Hosted agents access tools through a **Foundry Toolbox MCP endpoint** — they do NOT wire tools directly. If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples (see [references/use-toolbox-in-hosted-agent.md#code-integration-patterns](references/use-toolbox-in-hosted-agent.md#code-integration-patterns)). These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource — you'll resolve its endpoint in Step 6 (Verify Startup).
 
 ### Step 4: Download Sample Files
 
@@ -131,6 +131,7 @@ For nested directories, recursively fetch the GitHub contents API for entries wh
 
 1. Install dependencies (use virtual environment for Python)
 2. Ask user to provide values for `.env` variables if placeholders were used using `ask_user` tool.
+   - **If the agent uses tools / toolboxes**: resolve the toolbox endpoint per [references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint](references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint).
 3. Run the main entrypoint
 4. Fix startup errors and retry if needed
 5. Send a protocol-appropriate test request to the correct endpoint:
@@ -221,6 +222,7 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 ### Step B4: Configure Environment
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
+   - **If the agent uses tools / toolboxes**: resolve the toolbox endpoint per [references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint](references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint).
 2. For Python: ensure the code uses `load_dotenv(override=False)` so Foundry-injected environment variables are available at runtime.
 3. If the project uses Azure credentials: ensure Python uses `azure.identity.DefaultAzureCredential` for **local development**. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
 
