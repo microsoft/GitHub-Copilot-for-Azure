@@ -229,6 +229,8 @@ resource "azurerm_linux_web_app" "app" {
 - Consider auto-scale rules to handle failover traffic surge
 - App Service Managed Certificates don't support custom domains on Front Door — use App Service Certificate or Key Vault
 - Client affinity (ARR Affinity) must be disabled for multi-region (see Configure: Disable Client Affinity above)
+- App Service Environment (v3) live in one subnet and is regional; multi-region still requires one ASE per region with Azure Front Door/Traffic Manager in front. 
+
 
 ## Reporting (for the assessment table)
 
