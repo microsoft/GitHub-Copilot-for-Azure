@@ -40,6 +40,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       const description = skill.metadata.description.toLowerCase();
       const content = skill.content.toLowerCase();
       expect(description).toContain("functions");
+      expect(description).not.toContain("azure azure app service");
       expect(content).toContain("this skill currently covers **azure functions** only");
       expect(description).not.toMatch(
         /reliability posture of azure functions, container apps, and app service/
