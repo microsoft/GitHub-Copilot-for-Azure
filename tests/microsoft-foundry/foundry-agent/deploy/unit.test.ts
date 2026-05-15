@@ -180,7 +180,7 @@ describe("deploy - Unit Tests", () => {
     });
 
     test("documents required invocation RBAC for hosted agents", () => {
-      expect(deployContent).toContain("Azure AI User");
+      expect(deployContent).toContain("Foundry User");
       expect(deployContent).not.toContain("Cognitive Services OpenAI User");
       expect(deployContent).toMatch(/per-agent identity.*agent creation response/i);
       expect(deployContent).toMatch(/project-level agent identity.*project resource/i);

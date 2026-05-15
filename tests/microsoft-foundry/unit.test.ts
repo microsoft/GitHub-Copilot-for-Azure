@@ -209,10 +209,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains Azure AI Foundry roles table", () => {
-      expect(rbacContent).toContain("Azure AI User");
-      expect(rbacContent).toContain("Azure AI Project Manager");
-      expect(rbacContent).toContain("Azure AI Account Owner");
-      expect(rbacContent).toContain("Azure AI Owner");
+      expect(rbacContent).toContain("Foundry User");
+      expect(rbacContent).toContain("Foundry Project Manager");
+      expect(rbacContent).toContain("Foundry Account Owner");
+      expect(rbacContent).toContain("Foundry Owner");
     });
 
     test("contains roles capability matrix", () => {
