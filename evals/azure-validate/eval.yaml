@@ -307,15 +307,21 @@ stimuli:
       tier: full
       cost: llm
       area: files
-    # Environment setup: cloneRepo with sparse checkout samples/aspire-with-azure-functions
-    prompt: "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    # Environment setup: original Jest test cloned aspire-samples (samples/aspire-with-azure-functions)
+    # via cloneRepo. The eval framework has no equivalent workspace-seeding step, so we cannot
+    # assert against on-disk AppHost.cs. Instead, validate that the model's guidance describes
+    # configuring AzureWebJobsSecretStorageType in AppHost.cs.
+    prompt: "I'm deploying an Aspire app (samples/aspire-with-azure-functions from dotnet/aspire-samples) that uses Azure Functions to Azure. Target eastus2, my current subscription, small-scale production, standard SKUs. What configuration changes do I need to make to AppHost.cs so that Azure Functions secret storage works correctly? Reference the specific setting name."
     graders:
       - type: completed
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # matchesFileEdit: AppHost.cs should contain AzureWebJobsSecretStorageType
-      - type: file-matches
+      # Original Jest test asserted matchesFileEdit(/AppHost\.cs/i, /AzureWebJobsSecretStorageType/i).
+      # Without workspace seeding, validate the guidance in the model output instead.
+      - type: output-contains
         config:
-          path: "**/AppHost.cs"
-          pattern: "(?i)AzureWebJobsSecretStorageType"
+          substring: "AzureWebJobsSecretStorageType"
+      - type: output-contains
+        config:
+          substring: "AppHost.cs"

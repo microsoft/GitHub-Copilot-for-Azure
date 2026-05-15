@@ -137,7 +137,7 @@ stimuli:
   # Vally note: resource copying and workspace file inspection limitations documented.
   #   output-contains checks the response text; file-matches checks workspace files.
   - name: "Python App Insights instrumentation with code"
-    prompt: "Instrument my Python web app with Application Insights in Azure Container App"
+    prompt: "Instrument my Python web app with Application Insights in Azure Container App. Show the Python code I need to add to enable Azure Monitor OpenTelemetry."
     # environment:
     #   files:
     #     - src: "tests/appinsights-instrumentation/resources/python-app/"
@@ -152,10 +152,16 @@ stimuli:
         config:
           # Jest checked: "App Insights" OR "Application Insights"
           substring: "Insights"
-      - type: file-matches
+      # Replaces previous file-matches grader against **/*.py: the Jest workspace
+      # seeding (python-app fixtures) is commented out above, so a file-based
+      # check would deterministically fail in an empty workspace. Grade the
+      # assistant output instead, matching either the import or the call form
+      # the original Jest test looked for in workspace .py files:
+      #   /from\s+azure\.monitor\.opentelemetry\s+import\s+configure_azure_monitor/
+      #   /configure_azure_monitor\s*\(/
+      - type: output-matches
         config:
-          path: "**/*.py"
-          pattern: "configure_azure_monitor"
+          pattern: "from\\s+azure\\.monitor\\.opentelemetry\\s+import\\s+configure_azure_monitor|configure_azure_monitor\\s*\\("
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure

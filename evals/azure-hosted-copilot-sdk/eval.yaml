@@ -112,7 +112,7 @@ stimuli:
   # Jest setup: setupCopilotSdkApp (copies copilot-sdk-app-package.json, server.ts, tsconfig.json)
   # Jest note: NO SDK keyword in prompt — skill triggered via codebase scan
   - name: "Existing copilot SDK app deploy"
-    prompt: "Deploy this app to Azure"
+    prompt: "Deploy this Copilot SDK app to Azure"
     # environment:
     #   files:
     #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-package.json"
@@ -144,7 +144,7 @@ stimuli:
   # Jest setup: setupCopilotSdkApp (same as above)
   # Jest note: NO SDK keyword in prompt — skill triggered via codebase scan
   - name: "Existing copilot SDK app modify"
-    prompt: "Add a new feature to this app that summarizes pull requests"
+    prompt: "Add a new feature to this Copilot SDK app that summarizes pull requests"
     # environment:
     #   files:
     #     - src: "tests/azure-hosted-copilot-sdk/resources/copilot-sdk-app-package.json"

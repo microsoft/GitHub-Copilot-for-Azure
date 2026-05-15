@@ -78,6 +78,7 @@ jobs:
           npx @microsoft/vally-cli eval \
             --eval-spec evals/ \
             --skill-dir output/skills \
+            --suite ${{ steps.suite.outputs.name }} \
             --output-dir ./results \
             --output jsonl \
             --junit \

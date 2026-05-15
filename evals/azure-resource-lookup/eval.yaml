@@ -152,11 +152,10 @@ stimuli:
       area: output
     graders:
       # Jest used OR logic across "web", "app", "site" — any match passes.
-      # output-contains with the broadest common substring; Vally evaluates
-      # at least one should match for a correct response.
-      - type: output-contains
+      # Use output-matches with regex alternation to preserve the OR semantics.
+      - type: output-matches
         config:
-          substring: "web"
+          pattern: "(?i)web|app|site"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
