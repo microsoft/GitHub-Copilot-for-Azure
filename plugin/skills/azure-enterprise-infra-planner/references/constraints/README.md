@@ -1,6 +1,6 @@
 # Pairing Constraints Index
 
-Load only the files matching resources identified in Phase 1.
+Load only the files matching resources identified in Phase 2.
 
 | Sub-Category | File | Resources |
 |-------------|------|-----------|
