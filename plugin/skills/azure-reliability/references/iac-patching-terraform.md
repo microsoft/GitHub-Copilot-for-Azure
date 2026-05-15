@@ -28,13 +28,13 @@ Resource definitions may be in module files. Search all `.tf` files for the reso
 
 ## Per-service Terraform patches
 
-The patches for compute (zone redundancy on plans / environments, health check path, container probes, blue/green for Container Apps) live in the per-service references because the SKU rules and resource types differ:
+The patches for compute (zone redundancy on the Function App plan, health check path) live in the per-service references because the SKU rules and resource types differ:
 
 | Service | Reference |
 |---|---|
 | Azure Functions | [services/functions/reliability.md](services/functions/reliability.md) |
-| Azure App Service | [services/app-service/reliability.md](services/app-service/reliability.md) |
-| Azure Container Apps | [services/container-apps/reliability.md](services/container-apps/reliability.md) |
+
+> Azure App Service and Azure Container Apps per-service Terraform patches are planned for a future version of this skill.
 
 The one truly cross-service patch — **storage** — lives below.
 
@@ -127,64 +127,4 @@ Do NOT bundle the storage SKU change with the safe patches — a failed storage 
 
 Ready to run `terraform plan`? (yes / no)
 ```
-
-
-**Find:** `azurerm_storage_account`
-
-**Search pattern:** `resource "azurerm_storage_account"`
-
-**Before:**
-```hcl
-resource "azurerm_storage_account" "storage" {
-  name                     = var.storage_account_name
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-}
-```
-
-**After — change to ZRS:**
-```hcl
-resource "azurerm_storage_account" "storage" {
-  name                     = var.storage_account_name
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
-  account_tier             = "Standard"
-  account_replication_type = "ZRS"
-}
-```
-
-### Parameterized Replication Type
-
-If parameterized, update the default:
-
-**variables.tf — Before:**
-```hcl
-variable "storage_replication_type" {
-  default = "LRS"
-}
-```
-
-**After:**
-```hcl
-variable "storage_replication_type" {
-  default = "ZRS"
-}
-```
-
-Also check `terraform.tfvars` for overrides.
-
-### ⚠️ Existing Deployed Storage
-
-Changing `account_replication_type` in Terraform expresses the **desired end state**, but LRS→ZRS is a **storage redundancy conversion**, not a simple property change. Terraform may attempt an in-place update that fails, or worse, plan a destroy+recreate (data loss risk).
-
-**Always follow this order for existing storage:**
-1. Patch Terraform to `account_replication_type = "ZRS"` (desired end state)
-2. Run `az storage account migration start` to initiate the live conversion
-3. Wait for migration to complete (`az storage account migration show`)
-4. Run `terraform plan` — confirm it shows **no changes** (state now matches desired)
-5. If plan still shows changes, run `terraform refresh` to sync state, then re-plan
-
-> ⛔ Do NOT run `terraform apply` before the migration completes. It may fail or attempt to recreate the storage account.
 

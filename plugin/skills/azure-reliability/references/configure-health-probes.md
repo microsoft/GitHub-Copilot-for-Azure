@@ -6,10 +6,10 @@
 |---|---|---|
 | Functions Premium / Dedicated | `siteConfig.healthCheckPath` (platform health check) | [services/functions/reliability.md](services/functions/reliability.md) |
 | Functions Flex Consumption (FC1) / Consumption (Y1) | HTTP-triggered `/api/health` function in **app code** — `healthCheckPath` is unsupported | [services/functions/reliability.md](services/functions/reliability.md) |
-| App Service (Standard / Premium / Dedicated) | `siteConfig.healthCheckPath` (platform health check) | [services/app-service/reliability.md](services/app-service/reliability.md) |
-| Container Apps | `liveness` + `readiness` probes on each container | [services/container-apps/reliability.md](services/container-apps/reliability.md) |
 | Azure Front Door | `healthProbeSettings` on origin group | [health-probe-checks.md](health-probe-checks.md) |
 | Traffic Manager | `monitorConfig` on profile | [health-probe-checks.md](health-probe-checks.md) |
+
+> App Service (`siteConfig.healthCheckPath`) and Container Apps (`liveness` / `readiness` probes) deep-dive references are planned for a future version of this skill but are not yet shipped.
 
 ## ⛔ STOP — Code-only fixes require user consent
 

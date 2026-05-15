@@ -1,13 +1,15 @@
 # Configure Zone Redundancy — Platform Notes
 
-## Always check storage redundancy first
+## Storage redundancy is part of the same fix — discover it now, migrate it later
 
-Before enabling zone-redundant compute, verify the app's storage account is **ZRS or GZRS**. Zone-redundant compute backed by LRS storage still suffers downtime in a zone failure.
+Zone-redundant compute backed by LRS/GRS storage still suffers downtime in a zone failure, so the storage SKU **must** be assessed alongside compute. However, do **not** block the compute fix on a storage migration — they happen in separate steps.
 
-- Storage discovery and remediation: [storage-redundancy-checks.md](storage-redundancy-checks.md)
-- Live storage migration commands: [configure-storage.md](configure-storage.md)
+**Required order (matches the parent skill's [Configuration Workflow](../SKILL.md#configuration-workflow)):**
 
-The parent skill ([SKILL.md](../SKILL.md), Configuration Workflow) enforces a **two-step deploy** for this reason: enable compute ZR first (quick win), then ask the user before kicking off the slow storage migration.
+1. **Discover** the current storage SKU during assessment (Phase 2) so the user sees both gaps in one checklist. Use [storage-redundancy-checks.md](storage-redundancy-checks.md).
+2. **Enable compute ZR first** — fast, in-place property update, no downtime. This is the quick win and runs without any storage prerequisite.
+3. **Verify** compute is `zoneRedundant: true`.
+4. **Then ask the user** before starting the storage migration (hours-to-days, small cost increase). Commands live in [configure-storage.md](configure-storage.md).
 
 ## Per-service configuration commands
 
@@ -16,8 +18,6 @@ The `az` CLI commands, plan-upgrade paths, blue/green migration steps, and verif
 | Service | Reference |
 |---|---|
 | Azure Functions (FC1, EP1–EP3) | [services/functions/reliability.md](services/functions/reliability.md) |
-| Azure App Service (P1v2+, P0v3+, P0v4, ASEv3) | [services/app-service/reliability.md](services/app-service/reliability.md) |
-| Azure Container Apps (environment + apps) | [services/container-apps/reliability.md](services/container-apps/reliability.md) |
 
 ## Verification
 
