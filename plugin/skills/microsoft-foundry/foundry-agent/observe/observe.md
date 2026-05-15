@@ -29,6 +29,8 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 | "Compare agent versions" | [Step 5: Compare](references/compare-iterate.md) |
 | "Set up CI/CD evals" | [Step 6: CI/CD & Monitoring](references/cicd-monitoring.md) |
 | "Enable continuous monitoring" / "Set up production monitoring" / "Evaluation results dropping" | [Continuous Eval](references/continuous-eval.md) |
+| "Run FAOS optimization" / "Auto-optimize agent" / "Use FAOS" | [FAOS Optimization](references/faos-optimization.md) (prompt agents only) |
+| "Auto-detect and fix issues" / "Insights to optimize" / "End-to-end quality loop" | [Insights-to-Optimize Loop](references/insights-to-optimize.md) (prompt agents only) |
 
 > ⚠️ **Important:** Before running any evaluation (Step 2), always resolve the selected agent root, metadata file, and environment, then inspect that metadata file plus `.foundry/evaluators/` and `.foundry/datasets/` in that root only. If the cache is missing, stale, or the user wants to refresh it, route through [Step 1: Auto-Setup](references/deploy-and-setup.md) first — even if the user only asked to "evaluate." Do **not** merge `.foundry` cache or source context from sibling agent folders or sibling metadata files.
 
