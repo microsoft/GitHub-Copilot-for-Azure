@@ -1,0 +1,99 @@
+# Common Vally graders reference — shared patterns across eval suites
+# ─────────────────────────────────────────────────────────────────────
+# This file is NOT consumed by Vally directly.  It documents the global
+# graders that were defined at the Waza eval level and must now be
+# duplicated into EVERY stimulus block (evaluate#125 workaround).
+#
+# Copy the relevant graders into each stimulus in your eval.yaml files.
+# Migration: Waza → Vally (issue #1817, Phase 1)
+
+# ── has_output ──────────────────────────────────────────────────────
+# Ensures the agent produced meaningful output (not empty/trivial).
+# Waza:  type: code, config: { assertions: ["len(output) > 10"] }
+# Vally: type: completed
+#
+# Used in: azure-enterprise-infra-planner, azure-prepare, azure-deploy
+has_output:
+  type: completed
+
+# ── no_fatal_errors ─────────────────────────────────────────────────
+# Catches fatal errors, unhandled exceptions, stack traces in output.
+# Waza:  type: regex, config: { must_not_match: [...] }
+# Vally: type: output-not-matches
+#
+# Used in: azure-hosted-copilot-sdk
+no_fatal_errors:
+  type: output-not-matches
+  config:
+    pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+# ── no_runtime_failure ──────────────────────────────────────────────
+# Variant of no_fatal_errors with additional crash/panic patterns.
+# Waza:  type: text, config: { regex_not_match: [...] }
+# Vally: type: output-not-matches
+#
+# Used in: azure-enterprise-infra-planner, azure-deploy
+no_runtime_failure:
+  type: output-not-matches
+  config:
+    pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+
+# ── security_posture ────────────────────────────────────────────────
+# Ensures agent never suggests connection strings or shared keys.
+# Waza:  type: regex/text, config: { must_not_match / regex_not_match: [...] }
+# Vally: one output-not-matches grader per pattern
+#
+# Used in: azure-enterprise-infra-planner, azure-prepare
+security_posture_connection_string:
+  type: output-not-matches
+  config:
+    pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+
+security_posture_shared_access_key:
+  type: output-not-matches
+  config:
+    pattern: "(?i)SharedAccessKey="
+
+# Additional pattern — only in azure-enterprise-infra-planner
+security_posture_master_key:
+  type: output-not-matches
+  config:
+    pattern: "(?i)masterKey="
+
+# ── plan_first ──────────────────────────────────────────────────────
+# Verifies plan-first workflow — output contains planning indicators.
+# Waza:  type: regex, config: { must_match: [...], must_not_match: [...] }
+# Vally: split into positive (output-matches) and negative (output-not-matches)
+#
+# Used in: azure-prepare
+plan_first_positive:
+  type: output-matches
+  config:
+    pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+
+plan_first_negative:
+  type: output-not-matches
+  config:
+    pattern: "(?i)fatal error|crashed|exception occurred"
+
+# ── nodejs_entry_point (informational) ──────────────────────────────
+# Checks that Node.js entry points are mentioned.
+# Waza:  type: regex, config: { must_match: [...], skip_if_no_match: true }
+# Vally: No skip_if_no_match equivalent — include ONLY in Node.js/TS stimuli.
+#
+# Used in: azure-prepare (selectively — TS/Node tasks only)
+nodejs_entry_point:
+  type: output-matches
+  config:
+    pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+# ── efficiency (constraints, not a grader) ──────────────────────────
+# Limits tool call count.  Becomes a stimulus-level constraint.
+# Waza:  type: behavior, config: { max_tool_calls: N }
+# Vally: constraints: { max_turns: N }
+#
+# Per-suite defaults:
+#   azure-enterprise-infra-planner: max_turns: 50
+#   azure-prepare:                  max_turns: 40
+#   azure-hosted-copilot-sdk:       per-task (10 or 15)
+#   azure-deploy:                   (none — no global behavior constraint)

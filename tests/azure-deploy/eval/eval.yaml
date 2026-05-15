@@ -12,40 +12,23 @@ skill: azure-deploy
 version: "1.0"
 
 config:
-  trials_per_task: 3
-  timeout_seconds: 420
-  parallel: false
+  runs: 3
+  timeout: "7m"
   executor: mock
-  model: claude-sonnet-4-20250514
+  model: claude-sonnet-4.6
 
-metrics:
-  - name: task_completion
-    weight: 0.4
-    threshold: 0.8
-    description: Did the skill complete a deploy-focused request?
-
-  - name: trigger_accuracy
-    weight: 0.3
-    threshold: 0.85
-    description: Does the skill trigger on deploy prompts and avoid prepare-only prompts?
-
-  - name: behavior_quality
-    weight: 0.3
-    threshold: 0.75
-    description: Does output preserve AVM+AZD preference and AVM fallback order?
+scoring:
+  threshold: 0.8
+  weights:
+    completed: 1.0
+    output-not-matches: 2.0
 
 graders:
-  - type: code
-    name: has_output
-    config:
-      assertions:
-        - "len(output) > 10"
-
-  - type: regex
+  - type: completed
+  - type: output-not-matches
     name: no_runtime_failure
     config:
-      must_not_match:
-        - "(?i)fatal error|exception occurred|crashed"
+      pattern: "(?i)fatal error|exception occurred|crashed"
 
 tasks:
   - "tasks/*.yaml"

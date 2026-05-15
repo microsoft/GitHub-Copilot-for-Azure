@@ -28,7 +28,7 @@ docs/                     # Documentation (versioning, specs, diagrams)
 eng/                      # Engineering scripts (test subscription cleanup)
 gulpfile.ts               # Build pipeline
 .token-limits.json        # Token budget config
-.waza.yaml                # Waza eval framework config
+.vally.yaml                # Vally eval framework config
 ```
 
 ## Building

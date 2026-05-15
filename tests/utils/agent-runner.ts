@@ -689,6 +689,9 @@ export function useAgentRunner() {
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = config.preserveWorkspace;
 
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
+    entry.agentMetadata = agentMetadata;
+
     try {
       // Run optional setup
       if (config.setup) {
@@ -727,10 +730,12 @@ export function useAgentRunner() {
         disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
       }
 
+      const noSkills = process.env.NO_SKILLS === "true";
+      const model = modelOverride || "claude-sonnet-4.6";
       const session = await client.createSession({
-        model: modelOverride || "claude-sonnet-4.5",
+        model: model,
         onPermissionRequest: approveAll,
-        skillDirectories: [skillDirectory],
+        skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
         mcpServers: {
           azure: {
@@ -743,9 +748,6 @@ export function useAgentRunner() {
         systemMessage: config.systemPrompt
       });
       entry.session = session;
-
-      const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
-      entry.agentMetadata = agentMetadata;
 
       const done = new Promise<void>((resolve) => {
         session.on(async (event: SessionEvent) => {
@@ -790,7 +792,7 @@ export function useAgentRunner() {
         cacheWriteTokens: 0,
         totalApiDurationMs: 0,
         apiCallCount: 0,
-        model: modelOverride || "claude-sonnet-4.5",
+        model: model,
         perCallUsage: [],
       };
 
@@ -875,7 +877,11 @@ export function useAgentRunner() {
     } catch (error) {
       // Mark as complete to stop event processing
       isComplete = true;
-      console.error("Agent runner error:", error);
+      const errorDetails = error instanceof Error
+        ? (error.message)
+        : String(error);
+      agentMetadata.testComments.push(`❗️Agent runner error: ${errorDetails}`);
+      console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
       if (!isTest()) {

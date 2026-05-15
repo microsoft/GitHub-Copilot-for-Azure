@@ -1009,7 +1009,9 @@ button.header-status-pill {
 }
 
 .itoken-in,
-.itoken-out {
+.itoken-out,
+.itoken-cache-read,
+.itoken-cache-write {
   color: var(--color-text-muted);
 }
 

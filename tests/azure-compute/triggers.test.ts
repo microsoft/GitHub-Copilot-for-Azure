@@ -247,6 +247,27 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  describe("Should Trigger - Essential Machine Management", () => {
+    const emmPrompts: string[] = [
+      "How do I enable Essential Machine Management on my Azure subscription?",
+      "Set up EMM for my Azure VMs to get monitoring and security",
+      "Enroll my subscription in machine enrollment for Azure operations",
+      "What is Essential Machine Management and what does it include?",
+      "Check which Azure subscriptions have Essential Machine Management EMM enabled",
+      "I need to onboard my Azure VMs with Essential Machine Management",
+      "How do I check the machine enrollment status for my Azure subscription?",
+    ];
+
+    test.each(emmPrompts)(
+      'triggers on EMM prompt: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+        expect(result.matchedKeywords.length).toBeGreaterThanOrEqual(2);
+      }
+    );
+  });
+
   describe("Should NOT Trigger", () => {
     const shouldNotTriggerPrompts: string[] = [
       "What is the weather today?",

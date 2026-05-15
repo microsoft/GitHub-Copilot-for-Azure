@@ -1,29 +1,44 @@
-# azure-prepare Waza Eval Suite
+# azure-prepare Vally Eval Suite
 
-Evaluation suite for the `azure-prepare` skill using [waza](https://github.com/microsoft/waza).
+Evaluation suite for the `azure-prepare` skill using [Vally](https://www.npmjs.com/package/@microsoft/vally).
 
 ## Quick Start
 
+There are three ways to run `vally`:
+
+**Option 1 — Vally CLI**
 ```bash
-# Install waza (pick one)
-azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
-azd ext install microsoft.azd.waza
+# Install vally globally
+npm install -g @microsoft/vally-cli
 
-# Or via Go
-go install github.com/microsoft/waza/cmd/waza@latest
-
-# Run with mock executor (fast, no auth)
-waza run tests/azure-prepare/eval/eval.yaml \
-  --context-dir tests/azure-prepare/eval/fixtures -v
-
-# Run with real Copilot SDK (requires GITHUB_TOKEN)
-waza run tests/azure-prepare/eval/eval.yaml \
-  --executor copilot-sdk \
-  --context-dir tests/azure-prepare/eval/fixtures -v
-
-# Run via azd extension
-azd waza run tests/azure-prepare/eval/eval.yaml -v
+# Run evals (executor is configured in the YAML — mock or copilot-sdk)
+vally eval -e evals/azure-prepare/eval.yaml \
+  --work-dir evals/azure-prepare/fixtures --verbose
 ```
+
+> **Tip:** The `executor` field in `eval.yaml` controls whether evals run
+> against a mock backend (fast, no auth) or the real Copilot SDK.
+> Authentication is handled automatically via your local `gh` CLI session.
+> Environment variables (`COPILOT_GITHUB_TOKEN`) are only required in CI
+> environments. Change `executor: mock` → `executor: copilot-sdk` to switch
+> modes.
+
+**Option 2 — npx (no global install)**
+```bash
+npx @microsoft/vally-cli eval -e evals/azure-prepare/eval.yaml \
+  --work-dir evals/azure-prepare/fixtures --verbose
+```
+
+**Option 3 — global install**
+```bash
+npm install -g @microsoft/vally-cli   # adds `vally` to PATH
+vally eval -e evals/azure-prepare/eval.yaml \
+  --work-dir evals/azure-prepare/fixtures --verbose
+```
+
+> **Note:** `npx @microsoft/vally-cli` or the npm scripts are preferred for
+> consistency with CI. A global install works but may drift from the version
+> pinned in `tests/package.json`.
 
 ## What It Tests
 
@@ -87,27 +102,25 @@ eval/
 
 This repo has **two eval modes** that complement each other:
 
-| | Jest (`npm test`) | Waza (`waza run`) |
+| | Jest (`npm test`) | Vally (`vally eval`) |
 |---|---|---|
-| **Runner** | Jest + @github/copilot-sdk | Waza CLI (Go) |
+| **Runner** | Jest + @github/copilot-sdk | Vally CLI (Node.js) |
 | **Speed** | Fast for unit/trigger, slow for integration | Mock executor = fast, copilot-sdk = slow |
 | **Auth** | Copilot SDK for integration tests | Mock needs none, copilot-sdk needs GITHUB_TOKEN |
 | **Graders** | Custom JS assertions | YAML-defined (regex, code, behavior, file, action_sequence) |
-| **CI** | `npm run test:ci` | `waza run eval.yaml` (exit code 0/1/2) |
+| **CI** | `npm run test:ci` | `vally eval --suite full` (exit code 0/1/2) |
 | **Best for** | Skill metadata validation, trigger matching | Template selection accuracy, composable recipe correctness |
-| **Compare** | N/A | `waza compare results-a.json results-b.json` |
-| **Cache** | N/A | `--cache` flag for repeated runs |
 
-**Recommendation**: Use Jest for fast unit/trigger tests in CI. Use waza for template selection evals and model comparison benchmarks.
+**Recommendation**: Use Jest for fast unit/trigger tests in CI. Use Vally for template selection evals and model comparison benchmarks.
 
 ## Hybrid Eval Model
 
-This repo uses a **hybrid** approach for waza evals:
+This repo uses a **hybrid** approach for Vally evals:
 
 | Mode | Skills | How it works |
 |------|--------|-------------|
 | **Committed** (⬢) | azure-prepare | Hand-authored `eval/` dir in `tests/{skill}/eval/`. Custom graders, fixtures, assertions specific to the skill's domain. |
-| **Generated** (⬡) | All other skills | Auto-generated at runtime via `waza generate plugin/skills/{skill}/SKILL.md`. Generic trigger + invocation tests. |
+| **Generated** (⬡) | All other skills | Auto-generated at runtime via `vally eval plugin/skills/{skill}/SKILL.md`. Generic trigger + invocation tests. |
 
 **When to commit vs. generate:**
 - **Commit** when the skill has domain-specific correctness criteria (e.g., must select the right template, must use RBAC not keys, must enforce plan-first workflow)
@@ -116,7 +129,7 @@ This repo uses a **hybrid** approach for waza evals:
 To promote a generated eval to committed:
 ```bash
 # Generate into the test directory
-waza generate plugin/skills/azure-deploy/SKILL.md -d tests/azure-deploy/eval
+vally eval plugin/skills/azure-deploy/SKILL.md --output-dir tests/azure-deploy/eval
 
 # Customize the generated files, then commit
 git add tests/azure-deploy/eval/
