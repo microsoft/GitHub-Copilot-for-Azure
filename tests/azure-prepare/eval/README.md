@@ -36,9 +36,9 @@ vally eval -e evals/azure-prepare/eval.yaml \
   --work-dir evals/azure-prepare/fixtures --verbose
 ```
 
-> **Note:** `npx @microsoft/vally-cli` or the npm scripts are preferred for
-> consistency with CI. A global install works but may drift from the version
-> pinned in `tests/package.json`.
+> **Note:** `npx @microsoft/vally-cli` is preferred for consistency with CI,
+> since it uses the version pinned in `tests/package.json`. A global install
+> works but may drift from the pinned version.
 
 ## What It Tests
 
