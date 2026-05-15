@@ -16,9 +16,7 @@ Use this instead of manual KQL queries when you want **automated anomaly detecti
 POST https://{region}.api.azureml.ms/notification/v1-beta2/subscriptions/{sub}/resourceGroups/{rg}/providers/microsoft.insights/components/{component}/:insights
 ```
 
-Use the same region as the Foundry project (e.g., `eastus2`, `westus2`, `westcentralus`). To find the project region, parse it from the project endpoint URL or check the resource in the Azure portal.
-
-> **Note:** The API is region-agnostic — any region endpoint works with any project regardless of the project's region. If the project region is unknown, `eastus2euap` can be used as a default.
+The API is region-agnostic — any regional endpoint can serve requests for any project. For lowest latency, use the same region as the Foundry project (e.g., `eastus2`, `westus2`, `westcentralus`). If the project region is unknown, use `eastus2` as the default.
 
 **Query parameters:**
 | Parameter          | Required | Description                                                            |
