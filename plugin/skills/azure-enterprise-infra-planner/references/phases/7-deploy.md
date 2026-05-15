@@ -1,6 +1,6 @@
-# Phase 6: Deployment
+# Phase 7: Deployment
 
-> Important: Before continuing this phase, `meta.status` must be set to `approved` as required by Phase 3 and 4. Destructive actions require explicit user confirmation.
+> Important: Before continuing this phase, `meta.status` must be set to `approved` as required by Phase 4 and 5. Destructive actions require explicit user confirmation.
 
 Refer to [deployment.md](../deployment.md) for executing deployment commands.
 

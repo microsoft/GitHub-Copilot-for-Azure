@@ -1,4 +1,4 @@
-# Phase 4: Verify Plan
+# Phase 5: Verify Plan
 
 Thoroughly and objectively verify the generated plan based on the following checklists:
 - [verification.md](../verification.md)
@@ -15,4 +15,4 @@ You must fix any issue in-place in the plan JSON.
 - Every item in **both** checklists pass (or have been fixed).
 - Present plan to user and wait for manual and explicit approval before proceeding.
   - Edit `meta.status` to `approved` if approved.
-  - Otherwise, ask the user for improvements, and return to Phase 1, 2, or 3 based on the nature of their request.
+  - Otherwise, ask the user for improvements, and return to Phase 2, 3, or 4 based on the nature of their request.

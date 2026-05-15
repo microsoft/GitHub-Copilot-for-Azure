@@ -1,4 +1,4 @@
-# Phase 2: Research Resources
+# Phase 3: Research Resources
 
 > The goal of this phase is to research Azure resources before generating the plan.
 
@@ -10,9 +10,19 @@ Read [WAF cross-cutting checklist](../waf-checklist.md). For every checklist ite
 - Add missing resources / harden properties, or;
 - Document the the intentional omission in `overallReasoning.tradeoffs` and `inputs.subGoals`.
 
+## Insights Integration
+
+Read `.azure/insights.json` produced by Phase 1 and evaluate each insight against the current workload and sub-goals identified in Phase 2:
+* If an insight applies, prefer it over defaults — especially for region, SKU tier, security posture, naming, and tagging.
+* If an insight doesn't apply, document the intentional omission in `overallReasoning.tradeoffs`.
+* Insights can shape both resource selection and property configuration.
+* Track each insight you apply in `inputs.insightsApplied` so the user can trace why a decision was made.
+
+> Mandatory Security rule: only apply a security-related insight if it results in an equal or stronger security posture than the alternatives. A weaker security posture from an insight is only acceptable when the user has explicitly requested it in the initial prompt.
+
 ## Step 2 - Resource Lookup
 
-> Mandatory: Complete this step for every resource before generating the plan. WAF tools from Phase 1 provide architecture guidance, but do not provide ARM types, naming rules, or pairing constraints. This step fills those gaps.
+> Mandatory: Complete this step for every resource before generating the plan. WAF tools from Phase 2 provide architecture guidance, but do not provide ARM types, naming rules, or pairing constraints. This step fills those gaps.
 
 For each resource identified since Phase 1:
 1. Read the relevant resource reference file to get its ARM type, API version, and CAF prefix. Use [resources/README.md](../resources/README.md) as the index to help you find the right file (e.g., `resources/compute-infra.md` for AKS, `resources/data-analytics.md` for Cosmos DB).

@@ -27,6 +27,9 @@ The infrastructure plan is written to `<project-root>/.azure/infrastructure-plan
 |-------|------|----------|-------------|
 | `userGoal` | string | Yes | User's stated objective or workload description, matches user query exactly |
 | `subGoals` | string[] | No | Inferred architectural constraints and priorities derived from the user's request and research phase. Examples: `"Cost-optimized: user chose defaults, avoid premium networking"`, `"Security-first: encrypt all data, use managed identity"`, `"Minimal complexity: single region, no VNet"`. These help evaluators understand intentional tradeoffs. Should be short list of 0-3 points. |
+| `insightsApplied` | string[] | No | For each insight that influenced this plan, cite the insight ID and explain how and why it was applied. Leave this field empty if no insights were applied. Document any unapplied insights in `plan.overallReasoning.tradeoffs`. |
+
+Subset of insight strings (verbatim from `insights.json`) that influenced this plan. Lets reviewers trace which observed patterns shaped which decisions. Insights present in `insights.json` but not listed here should have their deviation reason documented in `plan.overallReasoning.tradeoffs`. Omit or leave empty when no insights were used.
 
 ## `plan` (required)
 
@@ -51,7 +54,7 @@ Each element represents one Azure resource, include resource groups:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `whyChosen` | string | Justification referencing WAF pillars (see [1-research-best-practices.md](phases/1-research-best-practices.md) and [2-research-resources.md](phases/2-research-resources.md)) or requirements |
+| `whyChosen` | string | Justification referencing WAF pillars (see [2-research-best-practices.md](phases/2-research-best-practices.md) and [3-research-resources.md](phases/3-research-resources.md)) or requirements |
 | `alternativesConsidered` | string[] | Other options evaluated |
 | `tradeoffs` | string | Key tradeoffs in this choice |
 
