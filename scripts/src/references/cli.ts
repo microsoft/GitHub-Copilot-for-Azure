@@ -11,13 +11,22 @@
  *      through a chain of markdown links starting from SKILL.md.
  *
  * Usage:
- *   npm run references              # Validate all skills
- *   npm run references <skill>      # Validate a single skill
+ *   npm run references                       # Validate all skills
+ *   npm run references <skill>               # Validate a single skill
+ *   npm run references -- --json             # Emit validation results as JSON
+ *   npm run references -- --list             # Emit every discovered local
+ *                                            # and remote link as JSON
+ *
+ * Tip: when redirecting JSON output to a file, pass `--silent` to npm so it
+ * does not prepend its own banner lines (which would corrupt the JSON):
+ *
+ *   npm run --silent references -- --list > out.json
  */
 
 import { dirname, resolve, relative, normalize } from "node:path";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { extractLocalLinks, extractRemoteLinks } from "./link-helpers.js";
 import { fileURLToPath } from "node:url";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
@@ -29,6 +38,20 @@ function getRepoRoot(): string {
 
 const REPO_ROOT = getRepoRoot();
 let SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
+
+const FILTERED_REMOTE_HOSTS = new Set<string>([]);
+const FILTERED_REMOTE_HOST_SUFFICES: string[] = [];
+
+function shouldPrintRemoteHost(host: string): boolean {
+  const normalizedHost = host.toLowerCase().replace(/:\d+$/, "");
+  if (FILTERED_REMOTE_HOSTS.has(normalizedHost)) {
+    return false;
+  }
+  if (FILTERED_REMOTE_HOST_SUFFICES.some(s => host.endsWith(s))) {
+    return false;
+  }
+  return true;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -44,51 +67,30 @@ interface OrphanedFile {
   reason: string;     // Human-readable explanation
 }
 
+interface RemoteLinkDetail {
+  file: string;
+  line: number;
+  link: string;
+  protocol: "http" | "https";
+  host: string;
+  path: string;
+}
+
+interface LocalLinkDetail {
+  file: string;
+  line: number;
+  link: string;
+  absPath: string;
+  exists: boolean;
+  isDirectory?: boolean;
+}
+
 interface ValidationResult {
   skill: string;
   issues: LinkIssue[];
   orphanedFiles: OrphanedFile[];
-}
-
-// ── Link extraction ──────────────────────────────────────────────────────────
-
-/**
- * Regex that captures local markdown link targets.
- *
- * Matches:
- *   [text](target)             – inline links
- *   [text](target#anchor)      – inline links with fragment
- *   [text](target "title")     – inline links with title
- *
- * Skips:
- *   https:// and http:// URLs
- *   mailto: links
- *   mdc: protocol links (Nuxt Content / internal protocol)
- *   Pure fragment links (#anchor-only)
- */
-const LINK_RE = /\[(?:[^\]]*)\]\(([^)]+)\)/g;
-
-function isIgnoredLink(rawTarget: string): boolean {
-  const trimmed = rawTarget.trim();
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return true;
-  if (trimmed.startsWith("mailto:")) return true;
-  if (trimmed.startsWith("mdc:")) return true;
-  if (trimmed.startsWith("vscode://")) return true;
-  if (trimmed.startsWith("#")) return true; // pure fragment
-  return false;
-}
-
-/**
- * Strip fragment identifiers (`#…`) and optional titles (`"…"`) from a link
- * target so we are left with just the file/dir path.
- */
-function cleanTarget(rawTarget: string): string {
-  let target = rawTarget.trim();
-  // Remove optional title ("title" or 'title') at the end
-  target = target.replace(/\s+["'][^"']*["']\s*$/, "");
-  // Remove fragment
-  target = target.replace(/#.*$/, "");
-  return target.trim();
+  remoteLinks: RemoteLinkDetail[];
+  localLinks: LocalLinkDetail[];
 }
 
 // ── Markdown file discovery ──────────────────────────────────────────────────
@@ -162,122 +164,102 @@ function findReferenceFiles(skillDir: string): string[] {
 
 // ── Validation logic ─────────────────────────────────────────────────────────
 
-/**
- * Extract all local markdown links from a file that need to be followed for
- * orphan detection. Returns resolved absolute paths.
- */
-function extractLocalLinks(mdFile: string, _skillDir: string): string[] {
-  const links: string[] = [];
-  const content = readFileSync(mdFile, "utf-8");
-  const lines = content.split("\n");
-
-  for (const line of lines) {
-    let match: RegExpExecArray | null;
-    LINK_RE.lastIndex = 0;
-
-    while ((match = LINK_RE.exec(line)) !== null) {
-      const rawTarget = match[1];
-      if (isIgnoredLink(rawTarget)) continue;
-
-      const target = cleanTarget(rawTarget);
-      if (target === "") continue;
-
-      const fileDir = dirname(mdFile);
-      const resolved = resolve(fileDir, target);
-
-      // Only include links that exist and are files (not directories)
-      if (existsSync(resolved)) {
-        try {
-          if (!statSync(resolved).isDirectory()) {
-            links.push(resolved);
-          }
-        } catch {
-          // skip if stat fails
-        }
-      }
-    }
-  }
-
-  return links;
-}
-
-function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
+function validateFile(mdFile: string, skillDir: string): {
+  issues: LinkIssue[];
+  remoteLinks: RemoteLinkDetail[];
+  localLinks: LocalLinkDetail[];
+} {
+  // Local links
+  const localLinks = extractLocalLinks(mdFile, skillDir);
+  const remoteLinks = extractRemoteLinks(mdFile, skillDir);
   const issues: LinkIssue[] = [];
-  const content = readFileSync(mdFile, "utf-8");
-  const lines = content.split("\n");
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    let match: RegExpExecArray | null;
-    LINK_RE.lastIndex = 0;
+  // Check 1: find all references that don't exist
+  issues.push(...localLinks.filter((item) => {
+    return !item.exists;
+  }).map((item) => {
+    return {
+      file: mdFile,
+      line: item.line,
+      link: item.link,
+      reason: `Target does not exist: ${item.link}`,
+    };
+  }));
 
-    while ((match = LINK_RE.exec(line)) !== null) {
-      const rawTarget = match[1];
-      if (isIgnoredLink(rawTarget)) continue;
+  // Check 2: find all references that are directories
+  issues.push(...localLinks.filter((item) => {
+    return item.exists && item.isDirectory;
+  }).map((item) => {
+    return {
+      file: mdFile,
+      line: item.line,
+      link: item.link,
+      reason: `Reference points to a directory, not a file: ${item.link}`,
+    };
+  }));
 
-      const target = cleanTarget(rawTarget);
-      if (target === "") continue; // pure fragment after cleaning
+  // Check 3: find all references outside the skills directory
+  issues.push(...localLinks.map((item) => {
+    const normalizedResolved = normalize(item.absPath).toLowerCase();
+    const normalizedSkillDir = normalize(skillDir).toLowerCase();
 
-      const fileDir = dirname(mdFile);
-      const resolved = resolve(fileDir, target);
+    const insideSkill = normalizedResolved.startsWith(normalizedSkillDir + "\\")
+      || normalizedResolved.startsWith(normalizedSkillDir + "/")
+      || normalizedResolved === normalizedSkillDir;
 
-      // ── Check 1: Does the target exist? ──────────────────────────────────
-      if (!existsSync(resolved)) {
-        issues.push({
-          file: mdFile,
-          line: i + 1,
-          link: rawTarget,
-          reason: `Target does not exist: ${target}`,
-        });
-        continue; // no point checking containment if it doesn't exist
-      }
-
-      // ── Check 2: Is the target a directory? ────────────────────────────
-      try {
-        if (statSync(resolved).isDirectory()) {
-          issues.push({
-            file: mdFile,
-            line: i + 1,
-            link: rawTarget,
-            reason: `Reference points to a directory, not a file: ${target}`,
-          });
-          continue;
-        }
-      } catch {
-        // skip if stat fails
-      }
-
-      // ── Check 3: Is the target inside the skill's directory? ────────────
-      const normalizedResolved = normalize(resolved).toLowerCase();
-      const normalizedSkillDir = normalize(skillDir).toLowerCase();
-
-      const insideSkill = normalizedResolved.startsWith(normalizedSkillDir + "\\")
-        || normalizedResolved.startsWith(normalizedSkillDir + "/")
-        || normalizedResolved === normalizedSkillDir;
-
-      if (!insideSkill) {
-        const rel = relative(SKILLS_DIR, resolved).replace(/\\/g, "/");
-        issues.push({
-          file: mdFile,
-          line: i + 1,
-          link: rawTarget,
-          reason: `Reference escapes skill directory → resolves to: ${rel}`,
-        });
-      }
+    if (!insideSkill) {
+      const rel = relative(SKILLS_DIR, item.absPath).replace(/\\/g, "/");
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        reason: `Reference escapes skill directory → resolves to: ${rel}`,
+      };
+    } else {
+      return undefined;
     }
-  }
+  }).filter((issue) => issue !== undefined));
 
-  return issues;
+  return {
+    issues,
+    remoteLinks: remoteLinks.filter((item) => {
+      return shouldPrintRemoteHost(item.host);
+    }).map((item) => {
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        protocol: item.protocol,
+        host: item.host,
+        path: item.path,
+      };
+    }),
+    localLinks: localLinks.map((item) => {
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        absPath: item.absPath,
+        exists: item.exists,
+        isDirectory: item.isDirectory,
+      };
+    }),
+  };
 }
 
 function validateSkill(skillName: string): ValidationResult {
   const skillDir = resolve(SKILLS_DIR, skillName);
   const mdFiles = findMarkdownFiles(skillDir);
   const issues: LinkIssue[] = [];
+  const remoteLinks: RemoteLinkDetail[] = [];
+  const localLinks: LocalLinkDetail[] = [];
 
   // Validate all markdown files for link issues
   for (const mdFile of mdFiles) {
-    issues.push(...validateFile(mdFile, skillDir));
+    const result = validateFile(mdFile, skillDir);
+    issues.push(...result.issues);
+    remoteLinks.push(...result.remoteLinks);
+    localLinks.push(...result.localLinks);
   }
 
   // Track visited files for orphan detection
@@ -298,12 +280,13 @@ function validateSkill(skillName: string): ValidationResult {
     const links = extractLocalLinks(current, skillDir);
 
     for (const link of links) {
-      const normalizedLink = normalize(link).toLowerCase();
+
+      const normalizedLink = normalize(link.absPath).toLowerCase();
       if (!visited.has(normalizedLink)) {
         visited.add(normalizedLink);
         // Only follow markdown links
-        if (link.endsWith(".md")) {
-          queue.push(link);
+        if (link.exists && !link.isDirectory && link.absPath.endsWith(".md")) {
+          queue.push(link.absPath);
         }
       }
     }
@@ -324,7 +307,7 @@ function validateSkill(skillName: string): ValidationResult {
     }
   }
 
-  return { skill: skillName, issues, orphanedFiles };
+  return { skill: skillName, issues, orphanedFiles, remoteLinks, localLinks };
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -397,6 +380,75 @@ function buildReferencesJson(
   };
 }
 
+// ── List output ─────────────────────────────────────────────────────────────
+
+export interface LinkListEntry {
+  source: string;
+  sourceLine: number;
+  link: string;
+}
+
+export interface LocalLinkListEntry extends LinkListEntry {
+  resolved: string;
+  status: "file" | "directory" | "missing";
+}
+
+export interface RemoteLinkListEntry extends LinkListEntry {
+  protocol: "http" | "https";
+  host: string;
+  path: string;
+}
+
+export interface SkillLinkList {
+  skill: string;
+  localLinks: LocalLinkListEntry[];
+  remoteLinks: RemoteLinkListEntry[];
+}
+
+export interface ReferencesListResult {
+  skills: SkillLinkList[];
+  summary: {
+    totalSkills: number;
+    totalLocalLinks: number;
+    totalRemoteLinks: number;
+  };
+}
+
+function buildListJson(results: ValidationResult[]): ReferencesListResult {
+  let totalLocal = 0;
+  let totalRemote = 0;
+
+  const skills: SkillLinkList[] = results.map((result) => {
+    const localLinks: LocalLinkListEntry[] = result.localLinks.map((l) => ({
+      source: formatPath(l.file),
+      sourceLine: l.line,
+      link: l.link,
+      resolved: formatPath(l.absPath),
+      status: !l.exists ? "missing" : l.isDirectory ? "directory" : "file",
+    }));
+    const remoteLinks: RemoteLinkListEntry[] = result.remoteLinks.map((r) => ({
+      source: formatPath(r.file),
+      sourceLine: r.line,
+      link: r.link,
+      protocol: r.protocol,
+      host: r.host,
+      path: r.path,
+    }));
+    totalLocal += localLinks.length;
+    totalRemote += remoteLinks.length;
+    return { skill: result.skill, localLinks, remoteLinks };
+  });
+
+  return {
+    skills,
+    summary: {
+      totalSkills: results.length,
+      totalLocalLinks: totalLocal,
+      totalRemoteLinks: totalRemote,
+    },
+  };
+}
+
 // ── CLI entry point ──────────────────────────────────────────────────────────
 
 function listSkills(): string[] {
@@ -417,6 +469,7 @@ function main(): void {
     args: process.argv.slice(2),
     options: {
       json: { type: "boolean", default: false },
+      list: { type: "boolean", default: false },
       "skills-dir": { type: "string" },
     },
     strict: false,
@@ -433,6 +486,7 @@ function main(): void {
   }
 
   const jsonOutput = values.json ?? false;
+  const listOutput = values.list ?? false;
   const requestedSkill = positionals[0];
 
   const skills = requestedSkill ? [requestedSkill] : listSkills();
@@ -455,6 +509,13 @@ function main(): void {
   const results: ValidationResult[] = [];
   for (const skill of skills) {
     results.push(validateSkill(skill));
+  }
+
+  // ── List output mode ────────────────────────────────────────────────────
+  if (listOutput) {
+    const listResult = buildListJson(results);
+    console.log(JSON.stringify(listResult, null, 2));
+    return;
   }
 
   // ── JSON output mode ────────────────────────────────────────────────────

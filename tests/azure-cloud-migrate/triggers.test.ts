@@ -21,9 +21,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     triggerMatcher = new TriggerMatcher(skill);
   });
 
-  describe("Should Trigger", () => {
-    // Prompts that SHOULD trigger this skill - cloud migration workflows
-    const shouldTriggerPrompts: string[] = [
+  describe("Should Trigger — Lambda to Functions", () => {
+    const lambdaPrompts: string[] = [
       "How do I migrate my AWS Lambda functions to Azure Functions?",
       "I want to migrate from AWS to Azure",
       "Can you do a Lambda migration assessment for my project?",
@@ -32,6 +31,19 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me migrate code to Azure Functions",
       "Assess my AWS Lambda project for Azure migration",
       "I need to move my Lambda workloads to Azure Functions",
+    ];
+
+    test.each(lambdaPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — Container Apps Migration", () => {
+    const containerAppsPrompts: string[] = [
       "migrate Cloud Run to Azure Container Apps",
       "migrate GCP Cloud Run services to Container Apps",
       "Cloud Run to Container Apps migration assessment",
@@ -40,9 +52,85 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "assess Cloud Run to Container Apps migration",
       "I want to migrate my Cloud Run service to Azure",
       "help me move from Google Cloud Run to Container Apps",
+      "migrate Spring Boot to Container Apps",
+      "Azure Spring Apps to ACA migration",
+      "Spring Boot ACA migration assessment",
+      "replatform Spring Boot to Container Apps",
+      "move Spring Boot from Azure Spring Apps to ACA",
+      "Spring Boot platform migration to Container Apps",
+      "migrate existing Spring Boot app to Container Apps",
+      "convert Spring Boot JAR to container on ACA",
+      "migrate SpringBoot to ContainerApps",
+      "replatform SpringBoot to ContainerApps",
+      // Fargate to Container Apps triggers
+      "migrate Fargate to Azure Container Apps",
+      "Fargate to Container Apps migration assessment",
+      "convert AWS Fargate workloads to Azure",
+      "move ECS Fargate containers to Azure Container Apps",
+      "migrate ECS on Fargate to Container Apps",
+      "assess AWS Fargate for Azure migration",
+      "replatform Fargate to Container Apps",
+      "migrate Kubernetes to Container Apps",
+      "convert k8s manifests to Azure Container Apps",
+      "move from GKE to Azure Container Apps",
+      "migrate from EKS to Azure Container Apps",
+      "migrate k8s deployments to Azure",
+      "k8s to ACA migration assessment",
+      "I want to migrate my GKE workload to Azure",
+      "help me move from Kubernetes to Container Apps",
     ];
 
-    test.each(shouldTriggerPrompts)(
+    test.each(containerAppsPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — Beanstalk to App Service", () => {
+    const beanstalkPrompts: string[] = [
+      "How do I migrate my Elastic Beanstalk app to Azure App Service?",
+      "Migrate my Beanstalk application to Azure",
+      "I need to move from AWS Beanstalk to Azure",
+      "Assess my Elastic Beanstalk project for Azure migration",
+    ];
+
+    test.each(beanstalkPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — Heroku to Azure", () => {
+    const herokuPrompts: string[] = [
+      "How do I migrate my Heroku app to Azure?",
+      "Migrate from Heroku to Azure App Service",
+      "I want to move my Heroku web app to Azure",
+      "Help me migrate my Heroku application to Azure",
+    ];
+
+    test.each(herokuPrompts)(
+      'triggers on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(true);
+      }
+    );
+  });
+
+  describe("Should Trigger — App Engine to App Service", () => {
+    const appEnginePrompts: string[] = [
+      "How do I migrate my Google App Engine app to Azure App Service?",
+      "Migrate from App Engine to Azure",
+      "Move my Google Cloud app to Azure App Service",
+    ];
+
+    test.each(appEnginePrompts)(
       'triggers on: "%s"',
       (prompt) => {
         const result = triggerMatcher.shouldTrigger(prompt);
@@ -62,6 +150,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "What is the capital of France?",
       "Help me debug my React application",
       "How do I optimize MySQL queries?",
+      // Near-miss negatives — mention source platforms WITHOUT migration intent
+      // Note: keyword-based matching cannot reliably distinguish "Deploy to Heroku" from
+      // "Migrate from Heroku" — those are intent-level decisions handled by the agent at
+      // routing time, not by keyword extraction.
+      "What is Elastic Beanstalk?",
+      "Set up monitoring for my Fargate cluster",
+      "Write a Dockerfile for App Engine",
     ];
 
     test.each(shouldNotTriggerPrompts)(

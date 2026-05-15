@@ -145,31 +145,23 @@ npm install
 | `npm run test:verbose` | Show individual test names |
 | `npm run update:snapshots` | Update Jest snapshots after intentional changes |
 
-### Waza Eval Mode (Alternative)
+### Vally Eval Mode (Alternative)
 
-Skills can also be evaluated using [waza](https://github.com/microsoft/waza), a Go CLI for skill benchmarking.
+Skills can also be evaluated using [Vally](https://www.npmjs.com/package/@microsoft/vally), a CLI for skill benchmarking.
 
 ```bash
-# Install waza via azd extension
-azd ext source add -n waza -t url -l https://raw.githubusercontent.com/microsoft/waza/main/registry.json
-azd ext install microsoft.azd.waza
-
-# Or via Go
-go install github.com/microsoft/waza/cmd/waza@latest
+# Install vally globally
+npm install -g @microsoft/vally
 ```
 
 **Hybrid model**: Key skills have committed (hand-tuned) eval suites. All other skills auto-generate evals from their SKILL.md at runtime.
 
 | Command | Use Case |
 |---------|----------|
-| `npm run waza -- azure-prepare` | Run committed eval for a key skill |
-| `npm run waza -- azure-storage` | Auto-generate + run eval from SKILL.md |
-| `npm run waza -- --all` | Run all skills (committed + generated) |
-| `npm run waza:live -- azure-prepare` | Run with real Copilot SDK |
-| `waza run tests/azure-prepare/eval/eval.yaml -v` | Run directly with waza CLI |
-| `waza run eval.yaml --cache` | Cached re-runs (skip unchanged tasks) |
-| `waza compare results-a.json results-b.json` | Compare results across models |
-| `waza check plugin/skills/azure-prepare` | Check skill readiness for submission |
+| `vally eval -e evals/azure-prepare/eval.yaml` | Run committed eval for a key skill |
+| `vally eval --suite full` | Run all skills (committed + generated) |
+| `vally eval -e evals/azure-prepare/eval.yaml --verbose` | Run with verbose output |
+| `vally lint plugin/skills/ --eval evals/` | Lint skills and eval specs |
 
 **Committed eval suites** (⬢ customized graders, fixtures, and assertions):
 - `azure-prepare` — template selection, recipe composition, plan-first workflow
@@ -213,6 +205,12 @@ npm run test:integration -- azure-deploy static-web-apps-deploy
 Test cases are grouped under the `describe` groups. It's commonly useful to use the title of the `describe` group as the 2nd argument to run test cases of that group.
 
 To learn more about how the CLI options work, check out `tests/scripts/run-tests.js`.
+
+### Local Workspace Cleanup
+
+Each integration test creates a temporary workspace under `os.tmpdir()` (e.g., `%TEMP%\skill-test-*` on Windows). By default, these are **automatically deleted** in `afterEach` after the test completes (pass or fail).
+
+To preserve workspaces for debugging, set `preserveWorkspace: true` in the `agent.run()` call.
 
 ### Reading Test Output
 

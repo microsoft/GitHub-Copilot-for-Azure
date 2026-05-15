@@ -8,16 +8,9 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { fileURLToPath } from "url";
 import { loadSkill, LoadedSkill } from "../../../utils/skill-loader";
 
 const SKILL_NAME = "microsoft-foundry";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DEPLOY_MD = path.resolve(
-  __dirname,
-  "../../../../output/skills/microsoft-foundry/foundry-agent/deploy/deploy.md"
-);
 
 describe("deploy - Unit Tests", () => {
   let skill: LoadedSkill;
@@ -25,7 +18,10 @@ describe("deploy - Unit Tests", () => {
 
   beforeAll(async () => {
     skill = await loadSkill(SKILL_NAME);
-    deployContent = fs.readFileSync(DEPLOY_MD, "utf-8");
+    deployContent = fs.readFileSync(
+      path.join(skill.path, "foundry-agent", "deploy", "deploy.md"),
+      "utf-8"
+    );
   });
 
   describe("Skill Metadata", () => {
@@ -69,13 +65,20 @@ describe("deploy - Unit Tests", () => {
 
     test("documents MCP tools", () => {
       expect(deployContent).toContain("## MCP Tools");
+      expect(deployContent).toContain("agent_definition_schema_get");
       expect(deployContent).toContain("agent_update");
-      expect(deployContent).toContain("agent_container_control");
-      expect(deployContent).toContain("agent_container_status_get");
+      expect(deployContent).toContain("agent_get");
     });
 
     test("contains hosted agent workflow", () => {
       expect(deployContent).toContain("## Workflow: Hosted Agent Deployment");
+    });
+
+    test("documents the hosted deployment verification flow", () => {
+      expect(deployContent).toMatch(/Capture the per-agent identity from the agent creation response/i);
+      expect(deployContent).toMatch(/project-level agent identity from the project resource/i);
+      expect(deployContent).toMatch(/Continue to Step 8/i);
+      expect(deployContent).toMatch(/required hosted-agent session handling/i);
     });
 
     test("contains prompt agent workflow", () => {
@@ -84,6 +87,11 @@ describe("deploy - Unit Tests", () => {
 
     test("contains error handling section", () => {
       expect(deployContent).toContain("## Error Handling");
+    });
+
+    test("lists invocations as a supported container protocol", () => {
+      expect(deployContent).toContain("`invocations`");
+      expect(deployContent).toMatch(/Invocation payload protocol/i);
     });
   });
 
@@ -135,6 +143,11 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
     });
 
+    test("scopes deploy scanning and cache usage to the selected agent root", () => {
+      expect(deployContent).toMatch(/selected agent root/i);
+      expect(deployContent).toMatch(/Do \*\*not\*\* scan sibling agent folders/i);
+    });
+
     test("uses the seed dataset guide as the canonical registration flow", () => {
       expect(deployContent).toContain("Generate Seed Evaluation Dataset");
       expect(deployContent).toMatch(/single source of truth for seed dataset registration/i);
@@ -165,15 +178,32 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain("observe skill");
       expect(deployContent).toMatch(/Step 2.*Evaluate/i);
     });
+
+    test("documents required invocation RBAC for hosted agents", () => {
+      expect(deployContent).toContain("Azure AI User");
+      expect(deployContent).not.toContain("Cognitive Services OpenAI User");
+      expect(deployContent).toMatch(/per-agent identity.*agent creation response/i);
+      expect(deployContent).toMatch(/project-level agent identity.*project resource/i);
+      expect(deployContent).not.toContain("Required identities:");
+      expect(deployContent).toMatch(/Cognitive Services account, not the project/i);
+    });
   });
 
   describe("Document Deployment Context", () => {
-    test("persists deployment context to agent-metadata.yaml", () => {
+    test("persists deployment context to the selected metadata file", () => {
       expect(deployContent).toContain("projectEndpoint");
       expect(deployContent).toContain("agentName");
       expect(deployContent).toContain("azureContainerRegistry");
-      expect(deployContent).toContain("testCases[]");
+      expect(deployContent).toContain("evaluationSuites[]");
       expect(deployContent).toContain("datasetUri");
+      expect(deployContent).toContain("tags");
+      expect(deployContent).toContain("tier: smoke");
+      expect(deployContent).toContain("selected metadata file");
+      expect(deployContent).toContain("agent-metadata.prod.yaml");
+      expect(deployContent).toContain("single-environment file");
+      expect(deployContent).toContain("older `testSuites[]`");
+      expect(deployContent).toContain("legacy `testCases[]`");
+      expect(deployContent).toContain("rewrite that environment to `evaluationSuites[]`");
     });
   });
 });

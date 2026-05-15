@@ -32,6 +32,47 @@
 #                     transcript_path may be absent, so stable vs Insiders can only be
 #                     distinguished when skills are called from agent-plugins (which
 #                     includes transcript_path)
+#
+# === Event Types ===
+#
+# 1. skill_invocation
+#    - Triggered when: the "skill"/"Skill" tool is called with a skill name,
+#      OR a SKILL.md file is read from a recognized azure-skills path
+#    - Tracked field: --skill-name <name>
+#
+# 2. tool_invocation
+#    - Triggered when: a tool matching an Azure MCP prefix is called
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*)
+#    - Tracked field: --tool-name <toolName>
+#
+# 3. reference_file_read
+#    - Triggered when: a file read tool (view/Read/read_file) targets a file
+#      inside a recognized azure-skills path that is NOT a SKILL.md
+#    - These are the reference/instruction files that skills bundle alongside
+#      SKILL.md (e.g., recipes, templates, requirement docs)
+#    - Tracked field: --file-reference <relative-path-after-skills/>
+#    - Example: azure-validate/references/recipes/azd/README.md
+#
+# === Reference File Detection ===
+#
+# When a file read tool is invoked (Copilot CLI: "view", Claude Code: "Read",
+# VS Code: "read_file"), the script extracts the file path from the tool input
+# and checks if it falls within a recognized azure-skills folder:
+#
+#   Path field lookup order:
+#     - toolArgs.path / toolArgs.filePath       (Copilot CLI)
+#     - tool_input.filePath / tool_input.file_path / tool_input.path  (Claude Code / VS Code)
+#
+#   Recognized azure-skills install paths:
+#     - .copilot/installed-plugins/azure-skills/azure/skills/...
+#     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
+#     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
+#     - .agents/skills/...
+#
+#   If the path matches AND is not a SKILL.md file, the relative path after
+#   "skills/" is extracted and emitted as a reference_file_read event.
+#   SKILL.md reads are tracked as skill_invocation instead (not double-counted).
 
 $ErrorActionPreference = "SilentlyContinue"
 
@@ -142,7 +183,7 @@ function Get-ToolInputPath {
 
 # Azure-skills path patterns per client (used for SKILL.md and file-reference matching)
 $pathPatternCopilot = '\.copilot/installed-plugins/azure-skills/azure/skills/'
-$pathPatternClaude = '\.claude/plugins/cache/azure-skills/azure/[0-9.]+/skills/'
+$pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
 $pathPatternAgentsSkills = '\.agents/skills/'
 

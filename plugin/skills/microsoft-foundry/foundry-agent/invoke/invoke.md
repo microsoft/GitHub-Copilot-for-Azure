@@ -1,98 +1,132 @@
 # Invoke Foundry Agent
 
-Invoke and test deployed agents in Azure AI Foundry with single-turn and multi-turn conversations.
+Invoke deployed agents in Azure AI Foundry. Manage sessions and file operations for hosted agents.
 
 ## Quick Reference
 
 | Property | Value |
 |----------|-------|
-| Agent types | Prompt (LLM-based), Hosted (ACA based), Hosted (vNext) |
+| Agent types | Prompt (LLM-based), Hosted |
 | MCP server | `azure` |
-| Key MCP tools | `agent_invoke`, `agent_container_status_get`, `agent_get` |
-| Conversation support | Single-turn and multi-turn (via `conversationId`) |
-| Session support | Sticky sessions for vNext hosted agents (via client-generated `sessionId`) |
+| Key Foundry MCP tools | `agent_invoke`, `agent_get`, `session_create`, `session_get`, `session_delete`, `session_list` |
+| File operation tools | `session_file_upload`, `session_file_download`, `session_file_list`, `session_file_delete`, `session_file_stat`, `session_file_mkdir` |
+| Conversation support | Single-turn and multi-turn (via `conversationId` for responses protocol, via session state for invocations protocol) |
+| Session support | Managed sessions for hosted agents (via `session_create`) |
+| Protocols | `responses` (OpenAI-compatible), `invocations` (custom payloads) |
 
 ## When to Use This Skill
 
-- Send a test message to a deployed agent
-- Have multi-turn conversations with an agent
-- Test a prompt agent immediately after creation
-- Test a hosted agent after its container is running
-- Verify an agent responds correctly to specific inputs
+- Send messages to a deployed agent (single or multi-turn)
+- Create/manage sessions for hosted agents
+- Upload/download files to/from hosted agent sessions
+- Test agent behavior after creation or deployment
 
 ## MCP Tools
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `agent_invoke` | Send a message to an agent and get a response | `projectEndpoint`, `agentName`, `inputText` (required); `agentVersion`, `conversationId`, `containerEndpoint`, `sessionId` (mandatory for vNext hosted agents) |
-| `agent_container_status_get` | Check container running status (hosted agents) | `projectEndpoint`, `agentName` (required); `agentVersion` |
+| `agent_invoke` | Send a message to an agent and get a response | `projectEndpoint`, `agentName`, `inputText` (required); `agentVersion`, `conversationId`, `sessionId`, `protocol`, `stream` (optional) |
 | `agent_get` | Get agent details to verify existence and type | `projectEndpoint` (required), `agentName` (optional) |
+| `session_create` | Create a new session for a hosted agent | `projectEndpoint`, `agentName` (required); `sessionId` (optional) |
+| `session_get` | Get session status and details | `projectEndpoint`, `agentName`, `sessionId` (required) |
+| `session_delete` | Delete a session and release compute | `projectEndpoint`, `agentName`, `sessionId` (required) |
+| `session_list` | List sessions with pagination | `projectEndpoint`, `agentName` (required); `limit`, `order`, `after`, `before` (optional) |
+| `session_logstream` | Stream console logs (stdout/stderr) from a session | `projectEndpoint`, `agentName`, `sessionId` (required); `maxLines` (optional) |
+
+For session file operation tools (`session_file_upload`, `session_file_download`, `session_file_list`, `session_file_delete`, `session_file_stat`, `session_file_mkdir`), see [File Operations](references/file-operations.md).
+
+## Protocols
+
+Hosted agents support two invocation protocols declared at deployment time.
+
+| Protocol | Recommended Version | Route | Best For |
+|----------|-------------------|-------|----------|
+| `responses` | `1.0.0` | `.../agents/{agentName}/endpoint/protocols/openai/responses` | Conversational agents, OpenAI-compatible |
+| `invocations` | `1.0.0` | `.../agents/{agentName}/endpoint/protocols/invocations` | Custom payloads, protocol bridges, webhook callers |
+
+Key difference: `responses` takes a natural language `inputText` message with platform-managed history. `invocations` is **bytes in, bytes out** — the request body is forwarded as-is to the container and the raw response is returned. The developer defines the schema; the platform is pure pass-through. See [Invocations Protocol Guide](references/invocations-protocol.md) for I/O details, schema discovery, and examples.
+
+> ⚠️ **Critical for invocations:** `inputText` is forwarded as the raw HTTP request body. The agent developer defines what the container accepts. **Do not guess** — fetch the agent's OpenAPI spec or inspect its source code first.
+
+> 💡 **Tip:** The `agent_invoke` MCP tool supports both protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
 
 ## Workflow
 
 ### Step 1: Verify Agent Readiness
 
-Delegate the readiness check to a sub-agent. Provide the project endpoint and agent name, and instruct it to:
+Use `agent_get` to verify the agent exists. For hosted agents, also verify the targeted version is `active`.
 
-**Prompt agents** → Use `agent_get` to verify the agent exists.
+### Step 2: Create Session (Hosted Agents)
 
-**Hosted agents (ACA)** → Use `agent_container_status_get` to check:
-- Status `Running` ✅ → Proceed to Step 2
-- Status `Starting` → Wait and re-check
-- Status `Stopped` or `Failed` ❌ → Warn the user and suggest using the deploy skill to start the container
+For hosted agents, create a session before invoking using `session_create` with `projectEndpoint` and `agentName`. Optionally provide a `sessionId` (must match `^[A-Za-z0-9_-]{8,128}$`). Store the returned `sessionId` for subsequent calls.
 
-**Hosted agents (vNext)** → Ready immediately after deployment (no container status check needed)
+> ⚠️ Skip this step for prompt agents — they do not use sessions.
 
-### Step 2: Invoke Agent
+For full session lifecycle details, see [Session Management](references/session-management.md).
 
-Use the project endpoint and agent name from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved.
+### Step 3: Invoke Agent
 
-Use `agent_invoke` to send a message:
-- `projectEndpoint` — AI Foundry project endpoint
-- `agentName` — Name of the agent to invoke
-- `inputText` — The message to send
+Use the project endpoint and agent name from the project context. Use `agent_invoke` with:
+- `projectEndpoint`, `agentName`, `inputText` (required)
+- `agentVersion`, `conversationId`, `sessionId`, `protocol`, `stream` (optional)
 
-**Optional parameters:**
-- `agentVersion` — Target a specific agent version
-- `sessionId` — MANDATORY for vNext hosted agents, include the session ID to maintain sticky sessions with the same compute resource
+**Responses protocol** (default): `inputText` is a natural language message string. Multi-turn via `conversationId`.
 
-#### Session Support for vNext Hosted Agents
-In vNext hosted agents, the invoke endpoint accepts a 25 character alphanumeric `sessionId` parameter. Sessions are **sticky** - they route the request to same underlying compute resource, so agent can re-use the state stored in compute's file across multiple turns.
+**Invocations protocol**: Set `protocol: 'invocations'`. This is **bytes in, bytes out** — `inputText` is forwarded as the raw HTTP request body to the container. The developer defines the expected schema.
 
-Rules:
-1. You MUST generate a unique `sessionId` before making the first `agent_invoke` call.
-2. If you have a session ID, you MUST include it in every subsequent `agent_invoke` call for that conversation.
-3. When the user explicitly requests a new session, create a new `sessionId` and use it for rest of the `agent_invoke` calls.
+> ⚠️ **Do not guess the invocations request body.** To discover the expected schema:
+> 1. **Fetch the OpenAPI spec**: `GET {projectEndpoint}/agents/{agentName}/endpoint/protocols/invocations/docs/openapi.json` (if the developer registered one)
+> 2. Inspect the agent's **route handler code** or README for the expected payload shape
+> 3. If unknown, ask the user for the agent's API contract before invoking
 
-This is different from `conversationId` which tracks conversation history — `sessionId` controls which compute instance handles the request.
+Example invocations call (agent expects `{"message": "<text>"}`):
 
-### Step 3: Multi-Turn Conversations
+```text
+agent_invoke(projectEndpoint, agentName, inputText: "{\"message\":\"hello\"}", protocol: "invocations", sessionId: "<id>")
+```
 
-For follow-up messages, pass the `conversationId` from the previous response to `agent_invoke`. This maintains conversation context across turns.
+See [Invocations Protocol Guide](references/invocations-protocol.md) for full details and examples.
 
-Each invocation with the same `conversationId` continues the existing conversation thread.
+### Step 4: Multi-Turn Conversations
+
+**Responses protocol** → Pass `conversationId` from previous response to continue the thread. Platform manages history.
+
+**Invocations protocol** → Reuse same `sessionId`; conversation state is agent-managed via `$HOME`. Do **not** pass `conversationId` — it has no effect for invocations.
+
+### Step 5: File Operations (Hosted Agents)
+
+Upload/download files to pass data to and retrieve results from agents. All file operations require an active session. See [File Operations](references/file-operations.md).
+
+### Step 6: Clean Up
+
+Use `session_delete` to release compute resources when done. Undeleted sessions expire per platform policies.
 
 ## Agent Type Differences
 
 | Behavior | Prompt Agent | Hosted Agent |
-|----------|-------------|--------------|
-| Readiness | Immediate after creation | Requires running container |
-| Pre-check | `agent_get` to verify exists | `agent_container_status_get` for `Running` status |
-| Routing | Automatic | Optional `containerEndpoint` parameter |
-| Multi-turn | ✅ via `conversationId` | ✅ via `conversationId` |
+|----------|--------------|--------------|
+| Readiness | Immediate | After deployment, version must be `active` |
+| Session | Not applicable | Required via `session_create` |
+| Multi-turn | Via `conversationId` | Via `conversationId` (responses) or session state (invocations) |
+| File operations | ❌ | ✅ via session file tools |
+| Protocol | `responses` only | `responses` or `invocations` |
 
 ## Error Handling
 
 | Error | Cause | Resolution |
 |-------|-------|------------|
-| Agent not found | Invalid agent name or project endpoint | Use `agent_get` to list available agents and verify name |
-| Container not running | Hosted agent container is stopped or failed | Use deploy skill to start the container with `agent_container_control` |
-| Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment is active, retry with simpler input |
-| Conversation ID invalid | Stale or non-existent conversation | Start a new conversation without `conversationId` |
-| Rate limit exceeded | Too many requests | Implement backoff and retry, or wait before sending next message |
+| Agent not found | Invalid name or endpoint | Use `agent_get` to list agents |
+| Hosted agent not active | Version still provisioning or failed | Check version status via `agent_get` |
+| Session not found | Invalid ID or expired | Create new session with `session_create` |
+| Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment |
+| Invocations schema mismatch | Request body does not match what the agent expects | Inspect agent's route handler or API docs for the correct JSON schema; do not guess |
+| File operation failed | Session not active or invalid path | Verify session with `session_get` |
+| Permission error | Missing RBAC | Follow [troubleshoot skill](../troubleshoot/troubleshoot.md) |
+| Rate limit exceeded | Too many requests | Implement backoff and retry |
 
 ## Additional Resources
 
+- [Session Management](references/session-management.md)
+- [File Operations](references/file-operations.md)
 - [Foundry Hosted Agents](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
-- [Foundry Agent Runtime Components](https://learn.microsoft.com/en-us/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
 - [Foundry Samples](https://github.com/azure-ai-foundry/foundry-samples)

@@ -16,7 +16,7 @@ import {
   useAgentRunner
 } from "../utils/agent-runner";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { expectFiles, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 /**
  * Find the -azure output directory. The skill may create it as a sibling
@@ -159,6 +159,100 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           /migration-status\.md$/,
           /migration-assessment-report\.md$/
         ], []);
+      });
+    }, migrationTestTimeoutMs);
+  });
+
+  describe("Spring Boot to Container Apps migration scenario", () => {
+    test("invokes skill for Spring Boot to ACA migration prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "I want to migrate my Spring Boot application from Azure Spring Apps to Azure Container Apps. Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+    test("invokes skill for Spring Boot containerization prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I containerize my Spring Boot JAR and deploy it to Azure Container Apps?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+  });
+
+  // Fargate tests only validate skill invocation (isSkillInvoked), not output files.
+  // Unlike the Lambda tests above, there is no public sample repo to clone and
+  // produce migration artifacts, so output-quality assertions are omitted.
+  describe("AWS Fargate to Container Apps migration scenario", () => {
+    test("invokes skill for Fargate to Container Apps migration", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt:
+            "I want to migrate my AWS Fargate ECS tasks to Azure Container Apps. " +
+            "Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) =>
+            shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+    test("invokes skill for ECS to Azure Container Apps migration", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt:
+            "Migrate my ECS Fargate containers to Azure Container Apps. " +
+            "I need to move from AWS to Azure.",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) =>
+            shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+  });
+
+  describe("Kubernetes to Container Apps migration scenario", () => {
+    test("invokes skill for k8s to ACA migration prompt", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "I want to migrate my Kubernetes workloads from GKE to Azure Container Apps. Can you help me assess compatibility and create a migration plan?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
+      });
+    }, migrationTestTimeoutMs);
+
+    test("invokes skill for k8s manifest conversion", async () => {
+      await withTestResult(async () => {
+        const agentMetadata = await agent.run({
+          prompt: "How do I convert my Kubernetes deployment manifests to Azure Container Apps configuration?",
+          nonInteractive: true,
+          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
+        });
+
+        const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
+        expect(isSkillUsed).toBe(true);
       });
     }, migrationTestTimeoutMs);
   });

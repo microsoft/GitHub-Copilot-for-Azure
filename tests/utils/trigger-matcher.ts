@@ -59,7 +59,7 @@ export class TriggerMatcher {
       "function", "app service", "container", "aks", "kubernetes",
       "bicep", "terraform", "deploy", "monitor", "diagnostic",
       "security", "rbac", "identity", "entra", "authentication",
-      "cli", "mcp", "validation", "networking", "observability"
+      "cli", "mcp", "validation", "networking", "observability", "vnet"
     ];
 
     const contentLower = this.skill.content.toLowerCase();

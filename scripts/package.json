@@ -21,21 +21,22 @@
     "lint:fix": "eslint --fix",
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
     "dashboard:serve": "sirv ../dashboard --port 3000 --dev",
-    "dashboard": "npm run dashboard:collect && npm run dashboard:serve"
+    "dashboard": "npm run dashboard:collect && npm run dashboard:serve",
+    "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/micromatch": "^4.0.10",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.2",
-    "eslint": "^10.2.0",
+    "eslint": "^10.3.0",
     "fast-xml-parser": "^5.7.1",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
     "sirv-cli": "^3.0.1",
     "tsx": "^4.21.0",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.0",
+    "typescript-eslint": "^8.59.0",
     "vitest": "^4.0.18"
   },
   "engines": {
