@@ -47,6 +47,7 @@ exports[`azure-infrastructure-sync - Trigger Tests Trigger Keywords Snapshot ski
     "synchronize",
     "templates",
     "validation",
+    "vnet",
     "what-if",
     "when",
   ],
@@ -99,6 +100,7 @@ exports[`azure-infrastructure-sync - Trigger Tests Trigger Keywords Snapshot ski
   "synchronize",
   "templates",
   "validation",
+  "vnet",
   "what-if",
   "when",
 ]
