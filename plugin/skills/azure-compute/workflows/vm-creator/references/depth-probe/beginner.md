@@ -13,7 +13,7 @@ Goal: get to a working Plan Card in **≤ 2 questions**, then show defaults and 
 - **Auth:** SSH key from `~/.ssh/id_rsa.pub` (Linux) — read the file; ask only if missing
 - **VNet:** create new `<vm-name>-vnet` with `10.0.0.0/16`
 - **Subnet:** `default` with `10.0.0.0/24`
-- **NSG:** create new, allow SSH 22 (Linux) or RDP 3389 (Windows) from `*` *— flag this in the Plan Card with a warning so the user can restrict*
+- **NSG:** create new, allow SSH 22 (Linux) or RDP 3389 (Windows) from **the user's current public IP** (detect via `curl -s ifconfig.me` or equivalent) — only fall back to `*` if detection fails, and always flag the chosen source in the Plan Card with a ⚠ so the user can edit before apply
 - **Public IP:** Standard SKU, dynamic
 - **OS disk:** 30 GB Premium SSD
 - **Zone:** none (regional)

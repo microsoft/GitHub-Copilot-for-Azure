@@ -2,42 +2,43 @@
 
 Recommend Azure VM sizes, VM Scale Sets (VMSS), and configurations by analyzing workload type, performance requirements, scaling needs, and budget. No Azure subscription required — data comes from public Microsoft documentation and the unauthenticated Retail Prices API.
 
-## When to use
+## When to Use This Skill
 
 - User asks which Azure VM or VMSS to choose for a workload
 - User wants to compare VM families, sizes, or pricing tiers
 - User asks about trade-offs (cost vs performance, single VM vs scale set, orchestration modes)
 - User needs a cost estimate without an Azure subscription
+- User asks "Needs autoscaling?" or wants to decide between a single VM and a scale set
 
 ## Workflow
 
 > Use reference files for initial filtering. Then **verify with live documentation** via `web_fetch` before final recommendations. If `web_fetch` fails, fall back to the reference files and surface the staleness warning from [web-fetch-policy.md](references/web-fetch-policy.md).
 
-### Step 1 — Gather Requirements
+### Step 1: Gather Requirements
 
 Ask the user (infer when possible):
 
 | Requirement | Examples |
 |---|---|
 | Workload type | Web server, relational DB, ML training, batch, dev/test |
-| vCPU / RAM | "4 cores, 16 GB" or "lightweight" / "heavy" |
-| GPU? | Yes → GPU families; No → general / compute / memory |
-| Storage | High IOPS, large temp disk, premium SSD |
-| Budget | Cost-sensitive, performance-first, balanced |
+| vCPU / RAM needs | "4 cores, 16 GB" or "lightweight" / "heavy" |
+| GPU needed? | Yes → GPU families; No → general / compute / memory |
+| Storage needs | High IOPS, large temp disk, premium SSD |
+| Budget priority | Cost-sensitive, performance-first, balanced |
 | OS | Linux or Windows (affects pricing) |
 | Region | Affects availability and price |
 | Instance count | Single, fixed count, or variable |
-| Scaling | None, manual, autoscale (metrics / schedule) |
-| Availability | Best-effort, fault-domain, cross-zone HA |
+| Scaling needs | None, manual, autoscale (metrics / schedule) |
+| Availability needs | Best-effort, fault-domain, cross-zone HA |
 | Load balancing | None, Azure Load Balancer (L4), Application Gateway (L7) |
 
-### Step 2 — VM vs VMSS
+### Step 2: Determine VM vs VMSS
 
-Review [VMSS Guide](../../references/vmss-guide.md). Decision shortcut:
+Review [VMSS Guide](../../references/vmss-guide.md). Decision shortcut — start by asking **Needs autoscaling?** then walk the table:
 
 | Signal | Pick |
 |---|---|
-| Autoscale on CPU / memory / schedule | **VMSS** |
+| Autoscale on CPU, memory, or schedule | **VMSS** |
 | Stateless web/API tier behind a load balancer | **VMSS** |
 | Batch / parallel processing across many nodes | **VMSS** |
 | Mixed VM sizes in one group | **VMSS (Flexible)** |
@@ -45,29 +46,29 @@ Review [VMSS Guide](../../references/vmss-guide.md). Decision shortcut:
 | Unique per-instance config | **VM** |
 | Stateful, tightly-coupled cluster | **VM** (or VMSS case-by-case) |
 
-If recommending VMSS, verify with `web_fetch` per [web-fetch-policy.md](references/web-fetch-policy.md). When in doubt, default to **single VM**.
+If recommending VMSS, verify with `web_fetch` per [web-fetch-policy.md](references/web-fetch-policy.md). When in doubt, default to a single **VM**.
 
-### Step 3 — Select VM Family
+### Step 3: Select VM Family
 
 Review [VM Family Guide](../../references/vm-families.md) and pick 2–3 candidate families. Verify each candidate's specs with `web_fetch` against:
 
 ```
-https://learn.microsoft.com/azure/virtual-machines/sizes/<family-category>/<series-name>
+https://learn.microsoft.com/en-us/azure/virtual-machines/sizes/<family-category>/<series-name>
 ```
 
-For Spot eligibility, also fetch `https://learn.microsoft.com/azure/virtual-machine-scale-sets/use-spot`. If any fetch fails, follow [web-fetch-policy.md](references/web-fetch-policy.md). Same SKUs apply to single VMs and VMSS.
+For Spot eligibility, also fetch `https://learn.microsoft.com/en-us/azure/virtual-machine-scale-sets/use-spot`. If any fetch fails, follow [web-fetch-policy.md](references/web-fetch-policy.md). Same SKUs apply to single VMs and VMSS.
 
-### Step 4 — Look Up Pricing
+### Step 4: Look Up Pricing
 
 Query the Azure Retail Prices API per [Retail Prices API Guide](../../references/retail-prices-api.md).
 
 > **VMSS:** no extra charge — pricing is per-VM. Multiply per-instance price × expected count. For autoscale, estimate at both `min` and `max`.
 
-### Step 5 — Validate Quota
+### Step 5: Validate Quota Availability
 
 > **GATE — do not present recommendations until quota is validated.**
 
-If the user has a subscription + region, run the checks from [VM Quota Validation Guide](../../references/vm-quotas.md). Without a subscription, note quota must be checked before deployment.
+If the user has a subscription + region, review and run the checks from [VM Quota Validation Guide](../../references/vm-quotas.md). Without a subscription, note quota must be checked before deployment.
 
 | Outcome | Action |
 |---|---|
@@ -77,7 +78,7 @@ If the user has a subscription + region, run the checks from [VM Quota Validatio
 
 Include a "Quota Status" column (✅/⚠️/❌) in the table.
 
-### Step 6 — Present Recommendations
+### Step 6: Present Recommendations
 
 Provide **2–3 options** with trade-offs:
 
@@ -91,21 +92,21 @@ Provide **2–3 options** with trade-offs:
 | Why | Workload fit |
 | Trade-off | What the user gives up |
 
-Always explain *why* a family fits and the trade-off (cost vs cores, burstable vs dedicated, VM simplicity vs VMSS scale).
+Always explain *why* a family fits and the Trade-off (cost vs cores, burstable vs dedicated, VM simplicity vs VMSS scale).
 
 For VMSS, also mention orchestration mode (default **Flexible**), autoscale strategy (metric / schedule / both), and load balancer type.
 
-### Step 7 — Offer Next Steps
+### Step 7: Offer Next Steps
 
 - Compare reservation / savings plan pricing (`priceType eq 'Reservation'` in the API)
 - Suggest [Azure Pricing Calculator](https://azure.microsoft.com/pricing/calculator/) for full estimates
 - For VMSS: [autoscale best practices](https://learn.microsoft.com/azure/azure-monitor/autoscale/autoscale-best-practices), [VMSS networking](https://learn.microsoft.com/azure/virtual-machine-scale-sets/virtual-machine-scale-sets-networking)
 
-### Step 8 — Hand Off to VM Creator (Optional)
+### Step 8: Hand Off to VM Creator (Optional)
 
 If the user wants to **actually provision** what was recommended, hand off to [vm-creator](../vm-creator/vm-creator.md). See [handoff-to-creator.md](references/handoff-to-creator.md) for the required Plan Card render and routing rules.
 
-## Error handling
+## Error Handling
 
 | Scenario | Action |
 |---|---|

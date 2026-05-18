@@ -31,6 +31,7 @@ terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa
 | `os_disk_type` | string | `Premium_LRS` | |
 | `os_disk_size_gb` | number | `30` | |
 | `tags` | map(string) | `{}` | |
+| `ssh_source_address_prefix` | string | `"*"` | ⚠ Restrict to your public IP or a CIDR for production |
 
 `*` = required (no default).
 
@@ -42,7 +43,7 @@ terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa
 Replace `azurerm_linux_virtual_machine` with `azurerm_linux_virtual_machine_scale_set`; add `instances`, `upgrade_mode = "Manual" | "Automatic" | "Rolling"`. Inline NIC inside the scale set via `network_interface { ip_configuration { ... } }`.
 
 ## Notes
-Open NSG / public IP is fine for dev. For production, restrict `source_address_prefix` to your IP and add managed identity, diagnostics, and backup.
+Even for dev, pass `ssh_source_address_prefix=<your-ip>/32` instead of leaving the default `"*"` — an open SSH port is a credential-stuffing target within minutes of going public. For production, also add managed identity, diagnostics, and backup.
 
 ## Cleanup
 ```bash

@@ -55,7 +55,7 @@ Render the Plan Card markdown **inline in the chat first** (so the user can read
 
 This collapses what used to be 3 sequential popups (approve → output format → delivery) into **1**.
 
-Implementation: a single `AskUserQuestion` tool call with `header: "Deliver"`, `multiSelect: false`, and 4 options (the 4 most likely combinations) — the user can also pick "Other" to type a custom answer like "give me both bicep and terraform".
+Implementation: a single `AskUserQuestion` tool call with `header: "Deliver"`, `multiSelect: false`, and 6 options (the most likely combinations above) — the user can also pick "Other" to type a custom answer like "give me both bicep and terraform".
 
 **If the user picks "Edit a row first":** then ask which row, update, re-render the full Plan Card, and re-ask the same batched action picker. Do not splinter into multiple popups.
 

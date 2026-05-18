@@ -35,7 +35,7 @@ See [output-adapters/mcp-apply.md](output-adapters/mcp-apply.md) for the full pa
 
 ## Why the proxy form matters
 
-The CLI / tool host shows `mcp__azure__compute` as one tool, not `mcp__azure__compute_vm_check-quota`. Every command is invoked as:
+The CLI / tool host shows `mcp__azure__compute` as a single tool. Sub-operations like `vm check-quota`, `vm list-skus`, etc. are not separate tools — they are passed through the `command` parameter. Every command is invoked as:
 
 ```
 mcp__azure__compute({

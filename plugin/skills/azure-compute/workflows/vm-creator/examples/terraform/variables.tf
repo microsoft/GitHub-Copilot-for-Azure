@@ -49,3 +49,9 @@ variable "tags" {
   type    = map(string)
   default = {}
 }
+
+variable "ssh_source_address_prefix" {
+  description = "Source address prefix allowed for SSH inbound (CIDR, IP, or \"*\"). Default \"*\" is open to the internet — set to your public IP or a CIDR range for production."
+  type        = string
+  default     = "*"
+}

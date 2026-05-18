@@ -4,7 +4,7 @@ Multi-cloud, existing TF state, organization standardized on Terraform.
 
 ## Templates
 
-Emit three code files to [`examples/terraform/`](../../examples/terraform/):
+Emit three code files to [`examples/terraform/`](../../examples/terraform/README.md):
 - `main.tf` — provider, RG, VNet, subnet, NSG (SSH allow), public IP, NIC, Linux VM
 - `variables.tf` — typed input variables with defaults
 - `outputs.tf` — `vm_id`, `public_ip`

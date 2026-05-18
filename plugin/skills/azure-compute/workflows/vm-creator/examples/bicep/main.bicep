@@ -32,6 +32,9 @@ param zone string = ''
 @description('Tags applied to all resources')
 param tags object = {}
 
+@description('Source address prefix allowed for SSH inbound (CIDR, IP, or "*"). Default "*" is open to the internet — set to your public IP or a CIDR range for production.')
+param sshSourceAddressPrefix string = '*'
+
 var vnetName = '${vmName}-vnet'
 var subnetName = 'default'
 var nsgName = '${vmName}-nsg'
@@ -51,7 +54,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
           access: 'Allow'
           direction: 'Inbound'
           protocol: 'Tcp'
-          sourceAddressPrefix: '*'
+          sourceAddressPrefix: sshSourceAddressPrefix
           sourcePortRange: '*'
           destinationAddressPrefix: '*'
           destinationPortRange: '22'

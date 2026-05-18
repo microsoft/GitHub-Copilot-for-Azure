@@ -8,7 +8,7 @@ Azure MCP server installed and authenticated. `az login` token is picked up via 
 ## Pre-flight checks (read-only)
 
 ```
-compute_vm_check-quota(subscription, location, familyPrefix={derived from vmSize})
+compute_vm_check-quota(subscription, location, family={derived from vmSize})
 compute_vm_list-skus(subscription, location, familyPrefix={derived from vmSize})
 ```
 
