@@ -15,7 +15,7 @@ npm install -g @microsoft/vally
 # or, no install: use `npx @microsoft/vally ...` below
 ```
 
-Authentication is automatic when running locally — the `copilot-sdk` executor uses your active `gh` CLI session. Just make sure you are logged in (`gh auth status`).
+Authentication is automatic when running locally — the `copilot-sdk` executor uses your active `gh` CLI session (verify with `gh auth status`). Environment variables (`COPILOT_GITHUB_TOKEN`) are only required in CI environments.
 
 ## Running a single eval spec
 

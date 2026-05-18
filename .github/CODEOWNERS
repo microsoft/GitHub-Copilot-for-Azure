@@ -26,6 +26,7 @@
 /plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan @jongio
 /plugin/skills/azure-quotas/ @rakal-dyh @jongio
 /plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman @jongio
+/plugin/skills/azure-reliability/ @MadhuraBharadwaj-MSFT @saikoumudi
 /plugin/skills/azure-resource-lookup/ @charris-msft @jongio
 /plugin/skills/azure-resource-visualizer/ @tmeschter @jongio
 /plugin/skills/azure-storage/ @charris-msft @jongio
