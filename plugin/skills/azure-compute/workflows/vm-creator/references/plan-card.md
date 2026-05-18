@@ -40,10 +40,23 @@ The Plan Card is the single source of truth for the create-flow. It renders **ev
 | Quota | ✅ 4/100 vCPUs used in `standardDSv5Family` | from `compute_vm_check-quota` |
 ```
 
-## After rendering
+## After rendering — single batched action picker
 
-Ask: *"Approve as-is, edit a row, or change output format?"*
+Render the Plan Card markdown **inline in the chat first** (so the user can read it), then ask **one** AskUserQuestion that combines approval + output format + delivery:
 
-- **Approve** → proceed to Step 6 (Output Choice)
-- **Edit** → ask which row(s), update, re-render the full card
-- **Change output format** → re-render the **same** card via a different adapter — never re-ask questions
+> *"Looks good? Pick how you want it delivered:"*
+>
+> 1. **Save Bicep to `./infra/{vm-name}/`** *(Recommended for repos)*
+> 2. **Print az CLI in chat** *(Quick copy-paste)*
+> 3. **Save Terraform to `./infra/{vm-name}/`**
+> 4. **Open GitHub PR with Bicep**
+> 5. **Apply live via Azure MCP** *(actually creates resources)*
+> 6. **Edit a row first** *(then re-render and re-ask)*
+
+This collapses what used to be 3 sequential popups (approve → output format → delivery) into **1**.
+
+Implementation: a single `AskUserQuestion` tool call with `header: "Deliver"`, `multiSelect: false`, and 4 options (the 4 most likely combinations) — the user can also pick "Other" to type a custom answer like "give me both bicep and terraform".
+
+**If the user picks "Edit a row first":** then ask which row, update, re-render the full Plan Card, and re-ask the same batched action picker. Do not splinter into multiple popups.
+
+**If the user already implied the answer in their original prompt** ("save bicep to ./infra" / "open a PR" / "just print az CLI" / "apply it"): **skip this prompt entirely** and proceed straight to delivery.
