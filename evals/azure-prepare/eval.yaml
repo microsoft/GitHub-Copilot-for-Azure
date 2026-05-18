@@ -41,7 +41,7 @@ stimuli:
       Migrated from: test("invokes azure-prepare skill for new Azure application preparation prompt")
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     prompt: "Prepare my application for Azure deployment and set up the infrastructure"

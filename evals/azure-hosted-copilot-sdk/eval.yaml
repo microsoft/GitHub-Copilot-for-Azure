@@ -59,7 +59,7 @@ stimuli:
     prompt: "Build an Azure app that uses the Copilot SDK to brutally review GitHub repos based on user input"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

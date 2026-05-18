@@ -35,7 +35,7 @@ stimuli:
       Migrated from: test("invokes azure-deploy skill for deployment prompt")
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     prompt: "Run azd up to deploy my already-prepared app to Azure"

@@ -49,7 +49,7 @@ stimuli:
     prompt: "Generate a Mermaid diagram showing my Azure resource group architecture"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:

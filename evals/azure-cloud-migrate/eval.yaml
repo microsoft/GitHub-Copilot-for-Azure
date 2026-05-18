@@ -65,7 +65,7 @@ stimuli:
     # followUp (Jest): ["Go with recommended options and test it locally."]
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: files
     graders:

@@ -42,7 +42,7 @@ stimuli:
       Migrated from: test("invokes azure-validate skill for deployment readiness check")
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     prompt: "Check if my app is ready to deploy to Azure"

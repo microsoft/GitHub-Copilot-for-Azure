@@ -49,7 +49,7 @@ stimuli:
     prompt: "How many resources do I have by type across all subscriptions?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: output
     graders:

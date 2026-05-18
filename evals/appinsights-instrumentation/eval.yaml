@@ -51,7 +51,7 @@ stimuli:
     prompt: "How do I add Application Insights to my ASP.NET Core web app?"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
     graders:
