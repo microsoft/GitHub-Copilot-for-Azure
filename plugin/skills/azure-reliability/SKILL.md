@@ -1,6 +1,6 @@
 ---
 name: azure-reliability
-description: "Assess and improve the reliability posture of Azure Functions: zone redundancy, ZRS storage, health probes, multi-region failover. Scans deployed resources, presents a feature-pivoted checklist, then drives staged remediation (CLI or IaC patches) end-to-end with user confirmation. WHEN: \"assess reliability\", \"check reliability\", \"zone redundant\", \"multi-region failover\", \"high availability\", \"disaster recovery\", \"single points of failure\", \"reliability posture\"."
+description: "Assess and improve the reliability posture of PaaS Applications (Azure Functions and Azure App Service).  Scans deployed resources for zone redundancy, ZRS storage, health probes, multi-region failover. Scans deployed resources, presents a feature-pivoted checklist, then drives staged remediation (CLI or IaC patches) end-to-end with user confirmation. WHEN: \"assess reliability\", \"check reliability\", \"zone redundant\", \"multi-region failover\", \"high availability\", \"disaster recovery\", \"single points of failure\", \"reliability posture\", \"resiliency\"."
 license: MIT
 metadata:
   author: Microsoft
@@ -15,24 +15,27 @@ metadata:
 |---|---|
 | Best for | Reliability posture assessment, zone redundancy enablement, multi-region failover setup |
 | Primary capabilities | Reliability assessment table, Zone Redundancy Configuration, Multi-Region IaC Generation |
-| Supported services | Azure Functions (App Service and Container Apps planned for a future version) |
+| Supported services | Azure Functions, App Service (Container Apps planned for a future version) |
 | MCP tools | Azure Resource Graph queries, Azure CLI commands |
 
 ## When to Use This Skill
 
 Activate this skill when user wants to:
-- "Assess my Functions app's reliability"
-- "Check the reliability of my resource group" (Functions resources only)
-- "Is my function app zone redundant?"
-- "Make my function app zone redundant"
-- "Set up multi-region failover for my Functions app"
+- "Assess my Function app's reliability"
+- "Assess my Web app's reliability"
+- "Check the reliability of my resource group" (App Service and Functions resources only)
+- "Is my app zone redundant?" (App Service and Functions resources only)
+- "Is my app service plan zone redundant?" 
+- "Make my app zone redundant" (App Service and Functions resources only)
+- "Make my app service plan zone redundant"
+- "Set up multi-region failover for my app" (App Service and Functions resources only)
 - "Check my reliability posture"
-- "Find single points of failure" (in Functions workloads)
-- "Enable high availability for my Functions app"
+- "Find single points of failure" (App Service and Functions resources only)
+- "Enable high availability for my app" (App Service and Functions resources only)
 - "Check disaster recovery readiness"
-- "Improve my Functions app's resilience"
+- "Improve my app's resilience" (App Service and Functions resources only)
 
-> **Scope note:** This skill currently covers **Azure Functions** only. If the user asks about Azure App Service or Azure Container Apps reliability, acknowledge that support is planned but not yet available, and only proceed with the parts that apply to Functions resources in scope.
+> **Scope note:** This skill currently covers **Azure Functions and Azure App Service** only. If the user asks about Azure Container Apps reliability, acknowledge that support is planned but not yet available, and only proceed with the parts that apply to App Service and Functions resources in scope.
 
 ## Prerequisites
 
@@ -57,7 +60,7 @@ Primary query method: Azure Resource Graph via `az graph query` (requires `az ex
 
 1. **Identify scope** — Ask user for resource group, subscription, or app name
 2. **Query Azure Resource Graph** to discover all resources in scope
-3. **Classify resources** by service type (Functions, Storage, etc.). If non-Functions compute (App Service sites that aren't Function Apps, Container Apps) is found, **note it but do not deep-dive** — those services are planned for a future version of this skill.
+3. **Classify resources** by service type (Functions, App Service, Storage, etc.). If Container Apps is found, **note it but do not deep-dive** — Container Apps support is planned for a future version of this skill.
 
 **Important:** Always scope queries to the user's specified resource group or subscription. Add these filters to every Resource Graph query:
 - Resource group: `| where resourceGroup =~ '<rg-name>'`
@@ -79,12 +82,12 @@ Two-step assessment: **platform-level discovery first, then per-service deep div
 
 **Step 2 — Per-service deep dive.** For each compute resource discovered in Step 1, load the matching service reference. The service reference is the single source of truth for that service's plan/SKU rules, assessment queries, CLI commands, IaC patches (Bicep + Terraform + AVM), and reporting hints.
 
-This skill version ships **only the Azure Functions** per-service reference. Other compute services are listed below explicitly so the dispatch logic is unambiguous: if a resource matches an unsupported row, do **not** attempt to load a reference, fabricate CLI commands, or generate IaC patches for it.
+This skill version ships **only the Azure Functions and App Service** per-service references. Other compute services are listed below explicitly so the dispatch logic is unambiguous: if a resource matches an unsupported row, do **not** attempt to load a reference, fabricate CLI commands, or generate IaC patches for it.
 
 | Service detected | Reference |
 |---|---|
 | Azure Functions (`microsoft.web/serverfarms` with `kind contains 'functionapp'`) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
-| Azure App Service (non-Functions sites: `microsoft.web/sites` without `kind contains 'functionapp'`, `microsoft.web/serverfarms` without `kind contains 'functionapp'`) | ⚪ Not yet shipped — planned for a future version |
+| Azure App Service (non-Functions sites: `microsoft.web/sites` without `kind contains 'functionapp'`, `microsoft.web/serverfarms` without `kind contains 'functionapp'`) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
 | Azure Container Apps (`microsoft.app/containerapps`, `microsoft.app/managedenvironments`) | ⚪ Not yet shipped — planned for a future version |
 
 > **Handling unsupported services:** If a resource matches an unsupported row above, surface it in the discovery summary, mark it as `⚪ not assessed (planned)` in the Phase 3 table, and skip the per-service remediation steps for it. Do **not** attempt to fabricate CLI commands or IaC patches for those services.
@@ -98,16 +101,18 @@ Present findings as a **feature-pivoted** table: one row per reliability feature
 ─────────────────────────────────────────────────────────────────────────────────────────────
 Reliability Feature              Status      Resources
 ─────────────────────────────────────────────────────────────────────────────────────────────
-Zone redundancy — compute        🔴 OFF      • plan-ii5trxva2ark4 (FC1)
+Zone redundancy — compute        🔴 OFF      • plan-web-ii5trxva2ark4 (P1v3)
+                                              •  plan-ii5trxva2ark4 (FC1)
 
 Zone-redundant storage           🔴 GRS      • stii5trxva2ark4 (defaulted; no SKU set in IaC)
 
 Health probes                    🔴 OFF      • func-api-ii5trxva2ark4 — needs code change (FC1)
+                                              • app-web-ii5trxva2ark4 — no health check path
 
 Multi-region failover            🔴 OFF      • Single region (eastus) only — Front Door not configured
 ─────────────────────────────────────────────────────────────────────────────────────────────
 
-Want me to fix the 🔴 items? I'll do the quick wins first (Function App
+Want me to fix the 🔴 items? I'll do the quick wins first (App
 plan zone redundancy + health checks on supported plans), then ask before
 storage migration and multi-region setup. (yes/no)
 ```
