@@ -42,17 +42,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("contains expected sections", () => {
-      expect(skill.content).toContain("## Core Responsibilities");
       expect(skill.content).toContain("## Workflow Process");
+      expect(skill.content).toContain("mermaid-diagram-workflow");
       expect(skill.content).toContain("Resource Group Selection");
       expect(skill.content).toContain("Resource Discovery & Analysis");
       expect(skill.content).toContain("Diagram Construction");
     });
 
-    test("includes Mermaid diagram examples", () => {
+    test("includes Mermaid diagram references", () => {
       expect(skill.content).toContain("Mermaid");
-      expect(skill.content).toContain("graph TB");
-      expect(skill.content).toContain("graph LR");
+      expect(skill.content).toContain("mermaid-diagram-workflow");
     });
 
     test("defines quality standards", () => {
@@ -70,7 +69,7 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     });
 
     test("includes relationship mapping guidance", () => {
-      expect(skill.content).toContain("Relationship Mapping");
+      expect(skill.content).toContain("Map relationships");
       expect(skill.content).toContain("Network connections");
       expect(skill.content).toContain("Data flow");
     });
@@ -83,6 +82,31 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
     test("mentions Resource Graph for resource discovery", () => {
       expect(skill.content).toContain("Azure Resource Graph");
+    });
+  });
+
+  describe("Draw.io Support", () => {
+    test("description mentions Draw.io as supported output format", () => {
+      expect(skill.metadata.description).toContain("Draw.io");
+    });
+
+    test("references drawio diagram workflow", () => {
+      expect(skill.content).toContain("drawio-diagram-workflow.md");
+    });
+
+    test("references drawio diagram conventions", () => {
+      expect(skill.content).toContain("drawio-diagram-conventions.md");
+    });
+
+    test("routes draw.io trigger phrases to drawio workflow", () => {
+      expect(skill.content).toContain("draw.io");
+      expect(skill.content).toContain("drawio");
+    });
+
+    test("description includes draw.io trigger phrases", () => {
+      const description = skill.metadata.description;
+      expect(description).toContain("draw.io diagram");
+      expect(description).toContain("generate draw.io");
     });
   });
 });
