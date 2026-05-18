@@ -102,7 +102,7 @@ Present findings as a **feature-pivoted** table: one row per reliability feature
 Reliability Feature              Status      Resources
 ─────────────────────────────────────────────────────────────────────────────────────────────
 Zone redundancy — compute        🔴 OFF      • plan-web-ii5trxva2ark4 (P1v3)
-                                              •  plan-ii5trxva2ark4 (FC1)
+                                              • plan-ii5trxva2ark4 (FC1)
 
 Zone-redundant storage           🔴 GRS      • stii5trxva2ark4 (defaulted; no SKU set in IaC)
 
