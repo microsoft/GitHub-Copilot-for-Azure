@@ -53,4 +53,4 @@ Common regions with AZ support across Functions, App Service, and Container Apps
 
 ## Reporting
 
-For the assessment table's `Zone redundancy — compute` row, the per-service references define exactly what `🟢 ON / 🟡 PARTIAL / 🔴 OFF` mean for that service (e.g. ZR + minimum instance count for App Service, Premium Functions). Only App Service and Functions has a per-service reference in this skill version; Container Apps support is planned.
+For the assessment table's `Zone redundancy — compute` row, the per-service references define exactly what `🟢 ON / 🟡 PARTIAL / 🔴 OFF` mean for that service (e.g. ZR + minimum instance count for App Service, Premium Functions). Only App Service and Functions have a per-service reference in this skill version; Container Apps support is planned.
