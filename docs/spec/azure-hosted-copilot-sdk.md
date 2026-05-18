@@ -43,7 +43,6 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | Test File | Tests | Status |
 |-----------|-------|--------|
 | `triggers.test.ts` | 5 test blocks (10 trigger, 8 negative, 5 edge cases) | ✅ Complete |
-| `unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ Complete |
 | `integration.test.ts` | 8 tests (invocation rate + content quality) | ✅ Complete |
 | `__snapshots__/triggers.test.ts.snap` | Keyword snapshots | ✅ Regenerated |
 

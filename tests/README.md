@@ -41,7 +41,7 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 3. **Each test file loads its skill** via `utils/skill-loader.ts`
 4. **Tests execute** - execute test code and generate output
 
-There are 3 types of tests.
+There are 2 types of tests.
 
 - trigger test: tests that validate if the description of a skill can trigger or not trigger a given prompt using a heuristic.
 - integration test: tests that validate if the skill can lead to successful completion of a task by running a given prompt against a Copilot SDK agent.
@@ -287,7 +287,7 @@ cp -r _template {skill-name}
 Edit each test file and change the `SKILL_NAME` constant:
 
 ```typescript
-// In unit.test.ts, triggers.test.ts, integration.test.ts
+// In triggers.test.ts, integration.test.ts
 const SKILL_NAME = 'azure-redis';  // ← Change this to match your skill folder
 ```
 
