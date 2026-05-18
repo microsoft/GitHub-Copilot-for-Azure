@@ -4,7 +4,7 @@ How to add or upgrade `azure-sdk-bom` and clean up redundant versions across all
 
 ## Prerequisite — Python availability check
 
-The Maven and plain-Gradle flows are automated by `scripts/upgrade_bom.py` (Python 3.8+). The script resolves the latest BOM internally; do not pass or pin a literal BOM version. Before picking a guide, verify Python is available:
+The Maven and plain-Gradle flows are automated by `scripts/upgrade_bom.py` (Python 3.10+). The script resolves the latest BOM internally; do not pass or pin a literal BOM version. Before picking a guide, verify Python is available:
 
 The following check works in both **bash** and **PowerShell 7+** (the `||` operator is supported in both):
 

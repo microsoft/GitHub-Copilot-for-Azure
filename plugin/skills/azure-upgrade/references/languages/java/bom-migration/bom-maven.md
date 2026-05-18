@@ -1,6 +1,6 @@
 # BOM Migration — Maven Projects
 
-> **Python availability**: The script below requires Python 3.8+. If `python3 --version` (or `python --version`) fails, skip the script section and follow [Manual Fallback (no Python)](#manual-fallback-no-python) instead.
+> **Python availability**: The script below requires Python 3.10+. If `python3 --version` (or `python --version`) fails, skip the script section and follow [Manual Fallback (no Python)](#manual-fallback-no-python) instead.
 
 ## Automated (Python available)
 
