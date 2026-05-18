@@ -11,9 +11,10 @@ Deploys a Linux VM (RG, VNet, subnet, NSG with SSH allow, public IP, NIC).
 ## Quickstart
 
 ```bash
+MY_IP=$(curl -s ifconfig.me)/32   # your current public IP, locked to /32
 terraform init
-terraform plan  -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa.pub)" -var "subscription_id=$AZ_SUB" -var "resource_group_name=dev-vm-rg"
-terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa.pub)" -var "subscription_id=$AZ_SUB" -var "resource_group_name=dev-vm-rg"
+terraform plan  -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa.pub)" -var "subscription_id=$AZ_SUB" -var "resource_group_name=dev-vm-rg" -var "ssh_source_address_prefix=$MY_IP"
+terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa.pub)" -var "subscription_id=$AZ_SUB" -var "resource_group_name=dev-vm-rg" -var "ssh_source_address_prefix=$MY_IP"
 ```
 
 ## Variables (see `variables.tf`)
@@ -24,6 +25,7 @@ terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa
 | `resource_group_name` * | string | — | RG will be created |
 | `vm_name` * | string | — | VM resource name |
 | `admin_public_key` * | string (sensitive) | — | Contents of `id_rsa.pub` |
+| `ssh_source_address_prefix` * | string | — | Your public IP as `<ip>/32` or a trusted CIDR. `"*"` opens port 22 to the internet — only pass it if you have accepted that risk. |
 | `location` | string | `eastus` | Azure region |
 | `size` | string | `Standard_D2s_v5` | Verify with `compute_vm_list-skus` |
 | `admin_username` | string | `azureuser` | |
@@ -31,7 +33,6 @@ terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa
 | `os_disk_type` | string | `Premium_LRS` | |
 | `os_disk_size_gb` | number | `30` | |
 | `tags` | map(string) | `{}` | |
-| `ssh_source_address_prefix` | string | `"*"` | ⚠ Restrict to your public IP or a CIDR for production |
 
 `*` = required (no default).
 
@@ -43,9 +44,9 @@ terraform apply -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa
 Replace `azurerm_linux_virtual_machine` with `azurerm_linux_virtual_machine_scale_set`; add `instances`, `upgrade_mode = "Manual" | "Automatic" | "Rolling"`. Inline NIC inside the scale set via `network_interface { ip_configuration { ... } }`.
 
 ## Notes
-Even for dev, pass `ssh_source_address_prefix=<your-ip>/32` instead of leaving the default `"*"` — an open SSH port is a credential-stuffing target within minutes of going public. For production, also add managed identity, diagnostics, and backup.
+`ssh_source_address_prefix` is required because an open SSH port is a credential-stuffing target within minutes of going public. Always pass `<your-ip>/32` (or a trusted CIDR) — even for dev. For production, also add managed identity, diagnostics, and backup.
 
 ## Cleanup
 ```bash
-terraform destroy -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa.pub)" -var "subscription_id=$AZ_SUB" -var "resource_group_name=dev-vm-rg" -auto-approve
+terraform destroy -var "vm_name=dev-vm" -var "admin_public_key=$(cat ~/.ssh/id_rsa.pub)" -var "subscription_id=$AZ_SUB" -var "resource_group_name=dev-vm-rg" -var "ssh_source_address_prefix=$MY_IP" -auto-approve
 ```

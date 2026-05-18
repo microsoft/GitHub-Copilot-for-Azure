@@ -32,8 +32,8 @@ param zone string = ''
 @description('Tags applied to all resources')
 param tags object = {}
 
-@description('Source address prefix allowed for SSH inbound (CIDR, IP, or "*"). Default "*" is open to the internet — set to your public IP or a CIDR range for production.')
-param sshSourceAddressPrefix string = '*'
+@description('Source address prefix allowed for SSH inbound (CIDR or IP). Required — supply your public IP (e.g. "203.0.113.42/32") or a trusted CIDR range. "*" exposes port 22 to the entire internet; only pass it explicitly when you have accepted that risk.')
+param sshSourceAddressPrefix string
 
 var vnetName = '${vmName}-vnet'
 var subnetName = 'default'
