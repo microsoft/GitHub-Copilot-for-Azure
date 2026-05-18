@@ -48,6 +48,7 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill des
     "sql",
     "storage",
     "templates",
+    "vnet",
     "when",
   ],
   "name": "azure-iac-generator",
@@ -100,6 +101,7 @@ exports[`azure-iac-generator - Trigger Tests Trigger Keywords Snapshot skill key
   "sql",
   "storage",
   "templates",
+  "vnet",
   "when",
 ]
 `;
