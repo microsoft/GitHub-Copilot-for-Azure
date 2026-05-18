@@ -1816,6 +1816,8 @@ async function loadIntegrationTestTokenUsage() {
           testName,
           inputTokens: Math.round((usage.inputTokens || 0) / runCount),
           outputTokens: Math.round((usage.outputTokens || 0) / runCount),
+          cacheReadTokens: Math.round((usage.cacheReadTokens || 0) / runCount),
+          cacheWriteTokens: Math.round((usage.cacheWriteTokens || 0) / runCount),
           totalTokens: Math.round((usage.totalTokens || 0) / runCount),
         });
       }
@@ -1833,7 +1835,7 @@ async function loadIntegrationTestTokenUsage() {
 /**
  * Populate and finalise the integration test token usage panel.
  * @param {HTMLElement} section
- * @param {Array<{skillName:string, testName:string, inputTokens:number, outputTokens:number, totalTokens:number}>} rows
+ * @param {Array<{skillName:string, testName:string, inputTokens:number, outputTokens:number, cacheReadTokens:number, cacheWriteTokens:number, totalTokens:number}>} rows
  * @param {string|null} dateLabel
  */
 function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
@@ -1855,7 +1857,7 @@ function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
     const headerRow = el("tr");
     const thTest = el("th", undefined, "Test");
     thTest.setAttribute("scope", "col");
-    const thTokens = el("th", "itoken-num-col", "In / Out / Total");
+    const thTokens = el("th", "itoken-num-col", "In / Out / Cache Read / Cache Write / Total");
     thTokens.setAttribute("scope", "col");
     headerRow.appendChild(thTest);
     headerRow.appendChild(thTokens);
@@ -1876,11 +1878,19 @@ function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
       spanIn.setAttribute("title", row.inputTokens.toLocaleString());
       const spanOut = el("span", "itoken-out", formatTokenCount(row.outputTokens));
       spanOut.setAttribute("title", row.outputTokens.toLocaleString());
+      const spanCacheRead = el("span", "itoken-cache-read", formatTokenCount(row.cacheReadTokens));
+      spanCacheRead.setAttribute("title", row.cacheReadTokens.toLocaleString());
+      const spanCacheWrite = el("span", "itoken-cache-write", formatTokenCount(row.cacheWriteTokens));
+      spanCacheWrite.setAttribute("title", row.cacheWriteTokens.toLocaleString());
       const spanTotal = el("span", "itoken-total", formatTokenCount(row.totalTokens));
       spanTotal.setAttribute("title", row.totalTokens.toLocaleString());
       tdTokens.appendChild(spanIn);
       tdTokens.appendChild(document.createTextNode(" / "));
       tdTokens.appendChild(spanOut);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanCacheRead);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanCacheWrite);
       tdTokens.appendChild(document.createTextNode(" / "));
       tdTokens.appendChild(spanTotal);
 

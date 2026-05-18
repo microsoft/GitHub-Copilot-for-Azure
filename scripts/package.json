@@ -21,14 +21,15 @@
     "lint:fix": "eslint --fix",
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
     "dashboard:serve": "sirv ../dashboard --port 3000 --dev",
-    "dashboard": "npm run dashboard:collect && npm run dashboard:serve"
+    "dashboard": "npm run dashboard:collect && npm run dashboard:serve",
+    "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/micromatch": "^4.0.10",
     "@types/node": "^25.6.0",
     "@vitest/coverage-v8": "^4.1.2",
-    "eslint": "^10.2.0",
+    "eslint": "^10.3.0",
     "fast-xml-parser": "^5.7.1",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",

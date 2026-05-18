@@ -175,7 +175,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async () => {
         const rawMetadata = await agent.run({
           setup: setupCopilotSdkApp,
-          prompt: "Deploy this app to Azure",
+          prompt: "Show me how to deploy this app to Azure but don't deploy it",
           nonInteractive: true,
         });
         const agentMetadata = sanitizeMetadata(rawMetadata);
