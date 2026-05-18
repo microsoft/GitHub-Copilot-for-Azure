@@ -46,6 +46,7 @@ BOM_POM_URL = "https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/s
 POM_NAMESPACE = {"m": "http://maven.apache.org/POM/4.0.0"}
 MIN_BOM_VERSION = "1.3.0"
 LATEST_VERSION_SENTINEL = "latest"
+HTTP_TIMEOUT_SECONDS = 30
 STABLE_SEMVER_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
 
 # Maven constants
@@ -78,7 +79,7 @@ def _detect_build_system(project_dir: str) -> str:
 
 def _get_latest_bom_version() -> str:
     try:
-        with urllib.request.urlopen(BOM_POM_URL) as response:
+        with urllib.request.urlopen(BOM_POM_URL, timeout=HTTP_TIMEOUT_SECONDS) as response:
             pom_xml = response.read()
     except urllib.error.URLError as exc:
         raise SystemExit(f"Failed to download {BOM_POM_URL}: {exc}") from exc

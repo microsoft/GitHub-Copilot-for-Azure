@@ -18,7 +18,7 @@ For Windows PowerShell 5.1, use:
 python3 --version; if ($LASTEXITCODE -ne 0) { python --version }
 ```
 
-- **Python available** → use the script as documented in [bom-maven.md](./bom-maven.md) / [bom-gradle.md](./bom-gradle.md).
+- **Python available** → use the script as documented in [bom-maven.md](./bom-maven.md) / [bom-gradle.md](./bom-gradle.md). If `upgrade_bom.py` fails for any reason, do not stop the migration; manually resolve the BOM version and follow the same guide's **Manual Fallback** section.
 - **Python NOT available** → follow the **Manual Fallback** section in the same guide. Do not attempt to install Python; perform the edits by hand.
 
 The TOML and programmatic-catalog guides ([bom-gradle-toml.md](./bom-gradle-toml.md), [bom-gradle-settings.md](./bom-gradle-settings.md)) are manual-only and unaffected by Python availability.
@@ -36,7 +36,7 @@ python3 ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
 # or: python ./references/languages/java/scripts/upgrade_bom.py --get-latest-version
 ```
 
-If Python is not available, fetch `https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml` directly and use the `<version>` value declared in that BOM `pom.xml`.
+If Python is not available or the `--get-latest-version` command fails, fetch `https://raw.githubusercontent.com/Azure/azure-sdk-for-java/main/sdk/boms/azure-sdk-bom/pom.xml` directly and use the `<version>` value declared in that BOM `pom.xml`.
 
 Do not continue until you have resolved that latest stable version explicitly. Add only that value to the plan's `Guidelines` section as `TARGET_AZURE_SDK_BOM_VERSION = <resolved-version>`.
 
