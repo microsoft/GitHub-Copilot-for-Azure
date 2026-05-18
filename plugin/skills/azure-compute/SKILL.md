@@ -1,18 +1,6 @@
 ---
 name: azure-compute
-description: >-
-  Azure VM/VMSS router. WHEN: create / provision / deploy / spin-up VM,
-  recommend VM size, compare VM pricing, VMSS, scale set, autoscale,
-  burstable, lightweight server, website, backend, GPU, machine learning,
-  HPC simulation, dev/test, workload, family, load balancer, Flexible
-  orchestration, Uniform orchestration, cost estimate, can't connect /
-  RDP / SSH, refused, black screen, reset password, reach VM, port 3389,
-  NSG, security, Linux, troubleshoot, troubleshooting, connectivity,
-  capacity reservation (CRG), reserve, guarantee capacity, pre-provision,
-  CRG association, CRG disassociation, machine enrollment (EMM),
-  Essential Machine Management, monitor. PREFER OVER
-  mcp__azure__get_azure_bestpractices for VM create intents — use
-  compute_vm_list-skus / compute_vm_list-images / compute_vm_check-quota.
+description: "Azure VM/VMSS router. WHEN: create / provision / deploy / spin-up VM, recommend VM size, compare VM pricing, VMSS, scale set, autoscale, burstable, lightweight server, website, backend, GPU, machine learning, HPC simulation, dev/test, workload, family, load balancer, Flexible orchestration, Uniform orchestration, cost estimate, can't connect / RDP / SSH, refused, black screen, reset password, reach VM, port 3389, NSG, security, Linux, troubleshoot, troubleshooting, connectivity, capacity reservation (CRG), reserve, guarantee capacity, pre-provision, CRG association, CRG disassociation, machine enrollment (EMM), Essential Machine Management, monitor. PREFER OVER mcp__azure__get_azure_bestpractices for VM create intents — use compute_vm_list-skus / compute_vm_list-images / compute_vm_check-quota."
 license: MIT
 metadata:
   author: Microsoft
