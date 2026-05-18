@@ -95,12 +95,12 @@ describe("deploy - Unit Tests", () => {
     });
   });
 
-  describe("After Deployment — Auto-Create Evaluators", () => {
-    test("has auto-create evaluators section", () => {
-      expect(deployContent).toContain("Auto-Create Evaluators & Dataset");
+  describe("After Deployment — Auto-Generate Evaluation Suite", () => {
+    test("has auto-generate evaluation suite section", () => {
+      expect(deployContent).toContain("Auto-Generate Evaluation Suite");
     });
 
-    test("marks auto-create as automatic (not optional)", () => {
+    test("marks suite generation as automatic (not optional)", () => {
       expect(deployContent).toMatch(/automatic|immediately/i);
     });
 
@@ -108,25 +108,24 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toContain("agent_get");
     });
 
-    test("specifies default evaluator categories", () => {
-      expect(deployContent).toContain("evaluator_catalog_get");
-      expect(deployContent).toMatch(/custom.*built-in|built-in.*custom/i);
-      expect(deployContent).toMatch(/name, category, and version/i);
-      expect(deployContent).toMatch(/<=5/i);
-      expect(deployContent).toContain("Quality");
-      expect(deployContent).toContain("Safety");
-      expect(deployContent).toContain("relevance");
-      expect(deployContent).toContain("intent_resolution");
-      expect(deployContent).toContain("task_adherence");
-      expect(deployContent).toContain("indirect_attack");
-      expect(deployContent).toContain("tool_call_accuracy");
+    test("uses evaluation suite generation as the preferred setup path", () => {
+      expect(deployContent).toContain("evaluation_suite_generation_job_create");
+      expect(deployContent).toContain("evaluation_suite_generation_job_get");
+      expect(deployContent).toContain("evaluation_suite_get");
+      expect(deployContent).toContain("generationModelDeploymentName");
+      expect(deployContent).toContain("dataGenerationType");
+      expect(deployContent).toContain("maxSamples");
+      expect(deployContent).toContain("traceAgentName");
+      expect(deployContent).toContain("traceStartTime");
     });
 
-    test("uses the observe skill's two-phase evaluator strategy", () => {
-      expect(deployContent).toContain("Two-Phase Evaluator Strategy");
-      expect(deployContent).toMatch(/Phase 1 is built-in only/i);
+    test("documents manual fallback to evaluator and dataset suggestions", () => {
+      expect(deployContent).toContain("evaluator_catalog_get");
+      expect(deployContent).toContain("Generate Seed Evaluation Dataset");
+      expect(deployContent).toContain("evaluation_dataset_create");
+      expect(deployContent).toContain("generationSource: manual-fallback");
       expect(deployContent).toContain("expected_behavior");
-      expect(deployContent).toMatch(/behavioral scoring/i);
+      expect(deployContent).toMatch(/fallback reason/i);
     });
 
     test("instructs identifying judge deployment from actual project deployments", () => {
@@ -136,10 +135,14 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
     });
 
-    test("instructs persisting artifacts to .foundry/evaluators/ and .foundry/datasets/", () => {
+    test("instructs persisting generated artifacts to .foundry/evaluators/ and .foundry/datasets/", () => {
       expect(deployContent).toContain(".foundry/evaluators/");
       expect(deployContent).toContain(".foundry/datasets/");
       expect(deployContent).toContain("datasetUri");
+      expect(deployContent).toContain("suiteName");
+      expect(deployContent).toContain("suiteVersion");
+      expect(deployContent).toContain("generationJobId");
+      expect(deployContent).toContain("generationSource");
       expect(deployContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
     });
 
@@ -148,24 +151,16 @@ describe("deploy - Unit Tests", () => {
       expect(deployContent).toMatch(/Do \*\*not\*\* scan sibling agent folders/i);
     });
 
-    test("uses the seed dataset guide as the canonical registration flow", () => {
+    test("uses the seed dataset guide as the manual fallback flow", () => {
       expect(deployContent).toContain("Generate Seed Evaluation Dataset");
-      expect(deployContent).toMatch(/single source of truth for seed dataset registration/i);
-      expect(deployContent).toContain("project_connection_list");
-      expect(deployContent).toContain("AzureStorageAccount");
       expect(deployContent).toContain("evaluation_dataset_create");
-      expect(deployContent).toContain("connectionName");
-      expect(deployContent).toContain("<agent-name>-eval-seed");
-      expect(deployContent).toContain("datasetUri");
       expect(deployContent).not.toContain("--account-key <storage-account-key>");
       expect(deployContent).not.toContain("--auth-mode login");
     });
 
-    test("describes seed generation rules without a separate validation pass", () => {
-      expect(deployContent).toMatch(/keep rows valid by construction/i);
-      expect(deployContent).not.toContain(
-        "Validation gates (JSON parsing, required fields, category coverage, minimum row count)"
-      );
+    test("surfaces generation failures instead of silently falling back", () => {
+      expect(deployContent).toMatch(/Do \*\*not\*\* silently ignore generation failures/i);
+      expect(deployContent).toMatch(/generated-suite path or the fallback path/i);
     });
 
     test("asks to RUN evaluation (not just set up)", () => {

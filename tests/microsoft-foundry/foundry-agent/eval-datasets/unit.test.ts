@@ -96,6 +96,17 @@ describe("eval-datasets - Unit Tests", () => {
       expect(datasetsContent).toMatch(/evaluation_dataset_create.*does not expose a first-class `tags` parameter/i);
     });
 
+    test("documents generated dataset refresh and suite alignment", () => {
+      expect(datasetsContent).toContain("data_generation_job_create");
+      expect(datasetsContent).toContain("data_generation_job_get");
+      expect(datasetsContent).toContain("evaluation_suite_create");
+      expect(datasetsContent).toContain("suiteName");
+      expect(datasetsContent).toContain("suiteVersion");
+      expect(datasetsContent).toContain("generationJobId");
+      expect(datasetsContent).toContain("generationSource");
+      expect(datasetsContent).toMatch(/do not mutate old suite versions in place/i);
+    });
+
     test("uses AzureStorageAccount connections and always includes connectionName when registering datasets", () => {
       const traceToDatasetContent = fs.readFileSync(
         path.join(REFERENCES_PATH, "trace-to-dataset.md"),

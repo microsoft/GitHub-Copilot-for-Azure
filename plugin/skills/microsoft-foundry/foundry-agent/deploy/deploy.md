@@ -30,6 +30,22 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 ## Workflow: Hosted Agent Deployment
 
+> ⚠️ **`azd deploy` ≠ deployment complete.** `azd deploy` (or any `azd up`/`az acr build`/`agent_update` shortcut) only covers Steps 1–6. You **MUST** still execute Step 7 (invocation test) and Step 8 (auto-generate evaluation suite) before reporting success to the user. A successful `azd deploy` exit code is **not** a stopping condition.
+
+### Definition of Done — Hosted Agent Deployment
+
+A hosted-agent deployment is complete only when **every** box below is checked. Do **not** produce a final "deployment successful" summary, table, or Playground link until all items are done. If you skip any item, your response is incomplete.
+
+- [ ] Step 1 — Project scanned, type detected
+- [ ] Step 2 — Environment variables confirmed with user
+- [ ] Step 3 — Image built and pushed to ACR
+- [ ] Step 4 — Agent configuration collected
+- [ ] Step 5 — Agent definition schema retrieved
+- [ ] Step 6 — `agent_update` called successfully
+- [ ] Step 7 — RBAC checked **and** invocation smoke test passed (via the invoke skill)
+- [ ] Step 8 — Auto-generated evaluation suite (or documented fallback) persisted under `.foundry/`
+- [ ] Deployment context written to `.foundry/agent-metadata.yaml` for the selected environment
+- [ ] User prompted to run an evaluation
 
 ### Step 1: Detect and Scan Project
 
@@ -162,13 +178,29 @@ After this RBAC check is complete, read and follow the [invoke skill](../invoke/
 
 If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 8 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+> ⚠️ **DO NOT stop here.** Continue to Step 8 (Auto-Generate Evaluation Suite). This step is mandatory after every successful deployment.
 
-### Step 8: Auto-Create Evaluators & Dataset
+### Step 8: Auto-Generate Evaluation Suite (MANDATORY)
 
-Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+> 🛑 **Stop-and-check before summarizing.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 8 has not run, you are violating this skill. Run Step 8 first.
+
+Follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below. The section is mandatory — not optional — for every hosted-agent deployment, including redeploys, version bumps, and `azd deploy` re-runs against an already-existing agent.
+
+If the user explicitly says "skip eval suite generation," record that decision in your summary and still update `.foundry/agent-metadata.yaml` with the deployment context. Otherwise, do not skip.
 
 ## Workflow: Prompt Agent Deployment
+
+### Definition of Done — Prompt Agent Deployment
+
+A prompt-agent deployment is complete only when **every** box below is checked. Do **not** produce a final "deployment successful" summary, table, or Playground link until all items are done.
+
+- [ ] Step 1 — Agent configuration collected
+- [ ] Step 2 — Agent definition schema retrieved
+- [ ] Step 3 — `agent_update` called successfully
+- [ ] Step 4 — Invocation smoke test passed (via the invoke skill)
+- [ ] Step 5 — Auto-generated evaluation suite (or documented fallback) persisted under `.foundry/`
+- [ ] Deployment context written to `.foundry/agent-metadata.yaml` for the selected environment
+- [ ] User prompted to run an evaluation
 
 ### Step 1: Collect Agent Configuration
 
@@ -200,13 +232,18 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Generate Evaluation Suite). This step is mandatory after every successful deployment.
 
-### Step 5: Auto-Create Evaluators & Dataset
+### Step 5: Auto-Generate Evaluation Suite (MANDATORY)
 
-Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+> 🛑 **Stop-and-check before summarizing.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+
+Follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
 
 ## Display Agent Information
+
+> 🛑 **Gate:** Do not render the table or Playground link until the Definition of Done checklist for the selected workflow (Hosted or Prompt) is fully satisfied, including the invocation smoke test, the auto-generated evaluation suite (or documented skip), and the `.foundry/agent-metadata.yaml` update. The Playground link is the final artifact, not a mid-workflow checkpoint.
+
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 
 Below the table you MUST also display a Playground link for direct access to the agent in Azure AI Foundry:
@@ -233,7 +270,7 @@ After a successful deployment, persist the deployment context to the selected me
 
 If the selected metadata file is a preferred single-environment file, update only that one environment block and leave sibling metadata files untouched. If the selected metadata file is a legacy multi-environment file, merge the selected environment instead of overwriting other environments or cached evaluation suites without confirmation. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite that environment to `evaluationSuites[]` when you persist deployment metadata.
 
-## After Deployment — Auto-Create Evaluators & Dataset
+## After Deployment — Auto-Generate Evaluation Suite
 
 > ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the selected `.foundry` environment for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
 
@@ -241,75 +278,67 @@ If the selected metadata file is a preferred single-environment file, update onl
 
 Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
 
-### 2. Reuse or Refresh Local Cache
+### 2. Reuse or Refresh Suite Cache
 
 Inspect the selected agent root before generating anything new:
 
-- Reuse `.foundry/evaluators/` and `.foundry/datasets/` when they already contain the right assets for the selected environment.
-- Ask before refreshing cached files or replacing thresholds.
-- If cache is missing or stale, regenerate the dataset/evaluators and update metadata for the active environment only.
+- Reuse a selected environment `evaluationSuites[]` entry when it has `suiteName`, `suiteVersion`, matching `.foundry/datasets/`, and matching `.foundry/evaluators/` cache files.
+- Call `evaluation_suite_get` to confirm the remote suite still exists before reusing it.
+- Ask before refreshing cached files, replacing thresholds, or writing a new suite version.
+- If cache or the remote suite is missing/stale, generate a new suite and update metadata for the active environment only.
 
-### 2.5 Discover Existing Evaluators
-
-Use **`evaluator_catalog_get`** with the selected environment's project endpoint to list all evaluators already registered in the project. Display them to the user grouped by type (`custom` vs `built-in`) with name, category, and version. During Phase 1, catalog any promising custom evaluators for later reuse, but keep the first run on the built-in baseline. Only propose creating a new evaluator in Phase 2 when no existing evaluator covers the required dimension.
-
-### 3. Select Default Evaluators
-
-Follow the [observe skill's Two-Phase Evaluator Strategy](../observe/observe.md). Phase 1 is built-in only, so do not create a new custom evaluator during the initial setup pass.
-
-Start with <=5 built-in evaluators for the initial eval run so the first pass stays fast:
-
-| Category | Evaluators |
-|----------|-----------|
-| **Quality (built-in)** | relevance, task_adherence, intent_resolution |
-| **Safety (built-in)** | indirect_attack |
-| **Tool use (built-in, conditional)** | tool_call_accuracy (use when the agent calls tools; some catalogs label it as `builtin.tool_call_accuracy`) |
-
-After analyzing initial results, suggest additional evaluators (custom or built-in) targeted at specific failure patterns instead of front-loading a larger default set.
-
-If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring. When creating custom evaluator `promptText`, preserve the rubric but remove or rewrite user-provided output-format instructions that conflict with the runtime-enforced `result`/`reason` JSON contract (for example, `score`/`reasoning` schemas or duplicate `OUTPUT FORMAT` blocks).
-
-### 4. Identify LLM-Judge Deployment
+### 3. Identify Generation Deployment
 
 Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
 
-### 5. Generate Seed Dataset
+### 4. Generate Evaluation Suite
 
-> ⚠️ **MANDATORY: Read the full generation workflow before proceeding.**
+Read and follow [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md). Use `evaluation_suite_generation_job_create` as the preferred post-deploy setup path, then poll with `evaluation_suite_generation_job_get` and inspect the generated suite with `evaluation_suite_get`.
 
-Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md). That reference contains:
-- The required JSONL row schema (`query` + `expected_behavior` are both mandatory)
-- Coverage distribution targets and generation rules
-- Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
-- Foundry registration steps (blob upload + `evaluation_dataset_create`)
-- Metadata updates for the selected metadata file and `manifest.json`
+> 🛑 **Do not stop at `status: in_progress`.** Suite generation is asynchronous but the workflow is not. After `evaluation_suite_generation_job_create` returns, you MUST keep polling `evaluation_suite_generation_job_get` (60–120s cadence, preferably via a subagent so the main turn stays responsive) until the job is `succeeded`, `failed`, or `canceled`. Reporting "deployment complete" or "ask me again later" while the job is still in progress violates the Definition of Done for Step 8. See the **MANDATORY** poll-to-terminal block in the suite-generation reference for the full rule.
 
-Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
+> ⚠️ **Ask first.** Before calling `evaluation_suite_generation_job_create`, prompt the user to choose the generation source: **(a) current agent code/definition** (synthetic Q&A) or **(b) historical traces** (default lookback: last 3 days, `maxTraces` ~50). Recommend (b) if the agent has recent traces, otherwise (a). See Step 1 of the suite generation reference for exact wording.
+
+> ⚠️ **Required parameters (service constraints):** `maxSamples` must be **15–1000** (use 15 for smoke), and for agent-sourced generation you must pass **`agentSourceNames: [<agentName>]`** in addition to `agentName` — otherwise the request fails with `Target is required for evaluation suite generation`.
+
+Use these source rules:
+
+- **Synthetic first setup (a):** pass `agentName`, `agentSourceNames: [agentName]`, `suiteName`, `generationModelDeploymentName`, `deploymentName`, `dataGenerationType`, and `maxSamples` (≥15).
+- **Trace-informed setup (b):** add `traceAgentName` (or `traceAgentId`), optional `traceAgentVersion`, `traceStartTime`, `traceEndTime` (unix seconds; default window = `now - 3*86400` to `now`), and `maxTraces` (default ~50).
+- **Existing dataset refinement:** pass `datasetName` and `datasetVersion` when a curated dataset should seed the generated adaptive evaluator.
+
+### 5. Fallback to Manual Suggestions
+
+If `evaluation_suite_generation_job_create`, `evaluation_suite_generation_job_get`, or `evaluation_suite_get` fails, is unavailable, or returns incomplete artifacts, fall back to the previous manual flow:
+
+1. Call `evaluator_catalog_get` and suggest relevant built-in/custom evaluators.
+2. Read [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md), generate valid local JSONL with `query` and `expected_behavior`, and register it with `evaluation_dataset_create`.
+3. Persist the suite with `generationSource: manual-fallback` and include the fallback reason in the workflow summary.
+
+Do **not** silently ignore generation failures; the user should know whether setup used the generated-suite path or the fallback path.
 
 The local filename must start with the selected environment's Foundry agent name (`agentName` in the selected metadata file) before adding stage, environment, or version suffixes.
 
-Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
-
 ### 6. Persist Artifacts and Evaluation Suites
 
-Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
+Save generated or fallback evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
 
 ```text
 .foundry/
   agent-metadata.yaml
   agent-metadata.prod.yaml
   evaluators/
-    <name>.yaml
+    <evaluator-name>-<version>.yaml
   datasets/
-    <agent-name>-eval-seed-v1.jsonl
+    <agent-name>-<suite-name>-<version>.jsonl
   results/
 ```
 
-Each evaluation suite should bundle one dataset with the evaluator list, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: seed`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one smoke suite after deployment. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
+Each evaluation suite should bundle one remote suite reference, dataset, evaluator list, thresholds, local cache paths, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: generated`). Persist `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `datasetFile`, and `datasetUri` together. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
 
 ### 7. Prompt User
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and evaluation-suite metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains generated evaluation-suite metadata, local dataset/evaluator references, and remote Foundry suite references. Would you like to run an evaluation to identify optimization opportunities?"*
 
 - **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
 - **No** → stop. The user can return later.

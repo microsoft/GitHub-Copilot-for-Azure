@@ -77,7 +77,7 @@ describe("observe - Unit Tests", () => {
 
   describe("Loop Overview", () => {
     test("contains numbered loop steps", () => {
-      expect(observeContent).toContain("Auto-setup evaluators");
+      expect(observeContent).toContain("Auto-setup generated evaluation suite");
       expect(observeContent).toContain("Evaluate");
       expect(observeContent).toContain("cluster failures");
       expect(observeContent).toContain("Optimize prompt");
@@ -94,7 +94,7 @@ describe("observe - Unit Tests", () => {
     });
 
     test("routes evaluate intent through auto-setup when cache is missing or stale", () => {
-      expect(observeContent).toMatch(/cache is missing|stale|refresh|check.*evaluators/i);
+      expect(observeContent).toMatch(/cache is missing|stale|refresh|suiteName/i);
     });
 
     test("warns to check for existing evaluators before evaluation", () => {
@@ -144,46 +144,37 @@ describe("observe - Unit Tests", () => {
       );
     });
 
-    test("has auto-create evaluators as primary content", () => {
-      expect(setupContent).toContain("Auto-Create Evaluators & Dataset");
+    test("has generated evaluation suite as primary content", () => {
+      expect(setupContent).toContain("Auto-Setup Evaluation Suite");
+      expect(setupContent).toContain("evaluation_suite_generation_job_create");
     });
 
     test("marks auto-create as automatic", () => {
       expect(setupContent).toMatch(/automatic|fully automatic/i);
     });
 
-    test("includes evaluator selection with quality and safety categories", () => {
+    test("includes generated-suite tool flow and source options", () => {
+      expect(setupContent).toContain("evaluation_suite_generation_job_create");
+      expect(setupContent).toContain("evaluation_suite_generation_job_get");
+      expect(setupContent).toContain("evaluation_suite_get");
+      expect(setupContent).toContain("generationModelDeploymentName");
+      expect(setupContent).toContain("traceAgentName");
+      expect(setupContent).toContain("traceStartTime");
+      expect(setupContent).toContain("datasetName");
+    });
+
+    test("documents manual fallback when suite generation fails", () => {
       expect(setupContent).toContain("evaluator_catalog_get");
-      expect(setupContent).toMatch(/custom.*built-in|built-in.*custom/i);
-      expect(setupContent).toMatch(/name, category, and version/i);
-      expect(setupContent).toMatch(/<=5/i);
-      expect(setupContent).toContain("Quality");
-      expect(setupContent).toContain("Safety");
-      expect(setupContent).toContain("relevance");
-      expect(setupContent).toContain("intent_resolution");
-      expect(setupContent).toContain("task_adherence");
-      expect(setupContent).toContain("indirect_attack");
-      expect(setupContent).toContain("tool_call_accuracy");
+      expect(setupContent).toContain("Generate Seed Evaluation Dataset");
+      expect(setupContent).toContain("evaluation_dataset_create");
+      expect(setupContent).toContain("generationSource: manual-fallback");
+      expect(setupContent).toMatch(/generation fails|incomplete artifacts/i);
     });
 
-    test("references the built-in-first two-phase evaluator strategy", () => {
-      expect(setupContent).toContain("Two-Phase Evaluator Strategy");
-      expect(setupContent).toMatch(/Phase 1 is built-in only/i);
-      expect(setupContent).toMatch(/do not create a new custom evaluator during the initial setup pass/i);
-      expect(setupContent).toContain("expected_behavior");
-      expect(setupContent).toContain("behavioral rubric");
-    });
-
-    test("includes judge deployment step based on actual project deployments", () => {
+    test("resolves generation deployment from actual project deployments", () => {
       expect(setupContent).toContain("model_deployment_get");
-      expect(setupContent).toMatch(/actual model deployments/i);
-      expect(setupContent).toMatch(/supports chat completions/i);
-      expect(setupContent).toMatch(/do\s+\*\*not\*\*\s+assume\s+`gpt-4o`\s+exists/i);
-    });
-
-    test("generates seed datasets directly instead of invoking the judge deployment", () => {
-      expect(setupContent).toMatch(/Generate the seed rows directly/i);
-      expect(setupContent).toMatch(/Do \*\*not\*\* call the identified chat-capable deployment/i);
+      expect(setupContent).toMatch(/choose a chat-completions deployment/i);
+      expect(setupContent).toMatch(/Do not assume `gpt-4o` exists/i);
     });
 
     test("includes artifact persistence structure", () => {
@@ -193,9 +184,11 @@ describe("observe - Unit Tests", () => {
       expect(setupContent).toContain(".foundry/evaluators/");
       expect(setupContent).toContain(".foundry/datasets/");
       expect(setupContent).toContain("datasetUri");
+      expect(setupContent).toContain("suiteName");
+      expect(setupContent).toContain("suiteVersion");
+      expect(setupContent).toContain("generationJobId");
       expect(setupContent).toContain(".yaml");
       expect(setupContent).toContain(".jsonl");
-      expect(setupContent).toMatch(/filename must start with the selected environment's Foundry agent name/i);
     });
 
     test("uses evaluationSuites metadata with tags as the primary schema", () => {
@@ -215,15 +208,9 @@ describe("observe - Unit Tests", () => {
       expect(setupContent).toContain("map `priority` to `tags.tier`");
     });
 
-    test("uses the seed dataset guide as the canonical registration flow", () => {
+    test("uses the seed dataset guide as fallback registration flow", () => {
       expect(setupContent).toContain("Generate Seed Evaluation Dataset");
-      expect(setupContent).toMatch(/single source of truth for registration/i);
-      expect(setupContent).toContain("project_connection_list");
-      expect(setupContent).toContain("AzureStorageAccount");
       expect(setupContent).toContain("evaluation_dataset_create");
-      expect(setupContent).toContain("connectionName");
-      expect(setupContent).toContain("<agent-name>-eval-seed");
-      expect(setupContent).toContain("datasetUri");
       expect(setupContent).not.toContain("--account-key <storage-account-key>");
       expect(setupContent).not.toContain("--auth-mode login");
     });
@@ -294,13 +281,13 @@ describe("observe - Unit Tests", () => {
 
     test("requires checking existing evaluators before creating new ones", () => {
       expect(observeContent).toContain("evaluator_catalog_get");
-      expect(observeContent).toMatch(/existing evaluators before creating new ones/i);
-      expect(observeContent).toMatch(/initial setup, re-evaluation, and optimization loops/i);
+      expect(observeContent).toMatch(/manual creation/i);
+      expect(observeContent).toMatch(/fallback or regeneration flows/i);
     });
 
-    test("documents the two-phase evaluator strategy and expected_behavior usage", () => {
-      expect(observeContent).toContain("## Two-Phase Evaluator Strategy");
-      expect(observeContent).toMatch(/Phase 1 - Initial setup/i);
+    test("documents the manual fallback evaluator strategy and expected_behavior usage", () => {
+      expect(observeContent).toContain("## Manual Fallback Evaluator Strategy");
+      expect(observeContent).toMatch(/Fallback baseline/i);
       expect(observeContent).toMatch(/Phase 2 - After analysis/i);
       expect(observeContent).toContain("expected_behavior");
       expect(observeContent).toContain("behavioral_adherence");
@@ -308,17 +295,10 @@ describe("observe - Unit Tests", () => {
     });
 
     test("requires custom evaluator prompts to use result/reason output contract", () => {
-      const setupContent = fs.readFileSync(
-        path.join(REFERENCES_PATH, "deploy-and-setup.md"),
-        "utf-8"
-      );
-
       expect(observeContent).toMatch(/custom evaluator output contract/i);
       expect(observeContent).toContain("`result` plus `reason`");
       expect(observeContent).toMatch(/score.*reasoning/i);
       expect(observeContent).toMatch(/duplicate `OUTPUT FORMAT` blocks/i);
-      expect(setupContent).toMatch(/runtime-enforced JSON fields are `result` and `reason`/i);
-      expect(setupContent).toMatch(/omit conflicting output JSON schemas/i);
     });
 
     test("documents LLM judge knowledge-cutoff mitigation for real-time data", () => {
@@ -332,7 +312,7 @@ describe("observe - Unit Tests", () => {
       expect(observeContent).toMatch(/fabricated|beyond knowledge cutoff/i);
       expect(analyzeContent).toMatch(/LLM judge knowledge cutoff/i);
       expect(analyzeContent).toMatch(/cannot verify|beyond knowledge cutoff|no evidence/i);
-      expect(analyzeContent).toContain("Behavioral Rule 13");
+      expect(analyzeContent).toContain("Behavioral Rule 17");
     });
 
     test("documents evaluator deletion parameter requirements", () => {
@@ -361,7 +341,7 @@ describe("observe - Unit Tests", () => {
 
       expect(evaluateContent).toMatch(/new evaluation group/i);
       expect(evaluateContent).toMatch(/thresholds/i);
-      expect(compareContent).toMatch(/reuse the same `evaluationId` only when `evaluatorNames` and thresholds are unchanged/i);
+      expect(compareContent).toMatch(/legacy batch re-evaluation creation uses `evaluationId`/i);
     });
 
     test("documents downloading detailed results via Azure AI Projects Python SDK", () => {
