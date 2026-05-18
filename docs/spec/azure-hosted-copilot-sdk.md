@@ -54,7 +54,6 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | `tests/utils/agent-runner.ts` | Enhanced with `runConversation()` for multi-turn scenarios | ✅ |
 | `tests/utils/evaluate.ts` | Shared evaluation helpers (`matchesCommand`, `getAllAssistantMessages`, etc.) | ✅ |
 | `tests/utils/regression-detectors.ts` | Regression detectors (secrets, ACR spirals, port confusion, etc.) | ✅ |
-| `tests/_template/unit.test.ts` | Unit test template for new skills | ✅ |
 
 ### Local Dev Tooling — 🔄 Replaced
 
@@ -167,7 +166,6 @@ docs/spec/
 tests/azure-hosted-copilot-sdk/
 ├── integration.test.ts                         # 8 integration tests
 ├── triggers.test.ts                            # 5 test blocks (23 parameterized cases)
-├── unit.test.ts                                # 17 unit tests
 └── __snapshots__/triggers.test.ts.snap         # Trigger keyword snapshots
 
 tests/utils/
