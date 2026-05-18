@@ -174,8 +174,8 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: planName
   location: location
   sku: {
-    name: 'P1v3'
-    capacity: 2              // ← ADD (min 2 for ZR on P1v3)
+    name: 'P0v3'
+    capacity: 2              // ← ADD (min 2 for ZR on P0v3+)
   }
   properties: {
     reserved: true           // Linux
@@ -208,7 +208,7 @@ resource "azurerm_service_plan" "plan" {
   location               = azurerm_resource_group.rg.location
   resource_group_name    = azurerm_resource_group.rg.name
   os_type                = "Linux"
-  sku_name               = "P1v3"
+  sku_name               = "P0v3"
   worker_count           = 2                   # ← ADD (min 2 for ZR)
   zone_balancing_enabled = true                # ← ADD
 }
