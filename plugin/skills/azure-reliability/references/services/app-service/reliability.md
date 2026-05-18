@@ -80,7 +80,7 @@ az appservice plan update \
 az appservice plan update \
   --name <plan> \
   --resource-group <rg> \
-  --number-of-workers 3
+  --number-of-workers 2
 
 # Enable ZR
 az resource update \
@@ -207,7 +207,7 @@ resource "azurerm_service_plan" "plan" {
   resource_group_name    = azurerm_resource_group.rg.name
   os_type                = "Linux"
   sku_name               = "P1v3"
-  worker_count           = 3                   # ← ADD (min 3 for ZR)
+  worker_count           = 2                   # ← ADD (min 2 for ZR)
   zone_balancing_enabled = true                # ← ADD
 }
 ```

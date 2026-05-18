@@ -39,8 +39,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("description scopes the skill to Azure Functions and Azure App Service", () => {
       const description = skill.metadata.description.toLowerCase();
       const content = skill.content.toLowerCase();
-      expect(description).toContain("Azure Functions and Azure App Service");
-      expect(content).toContain("reliability posture of paas applications (azure functions and azure app service)");
+      expect(description).toContain("azure functions and azure app service");
+      expect(content).toContain("this skill currently covers **azure functions and azure app service** only");
       expect(description).not.toMatch(
         /reliability posture of azure functions, container apps, and app service/
       );
