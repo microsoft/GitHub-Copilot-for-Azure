@@ -56,6 +56,10 @@ AzureResourceManager azure = AzureResourceManager.configure()
 
 Keep the `TODO` comment in the migrated source so reviewers and downstream maintainers are aware that the authentication mechanism changed and that the new code path has not been exercised by the original tests.
 
+#### Rewrite obsolete authentication diagnostics
+
+If legacy code mentions `AZURE_AUTH_LOCATION` only in a validation guard or exception message, do not carry that option into migrated runtime-visible text. Keep the guard, but rewrite the message around the credentials the migrated code actually supports, e.g. `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_SUBSCRIPTION_ID`. Do not scrub intentional `AZURE_AUTH_LOCATION` mentions from this guide's examples or TODO comments that explain why file-based auth was replaced.
+
 ### OKHttp Interceptors
 
 Legacy OKHttp `Interceptor` implementation classes should be migrated to `HttpPipelinePolicy` implementation classes. This is a two-step migration — both steps are required:
