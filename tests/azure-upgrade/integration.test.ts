@@ -237,6 +237,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       return stripXmlComments(fs.readFileSync(pomPath, "utf8"));
     };
 
+    const pomDependencyBlocks = (pomNoComments: string): string[] =>
+      pomNoComments.match(/<dependency\b[\s\S]*?<\/dependency>/g) ?? [];
+
+    const expectNoDependencyGroupId = (pomNoComments: string, groupId: string): void => {
+      const groupIdPattern = new RegExp(`<groupId>\\s*${groupId.replaceAll(".", "\\.")}\\s*<\\/groupId>`);
+      expect(pomDependencyBlocks(pomNoComments).some((dependency) => groupIdPattern.test(dependency))).toBe(false);
+    };
+
     const runJavaMigration = async (sparseCheckoutPath: string, commitId: string): Promise<{
       agentMetadata: Awaited<ReturnType<typeof agent.run>>;
       workspacePath: string;
@@ -278,7 +286,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const pomNoComments = readPomNoComments(workspacePath);
 
         // 1. No remaining legacy com.microsoft.azure dependencies.
-        expect(pomNoComments).not.toMatch(/<groupId>\s*com\.microsoft\.azure\s*<\/groupId>/);
+        //    The project itself may still use a legacy groupId; only dependency
+        //    entries determine whether legacy SDK packages remain.
+        expectNoDependencyGroupId(pomNoComments, "com.microsoft.azure");
 
         // 2. azure-sdk-bom is present in dependencyManagement.
         expect(pomNoComments).toMatch(/<artifactId>\s*azure-sdk-bom\s*<\/artifactId>/);
@@ -309,7 +319,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const pomNoComments = readPomNoComments(workspacePath);
 
         // 1. No remaining legacy com.microsoft.azure dependencies.
-        expect(pomNoComments).not.toMatch(/<groupId>\s*com\.microsoft\.azure\s*<\/groupId>/);
+        expectNoDependencyGroupId(pomNoComments, "com.microsoft.azure");
 
         // 2. azure-sdk-bom + com.azure are the new home.
         expect(pomNoComments).toMatch(/<artifactId>\s*azure-sdk-bom\s*<\/artifactId>/);
@@ -345,7 +355,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const pomNoComments = readPomNoComments(workspacePath);
 
         // 1. No remaining legacy com.microsoft.azure dependencies.
-        expect(pomNoComments).not.toMatch(/<groupId>\s*com\.microsoft\.azure\s*<\/groupId>/);
+        //    The project itself may still use a legacy groupId; only dependency
+        //    entries determine whether legacy SDK packages remain.
+        expectNoDependencyGroupId(pomNoComments, "com.microsoft.azure");
 
         // 2. At least one com.azure.resourcemanager:* dependency replaces the
         //    legacy azure-mgmt-batch SDK.
