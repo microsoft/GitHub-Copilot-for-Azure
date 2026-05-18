@@ -69,5 +69,5 @@ If including executable scripts:
 
 ## Related Resources
 
-- Reference the [skill-authoring skill](../skills/skill-authoring/SKILL.md) for detailed guidelines
+- Reference the [sensei skill](../skills/sensei/SKILL.md) for detailed guidelines
 - Follow the [agentskills.io specification](https://agentskills.io/specification)

@@ -277,7 +277,7 @@ wc -l plugin/skills/{skill-name}/SKILL.md
 ```
 Report a warning if SKILL.md exceeds 500 lines (spec recommendation).
 
-**Token Budgets** (from [skill-authoring](/.github/skills/skill-authoring)):
+**Token Budgets** (per [agentskills.io specification](https://agentskills.io/specification)):
 - SKILL.md: < 500 tokens (soft limit), < 5000 (hard limit)
 - references/*.md: < 1000 tokens each
 
