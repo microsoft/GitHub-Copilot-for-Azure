@@ -258,7 +258,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             depth: 1,
             sparseCheckoutPath,
           });
-          await simpleGit({ baseDir: workspace, binary: "git" }).checkout(commitId);
+          const git = simpleGit({ baseDir: workspace, binary: "git" });
+          await git.fetch(["--depth", "1", "origin", commitId]);
+          await git.checkout(commitId);
           workspacePath = path.join(workspace, ...sparseCheckoutPath.split("/"));
         },
         prompt:
