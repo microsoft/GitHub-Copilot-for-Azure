@@ -82,7 +82,7 @@ az appservice plan update \
 az appservice plan update \
   --name <plan> \
   --resource-group <rg> \
-  --number-of-workers 3
+  --number-of-workers 2
 
 # Enable ZR
 az resource update \
@@ -92,7 +92,7 @@ az resource update \
   --set properties.zoneRedundant=true
 ```
 
-⚠️ Enabling zone redundancy may require scaling up first — there must be at least as many instances as availability zones (typically 3).
+⚠️ Enabling zone redundancy requires a minimum of 2 instances (one per availability zone minimum).
 
 ## Configure: Health Check
 
@@ -174,7 +174,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: planName
   location: location
   sku: {
-    name: 'P0v3'
+    name: 'P1v3'
     capacity: 2              // ← ADD (min 2 for ZR on P1v3)
   }
   properties: {
@@ -209,7 +209,7 @@ resource "azurerm_service_plan" "plan" {
   resource_group_name    = azurerm_resource_group.rg.name
   os_type                = "Linux"
   sku_name               = "P1v3"
-  worker_count           = 3                   # ← ADD (min 3 for ZR)
+  worker_count           = 2                   # ← ADD (min 2 for ZR)
   zone_balancing_enabled = true                # ← ADD
 }
 ```
