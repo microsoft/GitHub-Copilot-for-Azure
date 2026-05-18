@@ -35,6 +35,11 @@ config:
 
 scoring:
   threshold: 0.8
+  weights:
+    output-contains: 0.5
+    output-not-contains: 2.0
+    output-not-matches: 2.0
+    skill-invocation: 2.0
 
 stimuli:
   # ═══════════════════════════════════════════════════════════════════════
