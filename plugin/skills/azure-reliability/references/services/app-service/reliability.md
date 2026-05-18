@@ -150,7 +150,7 @@ az webapp deployment slot swap \
   --target-slot production
 ```
 
-## Back Up Support by SKU
+## Backup Support by SKU
 
 | Plan | Automatic Backup | Custom Backup |
 |------|----------------|---------------|
