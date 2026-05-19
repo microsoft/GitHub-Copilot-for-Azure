@@ -30,7 +30,19 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 ## Workflow: Hosted Agent Deployment
 
-> ⚠️ **`azd deploy` ≠ deployment complete.** `azd deploy` (or any `azd up`/`az acr build`/`agent_update` shortcut) only covers Steps 1–6. You **MUST** still execute Step 7 (invocation test) and Step 8 (auto-generate evaluation suite) before reporting success to the user. A successful `azd deploy` exit code is **not** a stopping condition.
+> 🛑🛑🛑 **HOSTED AGENT DEPLOYMENT HAS 8 STEPS, NOT 7.** 🛑🛑🛑
+>
+> The single most common failure of this skill is stopping after Step 7 (invocation smoke test) and emitting a "deployment complete" summary. **Step 8 (auto-generate evaluation suite) is mandatory and runs automatically after every deploy — including redeploys, version bumps, and `azd deploy` re-runs.**
+>
+> Before you write any final summary, Playground link, version table, or "✅ deployed" message, you MUST self-verify:
+>
+> 1. Did Step 8 run to completion (suite generated **or** documented fallback persisted)?
+> 2. Was `.foundry/agent-metadata.yaml` updated for the selected environment?
+> 3. Did you prompt the user to run an evaluation?
+>
+> If the answer to any of these is **no**, do not summarize — go run Step 8 now.
+
+> ⚠️ **`azd deploy` ≠ deployment complete.** `azd deploy` (or any `azd up`/`az acr build`/`agent_update` shortcut) only covers Steps 1–6. You **MUST** still execute Step 7 (invocation test) and Step 8 (auto-generate evaluation suite) before reporting success to the user. A successful `azd deploy` exit code is **not** a stopping condition. A successful invocation in Step 7 is **not** a stopping condition either.
 
 ### Definition of Done — Hosted Agent Deployment
 
@@ -43,7 +55,8 @@ A hosted-agent deployment is complete only when **every** box below is checked. 
 - [ ] Step 5 — Agent definition schema retrieved
 - [ ] Step 6 — `agent_update` called successfully
 - [ ] Step 7 — RBAC checked **and** invocation smoke test passed (via the invoke skill)
-- [ ] Step 8 — Auto-generated evaluation suite (or documented fallback) persisted under `.foundry/`
+- [ ] Step 8 — Auto-generated evaluation suite job reached `succeeded` (or documented fallback)
+- [ ] Step 8 — Cache files written: `.foundry/suites/<suite>-v<ver>.json`, `.foundry/evaluators/<eval>-v<ver>.json` (FULL definition, not stub), `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json`, AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual dataset rows via SAS-url download)
 - [ ] Deployment context written to `.foundry/agent-metadata.yaml` for the selected environment
 - [ ] User prompted to run an evaluation
 
@@ -178,15 +191,33 @@ After this RBAC check is complete, read and follow the [invoke skill](../invoke/
 
 If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 8 (Auto-Generate Evaluation Suite). This step is mandatory after every successful deployment.
+> 🛑 **NOT DONE YET — invocation success is the midpoint, not the finish line.** The next action after a passing smoke test is **Step 8**, not a deployment summary. Do not write a summary, version table, or Playground link yet.
 
-### Step 8: Auto-Generate Evaluation Suite (MANDATORY)
+### Step 8: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
-> 🛑 **Stop-and-check before summarizing.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 8 has not run, you are violating this skill. Run Step 8 first.
+> 🛑 **Pre-summary gate.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 8 has not run, you are violating this skill. Run Step 8 first.
+>
+> This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below in 8a.
 
-Follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below. The section is mandatory — not optional — for every hosted-agent deployment, including redeploys, version bumps, and `azd deploy` re-runs against an already-existing agent.
+This step is mandatory — not optional — for every hosted-agent deployment, including redeploys, version bumps, and `azd deploy` re-runs against an already-existing agent.
 
-If the user explicitly says "skip eval suite generation," record that decision in your summary and still update `.foundry/agent-metadata.yaml` with the deployment context. Otherwise, do not skip.
+**8a. Ask the user (one question, required).** Before generating, ask the user to pick a generation source. Recommend (b) when the agent has recent traces, otherwise (a):
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use?*
+> *(a) **Current agent code/definition** — synthetic Q&A from `agent.yaml` / instructions. Best when there's little or no trace history.*
+> *(b) **Historical traces** — last 3 days, ~50 traces. Best if the agent has recent invocations."*
+
+**8b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below for the generation, polling, persistence, and metadata-update steps. Required parameters and poll-to-terminal rules are non-negotiable.
+
+**8c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally):
+
+- `evaluation_suite_get` → `.foundry/suites/<suite>-v<ver>.json` (full object)
+- `evaluator_catalog_get` → `.foundry/evaluators/<eval>-v<ver>.json` (full definition, NOT a stub)
+- `evaluation_dataset_get` + `evaluation_dataset_sas_url_get` → `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json` (metadata stub) AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual JSONL rows). The SAS-url tool returns a container-scope SAS — list the container then `curl.exe` each blob. See the reference for the exact list+download steps. Set `contentDownloaded: true` in the stub once files are on disk.
+
+Do not write the deployment summary until all cache files exist.
+
+**8d. Skip-only-on-explicit-request.** If — and only if — the user explicitly says "skip eval suite generation," record that decision in your summary and still update `.foundry/agent-metadata.yaml` with the deployment context. "The user didn't ask for it" is **not** a valid reason to skip; this step is opt-out, not opt-in.
 
 ## Workflow: Prompt Agent Deployment
 
@@ -198,7 +229,8 @@ A prompt-agent deployment is complete only when **every** box below is checked. 
 - [ ] Step 2 — Agent definition schema retrieved
 - [ ] Step 3 — `agent_update` called successfully
 - [ ] Step 4 — Invocation smoke test passed (via the invoke skill)
-- [ ] Step 5 — Auto-generated evaluation suite (or documented fallback) persisted under `.foundry/`
+- [ ] Step 5 — Auto-generated evaluation suite job reached `succeeded` (or documented fallback)
+- [ ] Step 5 — Cache files written: `.foundry/suites/<suite>-v<ver>.json`, `.foundry/evaluators/<eval>-v<ver>.json` (FULL definition, not stub), `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json`, AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual dataset rows via SAS-url download)
 - [ ] Deployment context written to `.foundry/agent-metadata.yaml` for the selected environment
 - [ ] User prompted to run an evaluation
 
@@ -232,13 +264,23 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Generate Evaluation Suite). This step is mandatory after every successful deployment.
+> 🛑 **NOT DONE YET — invocation success is the midpoint, not the finish line.** The next action is **Step 5**, not a deployment summary. Do not write a summary or Playground link yet.
 
-### Step 5: Auto-Generate Evaluation Suite (MANDATORY)
+### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
-> 🛑 **Stop-and-check before summarizing.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+> 🛑 **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+>
+> This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below.
 
-Follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
+**5a. Ask the user (one question, required).** Before generating, ask which generation source to use. Recommend (b) when the agent has recent traces, otherwise (a):
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use? (a) Current agent code/definition (synthetic Q&A), or (b) Historical traces (last 3 days, ~50 traces)?"*
+
+**5b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
+
+**5c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally): suite JSON, evaluator full definition, dataset `.ref.json` PLUS the actual dataset blobs downloaded via `evaluation_dataset_sas_url_get` (container SAS → list → curl each blob). Do not write the deployment summary until those files exist.
+
+**5d. Skip-only-on-explicit-request.** Skip only if the user explicitly says "skip eval suite generation." "The user didn't ask for it" is **not** a valid reason to skip.
 
 ## Display Agent Information
 

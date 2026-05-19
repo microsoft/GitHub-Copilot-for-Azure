@@ -156,6 +156,8 @@ describe("observe - Unit Tests", () => {
     test("includes generated-suite tool flow and source options", () => {
       expect(setupContent).toContain("evaluation_suite_generation_job_create");
       expect(setupContent).toContain("evaluation_suite_generation_job_get");
+      expect(setupContent).toMatch(/background polling/i);
+      expect(setupContent).toMatch(/suppress intermediate `in_progress` output/i);
       expect(setupContent).toContain("evaluation_suite_get");
       expect(setupContent).toContain("generationModelDeploymentName");
       expect(setupContent).toContain("traceAgentName");
@@ -230,6 +232,8 @@ describe("observe - Unit Tests", () => {
   describe("Behavioral Rules", () => {
     test("requires auto-poll in background", () => {
       expect(observeContent).toMatch(/auto-poll|background/i);
+      expect(observeContent).toMatch(/suite generation jobs/i);
+      expect(observeContent).toMatch(/Only surface terminal status/i);
     });
 
     test("requires confirmation before changes", () => {
@@ -265,7 +269,7 @@ describe("observe - Unit Tests", () => {
       expect(evaluateContent).toContain("evalId");
       expect(evaluateContent).toContain("expected_behavior");
       expect(evaluateContent).toMatch(/evaluation_get.*does\s+\*\*not\*\*\s+accept\s+`evaluationId`/i);
-      expect(compareContent).toMatch(/creation uses `evaluationId`.*`evaluation_get`.*`evalId`/i);
+      expect(compareContent).toMatch(/batch re-evaluation creation uses `evaluationId`.*`evaluation_get`.*`evalId`/i);
     });
 
     test("requires judge deployment lookup instead of assuming gpt-4o", () => {
@@ -312,7 +316,7 @@ describe("observe - Unit Tests", () => {
       expect(observeContent).toMatch(/fabricated|beyond knowledge cutoff/i);
       expect(analyzeContent).toMatch(/LLM judge knowledge cutoff/i);
       expect(analyzeContent).toMatch(/cannot verify|beyond knowledge cutoff|no evidence/i);
-      expect(analyzeContent).toContain("Behavioral Rule 17");
+      expect(analyzeContent).toContain("Behavioral Rule 18");
     });
 
     test("documents evaluator deletion parameter requirements", () => {
@@ -341,7 +345,8 @@ describe("observe - Unit Tests", () => {
 
       expect(evaluateContent).toMatch(/new evaluation group/i);
       expect(evaluateContent).toMatch(/thresholds/i);
-      expect(compareContent).toMatch(/legacy batch re-evaluation creation uses `evaluationId`/i);
+      expect(compareContent).toMatch(/Agent-target batch re-evaluation creation uses `evaluationId`/i);
+      expect(evaluateContent).toMatch(/Do not call `evaluation_suite_run` for batch eval/i);
     });
 
     test("documents downloading detailed results via Azure AI Projects Python SDK", () => {

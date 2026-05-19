@@ -34,32 +34,53 @@ Set `dataGenerationType` (default `simple_qna`), `category` (default `quality`),
 > - **A `target` is required.** When generating from a deployed agent, pass **`agentSourceNames: [<agentName>]`** (not just `agentName`) so the service can construct the `azure_ai_agent` target. Without it, the request fails with `Target is required for evaluation suite generation`.
 > - **`deploymentName`** (in `initialization_parameters`) is required when the generated evaluator uses an LLM judge — pass the same or a comparable deployment as `generationModelDeploymentName`.
 
-Poll with `evaluation_suite_generation_job_get(projectEndpoint, jobId)` until the job reaches a terminal state (`succeeded`, `failed`, `canceled`). Generation typically takes **5–15 minutes** for synthetic Q&A and longer for trace-derived suites — poll at 60–120 second intervals; do not assume completion before the first poll. After success, call `evaluation_suite_get(projectEndpoint, suiteName, version)` to inspect the generated suite.
+Poll with `evaluation_suite_generation_job_get(projectEndpoint, jobId)` until the job reaches a terminal state (`succeeded`, `failed`, `canceled`). Generation typically takes **5-15 minutes** for synthetic Q&A and longer for trace-derived suites, so do not block the main response with repeated foreground polling.
 
-> 🛑 **MANDATORY: Poll to a terminal state in the same turn — do not hand control back to the user mid-poll.** Once you have called `evaluation_suite_generation_job_create`, you MUST keep calling the `evaluation_suite_generation_job_get` MCP tool until `status` is `succeeded`, `failed`, or `canceled`. Returning a final summary to the user with `status: in_progress` (or asking the user to "ask again later") is a workflow violation.
+> 🛑 **MANDATORY: Poll in the background.** Once `evaluation_suite_generation_job_create` returns a `jobId`, persist the in-flight `generationJobId` in the selected `.foundry/agent-metadata*.yaml` file, start a background polling task or background terminal loop, and keep normal chat output clean. The foreground response should say that generation started and that final status will be surfaced when the background poll reaches a terminal state.
 >
-> **How to poll:** Just call the `evaluation_suite_generation_job_get` MCP tool directly, back-to-back, in the same turn. Each MCP call takes long enough on its own that no `Start-Sleep` is needed between calls; the global no-sleep rule still applies to the main agent. Synthetic Q&A jobs typically reach a terminal state within 5–15 minutes, so expect on the order of 5–15 polls. If you have other useful workflow steps (RBAC checks, dataset cache prep, evaluator catalog inspection), you may interleave them between polls, but **do not stop polling** until the job is terminal.
+> **How to poll:** In the background worker, call `evaluation_suite_generation_job_get` every 60-120 seconds until `status` is `succeeded`, `failed`, or `canceled`. Suppress intermediate `in_progress` output unless the status changes or the job is stuck. Do not print every poll result to the user.
 >
-> The only situations where you may stop before terminal state are: (a) the user explicitly tells you to stop polling, (b) the job has been `in_progress` for >30 minutes (treat as stuck — surface the job ID and ask the user how to proceed), or (c) the poll itself errors repeatedly (surface the error). In all three cases, leave the in-flight `generationJobId` recorded in `.foundry/agent-metadata.yaml` so a later turn can resume polling with `evaluation_suite_generation_job_get`.
+> The background poll may stop before terminal state only when: (a) the user explicitly tells you to stop polling, (b) the job has been `in_progress` for >30 minutes (treat as stuck and surface the job ID), or (c) polling errors repeatedly (surface the error). Leave the in-flight `generationJobId` recorded in metadata so a later turn can resume polling.
 >
-> When the job reaches `succeeded`, immediately continue with `evaluation_suite_get` and the cache/metadata steps below before producing your final summary.
+> When the background poll reaches `succeeded`, continue by calling `evaluation_suite_get` and then cache/update metadata before producing the completion summary. When it reaches `failed` or `canceled`, surface the terminal status and route to fallback.
 
 ## Cache Artifacts Locally
 
-Save generated or fetched references under the selected agent root only:
+> 🛑 **MANDATORY after `succeeded`.** As soon as the background poll reaches `succeeded`, perform **all three** of the following calls and write **all three** files. This is not optional — partial caching (e.g., metadata stub instead of full evaluator definition) is the most common skill bug. Do not write the deployment/eval-setup summary until the three files exist.
 
-```text
-.foundry/datasets/<agent-name>-<suite-name>-<version>.jsonl
-.foundry/evaluators/<evaluator-name>-<version>.yaml
-```
+Save artifacts under the selected agent root only, using these exact paths and contents:
 
-If job output includes direct file/session references, download those artifacts. If it only returns remote suite, dataset, and evaluator names/versions, call `evaluation_suite_get`, `evaluation_dataset_get`, and `evaluator_catalog_get` and create local reference files from the returned metadata or dataset URI. Ask before overwriting existing cache files.
+| Call | Local file | Contents |
+|------|------------|----------|
+| `evaluation_suite_get(suiteName, version)` | `.foundry/suites/<suite-name>-v<version>.json` | The **full** returned suite object (target, testing_criteria, dataset ref, input_messages). |
+| `evaluator_catalog_get(name, version)` | `.foundry/evaluators/<evaluator-name>-v<version>.json` | The **full** returned evaluator object including `definition.dimensions`, `definition.metrics`, `definition.data_schema`, and `generation_artifacts`. Do NOT save a YAML stub — persist the complete JSON so HITL rubric edits + `evaluator_catalog_update(createNewVersion: true)` can round-trip. |
+| `evaluation_dataset_get(name, version)` + `evaluation_dataset_sas_url_get(datasetName, datasetVersion)` | `.foundry/datasets/<agent-name>-<dataset-name>-v<version>.ref.json` AND `.foundry/datasets/<dataset-name>-v<version>/<blob-name>` | Metadata stub PLUS the actual dataset blob(s). The SAS-url tool returns a container-scope SAS (`sr=c, sp=rl`); list the container then download every blob (see "Dataset Content Download" below). Set `contentDownloaded: true` + `contentFiles: [...]` in the stub. |
+
+For the first two, do not skip fields and do not transform — write the JSON returned by the MCP tool. Overwrite existing files for the same `<name>-v<version>` without prompting (the version suffix makes the previous file immutable by design).
+
+### Dataset Content Download (USE THIS — DO NOT SKIP)
+
+The dataset rows live in a Foundry-managed Azure Storage container (host pattern `sa*.blob.core.windows.net`). User Entra credentials against the container fail (`InvalidAuthenticationInfo: Issuer validation failed`) and the storage account is not exposed as a project connection, BUT a working download path exists:
+
+1. Call `evaluation_dataset_sas_url_get(projectEndpoint, datasetName, datasetVersion)`. It returns a container-scope SAS URL with `sr=c&sp=rl` (read + list).
+2. **List blobs** via REST: `GET <containerUrlWithoutSas>?restype=container&comp=list&<sasQueryWithoutLeadingQuestionMark>`. Response is XML; blob names are at `EnumerationResults.Blobs.Blob.Name`.
+3. **Download each blob** to `.foundry/datasets/<dataset-name>-v<version>/<blob-name>` using the same SAS query appended: `<containerUrl>/<blobName>?<sasQuery>`.
+4. Use `curl.exe` (not PowerShell `Invoke-RestMethod` / `Invoke-WebRequest`) on Windows — PowerShell's URI parser chokes on Azure Storage SAS query strings and throws "Invalid URI: The hostname could not be parsed". `curl.exe` ships with Windows 10/11.
+5. Update the `.ref.json` stub with `contentDownloaded: true`, `contentPath`, and `contentFiles: [...]`.
+
+Only fall back to the portal-export workaround (Foundry portal → suite → Dataset → Download as JSONL) when `evaluation_dataset_sas_url_get` itself is unavailable or returns an error. Do NOT attempt `az storage blob`, `az storage account list`, or Resource Graph scans for the storage account — they will fail and waste tool calls.
+
+If the dataUri host does NOT match the Foundry-managed `sa*.blob.core.windows.net` pattern (e.g., a customer-owned storage account registered as a project connection), use the connection-resolved credential rather than the SAS flow.
+
+### Job-Returned Direct Artifacts
+
+If the generation job output includes direct file/session references (rare — most jobs only return remote names/versions), download those artifacts and place them in the same `.foundry/` folders alongside the reference files above.
 
 ## Regenerate One Artifact
 
-Use `data_generation_job_create` when the user wants fresh data without replacing the whole suite. It accepts `jobName`, `projectEndpoint`, optional `agentName`/`agentVersion`, `datasetName`/`datasetVersion`, `fileId`, `promptSource`, trace parameters, `generationType`, `questionTypes`, `scenario`, `maxSamples`, and `trainSplit`. Poll with `data_generation_job_get`.
+Use `data_generation_job_create` when the user wants fresh data without replacing the whole suite. It accepts `jobName`, `projectEndpoint`, optional `agentName`/`agentVersion`, `datasetName`/`datasetVersion`, `fileId`, `promptSource`, trace parameters, `generationType`, `questionTypes`, `scenario`, `maxSamples`, and `trainSplit`. Poll with `data_generation_job_get` in the background using the same clean-output rules.
 
-Use `evaluator_generation_job_create` to create or regenerate one adaptive evaluator. To regenerate, pass the existing `evaluatorName` plus updated source inputs and `modelDeploymentName`; poll with `evaluator_generation_job_get`.
+Use `evaluator_generation_job_create` to create or regenerate one adaptive evaluator. To regenerate, pass the existing `evaluatorName` plus updated source inputs and `modelDeploymentName`; poll with `evaluator_generation_job_get` in the background using the same clean-output rules.
 
 ## Review and Sync Back
 
@@ -68,8 +89,10 @@ After users edit generated dataset rows or evaluator rubrics locally:
 1. Save a new local dataset/evaluator version instead of overwriting the old one.
 2. Register approved dataset data with `evaluation_dataset_create`.
 3. For evaluator rubric changes, use `evaluator_catalog_update(createNewVersion: true)` when metadata/dimension edits are sufficient; otherwise regenerate with `evaluator_generation_job_create(evaluatorName, ...)`.
-4. Create an immutable suite version with `evaluation_suite_create` so future `evaluation_suite_run` calls use the reviewed artifacts.
+4. Create an immutable suite version with `evaluation_suite_create` so future agent-target batch evals can resolve the reviewed artifacts with `evaluation_suite_get`.
 
 ## Fallback
 
 If suite, data, or evaluator generation fails or returns incomplete artifacts, explain the failure and use the manual fallback: `evaluator_catalog_get`, local seed JSONL generation, `evaluation_dataset_create`, and `evaluationSuites[]` metadata with `generationSource: manual-fallback`.
+
+Do not use `evaluation_suite_run` for batch eval. Use `evaluation_agent_batch_eval_create` after reviewing the generated suite artifacts.

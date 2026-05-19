@@ -42,7 +42,7 @@ evaluation_suite_generation_job_create(
 )
 ```
 
-For trace-informed suites, include `traceAgentName` or `traceAgentId`, `traceAgentVersion`, `traceStartTime`, `traceEndTime`, and `maxTraces`. Poll with `evaluation_suite_generation_job_get`, then verify the generated suite with `evaluation_suite_get`.
+For trace-informed suites, include `traceAgentName` or `traceAgentId`, `traceAgentVersion`, `traceStartTime`, `traceEndTime`, and `maxTraces`. Start background polling with `evaluation_suite_generation_job_get`, suppress intermediate `in_progress` output, then verify the generated suite with `evaluation_suite_get` after terminal success.
 
 When refining an existing dataset, include `datasetName` and `datasetVersion`.
 

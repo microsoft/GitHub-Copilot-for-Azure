@@ -75,7 +75,7 @@ Each cycle makes the test suite harder and more representative. Production failu
 10. **Confirm before overwriting.** If a dataset version or cache file already exists, warn the user and ask for confirmation before replacing or refreshing it.
 11. **Sync to Foundry when requested or needed.** After saving datasets locally, refresh or register them in Foundry only when the user asks or the workflow needs shared/CI usage. Use `evaluation_suite_create` for reviewed suite versions that combine the updated dataset and evaluator set.
 12. **Never remove dataset rows or weaken evaluators to recover scores.** Score drops after a dataset update are expected - harder tests expose real gaps. Optimize the agent for new failure patterns; do not shrink the test suite.
-13. **Match eval parameter names exactly.** Prefer `evaluation_suite_run` when `suiteName` exists. Use `evaluationId` only when creating legacy grouped batch runs, but use `evalId` for `evaluation_get` and comparison/trending lookups.
+13. **Match eval parameter names exactly.** Use `evaluation_agent_batch_eval_create` for agent-target batch eval, including suites that have `suiteName`; call `evaluation_suite_get` only to resolve suite metadata. Use `evaluationId` when creating grouped batch runs, but use `evalId` for `evaluation_get` and comparison/trending lookups.
 
 ## Dataset Naming and Metadata Conventions
 
