@@ -41,9 +41,8 @@ Each skill in `/plugin/skills/{skill-name}/` can have a corresponding test suite
 3. **Each test file loads its skill** via `utils/skill-loader.ts`
 4. **Tests execute** - execute test code and generate output
 
-There are 3 types of tests.
+There are 2 types of tests.
 
-- unit test: tests that validate the file structure of a skill and the content.
 - trigger test: tests that validate if the description of a skill can trigger or not trigger a given prompt using a heuristic.
 - integration test: tests that validate if the skill can lead to successful completion of a task by running a given prompt against a Copilot SDK agent.
 
@@ -71,17 +70,7 @@ Run tests manually anytime during development (see [Running Tests Locally](#runn
 
 ## What Tests Validate
 
-### 1. Unit Tests (`unit.test.ts`)
-
-**Purpose:** Validate skill metadata and any embedded logic.
-
-**What it checks:**
-- `SKILL.md` exists and has valid frontmatter (`name`, `description`)
-- Description is meaningful (not empty, appropriate length)
-- Content contains expected sections
-- Any validation rules documented in the skill work correctly
-
-### 2. Trigger Tests (`triggers.test.ts`)
+### 1. Trigger Tests (`triggers.test.ts`)
 
 **Purpose:** Verify the skill activates on correct prompts and ignores unrelated ones.
 
@@ -96,7 +85,7 @@ Run tests manually anytime during development (see [Running Tests Locally](#runn
 npm run update:snapshots -- --testPathPatterns={skill-name}
 ```
 
-### 3. Integration Tests (`integration.test.ts`)
+### 2. Integration Tests (`integration.test.ts`)
 
 **Purpose:** Test skill behavior with a real Copilot agent session.
 
@@ -298,7 +287,7 @@ cp -r _template {skill-name}
 Edit each test file and change the `SKILL_NAME` constant:
 
 ```typescript
-// In unit.test.ts, triggers.test.ts, integration.test.ts
+// In triggers.test.ts, integration.test.ts
 const SKILL_NAME = 'azure-redis';  // ← Change this to match your skill folder
 ```
 
@@ -322,65 +311,11 @@ const shouldNotTriggerPrompts = [
 ];
 ```
 
-#### Step 4: Customize Unit Tests
-
-In `unit.test.ts`, add tests specific to your skill's content:
-
-```typescript
-test('documents cache tiers', () => {
-  expect(skill.content).toContain('Basic');
-  expect(skill.content).toContain('Standard');
-  expect(skill.content).toContain('Premium');
-});
-```
-
-#### Step 5: Run and Verify
+#### Step 4: Run and Verify
 
 ```bash
 npm run test:skill -- {skill-name}
 ```
-
-#### Step 6: Update Coverage Grid
-
-```bash
-npm run coverage:grid
-```
-
-This updates the Skills Coverage Grid in this README.
-
----
-
-## Skills Coverage Grid
-
-<!-- COVERAGE_GRID_START -->
-| Skill | Tests | Unit | Triggers | Integration | Coverage |
-|-------|-------|------|----------|-------------|----------|
-| appinsights-instrumentation | ✅ | ✅ | ✅ | ✅ | - |
-| azure-ai | ✅ | ✅ | ✅ | ✅ | - |
-| azure-aigateway | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cloud-migrate | ✅ | ✅ | ✅ | ✅ | - |
-| azure-compliance | ✅ | ✅ | ✅ | ✅ | - |
-| azure-compute | ✅ | ✅ | ✅ | ✅ | - |
-| azure-cost | ✅ | ✅ | ✅ | ✅ | - |
-| azure-deploy | ✅ | ✅ | ✅ | ✅ | - |
-| azure-diagnostics | ✅ | ✅ | ✅ | ✅ | - |
-| azure-enterprise-infra-planner | ✅ | ✅ | ✅ | ✅ | - |
-| azure-hosted-copilot-sdk | ✅ | ✅ | ✅ | ✅ | - |
-| azure-kusto | ✅ | - | - | ✅ | - |
-| azure-messaging | ✅ | ✅ | ✅ | ✅ | - |
-| azure-prepare | ✅ | ✅ | ✅ | ✅ | - |
-| azure-quotas | ✅ | ✅ | ✅ | ✅ | - |
-| azure-rbac | ✅ | ✅ | ✅ | ✅ | - |
-| azure-resource-lookup | ✅ | ✅ | ✅ | ✅ | - |
-| azure-resource-visualizer | ✅ | ✅ | ✅ | ✅ | - |
-| azure-storage | ✅ | - | - | ✅ | - |
-| azure-upgrade | ✅ | ✅ | ✅ | ✅ | - |
-| azure-validate | ✅ | ✅ | ✅ | ✅ | - |
-| entra-app-registration | ✅ | ✅ | ✅ | ✅ | - |
-| microsoft-foundry | ✅ | ✅ | ✅ | ✅ | - |
-
-**Legend:** ✅ Exists | ❌ Missing | Coverage shown as percentage
-<!-- COVERAGE_GRID_END -->
 
 ---
 
