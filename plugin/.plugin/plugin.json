@@ -21,5 +21,8 @@
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
-  "hooks": { "paths": ["./hooks/copilot-hooks.json"], "exclusive": true }
+  "hooks": {
+    "paths": ["./hooks/copilot-hooks.json"],
+    "exclusive": true
+  }
 }
