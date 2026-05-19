@@ -89,7 +89,6 @@ See [routing-analysis.md](routing-analysis.md) for detailed checks.
 |-------|------|
 | Registered | Skill listed in `tests/skills.json` |
 | Trigger tests | `tests/{skill-name}/triggers.test.ts` exists with shouldTrigger/shouldNotTrigger arrays |
-| Unit tests | `tests/{skill-name}/unit.test.ts` exists |
 | Snapshots | Updated if description changed |
 
 ## 10. Positive Acknowledgment

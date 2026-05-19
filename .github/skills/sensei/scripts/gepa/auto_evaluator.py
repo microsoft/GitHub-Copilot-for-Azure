@@ -7,7 +7,7 @@ GEPA-compatible evaluator with zero manual configuration.
 
 Currently, the evaluator:
   - parses triggers.test.ts files to extract trigger prompt arrays
-  - detects the presence of unit.test.ts and integration.test.ts files
+  - detects the presence of integration.test.ts files
   - uses this structural information plus content/keyword heuristics to
     construct a fitness function
 
