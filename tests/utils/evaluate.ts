@@ -128,6 +128,162 @@ export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern:
   return scanDirectory(workspace);
 }
 
+function readWorkspaceTextFiles(workspace: string, filePattern: RegExp): string[] {
+  const contents: string[] = [];
+
+  const scanDirectory = (dir: string): void => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        scanDirectory(fullPath);
+      } else if (entry.isFile() && entry.name.match(filePattern)) {
+        try {
+          contents.push(fs.readFileSync(fullPath, "utf-8"));
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+  };
+
+  scanDirectory(workspace);
+  return contents;
+}
+
+function expressionContainsPublicPlaceholderImage(expression: string, symbolExpressions: Map<string, string>, seenSymbols = new Set<string>()): boolean {
+  if (/["']mcr\.microsoft\.com\//i.test(expression)) {
+    return true;
+  }
+
+  for (const symbolName of expression.matchAll(/\b[A-Za-z_]\w*\b/g)) {
+    const name = symbolName[0];
+    if (seenSymbols.has(name)) {
+      continue;
+    }
+
+    const symbolExpression = symbolExpressions.get(name);
+    if (!symbolExpression) {
+      continue;
+    }
+
+    seenSymbols.add(name);
+    if (expressionContainsPublicPlaceholderImage(symbolExpression, symbolExpressions, seenSymbols)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
+  const blocks: string[] = [];
+
+  for (const match of content.matchAll(blockStartPattern)) {
+    const blockStart = match.index;
+    const openBraceIndex = content.indexOf("{", blockStart);
+    if (openBraceIndex === -1) {
+      continue;
+    }
+
+    let depth = 0;
+    for (let index = openBraceIndex; index < content.length; index++) {
+      if (content[index] === "{") {
+        depth += 1;
+      } else if (content[index] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          blocks.push(content.slice(blockStart, index + 1));
+          break;
+        }
+      }
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * Checks that generated Bicep provisions Container Apps with a public MCR placeholder image.
+ * This verifies the deployment behavior instead of a specific parameter name/default spelling.
+ */
+export function doesBicepContainerAppUsePublicPlaceholderImage(workspace: string): boolean {
+  const bicepFiles = readWorkspaceTextFiles(workspace, /\.bicep$/i)
+    .filter(content => /Microsoft\.App\/containerApps/i.test(content));
+
+  for (const content of bicepFiles) {
+    const symbolExpressions = new Map<string, string>();
+
+    for (const match of content.matchAll(/^\s*param\s+([A-Za-z_]\w*)\s+string\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*var\s+([A-Za-z_]\w*)\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*image\s*:\s*(.+)$/gmi)) {
+      if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks that generated Terraform provisions Container Apps with a public MCR placeholder image.
+ * This verifies the container app image expression instead of any incidental MCR string in the workspace.
+ */
+export function doesTerraformContainerAppUsePublicPlaceholderImage(workspace: string): boolean {
+  const terraformFiles = readWorkspaceTextFiles(workspace, /\.tf$/i)
+    .filter(content => /azurerm_container_app\b/i.test(content));
+
+  for (const content of terraformFiles) {
+    const symbolExpressions = new Map<string, string>();
+
+    for (const match of content.matchAll(/variable\s+"([A-Za-z_]\w*)"\s*{[\s\S]*?default\s*=\s*(.+?)\s*(?:\n|})/gi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*image\s*=\s*(.+)$/gmi)) {
+      if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks that generated Terraform tells Container Apps to ignore externally deployed image changes.
+ */
+export function doesTerraformContainerAppIgnoreImageChanges(workspace: string): boolean {
+  const terraformFiles = readWorkspaceTextFiles(workspace, /\.tf$/i)
+    .filter(content => /azurerm_container_app\b/i.test(content));
+
+  for (const content of terraformFiles) {
+    const containerAppBlocks = extractBlocks(content, /resource\s+"azurerm_container_app"\s+"[^"]+"\s*{/gi);
+    for (const containerAppBlock of containerAppBlocks) {
+      const lifecycleBlocks = extractBlocks(containerAppBlock, /lifecycle\s*{/gi);
+      for (const lifecycleBlock of lifecycleBlocks) {
+        const ignoreChanges = lifecycleBlock.match(/ignore_changes\s*=\s*(\[[\s\S]*?\]|[^\n]+)/i)?.[1];
+        if (ignoreChanges && /\b(image|all)\b/i.test(ignoreChanges)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 export type SeparateFilesPatternResult =
   | { isSeparate: true }
   | {
