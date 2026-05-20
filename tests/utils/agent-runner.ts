@@ -378,6 +378,11 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   // Second pass: generate output in order
   for (const event of agentMetadata.events) {
     switch (event.type) {
+      case "user.message": {
+        lines.push(`> User: ${event.data.content}`);
+        break;
+      }
+
       case "assistant.message": {
         const content = event.data.content as string;
         if (content) {
