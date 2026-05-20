@@ -370,7 +370,10 @@ export function getAllToolText(metadata: AgentMetadata): string {
   const parts: string[] = [];
   for (const event of metadata.events) {
     if (event.type === "tool.execution_start") {
-      parts.push(argsString(event));
+      // @todo: Use the actual type when copilot-sdk ships this fix
+      // https://github.com/github/copilot-sdk/issues/1156
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parts.push(argsString(event as any));
     }
     if (event.type === "tool.execution_complete") {
       const result = event.data.result as { content?: string } | undefined;
