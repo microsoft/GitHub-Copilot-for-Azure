@@ -198,9 +198,16 @@ export function doesBicepContainerAppUsePublicPlaceholderImage(workspace: string
       symbolExpressions.set(match[1], match[2]);
     }
 
-    for (const match of content.matchAll(/^\s*image\s*:\s*(.+)$/gmi)) {
-      if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
-        return true;
+    const containerAppBlocks = extractBlocks(
+      content,
+      /^\s*resource\s+[A-Za-z_]\w*\s+'Microsoft\.App\/containerApps@[^']+'\s*=\s*{/gmi,
+    );
+
+    for (const block of containerAppBlocks) {
+      for (const match of block.matchAll(/^\s*image\s*:\s*(.+)$/gmi)) {
+        if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+          return true;
+        }
       }
     }
   }
