@@ -27,7 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/micromatch": "^4.0.10",
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.0",
     "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^10.4.0",
     "fast-xml-parser": "^5.8.0",
