@@ -101,31 +101,7 @@ export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolea
  * @returns True if any file contains content matching the value pattern
  */
 export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern: RegExp, filePattern?: RegExp): boolean {
-  const scanDirectory = (dir: string): boolean => {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory() && entry.name !== "node_modules") {
-        if (scanDirectory(fullPath)) return true;
-      } else if (entry.isFile()) {
-        // Skip if filePattern is provided and doesn't match
-        if (filePattern && !entry.name.match(filePattern)) {
-          continue;
-        }
-        try {
-          const content = fs.readFileSync(fullPath, "utf-8");
-          if (content.match(valuePattern)) {
-            return true;
-          }
-        } catch {
-          // Skip files that can't be read as text
-        }
-      }
-    }
-    return false;
-  };
-
-  return scanDirectory(workspace);
+  return readWorkspaceTextFiles(workspace, filePattern ?? /.*/).some(content => content.match(valuePattern));
 }
 
 function readWorkspaceTextFiles(workspace: string, filePattern: RegExp): string[] {
