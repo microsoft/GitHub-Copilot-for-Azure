@@ -34,7 +34,7 @@ export function countSecretsInCode(metadata: AgentMetadata): number {
     const toolName = event.data.toolName as string;
     if (!writeTools.some(t => toolName.includes(t))) continue;
 
-    // @todo: Stop using any when copilot-sdk ships this fix
+    // @todo: Use the actual type when copilot-sdk ships this fix
     // https://github.com/github/copilot-sdk/issues/1156
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const args = argsString(event as any);
