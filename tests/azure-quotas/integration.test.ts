@@ -151,7 +151,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         const mentionsExtension = doesAssistantMessageIncludeKeyword(agentMetadata, "az extension add");
-        const installsExtension = matchesCommand(agentMetadata, /az\s+extension\+add/);
+        const installsExtension = matchesCommand(agentMetadata, /az\s+extension\s+add/);
 
         expect(isSkillUsed).toBe(true);
         expect(mentionsExtension || installsExtension).toBe(true);
