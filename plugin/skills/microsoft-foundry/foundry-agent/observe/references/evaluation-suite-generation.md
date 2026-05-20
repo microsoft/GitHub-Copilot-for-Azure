@@ -36,7 +36,7 @@ Set `dataGenerationType` (default `simple_qna`), `category` (default `quality`),
 
 Poll with `evaluation_suite_generation_job_get(projectEndpoint, jobId)` until the job reaches a terminal state (`succeeded`, `failed`, `canceled`). Generation typically takes **5-15 minutes** for synthetic Q&A and longer for trace-derived suites, so do not block the main response with repeated foreground polling.
 
-> 🛑 **MANDATORY: Poll in the background.** Once `evaluation_suite_generation_job_create` returns a `jobId`, persist the in-flight `generationJobId` in the selected `.foundry/agent-metadata*.yaml` file, start a background polling task or background terminal loop, and keep normal chat output clean. The foreground response should say that generation started and that final status will be surfaced when the background poll reaches a terminal state.
+> ⚠️ **Mandatory: poll in the background.** Once `evaluation_suite_generation_job_create` returns a `jobId`, persist the in-flight `generationJobId` in the selected `.foundry/agent-metadata*.yaml` file, start a background polling task or background terminal loop, and keep normal chat output clean. The foreground response should say that generation started and that final status will be surfaced when the background poll reaches a terminal state.
 >
 > **How to poll:** In the background worker, call `evaluation_suite_generation_job_get` every 60-120 seconds until `status` is `succeeded`, `failed`, or `canceled`. Suppress intermediate `in_progress` output unless the status changes or the job is stuck. Do not print every poll result to the user.
 >
@@ -46,17 +46,17 @@ Poll with `evaluation_suite_generation_job_get(projectEndpoint, jobId)` until th
 
 ## Cache Artifacts Locally
 
-> 🛑 **MANDATORY after `succeeded`.** As soon as the background poll reaches `succeeded`, perform **all three** of the following calls and write **all three** files. This is not optional — partial caching (e.g., metadata stub instead of full evaluator definition) is the most common skill bug. Do not write the deployment/eval-setup summary until the three files exist.
+> ⚠️ **Mandatory after `succeeded`.** As soon as the background poll reaches `succeeded`, perform **all three** of the following calls and write **all three** files. This is not optional — partial caching (e.g., metadata stub instead of full evaluator definition) is the most common skill bug. Do not write the deployment/eval-setup summary until the three files exist.
 
 Save artifacts under the selected agent root only, using these exact paths and contents:
 
 | Call | Local file | Contents |
 |------|------------|----------|
-| `evaluation_suite_get(suiteName, version)` | `.foundry/suites/<suite-name>-v<version>.json` | The **full** returned suite object (target, testing_criteria, dataset ref, input_messages). |
+| `evaluation_suite_get(projectEndpoint, suiteName, version)` | `.foundry/suites/<suite-name>-v<version>.json` | The **full** returned suite object (target, testing_criteria, dataset ref, input_messages). |
 | `evaluator_catalog_get(name, version)` | `.foundry/evaluators/<evaluator-name>-v<version>.json` | The **full** returned evaluator object including `definition.dimensions`, `definition.metrics`, `definition.data_schema`, and `generation_artifacts`. Do NOT save a YAML stub — persist the complete JSON so HITL rubric edits + `evaluator_catalog_update(createNewVersion: true)` can round-trip. |
 | `evaluation_dataset_get(name, version)` + `evaluation_dataset_sas_url_get(datasetName, datasetVersion)` | `.foundry/datasets/<agent-name>-<dataset-name>-v<version>.ref.json` AND `.foundry/datasets/<dataset-name>-v<version>/<blob-name>` | Metadata stub PLUS the actual dataset blob(s). The SAS-url tool returns a container-scope SAS (`sr=c, sp=rl`); list the container then download every blob (see "Dataset Content Download" below). Set `contentDownloaded: true` + `contentFiles: [...]` in the stub. |
 
-For the first two, do not skip fields and do not transform — write the JSON returned by the MCP tool. Overwrite existing files for the same `<name>-v<version>` without prompting (the version suffix makes the previous file immutable by design).
+For the first two, do not skip fields and do not transform — write the JSON returned by the MCP tool. Do not overwrite user-edited cache files without confirmation. Exception: deterministic re-fetch of the same immutable remote `<name>-v<version>` may replace the generated cache artifact for that exact version when rehydrating a missing, stale, or corrupt local cache.
 
 ### Dataset Content Download (USE THIS — DO NOT SKIP)
 

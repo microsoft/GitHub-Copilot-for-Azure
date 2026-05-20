@@ -30,11 +30,11 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 ## Workflow: Hosted Agent Deployment
 
-> 🛑🛑🛑 **HOSTED AGENT DEPLOYMENT HAS 8 STEPS, NOT 7.** 🛑🛑🛑
+> ⚠️ **Warning: hosted agent deployment has 8 steps, not 7.**
 >
 > The single most common failure of this skill is stopping after Step 7 (invocation smoke test) and emitting a "deployment complete" summary. **Step 8 (auto-generate evaluation suite) is mandatory and runs automatically after every deploy — including redeploys, version bumps, and `azd deploy` re-runs.**
 >
-> Before you write any final summary, Playground link, version table, or "✅ deployed" message, you MUST self-verify:
+> Before you write any final summary, Playground link, version table, or deployment success message, you MUST self-verify:
 >
 > 1. Did Step 8 run to completion (suite generated **or** documented fallback persisted)?
 > 2. Was `.foundry/agent-metadata.yaml` updated for the selected environment?
@@ -191,11 +191,11 @@ After this RBAC check is complete, read and follow the [invoke skill](../invoke/
 
 If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
 
-> 🛑 **NOT DONE YET — invocation success is the midpoint, not the finish line.** The next action after a passing smoke test is **Step 8**, not a deployment summary. Do not write a summary, version table, or Playground link yet.
+> ⚠️ **Not done yet: invocation success is the midpoint, not the finish line.** The next action after a passing smoke test is **Step 8**, not a deployment summary. Do not write a summary, version table, or Playground link yet.
 
 ### Step 8: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
-> 🛑 **Pre-summary gate.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 8 has not run, you are violating this skill. Run Step 8 first.
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 8 has not run, you are violating this skill. Run Step 8 first.
 >
 > This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below in 8a.
 
@@ -264,11 +264,11 @@ Use `agent_update` with the agent definition:
 
 Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
 
-> 🛑 **NOT DONE YET — invocation success is the midpoint, not the finish line.** The next action is **Step 5**, not a deployment summary. Do not write a summary or Playground link yet.
+> ⚠️ **Not done yet: invocation success is the midpoint, not the finish line.** The next action is **Step 5**, not a deployment summary. Do not write a summary or Playground link yet.
 
 ### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
-> 🛑 **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
 >
 > This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below.
 
@@ -284,7 +284,7 @@ Read and follow the [invoke skill](../invoke/invoke.md) to send a test message a
 
 ## Display Agent Information
 
-> 🛑 **Gate:** Do not render the table or Playground link until the Definition of Done checklist for the selected workflow (Hosted or Prompt) is fully satisfied, including the invocation smoke test, the auto-generated evaluation suite (or documented skip), and the `.foundry/agent-metadata.yaml` update. The Playground link is the final artifact, not a mid-workflow checkpoint.
+> ⚠️ **Gate:** Do not render the table or Playground link until the Definition of Done checklist for the selected workflow (Hosted or Prompt) is fully satisfied, including the invocation smoke test, the auto-generated evaluation suite (or documented skip), and the `.foundry/agent-metadata.yaml` update. The Playground link is the final artifact, not a mid-workflow checkpoint.
 
 Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
 

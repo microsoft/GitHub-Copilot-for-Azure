@@ -63,8 +63,8 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 |-------------|------------------------|
 | Create a new agent from scratch | [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Make existing Python agent FAOS optimizable | [faos-optimize](foundry-agent/faos-optimize/faos-optimize.md) → review → deploy → invoke |
-| Deploy an agent (code already exists) | deploy → invoke → observe (auto-setup eval suite) |
-| Update/redeploy an agent after code changes | deploy → invoke → observe (auto-setup eval suite) |
+| Deploy an agent (code already exists) | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
+| Update/redeploy an agent after code changes | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
 | Invoke/test/chat with an agent | invoke |
 | Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
 | Evaluate and optimize agent (full loop) | observe |

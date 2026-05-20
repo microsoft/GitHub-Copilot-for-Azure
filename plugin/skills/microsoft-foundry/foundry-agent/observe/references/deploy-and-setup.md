@@ -54,12 +54,14 @@ Cache generated artifacts inside the selected root:
 .foundry/
   agent-metadata.yaml
   agent-metadata.prod.yaml
-  evaluators/<evaluator-name>-<version>.yaml
-  datasets/<agent-name>-<suite-name>-<version>.jsonl
+  suites/<suite-name>-v<version>.json
+  evaluators/<evaluator-name>-v<version>.json
+  datasets/<agent-name>-<dataset-name>-v<version>.ref.json
+  datasets/<dataset-name>-v<version>/<blob-name>
   results/
 ```
 
-If the job result exposes only remote names/versions, fetch metadata with `evaluation_suite_get`, `evaluation_dataset_get`, and `evaluator_catalog_get`, then materialize local reference files from the returned details or linked dataset URI. Never overwrite local files without confirmation.
+If the job result exposes only remote names/versions, fetch metadata with `evaluation_suite_get(projectEndpoint, suiteName, suiteVersion)`, `evaluation_dataset_get`, `evaluation_dataset_sas_url_get`, and `evaluator_catalog_get`, then materialize the full suite JSON, full evaluator JSON, dataset `.ref.json`, and downloaded dataset blobs. Never overwrite user-edited cache files without confirmation; deterministic re-fetch of the same immutable remote `<name>-v<version>` may replace the generated cache artifact for that exact version.
 
 ### 5. Update Metadata
 
@@ -68,7 +70,7 @@ Write only the selected metadata file and selected environment. Persist evaluati
 - `id`, `tags`, `suiteName`, `suiteVersion`
 - `generationJobId`, `generationSource` (`synthetic`, `traces`, or `manual-fallback`)
 - `dataset`, `datasetVersion`, `datasetFile`, `datasetUri`
-- evaluator `name`, `version`, `threshold`, `definitionFile`
+- evaluator `name`, `version`, `threshold`, `definitionFile` (full cached JSON)
 
 Use tags such as `tier: smoke`, `purpose: baseline`, and `stage: generated`. If metadata still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` on write and map `priority` to `tags.tier` only when `tags.tier` is missing.
 

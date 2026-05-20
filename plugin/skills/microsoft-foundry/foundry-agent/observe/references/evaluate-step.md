@@ -14,7 +14,7 @@ A Step 2 evaluation run is complete only when **every** box below is checked. Do
 
 - [ ] `evaluation_agent_batch_eval_create` returned an `evalRunId`
 - [ ] `evalId` and `evalRunId` mirrored into the selected `.foundry/agent-metadata*.yaml` (`environments.<env>.lastEval.{evalId, evalRunId, runName, suiteName, suiteVersion, agentVersion, startedAt}`) so a later turn can resume
-- [ ] Polling reached terminal state (`Completed`, `Failed`, or `Cancelled`)
+- [ ] Polling reached terminal state (`completed`, `failed`, or `cancelled`)
 - [ ] Per-item `output_items` downloaded via the `azure-ai-projects` Python SDK (see [Step 3 → Download Results](analyze-results.md#step-3--download-results)) — NOT via `evaluation_get`, NOT via `evaluation_dataset_sas_url_get`
 - [ ] Results persisted under `.foundry/results/<env>/<eval-id>/<run-id>.json`
 - [ ] Per-item failures and any `passed: null` / `reason: null` items have been clustered (Step 4) before summarizing
@@ -71,7 +71,7 @@ Immediately after creating the run, poll `evaluation_get` in a background termin
 
 Only surface the final result when status reaches `completed`, `failed`, or `cancelled`.
 
-> 🛑 **`evaluation_get` returns run metadata only — it does NOT return per-item scores, agent responses, or judge reasons.** Once the run reaches terminal state, you MUST immediately follow [Step 3 → Download Results](analyze-results.md#step-3--download-results) and pull `output_items` via the `azure-ai-projects` Python SDK (`client.get_openai_client().evals.runs.output_items.list(...)`). Do **not** attempt to use `evaluation_dataset_sas_url_get` on the result artifact (`eval-result-<runId>-*`) — that endpoint is for evaluation **input** datasets and returns 500 for result artifacts.
+> ⚠️ **`evaluation_get` returns run metadata only — it does NOT return per-item scores, agent responses, or judge reasons.** Once the run reaches terminal state, you MUST immediately follow [Step 3 → Download Results](analyze-results.md#step-3--download-results) and pull `output_items` via the `azure-ai-projects` Python SDK (`client.get_openai_client().evals.runs.output_items.list(...)`). Do **not** attempt to use `evaluation_dataset_sas_url_get` on the result artifact (`eval-result-<runId>-*`) — that endpoint is for evaluation **input** datasets and returns 500 for result artifacts.
 
 > 💡 **Mirror IDs to metadata immediately.** Right after `evaluation_agent_batch_eval_create` returns, write `evalId`, `evalRunId`, `runName`, `suiteName`/`suiteVersion`, `agentVersion`, and `startedAt` to the selected environment's `lastEval` block in `.foundry/agent-metadata*.yaml`. This lets a later turn resume polling or downloading without re-reading chat history. The azd `.env` (`LAST_EVAL_ID`, etc.) is azd-internal and should not be relied on by skill flows.
 
