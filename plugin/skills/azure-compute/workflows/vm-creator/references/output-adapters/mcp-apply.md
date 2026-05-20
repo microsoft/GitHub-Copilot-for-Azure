@@ -3,7 +3,7 @@
 User is in an MCP-connected host (Claude Code, VS Code Copilot, Cursor) with the Azure MCP server enabled and says "just do it" / "create it now" / "deploy".
 
 ## Prerequisite
-Azure MCP server installed and authenticated. `az login` token is picked up via `DefaultAzureCredential`.
+Azure MCP server installed and authenticated. `az login` token is picked up via `AzureCliCredential`.
 
 ## Pre-flight checks (read-only)
 
