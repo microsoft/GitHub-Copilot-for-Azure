@@ -234,9 +234,12 @@ export function doesTerraformContainerAppUsePublicPlaceholderImage(workspace: st
       symbolExpressions.set(match[1], match[2]);
     }
 
-    for (const match of content.matchAll(/^\s*image\s*=\s*(.+)$/gmi)) {
-      if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
-        return true;
+    const containerAppBlocks = extractBlocks(content, /resource\s+"azurerm_container_app"\s+"[^"]+"\s*{/gi);
+    for (const containerAppBlock of containerAppBlocks) {
+      for (const match of containerAppBlock.matchAll(/^\s*image\s*=\s*(.+)$/gmi)) {
+        if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+          return true;
+        }
       }
     }
   }
