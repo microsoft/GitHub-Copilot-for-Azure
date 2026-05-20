@@ -335,19 +335,11 @@ Use **`model_deployment_get`** to list the selected project's actual model deplo
 
 ### 4. Generate Evaluation Suite
 
-Read and follow [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md). Use `evaluation_suite_generation_job_create` as the preferred post-deploy setup path, then poll with `evaluation_suite_generation_job_get` and inspect the generated suite with `evaluation_suite_get`.
+Read and follow [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md) for source selection, required parameters, polling, and cache writes. In the deploy flow, keep these guardrails:
 
-> 🛑 **Do not stop at `status: in_progress`.** Suite generation is asynchronous but the workflow is not. After `evaluation_suite_generation_job_create` returns, you MUST keep polling `evaluation_suite_generation_job_get` (60–120s cadence, preferably via a subagent so the main turn stays responsive) until the job is `succeeded`, `failed`, or `canceled`. Reporting "deployment complete" or "ask me again later" while the job is still in progress violates the Definition of Done for Step 8. See the **MANDATORY** poll-to-terminal block in the suite-generation reference for the full rule.
-
-> ⚠️ **Ask first.** Before calling `evaluation_suite_generation_job_create`, prompt the user to choose the generation source: **(a) current agent code/definition** (synthetic Q&A) or **(b) historical traces** (default lookback: last 3 days, `maxTraces` ~50). Recommend (b) if the agent has recent traces, otherwise (a). See Step 1 of the suite generation reference for exact wording.
-
-> ⚠️ **Required parameters (service constraints):** `maxSamples` must be **15–1000** (use 15 for smoke), and for agent-sourced generation you must pass **`agentSourceNames: [<agentName>]`** in addition to `agentName` — otherwise the request fails with `Target is required for evaluation suite generation`.
-
-Use these source rules:
-
-- **Synthetic first setup (a):** pass `agentName`, `agentSourceNames: [agentName]`, `suiteName`, `generationModelDeploymentName`, `deploymentName`, `dataGenerationType`, and `maxSamples` (≥15).
-- **Trace-informed setup (b):** add `traceAgentName` (or `traceAgentId`), optional `traceAgentVersion`, `traceStartTime`, `traceEndTime` (unix seconds; default window = `now - 3*86400` to `now`), and `maxTraces` (default ~50).
-- **Existing dataset refinement:** pass `datasetName` and `datasetVersion` when a curated dataset should seed the generated adaptive evaluator.
+- Ask the user which generation source to use before calling `evaluation_suite_generation_job_create`; recommend recent traces when available, otherwise the current agent code/definition.
+- Use the chat-capable generation deployment selected above and honor the reference's service constraints, especially `maxSamples` (15-1000) and `agentSourceNames: [<agentName>]` for agent-sourced suites.
+- Do not report deployment complete while the generation job is `in_progress`; poll with `evaluation_suite_generation_job_get` until `succeeded`, `failed`, or `canceled`, then inspect the suite with `evaluation_suite_get` and cache artifacts as described in the reference.
 
 ### 5. Fallback to Manual Suggestions
 
@@ -363,20 +355,23 @@ The local filename must start with the selected environment's Foundry agent name
 
 ### 6. Persist Artifacts and Evaluation Suites
 
-Save generated or fallback evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update evaluation suites in the selected metadata file for the selected environment:
+Save generated or fallback evaluator definitions, local datasets, and evaluation outputs under `.foundry/` using the cache paths defined in [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md), then register or update evaluation suites in the selected metadata file for the selected environment:
 
 ```text
 .foundry/
   agent-metadata.yaml
   agent-metadata.prod.yaml
+  suites/
+    <suite-name>-v<version>.json
   evaluators/
-    <evaluator-name>-<version>.yaml
+    <evaluator-name>-v<version>.json
   datasets/
-    <agent-name>-<suite-name>-<version>.jsonl
+    <agent-name>-<dataset-name>-v<version>.ref.json
+    <dataset-name>-v<version>/<blob>
   results/
 ```
 
-Each evaluation suite should bundle one remote suite reference, dataset, evaluator list, thresholds, local cache paths, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: generated`). Persist `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `datasetFile`, and `datasetUri` together. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
+Each evaluation suite should bundle the remote suite reference, local cache paths, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: generated`). Persist `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `datasetFile`, and `datasetUri` together. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
 
 ### 7. Prompt User
 
