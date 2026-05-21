@@ -25,6 +25,12 @@
 #   - no_open_rdp_or_ssh          (output-not-matches: 0.0.0.0/0 on 22/3389)
 #   - no_plaintext_admin_password (output-not-matches: adminPassword: "<literal>")
 #
+# Routing validation:
+#   The four `route-*` smoke stimuli use the `skill-invocation` grader to
+#   assert routing (required/disallowed skills activated). Output-text
+#   regex graders on those stimuli check response *content* (Ubuntu, VMSS,
+#   SKU, pricing, no-VM-artifact), not routing.
+#
 # WORKFLOW_PROGRESS pattern (DRY — used by every stimulus's common-grader block):
 #   (?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose
 
@@ -60,6 +66,9 @@ scoring:
     output-matches: 0.5
     output-not-matches: 2.0
     completed: 1.0
+    # Routing validation (router smoke stimuli only) — heavy weight because
+    # a routing miss is a categorical failure: the wrong skill ran.
+    skill-invocation: 1.5
 
 stimuli:
   # ════════════════════════════════════════════════════════════════════
@@ -80,18 +89,18 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
-      # Must engage vm-creator. The workflow has multiple legitimate surface
-      # phrasings: it may say "Plan Card" / "provision" / "create the VM",
-      # or it may enter the Beginner fast-path ("Single VM, fast-path", "I'll
-      # default silently") and only later render the Plan Card.
-      - type: output-matches
+      # ROUTING (skill-invocation grader) — must engage azure-compute and
+      # must NOT route to azure-prepare (that's for apps, not bare VMs).
+      # This replaces the previous output-text regex pair, which was a
+      # fragile proxy for routing (matched workflow names like "vm-creator"
+      # and forbidden strings like "deployment-plan.md").
+      - type: skill-invocation
         config:
-          pattern: "(?i)plan card|vm.?creator|provision|create.*vm|single.?vm|fast.?path|default.*silently|beginner"
-      # Must NOT route to azure-prepare (that's for apps, not bare VMs)
-      - type: output-not-matches
-        config:
-          pattern: "(?i)deployment-plan\\.md|azure-prepare|functions?.?quickstart"
-      # Should land on Ubuntu without re-asking (signal already given)
+          required:
+            - azure-compute
+          disallowed:
+            - azure-prepare
+      # CONTENT — should land on Ubuntu without re-asking (signal already given)
       - type: output-matches
         config:
           pattern: "(?i)ubuntu"
@@ -126,6 +135,14 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      # ROUTING (skill-invocation grader) — must engage azure-compute.
+      # VMSS sits inside vm-creator; skill-invocation can only assert the
+      # skill, so the "did it pick the VMSS branch?" question is handled by
+      # the content checks below (output-contains "VMSS", scale.?set|VMSS).
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
       - type: output-contains
         config:
           substring: "VMSS"
@@ -167,6 +184,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      # ROUTING (skill-invocation grader) — must engage azure-compute.
+      # vm-recommender vs vm-creator is a workflow-level distinction inside
+      # the skill; routing only asserts the skill activated. The "is this
+      # the recommender branch?" question is handled by the SKU + pricing
+      # content checks below.
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
       # Should recommend a SKU (D-series typical for 4c/16g general purpose)
       - type: output-matches
         config:
@@ -205,10 +231,17 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
-      # Must acknowledge azure-prepare / app deployment path
-      - type: output-matches
+      # ROUTING (skill-invocation grader) — must NOT silently route to
+      # azure-compute and emit a VM artifact. We use `disallowed` rather
+      # than `required: [azure-prepare]` because both azure-prepare (fresh
+      # app scaffolding) and azure-deploy (already-prepared app) are
+      # legitimate landings for "Deploy my docker container" — the original
+      # anti-pattern is "azure-compute spins up a VM and apt-installs
+      # docker", which `disallowed` catches directly.
+      - type: skill-invocation
         config:
-          pattern: "(?i)azure-prepare|container app|app service|aca|aks|container.?registry"
+          disallowed:
+            - azure-compute
       # Must NOT silently emit a VM artifact
       - type: output-not-matches
         config:
