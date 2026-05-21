@@ -249,6 +249,6 @@ describe("extractTerraformListAssignment", () => {
   ignore_changes = [ image ]
 }`;
 
-    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe(`[ image ]`);
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe("[ image ]");
   });
 });
