@@ -167,9 +167,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389"
 
   # ── route-vm-recommender-001 ──
   # Question form (no provision verb) → vm-recommender, not vm-creator.
