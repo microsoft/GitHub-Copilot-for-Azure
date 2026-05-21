@@ -181,6 +181,36 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     );
   });
 
+  // Near-neighbor protection: brand-new VMs *inside* Azure belong to the
+  // `azure-compute` skill, not arc-servers.
+  //
+  // NOTE: TriggerMatcher is a keyword pre-filter, not a router. SKILL.md
+  // contributes generic keywords (`azure`, `machine`, `server`, `windows`,
+  // `deploy`, `script`) that any Azure-VM prompt will hit, so we cannot
+  // assert non-triggering for prompts that share that vocabulary. The
+  // actual Arc-vs-Compute disambiguation is enforced by the LLM router
+  // and verified in `integration.test.ts`
+  // (`'on-prem server to Azure' invokes arc-servers, NOT azure-compute`),
+  // which asserts `wrongSkillInvocations === 0`.
+  //
+  // The two prompts below are unambiguous Azure-compute requests with no
+  // Arc-keyword overlap — they should not fire the keyword pre-filter and
+  // serve as a regression guard against keyword drift in SKILL.md.
+  describe("Should NOT Trigger - unambiguous azure-compute (no Arc keyword overlap)", () => {
+    const azureComputePrompts: string[] = [
+      "Create an Azure VM running Ubuntu in East US",
+      "Provision an Azure VM scale set for my web tier",
+    ];
+
+    test.each(azureComputePrompts)(
+      'does not trigger (azure-compute territory) on: "%s"',
+      (prompt) => {
+        const result = triggerMatcher.shouldTrigger(prompt);
+        expect(result.triggered).toBe(false);
+      }
+    );
+  });
+
   describe("Trigger Keywords Snapshot", () => {
     test("skill keywords match snapshot", () => {
       expect(triggerMatcher.getKeywords()).toMatchSnapshot();

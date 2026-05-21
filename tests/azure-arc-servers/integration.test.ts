@@ -32,7 +32,7 @@ const TROUBLESHOOT_WORKFLOW_PATH =
 const MANAGE_WORKFLOW_PATH =
   /workflows\/arc-server-manage\/arc-server-manage\.md/i;
 const RUNS_PER_PROMPT = 5;
-const invocationRateThreshold = 0.8;
+const INVOCATION_RATE_THRESHOLD = 0.8;
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -49,13 +49,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   async function expectPromptToInvokeWorkflow(
     prompt: string,
     workflowPathPattern: RegExp
-  ): Promise<
-    | {
-        skillInvocationCount: number;
-        toolCallCount: number;
-      }
-    | undefined
-  > {
+  ): Promise<{
+    skillInvocationCount: number;
+    toolCallCount: number;
+  }> {
     let invocationCount = 0;
     let toolCallCount = 0;
     for (let i = 0; i < RUNS_PER_PROMPT; i++) {
@@ -82,13 +79,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           "Onboard my on-prem Windows Server to Azure Arc. Generate the install script.",
           ONBOARD_WORKFLOW_PATH
         );
-        if (!result) return;
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(rate).toBeGreaterThanOrEqual(INVOCATION_RATE_THRESHOLD);
         const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
         expect(referenceViewRate).toBeGreaterThanOrEqual(
-          invocationRateThreshold
+          INVOCATION_RATE_THRESHOLD
         );
       });
     });
@@ -114,7 +110,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         }
         const rate = invocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(rate).toBeGreaterThanOrEqual(INVOCATION_RATE_THRESHOLD);
         // Wrong skill should never be invoked for a clearly-Arc prompt.
         expect(wrongSkillInvocations).toBe(0);
       });
@@ -127,13 +123,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "was working yesterday. How do I troubleshoot it?",
           TROUBLESHOOT_WORKFLOW_PATH
         );
-        if (!result) return;
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(rate).toBeGreaterThanOrEqual(INVOCATION_RATE_THRESHOLD);
         const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
         expect(referenceViewRate).toBeGreaterThanOrEqual(
-          invocationRateThreshold
+          INVOCATION_RATE_THRESHOLD
         );
       });
     });
@@ -145,13 +140,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Arc-enabled machine. I need it to keep getting security patches.",
           MANAGE_WORKFLOW_PATH
         );
-        if (!result) return;
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(rate).toBeGreaterThanOrEqual(INVOCATION_RATE_THRESHOLD);
         const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
         expect(referenceViewRate).toBeGreaterThanOrEqual(
-          invocationRateThreshold
+          INVOCATION_RATE_THRESHOLD
         );
       });
     });

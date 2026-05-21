@@ -111,30 +111,30 @@ az policy remediation create \
     --resource-group <rg>
 ```
 
-## Connect to an Arc server (SSH / RDP via Hybrid Connectivity)
+## Connect to an Arc server (SSH via Hybrid Connectivity)
 
-Arc supports tunneled SSH and RDP through the Hybrid Connectivity
-endpoint. No public IP required on the machine.
+Arc supports tunneled SSH through the Hybrid Connectivity endpoint —
+no public IP required on the machine.
 
 ```bash
-# Enable Hybrid Connectivity endpoint on the machine (one-time per machine)
+# Enable the Hybrid Connectivity endpoint on the machine (one-time per machine)
 az connectedmachine endpoint create \
     --resource-group <rg> \
     --machine-name <name> \
     --endpoint-name default
 
-# SSH
+# SSH to a Linux Arc server
 az ssh arc \
     --resource-group <rg> \
     --name <machine-name> \
     --local-user <linux-user>
-
-# RDP (Windows): generates a local listener
-az connectedmachine run-command create ...   # for run-command
 ```
 
-For users without the Az CLI extension, this is also surfaced on the
-portal's **Connect** blade for an Arc server.
+For RDP into a Windows Arc server, use the portal **Connect** blade on
+the Arc machine resource — it sets up the tunnel and hands off to the
+local RDP client. A verified CLI flow for RDP-via-Arc is not documented
+here; do not improvise one with `run-command`, which is unrelated to
+interactive remoting.
 
 ## Choosing a management licensing model
 
