@@ -8,6 +8,7 @@
 /.github/workflows/ @microsoft/ghcp4a
 
 # Plugin skills owners
+/plugin/skills/airunway-aks-setup/ @tmeschter
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT
 /plugin/skills/azure-ai/ @charris-msft
 /plugin/skills/azure-aigateway/ @azaslonov
@@ -18,6 +19,7 @@
 /plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi
 /plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab
+/plugin/skills/azure-hosted-copilot-sdk/ @tmeschter
 /plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho
 /plugin/skills/azure-kusto/ @saikoumudi
 /plugin/skills/azure-messaging/ @kashifkhan
