@@ -191,7 +191,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
           // 2. Initial assessment must mention zone redundancy as a gap
-          //    (the FC1 plan in the sample has zoneRedundant: false / unset by default)
+          //    (the App Service plan used by the sample has zoneRedundant: false / unset by default)
           const mentionsZRGap =
             doesAssistantMessageIncludeKeyword(agentMetadata, "Zone redundancy") ||
             doesAssistantMessageIncludeKeyword(agentMetadata, "zone redundant") ||
