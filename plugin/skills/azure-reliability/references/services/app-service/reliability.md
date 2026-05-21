@@ -60,6 +60,8 @@ az webapp config set --resource-group <rg> --name <app> --auto-heal-enabled true
 az rest --method patch \
   --uri "https://management.azure.com/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Web/sites/{app}/config/web?api-version=2022-03-01" \
   --body '{"properties":{"autoHealEnabled":true,"autoHealRules":{...}}}'
+```
+
 ## Configure: Zone Redundancy
 
 ### Upgrade Plan (if needed)
