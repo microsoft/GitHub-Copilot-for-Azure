@@ -179,6 +179,33 @@ function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
   return blocks;
 }
 
+export function extractTerraformListAssignment(block: string, attributeName: string): string | undefined {
+  const assignmentMatch = block.match(new RegExp(`${attributeName}\\s*=\\s*`, "i"));
+  if (!assignmentMatch || assignmentMatch.index === undefined) {
+    return undefined;
+  }
+  const valueStart = assignmentMatch.index + assignmentMatch[0].length;
+  const valueText = block.slice(valueStart).trimStart();
+
+  if (!valueText.startsWith("[")) {
+    return valueText.match(/^[^\n]+/)?.[0]?.trim();
+  }
+
+  let depth = 0;
+  for (let index = 0; index < valueText.length; index++) {
+    if (valueText[index] === "[") {
+      depth += 1;
+    } else if (valueText[index] === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        return valueText.slice(0, index + 1);
+      }
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Checks that generated Bicep provisions Container Apps with a public MCR placeholder image.
  * This verifies the deployment behavior instead of a specific parameter name/default spelling.
@@ -259,7 +286,7 @@ export function doesTerraformContainerAppIgnoreImageChanges(workspace: string): 
     for (const containerAppBlock of containerAppBlocks) {
       const lifecycleBlocks = extractBlocks(containerAppBlock, /lifecycle\s*{/gi);
       for (const lifecycleBlock of lifecycleBlocks) {
-        const ignoreChanges = lifecycleBlock.match(/ignore_changes\s*=\s*(\[[\s\S]*?\]|[^\n]+)/i)?.[1];
+        const ignoreChanges = extractTerraformListAssignment(lifecycleBlock, "ignore_changes");
         if (ignoreChanges && /\b(image|all)\b/i.test(ignoreChanges)) {
           return true;
         }
