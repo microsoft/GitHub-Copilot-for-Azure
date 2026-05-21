@@ -180,7 +180,8 @@ function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
 }
 
 export function extractTerraformListAssignment(block: string, attributeName: string): string | undefined {
-  const assignmentMatch = block.match(new RegExp(`${attributeName}\\s*=\\s*`, "i"));
+  const escapedAttributeName = attributeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignmentMatch = block.match(new RegExp(`(^|\\n)\\s*${escapedAttributeName}\\s*=\\s*`, "i"));
   if (!assignmentMatch || assignmentMatch.index === undefined) {
     return undefined;
   }

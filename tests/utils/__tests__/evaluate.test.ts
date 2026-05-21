@@ -251,4 +251,18 @@ describe("extractTerraformListAssignment", () => {
 
     expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe("[ image ]");
   });
+  test("returns the non list value", () => {
+    const lifecycleBlock = `lifecycle {
+  ignore_changes = all
+}`;
+
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe("all");
+  });
+  test("returns undefined", () => {
+    const lifecycleBlock = `lifecycle {
+  unmatched_key = all
+}`;
+
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe(undefined);
+  });
 });
