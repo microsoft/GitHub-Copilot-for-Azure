@@ -58,11 +58,19 @@ Outcomes:
 | ⚠️ Near limit (>80%) | Proceed but flag in Plan Card; suggest quota increase |
 | ❌ Insufficient / SKU missing | Propose alternate SKU or region; do **not** generate output |
 
-### Step 5 — Plan Card
+### Step 5 — Plan Card (with explicit-override fast path)
 
-Render a single markdown table summarizing **every decision** (explicit answers + silent defaults). The user reads top-to-bottom and either approves or edits any row before output is generated. See [plan-card.md](references/plan-card.md) for the schema, example, and rendering rules.
+**Default path.** Render a single markdown table summarizing **every decision** (explicit answers + silent defaults). The user reads top-to-bottom and either approves or edits any row before output is generated. See [plan-card.md](references/plan-card.md) for the schema, example, and rendering rules.
 
 Ask: *"Approve as-is, edit a row, or change output format?"* — do not generate until approved.
+
+**Explicit-override fast path.** If the user's prompt combines (a) an explicit deliverable ("give me the Bicep", "just print the az CLI", "apply it via MCP") **and** (b) an explicit refusal of dialog ("no questions", "skip planning", "no plan", "just do it"), **respect them**. Skip the Plan Card table and the approval AskUserQuestion. Instead:
+
+1. Emit a **single-line preview** that surfaces the high-signal decisions inline — e.g. *"→ Deploying `Standard_D2s_v5` in `eastus`, OS `Ubuntu2404`, NSG = your public IP only on 22, est. ~$70/mo."*
+2. Immediately emit the requested artifact (Bicep / Terraform / az CLI / MCP apply).
+3. Mention once, at the end, that the full Plan Card is available on request if they want to edit rows.
+
+Step 4 validation gates (SKU / image / quota / region) still run on the fast path — they protect against broken artifacts, not user intent. If validation fails, fall back to the ❌ outcome in Step 4 (propose alternate SKU/region, do not generate output).
 
 ### Step 6 — Output Choice
 

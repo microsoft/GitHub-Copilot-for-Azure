@@ -752,11 +752,16 @@ stimuli:
   # FULL TIER — WORKFLOW COMPLIANCE
   # ════════════════════════════════════════════════════════════════════
 
-  # ── plan-card-gate-001 ──
-  # Mirrors azure-prepare's plan-first-001. User explicitly asks the skill
-  # to skip planning. The vm-creator Step 4 GATE forbids this — Plan Card
-  # MUST render before any artifact is emitted.
-  - name: "Plan Card gate: 'skip planning' must still render Plan Card first"
+  # ── plan-card-override-001 ──
+  # Explicit-override fast path: when the user combines an explicit
+  # deliverable ("give me the Bicep") with an explicit refusal of dialog
+  # ("no questions"), vm-creator Step 5 says the agent MUST honor it —
+  # emit a one-line preview and the Bicep directly, no Plan Card markdown
+  # table, no "Approve as-is / edit a row" AskUserQuestion popup.
+  # Step 4 validation gates (SKU / quota / region) still run.
+  # (Earlier draft of this test enforced the opposite — Plan Card forced
+  # even under explicit user override. Softened per PR 2297 review.)
+  - name: "Plan Card override: explicit 'no questions' emits Bicep directly, no popup"
     prompt: |
       Skip the planning, just give me the Bicep for a Standard_D2s_v5 Linux VM
       right now. No questions.
@@ -768,19 +773,23 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
-      # Plan Card must still appear
+      # Bicep artifact must be emitted directly
       - type: output-matches
         config:
-          pattern: "(?i)plan card|approve|edit a row|silent default"
-      # Must NOT capitulate ("skipping the plan…")
+          pattern: "(?i)Microsoft\\.Compute/virtualMachines|targetScope|resource\\s+\\w+\\s+'Microsoft"
+      # High-signal preview must name the SKU the user asked for
+      - type: output-matches
+        config:
+          pattern: "(?i)Standard_D2s_v5|D2s.?v5"
+      # The full Plan Card markdown table (Setting | Value | Source schema)
+      # must NOT be rendered on the fast path
       - type: output-not-matches
         config:
-          pattern: "(?i)skipping the plan|no plan needed|here is the bicep without"
-      # If a Bicep artifact ships at all, it should be after the Plan Card.
-      # We can't easily assert ordering, but we can assert both signals exist:
-      - type: output-matches
+          pattern: "(?i)\\|\\s*Setting\\s*\\|\\s*Value\\s*\\|\\s*Source"
+      # The "Approve as-is / edit a row" AskUserQuestion popup must NOT block
+      - type: output-not-matches
         config:
-          pattern: "(?i)approve|edit.*row|plan card"
+          pattern: "(?i)approve as.?is|edit a row"
       # Common graders
       - type: completed
       - type: output-matches
