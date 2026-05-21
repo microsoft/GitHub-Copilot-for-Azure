@@ -108,7 +108,6 @@ The Ralph loop is an iterative improvement cycle inspired by the ["Ralph Wiggum"
 **Files to read:**
 ```
 plugin/skills/{skill-name}/SKILL.md    # Required
-tests/{skill-name}/unit.test.ts        # If exists
 tests/{skill-name}/triggers.test.ts    # If exists
 tests/{skill-name}/integration.test.ts # If exists
 ```

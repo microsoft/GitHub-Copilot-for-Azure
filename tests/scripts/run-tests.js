@@ -6,7 +6,6 @@
  * 
  * Types:
  *   all         - Run all tests (default)
- *   unit        - Run unit tests only
  *   integration - Run integration tests only
  *   verbose     - Run all tests with verbose output
  *   coverage    - Run tests with coverage report
@@ -16,12 +15,10 @@
  * 
  * Examples:
  *   node run-tests.js                                                  # Run all tests
- *   node run-tests.js unit                                             # Run unit tests
  *   node run-tests.js integration                                      # Run integration tests
  *   node run-tests.js integration azure-deploy                         # Run integration tests for azure-deploy
  *   node run-tests.js integration azure-deploy static-web-apps-deploy  # Run integration tests for a sub group
  *   node run-tests.js skill azure-ai                                   # Run tests for azure-ai skill
- *   node run-tests.js unit --verbose                                   # Run unit tests with verbose flag
  */
 
 import { spawn } from "child_process";
@@ -45,10 +42,6 @@ const testConfigs = {
   all: {
     description: "all tests",
     jestArgs: []
-  },
-  unit: {
-    description: "unit tests",
-    jestArgs: ["--testPathIgnorePatterns=\"node_modules|_template|integration\""]
   },
   integration: {
     description: "integration tests",
