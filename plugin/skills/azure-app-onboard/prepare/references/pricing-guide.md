@@ -30,7 +30,7 @@
 
 1. Pick SKU from [sku-matrix.md](sku-matrix.md) based on budget intent.
 2. Find service section in [pricing-guide-services.md](pricing-guide-services.md) for filter strings and formulas.
-3. Call `mcp_azure_mcp_pricing` → `pricing_get` per paid service (parallel OK — independent queries). ⛔ Always include `--sku` — tool returns 400 without it.
+3. Call `mcp_azure_mcp_pricing` → `pricing_get` per paid service (parallel OK — independent queries). ⛔ Requires at least one filter: `--sku`, `--service`, `--region`, `--service-family`, or `--filter`. Use `--sku` only when `armSkuName` is populated for that service.
 4. Apply per-service monthly formula.
 5. Cross-check returned `retailPrice` against planned SKU.
 
