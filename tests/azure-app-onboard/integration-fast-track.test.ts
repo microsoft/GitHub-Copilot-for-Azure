@@ -2,7 +2,10 @@
  * Integration Tests — Fast-Track
  *
  * Validates that simple repos (static site + Dockerfile) get fast-tracked
- * and complex repos (multi-component) do NOT get fast-tracked.
+ * to free-tier deployment without unnecessary questions.
+ *
+ * Microblog-ai-remix no-fast-track test moved to integration-catalog.test.ts
+ * (consolidated with existing microblog plan-quality test).
  */
 
 import {
@@ -14,18 +17,19 @@ import {
 import { cloneRepo } from "../utils/git-clone";
 import {
   SKILL_NAME,
-  testTimeoutMs,
-  shouldEarlyTerminateOnRoutingFailure,
-  assertApprovalGateReached,
+  shouldEarlyTerminateOnDeployComplete,
   assertSessionFileCreated,
-  assertDockerfileExplored,
+  assertDeployResultSchema,
+  assertDeployChecklistExists,
+  assertPhaseArtifactsExist,
   describeAppOnboardWithCleanup,
+  SUBSCRIPTION_PRIMER,
 } from "./app-onboard-test-helpers";
 
 describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
 
   describe("fast-track", () => {
-    test("fast-track — simple HTML site (no Dockerfile) gets free tier", async () => {
+    test("e2e — simple HTML site deploys to free tier", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
@@ -36,13 +40,21 @@ describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
           },
           prompt: "I have an app in GitHub — can you deploy it to Azure for me?",
           followUp: [
-            "Cheapest option, just get it live.",
-            "How much will this deployment cost me each month?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
+          followUpTimeout: 2_700_000, // 45 min — full pipeline deploy can exceed 30 min
+          shouldEarlyTerminate: shouldEarlyTerminateOnDeployComplete,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -68,63 +80,31 @@ describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
 
         // Outcome-based behavioral checks
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
-      });
-    }, testTimeoutMs);
 
-    test("no-fast-track — microblog-ai-remix must NOT be fast-tracked", async () => {
-      await withTestResult(async () => {
-        let workspacePath = "";
-        const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            workspacePath = workspace;
-            await cloneRepo({ repoUrl: "https://github.com/Azure-Samples/microblog-ai-remix", targetDir: workspace, branch: "main", depth: 1 });
-          },
-          prompt: "I'm a startup founder and need to deploy my MVP on Azure",
-          followUp: [
-            "Just go with defaults.",
-            "Why did you choose this architecture?",
-            "No, don't deploy. That's all I needed.",
-          ],
-          nonInteractive: true,
-          preserveWorkspace: true,
-          followUpTimeout: 600_000, // 10 min per follow-up — microblog-ai-remix is one of the heaviest workspaces (88 files, Remix+OpenAI+existing Bicep infra), agent needs processing time
-          shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-
-        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
-
-        // Must detect it's NOT a simple static site — has Remix + Functions + OpenAI
-        expect(messages.includes("remix") || messages.includes("function") || messages.includes("openai")).toBe(true);
-
-        // Must ask at least one question or present multi-component analysis (not fast-track)
-        const hasQuestion = messages.includes("?");
-        const hasMultiComponentAnalysis = messages.includes("component") || messages.includes("frontend") || messages.includes("backend");
-        if (!hasQuestion && !hasMultiComponentAnalysis) {
-          agentMetadata.testComments.push("❌ FAST-TRACK VIOLATION: Agent fast-tracked a complex multi-component app (Remix + Functions + OpenAI) without asking questions or analyzing components");
+        // ── Deploy assertions (e2e — must actually deploy) ──────────────
+        if (workspacePath) {
+          assertDeployChecklistExists(agentMetadata, workspacePath);
+          assertDeployResultSchema(agentMetadata, workspacePath);
+          assertPhaseArtifactsExist(agentMetadata, workspacePath, [
+            "context.json",
+            "prereq-output.json",
+            "prepare-plan.json",
+            "scaffold-manifest.json",
+            "deploy-result.json",
+          ]);
         }
-        expect(hasQuestion || hasMultiComponentAnalysis).toBe(true);
 
-        // Must present full approval gate (not collapsed one-liner)
-        assertApprovalGateReached(agentMetadata);
-
-        // Must mention multiple services (not just one free-tier suggestion)
-        const mentionsMultipleServices =
-          (messages.includes("container apps") ? 1 : 0) +
-          (messages.includes("openai") || messages.includes("azure openai") ? 1 : 0) +
-          (messages.includes("registry") || messages.includes("acr") ? 1 : 0) +
-          (messages.includes("static web") ? 1 : 0);
-        if (mentionsMultipleServices < 2) {
-          agentMetadata.testComments.push("⚠️ Expected multi-service architecture plan for complex app, but found fewer than 2 distinct Azure services mentioned");
+        // Live endpoint
+        const hasEndpoint =
+          messages.includes("azurewebsites.net") ||
+          messages.includes("azurestaticapps.net") ||
+          messages.includes("endpoint") ||
+          messages.includes("deployed");
+        if (!hasEndpoint) {
+          agentMetadata.testComments.push("⚠️ No deployed endpoint URL found in agent output");
         }
-        expect(mentionsMultipleServices).toBeGreaterThanOrEqual(2);
-
-        // Outcome-based behavioral checks
-        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
-        assertDockerfileExplored(agentMetadata);
+        expect(hasEndpoint).toBe(true);
       });
-    }, testTimeoutMs);
+    }, 3600000); // 60 min — full e2e deploy including clone + prereq + prepare + scaffold + deploy
   });
 });

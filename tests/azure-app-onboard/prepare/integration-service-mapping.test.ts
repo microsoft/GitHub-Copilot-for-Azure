@@ -1,8 +1,8 @@
 /**
- * Integration Tests — Prepare Catalog (Service Mapping + Migration)
+ * Integration Tests — Prepare Catalog (Service Mapping)
  *
  * Tests prepare-phase behaviors against catalog repos:
- * - aws-bookstore-demo: Full AWS→Azure multi-service migration
+ * - golang-clean-web-api: Go/Gin + PostgreSQL + Redis + Elasticsearch, Docker Compose
  * - wetty: Docker-compose + WebSocket routing
  * - yamtrack-django: Docker-compose + PostgreSQL + Redis PaaS mapping
  * - postgresql-event-sourcing: Kafka → Event Hubs + Gradle/Spring Boot
@@ -17,6 +17,7 @@ import {
   doesAssistantOrToolsIncludeKeyword,
   withTestResult,
   getAllAssistantMessages,
+  getToolCalls,
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import {
@@ -27,14 +28,93 @@ import {
   shouldEarlyTerminateOnScaffoldOrDeploy,
   assertSessionFileCreated,
   assertDockerfileExplored,
-  assertAwsMigrationMapping,
   assertDockerComposeDetected,
   assertAgentScannedWorkspace,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 
 describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
-  describe("aws-migration", () => {
-    test("e2e — aws-bookstore-demo (full AWS→Azure migration)", async () => {
+  describe("go-api", () => {
+    test("e2e — golang-clean-web-api (Go/Gin + PostgreSQL + Redis + Elasticsearch)", async () => {
+      await withTestResult(async () => {
+        let workspacePath = "";
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+            await cloneRepo({
+              repoUrl: "https://github.com/naeemaei/golang-clean-web-api",
+              targetDir: workspace,
+              branch: "master",
+              depth: 1,
+            });
+          },
+          prompt: "I built a side project and want to get it live on Azure",
+          followUp: [
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+          ],
+          nonInteractive: true,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+
+        // Hard: must detect Docker Compose
+        assertDockerComposeDetected(agentMetadata);
+
+        // Hard: must detect Go/Gin stack
+        const detectsGo =
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "go") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "gin") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "golang");
+        if (!detectsGo) {
+          agentMetadata.testComments.push("❌ STACK: Did not detect Go/Gin framework");
+        }
+        expect(detectsGo).toBe(true);
+
+        // Hard: must map PostgreSQL to Azure Database for PostgreSQL
+        const detectsPostgres =
+          messages.includes("postgresql") || messages.includes("postgres") ||
+          messages.includes("flexible server");
+        if (!detectsPostgres) {
+          agentMetadata.testComments.push("❌ SERVICE MAPPING: PostgreSQL → Azure Database for PostgreSQL not mentioned");
+        }
+        expect(detectsPostgres).toBe(true);
+
+        // Hard: must map Redis to Azure Cache for Redis
+        const detectsRedis = messages.includes("redis");
+        if (!detectsRedis) {
+          agentMetadata.testComments.push("❌ SERVICE MAPPING: Redis → Azure Cache for Redis not mentioned");
+        }
+        expect(detectsRedis).toBe(true);
+
+        // Soft: should map Elasticsearch to Azure Cognitive Search or Azure Monitor
+        const detectsSearch =
+          messages.includes("cognitive search") || messages.includes("search") ||
+          messages.includes("elasticsearch") || messages.includes("monitor") ||
+          messages.includes("log analytics");
+        if (!detectsSearch) {
+          agentMetadata.testComments.push("⚠️ SERVICE MAPPING: Elasticsearch → Azure Cognitive Search/Monitor not mentioned");
+        }
+
+        // Must scan workspace
+        assertAgentScannedWorkspace(agentMetadata);
+
+        // Session integrity
+        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
+      });
+    }, testTimeoutMs);
+  });
+
+  describe("aws-to-cloud-migrate", () => {
+    test("e2e — aws-bookstore-demo routes to azure-cloud-migrate after prereq", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
@@ -47,64 +127,68 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
               depth: 1,
             });
           },
-          prompt: "We're running this app today. Help me move it to Azure — what services do I need?",
+          prompt: "We're running this app today. How do we bring it to Azure with minimal changes?",
           followUp: [
-            "Map all the AWS services to Azure equivalents.",
-            "What will this cost on Azure?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+          shouldEarlyTerminate: (meta) => {
+            // Stop once azure-cloud-migrate is invoked
+            if (isSkillInvoked(meta, "azure-cloud-migrate")) {
+              meta.testComments.push("✅ Routed to azure-cloud-migrate via skill invocation");
+              return true;
+            }
+            // Also accept: routeToSkill written to context.json (agent correctly
+            // identified migration need but was terminated before skill load)
+            const hasRouteToSkill = getToolCalls(meta).some(tc => {
+              const toolName = (tc.data.toolName ?? "").toLowerCase();
+              if (toolName !== "edit" && toolName !== "create" && toolName !== "create_file" && toolName !== "write_file") return false;
+              const args = JSON.stringify(tc.data.arguments ?? "").toLowerCase();
+              return args.includes("routetoskill") && args.includes("azure-cloud-migrate");
+            });
+            if (hasRouteToSkill) {
+              meta.testComments.push("✅ Routed to azure-cloud-migrate via routeToSkill in context.json");
+              return true;
+            }
+            // Bail if too many tool calls without routing evidence
+            if (isSkillInvoked(meta, SKILL_NAME) && getToolCalls(meta).length > 60) {
+              meta.testComments.push("⚠️ Agent stayed in app-onboard after 60+ tool calls — no migration routing evidence");
+              return true;
+            }
+            return false;
+          },
         });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
-        // Hard: must detect AWS-native services and propose Azure equivalents
-        assertAwsMigrationMapping(agentMetadata, [
-          { from: "DynamoDB", to: "cosmos db" },
-          { from: "Lambda", to: "container apps" },
-          { from: "Cognito", to: "entra" },
-          { from: "ElastiCache", to: "redis" },
-          { from: "Elasticsearch", to: "search" },
-        ]);
-
-        // Hard: must detect CloudFormation and flag IaC conversion need
-        const detectsCloudFormation =
-          messages.includes("cloudformation") || messages.includes("cloud formation") ||
-          messages.includes("sam template") || messages.includes("aws iac");
-        if (!detectsCloudFormation) {
-          agentMetadata.testComments.push("⚠️ AWS MIGRATION: Did not detect CloudFormation IaC");
+        // Soft: agent should detect AWS services (Lambda, DynamoDB) in its analysis
+        const detectsAwsServices =
+          messages.includes("lambda") || messages.includes("dynamodb") ||
+          messages.includes("aws") || messages.includes("cloudformation");
+        if (!detectsAwsServices) {
+          agentMetadata.testComments.push("⚠️ Did not mention AWS services in analysis");
         }
 
-        // Hard: must NOT plan to provision DynamoDB directly on Azure
-        const sentences = messages.split(/[.!?\n]/);
-        const plansDynamoOnAzure = sentences.some(s =>
-          /provision\s+dynamo/i.test(s) || /deploy\s+dynamo/i.test(s) ||
-          /run\s+dynamo.+on\s+azure/i.test(s));
-        if (plansDynamoOnAzure) {
-          agentMetadata.testComments.push("❌ AWS MIGRATION: Agent planned to provision DynamoDB on Azure");
+        // Hard: should route to azure-cloud-migrate — either via skill invocation
+        // or by writing routeToSkill to context.json (prereq completed correctly)
+        const routedViaSkilInvocation = isSkillInvoked(agentMetadata, "azure-cloud-migrate");
+        const routedViaContextJson = getToolCalls(agentMetadata).some(tc => {
+          const toolName = (tc.data.toolName ?? "").toLowerCase();
+          if (toolName !== "edit" && toolName !== "create" && toolName !== "create_file" && toolName !== "write_file") return false;
+          const args = JSON.stringify(tc.data.arguments ?? "").toLowerCase();
+          return args.includes("routetoskill") && args.includes("azure-cloud-migrate");
+        });
+        if (!routedViaSkilInvocation && !routedViaContextJson) {
+          softCheckSkill(agentMetadata, "azure-cloud-migrate");
+          agentMetadata.testComments.push("❌ No migration routing evidence: neither skill invocation nor routeToSkill in context.json");
         }
-        expect(plansDynamoOnAzure).toBe(false);
-
-        // Soft: should identify multiple AWS services (≥3)
-        const awsServiceCount =
-          (messages.includes("dynamodb") ? 1 : 0) +
-          (messages.includes("lambda") ? 1 : 0) +
-          (messages.includes("cognito") ? 1 : 0) +
-          (messages.includes("elasticache") ? 1 : 0) +
-          (messages.includes("elasticsearch") || messages.includes("opensearch") ? 1 : 0) +
-          (messages.includes("neptune") ? 1 : 0) +
-          (messages.includes("cloudfront") ? 1 : 0);
-        if (awsServiceCount < 3) {
-          agentMetadata.testComments.push(`⚠️ AWS MIGRATION: Only ${awsServiceCount} AWS services identified (expected ≥3)`);
-        }
-
-        // Session integrity
-        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
+        expect(routedViaSkilInvocation || routedViaContextJson).toBe(true);
       });
     }, testTimeoutMs);
   });
@@ -125,9 +209,11 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
           },
           prompt: "I want to take my local app and put it in the cloud — where do I start?",
           followUp: [
-            "Just go with defaults.",
-            "What Azure services are you recommending?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -137,27 +223,11 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
         softCheckSkill(agentMetadata, SKILL_NAME);
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
-
         // Hard: must detect Dockerfile
         assertDockerfileExplored(agentMetadata);
 
         // Soft: should detect docker-compose
         assertDockerComposeDetected(agentMetadata);
-
-        // Soft: should recommend Container Apps (better WebSocket support than App Service)
-        const recommendsContainerApps = messages.includes("container apps");
-        if (!recommendsContainerApps) {
-          agentMetadata.testComments.push("⚠️ DOCKER-COMPOSE: Agent did not recommend Container Apps — wetty requires WebSocket support");
-        }
-
-        // Soft: should mention WebSocket or SSH/terminal requirements
-        const detectsWebSocket =
-          messages.includes("websocket") || messages.includes("web socket") ||
-          messages.includes("ssh") || messages.includes("terminal");
-        if (!detectsWebSocket) {
-          agentMetadata.testComments.push("⚠️ DOCKER-COMPOSE: Agent did not mention WebSocket/SSH requirements");
-        }
 
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
@@ -182,9 +252,11 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
           },
           prompt: "Can you analyze my app and tell me which Azure service I should use?",
           followUp: [
-            "Map each service in my Docker Compose to an Azure equivalent.",
-            "What will this cost on Azure?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -218,7 +290,7 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
         }
         expect(mapsRedis).toBe(true);
 
-        // Must surface scan-discovered facts (surfaces_scan_discovered_facts grader)
+        // Must surface scan-discovered facts
         const surfacesDiscoveredFacts =
           doesAssistantOrToolsIncludeKeyword(agentMetadata, "found") ||
           doesAssistantOrToolsIncludeKeyword(agentMetadata, "detected") ||
@@ -229,7 +301,7 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
         }
         expect(surfacesDiscoveredFacts).toBe(true);
 
-        // Must scan workspace (scans_repo grader)
+        // Must scan workspace
         assertAgentScannedWorkspace(agentMetadata);
 
         // Session integrity
@@ -254,9 +326,11 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
           },
           prompt: "I just signed up for Azure. What's the fastest way to bring my app over?",
           followUp: [
-            "Map all the middleware and database dependencies to Azure.",
-            "What will this cost?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -299,7 +373,7 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
         // Must detect Docker Compose services
         assertDockerComposeDetected(agentMetadata);
 
-        // Must scan workspace (scans_repo grader)
+        // Must scan workspace
         assertAgentScannedWorkspace(agentMetadata);
 
         // Session integrity

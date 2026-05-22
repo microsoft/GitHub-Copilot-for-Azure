@@ -1,6 +1,6 @@
 ---
 name: azure-app-onboard
-description: "End-to-end orchestrator: from an existing app or GitHub repo to running Azure deployment with cost estimates and pre-deploy approval. Analyzes your app, auto-detects the right Azure services, scaffolds infrastructure code, and deploys — tailored to your app, not a template. Handles moving existing apps to Azure without rewriting or with minimal changes, including non-Azure SDK swaps (AWS/GCP). WHEN: bring your app to Azure, plan my app, cost to run, is my code ready to deploy, deploy my app to the cloud, deploy all my services, what Azure services do I need, plan my Azure deployment, deploy my new app to Azure, one-click deploy, I have an app and want it on Azure, migrate my app to Azure, help me get started, build an app, no code yet, starter project. DO NOT USE FOR: running azd up (use azure-deploy), optimizing existing costs (use azure-cost), code readiness checks only (use azure-app-onboard-prereq)."
+description: "End-to-end orchestrator: from a business idea, app idea, or existing app to running Azure deployment with cost estimates and pre-deploy approval. Analyzes your app, auto-detects the right Azure services, scaffolds infrastructure code, and deploys — tailored to your app, not a template. Handles moving existing apps to Azure without rewriting or with minimal changes. WHEN: bring your app to Azure, plan my app, cost to run, is my code ready to deploy, deploy my app to the cloud, deploy all my services, what Azure services do I need, plan my Azure deployment, deploy my new app to Azure, one-click deploy, I have an app and want it on Azure, migrate my app to Azure, help me get started, build an app, no code yet, starter project. DO NOT USE FOR: running azd up (use azure-deploy), optimizing existing costs (use azure-cost), code readiness checks only (use azure-app-onboard-prereq)."
 license: MIT
 metadata:
   author: Microsoft
@@ -8,6 +8,8 @@ metadata:
 ---
 
 # Azure App Onboard
+
+> ⛔ **Every repo goes through the full pipeline (Steps 1–10). No exceptions.** Do not skip steps, refuse, or short-circuit based on what you recognize. Follow the Workflow table below sequentially — read each step's references before acting.
 
 ## Quick Reference
 
@@ -46,40 +48,27 @@ metadata:
 
 ## Workflow
 
+> ⛔ **Deploy recovery:** After deploy gate approval OR before any `az deployment`/`az webapp deploy`/`az acr build` — if you haven't read `deploy/SKILL.md`, read `.copilot-azure/sessions/{id}/deploy-checklist.md` first, then `deploy/SKILL.md`. ⛔ NEVER invoke `{"skill": "azure-deploy"}` — that is a DIFFERENT skill for a DIFFERENT workflow.
+
 | # | Step | Action | Reference |
 |---|------|--------|-----------|
-| 1 | **Session check + Azure login** | Create/resume session, verify Azure CLI auth, resolve subscription + user identity | ⛔ Read [session-protocol.md](references/session-protocol.md) |
-| 2 | **Gather intent (quick probe)** | Scan workspace, present detected stack + preliminary Azure services, write `context.json.quickProbe`, ask ≤2-6 questions | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 1 — contains probe budget, workspace-detection gate, existing IaC detection, and artifact schema |
-| 3 | **Prereq scan** | ⛔ **MANDATORY — do NOT skip.** Before invoking, ensure `context.json.quickProbe` is written with populated `manifests[]`, `importSamples[]`, `dockerfiles[]`, `missingFiles[]` — prereq reuses these to skip re-reading files the probe already extracted. Invoke `{"skill": "azure-app-onboard-prereq"}`. Write `prereq-output.json`. If prereq returns `overallHealth: "blocked"` with unsupported stack/EOL runtime, HALT — do NOT proceed to prepare | |
-| 4 | **Refine intent (scan-informed)** | Compare prereq results vs probe, resolve remaining questions, check azd routing | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Pass 2 |
-| 5 | **Plan architecture** | Set `currentPhase: "prepare"`. Write `prepare-plan.json`. ⛔ Self-check: have you read `pipeline-rules.md` and `session-protocol.md`? If not, read them NOW before proceeding | ⛔ Read [prepare/SKILL.md](prepare/SKILL.md) |
-| 6 | **Scaffold approval gate** | Display plan for user approval BEFORE generating any files | ⛔ Read [approval-gates.md](references/approval-gates.md) § Scaffold Gate |
-| 7 | **Scaffold** | Set `currentPhase: "scaffold"`. Generate IaC, run self-review. Write `scaffold-manifest.json` | ⛔ Read [scaffold/SKILL.md](scaffold/SKILL.md) |
-| 8 | **Deploy approval gate** | Display validation summary. SEPARATE gate from Step 6 | ⛔ Read [approval-gates.md](references/approval-gates.md) § Deploy Gate |
-| 9 | **Deploy** | Set `currentPhase: "deploy"`. Execute IaC, health-check. Write `deploy-result.json` | ⛔ Read [deploy/SKILL.md](deploy/SKILL.md) |
-| 10 | **Handoff** | Surface deployment identity, cleanup commands, recommendations, next steps | ⛔ **You MUST read [`handoff-protocol.md`](references/handoff-protocol.md)** |
+| 1 | **Session check + Azure login** | Create/resume session, verify Azure CLI auth, resolve subscription + user identity | ⛔ **You MUST read [session-protocol.md](references/session-protocol.md)** |
+| 2 | **Scope triage** | Check azd markers, triage question. Empty workspace or code-only (no infra) → Step 3 directly. | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Scope Triage |
+| 3 | **Prereq scan** | ⛔ Skip if `completedPhases` includes `"prereq"`. Otherwise: invoke `{"skill": "azure-app-onboard-prereq"}`. Write `prereq-output.json`, update `context.json`. **Halt if:** `overallHealth: "blocked"` OR `routeToSkill` set. | |
+| 4 | **Gather intent** | Present prereq results, confirm stack + Azure services, ask remaining questions. | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § After Prereq Returns |
+| 5 | **Plan architecture** | Write `prepare-plan.json`. | ⛔ **You MUST read [prepare/SKILL.md](prepare/SKILL.md)** |
+| 6 | **Scaffold approval gate** | Display plan for user approval BEFORE generating any files. | ⛔ Read [approval-gates.md](references/approval-gates.md) § Scaffold Gate |
+| 7 | **Scaffold** | Generate IaC, self-review. Write `scaffold-manifest.json`. Update `context.json`. | ⛔ **You MUST read [scaffold/SKILL.md](scaffold/SKILL.md)** |
+| 8 | **Deploy approval gate** | Display validation summary. ⛔ After approval: FIRST read deploy-checklist.md → deploy/SKILL.md. NEVER `{"skill": "azure-deploy"}`. | ⛔ Read [approval-gates.md](references/approval-gates.md) § Deploy Gate |
+| 9 | **Deploy** | Execute IaC, health-check. Write `deploy-result.json`. | ⛔ **You MUST read [deploy/SKILL.md](deploy/SKILL.md)** |
+| 10 | **Handoff** | Surface deployment identity, cleanup commands, next steps. | ⛔ **You MUST read [`handoff-protocol.md`](references/handoff-protocol.md)** |
 
 ## Error Handling
 
 | Error | Remediation |
 |-------|-------------|
-| Phase fails mid-pipeline | Halt, report which phase + error details. User decides: retry, skip, or abort. No silent continuation. |
-| Malformed `context.json` | Warn user, offer fresh session. Never silently repair. |
-| Intent stalls (3+ vague rounds) | Proceed with defaults, flag each assumption: "Assuming X — correct me if wrong." |
-| User override mid-flow | Write to `context.json.overrides[]`, re-run affected phase + downstream only. Surface what changed. |
-| Missing RBAC permissions | Detect on first API failure. Report required role + `az role assignment` command. |
-| Cost API unreachable | Fall back to cached estimates + disclaimer "Verify at azure.com/pricing." Never block pipeline on cost failure alone. |
-| MCP server unavailable | Log "⚠️ MCP tools unavailable — skipping [pricing/quota/WAF/best-practices] checks. Estimates are unverified." Add to `costEstimate.assumptions[]`. Surface disclaimer at every approval gate. |
+| Phase fails | Halt, report phase + error. User decides: retry, skip, abort. |
+| MCP server unavailable | Skip affected checks, add disclaimer to `costEstimate.assumptions[]` and every approval gate. |
+| Missing RBAC | Report required role + `az role assignment` command. |
 
-## Sub-Skills
-
-> **MANDATORY:** Before executing any sub-skill workflow, you MUST read the corresponding sub-skill document. Do not call MCP tools for a sub-skill workflow without reading its SKILL.md first.
-
-| Sub-Skill | Phase | Reference |
-|-----------|-------|-----------|
-| **prereq** | 1 — Discover | Invoke `{"skill": "azure-app-onboard-prereq"}` |
-| **prepare** | 2 — Architect | [prepare/SKILL.md](prepare/SKILL.md) |
-| **scaffold** | 3 — Scaffold | [scaffold/SKILL.md](scaffold/SKILL.md) |
-| **deploy** | 4 — Deploy | [deploy/SKILL.md](deploy/SKILL.md) |
-
-> **Shared references** (used by sub-skills): [iac-resources.md](references/iac-resources.md) · [mcp-tool-reference.md](references/mcp-tool-reference.md) · [session-schemas-prepare.ts](references/session-schemas-prepare.ts)
+> **Shared references:** [MCP tools](references/mcp-tool-reference.md) (cross-phase tool parameters) | [IaC resources](references/iac-resources.md) (Azure resource docs for troubleshooting)

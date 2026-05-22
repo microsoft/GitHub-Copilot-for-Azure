@@ -2,6 +2,18 @@
 
 4-layer adversarial review of generated IaC. Run after scaffold generates all files, before `scaffold-manifest.json`.
 
+## Rating System
+
+- **VERIFIED** — confirmed correct by inspecting the generated code
+- **PLAUSIBLE** — likely correct but cannot fully verify (e.g., API version exists but not checked against registry)
+- **FLAGGED** — incorrect, missing, or contradicts the plan/patterns
+
+**Consume results:** If any finding is FLAGGED → fix the IaC, then re-run validation. If all VERIFIED/PLAUSIBLE → proceed. Write findings to `scaffold-manifest.json.selfReview`.
+
+> ⛔ **Halt on critical failures** — if any finding is FLAGGED at L1 (Security) or L3 (Hallucination), do NOT proceed to deploy. Present findings and ask: **"Fix / Continue with risks / Cancel"**.
+
+> ⛔ **Step 12 validation remains mandatory** regardless of self-review results — IaC may change during FLAGGED fixes.
+
 ## Layer 1 — Security Claims Extraction
 
 Extract every security claim from the generated IaC and check for internal contradictions.
@@ -13,48 +25,56 @@ Extract every security claim from the generated IaC and check for internal contr
 | Key Vault referenced but RBAC not granted | `@Microsoft.KeyVault(...)` but no `roleAssignment` for app identity |
 | ⛔ Role assignment scope targets wrong resource | `scope: resourceGroup()` on resource-specific roles → `FLAGGED`. Must scope to specific resource. |
 | `principalType` missing on role assignments | Causes intermittent 30s+ delays |
-| ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute resources (App Service, Container Apps, Functions) MUST have `identity: { type: 'SystemAssigned' }` (Bicep) or `identity { type = "SystemAssigned" }` (Terraform). If missing → `FLAGGED`. **Exception:** F1/D1 SKU on Linux — MI sidecar causes OOM; omit identity block and mark as `PLAUSIBLE` with note "F1/D1 Linux — MI excluded per bicep-patterns-security.md." |
-| SQL firewall `0.0.0.0/0` (AllowAzureServices) without private endpoint | ⛔ **FLAGGED** — prefer managed identity + private endpoint. If AllowAzureServices genuinely needed, mark as `PLAUSIBLE` with note explaining why. |
-| ⛔ SCM/FTP auth policy missing on App Service | ⛔ **MANDATORY FAIL** — ALL App Service MUST have `basicPublishingCredentialsPolicies`: `scm.allow: true` (scaffold), `ftp.allow: false` (always). Missing → `FLAGGED`. |
+| ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute MUST have `identity: { type: 'SystemAssigned' }`. **Exception:** F1/D1 Linux (MI sidecar OOM) → `PLAUSIBLE`. |
+| SQL firewall `0.0.0.0/0` without private endpoint | Prefer MI + private endpoint. AllowAzureServices genuinely needed → `PLAUSIBLE`. |
+| ⛔ SCM/FTP auth policy missing on App Service | ALL App Service MUST have `basicPublishingCredentialsPolicies`: `scm.allow: true`, `ftp.allow: false`. Missing → `FLAGGED`. |
+| ⛔ KV URL uses `environment().suffixes.keyvaultDns` | Leading dot → double-dot URL → `ContainerAppSecretKeyVaultUrlInvalid`. Use `keyVault.name` + `.vault.azure.net` or `vaultUri` output. → ⛔ **FLAGGED** |
 
 **Rating:** Claims that contradict each other → `FLAGGED`. Consistent claims → `VERIFIED`.
 
 ## Layer 2 — Pattern Validation
 
-Validate generated code against the pattern files loaded during IaC generation (Steps 3–5) and [rbac-roles.md](rbac-roles.md). Each check below names its source file.
+Validate against pattern files loaded at Steps 3–5 and [rbac-roles.md](rbac-roles.md).
 
-### Bicep (default path)
+### Bicep
 
-| Check | Reference |
-|-------|-----------|
-| File structure matches `main.bicep` → `modules/*.bicep` | `bicep-patterns.md` § File Structure |
-| `main.parameters.json` uses ARM JSON (not `.bicepparam`) | `bicep-patterns.md` § main.parameters.json |
-| Naming follows `{prefix}{name}{token}` ≤32 chars | `bicep-patterns.md` § Naming Convention |
-| All services have system-assigned managed identity | `bicep-patterns-security.md` § Security Defaults — Identity |
-| No `administratorLogin` anywhere in generated Bicep | `bicep-patterns-security.md` § Security Defaults — Identity |
-| Key Vault uses RBAC authorization (not access policies) | `bicep-patterns-security.md` § Security Defaults — Secrets |
-| Express behind Azure proxy → verify `trust proxy` set if `W-TRUST-PROXY` flagged | prereq `W-TRUST-PROXY` |
-| Container Apps uses two-phase ACR wiring | `bicep-container-apps.md` |
-| Container Apps `registries` block populated when ACR in plan | If `prepare-plan.json.services[]` includes ACR, the Container App MUST have `registries: [{ server: acrLoginServer, identity: 'system' }]`. Empty `registries: []` → `FLAGGED`. **Fix:** add the registries block with managed identity auth before writing manifest. |
-| Container Apps port alignment: Oryx `targetPort` matches PORT env | `bicep-container-apps.md` |
-| ⛔ Role assignment `scope` targets the correct resource | `scope: {targetResource}` NOT `scope: resourceGroup()`. `FLAGGED` if any role uses RG scope for resource-specific roles. |
-| ⛔ `azure.yaml` generated by scaffold | ⛔ **MANDATORY FAIL** if `azure.yaml` in `scaffold-manifest.json.files[]`. Pre-existing `azure.yaml` not in `files[]` is fine. |
-| Non-Azure TF coexistence | Azure TF in separate dir from existing non-Azure TF (see `terraform-patterns.md` § coexistence). No GCP/AWS providers in generated code. `FLAGGED` if violated. |
+| Check | Source |
+|-------|--------|
+| File structure: `main.bicep` → `modules/*.bicep` | `bicep-patterns.md` |
+| `main.parameters.json` uses ARM JSON (not `.bicepparam`) | `bicep-patterns.md` |
+| Naming: `{prefix}{name}{token}` ≤32 chars | `bicep-patterns.md` |
+| System-assigned managed identity on all services | `bicep-patterns-security.md` |
+| No `administratorLogin` in generated Bicep | `bicep-patterns-security.md` |
+| KV uses RBAC authorization (not access policies) | `bicep-patterns-security.md` |
+| ⛔ `enablePurgeProtection` exists in KV module | Remove — `false` rejected by ARM, `true` blocks KV deletion → ⛔ **FLAGGED** |
+| ⛔ KV deployer role assignment — `Key Vault Secrets Officer` for `deployerObjectId` scoped to KV resource | `bicep-patterns-security.md` § Key Vault Deployer RBAC. Without this, `az keyvault secret set` fails with 403. |
+| Prereq `warnings[]` each have a corresponding IaC fix | Read [`env-var-secrets.md`](env-var-secrets.md) for SSL/TLS fixes |
+| Container Apps: two-phase ACR wiring, `registries` populated when ACR in plan, port alignment | `bicep-container-apps.md` |
+| ⛔ BuildKit Dockerfile without `Dockerfile.azure` | `hasBuildKitSyntax == true` but no `Dockerfile.azure` in `files[]` → ⛔ **MANDATORY FAIL**. ACR does not support BuildKit. |
+| ⛔ Role assignment `scope` targets specific resource, not `resourceGroup()` | `rbac-roles.md` |
+| ⛔ No `azure.yaml` in `scaffold-manifest.json.files[]` | `pipeline-rules.md` |
+| Non-Azure TF in separate dir | `terraform-patterns.md` |
 
-### Terraform (alternative path)
+### Cross-Module Reference Validation
 
-Validate against `mcp_azure_mcp_azureterraformbestpractices` output and HCL conventions.
+Trace references BETWEEN modules — per-file checks miss broken cross-module wiring.
 
-| Check | Reference |
-|-------|-----------|
-| File structure: `main.tf`, `variables.tf`, `outputs.tf`, `backend.tf`, `modules/{service}/main.tf` | `mcp_azure_mcp_azureterraformbestpractices` output |
-| Provider version: `azurerm ~> 4.0` in `required_providers` | Terraform registry |
-| All services have system-assigned managed identity | `terraform-patterns.md` § Security Defaults — Identity |
-| No `administrator_login` anywhere in generated HCL | `terraform-patterns.md` § Security Defaults — Identity |
-| Key Vault uses RBAC authorization (not access policies) | `terraform-patterns.md` § Security Defaults — Secrets |
-| Container Apps uses two-phase ACR wiring | Same circular dependency pattern as Bicep: deploy CA with placeholder image `mcr.microsoft.com/azuredocs/containerapps-helloworld:latest`, use `azurerm_role_assignment` for AcrPull with `depends_on = [azurerm_container_app.app]`. Phase 2 image update via CI/CD or `az containerapp update --image` outside Terraform. |
+| Check | Rating |
+|-------|--------|
+| **Param wiring** — every `module` call in `main.bicep`: verify every param without `= default` is passed | Missing param → `FLAGGED` |
+| **Secret ref completeness** — every CA `secrets[].keyVaultUrl` has a matching KV secret resource | Missing KV secret → `FLAGGED` |
+| **Output ref validity** — every `moduleRef.outputs.X` is declared in the referenced module | Missing output → `FLAGGED` |
 
-**Rating:** Matches pattern → `VERIFIED`. Reasonable deviation with justification → `PLAUSIBLE`. Violates pattern → `FLAGGED`.
+### Terraform
+
+| Check | Source |
+|-------|--------|
+| File structure: `main.tf`, `variables.tf`, `outputs.tf`, `backend.tf`, `modules/` | `mcp_azure_mcp_azureterraformbestpractices` |
+| Provider: `azurerm ~> 4.0` | Terraform registry |
+| System-assigned managed identity, no `administrator_login`, KV RBAC | `terraform-patterns.md` |
+| Container Apps: two-phase ACR wiring | Same pattern as Bicep |
+
+**Rating:** Matches → `VERIFIED`. Reasonable deviation → `PLAUSIBLE`. Violates → `FLAGGED`.
 
 ## Layer 3 — Hallucination Detection
 
@@ -64,18 +84,19 @@ Catch fabricated resource types, API versions, SKU names, or properties.
 
 | Check | How |
 |-------|-----|
-| API versions exist | `bicep build <file>` — invalid versions produce errors |
-| Resource type names valid | `bicep build <file>` — unknown types produce errors |
-| SKU names match `prepare-plan.json` | Cross-reference `services[].sku` against generated Bicep |
-| Property names valid for resource type | `bicep build` catches unknown properties |
+| API versions, resource types, property names valid | `bicep build` — errors = `FLAGGED` |
+| SKU names match `prepare-plan.json` | Cross-reference `services[].sku` |
+| OpenAI deployment uses `scaleSettings` instead of `sku` | `scaleSettings` deprecated → `FLAGGED` |
+| Any resource uses `-preview` API version | Use latest GA from MCP tool → `FLAGGED` |
+| VNet subnets as separate child resources | Must be inline in `properties.subnets[]` → `FLAGGED` |
 
 Run `bicep build main.bicep --stdout > /dev/null` as syntax + schema validation. Parse errors = `FLAGGED`.
 
-> ⛔ **`az bicep build` (or `bicep build`) is MANDATORY for L3 validation.** Do NOT skip this step or treat it as optional. If `bicep build` is not available in the environment, write `FLAGGED` with detail "bicep build unavailable — cannot validate generated IaC" and surface at the deploy approval gate. The build step catches fabricated API versions, invalid property names, and type mismatches that no other check detects.
+> ⛔ **`az bicep build` is MANDATORY for L3.** If unavailable, write `FLAGGED` with "bicep build unavailable."
 
-> ⛔ **Verify `main.bicep` starts with `targetScope = 'subscription'`.** If missing or set to `'resourceGroup'` → `FLAGGED`. **Fix:** add `targetScope = 'subscription'` on line 1, add a `Microsoft.Resources/resourceGroups` resource with the `tags` variable (see bicep-patterns.md § main.bicep Skeleton), and add `scope: rg` to every module call. This is a FIXABLE error — do NOT proceed without fixing. Resource-group scope causes RG tag gaps (CLI-created RGs often miss tags).
+> ⛔ **Verify `main.bicep` has `targetScope = 'subscription'`.** Missing → FLAGGED (FIXABLE — add targetScope, RG resource with tags, `scope: rg` on modules).
 
-> **Additional validation:** `mcp_bicep_get_bicep_file_diagnostics` and `az deployment sub what-if` also appropriate at L3. ⛔ Do NOT use `az deployment sub validate` (known CLI bug). If `what-if` fails (403, RG doesn't exist), fall back to `az bicep build`. Do NOT try `az deployment group what-if` — see validation-and-manifest.md.
+> `mcp_bicep_build_bicep` + `az deployment sub what-if` also appropriate at L3. ⛔ Do NOT use `az deployment sub validate` (known bug).
 
 **Rating:** Passes `bicep build` → `VERIFIED`. Build warning → `PLAUSIBLE`. Build error → `FLAGGED`.
 
@@ -91,7 +112,7 @@ Per-pillar spot check against [Azure Well-Architected Framework](https://learn.m
 
 | Pillar | Check |
 |--------|-------|
-| Reliability | Health probes configured. ⛔ Verify probe path exists in app code — non-existent path = `FLAGGED` |
+| Reliability | Health probes configured. ⛔ Verify probe path matches `prereq-output.json.healthEndpoint` — non-existent or mismatched path = `FLAGGED`. ⛔ ACA probes do NOT follow HTTP redirects — if app has trailing-slash normalization (Express `redirect`), use path WITHOUT trailing `/` (e.g., `/app` not `/app/`). |
 | Security | No public blob access, TLS 1.2+, managed identity |
 | Cost | SKU matches budget tier from `prepare-plan.json` |
 | Ops | Diagnostic settings route to Log Analytics |

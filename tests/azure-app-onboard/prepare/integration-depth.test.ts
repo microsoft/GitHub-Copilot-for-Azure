@@ -4,7 +4,7 @@
  * Validates prepare-plan.json schema compliance, quota validation evidence,
  * naming patterns, IaC format selection, and cost estimation quality.
  *
- * Covers: Gap 2 (prepare-plan schema), Gap 9 (user override / Terraform path),
+ * Covers: prepare-plan schema validation, user override / Terraform path,
  * and additional prepare-phase regression scenarios.
  */
 
@@ -20,22 +20,22 @@ import {
   SKILL_NAME,
   testTimeoutMs,
   shouldEarlyTerminateForPlanPresented,
-  shouldEarlyTerminateOnRoutingFailure,
   assertSessionFileCreated,
   assertPreparePlanSchema,
   readSessionArtifact,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 
 describeAppOnboard("Prepare Depth Tests", (agent) => {
   describe("prepare-plan-schema", () => {
-    test("prepare-plan.json has valid schema for simple Express app", async () => {
+    test("prepare-plan.json has valid schema for broken-todo-demo Express app", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             workspacePath = workspace;
             await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
+              repoUrl: "https://github.com/Arun07AK/broken-todo-demo",
               targetDir: workspace,
               branch: "main",
               depth: 1,
@@ -43,9 +43,11 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           },
           prompt: "I built a side project and want to get it live on Azure",
           followUp: [
-            "Just go with defaults.",
-            "Show me the full architecture plan before proceeding.",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -59,7 +61,7 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
         if (workspacePath) {
           assertPreparePlanSchema(agentMetadata, workspacePath);
 
-          // Validate specific fields for bya-simple-web-app
+          // Validate specific fields for broken-todo-demo
           const plan = readSessionArtifact<{
             services: { type: string; sku: string }[];
             costEstimate: { totalMonthlyUsd: number; assumptions?: string[] };
@@ -70,25 +72,25 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           }>(workspacePath, "prepare-plan.json");
 
           if (plan) {
-            // Should recommend App Service for simple Express app
-            const hasAppService = plan.services.some(s =>
-              s.type.toLowerCase().includes("app service"));
-            if (!hasAppService) {
-              agentMetadata.testComments.push("⚠️ PREPARE: No App Service in services[] — expected for simple Express app");
+            // Should recommend App Service or Container Apps for Express app
+            const hasCompute = plan.services.some(s =>
+              s.type?.toLowerCase().includes("app service") || s.type?.toLowerCase().includes("container"));
+            if (!hasCompute) {
+              agentMetadata.testComments.push("⚠️ PREPARE: No App Service or Container Apps in services[] — expected for Express app");
             }
 
-            // Cost should be in expected range ($0-$15 for bya-simple-web-app)
+            // Cost should be reasonable ($0-$50 for simple Express app)
             if (plan.costEstimate.totalMonthlyUsd !== undefined) {
               if (plan.costEstimate.totalMonthlyUsd > 50) {
                 agentMetadata.testComments.push(
-                  `⚠️ PREPARE: Cost $${plan.costEstimate.totalMonthlyUsd}/mo exceeds expected range ($0-$15) for simple Express app`,
+                  `⚠️ PREPARE: Cost $${plan.costEstimate.totalMonthlyUsd}/mo exceeds expected range ($0-$50) for simple Express app`,
                 );
               }
             }
 
-            // costEstimate.assumptions should be populated (SKILL.md requires it)
+            // costEstimate.assumptions should be populated
             if (!plan.costEstimate.assumptions || plan.costEstimate.assumptions.length === 0) {
-              agentMetadata.testComments.push("⚠️ PREPARE: costEstimate.assumptions[] is empty — SKILL.md requires assumptions");
+              agentMetadata.testComments.push("⚠️ PREPARE: costEstimate.assumptions[] is empty — cost estimate must include assumptions");
             }
 
             // deploymentVariables should be populated
@@ -100,6 +102,13 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
             if (!plan.postDeployRecommendations || plan.postDeployRecommendations.length === 0) {
               agentMetadata.testComments.push("⚠️ PREPARE: postDeployRecommendations[] is empty");
             }
+
+            // Naming suffix: naming.suffix must exist — 4-char session-ID suffix prevents global DNS collisions
+            if (!plan.naming.suffix || plan.naming.suffix.length < 3) {
+              agentMetadata.testComments.push(`❌ NAMING SUFFIX: naming.suffix missing or too short ('${plan.naming.suffix ?? "undefined"}') — must be ≥3 chars for collision prevention`);
+            }
+            expect(plan.naming.suffix).toBeDefined();
+            expect(plan.naming.suffix!.length).toBeGreaterThanOrEqual(3);
 
             // IaC format should be Bicep (default, no existing .tf)
             if (plan.iacFormat !== "bicep") {
@@ -122,21 +131,23 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
             await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
+              repoUrl: "https://github.com/rwieruch/node-express-server-rest-api",
               targetDir: workspace,
-              branch: "main",
+              branch: "master",
               depth: 1,
             });
           },
           prompt: "I want a one-click way to deploy my app to Azure.",
           followUp: [
-            "Check if there's quota available before recommending a region.",
-            "What SKU and region did you validate?",
-            "No, don't deploy.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
+          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -144,20 +155,22 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
 
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
-        // Soft: should mention quota/capacity check
+        // Hard: must mention quota/capacity check (must validate quota before recommending region)
         const mentionsQuota =
           messages.includes("quota") || messages.includes("capacity") ||
           messages.includes("available") || messages.includes("usage");
         if (!mentionsQuota) {
-          agentMetadata.testComments.push("⚠️ QUOTA: Agent did not mention quota/capacity validation");
+          agentMetadata.testComments.push("❌ QUOTA: Agent did not mention quota/capacity validation — must check quota before recommending a region");
         }
+        expect(mentionsQuota).toBe(true);
 
-        // Soft: should mention a specific region
+        // Hard: must mention a specific region
         const mentionsRegion =
           /\b(eastus|westus|centralus|northeurope|westeurope|eastus2|westus2|southcentralus)\b/i.test(messages);
         if (!mentionsRegion) {
-          agentMetadata.testComments.push("⚠️ QUOTA: Agent did not mention a specific Azure region");
+          agentMetadata.testComments.push("❌ QUOTA: Agent did not mention a specific Azure region — must recommend a region after quota validation");
         }
+        expect(mentionsRegion).toBe(true);
 
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });

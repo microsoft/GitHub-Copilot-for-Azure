@@ -42,7 +42,7 @@ Built-in Cosmos DB data roles:
 
 ## Delegation
 
-For complex RBAC scenarios (custom roles, cross-subscription, conditional access), AppOnboard does not generate custom role definitions inline. Instead, append an entry to `prepare-plan.json → postDeployRecommendations[]` (schema: `PostDeployRecommendation` in `session-schemas.ts`):
+For complex RBAC scenarios (custom roles, cross-subscription, conditional access), AppOnboard does not generate custom role definitions inline. Instead, append an entry to `prepare-plan.json → postDeployRecommendations[]` (schema: `PostDeployRecommendation` in [`prepare-schemas.ts`](../../prepare/references/prepare-schemas.ts)):
 
 ```json
 {

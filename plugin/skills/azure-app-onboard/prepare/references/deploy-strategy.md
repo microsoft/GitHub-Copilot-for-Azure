@@ -28,31 +28,27 @@ Three patterns — select based on `prereq-output.json.components[].buildRequire
 
 Oryx detects the stack from project manifests, installs dependencies, and builds automatically during zip deploy.
 
-**Still write `deployStrategy` to `prepare-plan.json`** — even though Oryx auto-detects, the startup command and app settings MUST be in Bicep at scaffold time (not generated at deploy time). This eliminates 5+ imperative CLI commands during deploy.
+**Still write `deployStrategy` to `prepare-plan.json`** — even though Oryx auto-detects, the startup command and app settings MUST be in Bicep at scaffold time (not generated at deploy time). This eliminates imperative CLI commands during deploy.
 
 ```json
 "deployStrategy": {
   "codeDeployPattern": "oryx-auto",
-  "startupCommand": "cd /home/site/wwwroot && {startCommand}",
   "requiredAppSettings": {
     "SCM_DO_BUILD_DURING_DEPLOYMENT": "true",
     "ENABLE_ORYX_BUILD": "true",
     "ORYX_DISABLE_COMPRESSION": "true"
   },
-  "reason": "Standard Oryx build — no native modules, no Dockerfile. Compression disabled to prevent output.tar.zst extraction failures at startup."
+  "reason": "Standard Oryx build — no native modules, no Dockerfile. Compression disabled to avoid startup extraction delays. No custom appCommandLine — Oryx launcher handles decompression + start."
 }
 ```
 
-**Startup command by language** (always prefix with `cd /home/site/wwwroot &&`):
+ Read `prereq-output.json.entryPoint` for the app's start file — do NOT re-read manifests. Build the startup command from `package.json` `start` script (Node.js) or framework convention (Python gunicorn, .NET/Go/Java Oryx-native).
 
-| Language | Start command source | Fallback | Startup command |
-|----------|---------------------|----------|----------------|
-| Node.js | `package.json` → `scripts.start` or `main` field | `index.js` | `cd /home/site/wwwroot && node {entryPoint}` |
-| Python (gunicorn) | `Procfile` or `gunicorn` in requirements | `app.py` | `cd /home/site/wwwroot && gunicorn {module}:{app} --bind 0.0.0.0:$PORT` |
-| Python (uvicorn) | `Procfile` or `uvicorn` in requirements | `main.py` | `cd /home/site/wwwroot && uvicorn {module}:{app} --host 0.0.0.0 --port $PORT` |
-| .NET / Go / Java | Oryx-native | — | Not needed — Oryx handles startup natively |
-
-> ⛔ **Every startup command MUST start with `cd /home/site/wwwroot &&`.** Oryx may run from a staging directory (`/tmp/{hash}/`). Without the `cd`, imports like `from app import create_app` fail with `ModuleNotFoundError`.
+> ⛔ **Do NOT set a custom `appCommandLine` for Pattern A.** Let Oryx use `package.json` `start` script or framework defaults natively. A custom `appCommandLine` (`cd /home/site/wwwroot && node {entryPoint}`) replaces the Oryx launcher entirely — the launcher handles `node_modules.tar.gz` decompression, and bypassing it causes `MODULE_NOT_FOUND` crashes. Only set `appCommandLine` when `initCommands[]` has `required: true` entries (migrations).
+>
+> ⛔ **TypeScript projects:** Verify `typescript` + `@types/*` are in `dependencies` (not `devDependencies`) — Oryx production mode skips devDeps, causing `tsc` build failures.
+>
+> ⛔ **When `initCommands[]` has `required: true` entries:** Set `startupCommand` to prepend migrations: `"cd /home/site/wwwroot && {initCommand} && {framework-default-start}"`. Migrations are idempotent — safe on every cold start. Otherwise, omit `startupCommand` entirely (let Oryx handle it).
 
 Scaffold encodes `startupCommand` → Bicep `appCommandLine`, and `requiredAppSettings` → Bicep `siteConfig.appSettings`. Deploy only does: wait → zip → health check.
 
@@ -92,33 +88,16 @@ Write to `prepare-plan.json.deployStrategy`:
 
 Replace `startupCommand` and `reason` with language-specific values from the entry point table below.
 
-### Entry Point Detection & Startup Commands
+### Entry Point & Startup Commands
 
-Same startup commands as Pattern A (see table above), but Node.js adds a dependency guard:
+Same as Pattern A, but Node.js adds a dependency guard: `if [ ! -d node_modules ]; then npm install --production; fi` before the start command.
 
-| Language | Startup command (Pattern B only — differs from A) |
-|----------|--------------------------------------------------|
-| Node.js | `cd /home/site/wwwroot && if [ ! -d node_modules ]; then npm install --production; fi && node {entryPoint}` |
-| Python / .NET / Go / Java | Same as Pattern A — no guard needed |
-
-> ⛔ **Inline commands only.** Never generate a `.sh` startup script file — Windows-created files have CRLF line endings that cause `bash` exit code 2 on Linux.
-
-> ⛔ **Python: do NOT use `venv` in startup commands.** App Service Linux provides a Python environment. Virtual environments (`.venv`) may not survive slot swaps or certain restarts.
+> ⛔ **Inline commands only.** Never generate a `.sh` startup script file — CRLF causes `bash` exit code 2.
+> ⛔ **Python: do NOT use `venv` in startup commands.**
 
 ### SKU Implications
 
-When `hasNativeModules: true` (any language):
-
-| SKU | Viable? | Reason |
-|-----|---------|--------|
-| F1 (Free) | ❌ No | 60 CPU-min/day quota. Native compilation takes 2-5 min, consuming the entire daily budget. App auto-disables (403 Site Disabled) |
-| F1 (Free) with build-time compilation (TypeScript `tsc`, large `npm install` >500KB lockfile) | ❌ No | Same CPU quota issue — build-time compilation exhausts F1 daily budget even without native modules. Default to B1 when prereq detects TypeScript or large lockfiles. |
-| F1 (Free) with large dependency tree (Python >10 deps, .NET >20 NuGet, Java WAR) | ❌ No | Oryx compresses deps into `output.tar.zst`. F1 (shared CPU, 1 GB RAM) cannot decompress at cold start — container times out. |
-| F1 (Free) with WSGI/ASGI server (gunicorn, uvicorn) | ❌ No | WSGI/ASGI server + Oryx venv decompression + app startup exceeds F1 cold-start budget. |
-| B1 (Basic) | ✅ Yes | No CPU quota limit. Native compilation succeeds. ~$13/month |
-| S1+ | ✅ Yes | Production tiers |
-
-When `prereq-output.json.buildRequirements.f1Viable == false`, use B1 as minimum SKU. Surface at the approval gate: "⚠️ {f1BlockReason}. F1 not viable — B1 (~$13/mo) minimum required."
+When `f1Viable: false` (any of: native modules, TypeScript build, large deps, WSGI/ASGI server), F1 is not viable — use B1 (~$13/mo) minimum. Surface at approval gate: "⚠️ {f1BlockReason}. B1 minimum required."
 
 ### Container Timeout
 
@@ -140,10 +119,3 @@ When the component has a Dockerfile with backend logic, route to **Container App
 The deploy phase handles: ACR build → image push → Bicep redeploy with real image. See [code-deployment-container-apps.md](../../deploy/references/code-deployment-container-apps.md).
 
 For Java apps using Jib (`build.gradle` + `com.google.cloud.tools.jib`), the build produces a container image without a Dockerfile — push to ACR via `jib` task.
-
-## References
-
-- [Troubleshooting Node.js deployments on App Service Linux](https://azureossd.github.io/2023/02/09/troubleshooting-nodejs-deployments-on-appservice-linux/) — `SCM_DO_BUILD_DURING_DEPLOYMENT`, `ENABLE_ORYX_BUILD`, Oryx build pipeline, native module compilation
-- [az webapp deploy](https://learn.microsoft.com/en-us/azure/app-service/deploy-zip) — official deploy command reference (OneDeploy API)
-- [WEBSITE_RUN_FROM_PACKAGE](https://learn.microsoft.com/en-us/azure/app-service/deploy-run-package) — alternative deploy pattern (not compatible with startup-install)
-- [WEBSITES_CONTAINER_START_TIME_LIMIT](https://github.com/Azure/app-service-linux-docs/issues/253) — max value is 1800 seconds

@@ -1,0 +1,101 @@
+{
+  "sessionId": "4d294c61-c598-4e19-a866-7853ab71bca2",
+  "scaffoldCompletedUtc": "2026-05-20T08:37:51.5072067Z",
+  "iacTool": "bicep",
+  "iacFormat": "bicep",
+  "targetScope": "subscription",
+  "entryPoint": "infra/main.bicep",
+  "parametersFile": "infra/main.parameters.json",
+  "filesWritten": [
+    "infra/main.bicep",
+    "infra/main.parameters.json",
+    "infra/modules/app-service-plan.bicep",
+    "infra/modules/app-service.bicep",
+    "infra/modules/key-vault.bicep",
+    "infra/modules/log-analytics.bicep",
+    "infra/modules/application-insights.bicep",
+    ".copilot-azure/sessions/4d294c61-c598-4e19-a866-7853ab71bca2/scaffold-manifest.json",
+    ".copilot-azure/sessions/4d294c61-c598-4e19-a866-7853ab71bca2/deploy-checklist.md",
+    ".copilot-azure/sessions/4d294c61-c598-4e19-a866-7853ab71bca2/deploy-result.json"
+  ],
+  "files": [
+    { "path": "infra/main.bicep", "type": "bicep" },
+    { "path": "infra/main.parameters.json", "type": "parameters" },
+    { "path": "infra/modules/app-service-plan.bicep", "type": "bicep-module" },
+    { "path": "infra/modules/app-service.bicep", "type": "bicep-module" },
+    { "path": "infra/modules/key-vault.bicep", "type": "bicep-module" },
+    { "path": "infra/modules/log-analytics.bicep", "type": "bicep-module" },
+    { "path": "infra/modules/application-insights.bicep", "type": "bicep-module" },
+    { "path": ".copilot-azure/sessions/4d294c61-c598-4e19-a866-7853ab71bca2/scaffold-manifest.json", "type": "manifest" },
+    { "path": ".copilot-azure/sessions/4d294c61-c598-4e19-a866-7853ab71bca2/deploy-checklist.md", "type": "checklist" },
+    { "path": ".copilot-azure/sessions/4d294c61-c598-4e19-a866-7853ab71bca2/deploy-result.json", "type": "deploy-result" }
+  ],
+  "deployCommand": "az deployment sub create --location eastus2 --template-file infra/main.bicep --parameters @infra/main.parameters.json --parameters sessionSecret=<generated-at-deploy-time>",
+  "selfReview": {
+    "findings": [
+      {
+        "layer": 1,
+        "claim": "Key Vault references require a managed identity when used from App Service app settings.",
+        "rating": "FLAGGED",
+        "detail": "Initially flagged, then fixed by switching the app setting wiring to a direct @secure() sessionSecret parameter and a plain Application Insights connection string instead of Key Vault references."
+      },
+      {
+        "layer": 1,
+        "claim": "Transport controls are hardened on App Service.",
+        "rating": "VERIFIED",
+        "detail": "App Service enables httpsOnly, enforces minTlsVersion 1.2, disables FTPS, and restricts FTP basic publishing credentials."
+      },
+      {
+        "layer": 2,
+        "claim": "SESSION_SECRET handling is complete for scaffold phase.",
+        "rating": "FLAGGED",
+        "detail": "Initially flagged because a Key Vault secret resource was missing; fixed by removing the Key Vault reference pattern and passing sessionSecret as an @secure() parameter to App Service."
+      },
+      {
+        "layer": 2,
+        "claim": "Module structure and cross-module wiring are consistent.",
+        "rating": "VERIFIED",
+        "detail": "main.bicep wires the resource group, Key Vault, Log Analytics, Application Insights, App Service plan, and App Service modules consistently using module outputs."
+      },
+      {
+        "layer": 3,
+        "claim": "Bicep schema validation passed and target scope is correct.",
+        "rating": "VERIFIED",
+        "detail": "az bicep build succeeded for infra/main.bicep, and the template declares targetScope = 'subscription'."
+      },
+      {
+        "layer": 3,
+        "claim": "Names and SKUs match prepare-plan.json.",
+        "rating": "VERIFIED",
+        "detail": "Resource names and SKUs match the plan for App Service F1, Key Vault Standard, Log Analytics PerGB2018, and Application Insights workspace-based Basic."
+      },
+      {
+        "layer": 4,
+        "claim": "WAF alignment is mostly present; runtime health behavior cannot be fully proven from IaC alone.",
+        "rating": "PLAUSIBLE",
+        "detail": "Infrastructure defaults align with the prepare plan, and App Service healthCheckPath is configured to '/', but endpoint correctness still depends on the deployed application."
+      }
+    ]
+  },
+  "validationResult": {
+    "status": "Validated",
+    "checks": [
+      {
+        "name": "bicep build",
+        "passed": true,
+        "detail": "az bicep build --file infra/main.bicep --stdout completed successfully."
+      },
+      {
+        "name": "RBAC review",
+        "passed": true,
+        "detail": "No App Service managed identity is defined (intentional F1 constraint), and key-vault.bicep grants the deployer Key Vault Secrets Officer and Key Vault Secrets User roles on the vault."
+      },
+      {
+        "name": "scaffold warnings addressed",
+        "passed": true,
+        "detail": "W-SESSION-SECRET is satisfied by the secure sessionSecret parameter, W-NO-ENGINES by WEBSITE_NODE_DEFAULT_VERSION='~20', and W-HEALTH by appServiceHealthCheckPath='/' wired into App Service."
+      }
+    ],
+    "proof": "Bicep build passed; static review confirmed RBAC completeness for the chosen F1 App Service design and all scaffold-phase prereq warnings were addressed in IaC."
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "sessionId": "4d294c61-c598-4e19-a866-7853ab71bca2",
+  "createdUtc": "2026-05-20T08:03:30Z",
+  "lastModifiedUtc": "2026-05-20T08:06:00Z",
+  "intent": {
+    "userPrompt": "I have an app in GitHub — can you deploy it to Azure for me?",
+    "description": "Deploy a Node.js/Express notes web app to Azure",
+    "refinedFromScan": true,
+    "scanDiscoveredFacts": [
+      "Node.js CommonJS app with Express 5.x",
+      "express-session with MemoryStore and bcryptjs auth",
+      "better-sqlite3 local database (data.db)",
+      "express-rate-limit on auth and API routes",
+      "Static frontend in public/ (HTML/CSS/JS)",
+      "Listens on PORT env var (default 3000)",
+      "No Dockerfile, no existing IaC",
+      "Single component at repo root"
+    ]
+  },
+  "azure": {
+    "subscriptionId": "00000000-0000-0000-0000-000000000000",
+    "subscriptionName": "placeholder",
+    "tenantId": "00000000-0000-0000-0000-000000000000",
+    "userDisplayName": "Test User"
+  },
+  "app": {
+    "name": "bya-simple-web-app"
+  },
+  "components": [
+    {
+      "name": "bya-simple-web-app",
+      "path": ".",
+      "stack": {
+        "language": "Node.js",
+        "framework": "Express",
+        "version": "5.x"
+      },
+      "readiness": {
+        "status": "fixesApplied",
+        "fixes": ["Added app.set('trust proxy', 1) to src/app.js"]
+      },
+      "verdicts": {
+        "build": "PASS",
+        "completeness": "WARN",
+        "deployability": "WARN"
+      }
+    }
+  ],
+  "repo": {
+    "remote": "https://github.com/samcdonald-ms/bya-simple-web-app.git",
+    "lastScanCommit": "9a3d2e85ed02f300fdde58c882177fc1c46ba647"
+  },
+  "detectedInfra": [],
+  "detectedServices": [
+    { "type": "sqlite", "source": "code" },
+    { "type": "express-session", "source": "code" }
+  ],
+  "overrides": [],
+  "completedPhases": ["scope-triage", "prereq", "prepare", "scaffold"],
+  "currentPhase": "deploy",
+  "lastModifiedUtc": "2026-05-20T08:12:00Z",
+  "statusSummary": "5 services, ~$0/mo, region: eastus2"
+}

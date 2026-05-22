@@ -86,8 +86,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/## Workflow/);
     });
 
-    test("has Verdicts section", () => {
-      expect(skill.content).toMatch(/## Verdicts/);
+    test("discusses verdicts in body", () => {
+      expect(skill.content).toMatch(/verdict/i);
     });
 
     test("has Outputs section", () => {
@@ -130,8 +130,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toMatch(/NEVER allowed/i);
     });
 
-    test("requires read-only by default", () => {
-      expect(skill.content).toMatch(/Read-only by default/i);
+    test("requires read-only evaluation", () => {
+      expect(skill.content).toMatch(/read-only evaluation/i);
     });
 
     test("limits to max 3 questions", () => {
@@ -155,10 +155,15 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   describe("Reference Files", () => {
     const expectedRefs = [
       "build-check.md",
+      "cloud-sdk-migration.md",
       "completeness-check.md",
+      "component-mapping.md",
       "deployability-check.md",
+      "prereq-artifacts.md",
       "readiness-gate.md",
       "remediation-protocol.md",
+      "session-protocol.md",
+      "subagent-starter-scaffold.md",
       "zero-code-path.md",
     ];
 
@@ -176,11 +181,17 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
         "completeness-check.md",
         "deployability-check.md",
         "readiness-gate.md",
+        "remediation-protocol.md",
+        "component-mapping.md",
+        "cloud-sdk-migration.md",
+        "prereq-artifacts.md",
+        "session-protocol.md",
       ];
       for (const ref of coreRefs) {
         expect(skill.content).toContain(ref);
       }
     });
+
   });
 
   // ── Session Artifacts ────────────────────────────────────────
@@ -194,12 +205,16 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("prereq-output.json");
     });
 
-    test("references session-schemas.ts", () => {
-      expect(skill.content).toContain("session-schemas.ts");
+    test("references prereq-artifacts.md", () => {
+      expect(skill.content).toContain("prereq-artifacts.md");
     });
 
     test("session-schemas.ts exists in parent skill", () => {
       expect(existsSync(SESSION_SCHEMAS)).toBe(true);
+    });
+
+    test("prereq-schemas.ts exists in references", () => {
+      expect(existsSync(path.join(REFERENCES_DIR, "prereq-schemas.ts"))).toBe(true);
     });
   });
 

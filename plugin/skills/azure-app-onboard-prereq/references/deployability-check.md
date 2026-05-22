@@ -7,7 +7,7 @@ Assess whether the repository can feasibly be deployed to Azure and whether a pr
 > ⛔ **You MUST read the following in order. Skip items marked conditional if the condition is not met:**
 >
 > 1. [component-mapping.md](component-mapping.md) — Steps 1–2: Component→Azure mapping, existing infrastructure detection, Terraform provider classification, compose service extraction. **Conditional: monorepo only (>1 project manifest found).** For single-component repos, skip to Step 3.
-> 2. [dependency-compatibility.md](dependency-compatibility.md) — Step 3: Cloud SDK deps, EOL runtimes/frameworks, archived repos, vulnerable apps, platform deps, Dockerfile analysis, native module detection
+> 2. [dependency-compatibility.md](dependency-compatibility.md) — Step 3: EOL runtimes/frameworks, archived repos, vulnerable apps, platform deps, Dockerfile analysis, native module detection
 > 3. Steps 4–5 below
 
 ## Step 4: Recipe Feasibility
@@ -24,17 +24,22 @@ Assess whether at least one deployment recipe is viable.
 | Outcome | Verdict |
 |---------|---------|
 | At least one recipe clearly viable | ✅ PASS |
-| Viable with modifications | ⚠️ WARN — note required changes |
+| Viable with modifications (config change, Dockerfile tweak) | 🔧 Recommended Fix — note required changes |
+| Viable but requires significant rework (>5 files, architecture change) | 🔶 Major Migration — warn about scope |
+| Minor platform concerns (ephemeral storage, missing .dockerignore) | ⚠️ WARN — informational |
 | No viable recipe identified | ❌ FAIL |
 
 ## Step 5: Specialized Skill Detection
 
-Check if the repo needs a specialized skill instead of standard azure-prepare.
+Check if the repo's stack requires a specialized deployment skill. If a match is found, set `context.json.routeToSkill` and `routeReason` so Step 8 routes directly.
 
-| Dependency / Pattern | Specialized Skill |
-|---------------------|-------------------|
-| `@github/copilot-sdk`, `github-copilot-sdk`, `GitHub.CopilotSdk` | **azure-hosted-copilot-sdk** |
+> **Non-Azure cloud SDK deps** (AWS/GCP SDKs, Firebase, etc.) — if present (user chose "Continue evaluation" in Step 2), they are evaluated and `routeToSkill` is set in [dependency-compatibility.md § Non-Azure Cloud SDK Dependencies](dependency-compatibility.md).
 
-If a specialized dependency is found, note it in the report so azure-prepare routes correctly.
+| Dependency / Pattern | `routeToSkill` | `routeReason` |
+|---------------------|----------------|---------------|
+| `@github/copilot-sdk`, `github-copilot-sdk`, `GitHub.CopilotSdk` | `azure-hosted-copilot-sdk` | `copilot-sdk-detected` |
+| `azure_ai_projects`, `azure-ai-agents`, `foundry-agents` | `microsoft-foundry` | `foundry-agents-detected` |
 
-> **Non-Azure cloud SDK deps** (AWS/GCP SDKs, Firebase, etc.) are NOT routed to a specialized skill. They are flagged as `CLOUD_SDK_DEPENDENCY` findings with Azure equivalents mapped, and handled inline during the scaffold phase via SDK swaps.
+## f1Viable Aggregation
+
+After the deployability check completes, cross-check `buildRequirements.f1Viable`. The build axis may have set an initial value — the deployability check MUST override it to `false` if ANY blocker was found during [dependency-compatibility.md § Native Module Detection](dependency-compatibility.md) or [§ F1 Viability — Beyond Native Modules](dependency-compatibility.md). Verify `f1BlockReason` is populated when `f1Viable: false`.

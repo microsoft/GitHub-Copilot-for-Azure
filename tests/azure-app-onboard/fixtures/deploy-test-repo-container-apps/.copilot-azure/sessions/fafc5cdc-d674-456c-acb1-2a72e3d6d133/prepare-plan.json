@@ -1,0 +1,179 @@
+{
+  "services": [
+    {
+      "name": "Azure Container Apps",
+      "sku": "Consumption",
+      "purpose": "Hosts the WeTTY web terminal container (Express + Socket.IO on port 3000)",
+      "component": "wetty",
+      "region": "eastus2",
+      "resourceName": "ca-wetty-dev-fafc"
+    },
+    {
+      "name": "Azure Container Apps Environment",
+      "sku": "Consumption",
+      "purpose": "Managed environment for Container Apps — provides ingress, networking, and logging integration",
+      "component": "wetty",
+      "region": "eastus2",
+      "resourceName": "cae-wetty-dev-fafc"
+    },
+    {
+      "name": "Azure Container Registry",
+      "sku": "Basic",
+      "purpose": "Stores the WeTTY Docker image built from containers/wetty/Dockerfile.azure",
+      "component": "wetty",
+      "region": "eastus2",
+      "resourceName": "crwettydevfafc"
+    },
+    {
+      "name": "Key Vault",
+      "sku": "Standard",
+      "purpose": "Secrets management — stores SSH credentials and any runtime secrets",
+      "component": "wetty",
+      "region": "eastus2",
+      "resourceName": "kv-wetty-dev-fafc"
+    },
+    {
+      "name": "Log Analytics Workspace",
+      "sku": "PerGB2018",
+      "purpose": "Centralized log collection for Container Apps and Application Insights",
+      "component": "wetty",
+      "region": "eastus2",
+      "resourceName": "log-wetty-dev-fafc"
+    },
+    {
+      "name": "Application Insights",
+      "sku": "Workspace-based",
+      "purpose": "APM and telemetry — WeTTY exposes /metrics via prom-client; App Insights provides live metrics and alerts",
+      "component": "wetty",
+      "region": "eastus2",
+      "resourceName": "appi-wetty-dev-fafc"
+    }
+  ],
+  "costEstimate": {
+    "monthlyUsd": 5.09,
+    "currency": "USD",
+    "breakdown": [
+      {
+        "service": "Azure Container Apps",
+        "sku": "Consumption",
+        "monthlyUsd": 0.0,
+        "note": "Free grant: 180K vCPU-sec + 360K GiB-sec/sub/month. Scale-to-zero = $0 when idle."
+      },
+      {
+        "service": "Azure Container Registry",
+        "sku": "Basic",
+        "monthlyUsd": 5.0,
+        "note": "$0.1666/day × 30 days"
+      },
+      {
+        "service": "Key Vault",
+        "sku": "Standard",
+        "monthlyUsd": 0.09,
+        "note": "$0.03/10K operations; negligible at low volume"
+      },
+      {
+        "service": "Log Analytics Workspace",
+        "sku": "PerGB2018",
+        "monthlyUsd": 0.0,
+        "note": "First 5 GB/month free; typical app logs stay within free tier"
+      },
+      {
+        "service": "Application Insights",
+        "sku": "Workspace-based",
+        "monthlyUsd": 0.0,
+        "note": "Billed via Log Analytics; covered by 5 GB free tier"
+      }
+    ],
+    "disclaimer": "Estimate based on Azure Retail Prices API (live). Actual costs depend on usage. Monitor at portal.azure.com/costmanagement."
+  },
+  "rejectedAlternatives": [
+    {
+      "service": "Azure App Service (container mode)",
+      "reason": "User explicitly chose Container Apps. App Service container mode would also work but lacks native scale-to-zero and event-driven scaling."
+    },
+    {
+      "service": "Azure App Service (Oryx code-deploy)",
+      "reason": "node-pty and gc-stats require node-gyp. F1/Free tier is not viable. Container deployment preferred over startup-install pattern."
+    },
+    {
+      "service": "nginx sidecar container",
+      "reason": "Container Apps provides built-in HTTPS ingress with automatic TLS termination — a separate nginx container is unnecessary overhead."
+    }
+  ],
+  "naming": {
+    "pattern": "{abbreviation}-{project}-{env}-{suffix}",
+    "resourcePrefix": "wetty-dev-fafc",
+    "resources": [
+      { "type": "Resource Group", "name": "rg-wetty-dev-fafc" },
+      { "type": "Container App", "name": "ca-wetty-dev-fafc" },
+      { "type": "Container Apps Environment", "name": "cae-wetty-dev-fafc" },
+      { "type": "Container Registry", "name": "crwettydevfafc" },
+      { "type": "Key Vault", "name": "kv-wetty-dev-fafc" },
+      { "type": "Log Analytics Workspace", "name": "log-wetty-dev-fafc" },
+      { "type": "Application Insights", "name": "appi-wetty-dev-fafc" }
+    ]
+  },
+  "quotas": [
+    {
+      "resource": "ManagedEnvironmentCount",
+      "region": "eastus2",
+      "required": 1,
+      "available": 50,
+      "sufficient": true,
+      "provider": "Microsoft.App",
+      "currentUsage": 0,
+      "currentLimit": 50,
+      "adjustable": true,
+      "source": "cli"
+    }
+  ],
+  "assumptions": [
+    "Container Apps scale-to-zero during idle — $0 when no active connections",
+    "Log Analytics ingestion <5 GB/month — covered by free tier",
+    "SSH target host (SSHHOST) must be configured via environment variable at deploy time",
+    "Dockerfile.azure (without BuildKit syntax) will be generated at scaffold time for ACR compatibility",
+    "Managed Identity used for Container App → ACR pull (no registry credentials stored)"
+  ],
+  "quotaValidation": {
+    "verified": true,
+    "method": "cli",
+    "verifiedRegion": "eastus2",
+    "verifiedSku": "Consumption",
+    "checkedRegions": ["eastus2", "eastus", "westus2", "westeurope", "northeurope"],
+    "failedResources": []
+  },
+  "deployStrategy": {
+    "codeDeployPattern": "container-only",
+    "reason": "WeTTY has a Dockerfile with a Node.js/Express backend and native modules (node-pty, gc-stats). Container-only deploy via ACR is the only viable path."
+  },
+  "instrumentation": {
+    "appInsightsEnabled": true,
+    "reason": "WeTTY exposes /metrics via prom-client. Application Insights provides live metrics, distributed tracing, and alerts with minimal config."
+  },
+  "deploymentVariables": {
+    "environmentName": "wetty-dev-fafc",
+    "location": "eastus2",
+    "sessionId": "fafc5cdc-d674-456c-acb1-2a72e3d6d133",
+    "deployedBy": "Test User"
+  },
+  "postDeployRecommendations": [
+    {
+      "title": "Configure a dedicated SSH target",
+      "reason": "WeTTY defaults SSHHOST to localhost. In production, set the SSHHOST env var to point to a dedicated SSH server (VM or container). Without this, the terminal connects to itself which may not be useful.",
+      "effort": "medium",
+      "services": ["Azure Container Apps (sidecar)", "Azure Virtual Machines"]
+    },
+    {
+      "title": "Enable TLS at the ingress",
+      "reason": "Container Apps provides automatic HTTPS ingress. No additional configuration needed — TLS terminates at the ingress layer.",
+      "effort": "low",
+      "services": ["Azure Container Apps Ingress"]
+    },
+    {
+      "title": "Upgrade to Dedicated plan for sustained load",
+      "reason": "Consumption plan scales to zero, which introduces cold start latency for terminal sessions. For always-on usage, a Dedicated plan eliminates cold starts.",
+      "effort": "low",
+      "services": ["Azure Container Apps Dedicated"]
+    }
+  ]
+}

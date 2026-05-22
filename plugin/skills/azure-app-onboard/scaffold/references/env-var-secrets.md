@@ -4,38 +4,34 @@ Applies to ALL compute targets (App Service, Container Apps, Functions). For Con
 
 ## Environment Variable Value Derivation
 
-> ⛔ **Never invent env var values — derive them from the app's config class.** Before setting any environment variable in Bicep, cross-reference ALL of: `.env.example`, `.env.sample`, `docker-compose.yml` env sections, and the app's settings/config module. Missing required env vars cause container crashes that cost 10+ minutes to diagnose. Then verify each value:
+> ⛔ **Never invent env var values — derive from the app's config class.** Cross-reference `.env.example`, `.env.sample`, `docker-compose.yml`, and the app's config module. Verify each value:
+> 1. **Type validation:** URL-typed fields need valid URLs — not `*` or placeholders
+> 2. **Defaults:** Use app defaults unless overriding with deployed URL
+> 3. **Required:** Fields without defaults must be provided
 >
-> 1. **Type validation:** If a field is typed as `list[AnyUrl]`, `HttpUrl`, or similar, the value MUST be a valid URL — not a wildcard (`*`) or placeholder.
-> 2. **Default values:** If the config has defaults (e.g., `FRONTEND_HOST = "http://localhost:5173"`), use them unless overriding with the actual deployed URL.
-> 3. **Required vs optional:** Fields without defaults are required — ensure they're provided.
->
-> **Common pitfalls:**
-> - `BACKEND_CORS_ORIGINS=["*"]` → crashes Pydantic `list[AnyUrl]` validation. Use actual URL(s) or `["http://localhost"]`.
-> - `DATABASE_URL=changethis` → crashes production validators. Use Key Vault secret reference.
-> - ⛔ **JSON array env vars (e.g., `CORS_ORIGINS`) require escaping through Bicep → ARM → Container Apps.** Use a Bicep variable:
->   ```bicep
->   var corsOrigins = '["https://${containerApp.properties.configuration.ingress.fqdn}"]'
->   { name: 'CORS_ORIGINS', value: corsOrigins }
->   ```
+> **Pitfalls:** `CORS_ORIGINS=["*"]` → invalid for strict validators (use actual URLs). `DATABASE_URL=changethis` → use KV ref. JSON array env vars need Bicep variable escaping:
+> ```bicep
+> var corsOrigins = '["https://${containerApp.properties.configuration.ingress.fqdn}"]'
+> { name: 'CORS_ORIGINS', value: corsOrigins }
+> ```
 
 ## Key Vault Secret Dependency Chain
 
-> ⛔ **Chicken-and-egg: CA references KV secrets that don't exist yet at deploy time.** The KV secret values (DB connection strings, passwords) are only known AFTER IaC creates the database. Bicep cannot populate them. The deploy phase seeds them via CLI AFTER infrastructure provisioning completes.
+> ⛔ **Chicken-and-egg:** CA references KV secrets that don't exist yet at deploy time. KV secret values (DB connection strings, passwords) are only known AFTER IaC creates the database.
 
 **Correct ordering:**
-1. **IaC creates:** Key Vault → RBAC (KV Secrets User for CA identity) → Database → Container App (with `secretRef` pointing to KV secret names that will be seeded)
-2. **Deploy phase seeds secrets:** `az keyvault secret set --vault-name {kv} --name db-connection-string --value {connection-string-from-db-output}`
-3. **New revision picks up secrets:** Bicep redeploy or `az containerapp update --revision-suffix` — CA reads the seeded secrets via managed identity
+1. **IaC Phase 1:** Key Vault → RBAC → Database → Container App with `secrets: []` (placeholder image, no KV refs yet)
+2. **Deploy phase seeds KV:** `az keyvault secret set --vault-name {kv} --name db-connection-string --value {value}`
+3. **IaC Phase 2:** Redeploy Bicep with `isPlaceholder=false` → activates KV `secretRef` entries + real image + ACR registries
 
-> ⛔ **Password consistency: generate ONCE, use in the SAME command block.** When IaC creates a database with a `@secure()` password AND the deploy phase seeds that password into Key Vault, both MUST use the SAME value. Shell variables do NOT persist between tool calls — generate the password inline and pass it to BOTH `az deployment sub create --parameters pgAdminPassword={value}` AND `az keyvault secret set --value {value}` in a single command block. NEVER generate a password in one shell and re-generate in another.
+**IaC pattern — reference secrets by name, gated by `isPlaceholder`:**
 
-> ⛔ **Container Apps resolves ALL secrets (KV refs, connection strings) at revision CREATION time — not restart time.** `az containerapp revision restart` does NOT pick up updated KV secrets. To apply updated secrets, create a NEW revision via Bicep redeploy (`az deployment sub create`) or `az containerapp update --revision-suffix fix-{n}`.
+> ⛔ **Container Apps:** KV `secretRef` entries MUST be gated behind `isPlaceholder` (see [bicep-container-apps.md](bicep-container-apps.md) § Two-Phase Wiring). Phase 1 deploys with `secrets: []` because the CA's managed identity has no RBAC yet. Phase 2 activates KV refs after RBAC propagates.
 
-**IaC pattern — reference secrets by name, not value:**
 ```bicep
-// The KV secret NAME is defined in IaC — the VALUE is seeded by deploy phase
-secrets: [
+// Phase 1: secrets: [] (isPlaceholder == true)
+// Phase 2: KV secretRef entries activated after RBAC propagates
+secrets: isPlaceholder ? [] : [
   {
     name: 'db-connection-string'
     keyVaultUrl: 'https://${keyVault.name}.vault.azure.net/secrets/db-connection-string'
@@ -45,3 +41,20 @@ secrets: [
 ```
 
 > ⛔ **Do NOT use `@secure()` parameters to pass secrets inline.** Do NOT hardcode passwords in `main.parameters.json`, `terraform.tfvars`, env vars, or any generated file. The deploy phase seeds secrets into Key Vault via `az keyvault secret set` after database provisioning — see [code-deployment-appservice.md](../../deploy/references/code-deployment-appservice.md) or [code-deployment-container-apps.md](../../deploy/references/code-deployment-container-apps.md) § Database Post-Deploy.
+
+## Azure Managed Service SSL/TLS Requirements
+
+> ⛔ **Azure managed databases and caches enforce TLS. Local docker-compose configs typically don't.** This mismatch causes container crashes post-deploy.
+
+Check `prereq-output.json.warnings[]` for warnings with `fixPhase: "scaffold"`. Each warning's `fix` field describes the required IaC change. Read the app's config loader for the actual env var name.
+
+> ⛔ **Prefer env var override over code change.** Only modify source if no env override path exists AND user approves.
+> ⛔ **Self-review:** If any `fixPhase: "scaffold"` warning exists and IaC lacks the fix → flag as FLAGGED.
+
+## Key Vault Secret Naming
+
+> ⛔ **KV secret names allow only alphanumeric characters and hyphens.** Map env var names: `SECRET_KEY` → `secret-key`, `DATABASE_URL` → `database-url`. Do NOT use underscores — Azure rejects them with `SecretNameInvalid`.
+
+## Compose → Azure PaaS Credential Mapping
+
+> ⛔ **Azure managed databases only create the `administratorLogin` user.** Docker-compose `POSTGRES_USER` / `MYSQL_USER` auto-creates a database user — Azure PostgreSQL/MySQL Flexible Server does NOT. Map compose user env vars to the `administratorLogin` value from your Bicep, not the compose username.

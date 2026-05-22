@@ -4,6 +4,7 @@
  * Validates post-deploy handoff: cleanup commands, deployment identity,
  * and post-deploy recommendations.
  *
+ * Uses seedDeployReadyWorkspace to skip prereq/prepare/scaffold (~20 min savings).
  * Extracted from integration-pipeline-flow.test.ts — deploy-phase specific.
  */
 
@@ -12,14 +13,20 @@ import {
   softCheckSkill,
   withTestResult,
 } from "../../utils/evaluate";
-import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboardWithCleanup,
   SKILL_NAME,
+  DEPLOY_PHASE_PROMPT,
+  DEPLOY_PHASE_FOLLOW_UPS,
   shouldEarlyTerminateOnHandoff,
   assertHandoffPresented,
   assertSessionFileCreated,
   assertPhaseArtifactsExist,
+  assertDeployChecklistExists,
+  assertDeployPreflightSubagentDispatched,
+  assertNoSubagentFailures,
+  hasReachedDeployPhase,
+  seedDeployReadyWorkspace,
 } from "../app-onboard-test-helpers";
 
 describeAppOnboardWithCleanup("Handoff Tests", (agent) => {
@@ -30,20 +37,10 @@ describeAppOnboardWithCleanup("Handoff Tests", (agent) => {
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             workspacePath = workspace;
-            await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
-              targetDir: workspace,
-              branch: "main",
-              depth: 1,
-            });
+            seedDeployReadyWorkspace(workspace);
           },
-          prompt: "I built a side project and want to get it live on Azure",
-          followUp: [
-            "Just go with defaults, cheapest option.",
-            "Yes, proceed with scaffolding.",
-            "Yes, deploy to Azure now.",
-            "Yes, confirm the deployment.",
-          ],
+          prompt: DEPLOY_PHASE_PROMPT,
+          followUp: DEPLOY_PHASE_FOLLOW_UPS,
           nonInteractive: true,
           preserveWorkspace: true,
           followUpTimeout: 1_800_000, // 30 min per follow-up
@@ -53,8 +50,23 @@ describeAppOnboardWithCleanup("Handoff Tests", (agent) => {
         softCheckSkill(agentMetadata, SKILL_NAME);
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
+        // ROOT CAUSE GUARD: check deploy-checklist.md first
+        if (workspacePath) {
+          assertDeployChecklistExists(agentMetadata, workspacePath);
+        }
+
         // Must present handoff content
         assertHandoffPresented(agentMetadata);
+
+        // Sub-agent assertions: deploy preflight must be dispatched via task tool
+        // Only assert when deploy phase was actually reached — if pipeline stalled in
+        // prereq/prepare/scaffold, the deploy sub-agent was never expected to fire.
+        if (hasReachedDeployPhase(agentMetadata)) {
+          assertDeployPreflightSubagentDispatched(agentMetadata);
+        } else {
+          agentMetadata.testComments.push("⚠️ DEPLOY PHASE NOT REACHED: Skipping deploy sub-agent assertion");
+        }
+        assertNoSubagentFailures(agentMetadata);
 
         // Session integrity
         if (workspacePath) {
@@ -66,6 +78,6 @@ describeAppOnboardWithCleanup("Handoff Tests", (agent) => {
           ]);
         }
       });
-    }, 3600000); // 60 min — full pipeline through handoff
+    }, 3000000); // 50 min — seeded fixture, deploy through handoff
   });
 });

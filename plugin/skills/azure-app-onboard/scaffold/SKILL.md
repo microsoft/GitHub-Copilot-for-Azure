@@ -18,7 +18,7 @@ Generate deployment-ready infrastructure code from an architecture plan, verify 
 | Parent | [azure-app-onboard](../SKILL.md) |
 | Best for | Turning `prepare-plan.json` service list into Bicep templates with secure-by-default patterns |
 | Inputs | `prepare-plan.json` (services, naming, quotas), `context.json` (overrides, components, repo info) |
-| Outputs | `scaffold-manifest.json`, `deployment-summary.md`, generated IaC files in `infra/` |
+| Outputs | `scaffold-manifest.json`, generated IaC files in `infra/` |
 | Pipeline position | Phase 3 of 4: prereq → prepare → **scaffold** → deploy |
 | IaC format | Bicep (v1 default). Terraform when existing `.tf` detected or user override. |
 
@@ -46,7 +46,8 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
 | `mcp_bicep_list_avm_metadata` | *(flat)* | AVM module catalog | None |
 | `mcp_bicep_get_bicep_best_practices` | *(flat)* | Bicep best practices | None |
 | `mcp_bicep_get_az_resource_type_schema` | *(flat)* | ARM resource type JSON schema | `azResourceType`, `apiVersion` (Required) |
-| `mcp_bicep_get_bicep_file_diagnostics` | *(flat)* | Validate `.bicep` files (self-review L3) | `filePath` (Required) |
+| `mcp_bicep_build_bicep` | *(flat)* | Validate `.bicep` files (self-review L3) | `filePath` (Required) |
+| `mcp_bicep_format_bicep_file` | *(flat)* | Format `.bicep` files (LF enforcement) | `filePath` (Required) |
 | `mcp_azure_mcp_deploy` | `deploy_iac_rules_get` | IaC best practices and rules | `deployment-tool`, `iac-type`, `resource-types` |
 | `mcp_azure_mcp_deploy` | `deploy_pipeline_guidance_get` | CI/CD pipeline config | `is-azd-project`, `pipeline-platform`, `deploy-option` |
 | `mcp_azure_mcp_get_azure_bestpractices` | `get_azure_bestpractices_get` | SDK/Functions best practices | `resource`, `action` |
@@ -60,32 +61,127 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
 
 1. **Read `prepare-plan.json`** — verify `services[]` exists, read `naming` config (especially `naming.resourcePrefix`, `naming.suffix`, `naming.resources[]`). Read resource group name from `context.json.azure.resourceGroup`. ⛔ **Use EXACTLY these names in generated IaC — do NOT invent names, derive them from `environmentName`, or append your own suffixes.** ⛔ **Use EXACTLY the names from `prepare-plan.json.naming.resources[]` as Bicep parameters. Do NOT derive names with `take()`, `substring()`, or string manipulation. The plan is the source of truth.** Missing → trigger prepare backfill via `azure-app-onboard` orchestrator.
 2. **Read `context.json`** — check `overrides[]` for `iacFormat` preference, `detectedInfra[]` for existing `.tf`, `detectedInfraProvider` for cloud provider classification.
-3. **Check workspace for existing IaC** — scan for `.tf`, `.bicep`, or `azure.yaml` files. Route based on what's found:
-   - **Azure IaC found** (`.bicep` files, `azure.yaml`, or `.tf` with `detectedInfraProvider.terraform` == `"azure"` or `"multi"` with `azurerm` present): tell the user: "Found existing Azure infrastructure files. I won't overwrite your IaC. Please remove or rename before scaffolding." Then **stop**.
-   - **Non-Azure IaC found** (`.tf` with `detectedInfraProvider.terraform` == `"gcp"`, `"aws"`, or `"multi"` without `azurerm`): **read `context.json.overrides[]` for `iacFormat`**. The prepare phase already presented the user with a Bicep vs Terraform choice. Respect that decision:
-     - `iacFormat == "terraform"`: generate Azure Terraform in a separate directory. See [terraform-patterns.md § Non-Azure IaC coexistence](references/terraform-patterns.md) for output directory rules.
-     - No `iacFormat` override (default): generate **Bicep** — the non-Azure TF is separate infrastructure that AppOnboard does not touch.
-     - ⛔ **Do NOT auto-force Terraform.** The prepare phase owns the IaC format decision. Scaffold reads it — it does not override it.
-   - **`detectedInfraProvider.terraform` == `"unknown"`**: ask user which provider their existing Terraform targets. Wait for response before routing.
-   - **No IaC found**: continue normally.
-4. **Load IaC patterns** — ⛔ **You MUST read [`bicep-patterns.md`](references/bicep-patterns.md) (Bicep) OR [`terraform-patterns.md`](references/terraform-patterns.md) (Terraform) before generating any IaC.** Do NOT load both formats — load only the one matching the chosen format. Then read the compute-target file: [`bicep-app-service.md`](references/bicep-app-service.md) if any service maps to App Service/Functions, [`bicep-container-apps.md`](references/bicep-container-apps.md) if any service maps to Container Apps. Load both only if the plan includes both compute targets. ⛔ **If the plan includes PostgreSQL or Redis**, you MUST also read [`bicep-patterns-data.md`](references/bicep-patterns-data.md) for service module templates.
+3. **Check workspace for existing IaC** — ⛔ **Skip** if `context.json.overrides[]` contains `ignoreExistingInfra: true`. Otherwise:
+   - **Azure IaC** (`.bicep`, `azure.yaml`, `.tf` with `azurerm`): `ask_user` → "Start fresh" (rename `infra/` to `infra.bak/`) or "Use existing" (route to `azure-prepare`, stop pipeline).
+   - **Non-Azure IaC** (`.tf` with GCP/AWS): respect `context.json.overrides[].iacFormat` from prepare. Default: Bicep alongside existing TF.
+   - **Unknown TF** (`detectedInfraProvider.terraform` == `"unknown"`): ask user which provider before routing.
+   - **No IaC**: continue.
+4. **Determine compute targets** — Check which compute targets are in the plan (App Service/Functions, Container Apps, or both) and whether PostgreSQL/Redis is present. Do NOT read any reference files — pass this info to the sub-agent at Step 5.
+4b. **Pre-check API versions (main thread)** — MCP tool access is unreliable in `task` agents — call these in the main thread before dispatching. Call `mcp_bicep_list_az_resource_types_for_provider` (or `bicep-list_az_resource_types_for_provider`) once per provider namespace in `prepare-plan.json.services[]` (e.g., `Microsoft.Web`, `Microsoft.App`, `Microsoft.DBforPostgreSQL`, `Microsoft.Cache`, `Microsoft.KeyVault`, `Microsoft.ContainerRegistry`). Extract the latest GA API version (no `-preview`) for each resource type. Build an `apiVersions` map and pass it to the IaC gen sub-agent at Step 5. Fallback: if MCP unavailable, pass `"MCP unavailable"` — sub-agent uses reference file examples + `az bicep build` for validation.
 
-### ACTION (Steps 5–10)
+### ACTION (Steps 5–12)
 
-> ⛔ **File boundary rule:** NEVER modify files outside `infra/`, `.copilot-azure/`. Do NOT rewrite app source. Do NOT run `npm install` / `pip install` during scaffold — scaffold only writes files. **Exception:** Cloud SDK swaps (iac-generation-rules.md § Step 6) modify app source to replace non-Azure imports, and the post-swap build-validation gate may run install/build/test with explicit user approval.
+> ⛔ **File boundary:** NEVER modify files outside `infra/`, `.copilot-azure/`. Scaffold only writes files — no install/build commands.
 
-5. **Generate IaC** — ⛔ **You MUST read [`iac-generation-rules.md`](references/iac-generation-rules.md) before generating any IaC.** It contains session tag requirements, sub-agent delegation rules, security patterns (SCM/FTP auth, managed identity, Key Vault, RBAC), env var completeness, Dockerfile generation (Step 6), secure-by-default verification (Step 7), and telemetry wiring (Step 8). Apply patterns from [bicep-patterns.md](references/bicep-patterns.md) (or [terraform-patterns.md](references/terraform-patterns.md)) + compute-target file loaded at Step 4.
+> ⛔ **Sub-agent delegation is MANDATORY for Steps 5, 6–9, and 10–12.** Each step reads its `subagent-*.md` template, then dispatches a `task` call. Do NOT read any reference file not explicitly named in these steps.
+>
+> ⛔ **Dispatch type: `task` ONLY — NEVER `general-purpose`.** `general-purpose` leaks sub-agent context into the main thread, accelerating compaction and evicting the orchestrator workflow. `task` isolates sub-agent context.
+>
+> ⛔ **How to dispatch — VERBATIM COPY required:**
+> 1. `view` the `subagent-*.md` template file
+> 2. Your **NEXT action MUST be a `task` tool call** — not `view`, `powershell`, `create`, or ANY other tool
+> 3. The task prompt MUST contain the **COMPLETE and UNMODIFIED** template text. Copy the template between `<<<TEMPLATE_START>>>` / `<<<TEMPLATE_END>>>` delimiters exactly as shown below. Do NOT summarize, paraphrase, reword, or omit ANY part of it — the sub-agent needs every "Read [file]" and "Do:" instruction to produce correct output
+> 4. AFTER the template block, append the data sections (plan JSON, overrides, etc.)
+>
+> **Anti-pattern (causes regressions):** Writing your OWN prompt that lists workflow steps or describes what to generate. The template already contains the complete workflow — your job is to COPY it, not rewrite it.
 
-9. **Adversarial self-review** — ⛔ **You MUST read [`self-review-procedure.md`](references/self-review-procedure.md).** Delegates L1–L4 review to a sub-agent with [self-review-checklist.md](references/self-review-checklist.md) + [waf-checklist.md](references/waf-checklist.md). Writes findings to `scaffold-manifest.json.selfReview`.
+5. **IaC generation** — ⛔ **You MUST dispatch [`subagent-iac-gen.md`](references/subagent-iac-gen.md) as a `task`.** ⛔ agent_type: `"task"` — NEVER `"general-purpose"`.
+   ```
+   <<<TEMPLATE_START>>>
+   {paste the ENTIRE content of subagent-iac-gen.md here — unmodified}
+   <<<TEMPLATE_END>>>
+
+   ## Data (appended by orchestrator)
+   ### prepare-plan.json
+   {full JSON}
+   ### context.json.overrides
+   {overrides array}
+   ### prereq-output.json.buildRequirements
+   {buildRequirements object}
+   ### prereq-output.json.warnings[]
+   {warnings array}
+   ### Compute targets
+   {App Service/Functions, Container Apps, or both + whether PostgreSQL/Redis present}
+   ### apiVersions
+   {map from Step 4b, e.g. {"Microsoft.KeyVault/vaults": "2023-07-01", ...} — or "MCP unavailable" if skipped}
+   ### Working directory
+   {absolute path}
+   ```
+   - **Expect:** IaC files written to `infra/`, file list returned for `scaffold-manifest.json.files[]`
+   - The tag `app-onboard-skill: 'true'` MUST appear verbatim in generated Bicep.
+
+5b. **Deploy checklist (parallel with Step 5)** — Dispatch as a `task` **in parallel** with the IaC gen subagent above. ⛔ agent_type: `"task"` — NEVER `"general-purpose"`.
+   ```
+   <<<TEMPLATE_START>>>
+   You are a deploy-checklist generator. Do NOT invoke any skills.
+
+   1. Read the deploy-checklist-template at: plugin/skills/azure-app-onboard/deploy/references/deploy-checklist-template.md
+   2. Fill in {placeholders} with real values from prepare-plan.json (appName, rgName, subscriptionId, sessionId).
+   3. Delete sections that don't apply to this deployment's compute target (e.g., remove App Service section for Container Apps deploys). The template section headers indicate which to delete.
+   4. Write the result to the session folder using the `create` tool. This file survives conversation compaction — deploy re-reads it after every long-running command.
+   <<<TEMPLATE_END>>>
+
+   ## Data (appended by orchestrator)
+   ### prepare-plan.json
+   {full JSON}
+   ### Session path
+   {.copilot-azure/sessions/{uuid}/}
+   ### Compute targets
+   {App Service, Container Apps, Static Web Apps, or combination}
+   ```
+   - **Expect:** `deploy-checklist.md` written to session folder. If this subagent fails, the validate subagent (Steps 10b–12.5) will catch the missing file.
+
+6–9. **Self-review** — ⛔ **You MUST dispatch [`subagent-review.md`](references/subagent-review.md) as a `task`.** ⛔ agent_type: `"task"` — NEVER `"general-purpose"`.
+   ```
+   <<<TEMPLATE_START>>>
+   {paste the ENTIRE content of subagent-review.md here — unmodified}
+   <<<TEMPLATE_END>>>
+
+   ## Data (appended by orchestrator)
+   ### Generated IaC files
+   {full content of every .bicep/.tf file}
+   ### prepare-plan.json (services, naming, deploymentVariables)
+   {relevant sections}
+   ### prereq-output.json.warnings[]
+   {warnings array}
+   ```
+   - **Expect:** findings JSON → write to `scaffold-manifest.json.selfReview`
+   - FLAGGED at L1/L3 → fix IaC before proceeding
 
 ### VALIDATE → MANIFEST → APPROVE (Steps 10–12.5)
 
-10–12.5. **Validate, write manifest, deploy gate** — ⛔ **You MUST read [`validation-and-manifest.md`](references/validation-and-manifest.md).** Covers: CI/CD (Step 10), IaC validation via `az bicep build` + `what-if` (Step 11), manifest write with `validationResult` (Step 12), deploy approval gate (Step 12.5), and phase exit checklist.
+10a. **Format IaC (main thread)** — For each `.bicep` file in `infra/` (including `modules/`): call `mcp_bicep_format_bicep_file` (or `bicep-format_bicep_file`) with `{ filePath: "<absolute path>" }`.This enforces LF line endings via the `bicepconfig.json` written during IaC generation. Fallback: skip if unavailable.
+
+10b–12.5. **Validation + manifest** — ⛔ **You MUST dispatch [`subagent-validate.md`](references/subagent-validate.md) as a `task`.** ⛔ agent_type: `"task"` — NEVER `"general-purpose"`.
+   ```
+   <<<TEMPLATE_START>>>
+   {paste the ENTIRE content of subagent-validate.md here — unmodified}
+   <<<TEMPLATE_END>>>
+
+   ## Data (appended by orchestrator)
+   ### IaC file paths
+   {list of generated files}
+   ### Self-review findings (from Steps 6–9)
+   {findings JSON}
+   ### prepare-plan.json
+   {full JSON}
+   ### prereq-output.json.warnings[]
+   {warnings array}
+   ### prereq-output.json.healthEndpoint
+   {detected health path string or null}
+   ### Session path
+   {.copilot-azure/sessions/{uuid}/}
+   ```
+   - **Expect:** `scaffold-manifest.json` with `validationResult`, deploy checklist generated
+   - Verify `deploy-checklist.md` exists (written at Step 5b) — if missing, create NOW from [`deploy-checklist-template.md`](../deploy/references/deploy-checklist-template.md). Verify `deploy-result.json` exists — if missing, create from [`deploy-schemas.ts`](../deploy/references/deploy-schemas.ts).
 
 ## Self-Healing Loop
 
-⛔ **You MUST read [`scaffold-healing-rules.md`](references/scaffold-healing-rules.md) when validation fails.** Covers healing escalation cadence (3 attempts → ask user → every 5), PLAN_LEVEL_CHANGE rules (service/region changes require re-approval), and artifact consistency requirements. Also read [self-healing.md](references/self-healing.md) for FIXABLE vs BLOCKING classification.
+On validation failure → read [`scaffold-healing-rules.md`](references/scaffold-healing-rules.md) (healing cadence, PLAN_LEVEL_CHANGE, artifact consistency). Do NOT pre-read.
 
 ## Error Handling
 
-⛔ **You MUST read [error-handling.md](references/error-handling.md) when any error occurs during scaffold** — it contains remediation procedures for missing plans, existing IaC conflicts, MCP failures, FLAGGED findings, and malformed session state.
+- **Missing `prepare-plan.json`:** trigger backfill via orchestrator.
+- **Existing IaC:** handled in DETECT Step 3.
+- **MCP unavailable:** fall back to reference patterns, flag as "unverified."
+- FLAGGED findings and healing exhaustion: see [scaffold-healing-rules.md](references/scaffold-healing-rules.md).

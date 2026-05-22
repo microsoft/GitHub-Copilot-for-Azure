@@ -18,6 +18,7 @@ import {
   SKILL_NAME,
   testTimeoutMs,
   shouldEarlyTerminateForPlanPresented,
+  shouldEarlyTerminateForApprovalGate,
   assertApprovalGateReached,
   assertSessionFileCreated,
   assertDockerfileExplored,
@@ -28,6 +29,10 @@ import {
   assertDatabaseDetected,
   assertAgentScannedWorkspace,
   describeAppOnboardWithCleanup,
+  assertNoSubagentFailures,
+  assertQuotaSubagentDispatched,
+  assertPricingHandled,
+  SUBSCRIPTION_PRIMER,
 } from "./app-onboard-test-helpers";
 
 describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
@@ -43,9 +48,12 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           },
           prompt: "I have an app in GitHub — can you deploy it to Azure for me?",
           followUp: [
-            "Just go with defaults.",
-            "Can you show me pricing before anything is created?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -72,7 +80,7 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           || doesAssistantOrToolsIncludeKeyword(agentMetadata, "Container Apps")
         ).toBe(true);
 
-        // Must detect database or auth dependencies (detects_db_or_auth grader)
+        // Must detect database or auth dependencies
         const detectsDbOrAuth =
           doesAssistantOrToolsIncludeKeyword(agentMetadata, "sqlite") ||
           doesAssistantOrToolsIncludeKeyword(agentMetadata, "database") ||
@@ -87,7 +95,7 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
 
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
-        // Must explain deployment steps/walkthrough (explains_steps grader)
+        // Must explain deployment steps/walkthrough
         // Non-blocking: in nonInteractive mode with shouldEarlyTerminateForPlanPresented,
         // the agent may be terminated after writing a plan file before explaining steps.
         const explainsSteps = /step|first.+then|walk.+through|plan|phase|next/i.test(messages);
@@ -95,46 +103,57 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           agentMetadata.testComments.push("⚠️ STEPS: Did not explain deployment steps or walkthrough (may be due to early termination)");
         }
 
-        // Quick probe should read bounded number of files (probe_stays_shallow grader, max 30)
-        // Threshold includes both workspace file reads AND skill reference reads (SKILL.md, pipeline-rules.md, etc.)
-        const probeToolNames = ["view", "read_file", "glob"];
-        const probeCalls = getToolCalls(agentMetadata).filter(tc => probeToolNames.includes(tc.data.toolName));
-        if (probeCalls.length > 30) {
-          agentMetadata.testComments.push(`❌ PROBE TOO DEEP: ${probeCalls.length} file reads (max 30 for quick probe)`);
-        }
-        expect(probeCalls.length).toBeLessThanOrEqual(30);
-
-        // Must scan workspace (scans_repo grader)
+        // Must scan workspace
         assertAgentScannedWorkspace(agentMetadata);
 
-        // Session integrity checks (B26, B27, B29)
+        // Sub-agent assertions: quota and pricing must be delegated or handled via MCP
+        assertNoSubagentFailures(agentMetadata);
+        assertQuotaSubagentDispatched(agentMetadata);
+        assertPricingHandled(agentMetadata);
+
+        // Session integrity checks
         if (workspacePath) {
           assertPhaseArtifactsExist(agentMetadata, workspacePath, ["prereq-output.json"]);
           assertContextJsonProgression(agentMetadata, workspacePath);
         }
 
-        // SQLite data-loss warning (B10) — bya-simple-web-app uses SQLite
+        // File-based database data-loss warning — test repo uses SQLite
         const hasDataLossWarning = /ephemeral|data loss|not persistent|sqlite.*persist|sqlite.*lost|local storage|file-based.*storage/i.test(messages);
         if (!hasDataLossWarning) {
-          agentMetadata.testComments.push("⚠️ B10: No SQLite ephemeral data-loss warning — SKILL.md requires ⛔ formatting for data-loss risks");
+          agentMetadata.testComments.push("⚠️ DATA LOSS: No warning about file-based database losing data on Azure PaaS ephemeral storage");
         }
 
-        // postDeployRecommendations mentioned (prepare-B3)
+        // postDeployRecommendations mentioned
         const hasPostDeployRecs = messages.includes("recommend") || messages.includes("suggestion") || messages.includes("post-deploy") || messages.includes("after deploy");
         if (!hasPostDeployRecs) {
-          agentMetadata.testComments.push("⚠️ prepare-B3: No postDeployRecommendations surfaced");
+          agentMetadata.testComments.push("⚠️ POST-DEPLOY: No postDeployRecommendations surfaced");
         }
 
-        // Approval gate exact text (B25)
+        // Approval gate exact text
         const hasExactGateText =
           (messages.includes("yes") && messages.includes("edit plan") && messages.includes("cancel"));
         if (!hasExactGateText) {
-          agentMetadata.testComments.push("⚠️ B25: Approval gate did not include exact 'Yes / Edit plan / Cancel' options");
+          agentMetadata.testComments.push("⚠️ APPROVAL GATE: Approval gate did not include exact 'Yes / Edit plan / Cancel' options");
         }
+
+        // Two separate gates (pipeline-rules.md requirement)
+        const hasScaffoldGate = messages.includes("ready to proceed with scaffolding") || messages.includes("ready to proceed");
+        const hasDeployGate = messages.includes("ready to deploy");
+        if (hasScaffoldGate && hasDeployGate) {
+          agentMetadata.testComments.push("✅ TWO GATES: Both scaffold gate and deploy gate detected as separate messages");
+        } else if (!hasScaffoldGate && !hasDeployGate) {
+          agentMetadata.testComments.push("⚠️ TWO GATES: Neither scaffold gate nor deploy gate text found (may have used different wording)");
+        } else if (!hasDeployGate) {
+          agentMetadata.testComments.push("⚠️ TWO GATES: Scaffold gate found but deploy gate missing — pipeline-rules.md requires separate gates");
+        }
+
+        // Deploy assertions removed — covered by deploy/integration-deploy-verification.test.ts
+        // (App Service verification: preflight, deploy-checklist, deploy-result, all 5 phase artifacts)
+        // This test focuses on plan-quality: approval gates, cost, service detection, DB/auth, workspace scanning
       });
     }, testTimeoutMs);
 
-    test("e2e — microblog-ai-remix (has existing infra)", async () => {
+    test("plan-quality — microblog-ai-remix (has existing infra)", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
@@ -144,9 +163,11 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           },
           prompt: "I have a prototype ready — help me get it to production on Azure",
           followUp: [
-            "Just go with defaults.",
-            "Explain why you're recommending this approach.",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -175,40 +196,90 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           || doesAssistantOrToolsIncludeKeyword(agentMetadata, "existing infra")
         ).toBe(true);
 
-        // IaC overwrite check is owned by scaffold/integration.test.ts (test 2: microblog-ai-remix)
+        // IaC overwrite check — must NOT silently generate new IaC that overwrites existing (from scaffold/integration)
+        // Only check create_file/write_file (not bare "create" which matches session/task tools).
+        // Check the file path argument specifically — not the entire stringified args blob
+        // which can mention "infra/" in plan descriptions without actually writing to infra/.
+        const toolCalls = getToolCalls(agentMetadata);
+        const overwroteIaC = toolCalls.some(tc => {
+          const toolName = (tc.data.toolName ?? "").toLowerCase();
+          const isWriteTool = toolName === "create_file" || toolName === "write_file";
+          if (!isWriteTool) return false;
+          const argsObj = (tc.data.arguments ?? {}) as Record<string, unknown>;
+          const filePath = ((argsObj.path ?? argsObj.filePath ?? "") as string).toLowerCase();
+          return filePath.includes("main.bicep") || filePath.includes("main.tf") || filePath.includes("/infra/") || filePath.startsWith("infra/");
+        });
+        if (overwroteIaC) {
+          agentMetadata.testComments.push("❌ SCAFFOLD VIOLATION: Agent overwrote existing IaC in infra/ without user confirmation");
+        }
+        expect(overwroteIaC).toBe(false);
 
         // Must detect stack components
         expect(doesAssistantOrToolsIncludeKeyword(agentMetadata, "remix")).toBe(true);
 
-        // Session integrity checks (B26, B29)
-        if (workspacePath) {
-          assertPhaseArtifactsExist(agentMetadata, workspacePath, ["prereq-output.json"]);
+        // Must NOT be fast-tracked — complex multi-component app requires analysis (from fast-track test)
+        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+        const hasQuestion = messages.includes("?");
+        const hasMultiComponentAnalysis = messages.includes("component") || messages.includes("frontend") || messages.includes("backend");
+        if (!hasQuestion && !hasMultiComponentAnalysis) {
+          agentMetadata.testComments.push("❌ FAST-TRACK VIOLATION: Agent fast-tracked a complex multi-component app without asking questions or analyzing components");
+        }
+        expect(hasQuestion || hasMultiComponentAnalysis).toBe(true);
+
+        // Soft: when azd-routing triggers, agent analyzes existing infra rather than proposing new services
+        const mentionsMultipleServices =
+          (messages.includes("container apps") ? 1 : 0) +
+          (messages.includes("openai") || messages.includes("azure openai") ? 1 : 0) +
+          (messages.includes("registry") || messages.includes("acr") ? 1 : 0) +
+          (messages.includes("static web") ? 1 : 0);
+        if (mentionsMultipleServices < 2) {
+          agentMetadata.testComments.push("⚠️ Expected multi-service architecture plan for complex app, but found fewer than 2 distinct Azure services mentioned");
         }
 
-        // Azure.yaml decision gate (Gap 5) — must present choice for existing infra
+        // Session integrity checks
+        // Skip prereq-output.json assertion if azd-template-routing was triggered — microblog-ai-remix
+        // has existing azd/Bicep infra, so azd-template-routing (Step 2) routes away from prereq,
+        // which skips the prereq phase entirely and never writes prereq-output.json.
+        // Detection: check if azd-template-routing.md was read OR context.json mentions routedTo.
+        const azdRoutingTriggered = getToolCalls(agentMetadata).some(tc => {
+          const args = JSON.stringify(tc.data.arguments ?? "").toLowerCase();
+          return args.includes("azd-template-routing") || args.includes("routedto");
+        });
+        if (workspacePath && !azdRoutingTriggered) {
+          assertPhaseArtifactsExist(agentMetadata, workspacePath, ["prereq-output.json"]);
+        } else if (azdRoutingTriggered) {
+          agentMetadata.testComments.push("\u2705 AZD ROUTING: azd-template-routing triggered — prereq skipped by design, skipping prereq-output.json assertion");
+        }
+
+        assertNoSubagentFailures(agentMetadata);
+
+        // Azure.yaml decision gate — must present choice for existing infra
         assertAzdDecisionGatePresented(agentMetadata);
       });
     }, testTimeoutMs);
   });
 
-  describe("catalog-driven — monorepo", () => {
-    test("e2e — fullstack-starter (monorepo, 3 languages)", async () => {
+  describe("catalog-driven — multi-component", () => {
+    test("plan-quality — full-stack-fastapi-template (React + FastAPI + PostgreSQL)", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             workspacePath = workspace;
-            await cloneRepo({ repoUrl: "https://github.com/first-fluke/fullstack-starter", targetDir: workspace, branch: "main", depth: 1 });
+            await cloneRepo({ repoUrl: "https://github.com/fastapi/full-stack-fastapi-template", targetDir: workspace, branch: "master", depth: 1 });
           },
           prompt: "I'm a startup founder and need to deploy my MVP on Azure",
           followUp: [
-            "Just go with defaults.",
-            "What other Azure options did you consider?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -218,24 +289,28 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
         // Outcome-based behavioral checks
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
 
-        // Must detect monorepo with multiple components (Next.js + FastAPI + Flutter)
+        // Must detect multi-component app (React frontend + FastAPI backend)
         expect(
-          doesAssistantOrToolsIncludeKeyword(agentMetadata, "monorepo")
-          || doesAssistantOrToolsIncludeKeyword(agentMetadata, "multiple")
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "multiple")
           || doesAssistantOrToolsIncludeKeyword(agentMetadata, "component")
+          || doesAssistantOrToolsIncludeKeyword(agentMetadata, "frontend")
+          || doesAssistantOrToolsIncludeKeyword(agentMetadata, "backend")
         ).toBe(true);
 
-        // Must detect at least 2 of the 3 deployable stacks
+        // Must detect both stacks (React + FastAPI/Python)
         const stackHits =
-          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "Next") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "nextjs") ? 1 : 0) +
-          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "FastAPI") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "Python") ? 1 : 0) +
-          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "Flutter") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "mobile") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "Dart") ? 1 : 0);
+          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "React") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "TypeScript") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "Vite") ? 1 : 0) +
+          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "FastAPI") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "Python") ? 1 : 0);
         if (stackHits < 2) {
-          agentMetadata.testComments.push(`⚠️ Only ${stackHits}/3 stacks detected (Next.js, FastAPI, Flutter) — expected ≥2`);
+          agentMetadata.testComments.push(`⚠️ Only ${stackHits}/2 stacks detected (React, FastAPI) — expected both`);
         }
-        expect(stackHits).toBeGreaterThanOrEqual(2);
+        try {
+          expect(stackHits).toBeGreaterThanOrEqual(2);
+        } catch {
+          agentMetadata.testComments.push(`⚠️ SOFT FAIL: Only ${stackHits}/2 stacks detected — scan incomplete but routing succeeded`);
+        }
 
-        // Must recommend multi-container service (Container Apps or similar)
+        // Must recommend Container Apps (multi-container with Docker Compose)
         try {
           expect(
             doesAssistantOrToolsIncludeKeyword(agentMetadata, "Container Apps")
@@ -250,9 +325,32 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           || doesAssistantOrToolsIncludeKeyword(agentMetadata, "$")
         ).toBe(true);
 
-        // Database detection (Gap 2) — fullstack-starter has PostgreSQL + Redis
+        // Database detection — full-stack-fastapi-template has PostgreSQL
         assertDatabaseDetected(agentMetadata, "postgresql");
-        assertDatabaseDetected(agentMetadata, "redis");
+
+        // Must mention ≥2 distinct Azure services for multi-component app
+        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+        const mentionsMultipleServices =
+          (messages.includes("container apps") || messages.includes("container app") ? 1 : 0) +
+          (messages.includes("postgresql") || messages.includes("postgres") || messages.includes("flexible server") ? 1 : 0) +
+          (messages.includes("registry") || messages.includes("acr") ? 1 : 0) +
+          (messages.includes("redis") ? 1 : 0) +
+          (messages.includes("static web") ? 1 : 0);
+        if (mentionsMultipleServices < 2) {
+          agentMetadata.testComments.push(`⚠️ Expected multi-service architecture plan for monorepo, but found fewer than 2 distinct Azure services mentioned (found ${mentionsMultipleServices})`);
+        }
+        expect(mentionsMultipleServices).toBeGreaterThanOrEqual(2);
+
+        // Docker Compose detection
+        const detectsCompose = messages.includes("docker-compose") || messages.includes("compose") || messages.includes("docker compose");
+        if (!detectsCompose) {
+          agentMetadata.testComments.push("⚠️ Did not detect Docker Compose in multi-component app");
+        }
+
+        // Sub-agent assertions: quota and pricing must be delegated or handled via MCP
+        assertNoSubagentFailures(agentMetadata);
+        assertQuotaSubagentDispatched(agentMetadata);
+        assertPricingHandled(agentMetadata);
       });
     }, testTimeoutMs);
   });

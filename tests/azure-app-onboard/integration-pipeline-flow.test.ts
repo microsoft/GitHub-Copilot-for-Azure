@@ -8,7 +8,7 @@
  * Deploy-specific tests (handoff) moved to deploy/integration-handoff.test.ts
  * Scaffold-specific tests (IaC override) moved to scaffold/integration-override.test.ts
  *
- * Covers: Gap 4, Gap 5, SKILL.md error handling.
+ * Covers: session resumption, intent stall handling, SKILL.md error handling.
  */
 
 import {
@@ -24,8 +24,11 @@ import {
   testTimeoutMs,
   shouldEarlyTerminateForPlanPresented,
   shouldEarlyTerminateOnRoutingFailure,
+  shouldEarlyTerminateOnPrereqComplete,
   assertSessionFileCreated,
-  readSessionArtifact,
+  assertPhaseArtifactsExist,
+  assertAgentScannedWorkspace,
+  SUBSCRIPTION_PRIMER,
 } from "./app-onboard-test-helpers";
 import * as fs from "fs";
 import * as path from "path";
@@ -66,10 +69,10 @@ describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
                 { type: "App Service", sku: "B1 Linux", estimatedMonthlyUsd: 12.41 },
               ],
               naming: {
-                resourceGroupName: "rg-bya-simple-web-app-abc123",
+                resourceGroupName: "rg-test-app-abc123",
                 suffix: "abc123",
-                resourcePrefix: "bya",
-                resources: [{ type: "App Service Plan", name: "plan-bya-abc123" }, { type: "App Service", name: "app-bya-abc123" }],
+                resourcePrefix: "test",
+                resources: [{ type: "App Service Plan", name: "plan-test-abc123" }, { type: "App Service", name: "app-test-abc123" }],
               },
               costEstimate: { totalMonthlyUsd: 12.41, assumptions: ["B1 Linux, 730 hrs/mo"] },
               iacFormat: "bicep",
@@ -77,15 +80,23 @@ describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
               postDeployRecommendations: ["Enable Application Insights", "Configure custom domain"],
             }, null, 2));
           },
-          prompt: "Continue deploying my app — I already have a plan ready.",
+          prompt: "Continue with the Azure App Onboard pipeline — I already have a plan ready.",
           followUp: [
-            "Yes, use the existing plan.",
-            "No, don't deploy. Just generate the infrastructure code.",
+            SUBSCRIPTION_PRIMER,
+            "Yes, proceed.",
+            "Yes, continue.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
           shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
         });
+
+        // Guard: if no assistant messages at all, the SDK hung (agent never responded)
+        const allMessages = getAllAssistantMessages(agentMetadata);
+        if (allMessages.length === 0) {
+          agentMetadata.testComments.push("⚠️ SESSION RESUMPTION: Agent never responded — SDK hang on pre-seeded session. Skipping assertions.");
+          return;
+        }
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         // Routing may vary — agent might handle "continue" without invoking the skill
@@ -94,34 +105,37 @@ describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
           return;
         }
 
-        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+        const messages = allMessages.toLowerCase();
 
-        // Soft: should detect existing session artifacts
+        // Hard: must detect existing session artifacts (SKILL.md session resumption rule)
         const detectsSession =
           messages.includes("existing") || messages.includes("previous") ||
           messages.includes("resume") || messages.includes("continue") ||
           messages.includes("session") || messages.includes("plan");
         if (!detectsSession) {
-          agentMetadata.testComments.push("⚠️ SESSION RESUMPTION: Agent did not acknowledge existing session/plan");
+          agentMetadata.testComments.push("\u274c SESSION RESUMPTION: Agent did not acknowledge existing session/plan");
         }
+        expect(detectsSession).toBe(true);
 
-        // Soft: should NOT re-run prereq scan (already completed)
+        // Hard: must NOT re-run prereq scan (already completed)
         const reRunsPrereq =
           messages.includes("scanning your code") ||
           messages.includes("prerequisite scan") ||
           messages.includes("checking readiness");
         if (reRunsPrereq) {
-          agentMetadata.testComments.push("⚠️ SESSION RESUMPTION: Agent re-ran prereq scan — should have skipped (completedPhases includes prereq)");
+          agentMetadata.testComments.push("❌ SESSION RESUMPTION: Agent re-ran prereq scan — SKILL.md says skip if completedPhases includes prereq");
         }
+        expect(reRunsPrereq).toBe(false);
 
-        // Soft: should reference the prepare plan or move to scaffold
+        // Hard: must reference the prepare plan or move to scaffold
         const referencesplanOrScaffold =
           messages.includes("prepare-plan") || messages.includes("scaffold") ||
           messages.includes("bicep") || messages.includes("infrastructure") ||
           messages.includes("b1") || messages.includes("app service");
         if (!referencesplanOrScaffold) {
-          agentMetadata.testComments.push("⚠️ SESSION RESUMPTION: Agent did not reference existing plan or move to scaffold");
+          agentMetadata.testComments.push("❌ SESSION RESUMPTION: Agent did not reference existing plan or move to scaffold");
         }
+        expect(referencesplanOrScaffold).toBe(true);
 
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
@@ -134,6 +148,7 @@ describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
         const agentMetadata = await agent.run({
           prompt: "I want to do something with Azure",
           followUp: [
+            SUBSCRIPTION_PRIMER,
             "I don't know, just something.",
             "I'm not sure what I need.",
             "Whatever you think is best.",
@@ -167,6 +182,73 @@ describeAppOnboardWithCleanup("Pipeline Flow Tests", (agent) => {
         } else {
           // Acceptable — very vague prompt may not route to app-onboard
           agentMetadata.testComments.push("ℹ️ INTENT STALL: Skill not invoked — vague prompt did not route to app-onboard (acceptable)");
+        }
+      });
+    }, testTimeoutMs);
+  });
+
+  describe("zero-code-path", () => {
+    test("empty workspace triggers zero-code scaffolding → prereq scan", async () => {
+      await withTestResult(async () => {
+        let workspacePath = "";
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+            // Empty workspace — triggers zero-code path (no app files to scan)
+            fs.mkdirSync(workspace, { recursive: true });
+          },
+          prompt: "I want to build a task management app where teams can create projects and assign tasks",
+          followUp: [
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+          ],
+          nonInteractive: true,
+          preserveWorkspace: true,
+          // Zero-code path: scaffold starter code FIRST, then prereq. Don't use
+          // shouldEarlyTerminateForPlanPresented — it fires on plan-file writes during
+          // scaffolding, killing the session before prereq runs.
+          shouldEarlyTerminate: (metadata) =>
+            shouldEarlyTerminateOnPrereqComplete(metadata, SKILL_NAME),
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+
+        // Routing may vary for zero-code — accept if skill invoked
+        if (!isSkillInvoked(agentMetadata, SKILL_NAME)) {
+          agentMetadata.testComments.push("⚠️ ZERO-CODE: Skill not invoked — prompt may have routed elsewhere");
+          return;
+        }
+
+        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+
+        // Hard: must ask about app type or detect from prompt
+        const asksOrDetects =
+          messages.includes("task management") || messages.includes("what kind") ||
+          messages.includes("what are you building") || messages.includes("node") ||
+          messages.includes("express") || messages.includes("scaffold");
+        if (!asksOrDetects) {
+          agentMetadata.testComments.push("❌ ZERO-CODE: Agent did not ask about app type or detect from prompt");
+        }
+        expect(asksOrDetects).toBe(true);
+
+        // Hard: must create session
+        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
+
+        // Soft: should scan workspace after scaffolding starter code
+        assertAgentScannedWorkspace(agentMetadata);
+
+        // Soft: prereq-output.json should be written if pipeline progressed past zero-code scaffold.
+        // The zero-code path may not reach prereq within the test budget, so use a soft check.
+        if (workspacePath) {
+          try {
+            assertPhaseArtifactsExist(agentMetadata, workspacePath, ["prereq-output.json"]);
+          } catch {
+            agentMetadata.testComments.push("⚠️ ZERO-CODE: prereq-output.json not written — zero-code path may not reach prereq in test budget");
+          }
         }
       });
     }, testTimeoutMs);
