@@ -48,13 +48,13 @@ const testConfigs = {
   },
   unit: {
     description: "unit tests",
-    jestArgs: ["--testPathIgnorePatterns=\"node_modules|_template|integration\""]
+    jestArgs: ["--testPathIgnorePatterns=\"node_modules|_template|integration|fixtures\""]
   },
   integration: {
     description: "integration tests",
     jestArgs: [
       "--testMatch=**/*integration*.ts",
-      "--testPathIgnorePatterns=\"node_modules|_template\""
+      "--testPathIgnorePatterns=\"node_modules|_template|fixtures\""
     ],
     optionalPattern: true
   },
@@ -64,7 +64,7 @@ const testConfigs = {
   },
   coverage: {
     description: "tests with coverage",
-    jestArgs: ["--coverage", "--testPathIgnorePatterns=\"node_modules|_template|integration\""]
+    jestArgs: ["--coverage", "--testPathIgnorePatterns=\"node_modules|_template|integration|fixtures\""]
   },
   ci: {
     description: "tests in CI mode",
@@ -72,7 +72,7 @@ const testConfigs = {
       "--ci",
       "--reporters=default",
       "--reporters=jest-junit",
-      "--testPathIgnorePatterns=\"node_modules|_template|integration\""
+      "--testPathIgnorePatterns=\"node_modules|_template|integration|fixtures\""
     ]
   },
   watch: {
