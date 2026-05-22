@@ -1,4 +1,4 @@
-# Evaluation Datasets — Trace-to-Dataset Pipeline & Lifecycle Management
+# Evaluation Datasets -- Trace-to-Dataset Pipeline & Lifecycle Management
 
 Manage the full lifecycle of evaluation datasets for a Foundry agent: harvesting production traces into the selected agent root's local `.foundry` cache, curating versioned test datasets, tracking evaluation quality over time, and syncing approved updates back to Foundry when needed.
 
@@ -6,9 +6,9 @@ Manage the full lifecycle of evaluation datasets for a Foundry agent: harvesting
 
 USE FOR: create dataset from traces, harvest traces into dataset, build test dataset, dataset versioning, version my dataset, tag dataset, pin dataset version, organize datasets, dataset splits, curate test cases, review trace candidates, evaluation trending, metrics over time, eval regression, regression detection, compare evaluations over time, dataset comparison, evaluation lineage, trace to dataset pipeline, annotation review, production traces to test cases.
 
-> ⚠️ **DO NOT manually run** KQL queries to extract datasets or call `evaluation_dataset_create` **without reading this skill first.** This skill defines the correct trace extraction patterns, schema transformation, cache rules, versioning conventions, and quality gates that raw tools do not enforce.
+> **Warning:** Do not run KQL queries or call `evaluation_dataset_create` without reading this skill first -- it defines required trace extraction patterns, schema transforms, cache rules, and quality gates.
 
-> 💡 **Tip:** This skill complements the [observe skill](../observe/observe.md) (eval-driven optimization loop) and the [trace skill](../trace/trace.md) (production trace analysis). Use this skill when you need to bridge traces and evaluations: turning production data into test cases and tracking evaluation quality over time.
+> **Tip:** Complements the [observe skill](../observe/observe.md) (eval-driven optimization) and the [trace skill](../trace/trace.md) (trace analysis). Use when bridging traces and evaluations.
 
 ## Quick Reference
 
@@ -20,6 +20,7 @@ USE FOR: create dataset from traces, harvest traces into dataset, build test dat
 | Azure services | Application Insights (via `monitor_resource_log_query`), Azure Blob Storage (dataset sync) |
 | Prerequisites | Agent deployed, selected `.foundry/agent-metadata*.yaml` file available, App Insights connected |
 | Local cache | `.foundry/datasets/`, `.foundry/results/`, `.foundry/evaluators/` |
+| Workspace standard | See [.foundry Workspace Standard](../../references/foundry-workspace.md) for layout, agent types, and setup references |
 
 ## Entry Points
 
@@ -36,7 +37,7 @@ USE FOR: create dataset from traces, harvest traces into dataset, build test dat
 | "Trace my evaluation lineage" / "Audit eval history" | [Eval Lineage](references/eval-lineage.md) |
 | "Generate eval dataset" / "Create seed dataset" / "Generate test cases for my agent" | [Generate Seed Dataset](references/generate-seed-dataset.md) |
 
-## Before Starting — Detect Current State
+## Before Starting -- Detect Current State
 
 1. Resolve the target agent root, selected metadata file, and environment from `.foundry/agent-metadata*.yaml`.
 2. Confirm the selected environment's `projectEndpoint`, `agentName`, and observability settings.
@@ -77,27 +78,7 @@ Each cycle makes the test suite harder and more representative. Production failu
 
 ## Dataset Naming and Metadata Conventions
 
-| Dataset type | Foundry dataset name | Foundry dataset version | Typical local file | Metadata stage |
-|--------------|----------------------|-------------------------|--------------------|----------------|
-| Seed dataset | `<agent-name>-eval-seed` | `v1` | `.foundry/datasets/<agent-name>-eval-seed-v1.jsonl` | `seed` |
-| Trace-harvested dataset | `<agent-name>-traces` | `v<N>` | `.foundry/datasets/<agent-name>-traces-v<N>.jsonl` | `traces` |
-| Curated/refined dataset | `<agent-name>-curated` | `v<N>` | `.foundry/datasets/<agent-name>-curated-v<N>.jsonl` | `curated` |
-| Production-ready dataset | `<agent-name>-prod` | `v<N>` | `.foundry/datasets/<agent-name>-prod-v<N>.jsonl` | `prod` |
-
-Here `<agent-name>` means the selected environment's `environments.<env>.agentName` from the selected metadata file. If that deployed agent name already includes the environment (for example, `support-agent-dev`), do **not** append the environment key a second time.
-
-Local dataset filenames must start with the selected Foundry agent name (`environments.<env>.agentName` in the selected metadata file). Put stage and version suffixes **after** that prefix so cache files sort and group by agent first.
-
-Keep the Foundry dataset name stable across versions. Store the version only in `datasetVersion` (or manifest `version`) using the `v<N>` format, while local filenames keep the `-v<N>` suffix for cache readability.
-
-Required metadata to track with every registered dataset:
-
-- `agent`: the agent name (for example, `hosted-agent-051-001`)
-- `stage`: `seed`, `traces`, `curated`, or `prod`
-- `version`: version string such as `v1`, `v2`, or `v3`
-- `datasetUri`: always persist the Foundry dataset URI in the selected metadata file alongside the local `datasetFile`, dataset name, and version
-
-> 💡 **Tip:** `evaluation_dataset_create` does not expose a first-class `tags` parameter in the current MCP surface. Persist `agent`, `stage`, and `version` in local metadata (the selected metadata file plus `.foundry/datasets/manifest.json`) so Foundry-side references stay aligned with the cache.
+Follow the [Dataset Naming and Metadata Conventions](references/dataset-naming.md) for naming patterns, versioning, local filename rules, and required metadata fields.
 
 ## Related Skills
 
