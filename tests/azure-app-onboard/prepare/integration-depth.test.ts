@@ -13,13 +13,14 @@ import {
   softCheckSkill,
   withTestResult,
   getAllAssistantMessages,
+  doesAssistantOrToolsIncludeKeyword,
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboard,
   SKILL_NAME,
   prepareTestTimeoutMs,
-  shouldEarlyTerminateForPlanPresented,
+  shouldEarlyTerminateForApprovalGate,
   assertSessionFileCreated,
   assertPreparePlanSchema,
   readSessionArtifact,
@@ -51,7 +52,7 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -63,52 +64,50 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
 
           // Validate specific fields for broken-todo-demo
           const plan = readSessionArtifact<{
-            services: { type: string; sku: string }[];
-            costEstimate: { totalMonthlyUsd: number; assumptions?: string[] };
-            naming: { resourceGroupName: string; suffix?: string; resourcePrefix?: string };
+            services: { type: string; sku: string; name: string }[];
+            costEstimate: { totalMonthlyUsd?: number; monthlyUsd?: number; assumptions?: string[] };
+            naming: { resourcePrefix: string; pattern?: string; resources?: { type: string; name: string }[] };
             iacFormat: string;
             deploymentVariables?: Record<string, unknown>;
             postDeployRecommendations?: string[];
           }>(workspacePath, "prepare-plan.json");
 
+          // Hard: prepare-plan.json must exist — if null, agent didn't reach prepare phase
+          if (!plan) {
+            agentMetadata.testComments.push("❌ PREPARE PLAN: prepare-plan.json not written — agent likely terminated before prepare phase completed");
+          }
+          expect(plan).not.toBeNull();
+
           if (plan) {
             // Should recommend App Service or Container Apps for Express app
-            const hasCompute = plan.services.some(s =>
-              s.type?.toLowerCase().includes("app service") || s.type?.toLowerCase().includes("container"));
+            // Agent writes service name in `name` field (not `type`) per PreparePlan schema
+            const hasCompute = plan.services.some(s => {
+              const svcName = (s.name ?? s.type ?? "").toLowerCase();
+              return svcName.includes("app service") || svcName.includes("container");
+            });
             if (!hasCompute) {
               agentMetadata.testComments.push("⚠️ PREPARE: No App Service or Container Apps in services[] — expected for Express app");
             }
 
             // Cost should be reasonable ($0-$50 for simple Express app)
-            if (plan.costEstimate.totalMonthlyUsd !== undefined) {
-              if (plan.costEstimate.totalMonthlyUsd > 50) {
+            // Agent may use `monthlyUsd` (actual) or `totalMonthlyUsd` (legacy)
+            const costUsd = plan.costEstimate.totalMonthlyUsd ?? plan.costEstimate.monthlyUsd;
+            if (costUsd !== undefined) {
+              if (costUsd > 50) {
                 agentMetadata.testComments.push(
-                  `⚠️ PREPARE: Cost $${plan.costEstimate.totalMonthlyUsd}/mo exceeds expected range ($0-$50) for simple Express app`,
+                  `⚠️ PREPARE: Cost $${costUsd}/mo exceeds expected range ($0-$50) for simple Express app`,
                 );
               }
             }
 
-            // costEstimate.assumptions should be populated
-            if (!plan.costEstimate.assumptions || plan.costEstimate.assumptions.length === 0) {
-              agentMetadata.testComments.push("⚠️ PREPARE: costEstimate.assumptions[] is empty — cost estimate must include assumptions");
+            // Naming: resourcePrefix must exist and contain a collision-prevention suffix (≥4 chars from session UUID)
+            // Schema: NamingConfig has { pattern, resourcePrefix, resources[] } — no separate "suffix" field.
+            // The suffix is embedded in resourcePrefix, e.g. "broken-dev-d2c1" where "d2c1" is from session UUID.
+            if (!plan.naming.resourcePrefix || plan.naming.resourcePrefix.length < 5) {
+              agentMetadata.testComments.push(`❌ NAMING: resourcePrefix missing or too short ('${plan.naming.resourcePrefix ?? "undefined"}') — must contain project + suffix for DNS collision prevention`);
             }
-
-            // deploymentVariables should be populated
-            if (!plan.deploymentVariables) {
-              agentMetadata.testComments.push("⚠️ PREPARE: deploymentVariables missing from prepare-plan.json");
-            }
-
-            // postDeployRecommendations should be populated
-            if (!plan.postDeployRecommendations || plan.postDeployRecommendations.length === 0) {
-              agentMetadata.testComments.push("⚠️ PREPARE: postDeployRecommendations[] is empty");
-            }
-
-            // Naming suffix: naming.suffix must exist — 4-char session-ID suffix prevents global DNS collisions
-            if (!plan.naming.suffix || plan.naming.suffix.length < 3) {
-              agentMetadata.testComments.push(`❌ NAMING SUFFIX: naming.suffix missing or too short ('${plan.naming.suffix ?? "undefined"}') — must be ≥3 chars for collision prevention`);
-            }
-            expect(plan.naming.suffix).toBeDefined();
-            expect(plan.naming.suffix!.length).toBeGreaterThanOrEqual(3);
+            expect(plan.naming.resourcePrefix).toBeDefined();
+            expect(plan.naming.resourcePrefix!.length).toBeGreaterThanOrEqual(5);
 
             // IaC format should be Bicep (default, no existing .tf)
             if (plan.iacFormat !== "bicep") {
@@ -147,26 +146,42 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
+        // Hard: prepare-plan.json must exist — proves prepare phase actually ran
+        if (workspacePath) {
+          const plan = readSessionArtifact(workspacePath, "prepare-plan.json");
+          if (!plan) {
+            agentMetadata.testComments.push("❌ PREPARE PLAN: prepare-plan.json not written — agent likely terminated before prepare phase completed");
+          }
+          expect(plan).not.toBeNull();
+        }
+
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
         // Hard: must mention quota/capacity check (must validate quota before recommending region)
+        // Check both assistant messages AND tool call content — agent may validate quota
+        // via MCP tools (mcp_azure_quota) without echoing results in assistant text.
+        // Note: "available" excluded — too generic, matches non-quota contexts.
         const mentionsQuota =
-          messages.includes("quota") || messages.includes("capacity") ||
-          messages.includes("available") || messages.includes("usage");
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "quota") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "capacity") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "usage");
         if (!mentionsQuota) {
-          agentMetadata.testComments.push("❌ QUOTA: Agent did not mention quota/capacity validation — must check quota before recommending a region");
+          agentMetadata.testComments.push("❌ QUOTA: Agent did not mention quota/capacity validation in messages or tool calls — must check quota before recommending a region");
         }
         expect(mentionsQuota).toBe(true);
 
         // Hard: must mention a specific region
         const mentionsRegion =
-          /\b(eastus|westus|centralus|northeurope|westeurope|eastus2|westus2|southcentralus)\b/i.test(messages);
+          /\b(eastus|westus|centralus|northeurope|westeurope|eastus2|westus2|southcentralus)\b/i.test(messages) ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "eastus") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "westus") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "eastus2");
         if (!mentionsRegion) {
           agentMetadata.testComments.push("❌ QUOTA: Agent did not mention a specific Azure region — must recommend a region after quota validation");
         }

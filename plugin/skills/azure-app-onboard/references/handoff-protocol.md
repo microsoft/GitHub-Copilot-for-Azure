@@ -78,6 +78,8 @@ Include this in the chat handoff AND in `deployment-summary.md`.
 
 > ⛔ **Skill-based next steps are MANDATORY.** Always suggest at minimum `azure-compliance` and `azure-resource-visualizer`. Evaluate every condition below.
 
+> ⛔ **Suggest only — do NOT invoke.** Present skill names as suggestions. Do NOT route to, execute, or offer to run them. The pipeline ends at handoff.
+
 | Condition | Suggest |
 |-----------|--------|
 | Always | **`azure-compliance`** — "Run a compliance scan on your deployed resources" |

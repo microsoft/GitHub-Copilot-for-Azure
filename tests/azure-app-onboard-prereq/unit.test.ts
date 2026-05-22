@@ -158,12 +158,14 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       "cloud-sdk-migration.md",
       "completeness-check.md",
       "component-mapping.md",
+      "dependency-compatibility.md",
       "deployability-check.md",
       "prereq-artifacts.md",
       "readiness-gate.md",
       "remediation-protocol.md",
       "session-protocol.md",
       "subagent-starter-scaffold.md",
+      "subscription-resolution.md",
       "zero-code-path.md",
     ];
 
@@ -225,6 +227,18 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       expect(skill.content).toContain("PASS");
       expect(skill.content).toContain("WARN");
       expect(skill.content).toContain("FAIL");
+    });
+  });
+
+  // ── MCP Tool References ───────────────────────────────────────
+
+  describe("MCP Tool References", () => {
+    test("references get_azure_bestpractices MCP tool", () => {
+      expect(skill.content).toContain("mcp_azure_mcp_get_azure_bestpractices");
+    });
+
+    test("references extension_cli_install MCP tool", () => {
+      expect(skill.content).toContain("mcp_azure_mcp_extension_cli_install");
     });
   });
 

@@ -39,7 +39,7 @@ import * as path from "path";
 
 const { describeIntegration } = setupIntegrationSuite();
 
-describeIntegration(`${SKILL_NAME} - Negative Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_negative - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("negative — bya-unsupported-web-app (migration)", async () => {

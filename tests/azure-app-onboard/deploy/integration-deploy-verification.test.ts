@@ -99,6 +99,7 @@ describeAppOnboardWithCleanup("Deploy Verification Tests", (agent) => {
             "prepare-plan.json",
             "scaffold-manifest.json",
             "deploy-result.json",
+            "deployment-summary.md",
           ]);
           assertContextJsonProgression(agentMetadata, workspacePath);
           assertSessionFileCreated(agentMetadata, workspacePath);
@@ -171,12 +172,9 @@ describeAppOnboardWithCleanup("Deploy Verification Tests", (agent) => {
         }
         expect(suggestsConfigZip).toBe(false);
 
-        const togglesScm =
-          shellCommandContains(agentMetadata, /basicpublishingcredentialpolicies.*(true|enable|allow)/i);
-        if (togglesScm) {
-          agentMetadata.testComments.push("❌ DEPLOY VIOLATION: Agent re-enabled SCM basic auth via shell command");
-        }
-        expect(togglesScm).toBe(false);
+        // SCM enable/disable lifecycle is already validated by assertScmBasicAuthDisabled above.
+        // The skill REQUIRES enabling SCM (allow:true) before zip deploy, then disabling after.
+        // Checking for "any SCM enable" as a violation here would contradict the required lifecycle.
 
         // ── No azd (from all) ──
         const usedAzd = shellCommandContains(agentMetadata, /azd\s+(up|provision|deploy)/i);

@@ -31,7 +31,7 @@ import type { ExpectedVerdicts } from "./prereq-test-helpers";
 
 const { describeIntegration } = setupIntegrationSuite();
 
-describeIntegration(`${SKILL_NAME} - Language Diversity Tests`, () => {
+describeIntegration(`${SKILL_NAME}_language-diversity - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("e2e — postgresql-event-sourcing (Java/Spring Boot + Kafka)", async () => {
@@ -222,7 +222,8 @@ describeIntegration(`${SKILL_NAME} - Language Diversity Tests`, () => {
 
       if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       if (workspacePath) {
-        const artifact = assertPrereqArtifactWritten(agentMetadata, workspacePath);
+        const expectedVerdicts: ExpectedVerdicts = { build: "PASS", completeness: "PASS", deployability: "FAIL" };
+        const artifact = assertPrereqArtifactWritten(agentMetadata, workspacePath, "blocked", expectedVerdicts);
         if (artifact && Array.isArray(artifact.components)) {
           agentMetadata.testComments.push(`✅ MULTI-COMPONENT: prereq-output.json has ${(artifact.components as unknown[]).length} components`);
           // Should detect at least 3 deployable components (Next.js + FastAPI + worker; Flutter is non-deployable)

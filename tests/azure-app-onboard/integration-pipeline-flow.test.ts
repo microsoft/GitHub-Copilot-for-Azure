@@ -6,7 +6,6 @@
  * - Intent stall → defaults — vague responses → proceed with assumptions
  *
  * Deploy-specific tests (handoff) moved to deploy/integration-handoff.test.ts
- * Scaffold-specific tests (IaC override) moved to scaffold/integration-override.test.ts
  *
  * Covers: session resumption, intent stall handling, SKILL.md error handling.
  */

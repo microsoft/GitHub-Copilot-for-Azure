@@ -87,8 +87,16 @@ export function assertNoForbiddenCommands(agentMetadata: AgentMetadata, allowPos
   for (const tc of toolCalls) {
     if (tc.data.toolName !== "powershell" && tc.data.toolName !== "bash" && tc.data.toolName !== "run_command" && tc.data.toolName !== "shell" && tc.data.toolName !== "terminal") continue;
     const cmd = ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "").toLowerCase();
+    // Strip file content (here-strings, quoted strings) so forbidden commands
+    // mentioned in written text (e.g. "run npm install to generate lockfile")
+    // don't false-positive — only match actual shell command invocations
+    const cmdExec = cmd
+      .replace(/@"[\s\S]*?"@/g, "")
+      .replace(/@'[\s\S]*?'@/g, "")
+      .replace(/"(?:[^"\\]|\\.)*"/g, "")
+      .replace(/'[^']*'/g, "");
     for (const forbidden of FORBIDDEN_COMMANDS) {
-      if (cmd.includes(forbidden)) {
+      if (cmdExec.includes(forbidden)) {
         violations.push(`${tc.data.toolName}: ${forbidden}`);
       }
     }

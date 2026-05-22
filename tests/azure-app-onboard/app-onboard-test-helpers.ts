@@ -329,12 +329,12 @@ export const DEPLOY_PHASE_PROMPT = "Use the azure-app-onboard skill to deploy my
 /**
  * Follow-ups for deploy-phase tests that resume from scaffold-complete.
  * Aligned with the deploy approval flow: subscription → confirm existing IaC → approve deploy.
+ * Keep minimal — extra "Yes." answers fuel post-deploy actions (azure-upgrade, config changes)
+ * that the agent self-initiates after the pipeline completes. shouldEarlyTerminate doesn't
+ * abort during sendAndWait follow-ups, so fewer follow-ups = less post-pipeline activity.
  */
 export const DEPLOY_PHASE_FOLLOW_UPS = [
   SUBSCRIPTION_PRIMER,
-  "Yes.",
-  "Yes.",
-  "Yes.",
   "Yes.",
   "Yes.",
   "Yes.",
@@ -541,9 +541,12 @@ export function shouldEarlyTerminateForPlanPresented(agentMetadata: AgentMetadat
   //   "Ready to proceed with scaffolding? (Yes / Edit plan / Cancel)"
   //   "Ready to deploy? (Yes / Run manually / Edit plan / Cancel)"
   // Also catches common variations the agent uses.
+  // IMPORTANT: "ready to deploy" alone is too broad — prereq readiness reports say
+  // "ready to deploy to Azure" (declarative, not a gate question). Require "?" suffix
+  // or gate options to distinguish the actual approval gate from prereq readiness text.
   const hasExplicitGate =
     messages.includes("ready to proceed") ||
-    messages.includes("ready to deploy") ||
+    messages.includes("ready to deploy?") ||
     messages.includes("shall i proceed") ||
     (messages.includes("yes") && messages.includes("edit plan") && messages.includes("cancel"));
 
@@ -570,13 +573,29 @@ export function shouldEarlyTerminateForPlanPresented(agentMetadata: AgentMetadat
   // IMPORTANT: prereq-output.json is EXCLUDED — it fires too early (before prereq completes)
   // and kills the agent before downstream artifact assertions can pass. Only trigger on
   // prepare-plan (post-prereq) and scaffold/deploy artifacts.
+  // ONLY match the exact session artifact file names — prepare-plan.json and scaffold-manifest.json.
+  // IMPORTANT: Only match tool calls that have COMPLETED (have a tool.execution_complete event),
+  // not just tool.execution_start. The shouldEarlyTerminate callback fires during the event stream —
+  // if we terminate on execution_start, the file write never completes and readSessionArtifact
+  // returns null (the file never hits disk). We need the write to finish first.
+  const completedToolCallIds = new Set(
+    agentMetadata.events
+      .filter(e => e.type === "tool.execution_complete")
+      .map(e => (e.data as { toolCallId?: string }).toolCallId)
+      .filter(Boolean),
+  );
   const hasPlanFileWrites = toolCalls.some(tc => {
     const toolName = (tc.data.toolName ?? "").toLowerCase();
-    const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
     const isWriteTool = toolName === "create_file" || toolName === "write_file" || toolName === "create";
-    return isWriteTool &&
-      (args.includes("prepare-plan") || args.includes("scaffold-manifest") ||
-       args.includes("assessment") || args.includes("migration-plan") || args.includes("plan.md") || args.includes("architecture-plan"));
+    if (!isWriteTool) return false;
+    // Only match if the write actually completed (file on disk)
+    if (!completedToolCallIds.has(tc.data.toolCallId)) return false;
+    const filePath = (
+      (tc.data.arguments as Record<string, unknown>)?.path ??
+      (tc.data.arguments as Record<string, unknown>)?.filePath ??
+      ""
+    ).toString().toLowerCase();
+    return filePath.includes("prepare-plan") || filePath.includes("scaffold-manifest");
   });
 
   if (hasExplicitGate || hasScaffoldOrDeploy || hasPlanFileWrites) {
@@ -586,7 +605,7 @@ export function shouldEarlyTerminateForPlanPresented(agentMetadata: AgentMetadat
     } else if (hasScaffoldOrDeploy) {
       comment = "⚠️ AppOnboard scaffold/deploy detected — agent skipped approval gate and started writing IaC or deploying. Terminating.";
     } else {
-      comment = "⚠️ AppOnboard plan file detected — agent wrote assessment/migration-plan to session directory. Terminating.";
+      comment = "✅ AppOnboard plan artifact written (prepare-plan.json or scaffold-manifest.json). Terminating before deployment.";
     }
     if (!agentMetadata.testComments.some(c => c === comment)) {
       agentMetadata.testComments.push(comment);
@@ -616,9 +635,11 @@ export function shouldEarlyTerminateForApprovalGate(agentMetadata: AgentMetadata
 
   const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
+  // IMPORTANT: "ready to deploy" alone is too broad — prereq readiness reports say
+  // "ready to deploy to Azure" (declarative). Require "?" or gate options to distinguish.
   const hasExplicitGate =
     messages.includes("ready to proceed") ||
-    messages.includes("ready to deploy") ||
+    messages.includes("ready to deploy?") ||
     messages.includes("shall i proceed") ||
     (messages.includes("yes") && messages.includes("edit plan") && messages.includes("cancel"));
 
@@ -675,7 +696,8 @@ export function assertDoesNotScaffoldOrDeploy(agentMetadata: AgentMetadata): voi
 
   // Deploy = actual shell command executing deploy infrastructure
   const hasDeployToolCalls = toolCalls.some(tc => {
-    if (tc.data.toolName !== "powershell" && tc.data.toolName !== "bash") return false;
+    const toolName = (tc.data.toolName ?? "").toLowerCase();
+    if (toolName !== "powershell" && toolName !== "bash" && toolName !== "run_in_terminal" && toolName !== "run_command") return false;
     const cmd = ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "").toLowerCase();
     return cmd.includes("azd up") || cmd.includes("azd provision") ||
       cmd.includes("az deployment") || cmd.includes("terraform apply");
@@ -683,8 +705,10 @@ export function assertDoesNotScaffoldOrDeploy(agentMetadata: AgentMetadata): voi
 
   // Scaffold = creating an actual IaC file (check path, not content)
   const hasScaffoldFileWrites = toolCalls.some(tc => {
-    if (tc.data.toolName !== "create_file" && tc.data.toolName !== "write_file") return false;
-    const filePath = ((tc.data.arguments as Record<string, unknown>)?.path as string ?? "").toLowerCase();
+    const toolName = (tc.data.toolName ?? "").toLowerCase();
+    if (toolName !== "create_file" && toolName !== "write_file" && toolName !== "create") return false;
+    const argsObj = tc.data.arguments as Record<string, unknown> | undefined;
+    const filePath = ((argsObj?.path ?? argsObj?.filePath ?? "") as string).toLowerCase();
     return filePath.endsWith(".tf") || filePath.endsWith(".bicep");
   });
 
@@ -734,8 +758,10 @@ export function shouldEarlyTerminateOnScaffoldOrDeploy(agentMetadata: AgentMetad
   });
 
   const hasIaCWrite = toolCalls.some(tc => {
-    if (tc.data.toolName !== "create_file" && tc.data.toolName !== "write_file") return false;
-    const filePath = ((tc.data.arguments as Record<string, unknown>)?.path as string ?? "").toLowerCase();
+    const toolName = (tc.data.toolName ?? "").toLowerCase();
+    if (toolName !== "create_file" && toolName !== "write_file" && toolName !== "create") return false;
+    const argsObj = tc.data.arguments as Record<string, unknown> | undefined;
+    const filePath = ((argsObj?.path ?? argsObj?.filePath ?? "") as string).toLowerCase();
     return filePath.endsWith(".tf") || filePath.endsWith(".bicep");
   });
 
@@ -1330,8 +1356,9 @@ export function shouldEarlyTerminateOnHandoff(metadata: AgentMetadata): boolean 
     const hasNextSteps = (messages.includes("next step") || messages.includes("post-deploy")) && messages.includes("recommend");
     const hasDeployIdentity = messages.includes("deployed by") || messages.includes("signed in as") ||
       (messages.includes("subscription") && (messages.includes("resource group") || messages.includes("region")));
-    const score = [hasCleanup, hasNextSteps, hasDeployIdentity].filter(Boolean).length;
-    return score >= 2;
+    const hasRedeploy = messages.includes("redeploy") || messages.includes("re-deploy") || messages.includes("deploy again") || messages.includes("push code");
+    const score = [hasCleanup, hasNextSteps, hasDeployIdentity, hasRedeploy].filter(Boolean).length;
+    return score >= 3;
   })(metadata);
 }
 
@@ -1417,7 +1444,8 @@ export function assertApprovalGateReachedHard(agentMetadata: AgentMetadata): voi
     messages.includes("ready to proceed") ||
     messages.includes("ready to deploy") ||
     messages.includes("shall i proceed") ||
-    (messages.includes("yes") && messages.includes("cancel") && (messages.includes("cost") || messages.includes("$")));
+    // pipeline-rules.md: scaffold gate = "Yes / Edit plan / Cancel", deploy gate = "Yes / Run manually / Edit plan / Cancel"
+    (messages.includes("yes") && messages.includes("cancel") && (messages.includes("cost") || messages.includes("$") || messages.includes("edit plan") || messages.includes("run manually")));
   if (!hasGate) {
     agentMetadata.testComments.push("❌ APPROVAL GATE NOT REACHED — agent did not present explicit approval prompt");
   }
@@ -1504,6 +1532,14 @@ export function assertHandoffPresented(agentMetadata: AgentMetadata): void {
   if (!hasCleanup) {
     agentMetadata.testComments.push("❌ HANDOFF: No cleanup commands provided — handoff must include cleanup commands");
   }
+  // handoff-protocol.md: Redeploy command is MANDATORY — user needs shortcut to redeploy after code changes
+  const hasRedeployCommand =
+    messages.includes("redeploy") || messages.includes("re-deploy") ||
+    (messages.includes("after code changes") && (messages.includes("az webapp deploy") || messages.includes("az acr build"))) ||
+    messages.includes("deploy again") || messages.includes("push code");
+  if (!hasRedeployCommand) {
+    agentMetadata.testComments.push("⚠️ HANDOFF: No redeploy command provided — handoff-protocol.md requires a redeploy shortcut for code changes");
+  }
   const hasRecommendations =
     messages.includes("next step") || messages.includes("recommend") ||
     messages.includes("consider") || messages.includes("post-deploy") ||
@@ -1511,12 +1547,12 @@ export function assertHandoffPresented(agentMetadata: AgentMetadata): void {
   if (!hasRecommendations) {
     agentMetadata.testComments.push("❌ HANDOFF: No post-deploy recommendations — handoff must include next-step recommendations");
   }
-  // Hard: at least 2 of 3 handoff elements must be present
-  const handoffScore = [hasDeployIdentity, hasCleanup, hasRecommendations].filter(Boolean).length;
-  if (handoffScore < 2) {
-    agentMetadata.testComments.push(`❌ HANDOFF: Only ${handoffScore}/3 elements present — need at least 2 (identity, cleanup, recommendations)`);
+  // Hard: at least 3 of 4 handoff elements must be present (identity, cleanup, redeploy, recommendations)
+  const handoffScore = [hasDeployIdentity, hasCleanup, hasRedeployCommand, hasRecommendations].filter(Boolean).length;
+  if (handoffScore < 3) {
+    agentMetadata.testComments.push(`❌ HANDOFF: Only ${handoffScore}/4 elements present — need at least 3 (identity, cleanup, redeploy, recommendations)`);
   }
-  expect(handoffScore).toBeGreaterThanOrEqual(2);
+  expect(handoffScore).toBeGreaterThanOrEqual(3);
 }
 
 /**
@@ -1538,13 +1574,31 @@ export function assertDeployResultSchema(agentMetadata: AgentMetadata, workspace
     found = true;
     try {
       const result = JSON.parse(fs.readFileSync(resultPath, "utf-8"));
-      const requiredFields = ["status", "subscriptionId", "resourceGroupName"];
+      const requiredFields = ["status", "subscriptionId", "resourceGroupName", "sessionId"];
       const missing = requiredFields.filter(f => result[f] === undefined);
       if (missing.length > 0) {
-        agentMetadata.testComments.push(`❌ DEPLOY RESULT: Missing fields: ${missing.join(", ")}`);
+        agentMetadata.testComments.push(`❌ DEPLOY RESULT: Missing required fields: ${missing.join(", ")}`);
         expect(missing.length).toBe(0);
       } else {
         agentMetadata.testComments.push(`✅ DEPLOY RESULT: status=${result.status}, rg=${result.resourceGroupName}`);
+      }
+      // deploy-schemas.ts: DeployResult requires endpoints[], healthStatus, deploymentNames[]
+      const expectedArrayFields = ["endpoints", "deploymentNames", "resourceIds"];
+      for (const field of expectedArrayFields) {
+        if (result[field] !== undefined && !Array.isArray(result[field])) {
+          agentMetadata.testComments.push(`❌ DEPLOY RESULT: ${field} is not an array`);
+        } else if (result[field] === undefined) {
+          agentMetadata.testComments.push(`⚠️ DEPLOY RESULT: ${field} missing — deploy-schemas.ts requires it`);
+        }
+      }
+      // deploy-schemas.ts: healthStatus must be one of "healthy" | "degraded" | "unreachable" | "unknown"
+      if (result.healthStatus) {
+        const validStatuses = ["healthy", "degraded", "unreachable", "unknown"];
+        if (!validStatuses.includes(result.healthStatus)) {
+          agentMetadata.testComments.push(`❌ DEPLOY RESULT: healthStatus '${result.healthStatus}' not valid — must be one of ${validStatuses.join(", ")}`);
+        }
+      } else {
+        agentMetadata.testComments.push("⚠️ DEPLOY RESULT: healthStatus missing — deploy-schemas.ts requires it");
       }
       if (result.healingAttempts && !Array.isArray(result.healingAttempts)) {
         agentMetadata.testComments.push("❌ DEPLOY RESULT: healingAttempts is not an array");
@@ -1930,29 +1984,36 @@ export function assertPortalLinkGenerated(agentMetadata: AgentMetadata): void {
   const toolText = getAllToolText(agentMetadata);
   const toolCalls = getToolCalls(agentMetadata);
 
+  // The agent generates portal deployment links in two URL formats:
+  //   Old: ...#blade/Microsoft_Azure_Resources/DeploymentDetailsBlade/...
+  //   New: ...#view/Microsoft_Azure_Resources/DeploymentDetails.MenuView/...
+  // And outputs them with different variable prefixes: LINK= or PORTAL=
+  const portalDeployPattern = /DeploymentDetailsBlade|DeploymentDetails\.MenuView/i;
+
   // Check for portal link in assistant messages
-  const portalLinkInMessages = /portal\.azure\.com.*DeploymentDetailsBlade/i.test(messages);
+  const portalLinkInMessages = /portal\.azure\.com/.test(messages) && portalDeployPattern.test(messages);
 
-  // Check for LINK= in PowerShell output (tool text)
-  const linkInToolOutput = /LINK=https:\/\/portal\.azure\.com/i.test(toolText);
+  // Check for LINK= or PORTAL= in PowerShell output (tool text — result.content from tool.execution_complete)
+  const linkInToolOutput = /(LINK|PORTAL)=https:\/\/portal\.azure\.com/i.test(toolText)
+    || (/portal\.azure\.com/.test(toolText) && portalDeployPattern.test(toolText));
 
-  // Check for portal link in shell command output (the Write-Output "LINK=$link" pattern)
+  // Check for portal link in shell command args (the Write-Output "LINK=$l" pattern with DeploymentDetails)
   const linkInShellArgs = toolCalls.some(tc => {
     const toolName = (tc.data.toolName ?? "").toLowerCase();
     if (toolName !== "powershell" && toolName !== "bash" && toolName !== "run_in_terminal") return false;
     const cmd = ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "");
-    return /DeploymentDetailsBlade/i.test(cmd) || /LINK=.*portal\.azure\.com/i.test(cmd);
+    return portalDeployPattern.test(cmd) || /(LINK|PORTAL)=.*portal\.azure\.com/i.test(cmd);
   });
 
   const hasPortalLink = portalLinkInMessages || linkInToolOutput || linkInShellArgs;
 
   if (!hasPortalLink) {
     agentMetadata.testComments.push(
-      "❌ PORTAL LINK: No DeploymentDetailsBlade URL found in messages or tool output — portal-links.md requires link BEFORE deployment",
+      "❌ PORTAL LINK: No deployment portal URL found in messages or tool output — portal-links.md requires link BEFORE deployment",
     );
   } else {
-    const source = portalLinkInMessages ? "assistant message" : linkInToolOutput ? "PowerShell LINK= output" : "shell command";
-    agentMetadata.testComments.push(`✅ PORTAL LINK: DeploymentDetailsBlade URL detected via ${source}`);
+    const source = portalLinkInMessages ? "assistant message" : linkInToolOutput ? "tool output" : "shell command";
+    agentMetadata.testComments.push(`✅ PORTAL LINK: Deployment portal URL detected via ${source}`);
   }
   expect(hasPortalLink).toBe(true);
 }
@@ -1984,16 +2045,25 @@ export function assertScmBasicAuthDisabled(agentMetadata: AgentMetadata): void {
     ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "").toLowerCase();
 
   // Find ALL SCM PUT calls — expect 2: enable (allow:true) then disable (allow:false)
+  // Also track SCM GET verification calls — deploy SKILL.md Step 7 requires GET after PUT to verify allow=false
   const scmPutCalls: { idx: number; isEnable: boolean }[] = [];
+  const scmGetCalls: number[] = [];
   for (let i = 0; i < toolCalls.length; i++) {
     const tc = toolCalls[i];
     if (!isShellCmd(tc)) continue;
     const cmd = getCmd(tc);
-    const isScmPut = (cmd.includes("basicpublishingcredentialpolicies/scm") && (cmd.includes("put") || cmd.includes("--method")))
-      || (cmd.includes("publishing") && cmd.includes("scm") && (cmd.includes("true") || cmd.includes("false")));
-    if (!isScmPut) continue;
-    const isEnable = cmd.includes("true") || cmd.includes("allow\":true") || cmd.includes("allow\": true");
-    scmPutCalls.push({ idx: i, isEnable });
+    const isScmPut = (cmd.includes("basicpublishingcredentialpolicies/scm") && (cmd.includes("put") || cmd.includes("--method put")))
+      || (cmd.includes("publishing") && cmd.includes("scm") && (cmd.includes("true") || cmd.includes("false")) && cmd.includes("put"));
+    if (isScmPut) {
+      const isEnable = cmd.includes("true") || cmd.includes("allow\":true") || cmd.includes("allow\": true");
+      scmPutCalls.push({ idx: i, isEnable });
+      continue;
+    }
+    // SCM GET verification — deploy SKILL.md Step 7 requires GET after disable to verify allow=false
+    const isScmGet = cmd.includes("basicpublishingcredentialpolicies/scm") && (cmd.includes("get") || cmd.includes("--method get"));
+    if (isScmGet) {
+      scmGetCalls.push(i);
+    }
   }
 
   if (scmPutCalls.length === 0) {
@@ -2042,6 +2112,18 @@ export function assertScmBasicAuthDisabled(agentMetadata: AgentMetadata): void {
   } else {
     agentMetadata.testComments.push(
       `⚠️ SCM RE-DISABLE: disable PUT (idx=${disableCall.idx}) before health check (idx=${lastHealthCheckIdx}) — may be misordered`,
+    );
+  }
+
+  // deploy SKILL.md Step 7: after disable PUT, MUST verify via GET that allow=false
+  const getAfterDisable = scmGetCalls.filter(idx => idx > disableCall.idx);
+  if (getAfterDisable.length > 0) {
+    agentMetadata.testComments.push(
+      `✅ SCM VERIFY: GET verification (idx=${getAfterDisable[0]}) after disable PUT (idx=${disableCall.idx})`,
+    );
+  } else {
+    agentMetadata.testComments.push(
+      "⚠️ SCM VERIFY: No GET verification after disable PUT — deploy SKILL.md Step 7 requires GET to confirm allow=false",
     );
   }
 }

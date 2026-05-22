@@ -33,7 +33,7 @@ const { describeIntegration } = setupIntegrationSuite();
 
 const sessionTestTimeoutMs = 1_200_000; // 20 minutes — multi-turn tests need more time
 
-describeIntegration(`${SKILL_NAME} - Session Lifecycle Tests`, () => {
+describeIntegration(`${SKILL_NAME}_session-lifecycle - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("session creation — full artifact structure validation", async () => {

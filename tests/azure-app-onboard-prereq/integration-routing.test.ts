@@ -42,7 +42,7 @@ import type { ExpectedVerdicts } from "./prereq-test-helpers";
 
 const { describeIntegration } = setupIntegrationSuite();
 
-describeIntegration(`${SKILL_NAME} - Routing Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_routing - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("routing — direct + ready + no infra → offers deploy (Go/Gin)", async () => {
@@ -248,7 +248,8 @@ describeIntegration(`${SKILL_NAME} - Routing Integration Tests`, () => {
       // After "Continue anyway" follow-up, agent should proceed with evaluation
       // and carry cloud SDK findings as 🔶 blockers
       if (workspacePath) {
-        assertPrereqArtifactWritten(agentMetadata, workspacePath);
+        const expectedVerdicts: ExpectedVerdicts = { build: "WARN", completeness: "WARN", deployability: "FAIL" };
+        assertPrereqArtifactWritten(agentMetadata, workspacePath, "blocked", expectedVerdicts);
       }
 
       // Scaffold check is soft — agent may propose migration plan

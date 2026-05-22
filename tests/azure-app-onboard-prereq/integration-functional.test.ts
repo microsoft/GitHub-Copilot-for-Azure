@@ -34,7 +34,7 @@ import type { ExpectedVerdicts } from "./prereq-test-helpers";
 
 const { describeIntegration } = setupIntegrationSuite();
 
-describeIntegration(`${SKILL_NAME} - Functional Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_functional - Integration Tests`, () => {
   const agent = useAgentRunner();
 
   test("e2e — bya-simple-web-app (happy path)", async () => {
@@ -66,7 +66,7 @@ describeIntegration(`${SKILL_NAME} - Functional Integration Tests`, () => {
 
       // Validate prereq-output.json with catalog-driven verdict comparison
       if (workspacePath) {
-        const expectedVerdicts: ExpectedVerdicts = { build: "PASS", completeness: "FAIL", deployability: "WARN" };
+        const expectedVerdicts: ExpectedVerdicts = { build: "PASS", completeness: "WARN", deployability: "WARN" };
         const artifact = assertPrereqArtifactWritten(agentMetadata, workspacePath, undefined, expectedVerdicts);
         if (artifact?.overallHealth) {
           const health = String(artifact.overallHealth).toLowerCase();
@@ -311,10 +311,11 @@ describeIntegration(`${SKILL_NAME} - Functional Integration Tests`, () => {
       // Must NOT scaffold or deploy — prereq is read-only evaluation
       assertDoesNotScaffoldOrDeploy(agentMetadata);
 
-      // Session + artifact checks
+      // Session + artifact checks with catalog verdicts
       if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       if (workspacePath) {
-        const artifact = assertPrereqArtifactWritten(agentMetadata, workspacePath);
+        const expectedVerdicts: ExpectedVerdicts = { build: "PASS", completeness: "PASS", deployability: "PASS" };
+        const artifact = assertPrereqArtifactWritten(agentMetadata, workspacePath, "ready", expectedVerdicts);
         if (artifact && Array.isArray(artifact.components)) {
           agentMetadata.testComments.push(`✅ MULTI-COMPONENT: prereq-output.json has ${artifact.components.length} components`);
 

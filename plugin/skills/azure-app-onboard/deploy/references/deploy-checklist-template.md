@@ -89,4 +89,6 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 5. ⛔ **Endpoint completeness** — EVERY service in `prepare-plan.json.services[]` that hosts application code MUST have a corresponding entry in `deploy-result.json.endpoints[]` with code deployed and a valid `healthStatus` (`healthy`, `degraded`, `unreachable`, `unknown`). If ANY compute endpoint is missing or has code not deployed, set `partial: true` and `status: "failed"`. A deployment with undeployed user components is NOT `"succeeded"`.
 
 If ANY artifact is missing or incomplete, write it NOW — do NOT return to orchestrator without all 5 checks passing.
+
+⛔ **Then STOP — return to orchestrator. No further CLI commands or skill invocations.**
 ```
