@@ -110,14 +110,14 @@ describeIntegration(`${SKILL_NAME} - Session Lifecycle Tests`, () => {
           workspacePath = workspace;
           await cloneRepo({ repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app", targetDir: workspace, branch: "main", depth: 1 });
         },
-        prompt: "Is my app ready to deploy to Azure? Check for any issues first.",
+        prompt: "Is my app ready to deploy to Azure?",
         followUp: [
-          // Turn 2: Let prereq complete normally
-          "Yes, go ahead.",
+          // Turn 2: Let prereq complete normally — just "Yes" to avoid approving prohibited commands
+          "Yes.",
           // Turn 3: Ask to resume — agent should recognize existing session
           "I want to continue where I left off — can you resume my prereq session?",
           // Turn 4: End
-          "That's all I needed, thanks.",
+          "Yes.",
         ],
         nonInteractive: true,
         preserveWorkspace: true,

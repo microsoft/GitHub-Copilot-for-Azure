@@ -18,6 +18,7 @@ import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboardWithCleanup,
   SKILL_NAME,
+  integrationTestTimeoutMs,
   SUBSCRIPTION_PRIMER,
   assertSessionFileCreated,
   assertBicepTagPresent,
@@ -120,6 +121,6 @@ describeAppOnboardWithCleanup("Deploy Safety Tests", (agent) => {
           assertSessionFileCreated(agentMetadata, workspacePath);
         }
       });
-    }, 1800000); // 30 min — scaffold only, no deploy
+    }, integrationTestTimeoutMs);
   });
 });

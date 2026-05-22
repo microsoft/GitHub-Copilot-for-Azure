@@ -30,6 +30,7 @@ import { cloneRepo } from "../../utils/git-clone";
 import type { AgentMetadata } from "../../utils/agent-runner";
 import {
   SKILL_NAME,
+  integrationTestTimeoutMs,
   cleanupSessionResourceGroups,
   assertNoAzdCommands,
   shellCommandContains,
@@ -38,7 +39,7 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 
-const testTimeoutMs = 3600000; // 60 minutes
+const testTimeoutMs = integrationTestTimeoutMs;
 
 /**
  * Early terminate once the agent presents deploy-domain output
@@ -357,6 +358,6 @@ describeIntegration(`${SKILL_NAME}_deploy - Integration Tests`, () => {
         }
         expect(suggestsBadPattern).toBe(false);
       });
-    }, 3000000);
+    }, integrationTestTimeoutMs);
   });
 });

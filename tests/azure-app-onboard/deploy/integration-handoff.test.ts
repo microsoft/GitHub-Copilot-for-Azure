@@ -16,6 +16,7 @@ import {
 import {
   describeAppOnboardWithCleanup,
   SKILL_NAME,
+  integrationTestTimeoutMs,
   DEPLOY_PHASE_PROMPT,
   DEPLOY_PHASE_FOLLOW_UPS,
   shouldEarlyTerminateOnHandoff,
@@ -78,6 +79,6 @@ describeAppOnboardWithCleanup("Handoff Tests", (agent) => {
           ]);
         }
       });
-    }, 3000000); // 50 min — seeded fixture, deploy through handoff
+    }, integrationTestTimeoutMs);
   });
 });

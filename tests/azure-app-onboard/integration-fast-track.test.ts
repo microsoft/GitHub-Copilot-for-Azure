@@ -18,6 +18,7 @@ import {
 import { cloneRepo } from "../utils/git-clone";
 import {
   SKILL_NAME,
+  integrationTestTimeoutMs,
   shouldEarlyTerminateOnDeployComplete,
   assertSessionFileCreated,
   assertDeployResultSchema,
@@ -114,6 +115,6 @@ describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
         }
         expect(hasEndpoint).toBe(true);
       });
-    }, 3600000); // 60 min — full e2e deploy including clone + prereq + prepare + scaffold + deploy
+    }, integrationTestTimeoutMs);
   });
 });

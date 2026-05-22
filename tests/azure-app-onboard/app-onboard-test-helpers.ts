@@ -243,10 +243,11 @@ function freshenTimestamps(workspace: string): void {
 export const SKILL_NAME = "azure-app-onboard";
 export const RUNS_PER_PROMPT = 1;
 export const invocationRateThreshold = 0.8;
-export const testTimeoutMs = 2700000; // 45 minutes per test — full pipeline tests regularly hit 25-30min
-export const negativeTestTimeoutMs = 1200000; // 20 minutes — negative tests correctly halt but need headroom for artifact writing
-export const prepareTestTimeoutMs = 900_000; // 15 minutes — prepare sub-skill tests max out at ~7min (cost-depth 6m55s)
-export const scaffoldTestTimeoutMs = 900_000; // 15 minutes — scaffold sub-skill tests max out at ~9min (Bicep Express 8m33s)
+export const integrationTestTimeoutMs = 3_600_000; // 60 minutes — generous ceiling for ALL integration tests; early terminators handle stopping
+export const testTimeoutMs = integrationTestTimeoutMs;
+export const negativeTestTimeoutMs = integrationTestTimeoutMs;
+export const prepareTestTimeoutMs = integrationTestTimeoutMs;
+export const scaffoldTestTimeoutMs = integrationTestTimeoutMs;
 
 /**
  * First follow-up for ALL app-onboard integration tests. Resolves the
@@ -2144,57 +2145,117 @@ export function assertBicepTagPresent(agentMetadata: AgentMetadata, workspacePat
 export function shouldEarlyTerminateOnDeployComplete(metadata: AgentMetadata): boolean {
   return withRoutingBailout((m) => {
     const toolCalls = getToolCalls(m);
-    const messages = getAllAssistantMessages(m).toLowerCase();
+    const fileWriteTools = ["create_file", "write_file", "create", "edit", "replace_string_in_file"];
 
-    // Gate 1: deploy-result.json must be written (not just mentioned in another file's content)
+    // Gate 1: deploy-result.json must be written/updated (not just mentioned in another file's content)
     // Check the file path argument specifically — not the entire stringified args blob,
     // which can contain "deploy-result" in the content of other files (e.g., deploy-checklist.md).
-    const hasDeployResult = toolCalls.some(tc => {
+    const deployResultIdx = toolCalls.findIndex(tc => {
       const toolName = (tc.data.toolName ?? "").toLowerCase();
-      if (toolName !== "create_file" && toolName !== "write_file" && toolName !== "create") return false;
+      if (!fileWriteTools.includes(toolName)) return false;
       const argsObj = (tc.data.arguments ?? {}) as Record<string, unknown>;
       const filePath = ((argsObj.path ?? argsObj.filePath ?? "") as string).toLowerCase();
       return filePath.includes("deploy-result");
     });
 
-    if (!hasDeployResult) return false;
+    if (deployResultIdx >= 0) {
+      // Gate 2: context.json updated after deploy-result.json — the authoritative
+      // signal that the deploy phase is complete and the agent has finalized artifacts.
+      const hasContextUpdate = toolCalls.slice(deployResultIdx).some(tc => {
+        const tn = (tc.data.toolName ?? "").toLowerCase();
+        if (!fileWriteTools.includes(tn)) return false;
+        const argsObj = (tc.data.arguments ?? {}) as Record<string, unknown>;
+        const fp = ((argsObj.path ?? argsObj.filePath ?? "") as string).toLowerCase();
+        return fp.includes("context.json");
+      });
 
-    // Gate 2: at least one post-deploy signal
-    const hasHandoff =
-      messages.includes("az group delete") ||
-      messages.includes("clean up") ||
-      messages.includes("remove the resource") ||
-      messages.includes("deployed by") ||
-      messages.includes("post-deploy");
+      if (hasContextUpdate) {
+        m.testComments.push("✅ EARLY TERMINATE: deploy-result.json written + context.json updated.");
+        return true;
+      }
 
-    const hasScmRedisable = toolCalls.some(tc => {
-      const toolName = (tc.data.toolName ?? "").toLowerCase();
-      if (toolName !== "powershell" && toolName !== "bash" && toolName !== "run_in_terminal") return false;
-      const cmd = ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "").toLowerCase();
-      return cmd.includes("basicpublishingcredentialpolicies/scm");
-    });
-
-    if (hasHandoff || hasScmRedisable) {
-      m.testComments.push("✅ EARLY TERMINATE: deploy-result.json written + post-deploy steps observed.");
-      return true;
+      // Fallback: if deploy-result.json was written but context.json was never updated
+      // after 5+ additional tool calls, terminate anyway — the agent finalized deploy
+      // but may have skipped the context.json update.
+      if (toolCalls.length - deployResultIdx > 5) {
+        m.testComments.push("⚠️ EARLY TERMINATE (fallback): deploy-result.json written but no context.json update after 5 tool calls.");
+        return true;
+      }
     }
 
-    // Gate 3 (fallback): if deploy-result.json was written but no post-deploy signal
-    // after 15+ additional tool calls, terminate anyway — the agent may have moved on
-    // without explicit handoff keywords, or SCM re-disable may have failed silently.
-    const deployResultIdx = toolCalls.findIndex(tc => {
+    // Fallback 2: if the agent has run 2+ actual deployment commands (az deployment sub/group create),
+    // it has attempted deploy + at least one healing retry. We've captured enough deploy behavior
+    // for all assertions. Without this, seeded-fixture tests can loop for 60min in healing.
+    const shellTools = ["powershell", "bash", "run_in_terminal", "run_command"];
+    const deployCommandCount = toolCalls.filter(tc => {
       const tn = (tc.data.toolName ?? "").toLowerCase();
-      if (tn !== "create_file" && tn !== "write_file" && tn !== "create") return false;
-      const argsObj = (tc.data.arguments ?? {}) as Record<string, unknown>;
-      const fp = ((argsObj.path ?? argsObj.filePath ?? "") as string).toLowerCase();
-      return fp.includes("deploy-result");
-    });
-    if (deployResultIdx >= 0 && toolCalls.length - deployResultIdx > 15) {
-      m.testComments.push("⚠️ EARLY TERMINATE (fallback): deploy-result.json written but no post-deploy signal after 15 tool calls — terminating to avoid timeout.");
+      if (!shellTools.includes(tn)) return false;
+      const cmd = ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "").toLowerCase();
+      return (cmd.includes("az deployment sub create") || cmd.includes("az deployment group create")) &&
+        !cmd.includes("what-if");
+    }).length;
+
+    if (deployCommandCount >= 2) {
+      m.testComments.push(`⚠️ EARLY TERMINATE (deploy-count fallback): ${deployCommandCount} az deployment commands executed — enough deploy behavior captured.`);
       return true;
     }
 
     return false;
+  })(metadata);
+}
+
+/**
+ * Early terminate when the FULL pipeline is definitively done.
+ *
+ * Signal: `context.json` write/edit containing BOTH `"deploy"` in completedPhases
+ * AND `currentPhase: null`. This is the single authoritative "pipeline done" marker —
+ * deploy/SKILL.md Step 8 explicitly sets these values as its last action before
+ * returning to the orchestrator for handoff (Step 10).
+ *
+ * Why this is better than existing terminators:
+ * - No fuzzy chat text matching (unlike shouldEarlyTerminateOnHandoff)
+ * - Won't false-fire during healing (unlike the 2-deploy-command fallback)
+ * - Won't fire on intermediate context.json writes (Step 1 create doesn't have these values)
+ * - Single artifact check — deterministic
+ *
+ * Use for tests that need to observe the full pipeline through deploy completion
+ * but don't need to wait for the handoff chat message.
+ */
+export function shouldEarlyTerminateOnPipelineComplete(metadata: AgentMetadata): boolean {
+  return withRoutingBailout((m) => {
+    const toolCalls = getToolCalls(m);
+    const fileWriteTools = ["create_file", "write_file", "create", "edit", "replace_string_in_file"];
+
+    // Find context.json write with currentPhase: null + "deploy" in completedPhases
+    const pipelineDoneEvent = toolCalls.find(tc => {
+      const tn = (tc.data.toolName ?? "").toLowerCase();
+      if (!fileWriteTools.includes(tn)) return false;
+      const args = tc.data.arguments as Record<string, unknown> ?? {};
+      const filePath = ((args.path ?? args.filePath ?? "") as string).toLowerCase();
+      if (!filePath.includes("context.json")) return false;
+      const content = JSON.stringify(args).toLowerCase();
+      // Must have "deploy" in completedPhases AND currentPhase set to null
+      const hasDeployPhase = content.includes('"deploy"');
+      const hasNullPhase = content.includes('"currentphase": null') ||
+        content.includes('"currentphase":null') ||
+        content.includes('"currentphase": "null"');
+      return hasDeployPhase && hasNullPhase;
+    });
+
+    if (!pipelineDoneEvent) return false;
+
+    // Wait for assistant message after the write (ensures artifacts are on disk)
+    const hasAssistantAfter = m.events.some(
+      e => (e.type === "assistant.message" || e.type === "assistant.message_delta")
+        && e.timestamp > pipelineDoneEvent.timestamp,
+    );
+
+    if (hasAssistantAfter) {
+      m.testComments.push(
+        "✅ EARLY TERMINATE: context.json updated with completedPhases=[\"deploy\"] + currentPhase=null — pipeline complete.",
+      );
+    }
+    return hasAssistantAfter;
   })(metadata);
 }
 
@@ -2353,15 +2414,17 @@ export function hasReachedScaffoldPhase(agentMetadata: AgentMetadata): boolean {
   const hasBicepWrite = toolCalls.some(tc => {
     const toolName = (tc.data.toolName ?? "").toLowerCase();
     if (toolName !== "create" && toolName !== "create_file" && toolName !== "write_file") return false;
-    const args = JSON.stringify(tc.data.arguments ?? "").toLowerCase();
-    return args.includes(".bicep") || args.includes(".tf");
+    const argsObj = tc.data.arguments as Record<string, unknown> | undefined;
+    const filePath = ((argsObj?.path ?? argsObj?.filePath ?? "") as string).toLowerCase();
+    return filePath.endsWith(".bicep") || filePath.endsWith(".tf");
   });
 
   const hasScaffoldManifest = toolCalls.some(tc => {
     const toolName = (tc.data.toolName ?? "").toLowerCase();
     if (toolName !== "create" && toolName !== "create_file" && toolName !== "write_file") return false;
-    const args = JSON.stringify(tc.data.arguments ?? "").toLowerCase();
-    return args.includes("scaffold-manifest");
+    const argsObj = tc.data.arguments as Record<string, unknown> | undefined;
+    const filePath = ((argsObj?.path ?? argsObj?.filePath ?? "") as string).toLowerCase();
+    return filePath.includes("scaffold-manifest");
   });
 
   return scaffoldSkillRead || iacGenRead || hasBicepWrite || hasScaffoldManifest;

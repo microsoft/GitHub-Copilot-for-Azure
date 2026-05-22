@@ -52,9 +52,11 @@ function shouldEarlyTerminateOnIaCFileWrite(agentMetadata: import("../../utils/a
   const toolCalls = getToolCalls(agentMetadata);
   const hasIaCWriteToolCall = toolCalls.some(tc => {
     const toolName = (tc.data.toolName ?? "").toLowerCase();
-    const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
     const isWriteTool = toolName === "create_file" || toolName === "write_file" || toolName === "create";
-    return isWriteTool && (args.includes(".bicep") || args.includes(".tf")) && args.includes("infra/");
+    if (!isWriteTool) return false;
+    const argsObj = tc.data.arguments as Record<string, unknown> | undefined;
+    const filePath = ((argsObj?.path ?? argsObj?.filePath ?? "") as string).toLowerCase();
+    return (filePath.endsWith(".bicep") || filePath.endsWith(".tf")) && filePath.includes("infra/");
   });
 
   return hasIaCWriteToolCall;

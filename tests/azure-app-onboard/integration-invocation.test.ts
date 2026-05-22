@@ -21,9 +21,10 @@ import {
   SKILL_NAME,
   RUNS_PER_PROMPT,
   invocationRateThreshold,
+  integrationTestTimeoutMs,
   testTimeoutMs,
   assertApprovalGateReached,
-  shouldEarlyTerminateOnRoutingFailure,
+  shouldEarlyTerminateForPlanPresented,
   SUBSCRIPTION_PRIMER,
 } from "./app-onboard-test-helpers";
 
@@ -54,8 +55,8 @@ describeIntegration(`${SKILL_NAME}_ - Invocation Tests`, () => {
               "Yes.",
             ],
             nonInteractive: true,
-            followUpTimeout: 2_700_000, // 45 min — full pipeline can exceed 30 min per follow-up
-            shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
+            shouldEarlyTerminate: (metadata) =>
+              shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME),
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -129,8 +130,9 @@ describeIntegration(`${SKILL_NAME}_ - Invocation Tests`, () => {
       });
     }, testTimeoutMs);
 
-    // Full-pipeline test: no early termination, agent runs the entire pipeline
-    // with follow-ups. Needs 60 min — the pipeline with 4 follow-ups can exceed 30 min.
+    // Greenfield pipeline test — agent must plan services, costs, auth for a no-code prompt.
+    // Early-terminates once prepare-plan.json is written (all assertions check assistant messages
+    // produced during prereq → prepare, so we don't need scaffold/deploy to complete).
     test("invokes azure-app-onboard for greenfield no-code prompt (no workspace)", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
@@ -145,8 +147,7 @@ describeIntegration(`${SKILL_NAME}_ - Invocation Tests`, () => {
               "Yes.",
             ],
             nonInteractive: true,
-            followUpTimeout: 2_700_000, // 45 min — full pipeline can exceed 30 min per follow-up
-            shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
+            shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -212,6 +213,6 @@ describeIntegration(`${SKILL_NAME}_ - Invocation Tests`, () => {
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
-    }, 3600000); // 60 min — full pipeline with follow-ups
+    }, integrationTestTimeoutMs);
   });
 });

@@ -57,7 +57,7 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -96,7 +96,7 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
         // Must explain deployment steps/walkthrough
-        // Non-blocking: in nonInteractive mode with shouldEarlyTerminateForPlanPresented,
+        // Non-blocking: in nonInteractive mode with shouldEarlyTerminateForApprovalGate,
         // the agent may be terminated after writing a plan file before explaining steps.
         const explainsSteps = /step|first.+then|walk.+through|plan|phase|next/i.test(messages);
         if (!explainsSteps) {

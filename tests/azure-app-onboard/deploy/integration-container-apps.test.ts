@@ -27,6 +27,7 @@ import {
 import { cloneRepo } from "../../utils/git-clone";
 import {
   SKILL_NAME,
+  integrationTestTimeoutMs,
   shouldEarlyTerminateOnContainerAppsCodeDeploy,
   assertSessionFileCreated,
   cleanupSessionResourceGroups,
@@ -183,6 +184,6 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
         // (individual expects above — this is a summary guard)
         expect((mentionsAcrBuild || executedAcrBuild) && mentionsContainerApps && !hasManualDeploySteps).toBe(true);
       });
-    }, 2_700_000); // 45 minutes — single-container deploy; 5 min headroom beyond 40-min followUpTimeout
+    }, integrationTestTimeoutMs);
   });
 });
