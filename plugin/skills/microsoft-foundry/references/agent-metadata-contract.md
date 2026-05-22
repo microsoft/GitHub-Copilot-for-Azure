@@ -35,7 +35,7 @@ New setups should prefer **one environment per metadata file** while keeping the
 | `defaultEnvironment` | ✅ | Default environment inside the selected metadata file; in preferred single-environment files it should match the only environment key |
 | `environments.<name>.projectEndpoint` | ✅ | Foundry project endpoint for that environment |
 | `environments.<name>.agentName` | ✅ | Deployed Foundry agent name |
-| `environments.<name>.azureContainerRegistry` | ✅ for hosted agents | ACR used for deployment and image refresh |
+| `environments.<name>.azureContainerRegistry` | ✅ for the Docker/ACR deploy flow | ACR used for deployment and image refresh |
 | `environments.<name>.observability.applicationInsightsResourceId` | Recommended | App Insights resource for trace workflows |
 | `environments.<name>.observability.applicationInsightsConnectionString` | Optional | Connection string when needed for tooling |
 | `environments.<name>.evaluationSuites[]` | ✅ | Dataset + local/remote references + evaluator + tag bundles for evaluation workflows |

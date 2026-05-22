@@ -50,7 +50,13 @@ Key difference: `responses` takes a natural language `inputText` message with pl
 
 > 💡 **Tip:** The `agent_invoke` MCP tool supports both protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
 
-## Workflow
+## Invocation Method Selection
+
+Use the direct-code invocation branch only when the user explicitly says the target agent was deployed `using direct code deployment`. For that branch, follow [Direct Code Invocation](references/direct-code-invocation.md).
+
+Otherwise use the default MCP invocation workflow below. Do not switch to direct-code REST invocation just because the agent is hosted; agents deployed through the default Docker/ACR flow continue to use the MCP session/invoke tools unless direct-code deployment is explicitly known.
+
+## Workflow: Default MCP Invocation
 
 ### Step 1: Verify Agent Readiness
 

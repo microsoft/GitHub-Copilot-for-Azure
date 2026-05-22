@@ -28,7 +28,13 @@ Troubleshoot and debug Foundry agents by collecting hosted-agent session logs, d
 |------|-------------|------------|
 | `agent_get` | Get agent details to determine type and inspect agent/version status | `projectEndpoint` (required), `agentName` (optional) |
 
-## Workflow
+## Troubleshooting Method Selection
+
+Use the direct-code troubleshooting branch only when the user explicitly says the agent was deployed `using direct code deployment`.
+
+For direct-code troubleshooting, follow [Direct Code Troubleshooting](references/direct-code-troubleshooting.md). Otherwise use the default troubleshooting workflow.
+
+## Workflow: Default Troubleshooting
 
 ### Step 1: Collect Agent Information
 
