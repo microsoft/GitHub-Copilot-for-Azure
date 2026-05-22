@@ -179,6 +179,13 @@ function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
   return blocks;
 }
 
+/**
+ * Extract the body of a terraform list assignment.
+ * @param block A text block that contains one list assignment.
+ * @param attributeName The attribute name of the list.
+ * @returns the body of the list, or the original text in the assignment if it's not a list.
+ * @example "ignore_changes = [ value[0], value[1] ]" => "[ value[0], value[2] ]"
+ */
 export function extractTerraformListAssignment(block: string, attributeName: string): string | undefined {
   const escapedAttributeName = attributeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const assignmentMatch = block.match(new RegExp(`(^|\\n)\\s*${escapedAttributeName}\\s*=\\s*`, "i"));
