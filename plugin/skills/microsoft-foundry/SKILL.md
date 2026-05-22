@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry
-description: "Deploy, evaluate, and manage Foundry agents end-to-end: Docker build, ACR push, hosted/prompt agent create, container start, batch eval, continuous eval, prompt optimizer workflows, agent.yaml, dataset curation from traces. USE FOR: deploy agent to Foundry, hosted agent, create agent, invoke agent, evaluate agent, run batch eval, continuous eval, continuous monitoring, continuous eval status, optimize prompt, improve prompt, prompt optimizer, optimize agent instructions, improve agent instructions, optimize system prompt, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, create dataset from traces, dataset versioning, eval trending, create AI Services, Cognitive Services, create Foundry resource, provision resource, knowledge index, agent monitoring, customize deployment, onboard, availability. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
+description: "Deploy, evaluate, and manage Microsoft Foundry agents and models. Covers agent creation, provision, deployment, invocation, evaluation, trace analysis, prompt optimization, dataset curation, and RBAC. WHEN: \"deploy Foundry agent\", \"create Foundry agent\", \"evaluate agent\", \"optimize prompt\", \"deploy model\", \"troubleshoot agent\", \"dataset from traces\", \"continuous eval\", \"Foundry project\", \"hosted agent\". DO NOT USE FOR: Azure Functions, App Service, general Azure deployment."
 license: MIT
 metadata:
   author: Microsoft
@@ -17,18 +17,18 @@ This skill helps developers work with Microsoft Foundry resources, covering mode
 
 ## Sub-Skills
 
-> **MANDATORY: Before executing ANY workflow-specific steps, you MUST read the corresponding sub-skill document.** Do not call workflow-specific MCP tools for a workflow without reading its skill document. This applies even if you already know the MCP tool parameters — the skill document contains required workflow steps, pre-checks, and validation logic that must be followed. This rule applies on every new user message that triggers a different workflow, even if the skill is already loaded.
+> **MANDATORY: Before executing ANY workflow-specific steps, you MUST read the corresponding sub-skill document.** Do not call workflow-specific MCP tools for a workflow without reading its skill document. This applies even if you already know the MCP tool parameters -- the skill document contains required workflow steps, pre-checks, and validation logic that must be followed. This rule applies on every new user message that triggers a different workflow, even if the skill is already loaded.
 
 This skill includes specialized sub-skills for specific workflows. **Use these instead of the main skill when they match your task:**
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **deploy** | Containerize, build, push to ACR, create/update/clone agent deployments | [deploy](foundry-agent/deploy/deploy.md) |
+| **deploy** | Containerize, build, push to ACR, create/update/clone agent deployments. Routes to hosted-agent or prompt-agent workflows. | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
 | **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, set up CI/CD monitoring, and enable continuous production evaluation | [observe](foundry-agent/observe/observe.md) |
 | **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#, across `responses` or `invocations` protocols. | [create](foundry-agent/create/create-hosted.md) |
+| **create** | Create new hosted agent applications. Routes to greenfield (from template) or brownfield (convert existing) workflows. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#. | [create](foundry-agent/create/create-hosted.md) |
 | **faos-optimize** | Convert existing Python agent code to a FAOS (Foundry Agent Optimization Service) optimization-ready version by wiring evaluator-targeted instructions/model/temperature knobs, then stop for review before deployment. | [faos-optimize](foundry-agent/faos-optimize/faos-optimize.md) |
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
@@ -38,11 +38,11 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **quota** | Managing quotas and capacity for Microsoft Foundry resources. Use when checking quota usage, troubleshooting deployment failures due to insufficient quota, requesting quota increases, or planning capacity. | [quota/quota.md](quota/quota.md) |
 | **rbac** | Managing RBAC permissions, role assignments, managed identities, and service principals for Microsoft Foundry resources. Use for access control, auditing permissions, and CI/CD setup. | [rbac/rbac.md](rbac/rbac.md) |
 
-> 💡 **Tip:** For a complete onboarding flow: `project/create` (public) or `private-network` (VNet isolation) → `models/deploy-model` → agent workflows (`create` → `deploy` → `invoke`).
+> **Tip:** For a complete onboarding flow: `project/create` (public) or `private-network` (VNet isolation) -> `models/deploy-model` -> agent workflows (`create` -> `deploy` -> `invoke`).
 
-> 💡 **Model Deployment:** Use `models/deploy-model` for all deployment scenarios — it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
+> **Model Deployment:** Use `models/deploy-model` for all deployment scenarios -- it intelligently routes between quick preset deployment, customized deployment with full control, and capacity discovery across regions.
 
-> 💡 **Prompt Optimization:** For requests like "optimize my prompt" or "improve my agent instructions," load [observe](foundry-agent/observe/observe.md) and use the `prompt_optimize` MCP tool through that eval-driven workflow.
+> **Prompt Optimization:** For requests like "optimize my prompt" or "improve my agent instructions," load [observe](foundry-agent/observe/observe.md) and use the `prompt_optimize` MCP tool through that eval-driven workflow.
 
 ## Infrastructure Lifecycle
 
@@ -50,7 +50,7 @@ Match user intent to the correct infrastructure workflow.
 
 | User Intent | Workflow |
 |-------------|---------|
-| "Create Foundry" / "Set up Foundry" (ambiguous) | Use `AskUserQuestion`: (a) just an AI Services resource, (b) a project with public access, or (c) a project with network isolation? Route: (a) → [resource/create](resource/create/create-foundry-resource.md), (b) → [project/create](project/create/create-foundry-project.md), (c) → [private-network](resource/private-network/private-network.md) |
+| "Create Foundry" / "Set up Foundry" (ambiguous) | Use `AskUserQuestion`: (a) just an AI Services resource, (b) a project with public access, or (c) a project with network isolation? Route: (a) -> [resource/create](resource/create/create-foundry-resource.md), (b) -> [project/create](project/create/create-foundry-project.md), (c) -> [private-network](resource/private-network/private-network.md) |
 | Set up Foundry with VNet isolation | [private-network](resource/private-network/private-network.md) |
 | Create a Foundry project (public) | [project/create](project/create/create-foundry-project.md) |
 | Create a bare Foundry resource | [resource/create](resource/create/create-foundry-resource.md) |
@@ -61,16 +61,16 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create a new agent from scratch | [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Make existing Python agent FAOS optimizable | [faos-optimize](foundry-agent/faos-optimize/faos-optimize.md) → review → deploy → invoke |
-| Deploy an agent (code already exists) | deploy → invoke |
-| Update/redeploy an agent after code changes | deploy → invoke |
+| Create a new agent from scratch | [create](foundry-agent/create/create-hosted.md) -> [deploy](foundry-agent/deploy/deploy.md) -> [invoke](foundry-agent/invoke/invoke.md) |
+| Make existing Python agent FAOS optimizable | [faos-optimize](foundry-agent/faos-optimize/faos-optimize.md) -> review -> deploy -> invoke |
+| Deploy an agent (code already exists) | deploy -> invoke |
+| Update/redeploy an agent after code changes | deploy -> invoke |
 | Invoke/test/chat with an agent | invoke |
 | Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
 | Evaluate and optimize agent (full loop) | observe |
 | Enable continuous evaluation monitoring | observe (Step 6: CI/CD & Monitoring) |
-| Troubleshoot an agent issue | invoke → troubleshoot |
-| Fix a broken agent (troubleshoot + redeploy) | invoke → troubleshoot → apply fixes → deploy → invoke |
+| Troubleshoot an agent issue | invoke -> troubleshoot |
+| Fix a broken agent (troubleshoot + redeploy) | invoke -> troubleshoot -> apply fixes -> deploy -> invoke |
 
 ## Agent: .foundry Workspace Standard
 
@@ -102,9 +102,9 @@ Agent skills should run this step **only when they need configuration values the
 
 Search the workspace for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
 
-- **One match** → use that agent root.
-- **Multiple matches** → require the user to choose the target agent folder.
-- **No matches** → for create/deploy workflows, seed a new `.foundry/` folder during setup; for all other workflows, stop and ask the user which agent source folder to initialize.
+- **One match** -> use that agent root.
+- **Multiple matches** -> require the user to choose the target agent folder.
+- **No matches** -> for create/deploy workflows, seed a new `.foundry/` folder during setup; for all other workflows, stop and ask the user which agent source folder to initialize.
 
 After selecting an agent root, keep all local `.foundry` cache inspection, source inspection, evaluator suggestions, dataset suggestions, and prompt-optimization context inside that folder only. Do **not** scan sibling agent folders unless the user explicitly switches roots.
 
@@ -152,13 +152,13 @@ On any metadata write (deploy, auto-setup, dataset refresh, or trace-to-dataset 
 ### Step 5: Collect Missing Values
 
 Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, metadata, or azd bootstrap. Common values skills may need:
-- **Agent root** — Target folder containing `.foundry/agent-metadata*.yaml`
-- **Metadata file** — `agent-metadata.yaml` for local/dev, or an explicit sidecar such as `agent-metadata.prod.yaml`
-- **Environment** — `dev`, `prod`, or another environment key from metadata
-- **Project endpoint** — AI Foundry project endpoint URL
-- **Agent name** — Name of the target agent
+- **Agent root** -- Target folder containing `.foundry/agent-metadata*.yaml`
+- **Metadata file** -- `agent-metadata.yaml` for local/dev, or an explicit sidecar such as `agent-metadata.prod.yaml`
+- **Environment** -- `dev`, `prod`, or another environment key from metadata
+- **Project endpoint** -- AI Foundry project endpoint URL
+- **Agent name** -- Name of the target agent
 
-> 💡 **Tip:** If the user already provides the agent path, environment, project endpoint, or agent name, extract it directly — do not ask again.
+> **Tip:** If the user already provides the agent path, environment, project endpoint, or agent name, extract it directly -- do not ask again.
 
 ## Agent: Agent Types
 
