@@ -129,6 +129,8 @@ describeIntegration(`${SKILL_NAME}_ - Invocation Tests`, () => {
       });
     }, testTimeoutMs);
 
+    // Full-pipeline test: no early termination, agent runs the entire pipeline
+    // with follow-ups. Needs 60 min — the pipeline with 4 follow-ups can exceed 30 min.
     test("invokes azure-app-onboard for greenfield no-code prompt (no workspace)", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
@@ -210,6 +212,6 @@ describeIntegration(`${SKILL_NAME}_ - Invocation Tests`, () => {
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
-    }, testTimeoutMs);
+    }, 3600000); // 60 min — full pipeline with follow-ups
   });
 });

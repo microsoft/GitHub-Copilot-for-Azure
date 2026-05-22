@@ -18,7 +18,7 @@ import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboard,
   SKILL_NAME,
-  testTimeoutMs,
+  prepareTestTimeoutMs,
   shouldEarlyTerminateForPlanPresented,
   assertSessionFileCreated,
   assertPreparePlanSchema,
@@ -120,7 +120,7 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, prepareTestTimeoutMs);
   });
 
   describe("quota-validation", () => {
@@ -174,6 +174,6 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
 
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, prepareTestTimeoutMs);
   });
 });

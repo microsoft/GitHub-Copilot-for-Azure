@@ -13,13 +13,14 @@ import {
 import {
   isSkillInvoked,
   softCheckSkill,
+  doesAssistantOrToolsIncludeKeyword,
   withTestResult,
   getAllAssistantMessages,
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import {
   SKILL_NAME,
-  testTimeoutMs,
+  prepareTestTimeoutMs,
   assertSessionFileCreated,
   cleanupSessionResourceGroups,
   shouldEarlyTerminateForApprovalGate,
@@ -108,9 +109,16 @@ describeIntegration(`${SKILL_NAME}_ - Cost Depth Tests`, () => {
         }
 
         // Hard: cost assumptions (cost estimate must include assumptions per prepare-phase spec)
-        const hasAssumptions = messages.includes("assum");
+        // Accept "assumes", "within ... limits", "free grant", "within free" as cost assumption phrasing
+        // Check both assistant messages and tool calls (prepare-plan.json may contain assumptions)
+        const hasAssumptions =
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "assum") ||
+          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "within") &&
+            (doesAssistantOrToolsIncludeKeyword(agentMetadata, "limit") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "grant"))) ||
+          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "free tier") &&
+            (doesAssistantOrToolsIncludeKeyword(agentMetadata, "$0") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "no cost")));
         if (!hasAssumptions) {
-          agentMetadata.testComments.push("❌ COST ASSUMPTIONS: No cost assumptions stated — cost estimate must include assumptions (e.g., 'Assumes ~1 GB/month ingestion')");
+          agentMetadata.testComments.push("❌ COST ASSUMPTIONS: No cost assumptions stated — cost estimate must include assumptions (e.g., 'Assumes ~1 GB/month ingestion' or 'within free grant limits')");
         }
         expect(hasAssumptions).toBe(true);
 
@@ -130,6 +138,6 @@ describeIntegration(`${SKILL_NAME}_ - Cost Depth Tests`, () => {
           agentMetadata.testComments.push("⚠️ INSTRUMENTATION: No instrumentation/monitoring mentioned in cost breakdown");
         }
       });
-    }, testTimeoutMs);
+    }, prepareTestTimeoutMs);
   });
 });

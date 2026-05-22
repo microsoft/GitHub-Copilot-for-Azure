@@ -37,7 +37,7 @@ Read [bicep-patterns.md](bicep-patterns.md) (Bicep) OR [terraform-patterns.md](t
 
 **Do:** Extract the `main.bicep` skeleton structure (targetScope, parameters, variables, resource group, module calls). Extract the 5-tag block definition. Use `prepare-plan.json.naming` for all resource names — never derive names with `take()`, `substring()`, `uniqueString()`, or string manipulation. The 4-char session suffix in the plan names already provides uniqueness. ⛔ For each `resource 'Type@Version'` declaration, use the version from `apiVersions` input. If type missing from map, use version from reference file examples.
 
-> ⛔ **If `apiVersions` is `"MCP unavailable"` or missing a resource type:** run `az provider show --namespace {ns} --query "resourceTypes[?resourceType=='{type}'].apiVersions" -o tsv` for each missing provider, pick the latest non-preview version. NEVER fall back to training data — hallucinated API versions cause multiple deploy healing cycles.
+> ⛔ **If `apiVersions` is `"MCP unavailable"` or missing a resource type:** run `az provider show --namespace {ns} --query "resourceTypes[?resourceType=='{type}'].apiVersions[?!contains(@, 'preview')] | [0][0]" -o tsv` for each missing provider — this filters to GA-only and picks the latest. NEVER fall back to training data — hallucinated API versions cause multiple deploy healing cycles.
 
 ### Step 2 — Read compute-target patterns
 
@@ -87,7 +87,7 @@ Wire connection strings via Key Vault `secretRef` (Container Apps) or `@Microsof
 5. If `buildRequirements.hasBuildKitSyntax == true`: ⛔ create `{component}/Dockerfile.azure` per [dockerfile-generation.md § ACR Build Compatibility](dockerfile-generation.md).
 6. If Container Apps and component has NO Dockerfile: read [dockerfile-generation.md](dockerfile-generation.md) and generate one. Follow the layer ordering, port alignment, and security defaults from that reference — do NOT generate from memory.
 
-> ⛔ **Health probes for two-phase Container Apps:** Use `/healthz` (liveness-only check) for BOTH liveness AND readiness probes. Do NOT use `/readyz` for readiness — `/readyz` checks DB connectivity, which returns 503 during Phase 1 (DB secrets not wired yet), causing Container Apps to mark all replicas unhealthy and show the Azure splash page instead of the app.
+> ⛔ **Health probes for Container Apps:** Probe path priority: (1) `prereq-output.json.healthEndpoint` if non-null, (2) first detected GET route from the app, (3) `/` only if the app has a root handler. Do NOT default to `/` for APIs that only serve sub-paths — returns 404, blocks activation. For DB apps: use `/healthz` not `/readyz` (DB not wired in Phase 1).
 
 ### Step 8 — Validate syntax
 

@@ -30,6 +30,7 @@ import {
   shouldEarlyTerminateAfterRemediation,
   assertAgentScannedWorkspace,
   assertDoesNotBlindlyApprove,
+  shouldEarlyTerminateOnScaffoldOrDeploy,
 } from "../azure-app-onboard/app-onboard-test-helpers";
 import { cloneRepo } from "../utils/git-clone";
 import * as fs from "fs";
@@ -54,6 +55,7 @@ export {
   assertReEvaluationAfterFix,
   assertAgentScannedWorkspace,
   assertDoesNotBlindlyApprove,
+  shouldEarlyTerminateOnScaffoldOrDeploy,
   cloneRepo,
 };
 export type { AgentMetadata };

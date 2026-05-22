@@ -243,8 +243,10 @@ function freshenTimestamps(workspace: string): void {
 export const SKILL_NAME = "azure-app-onboard";
 export const RUNS_PER_PROMPT = 1;
 export const invocationRateThreshold = 0.8;
-export const testTimeoutMs = 1800000; // 30 minutes per test
-export const negativeTestTimeoutMs = 900000; // 15 minutes — negative tests with multi-turn follow-ups need headroom
+export const testTimeoutMs = 2700000; // 45 minutes per test — full pipeline tests regularly hit 25-30min
+export const negativeTestTimeoutMs = 1200000; // 20 minutes — negative tests correctly halt but need headroom for artifact writing
+export const prepareTestTimeoutMs = 900_000; // 15 minutes — prepare sub-skill tests max out at ~7min (cost-depth 6m55s)
+export const scaffoldTestTimeoutMs = 900_000; // 15 minutes — scaffold sub-skill tests max out at ~9min (Bicep Express 8m33s)
 
 /**
  * First follow-up for ALL app-onboard integration tests. Resolves the
@@ -550,8 +552,13 @@ export function shouldEarlyTerminateForPlanPresented(agentMetadata: AgentMetadat
     const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
     const isIaCWrite = (tc.data.toolName === "create_file" || tc.data.toolName === "write_file") &&
       (args.includes(".bicep") || args.includes(".tf") || args.includes("main.bicep") || args.includes("main.tf"));
-    const isDeployCmd = args.includes("azd up") || args.includes("azd provision") ||
-      args.includes("az deployment") || args.includes("terraform apply");
+    // Only match deploy commands in actual shell executions — NOT in task/subagent prompts
+    // that merely reference deploy commands as instructions. A `task` dispatch with
+    // "az deployment" in its prompt text is teaching a subagent, not executing a deploy.
+    const isShellTool = tc.data.toolName === "powershell" || tc.data.toolName === "bash";
+    const isDeployCmd = isShellTool &&
+      (args.includes("azd up") || args.includes("azd provision") ||
+       args.includes("az deployment") || args.includes("terraform apply"));
     return isIaCWrite || isDeployCmd;
   });
 
@@ -619,8 +626,10 @@ export function shouldEarlyTerminateForApprovalGate(agentMetadata: AgentMetadata
     const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
     const isIaCWrite = (tc.data.toolName === "create_file" || tc.data.toolName === "write_file") &&
       (args.includes(".bicep") || args.includes(".tf") || args.includes("main.bicep") || args.includes("main.tf"));
-    const isDeployCmd = args.includes("azd up") || args.includes("azd provision") ||
-      args.includes("az deployment") || args.includes("terraform apply");
+    const isShellTool = tc.data.toolName === "powershell" || tc.data.toolName === "bash";
+    const isDeployCmd = isShellTool &&
+      (args.includes("azd up") || args.includes("azd provision") ||
+       args.includes("az deployment") || args.includes("terraform apply"));
     return isIaCWrite || isDeployCmd;
   });
 
@@ -731,6 +740,22 @@ export function shouldEarlyTerminateOnScaffoldOrDeploy(agentMetadata: AgentMetad
 
   if (hasDeployCmd || hasIaCWrite) {
     agentMetadata.testComments.push("⚠️ EARLY TERMINATE: Agent started scaffold/deploy on negative repo — stopping before damage.");
+    return true;
+  }
+
+  // Halt detection — when the agent correctly identifies an unsupported/broken
+  // repo and refuses to proceed, terminate early instead of burning 15+ minutes
+  // on follow-up conversation about migration options.
+  const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+  const agentHalted =
+    (messages.includes("not ready") || messages.includes("cannot proceed") ||
+     messages.includes("blocked") || messages.includes("halt") ||
+     messages.includes("cannot deploy") || messages.includes("won't deploy") ||
+     messages.includes("not supported") || messages.includes("end-of-life") ||
+     messages.includes("eol")) &&
+    toolCalls.length > 8; // enough tool calls to have done a real scan
+  if (agentHalted) {
+    agentMetadata.testComments.push("✅ EARLY TERMINATE: Agent correctly identified blocking issues and halted pipeline.");
     return true;
   }
   return false;
@@ -2154,6 +2179,21 @@ export function shouldEarlyTerminateOnDeployComplete(metadata: AgentMetadata): b
       return true;
     }
 
+    // Gate 3 (fallback): if deploy-result.json was written but no post-deploy signal
+    // after 15+ additional tool calls, terminate anyway — the agent may have moved on
+    // without explicit handoff keywords, or SCM re-disable may have failed silently.
+    const deployResultIdx = toolCalls.findIndex(tc => {
+      const tn = (tc.data.toolName ?? "").toLowerCase();
+      if (tn !== "create_file" && tn !== "write_file" && tn !== "create") return false;
+      const argsObj = (tc.data.arguments ?? {}) as Record<string, unknown>;
+      const fp = ((argsObj.path ?? argsObj.filePath ?? "") as string).toLowerCase();
+      return fp.includes("deploy-result");
+    });
+    if (deployResultIdx >= 0 && toolCalls.length - deployResultIdx > 15) {
+      m.testComments.push("⚠️ EARLY TERMINATE (fallback): deploy-result.json written but no post-deploy signal after 15 tool calls — terminating to avoid timeout.");
+      return true;
+    }
+
     return false;
   })(metadata);
 }
@@ -2499,14 +2539,22 @@ export function assertPricingHandled(agentMetadata: AgentMetadata): void {
     return toolName.includes("price") || toolName.includes("cost");
   });
 
-  const passed = usedPricingMcp || usedCostTool || templateRead || pricingInTaskArgs;
+  // Free-tier shortcut: pricing-guide.md says "If ALL services use free-tier SKUs →
+  // write $0 cost estimate, skip to Step 7." The agent legitimately skips the pricing
+  // API in this case. Accept if the agent mentions $0 or free-tier in cost context.
+  const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+  const usedFreeTierShortcut =
+    (messages.includes("$0") || messages.includes("free tier") || messages.includes("free-tier")) &&
+    (messages.includes("cost") || messages.includes("pric") || messages.includes("estimat"));
+
+  const passed = usedPricingMcp || usedCostTool || templateRead || pricingInTaskArgs || usedFreeTierShortcut;
 
   if (!passed) {
     agentMetadata.testComments.push(
-      `❌ PREPARE PRICING: No pricing MCP call or sub-agent detected. MCP pricing tool: ${usedPricingMcp}, cost tool: ${usedCostTool}, subagent-pricing.md read: ${templateRead}, pricing in task args: ${pricingInTaskArgs}. Cost estimates must come from API data, not guesses.`,
+      `❌ PREPARE PRICING: No pricing MCP call, sub-agent, or free-tier shortcut detected. MCP pricing tool: ${usedPricingMcp}, cost tool: ${usedCostTool}, subagent-pricing.md read: ${templateRead}, pricing in task args: ${pricingInTaskArgs}, free-tier shortcut: ${usedFreeTierShortcut}. Cost estimates must come from API data (or $0 free-tier shortcut).`,
     );
   } else {
-    const source = usedPricingMcp ? "MCP pricing tool" : usedCostTool ? "cost/price MCP tool" : templateRead ? "pricing sub-agent template" : "task with pricing instructions";
+    const source = usedPricingMcp ? "MCP pricing tool" : usedCostTool ? "cost/price MCP tool" : templateRead ? "pricing sub-agent template" : pricingInTaskArgs ? "task with pricing instructions" : "free-tier shortcut ($0)";
     agentMetadata.testComments.push(
       `✅ PREPARE PRICING: Pricing handled via ${source}`,
     );

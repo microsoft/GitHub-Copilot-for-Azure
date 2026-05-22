@@ -30,6 +30,7 @@ import {
   assertReEvaluationAfterFix,
   assertAgentScannedWorkspace,
   assertDoesNotBlindlyApprove,
+  shouldEarlyTerminateOnScaffoldOrDeploy,
   cloneRepo,
 } from "./prereq-test-helpers";
 import type { ExpectedVerdicts } from "./prereq-test-helpers";
@@ -219,7 +220,9 @@ describeIntegration(`${SKILL_NAME} - Negative Integration Tests`, () => {
         ],
         nonInteractive: true,
         preserveWorkspace: true,
-        shouldEarlyTerminate: earlyTerminateOnPrereqComplete,
+        shouldEarlyTerminate: (metadata) =>
+          shouldEarlyTerminateOnScaffoldOrDeploy(metadata) ||
+          earlyTerminateOnPrereqComplete(metadata),
       });
 
       softCheckSkill(agentMetadata, SKILL_NAME);

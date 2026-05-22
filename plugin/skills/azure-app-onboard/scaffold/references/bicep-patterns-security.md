@@ -78,6 +78,8 @@ Store secrets in Key Vault. Reference via app settings — never inline.
 >
 > **Container Apps exception:** Phase 1 of two-phase deployment uses `secrets: []` — NO secrets at all (not plaintext, not KV). KV `secretRef` entries are activated in Phase 2 after RBAC propagates. See [bicep-container-apps.md](../../scaffold/references/bicep-container-apps.md) § Two-Phase Wiring.
 >
+> ⛔ **Container Apps KV URL — do NOT use `environment().suffixes.keyvaultDns`.** That function returns `.vault.azure.net` (WITH leading dot) → double-dot URL → `ContainerAppSecretKeyVaultUrlInvalid`. Use `'https://${kvName}.vault.azure.net/secrets/...'` with `#disable-next-line no-hardcoded-env-urls` to suppress the linter.
+>
 > **Correct patterns:**
 > 1. **Key Vault reference (preferred):** `'@Microsoft.KeyVault(VaultName=${kvName};SecretName=secret-key)'`
 > 2. **Deploy-time seeding (free-tier):** Omit from Bicep; run `az webapp config appsettings set --settings SECRET_KEY=$(openssl rand -base64 32)` post-deploy

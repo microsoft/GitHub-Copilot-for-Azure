@@ -21,7 +21,7 @@ import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboardWithCleanup,
   SKILL_NAME,
-  testTimeoutMs,
+  scaffoldTestTimeoutMs,
   shouldEarlyTerminateOnAzdDecisionGate,
   assertAzdDecisionGatePresented,
   assertSessionFileCreated,
@@ -85,7 +85,7 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, scaffoldTestTimeoutMs);
 
     test("e2e — todo-nodejs-mongo (canonical azd template with Key Vault + Cosmos)", async () => {
       await withTestResult(async () => {
@@ -149,7 +149,7 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, scaffoldTestTimeoutMs);
   });
 
   describe("existing-azd-remix", () => {
@@ -206,6 +206,6 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, scaffoldTestTimeoutMs);
   });
 });

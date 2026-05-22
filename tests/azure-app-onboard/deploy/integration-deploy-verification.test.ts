@@ -52,6 +52,7 @@ import {
   assertNoPasswordPrompts,
   hasReachedDeployPhase,
   shellCommandContains,
+  assertBicepTagPresent,
 } from "../app-onboard-test-helpers";
 
 describeAppOnboardWithCleanup("Deploy Verification Tests", (agent) => {
@@ -183,10 +184,15 @@ describeAppOnboardWithCleanup("Deploy Verification Tests", (agent) => {
         }
         expect(usedAzd).toBe(false);
 
+        // ── Bicep tag — seeded fixture must retain app-onboard-skill tag through deploy ──
+        if (workspacePath) {
+          assertBicepTagPresent(agentMetadata, workspacePath);
+        }
+
         // ── Password safety — no ask_user for passwords ──
         assertNoPasswordPrompts(agentMetadata, true);
       });
-    }, 3000000); // 50 min — full e2e deploy
+    }, 3600000); // 60 min — full e2e deploy
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -266,9 +272,14 @@ describeAppOnboardWithCleanup("Deploy Verification Tests", (agent) => {
           }
         }
 
+        // ── Bicep tag — seeded fixture must retain app-onboard-skill tag through deploy ──
+        if (workspacePath) {
+          assertBicepTagPresent(agentMetadata, workspacePath);
+        }
+
         // ── Password safety — no ask_user for passwords ──
         assertNoPasswordPrompts(agentMetadata, true);
       });
-    }, 3000000); // 50 min
+    }, 3600000); // 60 min
   });
 });

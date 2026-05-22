@@ -72,8 +72,10 @@ function shouldEarlyTerminateForDeployOutput(agentMetadata: AgentMetadata): bool
     const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
     const isIaCWrite = (tc.data.toolName === "create_file" || tc.data.toolName === "write_file") &&
       (args.includes(".bicep") || args.includes(".tf"));
-    const isDeployCmd = args.includes("azd up") || args.includes("azd provision") ||
-      args.includes("az deployment") || args.includes("terraform apply");
+    const isShellTool = tc.data.toolName === "powershell" || tc.data.toolName === "bash";
+    const isDeployCmd = isShellTool &&
+      (args.includes("azd up") || args.includes("azd provision") ||
+       args.includes("az deployment") || args.includes("terraform apply"));
     return isIaCWrite || isDeployCmd;
   });
 

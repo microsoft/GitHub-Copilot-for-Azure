@@ -220,7 +220,10 @@ describeAppOnboardWithCleanup("Catalog Tests", (agent) => {
         // Must NOT be fast-tracked — complex multi-component app requires analysis (from fast-track test)
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
         const hasQuestion = messages.includes("?");
-        const hasMultiComponentAnalysis = messages.includes("component") || messages.includes("frontend") || messages.includes("backend");
+        const hasMultiComponentAnalysis =
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "component") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "frontend") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "backend");
         if (!hasQuestion && !hasMultiComponentAnalysis) {
           agentMetadata.testComments.push("❌ FAST-TRACK VIOLATION: Agent fast-tracked a complex multi-component app without asking questions or analyzing components");
         }

@@ -28,6 +28,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   identity: { type: 'SystemAssigned' }
   properties: {
     configuration: {
+      ingress: {
+        external: true
+        targetPort: isPlaceholder ? 80 : appPort
+        allowInsecure: false  // ⛔ MANDATORY
+      }
       registries: isPlaceholder ? [] : [{ server: acr.properties.loginServer, identity: 'system' }]
       secrets: isPlaceholder ? [] : [ /* KV secretRefs here */ ]
     }
@@ -43,6 +48,22 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 
 > ⛔ **Do NOT set `revisionSuffix`.** Omit it entirely — ARM auto-generates unique revision names. Hardcoding `revisionSuffix: 'v1'` causes Phase 2 redeploy to fail with "revision with suffix v1 already exists."
 
+### AcrPull Role Assignment
+
+> ⛔ **AcrPull role GUID: `7f951dda-4ed3-4680-a7ca-43fe172d538d`.** Copy verbatim — wrong GUIDs cause `RoleDefinitionDoesNotExist`.
+
+```bicep
+resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, containerApp.id, '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+    principalId: containerApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+```
+
 ## Log Analytics Workspace Key
 
 > ⛔ **Use `resource.listKeys()`, NOT `reference()`.** `reference()` does not expose `primarySharedKey`.
@@ -55,17 +76,30 @@ var laKey = logAnalyticsWorkspace.listKeys().primarySharedKey
 var laKey = reference(logAnalyticsWorkspace.id, '2023-09-01').primarySharedKey
 ```
 
+### Log Analytics customerId vs resource ID
+
+> ⛔ **Output BOTH `id` and `customerId` from the log-analytics module.** Container Apps Environment needs the GUID `customerId`. App Insights needs the ARM resource ID. Do NOT use `split(workspaceId, '/')[8]` — that extracts the workspace name, not the GUID.
+
+```bicep
+// log-analytics.bicep outputs:
+output id string = logAnalyticsWorkspace.id                            // ARM resource ID
+output customerId string = logAnalyticsWorkspace.properties.customerId // GUID
+output sharedKey string = logAnalyticsWorkspace.listKeys().primarySharedKey
+
+// container-app-environment.bicep:
+param workspaceCustomerId string  // GUID, NOT resource ID
+logAnalyticsConfiguration: {
+  customerId: workspaceCustomerId
+  sharedKey: workspaceSharedKey
+}
+// ❌ WRONG: customerId: split(workspaceId, '/')[8]
+```
+
 ## Ingress & Port Mapping
 
 > ⛔ **Container resource limits:** Use decimal format for memory: `'0.5Gi'`, `'1Gi'`, `'2Gi'` — NOT Kubernetes-style `'512Mi'`. CPU must be type `string`: `'0.25'`, `'0.5'`, `'1'`. Valid combos: `0.25/0.5Gi`, `0.5/1Gi`, `0.75/1.5Gi`, `1/2Gi`, `1.25/2.5Gi`, `1.5/3Gi`, `1.75/3.5Gi`, `2/4Gi`.
 
-> ⛔ **ACR module:** `retentionPolicy` is **Premium-only**. For Basic/Standard ACR, omit `retentionPolicy` entirely — ARM rejects it. Basic SKU is sufficient for dev/test workloads.
-
-> ⛔ **Port alignment is critical.** The MCR placeholder listens on **port 80**. Your app likely uses a different port (3000, 5000, 8080). Mismatch = health probe failure → "Operation expired."
-> - **Phase 1 (placeholder):** `targetPort: 80`
-> - **Phase 2 (real image):** `targetPort: {appPort}` (from Dockerfile EXPOSE or app config)
-> - Use conditional: `targetPort: isPlaceholder ? 80 : appPort`
-> - Set `allowInsecure: false` (⛔ MANDATORY — enforce HTTPS-only)
+> ⛔ **ACR module:** `retentionPolicy` is **Premium-only**. For Basic/Standard ACR, omit `retentionPolicy` entirely — ARM rejects it.
 
 ## Key Vault Secret References
 
@@ -90,6 +124,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       secrets: [
         {
           name: 'db-connection-string'
+          // ⛔ Do NOT replace vault.azure.net with environment().suffixes.keyvaultDns — it adds a leading dot → double-dot URL
+          #disable-next-line no-hardcoded-env-urls
           keyVaultUrl: 'https://${keyVault.name}.vault.azure.net/secrets/db-connection-string'
           identity: 'system'  // Uses the CA's system-assigned managed identity
         }
@@ -124,42 +160,22 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
 > )
 > ```
 
-> ⛔ **The CA's managed identity needs `Key Vault Secrets User` role scoped to the Key Vault resource — NOT `resourceGroup()`.** Scoping to `resourceGroup()` causes 403. Always set `scope: keyVault`. For role assignment patterns, see [rbac-roles.md](rbac-roles.md).
-
-> ⛔ **MI identity wiring for KV secret refs — use the correct IDs:**
->
-> ```bicep
-> // In secrets[]: 'system' means use the CA's system-assigned MI
-> secrets: [{ name: 'my-secret', keyVaultUrl: '...', identity: 'system' }]
->
-> // In role assignment: use principalId (object ID), NOT clientId
-> resource kvRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
->   scope: keyVault                    // ⛔ scope to KV resource, not RG
->   properties: {
->     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
->     principalId: containerApp.identity.principalId  // ⛔ object ID from MI output
->     principalType: 'ServicePrincipal'               // ⛔ required — prevents AAD lookup delay
->   }
-> }
-> ```
->
-> ❌ **WRONG:** `principalId: containerApp.identity.clientId` — clientId is NOT the object ID. Role assignments require the MI's `principalId` (object ID).
-> ❌ **WRONG:** `identity: containerApp.id` in secrets[] — use `'system'` for system-assigned MI, or the full MI resource ID for user-assigned.
-
-> For KV secret seeding and dependency chain, see [env-var-secrets.md](env-var-secrets.md).
-
-## Image Parameter (Redeploy Safety)
-
-Prevent Bicep redeploy from reverting to the placeholder image:
+> ⛔ **KV Secrets User role scoped to Key Vault resource — NOT `resourceGroup()`.** Scoping to `resourceGroup()` causes 403.
 
 ```bicep
-param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
-
-// In container template:
-containers: [{ image: containerImage, ... }]
+resource kvRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: keyVault                    // ⛔ scope to KV resource, not RG
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6') // Key Vault Secrets User
+    principalId: containerApp.identity.principalId  // ⛔ object ID, NOT clientId
+    principalType: 'ServicePrincipal'
+  }
+}
 ```
 
-Deploy phase passes real image: `--parameters containerImage='{acr}.azurecr.io/{name}:latest'`.
+> ❌ **WRONG:** `principalId: .clientId` (not the object ID) or `identity: containerApp.id` in secrets[] (use `'system'` for system-assigned MI).
+
+> For KV secret seeding and dependency chain, see [env-var-secrets.md](env-var-secrets.md).
 
 ## Multi-Container Internal DNS
 

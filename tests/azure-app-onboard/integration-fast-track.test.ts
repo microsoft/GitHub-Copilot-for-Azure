@@ -11,6 +11,7 @@
 import {
   isSkillInvoked,
   softCheckSkill,
+  doesAssistantOrToolsIncludeKeyword,
   withTestResult,
   getAllAssistantMessages,
 } from "../utils/evaluate";
@@ -63,10 +64,18 @@ describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
         // Should detect static site / HTML
-        expect(messages.includes("static") || messages.includes("html")).toBe(true);
+        expect(
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "static") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "html")
+        ).toBe(true);
 
         // Should recommend free tier (F1 for App Service, or Static Web Apps free)
-        expect(messages.includes("f1") || messages.includes("free") || messages.includes("$0") || messages.includes("static web app")).toBe(true);
+        expect(
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "f1") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "free") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "$0") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "static web app")
+        ).toBe(true);
 
         // Should NOT ask about stack/DB/auth (simple static site skips these)
         const asksUnnecessaryQuestions =
@@ -96,10 +105,10 @@ describeAppOnboardWithCleanup("Fast-Track Tests", (agent) => {
 
         // Live endpoint
         const hasEndpoint =
-          messages.includes("azurewebsites.net") ||
-          messages.includes("azurestaticapps.net") ||
-          messages.includes("endpoint") ||
-          messages.includes("deployed");
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "azurewebsites.net") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "azurestaticapps.net") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "endpoint") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "deployed");
         if (!hasEndpoint) {
           agentMetadata.testComments.push("⚠️ No deployed endpoint URL found in agent output");
         }
