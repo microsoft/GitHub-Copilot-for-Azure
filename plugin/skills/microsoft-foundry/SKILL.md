@@ -44,51 +44,13 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 > **Prompt Optimization:** For requests like "optimize my prompt" or "improve my agent instructions," load [observe](foundry-agent/observe/observe.md) and use the `prompt_optimize` MCP tool through that eval-driven workflow.
 
-## Infrastructure Lifecycle
+## Infrastructure and Agent Lifecycle
 
-Match user intent to the correct infrastructure workflow.
+See [Lifecycle Routing](references/lifecycle-routing.md) to match user intent to the correct infrastructure or agent workflow.
 
-| User Intent | Workflow |
-|-------------|---------|
-| "Create Foundry" / "Set up Foundry" (ambiguous) | Use `AskUserQuestion`: (a) just an AI Services resource, (b) a project with public access, or (c) a project with network isolation? Route: (a) -> [resource/create](resource/create/create-foundry-resource.md), (b) -> [project/create](project/create/create-foundry-project.md), (c) -> [private-network](resource/private-network/private-network.md) |
-| Set up Foundry with VNet isolation | [private-network](resource/private-network/private-network.md) |
-| Create a Foundry project (public) | [project/create](project/create/create-foundry-project.md) |
-| Create a bare Foundry resource | [resource/create](resource/create/create-foundry-resource.md) |
+## .foundry Workspace and Agent Types
 
-## Agent Development Lifecycle
-
-Match user intent to the correct agent workflow. Read each sub-skill in order before executing.
-
-| User Intent | Workflow (read in order) |
-|-------------|------------------------|
-| Create a new agent from scratch | [create](foundry-agent/create/create-hosted.md) -> [deploy](foundry-agent/deploy/deploy.md) -> [invoke](foundry-agent/invoke/invoke.md) |
-| Make existing Python agent FAOS optimizable | [faos-optimize](foundry-agent/faos-optimize/faos-optimize.md) -> review -> deploy -> invoke |
-| Deploy an agent (code already exists) | deploy -> invoke |
-| Update/redeploy an agent after code changes | deploy -> invoke |
-| Invoke/test/chat with an agent | invoke |
-| Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
-| Evaluate and optimize agent (full loop) | observe |
-| Enable continuous evaluation monitoring | observe (Step 6: CI/CD & Monitoring) |
-| Troubleshoot an agent issue | invoke -> troubleshoot |
-| Fix a broken agent (troubleshoot + redeploy) | invoke -> troubleshoot -> apply fixes -> deploy -> invoke |
-
-## Agent: .foundry Workspace Standard
-
-Every agent source folder should keep Foundry-specific state under `.foundry/`:
-
-```text
-<agent-root>/
-  .foundry/
-    agent-metadata.yaml
-    agent-metadata.prod.yaml
-    datasets/
-    evaluators/
-    results/
-```
-
-- `agent-metadata.yaml` is the preferred local/dev metadata file. Optional sidecar files such as `agent-metadata.prod.yaml` can hold a single prod or CI-targeted environment without mixing multiple environments in one file.
-- `datasets/` and `evaluators/` are local cache folders. Reuse them when they are current, and ask before refreshing or overwriting them.
-- See [Agent Metadata Contract](references/agent-metadata-contract.md) for the canonical schema and workflow rules.
+See [.foundry Workspace Standard](references/foundry-workspace.md) for workspace layout, agent types, and setup references.
 
 ## Agent: Setup References
 
@@ -96,80 +58,9 @@ Every agent source folder should keep Foundry-specific state under `.foundry/`:
 
 ## Agent: Project Context Resolution
 
-Agent skills should run this step **only when they need configuration values they don't already have**. If a value (for example, agent root, environment, project endpoint, or agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
+> **Scope:** Applies to deploy, invoke, observe, trace, troubleshoot, eval-datasets, faos-optimize. Does **not** apply to create (which uses `azd ai agent` CLI).
 
-### Step 1: Discover Agent Roots
-
-Search the workspace for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
-
-- **One match** -> use that agent root.
-- **Multiple matches** -> require the user to choose the target agent folder.
-- **No matches** -> for create/deploy workflows, seed a new `.foundry/` folder during setup; for all other workflows, stop and ask the user which agent source folder to initialize.
-
-After selecting an agent root, keep all local `.foundry` cache inspection, source inspection, evaluator suggestions, dataset suggestions, and prompt-optimization context inside that folder only. Do **not** scan sibling agent folders unless the user explicitly switches roots.
-
-### Step 2: Select Metadata File and Resolve Environment
-
-Inside the selected agent root, choose the metadata file in this order:
-1. Metadata filename or path explicitly provided by the user or workflow
-2. If an explicit environment is already known and `.foundry/agent-metadata.<env>.yaml` exists, use that file
-3. `.foundry/agent-metadata.yaml`
-4. If multiple metadata files remain and no rule above selects one, prompt the user to choose
-
-Read the selected metadata file and resolve the environment in this order:
-1. Environment explicitly named by the user
-2. If the selected metadata file defines exactly one environment, use it
-3. Environment already selected earlier in the session
-4. `defaultEnvironment` from metadata
-
-If the selected metadata file still contains multiple environments and none of the rules above selects one, prompt the user to choose. Keep the selected agent root, metadata file, and environment visible in every workflow summary.
-
-If the selected environment exposes older `testSuites[]` metadata but not `evaluationSuites[]`, treat `testSuites[]` as the source for this session and normalize each entry in memory to the `evaluationSuites[]` shape before continuing. If the metadata is older still and only exposes legacy `testCases[]`, normalize that list the same way. Preserve dataset and evaluator fields, keep any existing `tags`, and map legacy `priority` to `tags.tier` only when `tags.tier` is missing: `P0` -> `smoke`, `P1` -> `regression`, `P2` -> `coverage`.
-
-### Step 3: Resolve Common Configuration
-
-Use the selected environment in the selected metadata file as the primary source:
-
-| Metadata Field | Resolves To | Used By |
-|----------------|-------------|---------|
-| `environments.<env>.projectEndpoint` | Project endpoint | deploy, invoke, observe, trace, troubleshoot |
-| `environments.<env>.agentName` | Agent name | invoke, observe, trace, troubleshoot |
-| `environments.<env>.azureContainerRegistry` | ACR registry name / image URL prefix | deploy |
-| `environments.<env>.evaluationSuites[]` | Dataset + evaluator + tag bundles | observe, eval-datasets |
-
-### Step 4: Bootstrap Missing Metadata (Create/Deploy Only)
-
-If create/deploy is initializing a new `.foundry` workspace and metadata fields are still missing, check if `azure.yaml` exists in the project root. If found, run `azd env get-values` and use it to seed `agent-metadata.yaml` by default, or `agent-metadata.<env>.yaml` when the workflow explicitly targets a separate environment-specific file.
-
-On any metadata write (deploy, auto-setup, dataset refresh, or trace-to-dataset update), persist only `evaluationSuites[]` in the selected metadata file. If the selected file is a preferred single-environment file, rewrite only that one environment block. If the selected file is a legacy multi-environment file, rewrite only the selected environment block. Never copy or merge environments across sibling metadata files automatically. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite it to `evaluationSuites[]` and remove migrated `priority` fields from the rewritten entries.
-
-| azd Variable | Seeds |
-|-------------|-------|
-| `AZURE_AI_PROJECT_ENDPOINT` or `AZURE_AIPROJECT_ENDPOINT` | `environments.<env>.projectEndpoint` |
-| `AZURE_CONTAINER_REGISTRY_NAME` or `AZURE_CONTAINER_REGISTRY_ENDPOINT` | `environments.<env>.azureContainerRegistry` |
-| `AZURE_SUBSCRIPTION_ID` | Azure subscription for trace/troubleshoot lookups |
-
-### Step 5: Collect Missing Values
-
-Use the `ask_user` or `askQuestions` tool **only for values not resolved** from the user's message, session context, metadata, or azd bootstrap. Common values skills may need:
-- **Agent root** -- Target folder containing `.foundry/agent-metadata*.yaml`
-- **Metadata file** -- `agent-metadata.yaml` for local/dev, or an explicit sidecar such as `agent-metadata.prod.yaml`
-- **Environment** -- `dev`, `prod`, or another environment key from metadata
-- **Project endpoint** -- AI Foundry project endpoint URL
-- **Agent name** -- Name of the target agent
-
-> **Tip:** If the user already provides the agent path, environment, project endpoint, or agent name, extract it directly -- do not ask again.
-
-## Agent: Agent Types
-
-All agent skills support two agent types:
-
-| Type | Kind | Description |
-|------|------|-------------|
-| **Prompt** | `"prompt"` | LLM-based agents backed by a model deployment |
-| **Hosted** | `"hosted"` | Container-based agents running custom code |
-
-Use `agent_get` MCP tool to determine an agent's type when needed.
+See [Project Context Resolution](references/project-context-resolution.md) for the full 5-step procedure: discover agent roots, select metadata file, resolve environment, bootstrap from azd, and collect missing values.
 
 ## Tool Usage Conventions
 
