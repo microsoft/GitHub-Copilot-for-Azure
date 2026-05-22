@@ -425,22 +425,21 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
         break;
       }
 
+      case "skill.invoked": {
+        const skillName = event.data.name;
+        lines.push("```");
+        lines.push(`skill: ${skillName}`);
+        lines.push("```");
+        break;
+      }
+
       case "tool.execution_start": {
         const toolName = event.data.toolName as string;
         const toolCallId = event.data.toolCallId as string;
         const args = event.data.arguments;
 
-        // Check if this is a skill invocation
-        if (toolName === "skill") {
-          const argsStr = JSON.stringify(args);
-          // Extract skill name from arguments
-          const skillMatch = argsStr.match(/"skill"\s*:\s*"([^"]+)"/);
-          const skillName = skillMatch ? skillMatch[1] : "unknown";
-          lines.push("```");
-          lines.push(`skill: ${skillName}`);
-          lines.push("```");
-        } else {
-          // Regular tool call
+        // Exclude skill invocation call and log it on skill.invoked event.
+        if (toolName !== "skill") {
           let argsJson: string;
           try {
             argsJson = JSON.stringify(args, null, 2);
