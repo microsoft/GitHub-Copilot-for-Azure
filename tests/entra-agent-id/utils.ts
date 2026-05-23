@@ -70,7 +70,10 @@ function getScriptContent(agentMetadata: AgentMetadata): string {
     if (WRITE_TOOL_FRAGMENTS.some((fragment) => toolName.toLowerCase().includes(fragment))) {
       const filePath = extractFilePath(data.arguments);
       if (filePath && isScriptFile(filePath)) {
-        parts.push(argsString(event));
+        // @todo: Use the actual type when copilot-sdk ships this fix
+        // https://github.com/github/copilot-sdk/issues/1156
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        parts.push(argsString(event as any));
       }
     }
   }
