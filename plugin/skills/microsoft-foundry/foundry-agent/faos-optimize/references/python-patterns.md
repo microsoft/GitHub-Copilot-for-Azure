@@ -1,222 +1,136 @@
-# Python FAOS (Foundry Agent Optimization Service) Optimization Patterns
+# Python Agent Optimizer in Foundry Patterns
 
-These patterns are framework-neutral. Use them to expose Python agent behavior knobs to FAOS while preserving the app's current runtime.
+Use the Azure SDK optimization package and a local baseline folder. The baseline is file-based; call `load_config()` without code-level fallback parameters.
 
-## Base Contract
+## Install and Import
 
-Use this when there is one clear instructions/model surface.
+Add the package to `requirements.txt` or the project dependency file:
 
-```python
-import os
-
-from agent_optimization import load_config
-
-SYSTEM_PROMPT = """You are a helpful assistant."""
-
-config = load_config(
-    default_instructions=SYSTEM_PROMPT,
-    default_model=os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1"),
-    default_skills_dir="skills",
-)
+```text
+azure-ai-agentserver-optimization
 ```
 
-Then map the resolved values into the existing framework:
+Import from the SDK namespace:
 
 ```python
+from azure.ai.agentserver.optimization import load_config
+```
+
+## Baseline Folder
+
+Create `.agent_configs/baseline/` beside `agent.yaml`:
+
+```text
+<agent-root>/
+  agent.yaml
+  .agent_configs/
+    baseline/
+      metadata.yaml
+      instructions.md
+      tools.json
+      skills/<skill-name>/SKILL.md
+```
+
+Example `metadata.yaml`:
+
+```yaml
+model: gpt-4o
+temperature: 0.7
+instruction_file: instructions.md
+skill_dir: skills
+tool_file: tools.json
+```
+
+`instructions.md` contains the selected baseline system/developer instructions. Include only skill folders relevant to the optimization goal.
+
+## Tools File
+
+Use only the dict format with `tool_descriptions`. Currently, only function tool description optimization is supported:
+
+```json
+{
+  "tool_descriptions": {
+    "lookup_policy": {
+      "description": "Look up the company travel policy.",
+      "parameters": {
+        "dept": "Department name"
+      }
+    }
+  }
+}
+```
+
+## Runtime Wiring
+
+Call `load_config()` with no defaults:
+
+```python
+config = load_config()
 instructions = config.compose_instructions()
-model = config.model or os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1")
+model = config.model
 ```
 
-Only apply temperature if the framework supports it:
-
-```python
-options = {}
-if config.temperature is not None:
-    options["temperature"] = config.temperature
-```
-
-## Multi-Agent Named Targets
-
-When a Python app has multiple agents, use names that match the architecture rather than one generic `config`.
-
-```python
-orchestrator_config = load_config(
-    default_instructions=ORCHESTRATOR_PROMPT,
-    default_model=os.getenv("ORCHESTRATOR_MODEL_DEPLOYMENT_NAME", os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1")),
-    default_skills_dir="skills/orchestrator",
-)
-
-tool_agent_config = load_config(
-    default_instructions=TOOL_AGENT_PROMPT,
-    default_model=os.getenv("TOOL_AGENT_MODEL_DEPLOYMENT_NAME", os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1")),
-    default_skills_dir="skills/tool-agent",
-)
-```
-
-Use the evaluator objective to choose which named target to add first. For example, `intent_resolution` usually points to `orchestrator_config`, while `builtin.tool_call_accuracy` often points to `tool_agent_config`.
-
-## Microsoft Agent Framework
-
-Keep the current hosting adapter and agent construction. Replace only the selected knobs.
-
-```python
-agent = Agent(
-    client=client,
-    instructions=config.compose_instructions(),
-    tools=existing_tools,
-    default_options=default_options,
-)
-```
-
-For model selection:
+For Microsoft Agent Framework:
 
 ```python
 client = FoundryChatClient(
     project_endpoint=project_endpoint,
-    model=config.model or os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1"),
+    model=config.model,
     credential=credential,
+)
+
+agent = Agent(
+    client=client,
+    instructions=config.compose_instructions(),
+    tools=tools,
 )
 ```
 
-If the model client is shared by multiple agents, flag this as a global side effect in the review summary.
+Patch optimized function tool descriptions through the public helper:
 
-If the runtime should advertise local file-based skills, load `config.skills_dir` before composing instructions:
+```python
+config.apply_tool_descriptions(tools)
+```
+
+Load skills on demand when the runtime has a safe skill/tool mechanism:
 
 ```python
 from pathlib import Path
+from azure.ai.agentserver.optimization import load_skills_from_dir
 
-from agent_optimization._config import _load_skills_from_dir
-
-if not config.skills and config.skills_dir:
-    config.skills.extend(_load_skills_from_dir(Path(config.skills_dir)))
-instructions = config.compose_instructions()
+skills = load_skills_from_dir(Path(config.skills_dir)) if config.skills_dir else []
 ```
 
-Patch optimized tool descriptions only on safe metadata surfaces:
+## Target Selection
 
-```python
-for tool_fn in existing_tools:
-    overrides = config.tool_definitions.get(getattr(tool_fn, "__name__", ""))
-    if overrides and "description" in overrides:
-        tool_fn.__doc__ = overrides["description"]
-```
+Use evaluator and dataset goals to decide what belongs in the baseline:
 
-## FastAPI or Custom Responses Runtime
+| Signal | Prefer |
+| ------ | ------ |
+| `relevance`, `task_adherence` | primary instructions and model |
+| `intent_resolution` | router/orchestrator instructions |
+| `builtin.tool_call_accuracy` | tool-calling instructions and function `tool_descriptions` |
+| safety/groundedness | safety, retrieval, citation, or answer-synthesis instructions |
 
-Keep the existing HTTP contract. Use config values where the model call is created.
-
-```python
-instructions = body.get("instructions", config.compose_instructions())
-model = body.get("model", config.model or os.getenv("MODEL_DEPLOYMENT_NAME", "gpt-4.1"))
-```
-
-When the app already supports request-level overrides, preserve them and use FAOS config as the default.
-
-## LangGraph or Workflow Runtimes
-
-Do not rewrite the graph. Identify node-level prompts and model clients.
-
-- Router/planner nodes are good targets for `intent_resolution`.
-- Tool nodes are good targets for `builtin.tool_call_accuracy`.
-- Final synthesis nodes are good targets for `relevance`, style, and task adherence.
-
-Prefer node-specific config names:
-
-```python
-router_config = load_config(
-    default_instructions=ROUTER_PROMPT,
-    default_model=default_model,
-)
-```
-
-## Optional Skill Support
-
-`default_skills_dir="skills"` records the default skill location. It does not automatically make the runtime load files or expose skill tools unless the app explicitly loads `config.skills_dir` as shown above.
-
-Add file-based skill support only when the target framework has a safe tool-calling or plugin mechanism. If adding it, use progressive disclosure:
-
-1. Startup prompt contains skill name and description only
-2. Model calls a tool such as `load_skill` to load full skill instructions
-3. Model calls a file-reading tool only for deep skill assets when needed
-
-Do not append every `SKILL.md` body into every agent prompt by default, especially in multi-agent architectures.
-
-## Dependency Guidance
-
-Add dependencies only when needed:
-
-```text
-python-dotenv>=1.0.0
-azure-identity>=1.19.0
-```
-
-Use `python-dotenv` when local `.env` support exists. Use `azure-identity` when the local resolver uses Entra tokens.
+For multi-agent apps, scaffold the target role's instructions and related skills/tools. Do not merge unrelated role prompts into one baseline.
 
 ## Environment Variables
-
-The canonical local `agent_optimization` package uses hosted-agent-safe `OPTIMIZATION_*` variables first:
 
 | Variable | Purpose |
 | -------- | ------- |
 | `OPTIMIZATION_CONFIG` | Inline JSON config |
 | `OPTIMIZATION_CANDIDATE_ID` | Candidate identifier |
+| `OPTIMIZATION_JOB_ID` | Optimization job identifier |
 | `OPTIMIZATION_RESOLVE_ENDPOINT` | Resolver API base URL |
-| `OPTIMIZATION_LOCAL_DIR` | Local candidate directory |
-| `AGENT_OPTIMIZATION_CONFIG` | Backward-compatible inline JSON |
+| `OPTIMIZATION_LOCAL_DIR` | Custom config directory; default is `.agent_configs/` |
 
-Do not add all of these to `agent.yaml` by default. Hosted agent vNext reserves `AGENT_*` variables in user-authored deployment payloads. Add only non-reserved variables needed by the workflow, usually `OPTIMIZATION_LOCAL_DIR` or `OPTIMIZATION_CONFIG`.
-
-## Local Candidate Directory
-
-Use `OPTIMIZATION_LOCAL_DIR=.agent_optimization` for local or demo workflows without a resolver service. The local fallback expects this metadata layout. Resolver flows may persist `config.json`, but do not rely on it unless the package explicitly loads it.
-
-```text
-.agent_optimization/
-  baseline/
-    metadata.yaml
-    instructions.md
-    tools.json
-  <candidate-id>/
-    metadata.yaml
-    instructions.md
-    tools.json
-    skills/<skill-name>/SKILL.md
-```
-
-Keep loader priority explicit: inline `OPTIMIZATION_CONFIG`, resolver candidate, local directory, then defaults.
-
-## Canonical Local Package
-
-When the target repository does not already provide an optimization package, add this split-file package rather than a single-file loader:
-
-```text
-agent_optimization/
-    __init__.py
-    _config.py
-    _resolver.py
-```
-
-`__init__.py` should only re-export the public API:
-
-```python
-"""Agent optimization config loader for hosted agents."""
-
-from agent_optimization._config import OptimizationConfig, Skill, load_config
-
-__all__ = ["OptimizationConfig", "Skill", "load_config"]
-__version__ = "0.1.0"
-```
-
-`_config.py` owns `Skill`, `OptimizationConfig`, `load_config`, default fallback behavior, inline config parsing, local directory loading, and candidate config handoff.
-
-`_resolver.py` owns candidate resolution, using `OPTIMIZATION_RESOLVE_ENDPOINT`, `{endpoint}/candidates/{candidate_id}/config` for resolved config, optional skill-file download from the candidate manifest, and `DefaultAzureCredential` with the `https://ml.azure.com/.default` scope.
+Do not add all optimization env vars to `agent.yaml`. Use `OPTIMIZATION_LOCAL_DIR` only for non-default paths.
 
 ## Verification Checklist
 
-- Changed Python files compile
-- `from agent_optimization import load_config` succeeds from the agent root
-- `load_config(default_instructions="x", default_model="m")` returns defaults when no optimization env vars are set
-- Existing entrypoint, hosting adapter, and protocol remain unchanged
-- Multi-agent targets are named and documented
-- Evaluator objective influenced the target selection or was explicitly unavailable
+- Dependency file includes `azure-ai-agentserver-optimization`
+- `from azure.ai.agentserver.optimization import load_config` succeeds
+- `.agent_configs/baseline/metadata.yaml` points to existing files
+- `load_config()` is called without defaults
+- Changed Python files compile and preserve the hosting adapter/protocol
 - User is asked to review before deployment
