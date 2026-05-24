@@ -4,7 +4,8 @@ Add tools to agents to extend capabilities. This file covers tools that work wit
 - [Web Search tool](tool-web-search.md) — real-time public web search with citations (default for web search)
 - [Bing Grounding tool](tool-bing-grounding.md) — web search via dedicated Bing resource (only when explicitly requested)
 - [Azure AI Search tool](tool-azure-ai-search.md) — private data grounding with vector search
-- [MCP tool](tool-mcp.md) — remote Model Context Protocol servers
+- [MCP tool](tool-mcp.md) — remote Model Context Protocol servers (prompt agents)
+- [Foundry tool catalog](foundry-tool-catalog.md) — catalog tiles and generic remote MCP via project connections (toolbox-attached)
 
 ## Code Interpreter
 
@@ -33,6 +34,7 @@ For code samples, see: [Function Calling tool documentation](https://learn.micro
 | `BingGroundingAgentTool` | Yes (Bing) | [tool-bing-grounding.md](tool-bing-grounding.md) |
 | `AzureAISearchAgentTool` | Yes (Search) | [tool-azure-ai-search.md](tool-azure-ai-search.md) |
 | `MCPTool` | Optional | [tool-mcp.md](tool-mcp.md) |
+| Toolbox-attached tool (catalog tile or generic MCP) | Yes (project connection) | [foundry-tool-catalog.md](foundry-tool-catalog.md) + [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md) |
 
 > ⚠️ **Default for web search:** Use `WebSearchPreviewTool` unless the user explicitly requests Bing Grounding or Bing Custom Search.
 

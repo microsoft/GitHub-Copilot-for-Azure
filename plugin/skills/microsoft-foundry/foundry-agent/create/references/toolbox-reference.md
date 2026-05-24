@@ -1,6 +1,6 @@
 # Toolbox Reference
 
-Endpoint format, MCP protocol details, authentication, OAuth consent handling, endpoint testing, and troubleshooting for Foundry Toolboxes.
+Endpoint format, MCP protocol details, authentication, OAuth consent handling, endpoint testing, citation pattern, and troubleshooting for Foundry Toolboxes.
 
 ## Endpoint Format
 
@@ -17,6 +17,20 @@ The toolbox MCP endpoint is constructed from the **project endpoint** + **toolbo
 - **Required header** on every request: `Foundry-Features: Toolboxes=V1Preview`
 - `?api-version=v1` query parameter is **required** — requests without it return HTTP 400.
 
+### Agent env contract
+
+Hosted agents read the MCP endpoint from a single environment variable. Set one of these in the agent's `.env` (or have the platform inject it at deploy time):
+
+```
+# Latest version (recommended for prod):
+TOOLBOX_ENDPOINT=https://{host}/api/projects/{project}/toolboxes/{toolbox_name}/mcp?api-version=v1
+
+# Pinned to a specific version (recommended for testing a new version before promoting):
+TOOLBOX_ENDPOINT=https://{host}/api/projects/{project}/toolboxes/{toolbox_name}/versions/{version}/mcp?api-version=v1
+```
+
+> Some older samples use `FOUNDRY_TOOLBOX_ENDPOINT`. Either name works as long as the agent code reads the same one.
+
 ## MCP Protocol
 
 Toolboxes use **Model Context Protocol (MCP)** — JSON-RPC 2.0 over HTTP POST:
@@ -27,22 +41,63 @@ Toolboxes use **Model Context Protocol (MCP)** — JSON-RPC 2.0 over HTTP POST:
 
 > `prompts/list` is **not supported** by the toolbox endpoint. Always pass `load_prompts=False` to MCP client constructors.
 
+### Tool naming
+
+Tools sourced from a remote MCP server (`type: mcp`) are exposed as `{server_label}.{tool_name}` (e.g. `myserver.get_info`). When calling them via `tools/call`, you must use the prefixed name. Built-in tool types (`web_search`, `file_search`, `azure_ai_search`, `code_interpreter`) keep their canonical names.
+
 ## Authentication
 
 - **Agent → Toolbox:** Azure AD bearer token with scope `https://ai.azure.com/.default`, refreshed on every request.
-- **Toolbox → External Services:** Managed by the platform via project connections (API keys, OAuth, managed identity).
+- **Toolbox → External Services:** Managed by the platform via project connections (API keys, OAuth, managed identity). See [foundry-tool-catalog.md](foundry-tool-catalog.md) for the connection shapes that back each tool type.
+
+> ⚠️ Do **not** use scope `https://cognitiveservices.azure.com/.default`. The toolbox MCP endpoint rejects it with HTTP 401.
 
 ## OAuth Consent Handling
 
-When a toolbox includes an OAuth-based MCP connection (e.g., GitHub OAuth), the first call triggers a `CONSENT_REQUIRED` error (MCP error code `-32006`). The error message contains the consent URL.
+When a toolbox includes an OAuth-based MCP connection (e.g., GitHub OAuth), the **first** call from a new user triggers a `CONSENT_REQUIRED` error (MCP error code `-32006`). The error message contains the consent URL. This error can surface on either `initialize` or `tools/call` depending on when the server discovers the missing grant.
 
 **Agent code must handle this:**
-1. Catch MCP error code `-32006` from `tools/call` or during MCP session initialization.
+1. Catch MCP error code `-32006` from `tools/call` **or** during MCP session initialization.
 2. Extract the consent URL from the error message.
 3. Log the URL and surface it to the user (e.g., print to stdout or return in the agent response).
 4. After the user completes the OAuth flow in a browser, retry the call — subsequent calls succeed without re-prompting.
 
 > This is a one-time flow per user per OAuth connection in a project. The agent should not silently swallow this error.
+
+## Multi-Tool Toolbox Constraint
+
+A single toolbox can combine multiple tools, but **at most one tool per unnamed tool type**. Tools like `web_search`, `file_search`, `azure_ai_search`, and `code_interpreter` have no identifier; MCP tools must each have a unique `server_label`.
+
+If you include two unnamed tools of the same type (or two MCP tools with the same `server_label`), the API returns:
+
+```
+400 invalid_payload: Multiple tools without identifiers found...
+```
+
+Valid combinations include:
+
+- `file_search` + one or more `mcp` (each with unique `server_label`)
+- `web_search` + one or more `mcp`
+- `azure_ai_search` + one or more `mcp`
+
+## Azure AI Search Citation Pattern
+
+When calling an `azure_ai_search` tool through the toolbox MCP endpoint, citation metadata is returned under `result.structuredContent.documents[]` — **not** in a separate `citations` array. Treat each document as one citation:
+
+| Field | Meaning |
+|-------|---------|
+| `title` | Citation display text |
+| `url` | Source link |
+| `id` | Source identifier |
+| `score` | Retrieval relevance score |
+| `knowledgeSourceIndex` | Source grouping / index |
+
+Verification checklist:
+
+1. `tools/list` returns the tool name `azure_ai_search`.
+2. `tools/call` succeeds with a `query` argument.
+3. `result.structuredContent.documents` is present and non-empty.
+4. At least one document has both `title` and `url`.
 
 ## Testing the Toolbox Endpoint
 
@@ -97,6 +152,11 @@ curl -sS -X POST "$TOOLBOX_URL" \
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | CONSENT_REQUIRED (code -32006) | OAuth MCP connection needs user consent | Open consent URL in browser, complete OAuth flow, retry |
-| 401 on MCP calls | Expired token or wrong scope | Use scope `https://ai.azure.com/.default` and refresh token |
+| 401 on MCP calls | Expired token or wrong scope | Use scope `https://ai.azure.com/.default` (not `cognitiveservices`) and refresh token on every request |
+| 400 `invalid_payload: Multiple tools without identifiers found` | Two unnamed tools of the same type (or duplicate `server_label`) in one toolbox | Keep at most one unnamed tool per type; give each MCP tool a unique `server_label` |
+| `tools/list` returns 0 tools | Toolbox version still provisioning, or tool type not yet available in the region | Wait ~10s and retry; try a different region |
+| Tool not found on `tools/call` | Missing `server_label.` prefix for MCP-sourced tools | Call as `{server_label}.{tool_name}` |
 | 500 on `prompts/list` | Not supported by toolbox endpoint | Pass `load_prompts=False` to MCP client constructor |
 | 500 with non-streaming `tools/call` | Non-streaming not supported | Always use `stream=True` for toolbox MCP tools |
+| 400 missing `api-version` | Query string dropped | Append `?api-version=v1` to every toolbox URL |
+| 403 on `POST /toolboxes` | Caller lacks `Azure AI Developer` or `Cognitive Services Contributor` on the project | Grant the role on the project scope |
