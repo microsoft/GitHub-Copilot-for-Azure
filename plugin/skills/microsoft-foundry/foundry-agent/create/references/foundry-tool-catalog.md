@@ -47,8 +47,8 @@ Preflight RBAC — caller needs **Azure AI Developer** or **Cognitive Services C
 - `properties.credentials` is scrubbed to `null` on GET.
 - `properties.peRequirement` defaults to `"NotRequired"`.
 
-Allowed `authType` for `category=RemoteTool` (2026-05 snapshot):
-`None, CustomKeys, OAuth2, ProjectManagedIdentity, DeveloperConnection, UserEntraToken, AgentUserImpersonation, AgenticIdentityToken, AgenticUser, UserTokenAndProjectManagedIdentity`. `ApiKey` is **rejected** for `RemoteTool`.
+Allowed `authType` for `category=RemoteTool` (per `api-version=2025-04-01-preview`):
+`None, CustomKeys, OAuth2, ProjectManagedIdentity, DeveloperConnection, UserEntraToken, AgentUserImpersonation, AgenticIdentityToken, AgenticUser, UserTokenAndProjectManagedIdentity`. `ApiKey` is **rejected** for `RemoteTool`. The authoritative list is whatever the [Cognitive Services projects API reference](https://learn.microsoft.com/rest/api/aiservices/) returns for the current API version — if you hit `invalid_payload: unsupported authType`, re-check against the schema for the version you're calling.
 
 ## Decision tree
 
@@ -190,10 +190,12 @@ Forwards the calling user's Entra token to the MCP server. Not available when th
 
 Verifying a fresh connection is the only toolbox operation in scope of this reference. Toolboxes are upserted implicitly by `POST /versions`; no separate container create is needed.
 
+The `$dp` value below is the project's data-plane endpoint, in the same `{project_endpoint}` form used elsewhere in these references — `https://<account>.services.ai.azure.com/api/projects/<project>`. The host segment varies by Foundry account/region; read it from `FOUNDRY_PROJECT_ENDPOINT` / `AZURE_AI_PROJECT_ENDPOINT` rather than hardcoding.
+
 ```pwsh
 # Required dataplane header on every request below.
-$dp  = "https://<account>.services.ai.azure.com/api/projects/<proj>"
-$tb  = "<toolbox-name>"            # defaults to default-tb
+$dp  = $env:FOUNDRY_PROJECT_ENDPOINT   # e.g. https://<account>.services.ai.azure.com/api/projects/<project>
+$tb  = "<toolbox-name>"                # defaults to default-tb
 $conn= "<connection-name>"
 $lbl = "<server_label>"
 $tok = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv
@@ -219,9 +221,10 @@ Invoke-RestMethod -Method POST -Headers $hdr `
 
 # 2. Promote that version to default (optional — newest is default if unset).
 # Note: default_version must be a JSON STRING, not a number.
+# Use ${tb} to terminate the variable name unambiguously before the literal '?'.
 Invoke-RestMethod -Method PATCH -Headers $hdr `
    -Body (@{default_version="<n>"} | ConvertTo-Json) `
-   -Uri "$dp/toolboxes/$tb`?api-version=v1" | Out-Null
+   -Uri "$dp/toolboxes/${tb}?api-version=v1" | Out-Null
 
 # 3. tools/list — should return tools prefixed with $lbl.
 Invoke-RestMethod -Method POST -Headers $hdr `
@@ -247,8 +250,9 @@ The `Foundry-Features: Toolboxes=V1Preview` header is mandatory — without it t
 
 ## References
 
-- [Tool Catalog](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry)
+- [Tool Catalog](https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog)
 - [Toolbox (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
+- [Cognitive Services projects REST API](https://learn.microsoft.com/rest/api/aiservices/)
 - [tool-mcp.md](tool-mcp.md) — prompt-agent MCP wiring (no toolbox)
 - [toolbox-reference.md](toolbox-reference.md) — MCP endpoint, auth, testing, troubleshooting
 - [use-toolbox-in-hosted-agent.md](use-toolbox-in-hosted-agent.md) — wiring a toolbox into a hosted agent

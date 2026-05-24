@@ -19,7 +19,7 @@ The toolbox MCP endpoint is constructed from the **project endpoint** + **toolbo
 
 ### Agent env contract
 
-Hosted agents read the MCP endpoint from a single environment variable. Set one of these in the agent's `.env` (or have the platform inject it at deploy time):
+Hosted agents read the MCP endpoint from a single environment variable. The canonical name is **`TOOLBOX_ENDPOINT`** — use it in all new code and `.env` files:
 
 ```
 # Latest version (recommended for prod):
@@ -29,7 +29,7 @@ TOOLBOX_ENDPOINT=https://{host}/api/projects/{project}/toolboxes/{toolbox_name}/
 TOOLBOX_ENDPOINT=https://{host}/api/projects/{project}/toolboxes/{toolbox_name}/versions/{version}/mcp?api-version=v1
 ```
 
-> Some older samples use `FOUNDRY_TOOLBOX_ENDPOINT`. Either name works as long as the agent code reads the same one.
+> Some older samples use `FOUNDRY_TOOLBOX_ENDPOINT` — treat that as **legacy**. New code should read `TOOLBOX_ENDPOINT`; only fall back to the legacy name when maintaining an existing sample that already wires it.
 
 ## MCP Protocol
 

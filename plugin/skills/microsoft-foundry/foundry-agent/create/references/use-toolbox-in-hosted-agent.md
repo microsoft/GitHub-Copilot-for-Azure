@@ -11,7 +11,7 @@ Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. U
 | Property | Value |
 |----------|-------|
 | **Toolbox Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox |
-| **Tool Catalog Docs** | https://learn.microsoft.com/azure/ai-foundry/agents/concepts/tool-catalog?view=foundry |
+| **Tool Catalog Docs** | https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog |
 | **Default Sample (Python)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/maf |
 | **Python Hosted Agent — `responses`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses |
 | **Python Hosted Agent — `invocations`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations |
@@ -87,6 +87,12 @@ When the user asks to "add an MCP tool" or similar, **never guess**. Confirm eac
 If the project already uses `azd ai agent init`, prefer declaring the toolbox in `azure.yaml` so `azd deploy` provisions it and injects `TOOLBOX_ENDPOINT` automatically:
 
 ```yaml
+# Declare secret parameters first; azd will prompt for the value on `azd up`
+# (or read it from `AZURE_<NAME>` env vars) and never store it in plaintext.
+params:
+  - name: github_pat
+    type: securestring
+
 resources:
   - kind: connection
     name: <CONNECTION_NAME>
@@ -95,7 +101,8 @@ resources:
     credentials:
       type: CustomKeys
       keys:
-        Authorization: "Bearer {{ github_pat }}"   # use {{ param }} for secrets
+        # {{ github_pat }} is resolved from the `params` block above.
+        Authorization: "Bearer {{ github_pat }}"
 
   - kind: toolbox
     name: agent-tools
@@ -106,6 +113,8 @@ resources:
         server_url: <MCP_SERVER_URL>
         project_connection_id: <CONNECTION_NAME>
 ```
+
+See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-developer-cli/azd-schema#params) for the full parameter syntax.
 
 ## Code Integration Patterns
 
@@ -138,4 +147,11 @@ The sample repo provides integration patterns for both Python and C#. Read the s
 
 ## Tracing
 
-All toolbox samples emit OpenTelemetry traces. To export to Azure Monitor, set `APPLICATIONINSIGHTS_CONNECTION_STRING` in `.env` for local development; the platform injects it automatically when the agent is deployed against a Foundry project that is linked to an Application Insights resource. No code changes required — `maf` calls `enable_instrumentation()` in `main.py`, and `langgraph` / `azd` templates auto-instrument via `azure-ai-agentserver-core[tracing]`. View traces in the Azure Portal under **Application Insights → Investigate → Transaction search** or **Application map**.
+All toolbox samples emit OpenTelemetry traces. No code changes are required to enable export to Azure Monitor — it's purely a configuration step.
+
+- **Local development:** set `APPLICATIONINSIGHTS_CONNECTION_STRING` in the agent's `.env`.
+- **Deployed:** the platform injects `APPLICATIONINSIGHTS_CONNECTION_STRING` automatically when the Foundry project is linked to an Application Insights resource.
+- **Per-framework instrumentation hooks** (already present in the samples):
+  - `maf` — `main.py` calls `enable_instrumentation()`.
+  - `langgraph` / `azd` — auto-instrumented by `azure-ai-agentserver-core[tracing]`.
+- **Viewing traces:** Azure Portal → Application Insights → **Investigate → Transaction search** (per-trace) or **Application map** (dependency graph).
