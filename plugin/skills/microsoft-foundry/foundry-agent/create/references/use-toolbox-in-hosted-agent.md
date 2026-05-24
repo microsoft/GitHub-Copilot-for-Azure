@@ -180,6 +180,137 @@ resources:
 
 See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-developer-cli/azd-schema#params) for the full parameter syntax.
 
+### Imperative path via `azd ai` CLI
+
+Use the `azd ai` command surface when you want to create or inspect connections and toolboxes ad-hoc, outside of an `azure.yaml` deployment. Every command below has been exercised end-to-end against a Foundry project.
+
+> All commands require `--project-endpoint <PROJECT_ENDPOINT>` (the value of `PROJECT_ENDPOINT`, e.g. `https://<account>.services.ai.azure.com/api/projects/<project>`). To avoid repeating it, export it once:
+>
+> ```pwsh
+> $PE = "https://<account>.services.ai.azure.com/api/projects/<project>"
+> ```
+
+#### 1. Create a project connection — `azd ai connection create`
+
+Used to wire credentials for an MCP server (or other remote tool) into the project so a toolbox entry can reference it by name.
+
+**Remote MCP server with a custom-keys header (e.g. GitHub PAT):**
+
+```pwsh
+azd ai connection create my-gh-conn `
+  --project-endpoint $PE `
+  --kind remote-tool `
+  --target "https://api.githubcopilot.com/mcp/" `
+  --auth-type CustomKeys `
+  --keys "Authorization=Bearer $env:GITHUB_PAT"
+```
+
+- `--kind` value for any remote MCP / custom-headers connection is **`remote-tool`**.
+- `--auth-type CustomKeys` pairs with one or more `--keys "<header>=<value>"` flags. The header name is sent verbatim on every MCP request.
+- Verify after creation:
+  ```pwsh
+  azd ai connection show my-gh-conn --project-endpoint $PE
+  ```
+
+**Inspect existing connections:**
+
+```pwsh
+azd ai connection list --project-endpoint $PE
+```
+
+**Delete a connection:**
+
+```pwsh
+azd ai connection delete my-gh-conn --project-endpoint $PE --force --no-prompt
+```
+
+#### 2. Create a toolbox — `azd ai toolbox create --from-file`
+
+The `--from-file` YAML schema accepts exactly two top-level fields: `description:` and `connections:`. Each connection entry references an **existing** project connection by `name` and contributes one tool to the toolbox.
+
+```yaml
+# my-toolbox.yaml
+description: <human-readable description of the toolbox>
+connections:
+  - name: <project-connection-name>            # required — must already exist
+    # index: <search-index>                    # required only for CognitiveSearch connections
+    # instance_name: <bing-custom-config>      # required only for GroundingWithCustomSearch connections
+```
+
+Create the toolbox:
+
+```pwsh
+azd ai toolbox create my-toolbox `
+  --project-endpoint $PE `
+  --from-file .\my-toolbox.yaml `
+  --no-prompt
+```
+
+**Example A — Grounding with Custom Search (ApiKey auth on the connection):**
+
+```yaml
+description: Bing Custom Search grounding
+connections:
+  - name: my-grounding-conn
+    instance_name: agentdoc          # name of the Bing Custom Search configuration
+```
+
+**Example B — Azure AI Search index (ApiKey auth on the connection):**
+
+```yaml
+description: AI Search over the docs index
+connections:
+  - name: my-search-conn
+    index: bbc                       # search index to query
+```
+
+**Example C — Remote MCP server (custom-keys auth on the connection):**
+
+```yaml
+description: GitHub MCP via PAT
+connections:
+  - name: my-gh-conn                 # the connection created in step 1
+```
+
+#### 3. Inspect toolboxes
+
+```pwsh
+# List all toolboxes in the project
+azd ai toolbox list --project-endpoint $PE
+
+# Show one toolbox (includes the computed MCP endpoint URL)
+azd ai toolbox show my-toolbox --project-endpoint $PE
+
+# List all versions of a toolbox (the default version is marked)
+azd ai toolbox version list my-toolbox --project-endpoint $PE
+```
+
+#### 4. Delete a toolbox
+
+Delete requires **both** flags — without them the CLI prompts interactively:
+
+```pwsh
+azd ai toolbox delete my-toolbox --project-endpoint $PE --force --no-prompt
+```
+
+#### 5. End-to-end smoke test
+
+After `toolbox create`, hit the MCP endpoint directly to confirm the tool is reachable before pointing an agent at it:
+
+```pwsh
+$TOK = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv
+$H   = @{
+  Authorization      = "Bearer $TOK"
+  "Content-Type"     = "application/json"
+  "Foundry-Features" = "Toolboxes=V1Preview"
+}
+$URL = "$PE/toolboxes/my-toolbox/mcp?api-version=v1"
+$body = @{ jsonrpc = "2.0"; id = 1; method = "tools/list"; params = @{} } | ConvertTo-Json
+(Invoke-RestMethod -Method POST -Uri $URL -Headers $H -Body $body).result.tools | Select-Object name
+```
+
+`?api-version=v1` and the `Foundry-Features: Toolboxes=V1Preview` header are both required.
+
 ## Code Integration Patterns
 
 The sample repo provides integration patterns for both Python and C#. Read the sample code and adapt it to the user's project.
