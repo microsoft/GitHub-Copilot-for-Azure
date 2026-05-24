@@ -190,38 +190,79 @@ Use the `azd ai` command surface when you want to create or inspect connections 
 > $PE = "https://<account>.services.ai.azure.com/api/projects/<project>"
 > ```
 
-#### 1. Create a project connection — `azd ai connection create`
+#### 1. Create a project connection — `azd ai agent connection create`
 
-Used to wire credentials for an MCP server (or other remote tool) into the project so a toolbox entry can reference it by name.
+Wires credentials for an MCP server, Azure AI Search, or Bing Custom Search into the project so a toolbox entry can reference it by short name. Each block below has been exercised end-to-end (connection create → toolbox create → MCP `tools/list` and `tools/call` against a real Foundry project).
 
-**Remote MCP server with a custom-keys header (e.g. GitHub PAT):**
+**A. Remote MCP server, no auth** (public MCP, e.g. Microsoft Learn):
 
 ```pwsh
-azd ai connection create my-gh-conn `
+azd ai agent connection create my-mslearn `
   --project-endpoint $PE `
   --kind remote-tool `
-  --target "https://api.githubcopilot.com/mcp/" `
-  --auth-type CustomKeys `
-  --keys "Authorization=Bearer $env:GITHUB_PAT"
+  --target https://learn.microsoft.com/api/mcp `
+  --auth-type none
 ```
 
-- `--kind` value for any remote MCP / custom-headers connection is **`remote-tool`**.
-- `--auth-type CustomKeys` pairs with one or more `--keys "<header>=<value>"` flags. The header name is sent verbatim on every MCP request.
-- Verify after creation:
-  ```pwsh
-  azd ai connection show my-gh-conn --project-endpoint $PE
-  ```
-
-**Inspect existing connections:**
+**B. Remote MCP server, custom-keys header** (e.g. GitHub PAT):
 
 ```pwsh
-azd ai connection list --project-endpoint $PE
+azd ai agent connection create my-gh-conn `
+  --project-endpoint $PE `
+  --kind remote-tool `
+  --target https://api.githubcopilot.com/mcp/ `
+  --auth-type custom-keys `
+  --custom-key "Authorization=Bearer $env:GITHUB_PAT"
 ```
 
-**Delete a connection:**
+- `--custom-key` is **singular** and may be repeated (one flag per header). The `"<Header>=<Value>"` string is sent verbatim on every MCP request.
+
+**C. Azure AI Search, api-key:**
 
 ```pwsh
-azd ai connection delete my-gh-conn --project-endpoint $PE --force --no-prompt
+azd ai agent connection create my-search `
+  --project-endpoint $PE `
+  --kind cognitive-search `
+  --target "https://<your-search>.search.windows.net/" `
+  --auth-type api-key `
+  --key "<aisearch-admin-key>"
+```
+
+- The toolbox YAML for this connection must add an `index: <name>` field (see Example B in §2).
+
+**D. Remote MCP server, user Entra token (OBO passthrough)** — e.g. Microsoft Fabric:
+
+```pwsh
+azd ai agent connection create my-fabric-uet `
+  --project-endpoint $PE `
+  --kind remote-tool `
+  --target https://api.fabric.microsoft.com/v1/mcp/fabricaihub/integrations/m365 `
+  --auth-type user-entra-token `
+  --audience https://analysis.windows.net/powerbi/api
+```
+
+- `--audience` is **required** and must match what the downstream MCP expects. For Fabric the working value is the Power BI resource URI `https://analysis.windows.net/powerbi/api`; `https://api.fabric.microsoft.com` mints a token Fabric MCP rejects.
+
+**E. Bing Custom Search grounding, api-key:**
+
+```pwsh
+azd ai agent connection create my-bing-custom `
+  --project-endpoint $PE `
+  --kind GroundingWithCustomSearch `
+  --target https://api.bing.microsoft.com/ `
+  --auth-type api-key `
+  --key "<bing-custom-search-key>"
+```
+
+- `--kind` must be the **exact PascalCase string** `GroundingWithCustomSearch`; the kebab-case alias is rejected by the RP.
+- The toolbox YAML for this connection must add an `instance_name: <bing-custom-config>` field (see Example A in §2). The MCP `tools/call` argument is `search_query` (not `query`).
+
+**Inspect / delete existing connections:**
+
+```pwsh
+azd ai agent connection list --project-endpoint $PE
+azd ai agent connection show my-gh-conn --project-endpoint $PE
+azd ai agent connection delete my-gh-conn --project-endpoint $PE --force --no-prompt
 ```
 
 #### 2. Create a toolbox — `azd ai toolbox create --from-file`
@@ -287,7 +328,7 @@ azd ai toolbox version list my-toolbox --project-endpoint $PE
 
 #### 4. Retarget the default version — `azd ai toolbox update`
 
-Each toolbox version is **immutable**. Every mutation (`connection add`, `connection remove`, re-running `create` against the same name) publishes a new version. The version an agent actually hits is the one marked `*` in `version list` — i.e. the **default version**. Use `update` to point that pointer at any existing version (e.g. rollback to a known-good version, or roll forward after publishing a new one).
+Each toolbox version is **immutable**. The version an agent actually hits is the one marked `*` in `version list` — i.e. the **default version**. Use `update` to point that pointer at any existing version (e.g. rollback to a known-good version after a bad publish).
 
 ```pwsh
 # Inspect first — current default is marked with '*'
@@ -300,7 +341,7 @@ azd ai toolbox update my-toolbox --default-version 20 --project-endpoint $PE --n
 azd ai toolbox show my-toolbox --project-endpoint $PE
 ```
 
-- `--default-version` is the only field `update` accepts today. To change the tool list, publish a new version with `azd ai toolbox connection add` / `connection remove` (each mutation auto-retargets the default to the new version).
+- `--default-version` is the only field `update` accepts today.
 - Validated: switched `default-tb` from version 21 → 20 → 21; both `show` and the computed MCP endpoint (`.../toolboxes/<name>/versions/<n>/mcp?api-version=v1`) tracked the change immediately.
 
 #### 5. Delete a toolbox
