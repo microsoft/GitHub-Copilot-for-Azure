@@ -24,7 +24,6 @@ Two delivery paths exist:
 | **Work IQ (preview)** | (n/a — server-side only) | `work_iq_preview` | Yes (Work IQ BYO-Entra-app OAuth connection) | [Work IQ](#work-iq-preview) (this file) |
 | **Fabric IQ (preview)** | (n/a — server-side only) | `fabric_iq_preview` | Yes (Fabric IQ Entra-app OAuth or managed-OAuth connection) | [Fabric IQ](#fabric-iq-preview) (this file) |
 | **Tool Search (preview)** | (n/a — toolbox-side configuration directive) | `toolbox_search_preview` | No | [Tool Search](#tool-search-preview) (this file) |
-| **Routines (preview)** | (n/a — not a tool; it's an agent **trigger**) | — | Optional (event source connection, via Connector Namespace) | [Routines](#routines-preview) (this file) |
 
 > ⚠️ **Default for web search:** Use `WebSearchPreviewTool` (`type: web_search`) unless the user explicitly requests Bing Grounding or Bing Custom Search.
 
@@ -189,34 +188,6 @@ Behavior:
 
 For full fields, pinning recipes, the verify-with-`tool_search` flow, and best practices, see [Tool Search tool documentation](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search).
 
-## Routines (preview)
-
-Routines aren't a tool — they're a **trigger** that invokes an existing agent on a schedule, a one-shot timer, or an external event. **One routine = one trigger + one action.**
-
-Supported trigger types:
-
-| Type | Fires when |
-|---|---|
-| `schedule` | A cron expression matches (minimum interval 5 min); requires `time_zone`. |
-| `timer` | A specific `at` ISO-8601 timestamp / duration is reached (one-shot). |
-| `github_issue` | A GitHub issue is `opened` or `closed` in a repo; uses a project connection. |
-| `custom` | A provider-specific event fires via a Connector Namespace operation with `x-ms-trigger`. |
-
-Supported action types: `invoke_agent_responses_api` (provide `agent_name` or `agent_endpoint_id`; optional `conversation_id`) and `invoke_agent_invocations_api` (requires `agent_endpoint_id`; optional `session_id`).
-
-Event-based routines are powered by the **Connector Namespace** — the same managed service that backs catalog-MCP / managed-MCP connectors in your Foundry account. Connector credentials live in the namespace; routine definitions never embed raw secrets. Only connectors with `"triggers"` in their `x-ms-capabilities` can be event sources for routines; most managed MCP servers are action-only.
-
-Key REST surface (under `{project_endpoint}/routines/`, always with header `Foundry-Features: Routines=V1Preview`):
-
-- `PUT  /routines/{name}` — create or update (idempotent).
-- `POST /routines/{name}:enable` / `:disable` — toggle without redefining.
-- `POST /routines/{name}:dispatch_async` — manual test fire; payload `type` must match the routine's action type.
-- `GET  /routines/{name}/runs` — run history (status, phase, dispatch_id, response_id, error fields).
-
-Use a routine for lightweight automation ("run this agent when X happens"); move to a workflow when you need branching, multi-agent orchestration, approvals, or stateful coordination.
-
-For full schemas, trigger/action fields, manual dispatch, run history, and discovery of trigger-capable connectors via the catalog API, see [Automate agents with routines (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
-
 ## References
 
 - [Tool Catalog](https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog)
@@ -224,7 +195,6 @@ For full schemas, trigger/action fields, manual dispatch, run history, and disco
 - [Tool Search (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search)
 - [Work IQ (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/work-iq)
 - [Fabric IQ (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq)
-- [Routines (preview)](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines)
 - [Code Interpreter](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/code-interpreter)
 - [Function Calling](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/function-calling)
 - [OpenAPI tool](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/openapi)
