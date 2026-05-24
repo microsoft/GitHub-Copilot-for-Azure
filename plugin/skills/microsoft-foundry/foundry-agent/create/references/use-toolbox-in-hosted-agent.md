@@ -285,7 +285,25 @@ azd ai toolbox show my-toolbox --project-endpoint $PE
 azd ai toolbox version list my-toolbox --project-endpoint $PE
 ```
 
-#### 4. Delete a toolbox
+#### 4. Retarget the default version — `azd ai toolbox update`
+
+Each toolbox version is **immutable**. Every mutation (`connection add`, `connection remove`, re-running `create` against the same name) publishes a new version. The version an agent actually hits is the one marked `*` in `version list` — i.e. the **default version**. Use `update` to point that pointer at any existing version (e.g. rollback to a known-good version, or roll forward after publishing a new one).
+
+```pwsh
+# Inspect first — current default is marked with '*'
+azd ai toolbox version list my-toolbox --project-endpoint $PE
+
+# Retarget the default
+azd ai toolbox update my-toolbox --default-version 20 --project-endpoint $PE --no-prompt
+
+# Verify (Default version / Shown version / Endpoint all reflect the new value)
+azd ai toolbox show my-toolbox --project-endpoint $PE
+```
+
+- `--default-version` is the only field `update` accepts today. To change the tool list, publish a new version with `azd ai toolbox connection add` / `connection remove` (each mutation auto-retargets the default to the new version).
+- Validated: switched `default-tb` from version 21 → 20 → 21; both `show` and the computed MCP endpoint (`.../toolboxes/<name>/versions/<n>/mcp?api-version=v1`) tracked the change immediately.
+
+#### 5. Delete a toolbox
 
 Delete requires **both** flags — without them the CLI prompts interactively:
 
@@ -293,7 +311,7 @@ Delete requires **both** flags — without them the CLI prompts interactively:
 azd ai toolbox delete my-toolbox --project-endpoint $PE --force --no-prompt
 ```
 
-#### 5. End-to-end smoke test
+#### 6. End-to-end smoke test
 
 After `toolbox create`, hit the MCP endpoint directly to confirm the tool is reachable before pointing an agent at it:
 
