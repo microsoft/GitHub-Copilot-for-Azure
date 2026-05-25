@@ -2,8 +2,8 @@
  * Unit tests for direct-code Foundry agent workflow documentation.
  *
  * These tests lock down service-specific constraints that are easy to
- * regress because the direct-code flow is intentionally separate from the
- * default Docker/ACR hosted-agent flow.
+ * regress because direct-code deployment must stay scoped to deploy Step 3
+ * and return to the normal hosted-agent workflow afterward.
  */
 
 import { readFile } from "fs/promises";
@@ -20,6 +20,9 @@ describe("foundry-agent direct-code workflow docs", () => {
 
     expect(deploy).toContain("Direct code deployment is opt-in only.");
     expect(deploy).toContain("references/direct-code-deployment.md");
+    expect(deploy).toContain("### Step 3: Select Deployment Method and Prepare");
+    expect(deploy).toContain("#### Image built and pushed to ACR");
+    expect(deploy).toContain("When the direct-code version is active, skip Steps 4-6 and continue at Step 7");
     expect(deploy).toContain("Do not infer direct code deployment just because Docker is unavailable");
     expect(deploy).toContain("Deployment Method Selection");
   });
@@ -39,14 +42,21 @@ describe("foundry-agent direct-code workflow docs", () => {
     expect(reference).toContain("Do not send `x-ms-agent-name` on `POST /agents/<agent-name>/versions`");
   });
 
-  test("deploy workflow leaves invoke and troubleshoot on existing hosted-agent paths", async () => {
+  test("direct-code deployment returns to deploy workflow after publish", async () => {
+    const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
     const deployReference = await readSkillFile("foundry-agent/deploy/references/direct-code-deployment.md");
     const invoke = await readSkillFile("foundry-agent/invoke/invoke.md");
     const troubleshoot = await readSkillFile("foundry-agent/troubleshoot/troubleshoot.md");
 
-    expect(deployReference).toContain("Direct code is only a deployment method");
+    expect(deploy).toContain("### Step 7: Test the Agent");
+    expect(deploy).toContain("### Step 8: Auto-Generate Evaluation Suite");
+    expect(deployReference).toContain("return to [deploy.md](../deploy.md#step-7-test-the-agent)");
+    expect(deployReference).not.toContain("Direct code is only a deployment method");
+    expect(deployReference).not.toContain("same hosted-agent protocol path");
+    expect(deployReference).not.toContain("separate hosted-agent kind");
+    expect(deployReference).not.toContain("invoke skill");
+    expect(deployReference).not.toContain("troubleshoot skill");
     expect(deployReference).not.toContain("direct-code invocation branch");
-    expect(deployReference).not.toContain("direct-code branch");
     expect(deployReference).not.toContain("agent_session_id");
     expect(invoke).toContain("## Workflow");
     expect(invoke).not.toContain("Direct Code Invocation");

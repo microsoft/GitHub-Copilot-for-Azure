@@ -2,11 +2,11 @@
 
 Use this reference only when the user explicitly requested direct code deployment.
 
-This workflow is self-contained.
+This reference covers only direct-code deployment from [deploy.md](../deploy.md) Step 3. When the version becomes active, return to [deploy.md](../deploy.md#step-7-test-the-agent).
 
 Direct-code deployment uses local project files plus the Foundry REST API for upload and version operations. Azure MCP discovery and context lookup are optional context, not a prerequisite when project endpoint, model deployment, and agent name are already resolved. For the code upload itself, follow the REST endpoints below instead of the Docker/ACR `agent_update` path.
 
-## Step 1: Preflight
+## Task 1: Preflight
 
 Resolve the project endpoint from project context, `.env`, `azd env get-values`, or the user. The endpoint must look like:
 
@@ -28,7 +28,7 @@ Get the token for this resource. Do not use the Cognitive Services token resourc
 https://ai.azure.com
 ```
 
-Direct-code REST caller prerequisite: the signed-in user or service principal must have `Azure AI User` or a higher role on the Foundry project. This is separate from runtime identity RBAC used by the hosted runtime after deployment.
+Direct-code REST caller prerequisite: the signed-in user or service principal must have `Azure AI User` or a higher role on the Foundry project.
 
 Global direct-code limits:
 
@@ -36,7 +36,7 @@ Global direct-code limits:
 - Multipart upload zip: at most 250 MB.
 - CPU/memory: use conservative defaults such as `0.5` CPU and `1Gi` when the project does not specify resources.
 
-## Step 2: Detect Runtime and Entry Point
+## Task 2: Detect Runtime and Entry Point
 
 Scan only the selected agent root.
 
@@ -59,7 +59,7 @@ If the target framework is missing or does not map to a supported runtime, ask i
 
 For .NET, derive `<AssemblyName>` from `<AssemblyName>` in the `.csproj` when present; otherwise use the `.csproj` file stem. Never use `["dotnet", "run", ...]` for direct code deployment. The runtime environment has the .NET runtime, not the SDK, and `dotnet run` fails with `No .NET SDKs were found`.
 
-## Step 3: Collect Direct-Code Configuration
+## Task 3: Collect Direct-Code Configuration
 
 Ask only for values not already resolved:
 
@@ -79,7 +79,7 @@ Use bundled local dependencies only when the user explicitly asks for it. In bun
 
 For remote packaging, keep the user's dependency files unchanged. Do not slim, pin, or remove packages just to make deployment smoother. If the service fails while installing dependencies, report the exact error and ask before changing dependencies.
 
-## Step 4: Create `metadata.json`
+## Task 4: Create `metadata.json`
 
 Create the parent directory and write `.foundry/direct-code/metadata.json`. Do not write `metadata.json` before the parent directory exists.
 
@@ -147,7 +147,7 @@ Example C#/.NET metadata:
 }
 ```
 
-## Step 5: Create a Flat Code Zip
+## Task 5: Create a Flat Code Zip
 
 The zip must be flat at the root. Do not include a top-level wrapper folder such as `my-agent/`. The entry point path in `metadata.json` must resolve from the zip root.
 
@@ -240,7 +240,7 @@ with ZipFile(zip_path, "w", ZIP_DEFLATED) as zf:
             zf.write(path, path.relative_to(root).as_posix())
 ```
 
-## Step 6: Upload Code and Create or Update the Agent
+## Task 6: Upload Code and Create or Update the Agent
 
 Use the user's current platform and shell syntax. The examples below use literal placeholders and can be translated to any shell or HTTP client. Always keep `?api-version=...` in the final request URL.
 
@@ -323,7 +323,7 @@ Other useful REST operations:
 | Download code | `GET <project-endpoint>/agents/<agent-name>/code:download?api-version=2025-11-15-preview` | Add `agent_version=<n>` when downloading a specific version; compare the `x-ms-code-zip-sha256` response header with the local SHA |
 | Delete agent | `DELETE <project-endpoint>/agents/<agent-name>?api-version=2025-11-15-preview` | Deletes the agent and all versions; pull logs before deletion if needed |
 
-## Step 7: Poll Version Status
+## Task 7: Poll Version Status
 
 Use the version from the create/version response. If the response does not clearly include it, list versions and pick the newest version returned for the agent.
 
@@ -335,37 +335,5 @@ Foundry-Features: CodeAgents=V1Preview,HostedAgents=V1Preview
 
 Loop until the version status is no longer `creating`.
 
-- `active` -> continue to prewarm and invoke verification.
+- `active` -> return to [deploy.md](../deploy.md#step-7-test-the-agent).
 - `failed` -> read the error from the version object. There is no runtime session yet, so `:logstream` will not help.
-
-## Step 8: Direct-Code RBAC Handling
-
-Do not block the happy path on a full role-assignment audit. For direct-code deployment, an `active` version is enough to proceed to prewarm and invoke.
-
-If the create/version response already includes these hosted identities, capture them for troubleshooting notes, but do not block invocation just to audit RBAC:
-
-- `instance_identity.principal_id`
-- `blueprint.principal_id`
-
-Only check RBAC when the user explicitly asks to audit or fix permissions, or when the version is active but the smoke invocation fails with concrete permission evidence.
-
-When permission troubleshooting is needed, follow the existing [troubleshoot skill](../../troubleshoot/troubleshoot.md). Keep direct code deployment scoped to code upload and version activation; invocation and runtime diagnosis use the same hosted-agent protocol path as the rest of the skill.
-
-## Step 9: Prewarm and Invoke
-
-After the version is active, immediately read and follow the existing [invoke skill](../../invoke/invoke.md). Direct code is only a deployment method; the deployed agent still declares the normal hosted-agent `responses` or `invocations` protocol and should be verified through the same invoke workflow as other hosted agents.
-
-This smoke invoke is mandatory for deploy verification even when the user's prompt only says "deploy." If the user did not provide an invocation prompt, choose a short, harmless prompt from the agent's manifest/README/purpose, or use:
-
-```text
-Reply with one sentence confirming the agent is ready.
-```
-
-If invocation testing fails, follow the existing [troubleshoot skill](../../troubleshoot/troubleshoot.md). When summarizing direct-code prewarm or invocation status, describe the hosted runtime or session as ready. Do not describe direct-code as a separate hosted-agent kind; it is only a deployment method difference.
-
-## Step 10: Optional Verification
-
-Use these only after the main deployment and smoke invoke status is known:
-
-- List versions to confirm the active numeric version.
-- Download deployed code when you need to prove the service received the intended zip; compare `x-ms-code-zip-sha256` with the local SHA.

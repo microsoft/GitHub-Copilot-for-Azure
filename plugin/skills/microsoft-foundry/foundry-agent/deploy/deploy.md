@@ -32,13 +32,13 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 Direct code deployment is opt-in only.
 
-- If the user explicitly says `using direct code deployment`, `direct-code deployment`, `upload code deployment`, or otherwise clearly asks to deploy by uploading source code, read and follow [Direct Code Deployment Reference](references/direct-code-deployment.md).
-- Otherwise keep the existing behavior: prompt agents use [Workflow: Prompt Agent Deployment](#workflow-prompt-agent-deployment), and hosted agents use [Workflow: Docker/ACR Hosted Agent Deployment (Default)](#workflow-dockeracr-hosted-agent-deployment-default).
+- Prompt agents use [Workflow: Prompt Agent Deployment](#workflow-prompt-agent-deployment).
+- Hosted agents use [Workflow: Hosted Agent Deployment](#workflow-hosted-agent-deployment); select the hosted deployment method in Step 3.
 - Do not infer direct code deployment just because Docker is unavailable or a Dockerfile is missing. Ask or use the default Docker/ACR workflow guidance.
 
-Deployment is not complete until a smoke invocation has run and succeeded. For direct-code deployment, the reference owns REST upload and version polling; smoke invocation and troubleshooting use the existing hosted-agent invoke and troubleshoot workflows.
+If the user explicitly says `using direct code deployment`, `direct-code deployment`, `upload code deployment`, or otherwise clearly asks to deploy by uploading source code, Step 3 reads [Direct Code Deployment Reference](references/direct-code-deployment.md). After the direct-code version is active, skip Steps 4-6 and continue at Step 7.
 
-## Workflow: Docker/ACR Hosted Agent Deployment (Default)
+## Workflow: Hosted Agent Deployment
 
 > ⚠️ **Warning: hosted agent deployment has 8 steps, not 7.**
 >
@@ -58,9 +58,11 @@ Deployment is not complete until a smoke invocation has run and succeeded. For d
 
 A hosted-agent deployment is complete only when **every** box below is checked. Do **not** produce a final "deployment successful" summary, table, or Playground link until all items are done. If you skip any item, your response is incomplete.
 
+For direct-code deployments, Step 3 runs the direct-code reference through active version, then Steps 4-6 are not applicable and the workflow resumes at Step 7.
+
 - [ ] Step 1 — Project scanned, type detected
 - [ ] Step 2 — Environment variables confirmed with user
-- [ ] Step 3 — Image built and pushed to ACR
+- [ ] Step 3 — Deployment method selected and prepared
 - [ ] Step 4 — Agent configuration collected
 - [ ] Step 5 — Agent definition schema retrieved
 - [ ] Step 6 — `agent_update` called successfully
@@ -106,7 +108,13 @@ Loop until the user confirms or cancels:
 - `VAR_NAME=new_value` → Update the value, show updated table, ask again
 - `cancel` → Abort deployment
 
-### Step 3: Generate Dockerfile and Build Image
+### Step 3: Select Deployment Method and Prepare
+
+If the user explicitly requested direct code deployment or upload code deployment, do not generate a Dockerfile or build an image. Read and follow [Direct Code Deployment Reference](references/direct-code-deployment.md). When the direct-code version is active, skip Steps 4-6 and continue at Step 7.
+
+For all other hosted-agent deployments, continue with the Docker/ACR preparation below.
+
+#### Image built and pushed to ACR
 
 Delegate Dockerfile creation to a sub-agent. Guidelines:
 - Use official base image for the detected language and runtime version
@@ -465,7 +473,7 @@ When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode)
 - **Environment variables** — Uses values resolved from `azd env get-values` and project defaults without prompting for confirmation
 - **Agent name** — Must be provided in the initial user message or derived sensibly from the project context (`agent.yaml`, `agent.manifest.yaml`, folder name); if missing, the skill fails with an error instead of prompting
 - **Docker/ACR hosted-agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
-- **Direct code deployment** — If explicitly requested, derives runtime/entry point from source files, creates a flat zip excluding local artifacts, uploads by REST, polls the active version, then verifies it with the existing hosted-agent invoke workflow
+- **Direct code deployment** — If explicitly requested, Step 3 reads the direct-code reference, deploys to an active version, then continues at Step 7
 
 > ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, model deployment name, and ACR image for Docker/ACR deployments) are provided upfront in the user message, local `.env`, manifests, or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
 
