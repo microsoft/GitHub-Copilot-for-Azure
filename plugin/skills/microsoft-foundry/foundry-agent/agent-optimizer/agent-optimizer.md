@@ -17,7 +17,7 @@ DO NOT USE FOR: non-Python agents, deploying an agent directly, running batch ev
 | Required package | `azure-ai-agentserver-optimization` |
 | Required import | `from azure.ai.agentserver.optimization import load_config` |
 | Required baseline | `.agent_configs/baseline/` beside `agent.yaml` |
-| Supported targets | instruction, model, skill folder, function tool descriptions |
+| Supported targets | instruction, model, skill folder, function tool definitions |
 | Detailed scaffold steps | [Scaffold Workflow](references/scaffold.md) |
 | Python/file patterns | [Python Patterns](references/python-patterns.md) |
 

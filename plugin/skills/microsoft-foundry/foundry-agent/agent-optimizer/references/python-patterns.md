@@ -47,7 +47,7 @@ tool_file: tools.json
 
 ## Tools File
 
-Use the OpenAI function-calling list format with top-level `tools`. Currently, only function tool description optimization is supported:
+Use OpenAI function-calling tool objects under top-level `tools`. Currently, only function tool definition optimization is supported:
 
 ```json
 {
@@ -98,7 +98,7 @@ agent = Agent(
 )
 ```
 
-Patch optimized function tool descriptions through the public helper:
+Patch optimized function tool definitions through the public helper. It updates matching function docs, descriptions, and parameter descriptions:
 
 ```python
 config.apply_tool_descriptions(tools)
@@ -126,23 +126,15 @@ Use evaluator and dataset goals to decide what belongs in the baseline:
 
 For multi-agent apps, scaffold the target role's instructions and related skills/tools. Do not merge unrelated role prompts into one baseline.
 
-## Environment Variables
+## Runtime Config
 
-| Variable | Purpose |
-| -------- | ------- |
-| `OPTIMIZATION_CONFIG` | Inline JSON config |
-| `OPTIMIZATION_CANDIDATE_ID` | Candidate identifier |
-| `OPTIMIZATION_JOB_ID` | Optimization job identifier |
-| `OPTIMIZATION_RESOLVE_ENDPOINT` | Resolver API base URL |
-| `OPTIMIZATION_LOCAL_DIR` | Custom config directory; default is `.agent_configs/` |
-
-Do not add all optimization env vars to `agent.yaml`. Use `OPTIMIZATION_LOCAL_DIR` only for non-default paths.
+The SDK reads optimization context from supported runtime sources. Keep `.agent_configs/baseline/` present so default `load_config()` startup has a local baseline. Use `load_config(config_dir="my_configs")` only for non-default local config directories, and `load_config(required=False)` only when the app can intentionally run without optimization config.
 
 ## Verification Checklist
 
 - Dependency file includes `azure-ai-agentserver-optimization`
 - `from azure.ai.agentserver.optimization import load_config` succeeds
-- `.agent_configs/baseline/metadata.yaml` points to existing files
-- `load_config()` is called without defaults
+- `.agent_configs/baseline/metadata.yaml` exists and points to existing files
+- `load_config()` is called without defaults unless using an intentional `config_dir` or `required=False`
 - Changed Python files compile and preserve the hosting adapter/protocol
 - User is asked to review before deployment
