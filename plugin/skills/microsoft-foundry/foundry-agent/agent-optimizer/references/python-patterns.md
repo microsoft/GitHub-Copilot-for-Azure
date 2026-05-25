@@ -4,11 +4,13 @@ Use the Azure SDK optimization package and a local baseline folder. The baseline
 
 ## Install and Import
 
-Add the package to `requirements.txt` or the project dependency file:
+Add the preview wheel URL to `requirements.txt` or the project dependency file while the package is unreleased:
 
 ```text
-azure-ai-agentserver-optimization
+azure-ai-agentserver-optimization @ https://github.com/Zyysurely/tool/raw/main/preview/azure_ai_agentserver_optimization-1.0.0b1.dev1-py3-none-any.whl
 ```
+
+Do not vendor the wheel file into the repo or generated scaffold.
 
 Import from the SDK namespace:
 
