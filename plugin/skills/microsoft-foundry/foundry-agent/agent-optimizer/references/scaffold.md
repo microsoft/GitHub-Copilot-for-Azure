@@ -45,13 +45,13 @@ Do not use code-level defaults as the optimization baseline.
 
 ## Step 4: Install and Wire SDK
 
-Add the preview `azure-ai-agentserver-optimization` wheel URL to the project dependency file while the package is unreleased:
+Add `azure-ai-agentserver-optimization` to the project dependency file after the official PyPI package is available:
 
 ```text
-azure-ai-agentserver-optimization @ https://github.com/Zyysurely/tool/raw/main/preview/azure_ai_agentserver_optimization-1.0.0b1.dev1-py3-none-any.whl
+azure-ai-agentserver-optimization
 ```
 
-Do not vendor or commit the wheel file; reference the URL in the target agent project's dependency file.
+If the package is not available yet, stop and tell the user to wait for the official release or provide an approved package source. Do not vendor or commit wheel files.
 
 Wire the agent with no default parameters:
 
