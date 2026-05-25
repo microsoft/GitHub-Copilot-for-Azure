@@ -20,6 +20,7 @@ describe("foundry-agent direct-code workflow docs", () => {
 
     expect(deploy).toContain("Direct code deployment is opt-in only.");
     expect(deploy).toContain("references/direct-code-deployment.md");
+    expect(deploy).toContain("- [ ] Step 3 — Deployment method selected and prepared");
     expect(deploy).toContain("### Step 3: Select Deployment Method and Prepare");
     expect(deploy).toContain("#### Image built and pushed to ACR");
     expect(deploy).toContain("When the direct-code version is active, skip Steps 4-6 and continue at Step 7");
