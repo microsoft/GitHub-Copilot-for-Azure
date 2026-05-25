@@ -2,7 +2,7 @@
 
 Use this reference only when the user explicitly requested direct code deployment.
 
-This reference covers only direct-code deployment from [deploy.md](../deploy.md) Step 3. After deployment completes, return to [deploy.md](../deploy.md#step-7-test-the-agent).
+This reference covers only direct-code deployment from [deploy.md](../deploy.md) Step 3. After deployment completes, proceed directly back to [deploy.md Step 7: Test the Agent](../deploy.md#step-7-test-the-agent).
 
 Direct-code deployment uses local project files plus the Foundry REST API for upload and version operations. Azure MCP discovery and context lookup are optional context, not a prerequisite when project endpoint, model deployment, and agent name are already resolved. For the code upload itself, follow the REST endpoints below instead of the Docker/ACR `agent_update` path.
 
@@ -335,5 +335,5 @@ Foundry-Features: CodeAgents=V1Preview,HostedAgents=V1Preview
 
 Loop until the version status is no longer `creating`.
 
-- `active` -> return to [deploy.md](../deploy.md#step-7-test-the-agent).
+- `active` -> proceed directly back to [deploy.md Step 7: Test the Agent](../deploy.md#step-7-test-the-agent).
 - `failed` -> read the error from the version object. There is no runtime session yet, so `:logstream` will not help.

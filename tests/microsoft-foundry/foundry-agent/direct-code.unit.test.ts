@@ -23,7 +23,7 @@ describe("foundry-agent direct-code workflow docs", () => {
     expect(deploy).toContain("- [ ] Step 3 — Deployment method selected and prepared");
     expect(deploy).toContain("### Step 3: Select Deployment Method and Prepare");
     expect(deploy).toContain("#### Image built and pushed to ACR");
-    expect(deploy).toContain("deploys the agent directly, then skips Steps 4-6 and continues at Step 7");
+    expect(deploy).toContain("deploys the agent directly, then proceeds directly to [Step 7: Test the Agent]");
     expect(deploy).toContain("Do not infer direct code deployment just because Docker is unavailable");
     expect(deploy).toContain("Deployment Method Selection");
   });
@@ -51,7 +51,7 @@ describe("foundry-agent direct-code workflow docs", () => {
 
     expect(deploy).toContain("### Step 7: Test the Agent");
     expect(deploy).toContain("### Step 8: Auto-Generate Evaluation Suite");
-    expect(deployReference).toContain("return to [deploy.md](../deploy.md#step-7-test-the-agent)");
+    expect(deployReference).toContain("proceed directly back to [deploy.md Step 7: Test the Agent]");
     expect(deployReference).not.toContain("Direct code is only a deployment method");
     expect(deployReference).not.toContain("same hosted-agent protocol path");
     expect(deployReference).not.toContain("separate hosted-agent kind");
