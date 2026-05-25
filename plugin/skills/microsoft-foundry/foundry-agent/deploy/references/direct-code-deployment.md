@@ -2,7 +2,7 @@
 
 Use this reference only when the user explicitly requested direct code deployment.
 
-This reference covers only direct-code deployment from [deploy.md](../deploy.md) Step 3. When the version becomes active, return to [deploy.md](../deploy.md#step-7-test-the-agent).
+This reference covers only direct-code deployment from [deploy.md](../deploy.md) Step 3. After deployment completes, return to [deploy.md](../deploy.md#step-7-test-the-agent).
 
 Direct-code deployment uses local project files plus the Foundry REST API for upload and version operations. Azure MCP discovery and context lookup are optional context, not a prerequisite when project endpoint, model deployment, and agent name are already resolved. For the code upload itself, follow the REST endpoints below instead of the Docker/ACR `agent_update` path.
 

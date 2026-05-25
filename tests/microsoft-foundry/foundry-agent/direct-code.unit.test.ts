@@ -23,7 +23,7 @@ describe("foundry-agent direct-code workflow docs", () => {
     expect(deploy).toContain("- [ ] Step 3 — Deployment method selected and prepared");
     expect(deploy).toContain("### Step 3: Select Deployment Method and Prepare");
     expect(deploy).toContain("#### Image built and pushed to ACR");
-    expect(deploy).toContain("When the direct-code version is active, skip Steps 4-6 and continue at Step 7");
+    expect(deploy).toContain("deploys the agent directly, then skips Steps 4-6 and continues at Step 7");
     expect(deploy).toContain("Do not infer direct code deployment just because Docker is unavailable");
     expect(deploy).toContain("Deployment Method Selection");
   });
