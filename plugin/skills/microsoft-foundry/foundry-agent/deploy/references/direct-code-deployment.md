@@ -4,7 +4,7 @@ Use this reference only when the user explicitly requested direct code deploymen
 
 This workflow is self-contained.
 
-Direct-code deployment uses local project files plus the Foundry REST API for upload, version, session, and invoke operations. Azure MCP discovery and context lookup are optional context, not a prerequisite when project endpoint, model deployment, and agent name are already resolved. For the code upload itself, follow the REST endpoints below instead of the Docker/ACR `agent_update` path.
+Direct-code deployment uses local project files plus the Foundry REST API for upload and version operations. Azure MCP discovery and context lookup are optional context, not a prerequisite when project endpoint, model deployment, and agent name are already resolved. For the code upload itself, follow the REST endpoints below instead of the Docker/ACR `agent_update` path.
 
 ## Step 1: Preflight
 
@@ -20,7 +20,7 @@ Every direct-code REST call must use:
 Foundry-Features: CodeAgents=V1Preview,HostedAgents=V1Preview
 ```
 
-This includes create/update/create-version, version polling, version listing, code download, delete, session creation, invoke, and logstream calls.
+This includes create/update/create-version, version polling, version listing, code download, and delete calls.
 
 Get the token for this resource. Do not use the Cognitive Services token resource for direct-code REST calls:
 
@@ -347,22 +347,13 @@ If the create/version response already includes these hosted identities, capture
 - `instance_identity.principal_id`
 - `blueprint.principal_id`
 
-Only check RBAC when one of these is true:
+Only check RBAC when the user explicitly asks to audit or fix permissions, or when the version is active but the smoke invocation fails with concrete permission evidence.
 
-- The user explicitly asks to audit or fix permissions.
-- Version/session logs or invoke responses show `PermissionDenied`, authorization failure, or missing access to `POST /api/projects/{projectName}/openai/*` or `POST .../storage/responses`.
-- The deployment cannot be invoked and the failure evidence points to permissions.
-
-When direct-code RBAC is actually being diagnosed, follow the direct-code branch in the [troubleshoot skill](../../troubleshoot/troubleshoot.md). The hosted runtime identities usually need these roles at the Cognitive Services account scope:
-
-- `Foundry User`
-- `Cognitive Services OpenAI User`
-
-If missing assignments are found, create them when allowed, wait for normal RBAC propagation, and retry the same session/invoke path once. If the current user cannot grant roles, report the missing identities, roles, and scope.
+When permission troubleshooting is needed, follow the existing [troubleshoot skill](../../troubleshoot/troubleshoot.md). Keep direct code deployment scoped to code upload and version activation; invocation and runtime diagnosis use the same hosted-agent protocol path as the rest of the skill.
 
 ## Step 9: Prewarm and Invoke
 
-After the version is active, immediately read and follow the [invoke skill](../../invoke/invoke.md). For direct-code deployments, use the direct-code invocation branch: create a session for the concrete version, poll that same session until active, stream cold-start logs if needed, then invoke with `agent_session_id` in the request body.
+After the version is active, immediately read and follow the existing [invoke skill](../../invoke/invoke.md). Direct code is only a deployment method; the deployed agent still declares the normal hosted-agent `responses` or `invocations` protocol and should be verified through the same invoke workflow as other hosted agents.
 
 This smoke invoke is mandatory for deploy verification even when the user's prompt only says "deploy." If the user did not provide an invocation prompt, choose a short, harmless prompt from the agent's manifest/README/purpose, or use:
 
@@ -370,11 +361,7 @@ This smoke invoke is mandatory for deploy verification even when the user's prom
 Reply with one sentence confirming the agent is ready.
 ```
 
-Do not create repeated new sessions for the same first invoke timeout. If session creation returns `424 session_not_ready`, capture the session id from the error message, poll that same session, and stream logs.
-
-Capture these headers from invoke or session failures when present: `x-agent-session-id`, `x-agent-invocation-id`, and `x-ms-request-id`. The session id is needed for `:logstream`; the invocation id and request id are needed for service-side correlation.
-
-When summarizing direct-code prewarm or invocation status, describe the hosted runtime or session as ready. Do not describe direct-code as a separate hosted-agent kind; it is only a deployment method difference.
+If invocation testing fails, follow the existing [troubleshoot skill](../../troubleshoot/troubleshoot.md). When summarizing direct-code prewarm or invocation status, describe the hosted runtime or session as ready. Do not describe direct-code as a separate hosted-agent kind; it is only a deployment method difference.
 
 ## Step 10: Optional Verification
 

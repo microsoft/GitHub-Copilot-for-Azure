@@ -27,9 +27,6 @@ describe("troubleshoot - Trigger Tests", () => {
       "My Foundry agent is failing, help me diagnose the issue",
       "Check agent telemetry and traces for exceptions in Foundry",
       "Why is my Foundry agent returning errors?",
-      "Troubleshoot my Foundry agent deployed using direct code deployment",
-      "Debug session_not_ready for my direct-code Foundry agent",
-      "Check logstream failures for my direct-code hosted agent in Foundry",
     ];
 
     test.each(shouldTriggerPrompts)(

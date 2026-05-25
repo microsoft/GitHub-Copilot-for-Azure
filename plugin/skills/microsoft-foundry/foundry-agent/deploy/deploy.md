@@ -36,7 +36,7 @@ Direct code deployment is opt-in only.
 - Otherwise keep the existing behavior: prompt agents use [Workflow: Prompt Agent Deployment](#workflow-prompt-agent-deployment), and hosted agents use [Workflow: Docker/ACR Hosted Agent Deployment (Default)](#workflow-dockeracr-hosted-agent-deployment-default).
 - Do not infer direct code deployment just because Docker is unavailable or a Dockerfile is missing. Ask or use the default Docker/ACR workflow guidance.
 
-Deployment is not complete until a smoke invocation has run and succeeded. For direct-code deployment, the reference owns the REST upload, version polling, prewarm, invocation, and troubleshooting flow.
+Deployment is not complete until a smoke invocation has run and succeeded. For direct-code deployment, the reference owns REST upload and version polling; smoke invocation and troubleshooting use the existing hosted-agent invoke and troubleshoot workflows.
 
 ## Workflow: Docker/ACR Hosted Agent Deployment (Default)
 
@@ -399,7 +399,7 @@ When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode)
 - **Environment variables** — Uses values resolved from `azd env get-values` and project defaults without prompting for confirmation
 - **Agent name** — Must be provided in the initial user message or derived sensibly from the project context (`agent.yaml`, `agent.manifest.yaml`, folder name); if missing, the skill fails with an error instead of prompting
 - **Docker/ACR hosted-agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
-- **Direct code deployment** — If explicitly requested, derives runtime/entry point from source files, creates a flat zip excluding local artifacts, uploads by REST, polls the active version, prewarms a concrete-version session, and invokes it
+- **Direct code deployment** — If explicitly requested, derives runtime/entry point from source files, creates a flat zip excluding local artifacts, uploads by REST, polls the active version, then verifies it with the existing hosted-agent invoke workflow
 
 > ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, model deployment name, and ACR image for Docker/ACR deployments) are provided upfront in the user message, local `.env`, manifests, or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
 

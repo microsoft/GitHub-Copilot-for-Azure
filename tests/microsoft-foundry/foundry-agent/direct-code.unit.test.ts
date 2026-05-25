@@ -39,32 +39,19 @@ describe("foundry-agent direct-code workflow docs", () => {
     expect(reference).toContain("Do not send `x-ms-agent-name` on `POST /agents/<agent-name>/versions`");
   });
 
-  test("invoke workflow routes direct-code agents to concrete-version REST sessions", async () => {
+  test("deploy workflow leaves invoke and troubleshoot on existing hosted-agent paths", async () => {
+    const deployReference = await readSkillFile("foundry-agent/deploy/references/direct-code-deployment.md");
     const invoke = await readSkillFile("foundry-agent/invoke/invoke.md");
-    const reference = await readSkillFile("foundry-agent/invoke/references/direct-code-invocation.md");
-
-    expect(invoke).toContain("Use the direct-code invocation branch only when the user explicitly says");
-    expect(invoke).toContain("Do not switch to direct-code REST invocation just because the agent is hosted");
-    expect(reference).toContain("Do not use `@latest` in direct-code session creation");
-    expect(reference).toContain("\"type\": \"version_ref\"");
-    expect(reference).toContain("\"agent_version\": \"<active-version>\"");
-    expect(reference).toContain("\"agent_session_id\": \"<agent-session-id>\"");
-    expect(reference).toContain("Do not pass it as an `x-agent-session-id` header");
-    expect(reference).toContain("do not immediately create another session");
-  });
-
-  test("troubleshooting reference preserves direct-code failure routing and RBAC guidance", async () => {
     const troubleshoot = await readSkillFile("foundry-agent/troubleshoot/troubleshoot.md");
-    const reference = await readSkillFile("foundry-agent/troubleshoot/references/direct-code-troubleshooting.md");
 
-    expect(troubleshoot).toContain("Use the direct-code troubleshooting branch only when the user explicitly says");
-    expect(reference).toContain("Check Version Status Before Looking for Logs");
-    expect(reference).toContain("Do not try session logstream because there is no runtime session yet");
-    expect(reference).toContain("Foundry User");
-    expect(reference).toContain("Cognitive Services OpenAI User");
-    expect(reference).toContain("Do not use project-level `Azure AI User` as the runtime identity fix");
-    expect(reference).toContain("wait once for a bounded propagation window");
-    expect(reference).toContain("do not keep rechecking role definitions or retry indefinitely");
+    expect(deployReference).toContain("Direct code is only a deployment method");
+    expect(deployReference).not.toContain("direct-code invocation branch");
+    expect(deployReference).not.toContain("direct-code branch");
+    expect(deployReference).not.toContain("agent_session_id");
+    expect(invoke).toContain("## Workflow");
+    expect(invoke).not.toContain("Direct Code Invocation");
+    expect(troubleshoot).toContain("## Workflow");
+    expect(troubleshoot).not.toContain("Direct Code Troubleshooting");
   });
 
   test("agent metadata contract scopes ACR to Docker hosted-agent deployments", async () => {
