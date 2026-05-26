@@ -34,7 +34,7 @@ USE FOR: evaluate my agent, run an eval, test my agent, check agent quality, run
 
 ## Before Starting — Detect Current State
 
-1. Resolve the target agent root, selected environment, effective deployment context, and selected metadata overlay file using Common Project Context Resolution.
+1. Resolve the target agent root, selected environment, effective deployment context, and selected metadata overlay file using [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution).
 2. In azd projects, prefer azd env values for project endpoint and deployed agent name/version; if metadata disagrees, stop and ask which source is authoritative.
 3. Use `agent_get` and `agent_container_status_get` to verify the environment's agent exists and is running.
 4. Inspect the selected environment's `evaluationSuites[]`, cached files under `.foundry/suites/`, `.foundry/evaluators/`, and `.foundry/datasets/`, plus `eval.yaml` in the selected agent root only. If a suite has `suiteName`, call `evaluation_suite_get` to verify the remote suite/version before running it. If `eval.yaml` exists, verify/register its dataset and evaluator references before treating it as a synced Foundry suite. If the metadata still uses older `testSuites[]` or legacy `testCases[]`, normalize that list to evaluation suites first using the shared migration rule.

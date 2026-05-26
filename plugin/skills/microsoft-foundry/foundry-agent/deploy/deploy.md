@@ -62,7 +62,7 @@ A hosted-agent deployment is complete only when **every** box below is checked. 
 
 ### Step 1: Detect and Scan Project
 
-Get the project path from the selected agent root in the project context (see Common: Project Context Resolution). Detect the project type by checking for these files. Do **not** scan sibling agent folders.
+Get the project path from the selected agent root in the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Detect the project type by checking for these files. Do **not** scan sibling agent folders.
 
 | Project Type | Detection Files |
 |--------------|-----------------|
@@ -237,7 +237,7 @@ A prompt-agent deployment is complete only when **every** box below is checked. 
 
 ### Step 1: Collect Agent Configuration
 
-Use the project endpoint from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved:
+Use the project endpoint from the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Ask the user only for values not already resolved:
 - **Agent name** — Unique name for the agent
 - **Model deployment** — Model deployment name (e.g., `gpt-4o`)
 - **Instructions** — System prompt (optional)
@@ -318,7 +318,7 @@ If metadata and azd disagree for the same deployment value, stop and ask which s
 
 ### 1. Resolve Effective Context
 
-Use the Common Project Context Resolution flow. In azd projects, resolve project endpoint, agent name/version, ACR, and observability from `azd env get-values`; use `.foundry/agent-metadata*.yaml` only for overlays and synced suite/cache refs. If `eval.yaml` exists in the selected agent root, parse it as local evaluation intent before generating anything new.
+Use the [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution) flow. In azd projects, resolve project endpoint, agent name/version, ACR, and observability from `azd env get-values`; use `.foundry/agent-metadata*.yaml` only for overlays and synced suite/cache refs. If `eval.yaml` exists in the selected agent root, parse it as local evaluation intent before generating anything new.
 
 ### 2. Read Agent Instructions
 

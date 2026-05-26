@@ -39,7 +39,7 @@ USE FOR: create dataset from traces, harvest traces into dataset, build test dat
 
 ## Before Starting — Detect Current State
 
-1. Resolve the target agent root, environment, effective deployment context, and selected metadata overlay using Common Project Context Resolution.
+1. Resolve the target agent root, environment, effective deployment context, and selected metadata overlay using [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution).
 2. Confirm the selected environment's `projectEndpoint`, `agentName`, and observability settings from azd first, then metadata overrides.
 3. Check `.foundry/datasets/`, `.foundry/results/`, `.foundry/datasets/manifest.json`, and `eval.yaml` in the selected agent root only.
 4. Check whether `evaluation_dataset_get` returns server-side datasets for the same environment and whether `evaluationSuites[]` contains `suiteName`/`suiteVersion` references.

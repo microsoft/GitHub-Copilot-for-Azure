@@ -38,16 +38,16 @@ If azd and metadata both provide the same value and differ, stop and ask which s
 
 ## Environment Overlay Model
 
-| Field | Required | Purpose |
-|-------|----------|---------|
-| `defaultEnvironment` | Yes in metadata files | Default key inside this overlay file |
+| Field | Required when | Purpose |
+|-------|---------------|---------|
+| `defaultEnvironment` | Any metadata file exists | Default key inside this overlay file |
 | `environments.<env>.azd.environmentName` | Optional | Binds overlay to an azd environment |
 | `environments.<env>.azd.service` | Optional | Binds overlay to an `azure.yaml` service |
-| `environments.<env>.projectEndpoint` | Manual/non-azd only | Explicit override when azd cannot resolve it |
-| `environments.<env>.agentName` / `agentVersion` | Manual/non-azd only | Explicit override when azd cannot resolve it |
-| `environments.<env>.azureContainerRegistry` | Manual/non-azd hosted only | Explicit override when azd cannot resolve it |
-| `environments.<env>.observability.*` | Manual/non-azd only | Trace lookup config when azd cannot resolve it |
-| `environments.<env>.evaluationSuites[]` | After sync/setup | Remote suite/dataset/evaluator refs plus local cache paths |
+| `environments.<env>.projectEndpoint` | Required for non-azd/manual workflows | Explicit override when azd cannot resolve it |
+| `environments.<env>.agentName` / `agentVersion` | `agentName` required for non-azd/manual workflows; `agentVersion` optional | Explicit override when azd cannot resolve it |
+| `environments.<env>.azureContainerRegistry` | Required for non-azd/manual hosted-agent deploys | Explicit override when azd cannot resolve it |
+| `environments.<env>.observability.*` | Required only for trace workflows when azd cannot resolve observability | Trace lookup config when azd cannot resolve it |
+| `environments.<env>.evaluationSuites[]` | Required after evaluation setup/sync | Remote suite/dataset/evaluator refs plus local cache paths |
 | `environments.<env>.lastEval` | Optional | Last local result summary and result file path |
 
 ## Example azd Overlay

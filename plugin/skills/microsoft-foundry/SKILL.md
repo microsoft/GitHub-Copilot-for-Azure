@@ -99,7 +99,7 @@ Every agent source folder can keep Foundry-specific cache and overlay state unde
 
 - [Standard Agent Setup](references/standard-agent-setup.md) - Standard capability-host setup with customer-managed data, search, and AI Services resources.
 
-## Agent: Project Context Resolution
+## Agent: Common Project Context Resolution
 
 Agent skills should run this step **only when they need configuration values they don't already have**. If a value (for example, agent root, environment, project endpoint, or agent name) is already known from the user's message or a previous skill in the same session, skip resolution for that value.
 

@@ -36,7 +36,7 @@ USE FOR: analyze agent traces, search agent conversations, find failing traces, 
 
 ## Before Starting — Resolve App Insights Connection
 
-1. Resolve the target agent root, environment, effective deployment context, and selected metadata overlay using Common Project Context Resolution.
+1. Resolve the target agent root, environment, effective deployment context, and selected metadata overlay using [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution).
 2. In azd projects, prefer App Insights values from `azd env get-values`; otherwise check `environments.<env>.observability.applicationInsightsConnectionString` or `environments.<env>.observability.applicationInsightsResourceId` in the selected metadata file.
 3. If observability settings are missing, use `project_connection_list` to discover App Insights linked to the Foundry project, then persist the chosen resource back to `environments.<env>.observability` only when azd cannot provide it.
 4. Confirm the selected App Insights resource and environment with the user before querying.

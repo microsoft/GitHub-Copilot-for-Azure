@@ -36,7 +36,7 @@ Create `.agent_configs/baseline/` beside `agent.yaml`:
 Example `metadata.yaml`:
 
 ```yaml
-model: gpt-4o
+model: <existing-chat-model-deployment-name>
 temperature: 0.7
 instruction_file: instructions.md
 skill_dir: skills
@@ -44,6 +44,8 @@ tool_file: tools.json
 ```
 
 `instructions.md` contains the selected baseline system/developer instructions. Include only skill folders relevant to the optimization goal.
+
+Choose a `model` value that already exists as a model deployment in the target Foundry project. Do not assume `gpt-4o` is available.
 
 ## Tools File
 
