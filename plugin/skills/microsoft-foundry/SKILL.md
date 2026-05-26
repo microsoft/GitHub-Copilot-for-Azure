@@ -29,7 +29,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
 | **create** | Create new hosted agent applications. Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#, across `responses` or `invocations` protocols. | [create](foundry-agent/create/create-hosted.md) |
-| **agent-optimizer** | Make existing Python agent code optimization-ready for Agent Optimizer in Foundry by wiring evaluator-targeted instructions/model/temperature knobs, then stop for review before deployment. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
+| **agent-optimizer** | Make existing Python hosted-agent code optimization-ready, configure eval.yaml, run Agent Optimizer jobs, apply candidates locally, and deploy through azd after review. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |
 | **resource/create** | Creating Azure AI Services multi-service resource (Foundry resource) using Azure CLI. Use when manually provisioning AI Services resources with granular control. | [resource/create/create-foundry-resource.md](resource/create/create-foundry-resource.md) |
@@ -65,7 +65,7 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
 | Create a new agent from scratch | [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
-| Make existing Python agent optimization-ready | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) → review → deploy → invoke |
+| Optimize existing Python hosted agent | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) → scaffold/review → eval.yaml → optimize → apply candidate → deploy → invoke |
 | Deploy an agent (code already exists) | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
 | Update/redeploy an agent after code changes | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
 | Invoke/test/chat with an agent | invoke |
