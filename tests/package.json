@@ -13,6 +13,7 @@
     "test:ci": "node scripts/run-tests.js ci",
     "test:watch": "node scripts/run-tests.js watch",
     "test:skill": "node scripts/run-tests.js skill",
+    "coverage:grid": "node scripts/generate-coverage-grid.js --print",
     "report": "npx tsx scripts/generate-test-reports.ts",
     "results": "node scripts/show-test-results.js",
     "update:mcp-tool-snapshot": "node scripts/update-mcp-tool-snapshot.js",
