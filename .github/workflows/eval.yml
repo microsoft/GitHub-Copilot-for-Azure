@@ -39,9 +39,6 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install vally-cli
-        run: npm install --no-save --ignore-scripts @microsoft/vally-cli@^0.4.0
-
       - name: Install dependencies
         run: npm install
 
@@ -49,7 +46,7 @@ jobs:
         run: npm run build
 
       - name: Lint skill and eval specs
-        run: npx @microsoft/vally-cli lint plugin/skills/ --eval evals/ --strict
+        run: npx --yes @microsoft/vally-cli@^0.4.0 lint plugin/skills/ --eval evals/ --strict
 
       - name: Determine suite
         if: github.event_name != 'pull_request'
@@ -66,7 +63,7 @@ jobs:
       - name: Run smoke evaluations
         if: github.event_name == 'pull_request'
         run: |
-          npx @microsoft/vally-cli eval \
+          npx --yes @microsoft/vally-cli@^0.4.0 eval \
             --suite smoke \
             --runs 1 \
             --output-dir ./results \
@@ -80,7 +77,7 @@ jobs:
       - name: Run evaluations
         if: github.event_name != 'pull_request'
         run: |
-          npx @microsoft/vally-cli eval \
+          npx --yes @microsoft/vally-cli@^0.4.0 eval \
             --suite ${{ steps.suite.outputs.name }} \
             --output-dir ./results \
             --output jsonl \
