@@ -37,7 +37,7 @@ For session file operation tools (`session_file_upload`, `session_file_download`
 
 ## Protocols
 
-Hosted agents support two invocation protocols declared at deployment time.
+Hosted agents support three protocols declared at deployment time. They are distinct contracts — pick per use case (an agent may declare more than one and serve them from the same container):
 
 | Protocol | Recommended Version | Route | Best For |
 |----------|-------------------|-------|----------|
