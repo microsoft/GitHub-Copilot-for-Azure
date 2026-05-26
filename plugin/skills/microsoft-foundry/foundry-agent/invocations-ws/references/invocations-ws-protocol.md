@@ -84,7 +84,7 @@ If the handler isn't available, ask the agent author for the framing spec before
 **Connect from a Python client (no browser proxy):**
 
 ```python
-import os, uuid, websockets
+import os, uuid, websockets  # requires websockets >= 12 for the additional_headers kwarg below
 
 token = os.popen("az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv").read().strip()
 url = (
@@ -94,6 +94,7 @@ url = (
     "&foundry_features=HostedAgents=V1Preview"
 )
 
+# websockets >= 12 uses `additional_headers`; older versions (<12) expect `extra_headers`.
 async with websockets.connect(url, additional_headers={"Authorization": f"Bearer {token}"}) as ws:
     await ws.send(b"<first frame in your wire format>")
     async for frame in ws:

@@ -223,7 +223,7 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 - Prefer the protocol SDK sample for the selected lane instead of inventing a custom contract when a sample already exists
 
 **`invocations_ws`:**
-- Use the `azure-ai-agentserver-invocations` SDK and register a WebSocket handler with `@app.ws_handler` on the same `InvocationsAgentServerHost` 
+- Use the `azure-ai-agentserver-invocations` SDK and register a WebSocket handler with `@app.ws_handler` on the same `InvocationsAgentServerHost`
 - Follow the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the wire-level contract and `agent_session_id` semantics
 - Reference samples live under `samples/python/hosted-agents/bring-your-own/invocations_ws/`
 
