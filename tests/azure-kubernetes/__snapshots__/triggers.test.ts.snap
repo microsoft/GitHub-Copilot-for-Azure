@@ -2,7 +2,7 @@
 
 exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill description triggers match snapshot 1`] = `
 {
-  "description": "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, AKS spot nodes, AKS cluster-autoscaler, rightsize AKS pods, pod rightsizing, over-provisioned pods, pod resource requests and limits, Vertical Pod Autoscaler, VPA recommendations.",
+  "description": "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, AKS spot nodes, AKS cluster-autoscaler, rightsize AKS pod, pod rightsizing, over-provisioned AKS pod, pod resource requests and limits, Vertical Pod Autoscaler, VPA recommendations.",
   "extractedKeywords": [
     "aks",
     "analysis",
@@ -45,7 +45,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill descri
     "over-provisioned",
     "overlay",
     "plan",
-    "pods",
     "private",
     "production-ready",
     "provision",
@@ -114,7 +113,6 @@ exports[`azure-kubernetes - Trigger Tests Trigger Keywords Snapshot skill keywor
   "over-provisioned",
   "overlay",
   "plan",
-  "pods",
   "private",
   "production-ready",
   "provision",
