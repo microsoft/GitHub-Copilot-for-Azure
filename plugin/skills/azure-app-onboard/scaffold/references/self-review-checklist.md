@@ -25,7 +25,7 @@ Extract every security claim from the generated IaC and check for internal contr
 | Key Vault referenced but RBAC not granted | `@Microsoft.KeyVault(...)` but no `roleAssignment` for app identity |
 | ⛔ Role assignment scope targets wrong resource | `scope: resourceGroup()` on resource-specific roles → `FLAGGED`. Must scope to specific resource. |
 | `principalType` missing on role assignments | Causes intermittent 30s+ delays |
-| ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute MUST have `identity: { type: 'SystemAssigned' }`. **Exception:** F1/D1 Linux (MI sidecar OOM) → `PLAUSIBLE`. |
+| ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute MUST have `identity: { type: 'SystemAssigned' }`. ⛔ **HARD EXCEPTION — F1/D1 Linux:** MI sidecar causes OOM on free tier → rate `PLAUSIBLE`, **NEVER** `FLAGGED`. The gen template intentionally omits MI for F1/D1. If F1/D1 detected in plan, this check MUST be `PLAUSIBLE`. |
 | SQL firewall `0.0.0.0/0` without private endpoint | Prefer MI + private endpoint. AllowAzureServices genuinely needed → `PLAUSIBLE`. |
 | ⛔ SCM/FTP auth policy missing on App Service | ALL App Service MUST have `basicPublishingCredentialsPolicies`: `scm.allow: true`, `ftp.allow: false`. Missing → `FLAGGED`. |
 | ⛔ KV URL uses `environment().suffixes.keyvaultDns` | Leading dot → double-dot URL → `ContainerAppSecretKeyVaultUrlInvalid`. Use `keyVault.name` + `.vault.azure.net` or `vaultUri` output. → ⛔ **FLAGGED** |

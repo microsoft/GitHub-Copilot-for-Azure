@@ -50,6 +50,8 @@ function shouldEarlyTerminateOnIaCFileWrite(agentMetadata: import("../../utils/a
   }
 
   const toolCalls = getToolCalls(agentMetadata);
+
+  // Check 1: Direct IaC file write in parent context
   const hasIaCWriteToolCall = toolCalls.some(tc => {
     const toolName = (tc.data.toolName ?? "").toLowerCase();
     const isWriteTool = toolName === "create_file" || toolName === "write_file" || toolName === "create";
@@ -59,7 +61,23 @@ function shouldEarlyTerminateOnIaCFileWrite(agentMetadata: import("../../utils/a
     return (filePath.endsWith(".bicep") || filePath.endsWith(".tf")) && filePath.includes("infra/");
   });
 
-  return hasIaCWriteToolCall;
+  // Check 2: Sub-agent completed IaC generation/review (files written inside sub-agent are invisible to Check 1)
+  const hasSubagentIaCComplete = toolCalls.some(tc => {
+    const tn = (tc.data.toolName ?? "").toLowerCase();
+    if (tn !== "read_agent") return false;
+    const args = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
+    return args.includes("iac") || args.includes("review") || args.includes("scaffold");
+  });
+
+  // Check 3: scaffold-manifest.json written (canonical scaffold completion signal)
+  const hasManifest = toolCalls.some(tc => {
+    const tn = (tc.data.toolName ?? "").toLowerCase();
+    if (tn !== "create" && tn !== "create_file" && tn !== "edit") return false;
+    const filePath = ((tc.data.arguments as Record<string, unknown>)?.path as string ?? "").toLowerCase();
+    return filePath.includes("scaffold-manifest.json");
+  });
+
+  return hasIaCWriteToolCall || hasSubagentIaCComplete || hasManifest;
 }
 
 const skipTests = shouldSkipIntegrationTests();

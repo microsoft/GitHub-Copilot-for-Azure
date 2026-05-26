@@ -25,8 +25,8 @@ If the app seeds data using a generated secret (admin password, API key), either
 >
 > | Condition | Include MI? |
 > |-----------|-------------|
+> | F1 or D1 SKU on Linux | **NO** (MI sidecar causes OOM — use `@secure()` param + KV deployer RBAC instead) |
 > | Any Key Vault, database, storage, queue, or ACR access | **YES** |
-> | F1 or D1 SKU on Linux | **NO** (MI sidecar causes OOM) |
 > | None of the above | **YES** (default secure) |
 
 - **System-assigned managed identity** for all services (default). User-assigned only when shared identity is explicitly needed.

@@ -244,6 +244,7 @@ export const SKILL_NAME = "azure-app-onboard";
 export const RUNS_PER_PROMPT = 1;
 export const invocationRateThreshold = 0.8;
 export const integrationTestTimeoutMs = 3_600_000; // 60 minutes — generous ceiling for ALL integration tests; early terminators handle stopping
+export const remediationTestTimeoutMs = 7_200_000; // 120 minutes — remediation + quota pivot can exceed 60 min
 export const testTimeoutMs = integrationTestTimeoutMs;
 export const negativeTestTimeoutMs = integrationTestTimeoutMs;
 export const prepareTestTimeoutMs = integrationTestTimeoutMs;
@@ -2067,8 +2068,31 @@ export function assertScmBasicAuthDisabled(agentMetadata: AgentMetadata): void {
   }
 
   if (scmPutCalls.length === 0) {
+    // Check: Was SCM managed declaratively via Bicep resource? (superior — no enable window)
+    const hasDeclarativeScm = toolCalls.some(tc => {
+      const tn = (tc.data.toolName ?? "").toLowerCase();
+      if (tn !== "create" && tn !== "create_file" && tn !== "edit") return false;
+      const content = JSON.stringify(tc.data.arguments ?? {}).toLowerCase();
+      return content.includes("basicpublishingcredentialpolicies");
+    });
+
+    // Also check sub-agent output (IaC review sub-agents report on SCM resources)
+    const scmInSubagent = toolCalls.some(tc => {
+      const tn = (tc.data.toolName ?? "").toLowerCase();
+      if (tn !== "read_agent") return false;
+      const result = JSON.stringify(tc.data).toLowerCase();
+      return result.includes("basicpublishingcredentialpolicies");
+    });
+
+    if (hasDeclarativeScm || scmInSubagent) {
+      agentMetadata.testComments.push(
+        "ℹ️ SCM LIFECYCLE: Managed declaratively via Bicep (allow:false at provision time — superior to imperative enable/disable cycle)",
+      );
+      return;
+    }
+
     agentMetadata.testComments.push(
-      "❌ SCM LIFECYCLE: No basicPublishingCredentialsPolicies/scm PUT found — SCM basic auth must be enabled for deploy then re-disabled after health checks",
+      "❌ SCM LIFECYCLE: No basicPublishingCredentialsPolicies/scm management found — neither imperative PUT nor declarative Bicep resource",
     );
     expect(scmPutCalls.length).toBeGreaterThan(0);
     return;

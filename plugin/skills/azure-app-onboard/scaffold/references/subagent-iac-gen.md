@@ -47,7 +47,7 @@ Read ONLY the compute-target reference(s) matching the plan, if the plan has mul
 - If plan has Static Web Apps → read [bicep-swa.md](bicep-swa.md).
 - If plan has BOTH → read both.
 
-**Do:** Generate compute module(s) using the patterns from each reference file. F1/D1 App Service: do NOT generate Dockerfile, do NOT add managed identity (OOM).
+**Do:** Generate compute module(s) using the patterns from each reference file. F1/D1 App Service: do NOT generate Dockerfile, do NOT add managed identity (OOM). App Service health probe: if `prereq-output.json.healthEndpoint` is non-null, set `siteConfig.healthCheckPath` to that value; otherwise omit (do NOT default to `/`).
 
 ### Step 3 — Read security patterns
 
@@ -81,9 +81,9 @@ Wire connection strings via Key Vault `secretRef` (Container Apps) or `@Microsof
 
 **Do:** Create the `infra/` directory and write all files:
 1. `infra/bicepconfig.json` — write `{ "formatting": { "newlineKind": "LF" } }` if it doesn't already exist (user's repo may have one). LF is critical because Bicep triple-quoted strings pass content literally to ARM, and `\r` bytes crash `/bin/sh` in containers.
-2. `infra/main.bicep` — subscription scope, RG creation with tags, module calls for all services
-3. `infra/main.parameters.json` — ARM JSON format (NOT `.bicepparam`). Include `environmentName`, `location`, `sessionId`, `deployedBy`, `createdAt`. ⛔ **`createdAt` value:** run `Get-Date -Format "o"` in terminal to get the current ISO 8601 timestamp — NEVER use a hardcoded or placeholder date. Do NOT include `@secure()` params (passed at deploy time).
-4. `infra/modules/{service}.bicep` — one module per service from the plan
+2. `infra/main.bicep` — subscription scope, RG creation with tags, module calls for all services + `role-assignments` module (KV deployer + app-to-KV RBAC) + `diagnostic-settings` module (route compute logs → Log Analytics). ⛔ Role assignments and diagnostic settings are NOT optional — they MUST be wired as module calls in `main.bicep` alongside service modules.
+3. `infra/main.parameters.json` — ARM JSON format (NOT `.bicepparam`). Include `environmentName`, `location`, `sessionId`, `deployedBy`, `createdAt`. ⛔ **`createdAt` value:** run `Get-Date -Format "o"` in terminal to get the current ISO 8601 timestamp — NEVER use a hardcoded or placeholder date. Do NOT include `@secure()` params (passed at deploy time). Include `deployerObjectId` param (deploy phase passes via `az ad signed-in-user show --query id -o tsv`).
+4. `infra/modules/{service}.bicep` — one module per service from the plan, PLUS `role-assignments.bicep` (KV Secrets Officer for deployer, KV Secrets User for app identity if MI enabled — see [bicep-patterns-security.md](bicep-patterns-security.md) § Key Vault Deployer RBAC) and `diagnostic-settings.bicep` (route App Service/Container Apps logs + metrics to Log Analytics workspace)
 5. If `buildRequirements.hasBuildKitSyntax == true`: ⛔ create `{component}/Dockerfile.azure` per [dockerfile-generation.md § ACR Build Compatibility](dockerfile-generation.md).
 6. If Container Apps and component has NO Dockerfile: read [dockerfile-generation.md](dockerfile-generation.md) and generate one. Follow the layer ordering, port alignment, and security defaults from that reference — do NOT generate from memory.
 

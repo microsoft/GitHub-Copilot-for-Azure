@@ -133,7 +133,7 @@ describeAppOnboardWithCleanup("Prepare Catalog Tests", (agent) => {
           prompt: "We're running this app today. How do we bring it to Azure with minimal changes?",
           followUp: [
             SUBSCRIPTION_PRIMER,
-            "Yes.",
+            "Redirect to Azure Cloud Migrate",
             "Yes.",
             "Yes.",
             "Yes.",
