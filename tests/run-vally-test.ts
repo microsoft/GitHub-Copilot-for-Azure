@@ -144,7 +144,7 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
     const isPass = trials.every((t) => t.isPass);
     const message = trials.map((t) => t.message ?? "").join("\n");
     const expectsScreenshot = trials.some((t) => t.expectsScreenshot);
-    const skillInvocationRate = trials.some((t) => t.skillInvocationRate === undefined) ? undefined : (trials.map((t) => t.skillInvocationRate) as number[]).reduce((sum, rate) => sum += rate, 0) / trials.length;
+    const skillInvocationRate = trials.some((t) => t.skillInvocationRate === undefined) ? undefined : (trials.map((t) => t.skillInvocationRate) as number[]).reduce((sum, rate) => sum + rate, 0) / trials.length;
     testResults[normalizedTestName] = {
       isPass,
       message,
