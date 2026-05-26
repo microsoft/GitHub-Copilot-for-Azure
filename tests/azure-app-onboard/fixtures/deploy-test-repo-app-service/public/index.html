@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notes App</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>📝 Notes App</h1>
+      <p class="subtitle">Sign in to manage your notes</p>
+      <form id="login-form">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="e.g. user1" required autocomplete="username" />
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter password" required autocomplete="current-password" />
+        <div id="login-error" class="error-msg hidden"></div>
+        <button type="submit" class="btn-primary">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App Screen -->
+  <div id="app-screen" class="screen hidden">
+    <header class="app-header">
+      <div class="header-left">
+        <span class="logo">📝 Notes</span>
+        <span id="welcome-msg" class="welcome"></span>
+      </div>
+      <button id="logout-btn" class="btn-secondary">Sign Out</button>
+    </header>
+
+    <div class="app-body">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <span>My Notes</span>
+          <button id="new-note-btn" class="btn-icon" title="New note">＋</button>
+        </div>
+        <ul id="notes-list" class="notes-list"></ul>
+      </aside>
+
+      <!-- Editor -->
+      <main class="editor-area">
+        <div id="empty-state" class="empty-state">
+          <p>Select a note from the sidebar or create a new one.</p>
+        </div>
+        <div id="note-editor" class="note-editor hidden">
+          <div class="editor-toolbar">
+            <input type="text" id="note-title" class="note-title-input" placeholder="Note title" />
+            <button id="delete-note-btn" class="btn-danger" title="Delete note">🗑 Delete</button>
+          </div>
+          <textarea id="note-content" class="note-content-input" placeholder="Start writing…"></textarea>
+          <div class="editor-footer">
+            <span id="save-status" class="save-status"></span>
+            <button id="save-note-btn" class="btn-primary">Save</button>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -25,7 +25,7 @@ Where `resourcePrefix` = `{project}-{env}-{suffix}` (generated once in prepare S
 
 > ⛔ **No redundancy.** The resource name is `{abbr}-{resourcePrefix}` — NOT `{project}-{abbr}-{project}-{env}-{suffix}`. The project name appears ONCE in the prefix.
 >
-> ⛔ **Scaffold reads, it does NOT generate.** All names are populated in `prepare-plan.json.naming.resources[]`. Scaffold uses them as-is — it does NOT derive names from `environmentName` or invent its own suffixes.
+> ⛔ **Scaffold reads naming from the plan — does NOT generate or modify resource names.**
 
 Override via `context.json.overrides[]` with `key: "naming.pattern"`.
 
@@ -54,6 +54,10 @@ Override via `context.json.overrides[]` with `key: "naming.pattern"`.
 
 1. **ALL resources get the `{suffix}`** — including resource groups. This prevents cross-session naming collisions when the same app is deployed multiple times. The suffix is a 4-char random string generated once per session.
 2. **Container Registry + Storage Account:** strip hyphens (alphanumeric only)
-3. **Validate length** after substitution — truncate `{project}` if total exceeds max
+3. **Validate length** after substitution — Key Vault (24 chars) is the tightest constraint. Budget for `{project}`: `24 - len(abbreviation) - len(env) - len(suffix) - 3 - 2` (separators + healing reserve). For `kv` + `dev`: 10 chars max. The 2-char reserve ensures room for a healing suffix (e.g., `edd6` → `edd602`) on region fallback. **Truncation when over budget:**
+   1. Truncate at the nearest hyphen boundary within budget (e.g., `broken-web-app` at 10 → `broken-web`)
+   2. If no hyphen within budget: hard truncate, no trailing hyphen
+   3. Verify truncated name doesn't collide with reserved words (Rule 4)
+   4. Recompute ALL resource names with the truncated project — do NOT mix long and short names
 4. **Never use reserved words** as resource names (`admin`, `login`, `root`, `test`)
 5. Populate `naming.resources[]` in `prepare-plan.json` with concrete names after validation

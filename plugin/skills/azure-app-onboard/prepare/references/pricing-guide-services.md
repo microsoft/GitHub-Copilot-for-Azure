@@ -6,14 +6,12 @@ Filter strings, meter names, and formulas per Azure service. For methodology and
 
 No `armSkuName`. Filter: `serviceName eq 'Azure Container Apps' and armRegionName eq '{region}' and priceType eq 'Consumption' and isPrimaryMeterRegion eq true`
 
-**Key meters:** `Standard vCPU Active Usage` (1 Second), `Standard Memory Active Usage` (1 GiB Second), `Standard vCPU Idle Usage`, `Standard Memory Idle Usage`, `Standard Requests` (1M).
+**Key meters:** `Standard vCPU Active Usage` (1 Second), `Standard Memory Active Usage` (1 GiB Second), `Standard Requests` (1M).
 
-**Monthly formula (Consumption, 1 vCPU, 2 GiB, 8h active/day):**
+**Monthly (Consumption, 1 vCPU, 2 GiB, 8h active/day):**
 `(vCPU_active_rate × 3600 × 8 × 30) + (memory_active_rate × 2 × 3600 × 8 × 30)`
 
-**Free grant:** 180K vCPU-sec + 360K GiB-sec + 2M requests/sub/month.
-
-> ⚠️ **Idle cost:** When `min_replicas >= 1`: `idle_cost = (vCPU_idle_rate × 3600 × idle_hours × 30) + (memory_idle_rate × GiB × 3600 × idle_hours × 30)`. Scale-to-zero = $0 idle.
+**Free grant:** 180K vCPU-sec + 360K GiB-sec + 2M requests/sub/month. Scale-to-zero = $0 idle. When `min_replicas >= 1`: add idle cost from idle meters.
 
 ---
 
@@ -153,18 +151,14 @@ serviceName eq 'Service Bus' and armRegionName eq '{region}'
 
 **MCP call:** `pricing_get --service "Azure Database for PostgreSQL" --sku "{armSkuName}" --region "{region}"`
 
-**armSkuName values:**
+**armSkuName values:** ⛔ Case-sensitive. Small Burstable uses short names (`B1MS`, `B2S`); larger Burstable + GP/MO use `Standard_` prefix.
 
-> **Approximate reference only** — always verify via `pricing_get` or retail prices API.
->
-> **Naming convention:** Only the two smallest Burstable SKUs use short uppercase names (`B1MS`, `B2S`). All other Burstable SKUs (B4ms through B20ms) and all General Purpose / Memory Optimized tiers use the `Standard_` prefix (`Standard_B2ms`, `Standard_B4ms`, `Standard_D2ds_v5`). This is Azure API behavior — not a typo. Always use the exact `armSkuName` shown here.
-
-| SKU | `armSkuName` | `retailPrice` (eastus, approx.) |
-|-----|-------------|------------------------|
-| Burstable B1ms (1 vCore, 2 GiB) | `B1MS` | ~$0.017/hr |
-| Burstable B2s (2 vCores, 4 GiB) | `B2S` | ~$0.068/hr |
-| Burstable B2ms (2 vCores, 8 GiB) | `Standard_B2ms` | ~$0.136/hr |
-| General Purpose D2ds_v5 (2 vCores) | `Standard_D2ds_v5` | ~$0.178/hr |
+| SKU | `armSkuName` |
+|-----|-------------|
+| Burstable B1ms | `B1MS` |
+| Burstable B2s | `B2S` |
+| Burstable B2ms | `Standard_B2ms` |
+| General Purpose D2ds_v5 | `Standard_D2ds_v5` |
 
 **Storage:** Query separately — `meterName eq 'Storage Data Stored'` and `productName` containing `Flexible Server Storage`. Unit: 1 GiB/Month. Default 32 GiB included at ~$0.115/GiB/mo.
 
@@ -176,25 +170,11 @@ serviceName eq 'Service Bus' and armRegionName eq '{region}'
 
 ### Functions
 
-**Consumption plan:** Not in the Retail Prices API. Free grant covers most AppOnboard apps: 1M executions + 400K GB-seconds/month. Beyond that, use the published rates from [azure.microsoft.com/pricing/details/functions](https://azure.microsoft.com/en-us/pricing/details/functions/).
+**Consumption plan:** Not in API. Free: 1M executions + 400K GB-seconds/month.
 
-**Flex Consumption / Premium** — `serviceName eq 'Functions'`:
-
-**Filter:**
-```
-serviceName eq 'Functions' and armRegionName eq '{region}' and priceType eq 'Consumption' and isPrimaryMeterRegion eq true
-```
-
-**Key meters (Flex Consumption):**
-- `On Demand Execution Time` (unit: 1 GB Second)
-- `On Demand Total Executions` (unit: 10)
-- `Always Ready Baseline` (unit: 1 GB Second)
-
-**Key meters (Premium):**
-- `Premium vCPU Duration` (unit: 1 Hour)
-- `Premium Memory Duration` (unit: 1 GiB Hour)
-
-**Monthly (Premium):** `vCPU_rate × 730` + `memory_rate × GiB × 730`
+**Flex/Premium** — filter: `serviceName eq 'Functions' and armRegionName eq '{region}' and priceType eq 'Consumption' and isPrimaryMeterRegion eq true`
+- Flex: `On Demand Execution Time` (1 GB Second), `On Demand Total Executions` (10), `Always Ready Baseline`
+- Premium: `Premium vCPU Duration` (1 Hour), `Premium Memory Duration` (1 GiB Hour). Monthly: `vCPU_rate × 730 + memory_rate × GiB × 730`
 
 ---
 

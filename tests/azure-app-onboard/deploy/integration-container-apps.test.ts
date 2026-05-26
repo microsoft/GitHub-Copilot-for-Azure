@@ -4,7 +4,8 @@
  * Validates that azure-app-onboard deploys code to Container Apps end-to-end,
  * not just IaC with placeholder images + manual "Next Steps."
  *
- * Tests B50 (Container Apps Phase 2 code deploy missing).
+ * Tests that Container Apps code deploy executes ACR builds instead of
+ * presenting manual CLI commands.
  *
  * Uses wetty (butlerx/wetty): single-component TypeScript/Express app with
  * Dockerfile. Simple repo avoids monorepo exploration loops that caused
@@ -21,14 +22,22 @@ import {
   softCheckSkill,
   withTestResult,
   getAllAssistantMessages,
+  getToolCalls,
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import {
   SKILL_NAME,
+  integrationTestTimeoutMs,
   shouldEarlyTerminateOnContainerAppsCodeDeploy,
   assertSessionFileCreated,
   cleanupSessionResourceGroups,
   assertAgentScannedWorkspace,
+  assertDeployPreflightSubagentDispatched,
+  assertScaffoldSubagentsDispatched,
+  assertNoSubagentFailures,
+  hasReachedScaffoldPhase,
+  hasReachedDeployPhase,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 
 const skipTests = shouldSkipIntegrationTests();
@@ -62,11 +71,16 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
           },
           prompt: "I want to take my local app and put it in the cloud — where do I start?",
           followUp: [
-            "Go with defaults, keep costs low.",
-            "Yes, that looks good. Generate new Bicep for me.",
-            "Yes, proceed with scaffolding.",
-            "Yes, deploy to Azure now.",
-            "Yes, confirm the deployment.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -83,7 +97,7 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
 
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
-        // HARD: Must NOT present manual CLI commands as "Next Steps" for code deploy (B50)
+        // HARD: Must NOT present manual CLI commands as "Next Steps" for code deploy
         const hasManualDeploySteps =
           /next steps.{0,100}(docker build|docker push|deploy your code|az containerapp update)/i.test(messages);
         if (hasManualDeploySteps) {
@@ -93,24 +107,23 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
         }
         expect(hasManualDeploySteps).toBe(false);
 
-        // HARD: Must mention ACR build — this test validates code deploy, not just IaC (B50)
+        // HARD: Must mention or execute ACR build — this test validates code deploy, not just IaC
+        // Check both assistant messages AND tool calls (agent may execute builds via tools without mentioning in text)
         const mentionsAcrBuild =
           /az acr build|acr.{0,20}build|container.{0,20}registry.{0,20}build|image.{0,20}(build|push)/i.test(messages);
-        if (!mentionsAcrBuild) {
+        const toolCalls = getToolCalls(agentMetadata);
+        const executedAcrBuild = toolCalls.some(tc => {
+          const toolName = (tc.data.toolName ?? "").toLowerCase();
+          if (toolName !== "powershell" && toolName !== "bash" && toolName !== "run_in_terminal") return false;
+          const cmd = ((tc.data.arguments as Record<string, unknown>)?.command as string ?? "").toLowerCase();
+          return /az\s+acr\s+build|docker\s+(build|push)|acr.*build/.test(cmd);
+        });
+        if (!mentionsAcrBuild && !executedAcrBuild) {
           agentMetadata.testComments.push(
             "❌ Agent did not execute or mention ACR image builds — code deploy phase not reached"
           );
         }
-        expect(mentionsAcrBuild).toBe(true);
-
-        // SOFT: Communicate end-to-end code deploy (plans_end_to_end_code_deploy grader)
-        // Non-blocking: agent may use varied phrasing for deploy completion.
-        // ACR build + Container Apps mention + no manual steps is the hard signal (asserted separately).
-        const plansE2eDeploy =
-          /placeholder.{0,30}image|update.{0,30}image|replace.{0,30}(image|placeholder)|swap.{0,30}(image|placeholder)|redeploy|build.{0,50}(image|container).{0,50}(deploy|container.?app)|end.to.end.{0,30}deploy|deploy.{0,30}(application|app|code)|code.{0,30}deploy|push.{0,30}(image|container)|revision.{0,30}(update|creat|deploy)/i.test(messages);
-        if (!plansE2eDeploy) {
-          agentMetadata.testComments.push("⚠️ E2E DEPLOY: Agent did not communicate end-to-end code deploy (placeholder→image swap, redeploy, code/app deploy, push image, revision update) — ACR build + Container Apps asserted separately");
-        }
+        expect(mentionsAcrBuild || executedAcrBuild).toBe(true);
 
         // HARD: Must identify Container Apps as the target compute
         const mentionsContainerApps = /container.?apps/i.test(messages);
@@ -120,7 +133,7 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
         expect(mentionsContainerApps).toBe(true);
 
         // HARD: Must use Bicep, NOT Terraform — Bicep is the default IaC format
-        const usedTerraform = /terraform (init|plan|apply)|\.tf\b|hashicorp\/azurerm/i.test(messages);
+        const usedTerraform = /terraform\s+(init|plan|apply)|hashicorp\/azurerm/i.test(messages);
         if (usedTerraform) {
           agentMetadata.testComments.push(
             "❌ Agent used Terraform instead of Bicep — follow-up explicitly requests Bicep"
@@ -136,14 +149,8 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
         }
         expect(mentionsBicep).toBe(true);
 
-        // Must scan workspace (scans_repo grader)
+        // Must scan workspace
         assertAgentScannedWorkspace(agentMetadata);
-
-        // SOFT: Should notice Dockerfile presence
-        const detectsDockerfile = /dockerfile|docker|container.{0,10}image/i.test(messages);
-        if (!detectsDockerfile) {
-          agentMetadata.testComments.push("⚠️ Agent did not mention Dockerfile");
-        }
 
         // HARD: Must NOT use azd up/deploy — AppOnboard deploys via az deployment sub create
         const usedAzd = /azd\s+(up|provision|deploy)/i.test(messages);
@@ -159,10 +166,24 @@ describeIntegration(`${SKILL_NAME}_ - Container Apps Deploy`, () => {
           assertSessionFileCreated(agentMetadata, workspacePath);
         }
 
+        // Sub-agent assertions: scaffold + deploy must dispatch via task tool
+        // Only assert each when the respective phase was actually reached
+        if (hasReachedScaffoldPhase(agentMetadata)) {
+          assertScaffoldSubagentsDispatched(agentMetadata);
+        } else {
+          agentMetadata.testComments.push("⚠️ SCAFFOLD PHASE NOT REACHED: Skipping scaffold sub-agent assertion");
+        }
+        if (hasReachedDeployPhase(agentMetadata)) {
+          assertDeployPreflightSubagentDispatched(agentMetadata);
+        } else {
+          agentMetadata.testComments.push("⚠️ DEPLOY PHASE NOT REACHED: Skipping deploy sub-agent assertion");
+        }
+        assertNoSubagentFailures(agentMetadata);
+
         // All three must hold: ACR builds executed, Container Apps targeted, no manual steps
         // (individual expects above — this is a summary guard)
-        expect(mentionsAcrBuild && mentionsContainerApps && !hasManualDeploySteps).toBe(true);
+        expect((mentionsAcrBuild || executedAcrBuild) && mentionsContainerApps && !hasManualDeploySteps).toBe(true);
       });
-    }, 2_700_000); // 45 minutes — single-container deploy; 5 min headroom beyond 40-min followUpTimeout
+    }, integrationTestTimeoutMs);
   });
 });

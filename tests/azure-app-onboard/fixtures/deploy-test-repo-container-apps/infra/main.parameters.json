@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "wetty-dev-fafc"
+    },
+    "location": {
+      "value": "eastus2"
+    },
+    "sessionId": {
+      "value": "fafc5cdc-d674-456c-acb1-2a72e3d6d133"
+    },
+    "deployedBy": {
+      "value": "Test User"
+    },
+    "createdAt": {
+      "value": "2026-05-20T22:10:13.8488196Z"
+    },
+    "resourceGroupName": {
+      "value": "rg-wetty-dev-fafc"
+    },
+    "containerAppName": {
+      "value": "ca-wetty-dev-fafc"
+    },
+    "containerAppsEnvironmentName": {
+      "value": "cae-wetty-dev-fafc"
+    },
+    "containerRegistryName": {
+      "value": "crwettydevfafc"
+    },
+    "keyVaultName": {
+      "value": "kv-wetty-dev-fafc"
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "log-wetty-dev-fafc"
+    },
+    "applicationInsightsName": {
+      "value": "appi-wetty-dev-fafc"
+    },
+    "appPort": {
+      "value": 3000
+    },
+    "basePath": {
+      "value": "/wetty/"
+    },
+    "title": {
+      "value": "WeTTY - The Web Terminal Emulator"
+    },
+    "sshHost": {
+      "value": "localhost"
+    },
+    "sshPort": {
+      "value": 22
+    },
+    "sshUser": {
+      "value": ""
+    },
+    "sshAuth": {
+      "value": "password"
+    },
+    "sshKeyPath": {
+      "value": ""
+    },
+    "knownHosts": {
+      "value": "/dev/null"
+    },
+    "sshConfig": {
+      "value": ""
+    },
+    "forceSsh": {
+      "value": false
+    },
+    "command": {
+      "value": "login"
+    },
+    "allowIframe": {
+      "value": false
+    },
+    "deployerObjectId": {
+      "value": ""
+    }
+  }
+}

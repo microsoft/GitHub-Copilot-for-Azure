@@ -2,7 +2,7 @@
 
 Mandatory security configuration for all AppOnboard-generated Bicep. Read during IaC generation before writing resource definitions. Apply during scaffold — never defer to deploy.
 
-For core patterns (file structure, skeleton, naming, tagging), see [bicep-patterns.md](bicep-patterns.md). For data module templates (PostgreSQL, Redis), see [bicep-patterns-data.md](bicep-patterns-data.md).
+For core patterns (file structure, skeleton, naming, tagging), see [bicep-patterns.md](bicep-patterns.md). For data module templates (PostgreSQL, Redis), see [subagent-iac-gen.md](subagent-iac-gen.md) Step 6.
 
 ## Key Vault Deployer RBAC
 
@@ -12,6 +12,8 @@ The deploying user/principal needs RBAC to write secrets (scaffold seeds initial
 - **Key Vault Secrets User** (`4633458b-17de-408a-b874-0445c86b69e6`) — read secrets (also needed by app MI)
 
 If the app seeds data using a generated secret (admin password, API key), either display it to the user at deploy time OR ensure the deployer has read RBAC on the Key Vault.
+
+> ⛔ **Include a role assignment for the deploying user** (`context.json.azure.userObjectId`) with Key Vault Secrets Officer scoped to the Key Vault resource. Without this, `az keyvault secret set` fails with 403 during deploy secret seeding.
 
 ## Security Defaults
 
@@ -23,8 +25,8 @@ If the app seeds data using a generated secret (admin password, API key), either
 >
 > | Condition | Include MI? |
 > |-----------|-------------|
+> | F1 or D1 SKU on Linux | **NO** (MI sidecar causes OOM — use `@secure()` param + KV deployer RBAC instead) |
 > | Any Key Vault, database, storage, queue, or ACR access | **YES** |
-> | F1 or D1 SKU on Linux | **NO** (MI sidecar causes OOM) |
 > | None of the above | **YES** (default secure) |
 
 - **System-assigned managed identity** for all services (default). User-assigned only when shared identity is explicitly needed.
@@ -72,14 +74,18 @@ resource sqlServer 'Microsoft.Sql/servers@2024-05-01-preview' = {
 
 Store secrets in Key Vault. Reference via app settings — never inline.
 
-> ⛔ **No plaintext secrets in Bicep `appSettings`.** Values like `SECRET_KEY`, `JWT_SECRET`, `API_KEY`, session secrets, and database passwords MUST NOT be hardcoded in Bicep — not even as "placeholder" values like `'change-me-on-first-deploy'` or `'replace-this'`. Never use `uniqueString()` for secrets — it is deterministic and predictable. These appear in ARM deployment history, are visible in the Azure portal, and persist in source control.
+> ⛔ **No plaintext secrets in Bicep `appSettings`.** Values like `SECRET_KEY`, `JWT_SECRET`, `API_KEY`, session secrets, and database passwords MUST NOT be hardcoded — not even as placeholders. Never use `uniqueString()` for secrets (deterministic/predictable). These appear in ARM deployment history and persist in source control.
 >
-> **Correct patterns (pick one):**
-> 1. **Key Vault reference (preferred):** `'@Microsoft.KeyVault(VaultName=${kvName};SecretName=secret-key)'` — requires KV + RBAC setup
-> 2. **Deploy-time seeding (for free-tier without KV):** Omit the secret from Bicep `appSettings`. After IaC deploy, run `az webapp config appsettings set -g {rg} -n {app} --settings SECRET_KEY=$(openssl rand -base64 32)` to inject a random value. This avoids plaintext in IaC while keeping the resource count minimal.
+> **Container Apps exception:** Phase 1 of two-phase deployment uses `secrets: []` — NO secrets at all (not plaintext, not KV). KV `secretRef` entries are activated in Phase 2 after RBAC propagates. See [bicep-container-apps.md](../../scaffold/references/bicep-container-apps.md) § Two-Phase Wiring.
+>
+> ⛔ **Container Apps KV URL — do NOT use `environment().suffixes.keyvaultDns`.** That function returns `.vault.azure.net` (WITH leading dot) → double-dot URL → `ContainerAppSecretKeyVaultUrlInvalid`. Use `'https://${kvName}.vault.azure.net/secrets/...'` with `#disable-next-line no-hardcoded-env-urls` to suppress the linter.
+>
+> **Correct patterns:**
+> 1. **Key Vault reference (preferred):** `'@Microsoft.KeyVault(VaultName=${kvName};SecretName=secret-key)'`
+> 2. **Deploy-time seeding (free-tier):** Omit from Bicep; run `az webapp config appsettings set --settings SECRET_KEY=$(openssl rand -base64 32)` post-deploy
 > 3. **Bicep `@secure()` parameter:** Pass via CLI `--parameters secretKey=$(openssl rand -base64 32)` — never committed to parameters.json
 >
-> ❌ **NEVER:** `{ name: 'SECRET_KEY', value: 'hard-to-guess-string' }` or `{ name: 'SECRET_KEY', value: 'change-me' }` in Bicep
+> ❌ **NEVER:** `{ name: 'SECRET_KEY', value: 'hard-to-guess-string' }` or `value: 'change-me'` in Bicep
 
 ```bicep
 // App Service / Functions — Key Vault reference pattern
@@ -92,14 +98,15 @@ appSettings: [
 ```
 
 Key Vault config:
+
+> ⛔ **Do NOT set `enablePurgeProtection`.** Setting `true` blocks KV deletion until retention expires, breaking cleanup. Setting `false` is rejected by ARM. Omit the property entirely.
+
 ```bicep
 properties: {
   sku: { family: 'A', name: 'standard' }
   tenantId: subscription().tenantId
   enableRbacAuthorization: true  // RBAC, not access policies
-  // ⛔ enablePurgeProtection is write-once: only `true` is valid once set.
-  // For dev deployments, OMIT entirely (defaults to false for new vaults).
-  // Never set enablePurgeProtection: false — ARM rejects it.
+  // Do NOT add enablePurgeProtection — omit entirely
 }
 ```
 
@@ -120,27 +127,35 @@ allowBlobPublicAccess: false
 minimumTlsVersion: 'TLS1_2'
 ```
 
-### Cosmos DB — Data Plane RBAC
+### App Service / Functions — Publishing Credential Lockdown
 
-⛔ **Cosmos DB uses its OWN role system** — see [rbac-roles.md](rbac-roles.md) for the behavioral rules and role ID table. Do NOT use `Microsoft.Authorization/roleAssignments` for Cosmos DB data access.
+> ⛔ **Every App Service and Functions app MUST include both `basicPublishingCredentialsPolicies` child resources.** Missing these means deploy cannot toggle SCM auth post-deployment — the REST API call targets a resource that doesn't exist in ARM.
 
 ```bicep
-// Built-in Cosmos DB data roles:
-// Data Reader:      '00000000-0000-0000-0000-000000000001'
-// Data Contributor: '00000000-0000-0000-0000-000000000002'
-
-resource cosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2024-05-15' = {
-  parent: cosmosAccount
-  name: guid(cosmosAccount.id, principalId, dataContributorRoleId)
+// SCM — allow: true for deploy phase (deploy re-disables via REST API after code upload)
+resource scmAuth 'Microsoft.Web/sites/basicPublishingCredentialsPolicies@2023-12-01' = {
+  parent: appService
+  name: 'scm'
   properties: {
-    roleDefinitionId: '${cosmosAccount.id}/sqlRoleDefinitions/00000000-0000-0000-0000-000000000002'
-    principalId: managedIdentity.properties.principalId
-    scope: cosmosAccount.id
+    allow: true
+  }
+}
+
+// FTP — always disabled
+resource ftpAuth 'Microsoft.Web/sites/basicPublishingCredentialsPolicies@2023-12-01' = {
+  parent: appService
+  name: 'ftp'
+  properties: {
+    allow: false
   }
 }
 ```
 
-⛔ **Never use `Microsoft.Authorization/roleAssignments` for Cosmos data access** — use `sqlRoleAssignments` with Cosmos's own role IDs. ARM role assignment with Cosmos data-plane ID fails: `"RoleDefinitionDoesNotExist"`.
+> **Deploy lifecycle:** Scaffold sets `scm.allow: true` so `az webapp deploy` works. After code upload + health check, deploy phase runs `az rest --method put .../basicPublishingCredentialsPolicies/scm` with `allow: false` to re-harden. If scaffold omits these resources, deploy's Step 7b REST API call fails silently.
+
+### Cosmos DB — Data Plane RBAC
+
+⛔ Cosmos DB uses its own role system — see [rbac-roles.md](rbac-roles.md) § Cosmos DB for role IDs and behavioral rules. Do NOT use `Microsoft.Authorization/roleAssignments` for Cosmos data access.
 
 ### RBAC — Deterministic Role Assignments
 

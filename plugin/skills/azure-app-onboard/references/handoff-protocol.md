@@ -2,6 +2,8 @@
 
 Offer next steps: CI/CD setup, monitoring, domain config, **🗑️ resource cleanup**, skill-based suggestions. Session artifacts remain for deferred pickup.
 
+> ⛔ **Handoff MUST include ALL FOUR sections: (1) Deployment Identity, (2) Cleanup Commands, (3) Redeploy Command, (4) Post-Deploy Recommendations.** Missing any section = incomplete handoff. Do NOT skip cleanup even if deployment failed. Do NOT skip identity even if no resources were created. Do NOT skip recommendations even if the list is empty (print "No post-deploy recommendations.").
+
 ## Deployment Identity
 
 > ⛔ **Start handoff with deployment identity.** First lines of the handoff response MUST be:
@@ -13,14 +15,14 @@ Offer next steps: CI/CD setup, monitoring, domain config, **🗑️ resource cle
 > ```
 > Source: `context.json.azure`. This is the user's quickest path to finding their resources after the session ends.
 
-See [deployment-summary-template.md](deployment-summary-template.md) for the full deployment summary format.
+See [deploy-checklist-template.md § Deployment Summary](../deploy/references/deploy-checklist-template.md) for the full deployment summary format.
 
 ## Artifact Self-Check
 
 > ⛔ **Artifact self-check — MANDATORY before handoff.** Verify these exist before presenting cleanup or next steps:
-> 1. `deploy-result.json` in session folder — if missing, read [`session-schemas-deploy.ts`](session-schemas-deploy.ts) and write it NOW with status, endpoints, health, `orphanedResourceGroups[]`
-> 2. `deploy-audit.log` in session folder — if missing, reconstruct from terminal history
-> 3. Portal deployment link printed in chat — if missing, generate from `$resId` pattern (see deploy/SKILL.md Step 6) and print now
+> 1. `deploy-result.json` in session folder — if missing, read [`deploy-schemas.ts`](../deploy/references/deploy-schemas.ts) and write it NOW with status, endpoints, health, `orphanedResourceGroups[]`
+> 2. Portal deployment link printed in chat — if missing, generate from `$resId` pattern (see deploy/SKILL.md Step 6) and print now
+> 3. `deployment-summary.md` in session folder — if missing, `create` it NOW with the same content you are about to present in chat (status, subscription, RG, region, services table, endpoints, cleanup commands). One `create` call — do NOT skip.
 
 ## Post-Deploy Recommendations
 
@@ -41,29 +43,30 @@ See [deployment-summary-template.md](deployment-summary-template.md) for the ful
 🗑️ Delete this deployment's resources:
   → az group delete -n {rg} --yes --no-wait
 ```
-For Terraform: `cd infra && terraform destroy`.
 
 **Tag-based bulk cleanup (always print — catches orphans from healing):**
 ```
-🏷️ Delete ALL resources from this AppOnboard session (safety net):
+🏷️ Delete ALL resources from this AppOnboard session:
   → az group list --tag app-onboard-session-id={sessionId} --query "[].name" -o tsv | ForEach-Object { az group delete -n $_ --yes --no-wait }
 ```
-This command finds every RG tagged with the current session ID — including orphans created during region fallback or naming conflict healing that may not appear in `deploy-result.json`. It is the authoritative cleanup path.
+This catches orphaned RGs from region fallback or naming conflict healing. For Terraform: `cd infra && terraform destroy`.
 
-**If `deploy-result.json.orphanedResourceGroups[]` is non-empty**, also list each known orphan explicitly:
-```
-⚠️ Orphaned resource groups from healing:
-- rg-myapp-dev-eastus (empty — region fallback to westus2)
-  → az group delete -n rg-myapp-dev-eastus --yes --no-wait
-```
-For orphans with a `subscription` field (from subscription switch healing), include `--subscription {subscription}` in the delete command.
+**If `deploy-result.json.orphanedResourceGroups[]` is non-empty**, list each explicitly with delete commands. For orphans with a `subscription` field, include `--subscription {subscription}`.
 
-**If `deploy-result.json.healingAttempts[]` is non-empty**, surface a healing summary:
+## Redeploy Command
+
+> ⛔ **Redeploy command is MANDATORY.** The full AppOnboard pipeline (prereq → prepare → scaffold → deploy) is a one-time setup. After that, the user only needs to rebuild and push code. Without this command, they'd have to reverse-engineer the deploy steps from session artifacts or re-run the entire pipeline. Give them the shortcut.
+
+**Derive from what you ran in deploy Step 6b (code deploy).** Do NOT hardcode per service type — echo back the actual command(s) you executed to deploy code. The command varies by compute type, registry name, Dockerfile path, image tag, app name, etc. — all of which you already know from this session.
+
 ```
-⚕️ Deployment required {N} healing attempts:
-{for each attempt: "  - Attempt {N}: {error} → {action} → {outcome}"}
+🔄 Redeploy (after code changes):
+  → {code deploy command(s) from Step 6b}
 ```
-This tells the user WHY the deployment took longer than expected and what was automatically fixed. Include subscription changes, naming renames, region fallbacks — anything the user should be aware of.
+
+Include this in the chat handoff AND in `deployment-summary.md`.
+
+**If `deploy-result.json.healingAttempts[]` is non-empty**, surface: "⚕️ Deployment required {N} healing attempts" with per-attempt error/action/outcome and planLevelChange details.
 
 **Cross-session cleanup (optional — show if user asks):**
 ```
@@ -75,14 +78,14 @@ This tells the user WHY the deployment took longer than expected and what was au
 
 > ⛔ **Skill-based next steps are MANDATORY.** Always suggest at minimum `azure-compliance` and `azure-resource-visualizer`. Evaluate every condition below.
 
-| Condition | Suggest | Why |
-|-----------|---------|-----|
-| Always | **`azure-compliance`** — "Run a compliance scan on your deployed resources" | Security/best-practice audit of what was just created |
-| Always | **`azure-resource-visualizer`** — "Generate an architecture diagram of your resource group" | Visual confirmation of deployed topology |
-| Health check failed or `healthStatus: "degraded"/"unreachable"` | **`azure-diagnostics`** — "Troubleshoot your deployment with diagnostics" | Deep troubleshooting beyond AppOnboard's health checks |
-| `context.json.intent` mentions auth, login, OAuth, or `prereq-output.json` detected MSAL/passport/auth libraries | **`entra-app-registration`** — "Set up app registration for your auth flow" | OAuth/MSAL requires Entra app reg that AppOnboard doesn't scaffold |
-| `postDeployRecommendations[]` contains upgrade suggestions | **`azure-upgrade`** — "Upgrade your runtime or framework version" | Framework/runtime migration is outside AppOnboard scope |
-| Deployed resources include storage-heavy patterns | **`azure-storage`** — "Optimize your storage configuration" | Storage tuning beyond IaC defaults |
-| `postDeployRecommendations[]` contains entries with "RBAC", "role", or "custom role" in title/reason | **`mcp_azure_mcp_role`** — "I can configure the custom role assignments for your deployed resources now. Want me to run it?" Call `mcp_azure_mcp_role` with `intent: "list role assignments for resource group {rgName}"` to show current state, then offer to create the custom role definition. | AppOnboard scaffolds built-in roles only; custom roles require post-deploy configuration via the RBAC MCP tool |
+> ⛔ **Suggest only — do NOT invoke.** Present skill names as suggestions. Do NOT route to, execute, or offer to run them. The pipeline ends at handoff.
 
-> ⛔ **Auth-aware handoff — MANDATORY CHECK.** Before presenting next steps, scan `context.json.intent` for auth/login/OAuth keywords AND check `prereq-output.json` for MSAL, passport, `@azure/msal-*`, `next-auth`, `auth0`, or any auth library detection. If either condition is true, you MUST include **`entra-app-registration`** in the handoff: "Set up app registration for your auth flow." OAuth/MSAL requires an Entra app registration that AppOnboard does not scaffold — omitting this leaves the user with a broken auth flow.
+| Condition | Suggest |
+|-----------|--------|
+| Always | **`azure-compliance`** — "Run a compliance scan on your deployed resources" |
+| Always | **`azure-resource-visualizer`** — "Generate an architecture diagram of your resource group" |
+| Health check failed / `healthStatus: "degraded"/"unreachable"` | **`azure-diagnostics`** — "Troubleshoot your deployment" |
+| Auth/OAuth/MSAL detected in intent or prereq | **`entra-app-registration`** — "Set up app registration for your auth flow" |
+| `postDeployRecommendations[]` has upgrade suggestions | **`azure-upgrade`** — "Upgrade your runtime or framework" |
+| Storage-heavy patterns | **`azure-storage`** — "Optimize your storage configuration" |
+| `postDeployRecommendations[]` mentions RBAC/role | **`mcp_azure_mcp_role`** — offer to configure custom role assignments |

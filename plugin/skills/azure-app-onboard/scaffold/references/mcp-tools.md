@@ -68,13 +68,13 @@ Returns: metadata for all Azure Verified Modules (AVM) including versions and do
 
 Returns: all resource types and API versions for the provider.
 
-### `mcp_bicep_get_bicep_file_diagnostics`
+### `mcp_bicep_build_bicep`
 
 | Required | Optional | Read-Only |
 |----------|----------|-----------|
 | `filePath` (absolute) | — | ✅ |
 
-Returns: compilation errors, warnings, info for a `.bicep` or `.bicepparam` file.
+Returns: compiled ARM template JSON + compilation errors, warnings, info for a `.bicep` file.
 
 ### `mcp_bicep_format_bicep_file`
 
@@ -128,7 +128,7 @@ Converts ARM parameters JSON → `.bicepparam`.
 | `mcp_azure_mcp_bicepschema` | `bicepschema_get` | Step 5 | **Primary** — ARM resource type schemas without requiring exact API version |
 | `mcp_azure_mcp_deploy` | `deploy_iac_rules_get` | Step 5 | IaC best practices and rules. `--iac-type bicep` (default) or `--iac-type terraform` |
 | `mcp_azure_mcp_get_azure_bestpractices` | `get_azure_bestpractices_get` | Step 5 | SDK patterns during IaC gen. `resource: "general"`, `action: "code-generation"` |
-| `mcp_bicep_get_bicep_file_diagnostics` | *(flat)* | Step 9 | **Primary** — validate generated `.bicep` files in self-review L3 (syntax, properties, API versions) |
+| `mcp_bicep_build_bicep` | *(flat)* | Step 9 | **Primary** — validate generated `.bicep` files in self-review L3 (syntax, properties, API versions) |
 | `mcp_bicep_format_bicep_file` | *(flat)* | Step 9 | Format generated `.bicep` files per official standards after self-review fixes |
 | `mcp_bicep_get_file_references` | *(flat)* | Step 11 | Verify scaffold output completeness — all module references resolve |
 | `mcp_azure_mcp_deploy` | `deploy_pipeline_guidance_get` | Step 10 | CI/CD pipeline config. `is-azd-project: false`, `pipeline-platform: "github-actions"`, `deploy-option: "provision-and-deploy"` |

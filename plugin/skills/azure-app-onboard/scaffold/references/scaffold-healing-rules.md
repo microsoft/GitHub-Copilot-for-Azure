@@ -1,46 +1,46 @@
 # Scaffold Healing Rules
 
-Self-healing loop for scaffold validation failures. Supplements [self-healing.md](self-healing.md) (FIXABLE vs BLOCKING classification) with scaffold-specific escalation and plan-change rules.
+Self-healing loop for scaffold validation failures. Contains error classification (FIXABLE vs BLOCKING) and scaffold-specific escalation and plan-change rules.
+
+## Error Classification
+
+| Error Type | Class | Auto-Fix Strategy |
+|------------|-------|-------------------|
+| Invalid property name | FIXABLE | Fix from schema |
+| Syntax error (HCL/Bicep) | FIXABLE | Regenerate from references |
+| Missing required property | FIXABLE | Call `mcp_bicep_build_bicep` for structured error, fix from diagnostics output |
+| Wrong API version | FIXABLE | Call `mcp_bicep_list_az_resource_types_for_provider` with `{ providerNamespace: "..." }` for latest GA. Fallback: reference file examples |
+| Provider version conflict | FIXABLE | Update `required_providers` |
+| Undeclared variable | FIXABLE | Add to `variables.tf` |
+| Policy-blocked SKU | FIXABLE | Next-best from `rejectedAlternatives[]` |
+| Circular dependency | FIXABLE | Break cycle — refactor module refs |
+| Permission/RBAC insufficient | BLOCKING | Surface role + `az role assignment create` |
+| State backend inaccessible | BLOCKING | Surface `az storage account create` |
+| Region unsupported | BLOCKING | Suggest alternate regions (user decision) |
+| Quota exhaustion (all tiers+regions) | PLAN_LEVEL_CHANGE | ⛔ See § PLAN_LEVEL_CHANGE |
+| Quota exhaustion (single region) | PLAN_LEVEL_CHANGE | ⛔ Region pivot — skip `quotaValidation.checkedRegions` failures |
+| Policy blocks service entirely | PLAN_LEVEL_CHANGE | ⛔ Map to `rejectedAlternatives[]` |
 
 ## Healing Escalation Cadence
 
-If Step 11 validation fails, classify each error as FIXABLE or BLOCKING per [self-healing.md](self-healing.md). For FIXABLE: edit IaC → re-validate via CLI (max 3 total before asking user). Each attempt must propose a *different* fix — never retry the same change twice. For BLOCKING: surface to user and halt.
+Classify Step 11 failures using the table above. **FIXABLE:** edit IaC → re-validate (max 3 before asking). Each attempt must be a *different* fix. **BLOCKING:** surface to user, halt.
 
-> ⛔ **Ask user after 3 attempts, then every 5.** After 3 failed healing attempts, pause auto-healing and present a diagnosis:
->
-> 1. **Explain the error pattern** — summarize what's failing and why across all 3 attempts (e.g., "Each retry fails on the same Cosmos DB Key Vault reference — the secret name in the Bicep doesn't match the Key Vault secret resource name").
-> 2. **Propose a specific next fix** — state exactly what you would change and why. Never say "I'll try again" without naming the change.
-> 3. **Ask the user** — present these options:
->    - **"Yes, try that"** → apply the proposed fix, continue for up to 5 more attempts.
->    - **"I have a suggestion"** → accept user input, apply their fix, retry.
->    - **"Stop"** → write `validationResult` with `status: "Failed"` and all accumulated errors. Do NOT proceed to deploy.
->
-> After the user approves continuing, auto-heal for up to 5 more attempts before asking again. Ask again every 5 attempts thereafter.
+> ⛔ **After each FIXABLE auto-fix:** call `mcp_bicep_build_bicep` with `{ filePath: "infra/main.bicep" }` to quick-check before re-dispatching the validate sub-agent. If errors remain, fix again — saves a sub-agent dispatch. Fallback: `az bicep build`.
 
-> ⛔ **Docs fallback after 3 failed attempts on the same error.** If 3 consecutive healing attempts fail with the same error class (e.g., same Bicep compilation error, same ARM deployment error code), stop retrying and ⛔ **read [iac-resources.md](../../references/iac-resources.md)** for external documentation and validation tool links. Present the user with the relevant doc link + a suggested manual fix. Do NOT continue auto-healing the same error pattern.
+> ⛔ **After 3 attempts:** summarize error pattern, propose specific next fix (never "I'll try again" without naming the change), present options: **"Yes, try that"** (5 more) | **"I have a suggestion"** (apply user fix) | **"Stop"** (write `validationResult.status: "Failed"`). Ask again every 5 thereafter.
+
+> ⛔ **Same error 3×:** read [iac-resources.md](../../references/iac-resources.md) for docs. Present to user; stop auto-healing that pattern.
 
 ## PLAN_LEVEL_CHANGE
 
-> ⛔ If a validation failure requires changing the **service type** (e.g., App Service → Container Apps due to quota exhaustion) or **region** (e.g., eastus → westus2):
->
-> 1. **STOP** — do not silently rewrite the IaC for a different service.
-> 2. **Update `prepare-plan.json` FIRST** — change `services[]` to the new service type, update `naming.resources[]` with correct abbreviations (e.g., `app-` → `ca-`, `plan-` → `cae-`), update `costEstimate` with new pricing, update `deployStrategy` if code deploy path changes.
-> 3. **Present abbreviated re-approval gate:** "⚠️ Plan change required: {old service} is unavailable ({reason}). Updated plan: {new service/SKU} in {region} (~${new cost}/mo, was ~${old cost}/mo). Approve? (Yes / Edit / Cancel)"
-> 4. **Wait for user approval** — do NOT proceed until the user confirms.
-> 5. **After re-approval, MUST update `prepare-plan.json`** — `services[]`, `naming.resources[]`, `costEstimate` — to reflect the new service set. Stale artifacts cause downstream inconsistency. Then regenerate IaC from the updated plan. Create NEW module files with correct names (e.g., `container-app.bicep` not `app-service.bicep` containing Container Apps code). Delete or rename stale module files. Re-run self-review and validation on the new IaC.
-> 6. **Log the pivot** — write a [`ScaffoldHealingAttempt`](../../references/session-schemas-deploy.ts) entry with `planLevelChange: true`, `originalService`, and `newService` fields. This counts toward the 3-attempt healing cap.
->
-> This rule applies to ANY service type or region change during scaffold — whether triggered by validation failure, quota exhaustion, or policy block. The deploy SKILL.md has the same rule for deploy-time errors. The principle is the same: **the user approved a specific plan — changing it requires re-approval.**
+> ⛔ Service type or region changes require user re-approval — never silently rewrite IaC.
 
-## Artifact Consistency After Service Changes
+| Step | Action |
+|------|--------|
+| 1. STOP | Never silently change service/region |
+| 2. Update plan | `prepare-plan.json`: `services[]`, `naming.resources[]`, `costEstimate`, `deployStrategy` per [`prepare-schemas.ts`](../../prepare/references/prepare-schemas.ts) |
+| 3. Re-approve | "⚠️ Plan change: {old} → {new} (~${new}/mo). Approve? (Yes / Edit / Cancel)" |
+| 4. Regenerate | New module files with correct names, delete stale, re-run self-review + validation |
+| 5. Log | [`ScaffoldHealingAttempt`](scaffold-schemas.ts) with `planLevelChange: true`. Counts toward healing cap |
 
-> ⛔ Whenever the service type, region, or SKU changes during self-healing (scaffold OR deploy), ALL upstream artifacts must be updated to reflect reality:
->
-> | Artifact | What to update |
-> |----------|---------------|
-> | `prepare-plan.json` | `services[]` (type, SKU, region), `naming.resources[]` (abbreviations), `costEstimate`, `deployStrategy`, `quotaValidation` |
-> | `scaffold-manifest.json` | `files[]` (new module paths), `selfReview` (re-run on new IaC) |
-> | `context.json` | `statusSummary` (reflect actual state) |
-> | IaC files | New modules with correct names — no stale files with wrong names |
->
-> A session where `prepare-plan.json` says "App Service B1" but the deployed resources are Container Apps is **broken** — downstream analysis, resume, and cleanup all read the plan. The plan MUST match deployed reality.
+> ⛔ **Artifact consistency:** After any service/region/SKU change, update ALL upstream artifacts (`prepare-plan.json`, `scaffold-manifest.json`, `context.json`, IaC files) — the plan MUST match deployed reality.

@@ -21,7 +21,7 @@ Component→Azure service selection. Apply `context.json.intent` as modifiers, `
 
 **AKS vs Container Apps:** Use Container Apps when scale-to-zero needed, no K8s expertise, or KEDA-driven event processing. Delegate AKS planning to `azure-kubernetes` skill.
 
-**App Service vs Container Apps:** App Service preferred for simple web apps (F1 $0 / B1 ~$13/mo), single process, no container orchestration. Container Apps preferred when Dockerfile present + scale-to-zero needed, multi-container/sidecar, or event-driven KEDA scaling. Container Apps has no free tier (consumption billing).
+**App Service vs Container Apps:** App Service preferred when user wants free tier (F1 $0 / B1 ~$13/mo) or single-process with no container orchestration. Container Apps preferred for REST/GraphQL APIs (scaffold generates Dockerfile if missing), scale-to-zero, multi-container/sidecar, or event-driven KEDA scaling. Budget affects SKU tier (Consumption vs Dedicated), not compute service type. Container Apps Consumption has no fixed free tier but scales to zero.
 
 **Static Dockerfile sites (nginx/httpd serving HTML):**
 - **Primary:** Static Web Apps Free — $0, global CDN.
@@ -58,7 +58,7 @@ Component→Azure service selection. Apply `context.json.intent` as modifiers, `
 | Multi-step orchestration | Durable Functions + Durable Task Scheduler | DTS is the recommended managed backend |
 | Low-code workflow | Logic Apps | Integration-heavy, visual designer |
 
-> **docker-compose → Azure mapping:** Map each `detectedServices[].type` to its PaaS equivalent using these tables.
+> **docker-compose → Azure mapping:** Map each `detectedServices[].type` to its PaaS equivalent using these tables. **Unmapped services** (SSH daemons, custom sidecars — no managed equivalent): offer a Linux VM (B1s ~$7/mo) as companion at the scaffold gate. Present as option, not forced. Write to `postDeployRecommendations[]`.
 
 ## Supporting (always include)
 
@@ -78,7 +78,7 @@ Check before mapping — delegate to specialized skill if matched:
 | Copilot SDK, `@github/copilot-sdk` | `azure-hosted-copilot-sdk` |
 | Foundry agent, AI agent deployment | `microsoft-foundry` |
 
-> **Non-Azure cloud SDK deps** (AWS Lambda, GCP Cloud Functions, `google-cloud-*`, `aws-sdk`, `boto3`, Firebase) are NOT routed to a separate skill. They are handled inline: prereq flags them as `CLOUD_SDK_DEPENDENCY`, prepare maps the Azure service equivalents, and scaffold performs the SDK code swaps.
+> ⛔ **Non-Azure cloud SDK deps** (AWS/GCP/Firebase) are handled by prereq — `routeToSkill: "azure-cloud-migrate"` is set and the pipeline halts before reaching prepare. If you see cloud SDK findings here, prereq routing failed — HALT and do NOT continue architecture planning.
 
 ## Non-Azure Terraform Resource Mapping
 

@@ -39,4 +39,4 @@ Look up when stuck after 3 tries, edge cases, or validating generated code again
 | Container Apps Troubleshooting | https://learn.microsoft.com/en-us/azure/container-apps/troubleshooting | Revision failures, ingress errors, secret resolution, image pull failures |
 | Quota Increase Portal | https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas | Direct link for quota increase requests |
 
-> **Source:** All URLs validated 2026-04-25. All are official (Microsoft Learn, HashiCorp Developer, GitHub/Azure).
+> **Source:** Official Microsoft Learn, HashiCorp Developer, and Azure documentation.
