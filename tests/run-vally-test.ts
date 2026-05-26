@@ -2,7 +2,7 @@
  * CLI wrapper for running vally tests.
  *
  * Example:
- * npm run test:vally -- --skill azure-ai --use-custom-executor [...vally eval arguments]
+ * npm run test:vally -- --skill azure-ai [...vally eval arguments]
  */
 
 import * as path from "node:path";
@@ -26,6 +26,7 @@ type ResultJsonlEntry = {
         skill: string;
         tier: string;
         cost: string;
+        area: string;
         earlyTerminate?: string;
         followUp?: string[];
         systemPrompt?: string;
@@ -45,6 +46,13 @@ type ResultJsonlEntry = {
       evidence: string;
     }[];
   }
+};
+
+type TrialResult = {
+  isPass: boolean;
+  message?: string;
+  expectsScreenshot?: boolean;
+  skillInvocationRate?: number
 };
 
 /**
@@ -99,16 +107,13 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
     const entry: ResultJsonlEntry = JSON.parse(line);
     records.push(entry);
   }
-  const testResults: Record<string, {
-    isPass: boolean;
-    message?: string;
-    expectsScreenshot?: boolean;
-  }> = {};
+  const testTrials: Record<string, TrialResult[]> = {};
   for (const record of records) {
     // Entry is for a stimulus.
     if (record.status && record.trajectory && record.trajectory) {
       const skillName = record.trajectory.stimulus.tags?.skill ?? "unknown";
       const expectsScreenshot = !!record.trajectory?.stimulus?.tags?.takeScreenshot;
+      const isInvocationTest = record.trajectory?.stimulus?.tags?.area === "routing";
       const normalizedTestName = normalizeTestName(skillName, record.trajectory.stimulus.name);
       const gradeResult = record.gradeResult;
       const isPass = gradeResult?.passed ?? false;
@@ -120,15 +125,33 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
           message += `\n${detail.evidence}`;
         }
       });
-
-      testResults[normalizedTestName] = {
+      if (!testTrials[normalizedTestName]) {
+        testTrials[normalizedTestName] = [];
+      }
+      testTrials[normalizedTestName].push({
         isPass,
         message,
-        expectsScreenshot
-      };
+        expectsScreenshot,
+        skillInvocationRate: isInvocationTest ? (isPass ? 1 : 0) : undefined
+      });
     }
   }
 
+  // Aggregate the result of each trail into one result per test case
+  const testResults: Record<string, TrialResult> = {};
+  Object.keys(testTrials).forEach((normalizedTestName) => {
+    const trials = testTrials[normalizedTestName];
+    const isPass = trials.every((t) => t.isPass);
+    const message = trials.map((t) => t.message ?? "").join("\n");
+    const expectsScreenshot = trials.some((t) => t.expectsScreenshot);
+    const skillInvocationRate = trials.some((t) => t.skillInvocationRate === undefined) ? undefined : (trials.map((t) => t.skillInvocationRate) as number[]).reduce((sum, rate) => sum += rate, 0) / trials.length;
+    testResults[normalizedTestName] = {
+      isPass,
+      message,
+      expectsScreenshot,
+      skillInvocationRate
+    };
+  });
   await fs.writeFile(
     path.join(testCaseDirPath, "testResults.json"),
     JSON.stringify(testResults, null, 2),
@@ -138,14 +161,12 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
 
 type CliOptions = {
   skill?: string;
-  useCustomExecutor: boolean;
   forwardedArgs: string[];
 };
 
 function parseCliOptions(argv: string[]): CliOptions {
   const forwardedArgs: string[] = [];
   let skill: string | undefined;
-  let useCustomExecutor = false;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -169,11 +190,6 @@ function parseCliOptions(argv: string[]): CliOptions {
       continue;
     }
 
-    if (arg === "--use-custom-executor") {
-      useCustomExecutor = true;
-      continue;
-    }
-
     if (arg === "--output-dir") {
       console.warn("Ignoring user-provided --output-dir; this wrapper manages output directory.");
       const next = argv[i + 1];
@@ -193,7 +209,6 @@ function parseCliOptions(argv: string[]): CliOptions {
 
   return {
     skill,
-    useCustomExecutor,
     forwardedArgs,
   };
 }
@@ -204,7 +219,6 @@ function printUsage(): void {
     "",
     "Options:",
     "  --skill <name>            Skill name used by this wrapper",
-    "  --use-custom-executor     Enable custom executor behavior in this wrapper",
     "  --help                    Show this help",
     "",
     "All unknown options are forwarded to the underlying vally command.",
@@ -251,13 +265,10 @@ async function main(): Promise<void> {
 
   // default options
   forwardedArgs.splice(0, 0, "--output-dir", "./results");
+  forwardedArgs.splice(0, 0, "--executor-plugin", "../../tests/vally/vally-executor.ts");
 
   if (options.skill) {
     forwardedArgs.splice(0, 0, "--eval-spec", `../evals/${options.skill}/eval.yaml`);
-  }
-
-  if (options.useCustomExecutor) {
-    forwardedArgs.splice(0, 0, "--executor-plugin", "../../tests/vally/vally-executor.ts");
   }
 
   const exitCode = await runVallyCommand(forwardedArgs);

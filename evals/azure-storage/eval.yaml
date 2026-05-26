@@ -39,13 +39,12 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-storage"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-storage
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -61,13 +60,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-storage"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-storage
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -83,13 +81,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-storage"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-storage
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:

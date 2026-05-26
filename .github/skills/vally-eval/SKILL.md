@@ -47,7 +47,8 @@ Extended features such as early termination are implemented using tags and many 
 Use vally-cli to run vally eval suites. In most cases, you would like to use a command like this.
 
 ```bash
-npx @microsoft/vally-cli eval --eval-spec ../evals/<skill-name>/eval.yaml --output-dir ./results --executor-plugin ../../tests/vally/vally-executor.ts
+# In tests/
+npm run test:vally -- --skill $SKILL
 ```
 
 `--eval-spec ../evals/<skill-name>/eval.yaml` tells vally which eval spec to run. The path is relative to the current working directory of the process running the command. `--output-dir ./results` tells vally to write its output to a `results/` directory relative to the current working directory of the process running the command. `--executor-plugin ../../tests/vally/vally-executor.ts` tells vally to load and execute the code in this module, which registers the custom executor used by azure-skill vally eval suites. Note that this path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
