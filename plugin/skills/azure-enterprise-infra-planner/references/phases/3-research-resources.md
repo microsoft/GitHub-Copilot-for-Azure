@@ -8,7 +8,7 @@
 
 Read [WAF cross-cutting checklist](../waf-checklist.md). For every checklist item, either:
 - Add missing resources / harden properties, or;
-- Document the the intentional omission in `overallReasoning.tradeoffs` and `inputs.subGoals`.
+- Document the intentional omission in `overallReasoning.tradeoffs` and `inputs.subGoals`.
 
 ## Insights Integration
 
