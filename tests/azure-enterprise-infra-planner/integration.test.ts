@@ -27,20 +27,17 @@ const FOLLOW_UP_PROMPT = [
   "Go with recommended options. Assume all defaults to make the plan."
 ];
 
-function softCheckInsights(agentMetadata: AgentMetadata, workspacePath: string | undefined): void {
-  if (!isToolCalled(agentMetadata, "insights_get", /.*/)) {
-    agentMetadata.testComments.push(
-      "⚠️ insights_get tool was not called."
-    );
+function checkInsights(agentMetadata: AgentMetadata, workspacePath: string | undefined): void {
+  // Warn if insights tool not called
+  if (!isToolCalled(agentMetadata, "azure-insights", /.*/)) {
+    console.warn("⚠️ azure-insights tool was not called.");
+    agentMetadata.testComments.push("⚠️ azure-insights tool was not called.");
   }
-  if (workspacePath) {
-    const insightsPath = path.join(workspacePath, ".azure", "insights.json");
-    if (!fs.existsSync(insightsPath)) {
-      agentMetadata.testComments.push(
-        `⚠️ insights.json not found at ${insightsPath}.`
-      );
-    }
-  }
+
+  // Check insights.json is created
+  expect(workspacePath).toBeDefined();
+  const insightsPath = path.join(workspacePath!, ".azure", "insights.json");
+  expect(fs.existsSync(insightsPath)).toBe(true);
 }
 
 const skipTests = shouldSkipIntegrationTests();
@@ -205,7 +202,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
-        softCheckInsights(agentMetadata, testWorkspacePath);
+        checkInsights(agentMetadata, testWorkspacePath);
 
         // Verify plan file was created
         expect(testWorkspacePath).toBeDefined();
@@ -288,7 +285,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
-        softCheckInsights(agentMetadata, testWorkspacePath);
+        checkInsights(agentMetadata, testWorkspacePath);
 
         // Check for Bicep files under <project-root>/infra/
         expect(testWorkspacePath).toBeDefined();
