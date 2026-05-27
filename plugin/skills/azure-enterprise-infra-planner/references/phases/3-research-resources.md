@@ -4,7 +4,7 @@
 
 ## Step 1 - Resource Refinement
 
-#### Cross reference WAF
+### Cross reference WAF
 
 Read [WAF cross-cutting checklist](../waf-checklist.md). For every checklist item, either:
 - Add missing resources / harden properties, or;
