@@ -1,3 +1,8 @@
+/**
+ * Validate the vally suites in this repository to make sure they follow the
+ * standards of this project in addition to following the vally eval suite schema.
+ */
+
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import matter from "gray-matter";
