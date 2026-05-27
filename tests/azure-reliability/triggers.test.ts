@@ -27,18 +27,23 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Is my function app zone redundant?",
       "Make my function app zone redundant",
       "Set up multi-region failover for my Functions app",
+      "Set up multi-region failover for my App Service app",
       "Check my reliability posture",
       "Find single points of failure in my Azure environment",
       "Enable high availability for my Azure Functions resources",
+      "Enable high availability for my Azure App Service resources",
       "Check disaster recovery readiness",
       "Improve my Azure Functions app's resilience",
+      "Improve my Azure App Service app's resilience",
       // Storage redundancy (always paired with reliability/zone keywords)
       "Is my storage zone redundant?",
       // Functions-specific
       "Add zone redundancy to my Azure Functions Premium plan",
+      "Add zone redundancy to my Azure App Service Plan",
       // Multi-region
       "Set up Azure Front Door for failover between regions",
       "How do I make my Azure Functions app multi-region?",
+      "How do I make my Azure App Service app multi-region?",
     ];
 
     test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {

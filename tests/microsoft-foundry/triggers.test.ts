@@ -25,6 +25,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "How do I deploy an AI model from Microsoft Foundry catalog?",
       "Build a RAG application with Azure AI Foundry knowledge index",
       "Create an AI agent in Microsoft Foundry with web search",
+      "Add a tool to my Foundry agent",
       "Evaluate agent performance using Foundry evaluators",
       "Optimize my prompt for a Microsoft Foundry agent",
       "Improve my agent instructions in Azure AI Foundry",
