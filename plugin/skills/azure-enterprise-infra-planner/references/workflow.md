@@ -10,7 +10,7 @@
 
 ## Overview
 
-Start by running Phase 1 and Phase 2 in parallel. You must wait for both Phase 1 and 2 to complete before moving onto Phase 3, and all subsequent phases must be executed in sequence.
+Starting from Phase 1, execute all phases in sequential order. Do not advance to the next phase until the current phase is complete and all of its gate conditions have been met.
 
 | Phase | Action | Reference | Key Gate |
 |-------|--------|-----------|----------|

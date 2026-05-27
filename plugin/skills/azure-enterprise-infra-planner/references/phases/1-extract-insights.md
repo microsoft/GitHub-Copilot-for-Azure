@@ -1,6 +1,23 @@
 # Phase 1: Extract Insights
 
-> The goal of this phase is to extract insights from the user's existing Azure environment which will be used to guide the planning process.
+> The goal of this phase is to extract insights from the user's existing Azure environment. These insights will be used to guide the planning process in later phases.
 
-1. Ask the user whether they want to get subscription or tenant level insights (default option is subscription level using their **current subscription** as specified by az cli).
-2. Call `insights_get` tool directly and save the final insights to `<project-root>/.azure/insights.json` exactly as returned by the tool.
+1. Check whether insights already exist at `<project-root>/.azure/insights.json`. If they do, reuse them and skip the rest of this phase.
+2. Check whether the `insights_get` tool is available. If it is not, skip this phase.
+3. Ask the user which scope to use for generating insights. Present these three options:
+   a. "Subscription-scoped (default subscription)" — use this as the default if the user does not respond.
+   b. "Subscription-scoped (choose a subscription)" — if selected, ask the user to provide a subscription name or ID.
+   c. "Tenant-scoped (slower)"
+4. Ask the user whether there are specific areas they want the insights to focus on. Present these options:
+   a. "General" — use this as the default if the user does not respond.
+   b. "Cost"
+   c. "Reliability"
+   d. "Security"
+   e. "Performance"
+   f. "Other" — this should be a custom input field.
+5. Run the `insights_get` tool as a background task. Pass a one-line summary via the `--query` option that describes the user's infrastructure and the types of insights to prioritise. Do not pass the `--nocache` flag unless the user has explicitly asked for it. Begin Phase 2 while this tool runs.
+6. Once the tool finishes, save the resulting JSON to `<project-root>/.azure/insights.json`. If the tool errors or returns no insights, write an empty array `[]` to the file instead.
+
+## Gate
+
+- `insights.json` must exist and match the schema defined in `sample_insights.json`. If the tool errored or returned no insights, the file should contain an empty array `[]`.
