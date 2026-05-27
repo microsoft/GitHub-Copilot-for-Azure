@@ -24,7 +24,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_finetuning - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    useJest: true,
+    isTest: true
+  });
 
   test("invokes skill for fine-tuning prompt", () =>
     withTestResult(async () => {

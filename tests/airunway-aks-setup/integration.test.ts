@@ -23,7 +23,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   async function measureInvocationRate(prompt: string): Promise<number> {
     let invocationCount = 0;
@@ -74,8 +77,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasControllerContent = doesAssistantMessageIncludeKeyword(agentMetadata, "controller") ||
-                                     doesAssistantMessageIncludeKeyword(agentMetadata, "make") ||
-                                     doesAssistantMessageIncludeKeyword(agentMetadata, "CRD");
+          doesAssistantMessageIncludeKeyword(agentMetadata, "make") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "CRD");
         expect(hasControllerContent).toBe(true);
       });
     });
@@ -87,9 +90,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasGPUContent = doesAssistantMessageIncludeKeyword(agentMetadata, "float16") ||
-                              doesAssistantMessageIncludeKeyword(agentMetadata, "bfloat16") ||
-                              doesAssistantMessageIncludeKeyword(agentMetadata, "T4") ||
-                              doesAssistantMessageIncludeKeyword(agentMetadata, "dtype");
+          doesAssistantMessageIncludeKeyword(agentMetadata, "bfloat16") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "T4") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "dtype");
         expect(hasGPUContent).toBe(true);
       });
     });
@@ -101,8 +104,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasModelContent = doesAssistantMessageIncludeKeyword(agentMetadata, "Llama") ||
-                                doesAssistantMessageIncludeKeyword(agentMetadata, "Phi") ||
-                                doesAssistantMessageIncludeKeyword(agentMetadata, "KAITO");
+          doesAssistantMessageIncludeKeyword(agentMetadata, "Phi") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "KAITO");
         expect(hasModelContent).toBe(true);
       });
     });
@@ -115,8 +118,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         const hasCRContent = doesAssistantMessageIncludeKeyword(agentMetadata, "ModelDeployment") ||
-                             doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl apply") ||
-                             doesAssistantMessageIncludeKeyword(agentMetadata, "airunway.ai");
+          doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl apply") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "airunway.ai");
         expect(hasCRContent).toBe(true);
       });
     });
@@ -160,9 +163,9 @@ users:
         softCheckSkill(agentMetadata, SKILL_NAME);
         // Response should focus on provider setup (step 4 content)
         const hasProviderContent = doesAssistantMessageIncludeKeyword(agentMetadata, "provider") ||
-                                   doesAssistantMessageIncludeKeyword(agentMetadata, "KAITO") ||
-                                   doesAssistantMessageIncludeKeyword(agentMetadata, "Dynamo") ||
-                                   doesAssistantMessageIncludeKeyword(agentMetadata, "KubeRay");
+          doesAssistantMessageIncludeKeyword(agentMetadata, "KAITO") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "Dynamo") ||
+          doesAssistantMessageIncludeKeyword(agentMetadata, "KubeRay");
         expect(hasProviderContent).toBe(true);
       });
     });

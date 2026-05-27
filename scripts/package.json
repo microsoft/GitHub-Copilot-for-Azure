@@ -22,7 +22,8 @@
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
     "dashboard:serve": "sirv ../dashboard --port 3000 --dev",
     "dashboard": "npm run dashboard:collect && npm run dashboard:serve",
-    "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts"
+    "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts",
+    "vally": "node --import tsx src/vally/cli.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

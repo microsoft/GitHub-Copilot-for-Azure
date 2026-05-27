@@ -33,7 +33,7 @@ environment:
 config:
   runs: 3
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -55,6 +55,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -119,6 +120,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -182,6 +184,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -233,6 +236,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -289,6 +293,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -333,6 +338,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -385,6 +391,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -437,6 +444,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: behavior
       skill: azure-prepare
     constraints:
@@ -490,6 +498,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:
@@ -542,6 +551,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-prepare
     constraints:

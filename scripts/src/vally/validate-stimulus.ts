@@ -1,0 +1,246 @@
+/**
+ * Validate the vally suites in this repository to make sure they follow the
+ * standards of this project in addition to following the vally eval suite schema.
+ */
+
+import { readdirSync, readFileSync } from "node:fs";
+import { join, relative } from "node:path";
+import matter from "gray-matter";
+
+type GrayMatterWithYamlEngine = typeof matter & {
+  engines: {
+    yaml: {
+      parse: (value: string) => unknown;
+    };
+  };
+};
+
+type Stimuli = {
+  name?: string;
+  tags?: {
+    type?: string;
+    tier?: string;
+    cost?: string;
+    area?: string;
+    earlyTerminate?: string;
+    followUp?: string[] | string;
+    systemPrompt?: string;
+    takeScreenshot?: string;
+  };
+};
+
+type EvalSuite = {
+  tags?: {
+    type?: string;
+    skill?: string;
+  };
+  stimuli?: Stimuli[];
+};
+
+const REQUIRED_TAG_KEYS = ["type", "tier", "cost", "area"] as const;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function validateJsonObjectTag(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  tagName: "systemPrompt",
+  value: string | undefined,
+): boolean;
+function validateJsonObjectTag(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  tagName: "earlyTerminate" | "takeScreenshot",
+  value: string | undefined,
+): boolean;
+function validateJsonObjectTag(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  tagName: "earlyTerminate" | "systemPrompt" | "takeScreenshot",
+  value: string | undefined,
+): boolean {
+  if (!value) {
+    return true;
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (isPlainObject(parsed) || Array.isArray(parsed)) {
+      return true;
+    }
+  } catch {
+    // Fall through to the validation error below.
+  }
+
+  reportValidationError(
+    displayPath,
+    stimulusIndex,
+    stimulusName,
+    `tags.${tagName} must be parsable JSON`,
+  );
+  return false;
+}
+
+function validateFollowUpTag(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  value: string[] | string | undefined,
+): boolean {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
+    return true;
+  }
+
+  reportValidationError(
+    displayPath,
+    stimulusIndex,
+    stimulusName,
+    "tags.followUp must be a string array",
+  );
+  return false;
+}
+
+function reportValidationError(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  message: string,
+): void {
+  const stimulusLabel = stimulusName ? `stimulus "${stimulusName}"` : `stimulus #${stimulusIndex + 1}`;
+  console.error(`${displayPath}: ${stimulusLabel}: ${message}`);
+  process.exitCode = 1;
+}
+
+function findEvalYamlFiles(dirPath: string): string[] {
+  const entries = readdirSync(dirPath, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const entryPath = join(dirPath, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...findEvalYamlFiles(entryPath));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name === "eval.yaml") {
+      files.push(entryPath);
+    }
+  }
+
+  return files;
+}
+
+export function validateStimulus(rootDir: string, _args: string[]): void {
+  const evalsDir = join(rootDir, "evals");
+  const evalFiles = findEvalYamlFiles(evalsDir).sort();
+  const matterWithYamlEngine = matter as GrayMatterWithYamlEngine;
+  let hasErrors = false;
+
+  for (const filePath of evalFiles) {
+    const fileContents = readFileSync(filePath, "utf8");
+    const parsed = matter(fileContents);
+    const parsedBody: EvalSuite | null = parsed.content.trim()
+      ? matterWithYamlEngine.engines.yaml.parse(parsed.content) as EvalSuite
+      : null;
+    const displayPath = relative(rootDir, filePath);
+    const topLevelSkill = parsedBody?.tags?.skill;
+    const stimuli = (parsedBody?.stimuli ?? parsed.data.stimuli) as unknown;
+
+    if (!Array.isArray(stimuli)) {
+      console.error(`${displayPath}: missing stimuli array`);
+      process.exitCode = 1;
+      hasErrors = true;
+      continue;
+    }
+
+    let fileHasErrors = false;
+
+    if (!topLevelSkill) {
+      console.error(`${displayPath}: missing top-level tags.skill`);
+      process.exitCode = 1;
+      fileHasErrors = true;
+    }
+
+    for (const [stimulusIndex, stimulus] of stimuli.entries()) {
+      const typedStimulus = stimulus as Stimuli;
+
+      if (!typedStimulus.name) {
+        reportValidationError(displayPath, stimulusIndex, typedStimulus.name, "missing name");
+        fileHasErrors = true;
+      }
+
+      for (const key of REQUIRED_TAG_KEYS) {
+        if (!typedStimulus.tags?.[key]) {
+          reportValidationError(
+            displayPath,
+            stimulusIndex,
+            typedStimulus.name,
+            `missing tags.${key}`,
+          );
+          fileHasErrors = true;
+        }
+      }
+
+      if (!validateJsonObjectTag(
+        displayPath,
+        stimulusIndex,
+        typedStimulus.name,
+        "earlyTerminate",
+        typedStimulus.tags?.earlyTerminate,
+      )) {
+        fileHasErrors = true;
+      }
+
+      if (!validateFollowUpTag(
+        displayPath,
+        stimulusIndex,
+        typedStimulus.name,
+        typedStimulus.tags?.followUp,
+      )) {
+        fileHasErrors = true;
+      }
+
+      if (!validateJsonObjectTag(
+        displayPath,
+        stimulusIndex,
+        typedStimulus.name,
+        "systemPrompt",
+        typedStimulus.tags?.systemPrompt,
+      )) {
+        fileHasErrors = true;
+      }
+
+      if (!validateJsonObjectTag(
+        displayPath,
+        stimulusIndex,
+        typedStimulus.name,
+        "takeScreenshot",
+        typedStimulus.tags?.takeScreenshot,
+      )) {
+        fileHasErrors = true;
+      }
+    }
+
+    if (!fileHasErrors) {
+      continue;
+    }
+
+    hasErrors = true;
+  }
+
+  if (!hasErrors) {
+    console.log("All stimuli are valid.");
+  } else {
+    process.exit(1);
+  }
+}

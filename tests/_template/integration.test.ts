@@ -34,7 +34,10 @@ const invocationRateThreshold = 0.8;
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   // ──────────────────────────────────────────────────────────────────
   // Pattern 1: Skill invocation rate test (with setSkillInvocationRate)

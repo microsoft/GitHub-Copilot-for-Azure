@@ -86,7 +86,10 @@ const migrationTestTimeoutMs = 2700000;
 const FOLLOW_UP_PROMPT = ["Go with recommended options and test it locally."];
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("brownfield-lambda", () => {
     test("migrates serverless-face-blur-service Lambda to Azure", async () => {
