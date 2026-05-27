@@ -74,14 +74,6 @@ Read each sub-skill in order before executing.
 | Troubleshoot an agent issue | invoke -> troubleshoot |
 | Fix a broken agent (troubleshoot + redeploy) | invoke -> troubleshoot -> apply fixes -> deploy -> invoke |
 
-## .foundry Workspace and Agent Types
-
-See [.foundry Workspace Standard](references/foundry-workspace.md) for workspace layout, agent types, and setup references.
-
-## Agent: Setup References
-
-- [Standard Agent Setup](references/standard-agent-setup.md) - Standard capability-host setup with customer-managed data, search, and AI Services resources.
-
 ## Agent: Project Context Resolution
 
 > **Scope:** Applies to deploy, invoke, observe, trace, troubleshoot, eval-datasets, faos-optimize. Does **not** apply to create (which uses `azd ai agent` CLI).
