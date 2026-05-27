@@ -5,6 +5,11 @@ import type { SystemMessageConfig } from "@github/copilot-sdk";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
+/**
+ * When any of the early termination condition is satisfied,
+ * the custom executor will terminate the agent and hand over
+ * the trajectory to the graders.
+ */
 export type EarlyTerminateCondition = {
   type: "tool-call-count";
   /**
@@ -42,6 +47,10 @@ export type TakeScreenshotCondition = {
    * A regex pattern matching the deployed app's url.
    */
   urlPattern: string;
+}
+
+export function isSkillInvocationTest(tags: Record<string, string | string[]> | undefined): boolean {
+  return tags?.area === "routing";
 }
 
 export function getSkillName(tags: Record<string, string[] | string> | undefined): string {
