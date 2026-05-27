@@ -27,10 +27,10 @@ evaluators:
     local_uri: <local-evaluator-json>
 options:
   eval_model: <existing-chat-model-deployment-name>
-  optimization_model: <existing-optimizer-model-deployment-name>
+  optimization_model: <allowed-optimizer-model-deployment-name>
   max_iterations: 4
   optimization_config:
-    model: '["<target-model-deployment-name>"]'
+    model: '["<allowed-target-model-deployment-name>"]'
     baselineModel: '"<baseline-model-deployment-name>"'
   keep_versions: false
 generation_instruction: >-
@@ -39,7 +39,19 @@ max_samples: 15
 trace_days: 3
 ```
 
-Use existing model deployments for `agent.model`, `options.eval_model`, `options.optimization_model`, and `options.optimization_config`; do not assume `gpt-4o`.
+Use existing model deployments for `agent.model` and `options.eval_model`; do not assume `gpt-4o`.
+
+For `options.optimization_model` and `options.optimization_config.model`, first verify that the target Foundry project has deployments whose names are in this allowlist:
+
+- `GPT-5`
+- `GPT-5.1`
+- `GPT-5.2`
+- `GPT-5.4`
+- `GPT-5.5`
+- `DeepSeek-V4-Pro`
+- `DeepSeek-V-3.2`
+
+If none exist, ask the user to deploy one of these models before configuring optimization.
 
 ## Skip
 
@@ -62,5 +74,5 @@ Keep `target_attributes` omitted so azd can auto-detect optimizable attributes.
 | selected validation dataset | `validation_reference` |
 | selected Foundry/local evaluators | `evaluators[]` |
 | selected judge/eval deployment | `options.eval_model` |
-| selected optimizer deployment | `options.optimization_model`, `options.optimization_config.model` |
+| selected allowlisted optimizer deployment | `options.optimization_model`, `options.optimization_config.model` |
 | optimization goal | `generation_instruction` |

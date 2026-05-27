@@ -41,7 +41,7 @@ tool_file: tools.json
 
 Write the selected baseline prompt to `instructions.md`. Include only relevant skills under `skills/`. Use `tools.json` only for OpenAI function-calling tool definitions; see [Python Patterns](python-patterns.md#tools-file).
 
-Choose a `model` value that already exists as a model deployment in the target Foundry project. Do not assume `gpt-4o` is available.
+Choose a `model` value that already exists as a model deployment in the target Foundry project.
 
 Do not use code-level defaults as the optimization baseline.
 

@@ -8,6 +8,7 @@ Use this after azd setup and scaffold review are complete.
 2. If SDK wiring or `.agent_configs/baseline/` is missing, run [Scaffold Workflow](scaffold.md) first.
 3. If scaffolding changed files, stop and ask the user to review before optimization.
 4. Ensure `eval.yaml` exists using [eval.yaml Guidance](eval-yaml.md), or ask whether to use built-in optimize defaults.
+5. Before setting optimizer models, verify the project has deployments named `GPT-5`, `GPT-5.1`, `GPT-5.2`, `GPT-5.4`, `GPT-5.5`, `DeepSeek-V4-Pro`, or `DeepSeek-V-3.2`. Use only existing deployments from that allowlist.
 
 ## 2. Run optimize
 
