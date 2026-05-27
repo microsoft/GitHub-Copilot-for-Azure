@@ -1,333 +1,215 @@
-# Create Hosted Agent Application
+# Create Hosted Agent
 
-Create new hosted agent applications for Microsoft Foundry, or convert existing agent projects to be Foundry-compatible using the hosting adapter.
+Hosted Foundry agents are container-based agents that run user-authored code on
+Foundry-managed infrastructure. The full lifecycle (scaffold, develop, configure,
+deploy, operate, investigate) is owned by the Azure Developer CLI's `azd ai agent`
+command and is documented in the `azure.ai.docs` extension (`azd ai doc`).
+
+This file is a thin router: it sets up Foundry-specific context, points to the
+right `azd ai doc agent <topic>` for each step, and hands off to sibling sub-skills
+for Foundry-specific glue around deploy and operate. For LLM-only prompt agents
+(no container), see [create-prompt.md](create-prompt.md). `hosted` is the only
+`agent.kind` value supported by `azd ai agent`.
 
 ## Quick Reference
 
 | Property | Value |
 |----------|-------|
-| **Samples Repo** | `microsoft-foundry/foundry-samples` |
-| **Python Samples** | `samples/python/hosted-agents/` |
-| **C# Samples** | `samples/csharp/hosted-agents/` |
-| **Hosted Agents Docs** | https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents |
-| **Default Selection** | `Python` + `responses` + `Microsoft Agent Framework` |
-| **Best For** | Creating new or converting existing agent projects for Foundry |
+| Agent kind | `hosted` |
+| Primary CLI | `azd ai agent` (`azure.ai.agents` extension) |
+| Authoritative docs | `azd ai doc agent|connection|toolbox|skill|routine <topic>` (`azure.ai.docs` extension) |
+| Workspace | `<agent-root>/.foundry/` (per-environment metadata, evaluators, datasets) |
+| Runtime auth | Local: `DefaultAzureCredential`. Production: `ManagedIdentityCredential`. |
+| RBAC -- invocation | `Azure AI User` on the per-agent identity AND the project-level agent identity, at the Cognitive Services account scope. |
+| RBAC -- toolboxes | Agent identity also needs `Foundry User` on the Foundry project (see `azd ai doc toolbox consume`). |
 
 ## When to Use This Skill
 
-- Create a new hosted agent application from scratch (greenfield)
-- Start from an official sample and customize it
-- Convert an existing agent project to be Foundry-compatible (brownfield)
-- Help user choose a language, protocol, framework, or sample for their agent
+USE FOR: scaffolding a new hosted agent, "build me an agent that does X" where
+the deliverable will deploy to Foundry as a container, bringing an existing
+codebase under `azd ai agent` (brownfield), picking a Foundry hosted-agent sample,
+hosted-agent first deploy, post-init wiring of model deployments / connections /
+toolboxes / Foundry skills.
+
+DO NOT USE FOR: pure prompt agents (use [create-prompt.md](create-prompt.md));
+deploying an already-scaffolded project (use [../deploy/deploy.md](../deploy/deploy.md));
+diagnosing a deployed agent (use [../troubleshoot/troubleshoot.md](../troubleshoot/troubleshoot.md)).
+
+## Prerequisites
+
+Verify the CLI and required extensions:
+
+```bash
+azd version --output json
+azd extension list --output json
+```
+
+The list MUST include `azure.ai.agents`, `azure.ai.projects`, and `azure.ai.docs`.
+Add `azure.ai.toolboxes` only if the agent will use a toolbox. Install missing
+extensions with `azd extension install <name>`.
+
+Verify the developer is signed in. Do NOT run `azd auth login` yourself -- it
+opens a browser; ask the developer instead:
+
+```bash
+azd auth login --check-status
+```
+
+Pull the master `azd ai` router once per session before reading any sub-topic:
+
+```bash
+azd ai doc
+```
+
+The router prints the canonical session-start sequence (`azd ai project show`,
+`azd ai agent show`, etc.), the topic tables for `agent` / `connection` / `toolbox`
+/ `skill` / `routine`, the `--project-id` resolution rules, and the confirmation-
+envelope handling rules. Follow its `Defaults` block for conventions this file
+does not repeat (for example, `--output json` + `--no-prompt` on agent commands,
+and the rule that doc commands never get `--output json`).
 
 ## Workflow
 
-> Relative reference paths in this file are resolved from the directory containing `create.md`. For example, `./references/agentframework.md` means the file next to this document under `create/references/`, not a path relative to the runtime working directory.
+### Step 1: Greenfield or brownfield, new project or existing
 
-### Step 1: Determine Scenario
+Ask the developer:
 
-Check the user's workspace for existing agent project indicators:
+> "Are we starting a fresh agent project, or bringing an existing codebase under
+> `azd ai agent`? And are we deploying into a new Foundry project, or an existing
+> one?"
 
-- **No agent-related code found** → **Greenfield**. Proceed to Greenfield Workflow (Step 2).
-- **Existing agent code present** → **Brownfield**. Proceed to Brownfield Workflow.
+| Combination | What changes |
+|-------------|--------------|
+| Fresh project, new Foundry project | Step 2 (sample) -> Step 3 (`init -m <manifestUrl>`); do NOT pass `--project-id`, `azd provision` creates the project. |
+| Fresh project, existing Foundry project | Step 2 (sample) -> Step 3 (`init -m <manifestUrl> --project-id <arm-id>`). |
+| Existing codebase | Skip Step 2. Step 3 uses `init --from-code`. Existing-project rules above still apply. |
 
-### Step 2: Gather Requirements (Greenfield)
+> [!] Ask whether the Foundry project is new or existing BEFORE running
+> `azd ai agent init`. Do NOT assume the developer has an existing project ID.
+> Full rules in `azd ai doc` under "Resolving subscription, location, project ID".
 
-If the user hasn't already specified, use `ask_user` to collect in this order:
+### Step 2: Pick a starting sample (greenfield only)
 
-**Language:** Python (default) or C#.
-
-**Protocol:**
-
-| Protocol | Best For |
-|----------|----------|
-| `responses` (default) | Conversational agents using the OpenAI-compatible `/responses` contract |
-| `invocations` | Arbitrary payloads, custom SSE behavior, protocol bridges, webhook-style callers, or client-managed sessions |
-
-**Framework:**
-
-The paths below refer to the framework-level directories in the Foundry sample repo. Choose the protocol-specific subpath in Step 3.
-
-| Framework | Python Path | C# Path |
-|-----------|-------------|---------|
-| Microsoft Agent Framework (default) | `agent-framework` | `agent-framework` |
-| LangGraph | `bring-your-own` | ❌ Python only |
-| Custom | `bring-your-own` | `bring-your-own` |
-
-> ⚠️ **Warning:** LangGraph is Python-only. For C# + LangGraph, suggest Microsoft Agent Framework or Custom instead.
-
-> 💡 **Tip:** In the sample repo, **Custom** corresponds to the **Bring Your Own** lanes.
-
-> 💡 **Tip:** LangGraph samples are under **Bring Your Own**, not under a separate top-level `langgraph` directory.
-
-If user has no specific preference, suggest Python + `responses` + Microsoft Agent Framework as defaults.
-
-In non-interactive or YOLO mode, default to Python + `responses` + Microsoft Agent Framework unless the user's request clearly requires another supported combination.
-
-### Step 3: Browse and Select Sample
-
-List available samples using the GitHub API. First resolve the `sample_browse_path` (the browse root) from the selected language, protocol, and framework:
-
-| Selection | Sample Browse Path |
-|-----------|--------------------|
-| Python + Microsoft Agent Framework + `responses` | `samples/python/hosted-agents/agent-framework/responses/` |
-| Python + Microsoft Agent Framework + `invocations` | `samples/python/hosted-agents/agent-framework/invocations/` |
-| Python + LangGraph | `samples/python/hosted-agents/bring-your-own/{protocol}/langgraph-chat/` |
-| Python + Custom | `samples/python/hosted-agents/bring-your-own/{protocol}/` |
-| C# + Microsoft Agent Framework + `responses` | `samples/csharp/hosted-agents/agent-framework/` |
-| C# + Microsoft Agent Framework + `invocations` | `samples/csharp/hosted-agents/agent-framework/invocations-echo-agent/` |
-| C# + Custom | `samples/csharp/hosted-agents/bring-your-own/{protocol}/` |
-
-Use the chosen lane to browse the repo under `sample_browse_path`:
-
-```
-GET https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/{sample_browse_path}
-```
-
-If the user has specified what they want the agent to do, choose the most relevant or most simple sample under that lane and record its exact `selected_sample_path`. Only if the user has not given any preferences, present the sample directories under `sample_browse_path` to the user and help them choose based on their requirements (e.g., RAG, tools, multi-agent workflows, HITL).
-
-If the requested combination does not have a real sample, say so clearly and suggest the nearest supported lane.
-
-> ⚠️ **Tools:** Hosted agents access tools through a **Foundry Toolbox MCP endpoint** — they do NOT wire tools directly. If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples (see [references/use-toolbox-in-hosted-agent.md#code-integration-patterns](references/use-toolbox-in-hosted-agent.md#code-integration-patterns)). These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource — you'll resolve its endpoint in Step 6 (Verify Startup).
-
-### Step 4: Download Sample Files
-
-Download only the selected sample directory — do NOT clone the entire repo. Preserve the directory structure by creating subdirectories as needed.
-
-Use the exact `selected_sample_path` selected in Step 3.
-
-**Using `gh` CLI (preferred if available):**
 ```bash
-gh api repos/microsoft-foundry/foundry-samples/contents/{selected_sample_path} \
-  --jq '.[] | select(.type=="file") | .download_url' | while read url; do
-  filepath="${url##*/{selected_sample_path}/}"
-  mkdir -p "$(dirname "$filepath")"
-  curl -sL "$url" -o "$filepath"
-done
+azd ai doc agent samples
 ```
 
-**Using curl (fallback):**
+Covers `azd ai agent sample list`, the manifest URL shape, filtering by language
+and feature, and what each starter category includes. Capture the chosen
+sample's `manifestUrl` for Step 3.
+
+### Step 3: Scaffold the project
+
 ```bash
-curl -s "https://api.github.com/repos/microsoft-foundry/foundry-samples/contents/{selected_sample_path}" | \
-  jq -r '.[] | select(.type=="file") | .path + "\t" + .download_url' | while IFS=$'\t' read path url; do
-    relpath="${path#{selected_sample_path}/}"
-    mkdir -p "$(dirname "$relpath")"
-    curl -sL "$url" -o "$relpath"
-  done
+azd ai doc agent initialize
 ```
 
-For nested directories, recursively fetch the GitHub contents API for entries where `type == "dir"` and repeat the download for each.
+Covers `azd ai agent init`, the difference between `-m <manifestUrl>` (greenfield)
+and `--from-code` (brownfield), the prompts to expect, and the on-disk layout
+produced. After init, two files own the agent's shape:
 
-### Step 5: Customize and Implement
+* `azure.yaml` -> `services.<name>.config` -- declares model deployments, model
+  connections, toolboxes. Edited via `azd ai doc agent configure`.
+* `<service-dir>/agent.yaml` -- flat ContainerAgent shape: env vars, endpoint
+  path, agent card, runtime knobs. Edited via `azd ai doc agent extend`.
 
-1. Read the sample's `README.md` and `agent.yaml` or `agent.manifest.yaml` to understand its structure
-2. Read the sample code to understand patterns, protocol handling, and dependencies used
-3. If using Agent Framework, follow the best practices in [references/agentframework.md](references/agentframework.md)
-4. Implement the user's specific requirements on top of the sample
-5. Update configuration (`.env`, dependency files, `agent.yaml`, `agent.manifest.yaml`) as needed, and keep the selected protocol consistent across code and config
-6. Ensure the project is in a runnable state
+> [!] These two files own different fields. Putting a field in the wrong one is
+> the single most common deploy failure. Always reach for `configure` or `extend`
+> over memory.
 
-### Step 6: Verify Startup
+### Step 4: Implement, run, and iterate locally
 
-1. Install dependencies (use virtual environment for Python)
-2. Ask user to provide values for `.env` variables if placeholders were used using `ask_user` tool.
-   - **If the agent uses tools / toolboxes**: resolve the toolbox endpoint per [references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint](references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint).
-3. Run the main entrypoint
-4. Fix startup errors and retry if needed
-5. Send a protocol-appropriate test request to the correct endpoint:
-   - `responses` → `POST http://localhost:8088/responses`
-   - `invocations` → `POST http://localhost:8088/invocations`
-6. Fix any errors from the test request and retry until it succeeds
-7. Once startup and test request succeed, stop the server to prevent resource usage
+```bash
+azd ai doc agent develop
+```
 
-**Guardrails:**
-- ✅ Perform real run to catch startup errors
-- ✅ Cleanup after verification (stop server)
-- ✅ Ignore auth/connection/timeout errors (expected without Azure config)
-- ❌ Don't wait for user input or create test scripts
+Covers `azd ai agent run` (local dev loop), reserved environment variables, how
+to inject local connection credentials, and how to attach a debugger.
 
-## Brownfield Workflow: Convert Existing Agent to Hosted Agent
+> [!] Do NOT treat the scaffolded sample as the final agent. After scaffolding,
+> open the generated source under `<service-dir>/` and implement the behavior
+> the developer asked for: edit the agent entrypoint to satisfy "build me an
+> agent that does X", keep the selected protocol consistent across source code +
+> `agent.yaml` + `azd ai agent run` + deploy, and iterate locally until the
+> agent answers correctly before handing off to deploy. If the project uses
+> Microsoft Agent Framework, also read
+> [Microsoft Agent Framework best practices](references/agentframework.md) for
+> Foundry-specific runtime patterns (hosting adapter packages, agent naming
+> rules, VS Code AI Toolkit debugging) that the external corpus does not cover.
 
-Use this workflow when the user has an existing agent project that needs to be made compatible with Foundry hosted agent deployment. The key requirement is wrapping the existing agent with the appropriate hosting adapter.
+### Step 5: Wire optional surfaces
 
-### Step B1: Analyze Existing Project
+Inspect `azure.yaml` first -- the chosen sample may already include the surfaces
+the developer wants. To add a new surface:
 
-Scan the project to determine:
+| Want to ... | Read |
+|-------------|------|
+| Add or change a model deployment | `azd ai doc agent configure` |
+| Add a non-MCP connection (Azure AI Search, Bing, OpenAPI, A2A) | `azd ai doc connection add` -> `azd ai doc connection auth-types` |
+| Add a toolbox (group multiple tools under one MCP endpoint) | `azd ai doc toolbox add` -> `azd ai doc toolbox consume` |
+| Bundle a versioned Foundry skill (project-scoped behavioral guideline) | `azd ai doc skill overview` -> `azd ai doc skill consume` |
+| Tweak agent runtime fields (port, endpoint path, agent card) | `azd ai doc agent extend` |
 
-1. **Language** — Python (look for `requirements.txt`, `pyproject.toml`, `*.py`) or C# (look for `*.csproj`, `*.cs`)
-2. **Framework** — Identify which agent framework is in use:
+### Step 6: Hand off to deploy
 
-| Indicator | Framework |
-|-----------|-----------|
-| Imports from `agent_framework` or `Microsoft.Agents.AI` | Microsoft Agent Framework |
-| Imports from `langgraph`, `langchain` | LangGraph |
-| No recognized framework imports, or other frameworks (e.g., Semantic Kernel, AutoGen, custom code) | Custom |
+Once the agent runs cleanly locally, read [../deploy/deploy.md](../deploy/deploy.md).
+The deploy skill detects `azd ai agent` scaffolding (presence of `agent.yaml`
+plus `azure.yaml services.<name>.config`) and delegates the command sequence to
+`azd ai doc agent deploy`, then layers on Foundry-specific post-deploy work that
+is NOT in the external corpus: invocation RBAC, `.foundry/` metadata persistence,
+auto-eval setup.
 
-3. **Target protocol** — If the user has not specified one, infer whether the project should target `responses` or `invocations` based on the existing caller contract
-4. **Entry point** — Identify the main script/entrypoint that creates and runs the agent
-5. **Agent object** — Identify the agent instance that needs to be wrapped (e.g., a `BaseAgent` subclass, a compiled `StateGraph`, or an existing server/app)
+## Foundry-specific guardrails (apply throughout)
 
-### Step B2: Add Hosting Adapter Dependency
+This file is the authoritative source for the items below. They are NOT all
+repeated in the `azd ai doc` corpus.
 
-Add the correct adapter package based on framework, language, and protocol. Get the latest version from the package registry — do not hardcode versions.
-
-**Python adapter packages:**
-
-| Framework | Package(s) |
-|-----------|------------|
-| Microsoft Agent Framework | `responses`: `agent-framework-foundry-hosting`; `invocations`: `agent-framework-foundry-hosting` |
-| LangGraph | `responses`: `azure-ai-agentserver-responses` + `azure-ai-agentserver-core`; `invocations`: `azure-ai-agentserver-invocations` + `azure-ai-agentserver-core` |
-| Custom | `responses`: `azure-ai-agentserver-responses`; `invocations`: `azure-ai-agentserver-invocations` |
-
-**.NET adapter packages:**
-
-| Framework | Package(s) |
-|-----------|------------|
-| Microsoft Agent Framework | `responses`: `Microsoft.Agents.AI.Foundry.Hosting`; `invocations`: `Microsoft.Agents.AI.Foundry.Hosting` + `Azure.AI.AgentServer.Invocations` |
-| Custom | `responses`: `Azure.AI.AgentServer.Responses`; `invocations`: `Azure.AI.AgentServer.Invocations` |
-
-Add the package to the project's dependency file (`requirements.txt`, `pyproject.toml`, or `.csproj`). For Python, also add `python-dotenv` if not present.
-
-### Step B3: Wrap Agent with Hosting Adapter
-
-Modify the project's main entrypoint to wrap the existing agent with the adapter. The approach differs by framework and protocol:
-
-**Microsoft Agent Framework + `responses` (Python):**
-- Import `ResponsesHostServer` from the adapter package
-- Pass the agent instance (from `agent_framework` package) to the adapter
-- Call `.run()` on the adapter as the default entrypoint
-
-**Microsoft Agent Framework + `invocations` (Python):**
-- Use `InvocationAgentServerHost()`
-- Implement an `@app.invoke_handler`
-- Manage session state if the agent needs multi-turn memory
-
-**Microsoft Agent Framework + `responses` (C#):**
-- Register Foundry responses hosting and map the `responses` protocol
-
-**Microsoft Agent Framework + `invocations` (C#):**
-- Register invocations services and an invocation handler
-- Map the `invocations` protocol
-
-**LangGraph:**
-- Python only
-- Follow the `bring-your-own/{protocol}/langgraph-chat` sample for the selected protocol lane
-
-**Custom:**
-- Follow the corresponding `bring-your-own/{protocol}` sample for the selected language
-- Prefer the protocol SDK sample for the selected lane instead of inventing a custom contract when a sample already exists
-
-> ⚠️ **Warning:** The adapter MUST be the default entrypoint (no flags required to start). This is required for both local debugging and containerized deployment.
-
-### Step B4: Configure Environment
-
-1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
-   - **If the agent uses tools / toolboxes**: resolve the toolbox endpoint per [references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint](references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint).
-2. For Python: ensure the code uses `load_dotenv(override=False)` so Foundry-injected environment variables are available at runtime.
-3. If the project uses Azure credentials: ensure Python uses `azure.identity.DefaultAzureCredential` for **local development**. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
-
-### Step B5: Create agent.yaml
-
-Create an `agent.yaml` file in the project root. This file defines the agent's metadata and deployment configuration for Foundry. Required fields:
-
-- `name` — Unique identifier (alphanumeric + hyphens, max 63 chars)
-- `description` — What the agent does
-- `template.kind` — Must be `hosted`
-- `template.protocols` — Must include the selected protocol and matching version from the chosen sample
-- `template.environment_variables` — List all environment variables the agent needs at runtime
-
-Refer to the chosen sample's `agent.yaml` or `agent.manifest.yaml` in the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for the exact schema.
-
-### Step B6: Create Dockerfile
-
-Create a `Dockerfile` if one doesn't exist. Requirements:
-
-- Base image appropriate for the language (e.g., `python:3.12-slim` for Python, `mcr.microsoft.com/dotnet/sdk` for C#)
-- Copy source code into the container
-- Install dependencies
-- Expose port **8088** (the adapter's default port)
-- Set the main entrypoint as the CMD
-
-> ⚠️ **Warning:** When building, MUST use `--platform linux/amd64`. Hosted agents run on Linux AMD64 infrastructure. Images built for other architectures (e.g., ARM64 on Apple Silicon) will fail.
-
-Refer to the chosen sample's `Dockerfile` in the [foundry-samples repo](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for the exact pattern.
-
-### Step B7: Test Locally
-
-1. Install dependencies (use virtual environment for Python)
-2. Run the main entrypoint — the adapter should start an HTTP server on `localhost:8088`
-3. Send a protocol-appropriate test request to either `/responses` or `/invocations`
-4. Verify the response follows the expected protocol shape for the selected lane
-5. Fix any errors and retry until the test request succeeds
-6. Stop the server
-
-> 💡 **Tip:** If auth/connection errors occur for Azure services, that's expected without real Azure credentials configured. The key validation is that the HTTP server starts and accepts requests.
-
-## Common Guidelines
-
-IMPORTANT: YOU MUST FOLLOW THESE.
-
-Apply these to both greenfield and brownfield projects:
-
-1. **Sample-first** — Start from a real sample in the current `foundry-samples` repo. Do not invent unsupported combinations, paths, or protocol behavior.
-
-2. **Protocol consistency** — Keep the selected protocol consistent across sample choice, code, config, and verification steps.
-
-3. **Logging** — Implement proper logging using the language's standard logging framework (Python `logging` module, .NET `ILogger`). Hosted agents stream container stdout/stderr logs to Foundry, so all log output is visible via the troubleshoot workflow. Use structured log levels (INFO, WARNING, ERROR) and include context like request IDs and agent names.
-
-4. **Framework-specific best practices** — When using Microsoft Agent Framework, read the [Agent Framework best practices](references/agentframework.md) for hosting adapter setup, credential patterns, and debugging guidance.
-
-5. **Deploy handoff** — After the agent has been created and local verification succeeds, explicitly tell the user that they can deploy the agent if they want, and ask them to say `deploy agent to foundry` to continue with the deploy sub-skill.
-
-6. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/use-toolbox-in-hosted-agent.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, file search, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
-
-7. **Reserved environment variables** — The Foundry platform injects environment variables into every hosted agent container at startup. You MUST NOT generate, suggest, or configure any of these in `.env` files, `agent.yaml` `environment_variables`, or application code:
-
-   **Blocked prefixes** (any variable starting with these is reserved):
-   - `FOUNDRY_*` — platform-injected identity, session, project, and toolset variables
-   - `AGENT_*` — reserved for platform use
-
-   **Exact reserved names** (platform-managed, overwritten at runtime):
-   - `PORT` — HTTP listen port (default `8088`)
-   - `HOME` — session filesystem path (`/home/session`)
-   - `SSE_KEEPALIVE_INTERVAL` — SSE keep-alive config
-   - `APPLICATIONINSIGHTS_CONNECTION_STRING` — observability
-   - `OTEL_EXPORTER_OTLP_ENDPOINT` — OTLP collector endpoint
-
-   **Key `FOUNDRY_*` variables available at runtime** (read-only, do not set):
-   - `FOUNDRY_PROJECT_ENDPOINT` — project endpoint URL for calling Azure services
-   - `FOUNDRY_AGENT_NAME` — the deployed agent's name
-   - `FOUNDRY_AGENT_VERSION` — the deployed agent's version
-   - `FOUNDRY_TOOLBOX_ENDPOINT` — MCP-compatible toolbox endpoint (if toolbox is configured)
-
-   If user code needs to read these values at runtime (e.g., `FOUNDRY_PROJECT_ENDPOINT` to call Azure services), read them from the environment — do not set or override them.
-
-## Coding Tips
-
-Use these when generating or modifying project code:
-
-1. **Create a `.gitignore` file** — After generating code, create a `.gitignore` file if one does not already exist. If one already exists, update it as needed.
-   - Choose the ignore entries based on the language, framework, and files generated.
-   - Do not leave the project with no ignored files.
-   - For Python projects, `.venv/` MUST be ignored at a minimum.
-
-## Non-Interactive / YOLO Mode
-
-When running in non-interactive mode (e.g., YOLO mode), skip selection prompts and use these defaults unless the user has already specified otherwise:
-
-- **Language** — `Python`
-- **Protocol** — `responses`
-- **Framework** — `Microsoft Agent Framework`
-
-If the user's request clearly requires another supported lane, use that lane instead of forcing the defaults.
+* **Reserved env vars** -- `FOUNDRY_*`, `AGENT_*`, `PORT`, `HOME`,
+  `SSE_KEEPALIVE_INTERVAL`, `APPLICATIONINSIGHTS_CONNECTION_STRING`,
+  `OTEL_EXPORTER_OTLP_ENDPOINT` are platform-injected. User code may READ them
+  but never SET them. `azd ai doc agent extend` covers where to put env vars on
+  disk; the reserved-name list itself lives here.
+* **Toolboxes need explicit creation** -- `azd deploy` does NOT auto-create
+  toolboxes for post-init projects. Workflow: `azd ai toolbox create` ->
+  `azd ai connection add` for any credentialed tool -> `azd env set
+  TOOLBOX_<NAME>_MCP_ENDPOINT` -> wire the MCP client into agent code -> `azd
+  deploy`. Full recipe: `azd ai doc toolbox add` + `azd ai doc toolbox consume`.
+* **MCP request header** -- All toolbox MCP calls require
+  `Foundry-Features: Toolboxes=V1Preview` on every request. See
+  `azd ai doc toolbox consume`.
+* **Foundry skill bundles** -- A Foundry skill RESOURCE is a versioned,
+  project-scoped behavioral guideline. The consuming agent must download or copy
+  it into `skills/<name>/SKILL.md` (NOT `skills/SKILL.md` at project root)
+  before build/deploy, then pass `skill_directories=["./skills"]` (or the SDK
+  equivalent) at session creation. Updating the skill on the Foundry project
+  does NOT auto-refresh on `azd deploy`; re-run `azd ai skill download --force`
+  then redeploy. See `azd ai doc skill consume`.
+* **Auth** -- Local dev uses `DefaultAzureCredential`. Production uses
+  `ManagedIdentityCredential`. Foundry injects credentials via reserved env
+  vars; user code never reads them directly. See
+  [auth-best-practices.md](../../references/auth-best-practices.md).
+* **Project context** -- For endpoint / subscription / resource-group resolution
+  rules used across sibling sub-skills, see
+  [Project Context Resolution](../../SKILL.md#agent-project-context-resolution).
 
 ## Error Handling
 
-| Error | Cause | Resolution |
-|-------|-------|------------|
-| GitHub API rate limit | Too many requests | Authenticate with `gh auth login` |
-| `gh` not available | CLI not installed | Use curl REST API fallback |
-| Sample not found | Path changed in repo or selected lane has no matching sample | List the selected parent directory again and choose a current sample |
-| Requested combination not supported | Example: C# + LangGraph | Explain the gap and switch to the nearest supported lane |
-| Protocol mismatch | Code, `agent.yaml`, and test request are not aligned | Make all three match the selected protocol |
-| Dependency install fails | Version conflicts | Use versions from the selected sample's own dependency file |
+Each `azd ai doc agent <topic>` page has a tailored Errors section -- read it
+when a command fails. Otherwise:
+
+| Symptom | First step |
+|---------|------------|
+| `azd ai agent ...` exits nonzero with no `next_step` block | `azd ai agent doctor --output json` |
+| `init` reports a missing project ID after the developer said "existing project" | Ask for the ARM resource ID per `azd ai doc` (ai.azure.com -> Operate -> Admin -> Resource ID). |
+| `init` fails because of missing extensions | Re-run the Prerequisites block above. |
+| Confirmation envelope (exit 2 with `confirmation_required`) | Summarize `changes[]` in plain English, get explicit consent, then re-run the printed `confirmCommand` exactly. Never auto-append `--force`. Full spec: `azd ai doc agent operate`. |
+| Post-deploy invocation fails | Continue to [../troubleshoot/troubleshoot.md](../troubleshoot/troubleshoot.md). |
+| `auth login --check-status` reports not signed in | Ask the developer to run `azd auth login`. Never run it yourself. |
+
+## Additional Resources
+
+* `azd ai doc` -- master router; print once per session.
+* [Foundry Hosted Agents concepts](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents)
+* [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components)
+* [Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/)
+* [Microsoft Agent Framework](https://github.com/microsoft/agent-framework)

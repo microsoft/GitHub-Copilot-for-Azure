@@ -30,6 +30,56 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 ## Workflow: Hosted Agent Deployment
 
+### Step 0: Detect scaffolding type and pick a deploy path
+
+Hosted-agent deploy has two supported lanes. Pick before doing anything else.
+
+**Inspect the agent root for `azd ai agent` scaffolding:**
+
+| Marker | Where |
+|--------|-------|
+| `azure.yaml` with a `services.<name>.config` block | Project root |
+| `<service-dir>/agent.yaml` (flat ContainerAgent shape) | Service directory referenced by `azure.yaml services.<name>.project` |
+
+If BOTH markers are present, the project was scaffolded with `azd ai agent`. Use
+the **azd-managed lane** below. Otherwise use the **manual lane** that starts at
+Step 1 of this file.
+
+#### Azd-managed lane (preferred)
+
+For projects scaffolded with `azd ai agent init`, the deploy command sequence is
+owned by the `azure.ai.docs` extension and the platform handles container build,
+ACR push, and `agent_update`. Read the topic before driving it:
+
+```bash
+azd ai doc agent deploy
+```
+
+That topic covers `azd provision`, `azd deploy`, the `.agentignore` file,
+versioning (`azd ai agent version`), pre-deploy schema validation, and the env
+vars the deploy emits (`AGENT_<SVC>_NAME`, `AGENT_<SVC>_VERSION`,
+`AGENT_<SVC>_<PROTO>_ENDPOINT`). Toolboxes for post-init projects must be wired
+explicitly first; see `azd ai doc toolbox add` + `azd ai doc toolbox consume`.
+
+After `azd deploy` succeeds, jump directly to:
+- **Step 7 (Test the Agent)** below for the invocation RBAC check (the
+  `Azure AI User` role on the per-agent and project-level agent identities at
+  the Cognitive Services account scope is NOT auto-assigned).
+- **Step 8 (Auto-Create Evaluators & Dataset)** for the Foundry-specific
+  `.foundry/` workspace setup that the external corpus does not cover.
+
+Skip Steps 1-6 entirely on this lane -- they describe the manual container
+pipeline that `azd deploy` replaces.
+
+> [!] Do NOT mix lanes. If `azure.yaml` + `agent.yaml` are present, do NOT run
+> `az acr build` or `agent_update` manually -- you'll fight `azd` over the
+> declarative source of truth and the next `azd deploy` will overwrite your
+> changes.
+
+#### Manual lane (no `azd ai agent` scaffolding)
+
+When `azure.yaml` + `agent.yaml` are NOT present, follow Steps 1-8 below for the
+direct Docker / ACR / `agent_update` path.
 
 ### Step 1: Detect and Scan Project
 
