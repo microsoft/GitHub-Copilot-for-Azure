@@ -19,6 +19,7 @@ plugin/                   # Plugin source (skills, hooks, MCP config, manifests)
 
 output/                   # Build output (git-ignored) — stamped, ready to deploy
 scripts/                  # Dev tooling: token analysis, frontmatter/reference validators
+evals/                    # Vally test suites
 tests/                    # Jest test suite (unit, trigger, integration)
 .github/
   instructions/           # Copilot instruction files for skill authoring

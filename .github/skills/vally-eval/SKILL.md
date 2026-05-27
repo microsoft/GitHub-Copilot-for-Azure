@@ -31,6 +31,10 @@ The legacy Jest based integration test framework implemented features that vally
 
 If you intend to have your vally suites use any of the extended features or have their results be consumed by the dashboard, you **MUST** use the custom executor in your vally suites.
 
+### Use tags to control the custom executor
+
+The custom executor in azure-skills plugin uses special tag values to control the behavior of the custom executor. See [tag-helpers.ts](../../../tests/vally/tag-helpers.ts) to learn what special tags are supported.
+
 ## Validate vally eval suites
 
 Vally eval suites for azure-skills plugin follow certain conventions. For example, all eval suites must have a `type`, `tier`, `cost` and `area` tag so they can be run for a corresponding target group. To ensure all eval suites follow the conventions, a script is added to validate the eval suites and report errors when it sees any violation. To run the script, execute this command from the `scripts/` directory.
@@ -52,3 +56,12 @@ npm run test:vally -- --skill $SKILL
 ```
 
 `--eval-spec ../evals/<skill-name>/eval.yaml` tells vally which eval spec to run. The path is relative to the current working directory of the process running the command. `--output-dir ./results` tells vally to write its output to a `results/` directory relative to the current working directory of the process running the command. `--executor-plugin ../../tests/vally/vally-executor.ts` tells vally to load and execute the code in this module, which registers the custom executor used by azure-skill vally eval suites. Note that this path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
+
+### Collect test results
+
+When running locally, the test results can be found at the following directories:
+
+- `tests/reports/<test-run-name>/`
+- `tests/results/<test-run-name>/`
+
+When running in CI, the test results can be found in the GitHub Action artifacts or at a storage account that the workflow publishes to. You can also use the [integration tests dashboard](https://aka.ms/azure-skills-tests) to view the test results from nightly test runs.

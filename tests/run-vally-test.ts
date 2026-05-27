@@ -10,6 +10,7 @@ import * as fs from "fs/promises";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { normalizeTestName } from "./vally/utils";
+import { isSkillInvocationTest } from "./vally/tag-helpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -113,7 +114,7 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
     if (record.status && record.trajectory && record.trajectory) {
       const skillName = record.trajectory.stimulus.tags?.skill ?? "unknown";
       const expectsScreenshot = !!record.trajectory?.stimulus?.tags?.takeScreenshot;
-      const isInvocationTest = record.trajectory?.stimulus?.tags?.area === "routing";
+      const isInvocationTest = isSkillInvocationTest(record.trajectory?.stimulus?.tags);
       const normalizedTestName = normalizeTestName(skillName, record.trajectory.stimulus.name);
       const gradeResult = record.gradeResult;
       const isPass = gradeResult?.passed ?? false;
