@@ -26,20 +26,14 @@ Activate this skill when user wants to:
 | MCP tools | `get_azure_bestpractices_get`, `wellarchitectedframework_serviceguide_get`, `microsoft_docs_fetch`, `microsoft_docs_search`, `bicepschema_get` |
 | CLI commands | `az deployment group create`, `az bicep build`, `az resource list`, `terraform init`, `terraform plan`, `terraform validate`, `terraform apply` |
 | Output schema | [plan-schema.md](references/plan-schema.md) |
-| Key references | [research.md](references/research.md), [resources/](references/resources/README.md), [waf-checklist.md](references/waf-checklist.md), [constraints/](references/constraints/README.md) |
+| Sample plan | [sample_infrastructure_plan.json](references/sample_infrastructure_plan.json) |
+| Key references | [workflow.md](references/workflow.md), [waf-checklist.md](references/waf-checklist.md), [resources/](references/resources/README.md), [constraints/](references/constraints/README.md) |
 
-## Workflow
+## Workflow (Start Here)
 
-Read [workflow.md](references/workflow.md) for detailed step-by-step instructions, including MCP tool usage, CLI commands, and decision points. Follow the phases in order, ensuring all key gates are passed before proceeding to the next phase.
+Follow the step-by-step instructions in [workflow.md](references/workflow.md) to execute the 6 phases of infrastructure planning and provisioning.
 
-| Phase | Action | Key Gate |
-|-------|--------|----------|
-| 1 | Research — WAF Tools | All MCP tool calls complete |
-| 2 | Research — Refine & Lookup | Resource list approved by user |
-| 3 | Plan Generation | Plan JSON written to disk |
-| 4 | Verification | All checks pass, user approves |
-| 5 | IaC Generation | `meta.status` = `approved` |
-| 6 | Deployment | User confirms destructive actions |
+Ensure that all phases are executed in the correct order. Do not attempt to bypass any steps, do not alter the process, do not invent alternative approaches, and do not make any assumptions - simply follow the steps as prescribed.
 
 ## MCP Tools
 

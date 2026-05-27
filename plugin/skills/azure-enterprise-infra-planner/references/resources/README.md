@@ -1,6 +1,6 @@
 # Resource Reference Index
 
-Load only the files matching resources identified in Phase 1.
+Load only the files matching resources identified in Phase 2.
 
 ## Region Categories
 
