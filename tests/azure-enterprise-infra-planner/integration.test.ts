@@ -16,7 +16,8 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, listFilesRecursive, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, isToolCalled, listFilesRecursive, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import type { AgentMetadata } from "../utils/agent-runner";
 
 const SKILL_NAME = "azure-enterprise-infra-planner";
 const RUNS_PER_PROMPT = 1;
@@ -25,6 +26,22 @@ const FOLLOW_UP_PROMPT = [
   "The resource list looks good, proceed with generating the plan.",
   "Go with recommended options. Assume all defaults to make the plan."
 ];
+
+function softCheckInsights(agentMetadata: AgentMetadata, workspacePath: string | undefined): void {
+  if (!isToolCalled(agentMetadata, "insights_get", /.*/)) {
+    agentMetadata.testComments.push(
+      "⚠️ insights_get tool was not called."
+    );
+  }
+  if (workspacePath) {
+    const insightsPath = path.join(workspacePath, ".azure", "insights.json");
+    if (!fs.existsSync(insightsPath)) {
+      agentMetadata.testComments.push(
+        `⚠️ insights.json not found at ${insightsPath}.`
+      );
+    }
+  }
+}
 
 const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
@@ -188,6 +205,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
+        softCheckInsights(agentMetadata, testWorkspacePath);
 
         // Verify plan file was created
         expect(testWorkspacePath).toBeDefined();
@@ -209,6 +227,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Verify inputs
         expect(plan).toHaveProperty("inputs.userGoal");
         expect(typeof plan.inputs.userGoal).toBe("string");
+
+        // insightsApplied may be empty if no insights were applicable
+        expect(plan.inputs).toHaveProperty("insightsApplied");
+        expect(Array.isArray(plan.inputs.insightsApplied)).toBe(true);
 
         // Verify each resource has required fields
         for (const resource of plan.plan.resources) {
@@ -266,6 +288,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
+        softCheckInsights(agentMetadata, testWorkspacePath);
 
         // Check for Bicep files under <project-root>/infra/
         expect(testWorkspacePath).toBeDefined();
