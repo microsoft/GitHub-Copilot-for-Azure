@@ -15,9 +15,9 @@ Create and manage agent deployments in Azure AI Foundry. For hosted agents, this
 
 ## When to Use This Skill
 
-USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
+USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, direct code deployment, upload code deployment, create hosted agent, deploy prompt agent, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
 
-> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, or `agent_update` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, RBAC setup, invocation verification).
+> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, `agent_update`, or direct-code REST upload commands **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → deployment method selection → Dockerfile/image build or direct-code metadata upload → agent creation/version update → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema or REST metadata validation, RBAC setup, invocation verification).
 
 ## MCP Tools
 
@@ -27,6 +27,16 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 | `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName` |
 | `agent_get` | List all agents or get a specific agent | `projectEndpoint` (required), `agentName` (optional) |
 | `agent_delete` | Delete an agent and clean up hosted-agent runtime resources | `projectEndpoint`, `agentName` (required) |
+
+## Deployment Method Selection
+
+Direct code deployment is opt-in only.
+
+- Prompt agents use [Workflow: Prompt Agent Deployment](#workflow-prompt-agent-deployment).
+- Hosted agents use [Workflow: Hosted Agent Deployment](#workflow-hosted-agent-deployment); select the hosted deployment method in Step 3.
+- Do not infer direct code deployment just because Docker is unavailable or a Dockerfile is missing. Ask or use the default Docker/ACR workflow guidance.
+
+If the user explicitly says `using direct code deployment`, `direct-code deployment`, `upload code deployment`, or otherwise clearly asks to deploy by uploading source code, Step 3 reads [Direct Code Deployment Reference](references/direct-code-deployment.md), deploys the agent directly, then proceeds directly to [Step 7: Test the Agent](#step-7-test-the-agent).
 
 ## Workflow: Hosted Agent Deployment
 
@@ -48,9 +58,11 @@ USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build an
 
 A hosted-agent deployment is complete only when **every** box below is checked. Do **not** produce a final "deployment successful" summary, table, or Playground link until all items are done. If you skip any item, your response is incomplete.
 
+For direct-code deployments, Step 3 runs the direct-code reference and deploys the agent directly, then proceeds directly to Step 7.
+
 - [ ] Step 1 — Project scanned, type detected
 - [ ] Step 2 — Environment variables confirmed with user
-- [ ] Step 3 — Image built and pushed to ACR
+- [ ] Step 3 — Deployment method selected and prepared
 - [ ] Step 4 — Agent configuration collected
 - [ ] Step 5 — Agent definition schema retrieved
 - [ ] Step 6 — `agent_update` called successfully
@@ -96,7 +108,13 @@ Loop until the user confirms or cancels:
 - `VAR_NAME=new_value` → Update the value, show updated table, ask again
 - `cancel` → Abort deployment
 
-### Step 3: Generate Dockerfile and Build Image
+### Step 3: Select Deployment Method and Prepare
+
+If the user explicitly requested direct code deployment or upload code deployment, do not generate a Dockerfile or build an image. Read and follow [Direct Code Deployment Reference](references/direct-code-deployment.md), deploy the agent directly, then proceed directly to [Step 7: Test the Agent](#step-7-test-the-agent).
+
+For all other hosted-agent deployments, continue with the Docker/ACR preparation below.
+
+#### Image built and pushed to ACR
 
 Delegate Dockerfile creation to a sub-agent. Guidelines:
 - Use official base image for the detected language and runtime version
@@ -458,10 +476,11 @@ Use `agent_get` without `agentName` to list all agents, or with `agentName` to g
 When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode), the skill skips user confirmation prompts and uses sensible defaults:
 
 - **Environment variables** — Uses values resolved from `azd env get-values` and project defaults without prompting for confirmation
-- **Agent name** — Must be provided in the initial user message or derived sensibly from the project context; if missing, the skill fails with an error instead of prompting
-- **Hosted agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
+- **Agent name** — Must be provided in the initial user message or derived sensibly from the project context (`agent.yaml`, `agent.manifest.yaml`, folder name); if missing, the skill fails with an error instead of prompting
+- **Docker/ACR hosted-agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
+- **Direct code deployment** — If explicitly requested, Step 3 reads the direct-code reference, deploys the agent directly, then proceeds directly to Step 7
 
-> ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, ACR image) are provided upfront in the user message or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
+> ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, model deployment name, and ACR image for Docker/ACR deployments) are provided upfront in the user message, local `.env`, manifests, or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
 
 ## Additional Resources
 
