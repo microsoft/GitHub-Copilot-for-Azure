@@ -8,12 +8,12 @@ Clarify the user's requirements until you can confidently describe what they wan
 
 1. Extract what's explicitly stated in the user's prompt: workload purpose, traffic expectations, data storage needs, security requirements, and budget constraints.
 2. Identify gaps across: workload purpose, data/storage needs, networking requirements, security/compliance constraints, availability expectations, environments, expected scale, and budget. A gap is **critical** if it would fundamentally change the scope of the infrastructure.
-3. Ask the user focused questions (≤5 per round) for critical gaps only. Do not suggest answers — ask open questions to understand their intent. Repeat until no critical gaps remain.
+3. Ask the user focused questions (≤5 per round) for critical gaps only. Repeat until no critical gaps remain. Defer region and SKU related questions until insights have been generated; only ask the user directly if the insights do not address them.
 4. Summarize your understanding of the user's requirements and wait for confirmation before proceeding.
 
 ## Step 2 - Identify Sub-Goals
 
-Derive sub-goals and include in `inputs.subGoals`. Sub-goals are implicit constraints the user hasn't stated but the workload clearly requires. Examples:
+Derive sub-goals and include them in `inputs.subGoals`. Sub-goals are implicit constraints the user hasn't stated but the workload clearly requires. Examples:
 
 - "assume all defaults" -> Cost-optimized: consumption/serverless tiers, minimal complexity.
 - "production system" -> Production-grade: zone redundancy, private networking, managed identity.
@@ -30,4 +30,5 @@ Derive sub-goals and include in `inputs.subGoals`. Sub-goals are implicit constr
 4. Collect all WAF findings: missing resources, property hardening, architecture patterns.
 
 ## Gate
+
 - All tool calls must be completed and all WAF guides summarized.
