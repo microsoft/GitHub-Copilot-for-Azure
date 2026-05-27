@@ -10,34 +10,36 @@
 
 ## Overview
 
-Execute the six phases sequentially. Do not begin a phase until the previous phase's gate has been met.
+Start by running Phase 1 and Phase 2 in parallel. You must wait for both Phase 1 and 2 to complete before moving onto Phase 3, and all subsequent phases must be executed in sequence.
 
 | Phase | Action | Reference | Key Gate |
 |-------|--------|-----------|----------|
-| 1 | Research best practices | [1-research-best-practices.md](phases/1-research-best-practices.md) | All MCP tool calls complete and WAF guides summarized |
-| 2 | Research resources | [2-research-resources.md](phases/2-research-resources.md) | All resources have ARM type, naming rules, and pairing constraints; user approves resource list |
-| 3 | Generate plan | [3-generate-plan.md](phases/3-generate-plan.md) | Plan JSON written to disk |
-| 4 | Verify plan | [4-verify.md](phases/4-verify.md) | All checks pass, user approves |
-| 5 | Generate IaC | [5-generate-iac.md](phases/5-generate-iac.md) | All IaC files generated and saved to disk |
-| 6 | Deploy to Azure | [6-deploy.md](phases/6-deploy.md) | User confirms destructive actions |
+| 1 | Extract insights | [1-extract-insights.md](phases/1-extract-insights.md) | Insights written to `<project-root>/.azure/insights.json` |
+| 2 | Research best practices | [2-research-best-practices.md](phases/2-research-best-practices.md) | All MCP tool calls complete and WAF guides summarized |
+| 3 | Research resources | [3-research-resources.md](phases/3-research-resources.md) | All resources have ARM type, naming rules, and pairing constraints; user approves resource list |
+| 4 | Generate plan | [4-generate-plan.md](phases/4-generate-plan.md) | Plan JSON written to disk |
+| 5 | Verify plan | [5-verify.md](phases/5-verify.md) | All checks pass, user approves |
+| 6 | Generate IaC | [6-generate-iac.md](phases/6-generate-iac.md) | All IaC files generated and saved to disk |
+| 7 | Deploy to Azure | [7-deploy.md](phases/7-deploy.md) | User confirms destructive actions |
 
 ## Plan Status Lifecycle
 
 `draft` → `approved` → `deployed`
 
-- `draft` — set by Phase 3 when the plan is written.
-- `approved` — set by Phase 4 only after the user explicitly approves. Required before Phase 5 and Phase 6.
-- `deployed` — set by Phase 6 after a successful `az deployment ... create` or `terraform apply`.
+- `draft` — set by Phase 4 when the plan is written.
+- `approved` — set by Phase 5 only after the user explicitly approves. Required before Phase 6 and Phase 7.
+- `deployed` — set by Phase 7 after a successful `az deployment ... create` or `terraform apply`.
 
 ## Outputs
 
 | Artifact | Location |
 |----------|----------|
+| Insights | `<project-root>/.azure/insights.json` |
 | Infrastructure Plan | `<project-root>/.azure/infrastructure-plan.json` |
 | Bicep files | `<project-root>/infra/main.bicep`, `<project-root>/infra/modules/*.bicep` |
 | Terraform files | `<project-root>/infra/main.tf`, `<project-root>/infra/modules/**/*.tf` |
 
-Before writing any `.bicep` or `.tf` files in Phase 5:
+Before writing any `.bicep` or `.tf` files in Phase 6:
 
 1. Create the `infra/` directory at `<project-root>/infra/`.
 2. Create `infra/modules/` for child modules.

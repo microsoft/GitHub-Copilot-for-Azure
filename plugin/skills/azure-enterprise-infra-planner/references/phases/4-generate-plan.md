@@ -1,4 +1,4 @@
-# Phase 3: Generate Plan
+# Phase 4: Generate Plan
 
 Build `<project-root>/.azure/infrastructure-plan.json` using the schema in [plan-schema.md](../plan-schema.md). Set `meta.status` to `draft`.
 

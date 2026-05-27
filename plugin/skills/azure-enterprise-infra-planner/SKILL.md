@@ -23,7 +23,7 @@ Activate this skill when user wants to:
 
 | Property | Details |
 |---|---|
-| MCP tools | `get_azure_bestpractices_get`, `wellarchitectedframework_serviceguide_get`, `microsoft_docs_fetch`, `microsoft_docs_search`, `bicepschema_get` |
+| MCP tools | `insights_get`, `get_azure_bestpractices_get`, `wellarchitectedframework_serviceguide_get`, `microsoft_docs_fetch`, `microsoft_docs_search`, `bicepschema_get` |
 | CLI commands | `az deployment group create`, `az bicep build`, `az resource list`, `terraform init`, `terraform plan`, `terraform validate`, `terraform apply` |
 | Output schema | [plan-schema.md](references/plan-schema.md) |
 | Sample plan | [sample_infrastructure_plan.json](references/sample_infrastructure_plan.json) |
@@ -31,7 +31,7 @@ Activate this skill when user wants to:
 
 ## Workflow (Start Here)
 
-Follow the step-by-step instructions in [workflow.md](references/workflow.md) to execute the 6 phases of infrastructure planning and provisioning.
+Follow the step-by-step instructions in [workflow.md](references/workflow.md) to execute the 7 phases of infrastructure planning and provisioning.
 
 Ensure that all phases are executed in the correct order. Do not attempt to bypass any steps, do not alter the process, do not invent alternative approaches, and do not make any assumptions - simply follow the steps as prescribed.
 
@@ -39,6 +39,7 @@ Ensure that all phases are executed in the correct order. Do not attempt to bypa
 
 | Tool | Purpose |
 |------|---------|
+| `insights_get` | Retrieve insights about the user's existing Azure environment to guide planning decisions |
 | `get_azure_bestpractices_get` | Azure best practices for code generation, operations, and deployment |
 | `wellarchitectedframework_serviceguide_get` | WAF service guide for a specific Azure service |
 | `microsoft_docs_search` | Search Microsoft Learn for relevant documentation chunks |

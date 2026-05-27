@@ -1,4 +1,4 @@
-# Phase 1: Research WAF
+# Phase 2: Research WAF
 
 > The goal of this phase is to understand user intent and gather WAF guidance using MCP tools.
 

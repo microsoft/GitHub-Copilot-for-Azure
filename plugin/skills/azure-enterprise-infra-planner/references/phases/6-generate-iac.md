@@ -1,6 +1,6 @@
-# Phase 5: Generate IaC
+# Phase 6: Generate IaC
 
-> Important: Before continuing this phase, `meta.status` must be set to `approved` as required by Phase 3.
+> Important: Before continuing this phase, `meta.status` must be set to `approved` as required by Phase 4.
 
 1. Ask the user whether to generate Bicep or Terraform.
 2. Generate IaC from the approved plan. Refer to [bicep-generation.md](../bicep-generation.md) for Bicep or [terraform-generation.md](../terraform-generation.md) for Terraform.
