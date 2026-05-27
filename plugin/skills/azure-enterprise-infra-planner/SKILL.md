@@ -33,7 +33,7 @@ Activate this skill when user wants to:
 
 Follow the step-by-step instructions in [workflow.md](references/workflow.md) to execute the 7 phases of infrastructure planning and provisioning.
 
-Ensure that all phases are executed in the correct order. Do not attempt to bypass any steps, do not alter the process, do not invent alternative approaches, and do not make any assumptions - simply follow the steps as prescribed.
+Execute all phases in the correct order. Do not bypass steps, alter the process, or invent alternative approaches. Do not make unstated assumptions - if a step requires deriving an implicit constraint or applying a default, do so explicitly and ask the user about any critical gaps before continuing.
 
 ## MCP Tools
 
