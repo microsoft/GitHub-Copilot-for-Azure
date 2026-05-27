@@ -28,7 +28,7 @@ Read [pairing-checks.md](pairing-checks.md) in full. It covers SKU compatibility
 
 ## 4. Insights Checks
 
-Skip this section when there are no insights in `insights.json` or the user skipped insights generation (Phase 1).
+Skip this section when `insights.json` does not exist or contains no insights.
 
 | # | Check | Fix |
 |---|-------|-----|
