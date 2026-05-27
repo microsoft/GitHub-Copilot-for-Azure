@@ -45,7 +45,7 @@ If azd and metadata both provide the same value and differ, stop and ask which s
 | `environments.<env>.azd.service` | Optional | Binds overlay to an `azure.yaml` service |
 | `environments.<env>.projectEndpoint` | Required for non-azd/manual workflows | Explicit override when azd cannot resolve it |
 | `environments.<env>.agentName` / `agentVersion` | `agentName` required for non-azd/manual workflows; `agentVersion` optional | Explicit override when azd cannot resolve it |
-| `environments.<env>.azureContainerRegistry` | Required for non-azd/manual hosted-agent deploys | Explicit override when azd cannot resolve it |
+| `environments.<env>.azureContainerRegistry` | Required for non-azd/manual hosted-agent Docker/ACR deploy flow | Explicit override when azd cannot resolve it |
 | `environments.<env>.observability.*` | Required only for trace workflows when azd cannot resolve observability | Trace lookup config when azd cannot resolve it |
 | `environments.<env>.evaluationSuites[]` | Required after evaluation setup/sync | Remote suite/dataset/evaluator refs plus local cache paths |
 | `environments.<env>.lastEval` | Optional | Last local result summary and result file path |

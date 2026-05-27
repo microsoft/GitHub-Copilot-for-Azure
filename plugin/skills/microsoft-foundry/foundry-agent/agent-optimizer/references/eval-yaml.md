@@ -28,7 +28,6 @@ evaluators:
 options:
   eval_model: <existing-chat-model-deployment-name>
   optimization_model: <existing-optimizer-model-deployment-name>
-  pass_threshold: 0.75
   max_iterations: 4
   optimization_config:
     model: '["<target-model-deployment-name>"]'
