@@ -32,7 +32,7 @@ Troubleshoot and debug Foundry agents by collecting hosted-agent session logs, d
 
 ### Step 1: Collect Agent Information
 
-Use the project endpoint and agent name from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved:
+Use the project endpoint and agent name from the project context (see [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution)). Ask the user only for values not already resolved:
 - **Project endpoint** — AI Foundry project endpoint URL
 - **Agent name** — Name of the agent to troubleshoot
 
