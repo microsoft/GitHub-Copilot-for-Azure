@@ -14,7 +14,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-aigateway";
 const RUNS_PER_PROMPT = 5;
@@ -40,7 +40,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "How do I set up Azure API Management as an AI Gateway for my Azure OpenAI models?"
+            prompt: "How do I set up Azure API Management as an AI Gateway for my Azure OpenAI models?",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -59,7 +60,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "How do I add rate limiting and token limits to my AI model requests using APIM?"
+            prompt: "How do I add rate limiting and token limits to my AI model requests using APIM?",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -78,7 +80,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "Enable semantic caching for my Azure OpenAI API to reduce costs"
+            prompt: "Enable semantic caching for my Azure OpenAI API to reduce costs",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -97,7 +100,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "Add content safety and jailbreak detection to my AI gateway endpoint"
+            prompt: "Add content safety and jailbreak detection to my AI gateway endpoint",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -116,7 +120,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "Load balance requests across multiple Azure OpenAI backends in API Management"
+            prompt: "Load balance requests across multiple Azure OpenAI backends in API Management",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -135,7 +140,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "How do I add rate limiting to protect my MCP server tools in APIM?"
+            prompt: "How do I add rate limiting to protect my MCP server tools in APIM?",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);
@@ -154,7 +160,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            prompt: "Add an Azure OpenAI backend to my existing API Management instance"
+            prompt: "Add an Azure OpenAI backend to my existing API Management instance",
+            shouldEarlyTerminate: (agentMetadata) => shouldEarlyTerminateForSkillInvocation(agentMetadata, SKILL_NAME)
           });
 
           softCheckSkill(agentMetadata, SKILL_NAME);

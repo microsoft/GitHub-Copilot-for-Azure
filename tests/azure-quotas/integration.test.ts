@@ -16,7 +16,7 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason
 } from "../utils/agent-runner";
-import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult, matchesCommand } from "../utils/evaluate";
 
 /**
  * Check if any tool call arguments contain a keyword.
@@ -101,15 +101,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        // Agent may suggest CLI commands in the response or execute them via powershell tool
-        const mentionsQuotaCmd = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota")
-          || doToolCallArgsIncludeKeyword(agentMetadata, "az quota");
-        const mentionsScope = doesAssistantMessageIncludeKeyword(agentMetadata, "/subscriptions/")
-          || doToolCallArgsIncludeKeyword(agentMetadata, "/subscriptions/");
+        // Agent should invoke the check-quota script rather than raw az quota commands
+        const invokesScript = doToolCallArgsIncludeKeyword(agentMetadata, "check-quota.ps1")
+          || doToolCallArgsIncludeKeyword(agentMetadata, "check-quota.sh");
 
         expect(isSkillUsed).toBe(true);
-        expect(mentionsQuotaCmd).toBe(true);
-        expect(mentionsScope).toBe(true);
+        expect(invokesScript).toBe(true);
       });
     });
 
@@ -151,9 +148,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
         const mentionsExtension = doesAssistantMessageIncludeKeyword(agentMetadata, "az extension add");
+        const installsExtension = matchesCommand(agentMetadata, /az\s+extension\s+add/);
 
         expect(isSkillUsed).toBe(true);
-        expect(mentionsExtension).toBe(true);
+        expect(mentionsExtension || installsExtension).toBe(true);
       });
     });
   });

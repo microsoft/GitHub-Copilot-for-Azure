@@ -43,6 +43,9 @@ If the user hasn't already specified, use `ask_user` to collect in this order:
 |----------|----------|
 | `responses` (default) | Conversational agents using the OpenAI-compatible `/responses` contract |
 | `invocations` | Arbitrary payloads, custom SSE behavior, protocol bridges, webhook-style callers, or client-managed sessions |
+| `invocations_ws` | Real-time duplex workloads — voice agents, live streams, signaling for out-of-band media transports. The verify and adapter sections below assume HTTP — for WS specifics (URL with `agent_session_id`, browser-proxy requirement, framing), follow the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md). |
+
+> 💡 **Tip:** A single hosted agent can expose **multiple protocols simultaneously**. Declare each in `agent.yaml` under `protocols:` and register the matching handlers on the same `InvocationAgentServerHost` (e.g., `invocations` + `invocations_ws` to pair a control/batch HTTP path with a WebSocket path).
 
 **Framework:**
 
@@ -74,6 +77,7 @@ List available samples using the GitHub API. First resolve the `sample_browse_pa
 | Python + Microsoft Agent Framework + `invocations` | `samples/python/hosted-agents/agent-framework/invocations/` |
 | Python + LangGraph | `samples/python/hosted-agents/bring-your-own/{protocol}/langgraph-chat/` |
 | Python + Custom | `samples/python/hosted-agents/bring-your-own/{protocol}/` |
+| Python + Custom + `invocations_ws` | `samples/python/hosted-agents/bring-your-own/invocations_ws/` |
 | C# + Microsoft Agent Framework + `responses` | `samples/csharp/hosted-agents/agent-framework/` |
 | C# + Microsoft Agent Framework + `invocations` | `samples/csharp/hosted-agents/agent-framework/invocations-echo-agent/` |
 | C# + Custom | `samples/csharp/hosted-agents/bring-your-own/{protocol}/` |
@@ -88,7 +92,7 @@ If the user has specified what they want the agent to do, choose the most releva
 
 If the requested combination does not have a real sample, say so clearly and suggest the nearest supported lane.
 
-> ⚠️ **Tools:** If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples. These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource and must configure its endpoint/auth as described in [references/toolbox.md](references/toolbox.md) (see Step 1).
+> ⚠️ **Tools:** Hosted agents access tools through a **Foundry Toolbox MCP endpoint** — they do NOT wire tools directly. If the user wants an agent with tools (web search, AI search, code interpreter, MCP servers, etc.), select the `toolbox` samples (see [references/use-toolbox-in-hosted-agent.md#code-integration-patterns](references/use-toolbox-in-hosted-agent.md#code-integration-patterns)). These samples include Foundry Toolbox integration in the sample code out of the box, but the user still needs an actual toolbox resource — you'll resolve its endpoint in Step 6 (Verify Startup).
 
 ### Step 4: Download Sample Files
 
@@ -131,11 +135,13 @@ For nested directories, recursively fetch the GitHub contents API for entries wh
 
 1. Install dependencies (use virtual environment for Python)
 2. Ask user to provide values for `.env` variables if placeholders were used using `ask_user` tool.
+   - **If the agent uses tools / toolboxes**: resolve the toolbox endpoint per [references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint](references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint).
 3. Run the main entrypoint
 4. Fix startup errors and retry if needed
 5. Send a protocol-appropriate test request to the correct endpoint:
    - `responses` → `POST http://localhost:8088/responses`
    - `invocations` → `POST http://localhost:8088/invocations`
+   - `invocations_ws` → open a WebSocket to `ws://localhost:8088/invocations_ws` (not HTTP POST). The wire format is developer-defined per the sample; see the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the framing model and discovery guidance.
 6. Fix any errors from the test request and retry until it succeeds
 7. Once startup and test request succeed, stop the server to prevent resource usage
 
@@ -162,7 +168,7 @@ Scan the project to determine:
 | Imports from `langgraph`, `langchain` | LangGraph |
 | No recognized framework imports, or other frameworks (e.g., Semantic Kernel, AutoGen, custom code) | Custom |
 
-3. **Target protocol** — If the user has not specified one, infer whether the project should target `responses` or `invocations` based on the existing caller contract
+3. **Target protocol** — If the user has not specified one, infer whether the project should target `responses`, `invocations`, or `invocations_ws` based on the existing caller contract (HTTP request/response → `responses` or `invocations`; long-lived duplex stream / real-time media → `invocations_ws`)
 4. **Entry point** — Identify the main script/entrypoint that creates and runs the agent
 5. **Agent object** — Identify the agent instance that needs to be wrapped (e.g., a `BaseAgent` subclass, a compiled `StateGraph`, or an existing server/app)
 
@@ -216,11 +222,17 @@ Modify the project's main entrypoint to wrap the existing agent with the adapter
 - Follow the corresponding `bring-your-own/{protocol}` sample for the selected language
 - Prefer the protocol SDK sample for the selected lane instead of inventing a custom contract when a sample already exists
 
+**`invocations_ws`:**
+- Use the `azure-ai-agentserver-invocations` SDK and register a WebSocket handler with `@app.ws_handler` on the same `InvocationAgentServerHost`
+- Follow the [invocations-ws skill](../invocations-ws/invocations-ws.md) for the wire-level contract and `agent_session_id` semantics
+- Reference samples live under `samples/python/hosted-agents/bring-your-own/invocations_ws/`
+
 > ⚠️ **Warning:** The adapter MUST be the default entrypoint (no flags required to start). This is required for both local debugging and containerized deployment.
 
 ### Step B4: Configure Environment
 
 1. Create or update a `.env` file with required environment variables (project endpoint, model deployment name, etc.)
+   - **If the agent uses tools / toolboxes**: resolve the toolbox endpoint per [references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint](references/use-toolbox-in-hosted-agent.md#resolve-toolbox-endpoint).
 2. For Python: ensure the code uses `load_dotenv(override=False)` so Foundry-injected environment variables are available at runtime.
 3. If the project uses Azure credentials: ensure Python uses `azure.identity.DefaultAzureCredential` for **local development**. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../references/auth-best-practices.md)
 
@@ -254,7 +266,10 @@ Refer to the chosen sample's `Dockerfile` in the [foundry-samples repo](https://
 
 1. Install dependencies (use virtual environment for Python)
 2. Run the main entrypoint — the adapter should start an HTTP server on `localhost:8088`
-3. Send a protocol-appropriate test request to either `/responses` or `/invocations`
+3. Send a protocol-appropriate test request:
+   - `responses` → `POST /responses`
+   - `invocations` → `POST /invocations`
+   - `invocations_ws` → open a WebSocket to `ws://localhost:8088/invocations_ws` (see the [invocations-ws skill](../invocations-ws/invocations-ws.md) for framing)
 4. Verify the response follows the expected protocol shape for the selected lane
 5. Fix any errors and retry until the test request succeeds
 6. Stop the server
@@ -277,7 +292,7 @@ Apply these to both greenfield and brownfield projects:
 
 5. **Deploy handoff** — After the agent has been created and local verification succeeds, explicitly tell the user that they can deploy the agent if they want, and ask them to say `deploy agent to foundry` to continue with the deploy sub-skill.
 
-6. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/toolbox.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
+6. **Tool integration** — Hosted agents access tools through [Foundry Toolbox](references/use-toolbox-in-hosted-agent.md), NOT by wiring tools directly. If the user needs tools (web search, AI search, code execution, file search, MCP servers, etc.), follow the toolbox integration guide. The toolbox provides a single MCP-compatible endpoint that handles credential injection and tool discovery.
 
 7. **Reserved environment variables** — The Foundry platform injects environment variables into every hosted agent container at startup. You MUST NOT generate, suggest, or configure any of these in `.env` files, `agent.yaml` `environment_variables`, or application code:
 

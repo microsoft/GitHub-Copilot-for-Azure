@@ -27,7 +27,7 @@ Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 > **Frontmatter Format Rule:** Descriptions over 200 characters MUST use folded YAML format (`>-`) for maintainability. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries. Do NOT use `|` (literal block) as it preserves newlines.
 
 ### Step 3: Update test files
-In each test file (`unit.test.ts`, `triggers.test.ts`), change:
+In each test file `triggers.test.ts`, change:
 ```typescript
 const SKILL_NAME = '{skill-name}';  // Must match the folder name exactly
 ```
@@ -45,15 +45,12 @@ Based on the skill's description and content, add to `triggers.test.ts`:
 - Different cloud providers ("AWS", "GCP")
 - Different Azure services not covered by this skill
 
-### Step 5: Add skill-specific unit tests
-In `unit.test.ts`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
-
-### Step 6: Configure integration tests (optional)
+### Step 5: Configure integration tests (optional)
 In `integration.test.ts`, customize the prompts to test real agent behavior.
 
 Follow existing `integration.test.ts` files for how to implement such tests. 
 
-### Step 7: Run and verify
+### Step 6: Run and verify
 ```bash
 cd tests
 
@@ -73,8 +70,7 @@ npm run coverage:grid
 
 ## Overview
 
-This testing framework uses **Jest** to validate skill behavior across three test categories:
-- **Unit Tests** - Isolated logic testing
+This testing framework uses **Jest** to validate skill behavior across these test categories:
 - **Trigger Tests** - Skill activation validation  
 - **Integration Tests** - MCP tool interaction testing
 
@@ -88,7 +84,6 @@ This testing framework uses **Jest** to validate skill behavior across three tes
 
 | File | Purpose |
 |------|---------|
-| `unit.test.ts` | Tests isolated skill logic and metadata |
 | `triggers.test.ts` | Tests skill activation on prompts |
 | `integration.test.ts` | Tests real Copilot agent behavior (optional) |
 | `fixtures/*.json` | Test data and mock responses |
@@ -104,26 +99,6 @@ tests/{skill-name}/
 │   └── triggers.test.js.snap
 └── fixtures/
     └── prompts.json      # Trigger test prompts
-```
-
----
-
-## Writing Unit Tests
-
-Unit tests validate skill metadata and any extractable logic.
-
-### Required Tests
-
-Every skill should have these basic unit tests:
-
-```typescript
-describe('Skill Metadata', () => {
-  test('has valid SKILL.md with required fields', () => {
-    expect(skill.metadata.name).toBe(SKILL_NAME);
-    expect(skill.metadata.description).toBeDefined();
-    expect(skill.metadata.description.length).toBeGreaterThan(10);
-  });
-});
 ```
 
 ---
@@ -392,7 +367,6 @@ When adding tests for a new skill:
 - [ ] Update `SKILL_NAME` in all test files
 - [ ] Add 5+ prompts that should trigger
 - [ ] Add 5+ prompts that should NOT trigger  
-- [ ] Add unit tests for any validation logic
 - [ ] Run tests locally and verify passing
 - [ ] Update coverage grid if significant changes
 

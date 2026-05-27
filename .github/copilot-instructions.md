@@ -72,7 +72,6 @@ cd tests
 npm install
 npm test                                    # Run all tests
 npm test -- --testPathPatterns=<skill-name>  # Run tests for a single skill
-npm run test:unit                            # Unit tests only
 npm run typecheck                            # TypeScript type checking
 npm run lint                                 # ESLint
 ```

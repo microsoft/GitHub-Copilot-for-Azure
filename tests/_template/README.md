@@ -42,11 +42,6 @@ your-skill-name/
 
 ## Test Types
 
-### Unit Tests (`unit.test.js`)
-- Test skill metadata (SKILL.md parsing)
-- Test validation logic
-- Test utility functions
-
 ### Trigger Tests (`triggers.test.js`)
 - Verify correct prompts activate the skill
 - Verify unrelated prompts don't activate
