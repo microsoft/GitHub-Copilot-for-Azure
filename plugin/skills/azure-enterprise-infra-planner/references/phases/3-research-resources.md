@@ -26,10 +26,8 @@ Read `.azure/insights.json` produced by Phase 1 and evaluate each insight agains
 
 For each resource identified since Phase 1:
 1. Read the relevant resource reference file to get its ARM type, API version, and CAF prefix. Use [resources/README.md](../resources/README.md) as the index to help you find the right file (e.g., `resources/compute-infra.md` for AKS, `resources/data-analytics.md` for Cosmos DB).
-2. Use sub-agents to fetch naming rules. You must try approach A first, only default to approach B if there are errors or the naming rules URL is missing:
-  a. Instruct the sub-agent verbatim: `Extract naming rules for {service} using microsoft_docs_fetch tool: min/max length, allowed characters, uniqueness scope. ≤200 tokens.`.
-  b. Instruct the sub-agent to call `microsoft_docs_search` with `"<resource-name> naming rules"`
-3. Read the relevant pairing constraint file using [constraints/README.md](../constraints/README.md) as the index. Each category file is <2K tokens, you must read the whole file for all resources in that category.
+2. Read the relevant pairing constraint file using [constraints/README.md](../constraints/README.md) as the index. Each category file is <2K tokens, you must read the whole file for all resources in that category.
+3. **Required** — for every resource, spawn a general-purpose sub-agent to fetch its naming rules. Pass the naming rules URL from the resource file and instruct the sub-agent to call `microsoft_docs_fetch` and return only the min/max length, allowed characters, and uniqueness scope. The resource file's CAF prefix is a style convention only — it does not capture these ARM-enforced constraints, so this step cannot be skipped.
 
 > Important Tip: Only load the category files you need. For a plan with AKS + Cosmos DB + VNet + Key Vault, you'd load 4 constraint files and 4 resource files (~5.5K tokens total) instead of the full catalog (~22K tokens).
 
