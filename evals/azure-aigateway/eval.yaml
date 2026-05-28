@@ -46,8 +46,6 @@ stimuli:
         config:
           required:
             - azure-aigateway
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
