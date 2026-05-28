@@ -43,7 +43,7 @@ jobs:
       # 3. Generate a short-lived token from the GitHub App for microsoft/mcp
       - name: Generate token for microsoft/mcp
         id: mcp-token
-        uses: actions/create-github-app-token@c98839d38bc9b0e26b2731d5df0dd42c64dc6cf8 # v2.0.0
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
         with:
           app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
           private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
