@@ -6,7 +6,9 @@ Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. U
 >
 > 📘 For wiring a remote tool (catalog tile or generic MCP server) into a project connection that a toolbox can attach to, see [foundry-tool-catalog.md](foundry-tool-catalog.md).
 >
-> 📘 For the full list of supported tool types and their per-type fields, see [agent-tools.md](agent-tools.md).
+> 📘 For the full list of supported tool types and their per-type fields, see [agent-tools.md](agent-tools.md) and the per-tool `tool-*.md` files.
+
+> 💡 **This skill is scoped to *consuming* an existing toolbox from agent code** — endpoint resolution, env-var contract, payload shape gathered before agent runtime, verification, and tracing. **Toolbox and connection CRUD belongs in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/)** — those surfaces give you tool browsing, metadata, connection wizards, and validation. Use the imperative `azd ai` CLI only for *operational* tasks (retarget the default version, smoke-test an endpoint).
 
 ## ✨ Recommendation: enable Tool Search
 
@@ -17,7 +19,7 @@ Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. U
 - Pin specific high-traffic tools or add ranking-only keywords via `tool_configs.{tool_name}` (with `pin: true` and `additional_search_text`).
 - In the agent's system prompt, instruct the model to call `tool_search` whenever a needed capability isn't already visible.
 
-Full configuration recipe in [agent-tools.md § Tool Search](agent-tools.md#tool-search-preview) and the public [Tool Search (preview) docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search).
+Full configuration recipe in [tool-tool-search.md](tool-tool-search.md) and the public [Tool Search (preview) docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search).
 
 ## Quick Reference
 
@@ -26,6 +28,8 @@ Full configuration recipe in [agent-tools.md § Tool Search](agent-tools.md#tool
 | **Toolbox Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox |
 | **Tool Catalog Docs** | https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog |
 | **Tool Search Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search |
+| **Foundry Toolkit (VS Code) — set up tools/toolboxes** | https://code.visualstudio.com/docs/intelligentapps/tool-catalog |
+| **Foundry Portal** | https://ai.azure.com/ |
 | **Default Sample (Python)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/maf |
 | **Python Hosted Agent — `responses`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses |
 | **Python Hosted Agent — `invocations`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations |
@@ -52,23 +56,23 @@ Once the user supplies the toolbox name/endpoint — either an existing one or a
 
 The full set is documented in [agent-tools.md](agent-tools.md) and — authoritatively — in the public [Toolbox docs (Configure tools)](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox#configure-tools). At time of writing the supported `type` values are:
 
-| `type` | Tool | Connection required? |
-|---|---|---|
-| `mcp` | Remote MCP server (third-party via catalog, BYO OAuth, or generic) | Optional (none / static key / project MI / OAuth) |
-| `web_search` | Web search (basic Bing; optional `web_search.custom_search_configuration` for Bing Custom Search to scope grounding to specific domains) | No (basic); Yes for Custom Search |
-| `azure_ai_search` | Azure AI Search index | Yes (Search service connection) |
-| `code_interpreter` | Sandboxed Python execution | No |
-| `file_search` | Vector-store-backed retrieval over uploaded files | No (vector store is part of the toolbox) |
-| `openapi` | REST API exposed via an OpenAPI 3.x spec | Conditional (`connection` requires `project_connection_id`; `managed_identity` does not — uses project MI + `audience`) |
-| `a2a_preview` | Call another Foundry agent as a tool | Optional |
-| `work_iq_preview` | Microsoft 365 work context (mail / meetings / files / chats) via Work IQ | Yes (Work IQ `RemoteA2A` OAuth connection; BYO Entra app; M365 Copilot license per user) |
-| `fabric_iq_preview` | Microsoft Fabric data (Ontology / Fabric data agent / Power BI semantic model) | Yes (Fabric IQ OAuth connection; tenant admin consent) |
-| `toolbox_search_preview` | **Tool Search** — a directive (not a tool) that swaps `tools/list` for `tool_search` + `call_tool` meta-tools | No |
+| `type` | Tool | Connection required? | Detail |
+|---|---|---|---|
+| `mcp` | Remote MCP server (third-party via catalog, BYO OAuth, or generic) | Optional (none / static key / project MI / OAuth) | [tool-mcp.md](tool-mcp.md) |
+| `web_search` | Web search (basic Bing; optional `web_search.custom_search_configuration` for Bing Custom Search to scope grounding to specific domains) | No (basic); Yes for Custom Search | [tool-web-search.md](tool-web-search.md) |
+| `azure_ai_search` | Azure AI Search index | Yes (Search service connection) | [tool-azure-ai-search.md](tool-azure-ai-search.md) |
+| `code_interpreter` | Sandboxed Python execution | No | [tool-code-interpreter.md](tool-code-interpreter.md) |
+| `file_search` | Vector-store-backed retrieval over uploaded files | No (vector store is part of the toolbox) | [tool-file-search.md](tool-file-search.md) |
+| `openapi` | REST API exposed via an OpenAPI 3.x spec | Conditional (`connection` requires `project_connection_id`; `managed_identity` does not — uses project MI + `audience`) | [tool-openapi.md](tool-openapi.md) |
+| `a2a_preview` | Call another Foundry agent as a tool | Optional | [tool-a2a.md](tool-a2a.md) |
+| `work_iq_preview` | Microsoft 365 work context (mail / meetings / files / chats) via Work IQ | Yes (Work IQ `RemoteA2A` OAuth connection; BYO Entra app; M365 Copilot license per user) | [tool-work-iq.md](tool-work-iq.md) |
+| `fabric_iq_preview` | Microsoft Fabric data (Ontology / Fabric data agent / Power BI semantic model) | Yes (Fabric IQ OAuth connection; tenant admin consent) | [tool-fabric-iq.md](tool-fabric-iq.md) |
+| `toolbox_search_preview` | **Tool Search** — a directive (not a tool) that swaps `tools/list` for `tool_search` + `call_tool` meta-tools | No | [tool-tool-search.md](tool-tool-search.md) |
 
 **Adjacent (not a `type` in a toolbox version):**
 
-- **Agent Memory** — use the `MemorySearchTool` SDK class on prompt agents; for hosted agents, configure the memory store via the project (separate from the toolbox).
-- **Routines (preview)** — not a tool; an agent **trigger** (`schedule` / `timer` / `github_issue` / `custom`) that invokes an existing agent. Event-based routines are powered by the same **Connector Namespace** that backs catalog-MCP / managed-MCP connectors. See [agent-tools.md § Routines](agent-tools.md#routines-preview) and the [public Routines docs](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
+- **Agent Memory** — use the `MemorySearchTool` SDK class on prompt agents; for hosted agents, configure the memory store via the project (separate from the toolbox). See [tool-memory.md](tool-memory.md).
+- **Routines (preview)** — not a tool; an agent **trigger** (`schedule` / `timer` / `github_issue` / `custom`) that invokes an existing agent. See the [public Routines docs](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
 
 ## Information to Gather Before Building a Toolbox Payload
 
@@ -177,9 +181,9 @@ resources:
 
 See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-developer-cli/azd-schema#params) for the full parameter syntax.
 
-### Imperative path via `azd ai` CLI
+## Operational helpers via `azd ai` CLI
 
-Use the `azd ai` command surface when you want to create or inspect connections and toolboxes ad-hoc, outside of an `azure.yaml` deployment. Every command below has been exercised end-to-end against a Foundry project.
+> The `azd ai` CLI also exposes `agent connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
 
 > All commands require `--project-endpoint <PROJECT_ENDPOINT>` (the value of `PROJECT_ENDPOINT`, e.g. `https://<account>.services.ai.azure.com/api/projects/<project>`). To avoid repeating it, export it once:
 >
@@ -187,143 +191,7 @@ Use the `azd ai` command surface when you want to create or inspect connections 
 > $PE = "https://<account>.services.ai.azure.com/api/projects/<project>"
 > ```
 
-#### 1. Create a project connection — `azd ai agent connection create`
-
-Wires credentials for an MCP server, Azure AI Search, or Bing Custom Search into the project so a toolbox entry can reference it by short name. Each block below has been exercised end-to-end (connection create → toolbox create → MCP `tools/list` and `tools/call` against a real Foundry project).
-
-**A. Remote MCP server, no auth** (public MCP, e.g. Microsoft Learn):
-
-```pwsh
-azd ai agent connection create my-mslearn `
-  --project-endpoint $PE `
-  --kind remote-tool `
-  --target https://learn.microsoft.com/api/mcp `
-  --auth-type none
-```
-
-**B. Remote MCP server, custom-keys header** (e.g. GitHub PAT):
-
-```pwsh
-azd ai agent connection create my-gh-conn `
-  --project-endpoint $PE `
-  --kind remote-tool `
-  --target https://api.githubcopilot.com/mcp/ `
-  --auth-type custom-keys `
-  --custom-key "Authorization=Bearer $env:GITHUB_PAT"
-```
-
-- `--custom-key` is **singular** and may be repeated (one flag per header). The `"<Header>=<Value>"` string is sent verbatim on every MCP request.
-
-**C. Azure AI Search, api-key:**
-
-```pwsh
-azd ai agent connection create my-search `
-  --project-endpoint $PE `
-  --kind cognitive-search `
-  --target "https://<your-search>.search.windows.net/" `
-  --auth-type api-key `
-  --key "<aisearch-admin-key>"
-```
-
-- The toolbox YAML for this connection must add an `index: <name>` field (see Example B in §2).
-
-**D. Remote MCP server, user Entra token (OBO passthrough)** — e.g. Microsoft Fabric:
-
-```pwsh
-azd ai agent connection create my-fabric-uet `
-  --project-endpoint $PE `
-  --kind remote-tool `
-  --target https://api.fabric.microsoft.com/v1/mcp/fabricaihub/integrations/m365 `
-  --auth-type user-entra-token `
-  --audience https://analysis.windows.net/powerbi/api
-```
-
-- `--audience` is **required** and must match what the downstream MCP expects. For Fabric the working value is the Power BI resource URI `https://analysis.windows.net/powerbi/api`; `https://api.fabric.microsoft.com` mints a token Fabric MCP rejects.
-
-**E. Bing Custom Search grounding, api-key:**
-
-```pwsh
-azd ai agent connection create my-bing-custom `
-  --project-endpoint $PE `
-  --kind GroundingWithCustomSearch `
-  --target https://api.bing.microsoft.com/ `
-  --auth-type api-key `
-  --key "<bing-custom-search-key>"
-```
-
-- `--kind` must be the **exact PascalCase string** `GroundingWithCustomSearch`; the kebab-case alias is rejected by the RP.
-- The toolbox YAML for this connection must add an `instance_name: <bing-custom-config>` field (see Example A in §2). The MCP `tools/call` argument is `search_query` (not `query`).
-
-**Inspect / delete existing connections:**
-
-```pwsh
-azd ai agent connection list --project-endpoint $PE
-azd ai agent connection show my-gh-conn --project-endpoint $PE
-azd ai agent connection delete my-gh-conn --project-endpoint $PE --force --no-prompt
-```
-
-#### 2. Create a toolbox — `azd ai toolbox create --from-file`
-
-The `--from-file` YAML schema accepts exactly two top-level fields: `description:` and `connections:`. Each connection entry references an **existing** project connection by `name` and contributes one tool to the toolbox.
-
-```yaml
-# my-toolbox.yaml
-description: <human-readable description of the toolbox>
-connections:
-  - name: <project-connection-name>            # required — must already exist
-    # index: <search-index>                    # required only for CognitiveSearch connections
-    # instance_name: <bing-custom-config>      # required only for GroundingWithCustomSearch connections
-```
-
-Create the toolbox:
-
-```pwsh
-azd ai toolbox create my-toolbox `
-  --project-endpoint $PE `
-  --from-file .\my-toolbox.yaml `
-  --no-prompt
-```
-
-**Example A — Grounding with Custom Search (ApiKey auth on the connection):**
-
-```yaml
-description: Bing Custom Search grounding
-connections:
-  - name: my-grounding-conn
-    instance_name: agentdoc          # name of the Bing Custom Search configuration
-```
-
-**Example B — Azure AI Search index (ApiKey auth on the connection):**
-
-```yaml
-description: AI Search over the docs index
-connections:
-  - name: my-search-conn
-    index: bbc                       # search index to query
-```
-
-**Example C — Remote MCP server (custom-keys auth on the connection):**
-
-```yaml
-description: GitHub MCP via PAT
-connections:
-  - name: my-gh-conn                 # the connection created in step 1
-```
-
-#### 3. Inspect toolboxes
-
-```pwsh
-# List all toolboxes in the project
-azd ai toolbox list --project-endpoint $PE
-
-# Show one toolbox (includes the computed MCP endpoint URL)
-azd ai toolbox show my-toolbox --project-endpoint $PE
-
-# List all versions of a toolbox (the default version is marked)
-azd ai toolbox version list my-toolbox --project-endpoint $PE
-```
-
-#### 4. Retarget the default version — `azd ai toolbox update`
+### Retarget the default version — `azd ai toolbox update`
 
 Each toolbox version is **immutable**. The version an agent actually hits is the one marked `*` in `version list` — i.e. the **default version**. Use `update` to point that pointer at any existing version (e.g. rollback to a known-good version after a bad publish).
 
@@ -341,17 +209,9 @@ azd ai toolbox show my-toolbox --project-endpoint $PE
 - `--default-version` is the only field `update` accepts today.
 - Validated: switched `default-tb` from version 21 → 20 → 21; both `show` and the computed MCP endpoint (`.../toolboxes/<name>/versions/<n>/mcp?api-version=v1`) tracked the change immediately.
 
-#### 5. Delete a toolbox
+### End-to-end smoke test
 
-Delete requires **both** flags — without them the CLI prompts interactively:
-
-```pwsh
-azd ai toolbox delete my-toolbox --project-endpoint $PE --force --no-prompt
-```
-
-#### 6. End-to-end smoke test
-
-After `toolbox create`, hit the MCP endpoint directly to confirm the tool is reachable before pointing an agent at it:
+After the toolbox is created (via Toolkit / Portal / `azd`), hit the MCP endpoint directly to confirm the tool is reachable before pointing an agent at it:
 
 ```pwsh
 $TOK = az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv
