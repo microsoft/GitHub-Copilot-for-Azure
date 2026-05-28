@@ -38,7 +38,7 @@ jobs:
       # Generate a short-lived token from the GitHub App for microsoft/skills
       - name: Generate token for microsoft/skills
         id: skills-token
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
           private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
@@ -134,7 +134,7 @@ jobs:
       # Generate a short-lived token from the GitHub App for microsoft/azure-skills
       - name: Generate token for microsoft/azure-skills
         id: azure-skills-token
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
           private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
