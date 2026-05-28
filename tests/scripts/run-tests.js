@@ -8,7 +8,6 @@
  *   all         - Run all tests (default)
  *   integration - Run integration tests only
  *   verbose     - Run all tests with verbose output
- *   coverage    - Run tests with coverage report
  *   ci          - Run tests in CI mode with reporters
  *   watch       - Run tests in watch mode
  *   skill       - Run tests for a specific skill (requires pattern arg)
@@ -54,10 +53,6 @@ const testConfigs = {
   verbose: {
     description: "all tests (verbose)",
     jestArgs: ["--verbose"]
-  },
-  coverage: {
-    description: "tests with coverage",
-    jestArgs: ["--coverage", "--testPathIgnorePatterns=\"node_modules|_template|integration\""]
   },
   ci: {
     description: "tests in CI mode",
