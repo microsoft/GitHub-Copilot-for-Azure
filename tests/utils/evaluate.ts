@@ -180,6 +180,41 @@ function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
 }
 
 /**
+ * Extract the body of a terraform list assignment.
+ * @param block A text block that contains one list assignment.
+ * @param attributeName The attribute name of the list.
+ * @returns the body of the list, or the original text in the assignment if it's not a list.
+ * @example "ignore_changes = [ value[0], value[1] ]" => "[ value[0], value[2] ]"
+ */
+export function extractTerraformListAssignment(block: string, attributeName: string): string | undefined {
+  const escapedAttributeName = attributeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignmentMatch = block.match(new RegExp(`(^|\\n)\\s*${escapedAttributeName}\\s*=\\s*`, "i"));
+  if (!assignmentMatch || assignmentMatch.index === undefined) {
+    return undefined;
+  }
+  const valueStart = assignmentMatch.index + assignmentMatch[0].length;
+  const valueText = block.slice(valueStart).trimStart();
+
+  if (!valueText.startsWith("[")) {
+    return valueText.match(/^[^\n]+/)?.[0]?.trim();
+  }
+
+  let depth = 0;
+  for (let index = 0; index < valueText.length; index++) {
+    if (valueText[index] === "[") {
+      depth += 1;
+    } else if (valueText[index] === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        return valueText.slice(0, index + 1);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Checks that generated Bicep provisions Container Apps with a public MCR placeholder image.
  * This verifies the deployment behavior instead of a specific parameter name/default spelling.
  */
@@ -259,7 +294,7 @@ export function doesTerraformContainerAppIgnoreImageChanges(workspace: string): 
     for (const containerAppBlock of containerAppBlocks) {
       const lifecycleBlocks = extractBlocks(containerAppBlock, /lifecycle\s*{/gi);
       for (const lifecycleBlock of lifecycleBlocks) {
-        const ignoreChanges = lifecycleBlock.match(/ignore_changes\s*=\s*(\[[\s\S]*?\]|[^\n]+)/i)?.[1];
+        const ignoreChanges = extractTerraformListAssignment(lifecycleBlock, "ignore_changes");
         if (ignoreChanges && /\b(image|all)\b/i.test(ignoreChanges)) {
           return true;
         }
