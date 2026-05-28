@@ -55,7 +55,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     // RBAC-specific prompts that SHOULD trigger this skill
     const rbacTriggerPrompts: string[] = [
       "Grant Alice role assignment access to my Microsoft Foundry project",
-      "Assign Azure AI User role to a user in Foundry",
+      "Assign Foundry User role to a user in Foundry",
       "Make Bob a project manager in Azure AI Foundry",
       "Who has role assignment access to my Microsoft Foundry resource?",
       "Audit role assignments on my Foundry account",

@@ -77,7 +77,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          prompt: "Grant a user the Azure AI User role on my Foundry project",
+          prompt: "Grant a user the Foundry User role on my Foundry project",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
 
