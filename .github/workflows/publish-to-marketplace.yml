@@ -35,9 +35,19 @@ jobs:
           npm ci --ignore-scripts
           npm run build
 
+      # Generate a short-lived token from the GitHub App for microsoft/skills
+      - name: Generate token for microsoft/skills
+        id: skills-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: skills
+
       - name: Clone microsoft/skills and create feature branch
         env:
-          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ steps.skills-token.outputs.token }}
         run: |
           gh repo clone microsoft/skills target-repo -- --branch main --single-branch
 
@@ -66,7 +76,7 @@ jobs:
         id: commit
         working-directory: target-repo
         env:
-          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ steps.skills-token.outputs.token }}
         run: |
           gh auth setup-git
           git config user.name "github-actions[bot]"
@@ -85,7 +95,7 @@ jobs:
       - name: Create Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ steps.skills-token.outputs.token }}
         run: |
           cd target-repo
           gh pr create \
@@ -121,9 +131,19 @@ jobs:
           npm ci --ignore-scripts
           npm run build
 
+      # Generate a short-lived token from the GitHub App for microsoft/azure-skills
+      - name: Generate token for microsoft/azure-skills
+        id: azure-skills-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: azure-skills
+
       - name: Clone microsoft/azure-skills and create feature branch
         env:
-          GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
+          GH_TOKEN: ${{ steps.azure-skills-token.outputs.token }}
         run: |
           gh repo clone microsoft/azure-skills target-repo -- --branch main --single-branch
 
@@ -183,7 +203,7 @@ jobs:
         id: commit
         working-directory: target-repo
         env:
-          GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
+          GH_TOKEN: ${{ steps.azure-skills-token.outputs.token }}
         run: |
           gh auth setup-git
           git config user.name "github-actions[bot]"
@@ -202,7 +222,7 @@ jobs:
       - name: Create Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
+          GH_TOKEN: ${{ steps.azure-skills-token.outputs.token }}
         run: |
           cd target-repo
           gh pr create \
