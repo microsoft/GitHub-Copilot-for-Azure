@@ -26,9 +26,6 @@ Full configuration recipe in [agent-tools.md § Tool Search](agent-tools.md#tool
 | **Toolbox Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox |
 | **Tool Catalog Docs** | https://learn.microsoft.com/azure/foundry/agents/concepts/tool-catalog |
 | **Tool Search Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search |
-| **Work IQ Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/work-iq |
-| **Fabric IQ Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/fabric-iq |
-| **Routines Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines |
 | **Default Sample (Python)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/maf |
 | **Python Hosted Agent — `responses`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses |
 | **Python Hosted Agent — `invocations`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations |
@@ -378,9 +375,8 @@ The sample repo provides integration patterns for both Python and C#. Read the s
 
 | Sample | Framework | Protocol | When to use |
 |--------|-----------|----------|-------------|
-| [`toolbox/maf/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/maf) — recommended | Agent Framework (MAF) | Responses | **Default choice** |
+| [`agent-framework/responses/04-foundry-toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox) — recommended | Agent Framework (MAF) | Responses | **Default choice** |
 | [`bring-your-own/responses/langgraph-toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/langgraph-toolbox) | LangGraph (BYO) | Responses | LangGraph hosted agent with toolbox |
-| [`toolbox/copilot-sdk/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/copilot-sdk) | GitHub Copilot SDK | Responses | Copilot SDK with toolbox tools |
 | [`bring-your-own/responses/bring-your-own-toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox) | Generic MCP (BYO) | Responses | Raw `httpx` MCP client — works with any framework |
 | [`bring-your-own/invocations/toolbox/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations/toolbox) | Generic MCP (BYO) | Invocations | Toolbox via Invocations protocol |
 
@@ -388,7 +384,7 @@ The sample repo provides integration patterns for both Python and C#. Read the s
 
 | Sample | Description |
 |--------|-------------|
-| [`csharp/toolbox/maf/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/toolbox/maf) — recommended | Agent Framework agent with toolbox MCP (Responses protocol) |
+| [`csharp/hosted-agents/agent-framework/foundry-toolbox-server-side/`](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents/agent-framework/foundry-toolbox-server-side) — recommended | Agent Framework agent with toolbox MCP (Responses protocol) |
 
 **Notes** (apply to all patterns, both Python and C#):
 

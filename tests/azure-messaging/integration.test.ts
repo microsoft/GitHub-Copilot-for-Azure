@@ -60,7 +60,10 @@ function defineInvocationTest(
 }
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("customer-reported-issues", () => {
     // #41220 — Event Hub connection inactive timeout

@@ -35,7 +35,10 @@ const describeIntegration = skipTests ? describe.skip : describe;
 const visualizerTestTimeoutMs = 1800000;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
     test("invokes azure-resource-visualizer skill for architecture diagram prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {

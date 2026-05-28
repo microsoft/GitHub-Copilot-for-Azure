@@ -49,7 +49,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
     test("invokes azure-quotas skill for quota check prompt", async () => {
@@ -101,15 +104,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
-        // Agent may suggest CLI commands in the response or execute them via powershell tool
-        const mentionsQuotaCmd = doesAssistantMessageIncludeKeyword(agentMetadata, "az quota")
-          || doToolCallArgsIncludeKeyword(agentMetadata, "az quota");
-        const mentionsScope = doesAssistantMessageIncludeKeyword(agentMetadata, "/subscriptions/")
-          || doToolCallArgsIncludeKeyword(agentMetadata, "/subscriptions/");
+        // Agent should invoke the check-quota script rather than raw az quota commands
+        const invokesScript = doToolCallArgsIncludeKeyword(agentMetadata, "check-quota.ps1")
+          || doToolCallArgsIncludeKeyword(agentMetadata, "check-quota.sh");
 
         expect(isSkillUsed).toBe(true);
-        expect(mentionsQuotaCmd).toBe(true);
-        expect(mentionsScope).toBe(true);
+        expect(invokesScript).toBe(true);
       });
     });
 

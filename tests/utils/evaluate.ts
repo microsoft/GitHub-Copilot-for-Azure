@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner.ts";
 
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
@@ -414,12 +414,8 @@ export function expectFiles(
  */
 export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
   return metadata.events
-    .filter(event => event.type === "tool.execution_start")
-    .filter(event => event.data.toolName === "skill")
-    .some(event => {
-      const args = event.data.arguments;
-      return JSON.stringify(args).includes(skillName);
-    });
+    .filter(event => event.type === "skill.invoked")
+    .some(event => event.data.name === skillName);
 }
 
 /**
