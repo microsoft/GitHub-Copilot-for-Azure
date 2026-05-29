@@ -38,7 +38,7 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 
 ### Step 1 -- Verify the environment
 
-Run the bundled verification script first. It performs all read-only checks in one pass (azd version, required `azure.ai.agents` + `azure.ai.projects` extensions, auth status, Foundry project endpoint, and agent deployment status) and prints one concise summary -- more reliable and cheaper than running each `azd` command separately.
+Run the bundled verification script to check that the local environment is set up correctly:
 
 ```bash
 ./scripts/verify-environment.sh     # macOS / Linux
@@ -89,7 +89,7 @@ azd ai agent init --no-prompt -m "<manifestUrl>"
 azd ai agent init --no-prompt --project-id "<resourceId>" -m "<manifestUrl>"
 ```
 
-> Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), drop `--no-prompt` so the user can answer prompts -- secret parameters always fail under `--no-prompt`.
+> Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), do NOT drop `--no-prompt`. Instead, collect any required values with `ask_user`, set them via `azd env set PARAM_<CONN>_<KEY> <value>` first, then run `init` with `--no-prompt`. This avoids azd's interactive prompts, which the agent cannot answer reliably.
 
 `init` writes `azure.yaml` (or appends to it), `<service-dir>/agent.yaml`, and `<service-dir>/.agentignore` (code-deploy only). For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
 
@@ -143,7 +143,7 @@ Once local invocation succeeds, tell the user the agent is ready and ask if they
 
 ## Non-Interactive / YOLO Mode
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, plus `--no-prompt` on every write. If project ID is missing, stop and ask. If the manifest declares secret parameters, drop `--no-prompt` so the user can answer in their terminal.
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, plus `--no-prompt` on every write. If project ID is missing, stop and ask. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 
@@ -153,7 +153,7 @@ Defaults when unspecified: greenfield + Python + `azd ai agent sample list --fea
 | `not_logged_in` / `login_expired` | Ask user to run `azd auth login` |
 | `missing_project_endpoint` | Run `azd provision`, or `azd env set AZURE_AI_PROJECT_ENDPOINT <url>` |
 | `project_not_found` | cwd has no `azure.yaml`; move to project root or run init |
-| Secret parameter prompt under `--no-prompt` | Drop `--no-prompt`; user answers interactively |
+| Secret parameter prompt under `--no-prompt` | Set the value via `azd env set PARAM_<CONN>_<KEY>` before init; keep `--no-prompt` |
 | `cannot use --version with --local` | Drop `--version`, or drop `--local` to hit the deployed agent |
 | `could not detect project type` | Set `startupCommand` in `azure.yaml` or pass `--start-command` |
 | Local agent slow to respond | Wait 30-60 seconds on first start |

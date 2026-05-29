@@ -28,8 +28,8 @@ For **prompt agents** (LLM + instructions, no container), use the Foundry MCP `a
 ### Step 1 -- Verify state
 
 ```bash
-azd ai project show --output json     # Foundry project endpoint
-azd ai agent show --output json       # status: not_deployed | active
+azd ai project show     # Foundry project endpoint
+azd ai agent show       # status: not_deployed | active
 ```
 
 Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (skip Step 2, go to Step 3). If `azd ai project show` fails with `missing_project_endpoint`, do Step 2 first -- `azd provision` will create the project.
@@ -39,6 +39,8 @@ Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (s
 ```bash
 azd provision --no-prompt
 ```
+
+> Optional: run `azd provision --preview --no-prompt` first to preview the resource changes (a what-if) before applying them.
 
 What this does:
 
