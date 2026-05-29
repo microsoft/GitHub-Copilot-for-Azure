@@ -43,7 +43,8 @@ jobs:
                   },
                 });
               } catch (error) {
-                core.warning(`Could not create neutral check run: ${error.message}`);
+                const message = error instanceof Error ? error.message : String(error);
+                core.warning(`Could not create neutral check run: ${message}`);
               }
             }
 
