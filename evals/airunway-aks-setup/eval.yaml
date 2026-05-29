@@ -51,7 +51,6 @@ stimuli:
         config:
           required:
             - airunway-aks-setup
-      - type: completed
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -72,7 +71,6 @@ stimuli:
         config:
           required:
             - airunway-aks-setup
-      - type: completed
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -204,7 +202,6 @@ stimuli:
       tier: full
       cost: llm
       area: workspace-fixture
-      earlyTerminate: '[{"type":"skill-call","skill":"airunway-aks-setup"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:

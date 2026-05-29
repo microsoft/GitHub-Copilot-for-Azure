@@ -193,7 +193,6 @@ stimuli:
       tier: full
       cost: llm
       area: output
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"[Rr]etry"},{"type":"tool-call-count","count":4}]'
     graders:
       - type: skill-invocation
         config:
