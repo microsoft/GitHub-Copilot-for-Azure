@@ -1,6 +1,12 @@
 # Phase 7: Deployment
 
-> Important: Before continuing this phase, `meta.status` must be set to `approved` as required by Phase 5. Destructive actions require explicit user confirmation.
+## Destructive Action Gate
+
+This phase is destructive and has irreversible effects. Explicitly confirm with the user whether to deploy, and mention the risks of altering live environments. Never accept implicit or vague intent; only continue if they confirm "I understand the risks, continue with deployment" verbatim in a reply sent *after* you present the risks — the original task prompt never satisfies this gate, even if it says "deploy" or "run all phases". Stop if no input is received. Do not accept vague statements such as: "continue", "yes", "deploy now" (without risk acceptance), "go ahead".
+
+---
+
+> Important: Before continuing this phase, `meta.status` must be set to `approved` as required by Phase 5. Each destructive action requires explicit user confirmation.
 
 Refer to [deployment.md](../deployment.md) for executing deployment commands.
 
