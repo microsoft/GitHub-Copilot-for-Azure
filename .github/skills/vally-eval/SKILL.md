@@ -63,10 +63,10 @@ Test authors commonly need to fine-tune grader configurations to reduce result f
 
 ```bash
 # in tests/
-npx @microsoft/vally-cli grade --eval-spec ../evals/<skill-name>/eval.yaml --verbose < results/<test-date>/results.jsonl
+npx @microsoft/vally-cli grade --eval-spec ../evals/<skill-name>/eval.yaml --verbose < results/<test-run-name>/results.jsonl
 ```
 
-You can keep tuning the grader config in the eval.yaml and re-grade the trajectory until the result meets your expectation.
+ You can keep tuning the grader config in `eval.yaml` and re-grade the trajectory until the results meet your expectations.
 
 ### Collect test results
 
