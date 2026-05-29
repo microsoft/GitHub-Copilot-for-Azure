@@ -35,6 +35,8 @@ If you intend to have your vally suites use any of the extended features or have
 
 The custom executor in azure-skills plugin uses special tag values to control the behavior of the custom executor. See [tag-helpers.ts](../../../tests/vally/tag-helpers.ts) to learn what special tags are supported.
 
+> Note: If an eval suite specifies an earlyTerminate condition, the suite MUST NOT use the `completed` grader because early terminated runs will always fail the `completed` grader by design.
+
 ## Validate vally eval suites
 
 Vally eval suites for azure-skills plugin follow certain conventions. For example, all eval suites must have a `type`, `tier`, `cost` and `area` tag so they can be run for a corresponding target group. To ensure all eval suites follow the conventions, a script is added to validate the eval suites and report errors when it sees any violation. To run the script, execute this command from the `scripts/` directory.
