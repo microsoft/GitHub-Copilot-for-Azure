@@ -18,9 +18,10 @@ jobs:
             const title = context.payload.pull_request.title;
             const validPrefixes = ['feat:', 'fix:', 'feature:', 'chore:', 'misc:', 'test:', 'eval:'];
 
-            // Check if title starts with any valid prefix (case-sensitive)
+            // Check if title starts with any valid prefix (case-insensitive to match changelog filter)
+            const lowerTitle = title.toLowerCase();
             const isValid = validPrefixes.some(prefix =>
-              title.startsWith(prefix.toLowerCase())
+              lowerTitle.startsWith(prefix)
             );
 
             if (!isValid) {
