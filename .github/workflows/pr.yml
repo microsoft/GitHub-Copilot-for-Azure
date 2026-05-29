@@ -9,6 +9,7 @@ jobs:
     name: Check mandatory PR title prefix
     runs-on: ubuntu-latest
     permissions:
+      checks: write
       pull-requests: read
     steps:
       - name: Validate PR title prefix
@@ -26,6 +27,24 @@ jobs:
 
             if (!isValid) {
               core.warning(`PR title must start with one of the known prefixes. ${validPrefixes.join(', ')}`);
+
+              // Create a neutral check run so the warning is visible in the PR checks panel.
+              try {
+                await github.rest.checks.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'PR title prefix warning',
+                  head_sha: context.payload.pull_request.head.sha,
+                  status: 'completed',
+                  conclusion: 'neutral',
+                  output: {
+                    title: 'PR title prefix does not match convention',
+                    summary: `Expected one of: ${validPrefixes.join(', ')}. Current title: "${title}"`,
+                  },
+                });
+              } catch (error) {
+                core.warning(`Could not create neutral check run: ${error.message}`);
+              }
             }
 
   eslint:
