@@ -30,11 +30,11 @@ Full configuration recipe in [tool-tool-search.md](tool-tool-search.md) and the 
 | **Tool Search Docs** | https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search |
 | **Foundry Toolkit (VS Code) — set up tools/toolboxes** | https://code.visualstudio.com/docs/intelligentapps/tool-catalog |
 | **Foundry Portal** | https://ai.azure.com/ |
-| **Default Sample (Python)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/toolbox/maf |
-| **Python Hosted Agent — `responses`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses |
-| **Python Hosted Agent — `invocations`** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations |
-| **C# (.NET) Samples** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/toolbox |
-| **Supported Tool Types & Auth (sample-side reference)** | https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/toolbox/SUPPORTED_TOOLBOX_TOOLS.md |
+| **Default Sample (Python, Agent Framework + toolbox)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox |
+| **Python Hosted Agent — `responses` (BYO)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses |
+| **Python Hosted Agent — `invocations` (BYO)** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/invocations |
+| **C# (.NET) Hosted Agent + toolbox** | https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents/agent-framework/foundry-toolbox-server-side |
+| **Supported Toolbox Scenarios (sample-side reference)** | https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/SUPPORTED_TOOLBOX_SCENARIOS.md |
 
 ## Resolve Toolbox Endpoint
 
