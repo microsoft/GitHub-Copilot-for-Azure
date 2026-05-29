@@ -59,7 +59,7 @@ npm run test:vally -- --skill $SKILL
 
 ## Re-grade an existing trajectory
 
-Test authors commonly need to fine tune grader configs to reduce the flakiness of the result. Vally supports re-grading a trajectory using a command like this
+Test authors commonly need to fine-tune grader configurations to reduce result flakiness. Vally supports re-grading an existing trajectory using a command like this:
 
 ```bash
 # in tests/
