@@ -2,7 +2,7 @@ name: Publish to marketplace repos
 
 on:
   schedule:
-    - cron: '0 11 * * 1-5'
+    - cron: "0 11 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -19,14 +19,14 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           path: source-repo
-          fetch-depth: 0  # Full history required for NBGV version computation
+          fetch-depth: 0 # Full history required for NBGV version computation
 
       # 2. Build the plugin (stamps NBGV versions into output/)
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: source-repo/package-lock.json
 
       - name: Build plugin
@@ -115,14 +115,14 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           path: source-repo
-          fetch-depth: 0  # Full history required for NBGV version computation
+          fetch-depth: 0 # Full history required for NBGV version computation
 
       # 2. Build the plugin (stamps NBGV versions into output/)
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: source-repo/package-lock.json
 
       - name: Build plugin
@@ -184,12 +184,14 @@ jobs:
           rm -f "target-repo/copilot-hooks.json"
 
       # 6. Replace repository URLs in synced files
+      # CHANGELOG.md file contains links to PRs in the GitHub-Copilot-for-Azure repo. These links should not be replaced.
+      # Otherwise they will all get 404.
       - name: Replace repository URLs
         run: |
           TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
-              if matches=$(grep -rli --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
+              if matches=$(grep -rli --exclude='CHANGELOG.md' --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
                 echo "$matches" | while IFS= read -r file; do
                   sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
                   sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
