@@ -91,7 +91,6 @@ stimuli:
         config:
           required:
             - airunway-aks-setup
-      - type: completed
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"

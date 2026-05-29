@@ -10,12 +10,6 @@
 # - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
 #   a stimulus-level `config.runs: 1` annotation.
 # - Stimuli with earlyTerminate tags MUST NOT use the `completed` grader.
-#
-# Migration notes:
-# - Original Jest tests used doToolCallArgsIncludeKeyword() and matchesCommand()
-#   to check tool call arguments. Vally doesn't have a tool-call-args grader,
-#   so these are migrated to output-matches patterns that verify the agent
-#   mentions or uses the expected commands in its response.
 
 name: azure-quotas-integration-eval
 description: |

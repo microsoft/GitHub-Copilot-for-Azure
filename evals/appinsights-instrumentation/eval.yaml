@@ -2,9 +2,6 @@
 # Source: tests/appinsights-instrumentation/integration.test.ts
 # Migration: Jest → Vally
 #
-# Global graders (evaluate#125 workaround): completed and no_runtime_failure
-# are duplicated into every stimulus block below.
-#
 # Note on runs:
 # - Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
 # - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
