@@ -57,6 +57,17 @@ npm run test:vally -- --skill $SKILL
 
 `--eval-spec ../evals/<skill-name>/eval.yaml` tells vally which eval spec to run. The path is relative to the current working directory of the process running the command. `--output-dir ./results` tells vally to write its output to a `results/` directory relative to the current working directory of the process running the command. `--executor-plugin ../../tests/vally/vally-executor.ts` tells vally to load and execute the code in this module, which registers the custom executor used by azure-skill vally eval suites. Note that this path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
 
+## Re-grade an existing trajectory
+
+Test authors commonly need to fine tune grader configs to reduce the flakiness of the result. Vally supports re-grading a trajectory using a command like this
+
+```bash
+# in tests/
+npx @microsoft/vally-cli grade --eval-spec ../evals/<skill-name>/eval.yaml --verbose < results/<test-date>/results.jsonl
+```
+
+You can keep tuning the grader config in the eval.yaml and re-grade the trajectory until the result meets your expectation.
+
 ### Collect test results
 
 When running locally, the test results can be found at the following directories:
