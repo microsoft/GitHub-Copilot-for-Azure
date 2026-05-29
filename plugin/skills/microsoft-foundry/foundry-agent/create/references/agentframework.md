@@ -78,7 +78,7 @@ Use [Foundry Toolkit for VS Code (Formerly AI Toolkit)](https://marketplace.visu
 2. Install `agent-dev-cli` (pre-release) for the `agentdev` command
 3. Key debug tasks: `agentdev run <entrypoint>.py --port 8087` starts the agent HTTP server, `debugpy --listen 127.0.0.1:5679` attaches the debugger, and the `ai-mlstudio.openTestTool` VS Code command opens the Agent Inspector UI
 
-For VS Code `launch.json` and `tasks.json` configuration templates, see [Foundry Toolkit for VS Code (Formerly AI Toolkit) Agent Inspector — Configure debugging manually](https://github.com/microsoft/vscode-ai-toolkit/blob/main/doc/agent-test-tool.md#configure-debugging-manually).
+For VS Code `launch.json` and `tasks.json` configuration templates, see [Foundry Toolkit Agent Inspector — Configure debugging manually](https://github.com/microsoft/vscode-ai-toolkit/blob/main/doc/agent-test-tool.md#configure-debugging-manually).
 
 ## Common Errors
 
