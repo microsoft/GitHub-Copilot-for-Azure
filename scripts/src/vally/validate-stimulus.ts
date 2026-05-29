@@ -17,6 +17,9 @@ type GrayMatterWithYamlEngine = typeof matter & {
 
 type Stimuli = {
   name?: string;
+  graders?: Array<{
+    type?: string;
+  }>;
   tags?: {
     type?: string;
     tier?: string;
@@ -140,6 +143,11 @@ function findEvalYamlFiles(dirPath: string): string[] {
   return files;
 }
 
+function hasCompletedGrader(stimulus: Stimuli): boolean {
+  return Array.isArray(stimulus.graders)
+    && stimulus.graders.some((grader) => grader?.type === "completed");
+}
+
 export function validateStimulus(rootDir: string, _args: string[]): void {
   const evalsDir = join(rootDir, "evals");
   const evalFiles = findEvalYamlFiles(evalsDir).sort();
@@ -227,6 +235,16 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         "takeScreenshot",
         typedStimulus.tags?.takeScreenshot,
       )) {
+        fileHasErrors = true;
+      }
+
+      if (typedStimulus.tags?.earlyTerminate && hasCompletedGrader(typedStimulus)) {
+        reportValidationError(
+          displayPath,
+          stimulusIndex,
+          typedStimulus.name,
+          "tags.earlyTerminate must not coexist with a completed grader",
+        );
         fileHasErrors = true;
       }
     }
