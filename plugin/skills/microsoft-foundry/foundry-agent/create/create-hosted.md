@@ -2,6 +2,8 @@
 
 Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers greenfield (from a curated sample) and brownfield (lift existing code), then drops you into a local inner-loop so you can iterate before deploying.
 
+> **Scope:** `azd ai` is the preferred *code-first* path -- use it when the intent is agent code on disk, in a repo, with infrastructure-as-code and a local inner-loop. If the intent is only to create a remote agent resource (no code on disk), other approaches may apply -- for prompt agents see [create-prompt.md](create-prompt.md), or use the Foundry MCP tools / portal.
+
 ## Quick Reference
 
 | Property | Value |
@@ -36,19 +38,16 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 
 ### Step 1 -- Verify the environment
 
-Run these read-only checks first. Branch on the output.
+Run the bundled verification script first. It performs all read-only checks in one pass (azd version, required `azure.ai.agents` + `azure.ai.projects` extensions, auth status, Foundry project endpoint, and agent deployment status) and prints one concise summary -- more reliable and cheaper than running each `azd` command separately.
 
 ```bash
-azd version --output json
-azd extension list --output json     # must include azure.ai.agents and azure.ai.projects
-azd auth login --check-status
-azd ai project show --output json    # Foundry project endpoint (if set)
-azd ai agent show --output json      # status: not_deployed | active
+./scripts/verify-environment.sh     # macOS / Linux
+./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Missing extension -> `azd extension install azure.ai.agents`. Failed auth -> ask the user to run `azd auth login` (never run it yourself; it opens a browser).
+Act on the summary prefixes: `[OK]` nothing to do; `[WARN]` non-blocking (continue); `[ACTION]` resolve first (missing extension -> `azd extension install azure.ai.agents`; failed auth -> ask the user to run `azd auth login`, never run it yourself).
 
-Branch on `azd ai agent show`:
+Branch on the reported agent status:
 
 - `not_deployed` -> Step 2.
 - `active` / `deployed` -> already deployed. Skip to [deploy/deploy.md](../deploy/deploy.md) for redeploy or [tools](references/tools.md) to add a tool.
