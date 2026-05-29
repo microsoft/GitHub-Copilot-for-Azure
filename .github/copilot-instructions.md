@@ -47,7 +47,7 @@ This repo uses **Nerdbank.GitVersioning (NBGV)**. Versions are computed automati
 - Source files must always use `"0.0.0-placeholder"` — the build stamps real versions
 - Each skill has its own `version.json` with `pathFilters: ["."]`; only commits touching that skill's directory increment its version
 - For skills outside `plugin/` (e.g., `.github/skills/`), set a real semver version and bump it in the same PR that modifies the skill
-- Use conventional commit-style PR titles (`feat:`, `fix:`, `feature:`) — the build generates `CHANGELOG.md` from these
+- Use conventional commit-style PR titles (e.g. `feat:`, `fix:`, `feature:`) — the build generates `CHANGELOG.md` from these
 
 ## Validating Changes
 
