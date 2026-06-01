@@ -340,12 +340,15 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes-automatic-readiness"},{"type":"tool-call-count","count":3}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
-            - azure-kubernetes-automatic-readiness
+            - azure-kubernetes
+      - type: output-contains
+        config:
+          substring: "azure-kubernetes-automatic-readiness"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
