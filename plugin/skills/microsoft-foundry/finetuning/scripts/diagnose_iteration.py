@@ -35,7 +35,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
@@ -127,7 +127,7 @@ def load_jsonl(path, k=None):
                 try:
                     rows.append(json.loads(line))
                 except json.JSONDecodeError:
-                    pass
+                    pass  # Skip malformed rows; an empty result will surface as "no candidates" later
     if k is not None and len(rows) > k:
         return random.sample(rows, k)
     return rows
@@ -152,14 +152,32 @@ def extract_pass_fail_samples(candidate_result, test_rows, k=3):
     azure-ai-evaluation `evaluate()` output preserves input ordering). Rows
     whose index falls outside test_rows are skipped — better to under-sample
     than to mis-attribute.
+
+    Per-row pass/fail is determined in priority order:
+      1. an explicit `passed` boolean on the row (preferred — set by the
+         evaluator using its configured `pass_threshold`)
+      2. an explicit per-row `pass_threshold` field + numeric `score`
+      3. a top-level `pass_threshold` on `candidate_result` + numeric `score`
+      4. fallback: score < 0.5 is a failure (only used when no threshold info
+         is present anywhere in the result)
     """
     rows_with_scores = candidate_result.get("rows", []) or candidate_result.get("results", [])
+    metrics = candidate_result.get("metrics") or {}
+    default_threshold = (candidate_result.get("pass_threshold")
+                         or metrics.get("pass_threshold"))
     fail_ids = []
     pass_ids = []
     for i, r in enumerate(rows_with_scores):
         if i >= len(test_rows):
             break  # cannot map score back to a test row safely
-        # heuristic: row has a top-level numeric "score" or nested "outputs.*.score"
+
+        # 1. Explicit boolean wins.
+        passed = r.get("passed")
+        if isinstance(passed, bool):
+            (pass_ids if passed else fail_ids).append(i)
+            continue
+
+        # 2/3. Numeric score with a known threshold.
         score = r.get("score")
         if score is None:
             outputs = r.get("outputs", {}) if isinstance(r.get("outputs"), dict) else {}
@@ -169,10 +187,14 @@ def extract_pass_fail_samples(candidate_result, test_rows, k=3):
                     break
         if score is None:
             continue
-        if score < 0.5:
-            fail_ids.append(i)
-        else:
-            pass_ids.append(i)
+        threshold = r.get("pass_threshold")
+        if threshold is None:
+            threshold = default_threshold
+        # 4. Fallback heuristic only when nothing else available.
+        if threshold is None:
+            threshold = 0.5
+        (pass_ids if score >= threshold else fail_ids).append(i)
+
     failed = [test_rows[i] for i in random.sample(fail_ids, min(k, len(fail_ids)))]
     passed = [test_rows[i] for i in random.sample(pass_ids, min(k, len(pass_ids)))]
     return failed, passed

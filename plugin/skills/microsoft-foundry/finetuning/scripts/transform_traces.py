@@ -46,7 +46,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser
@@ -64,19 +64,32 @@ def step1_dedup_overlapping(rows):
 
 
 def step2_drop_fragments(rows):
-    """Drop rows ending mid-tool-call or with no final assistant turn."""
+    """Drop rows that aren't trainable end-to-end.
+
+    A row is trainable when its final message is an assistant turn with
+    non-empty *text* content (with or without preceding tool calls and tool
+    replies — those are valid intermediate turns). Drop:
+      - empty message lists
+      - rows ending in user, tool, or system
+      - rows ending in an assistant message that emitted tool_calls but no
+        subsequent tool reply / final assistant text (mid-tool-call fragment)
+      - rows ending in an assistant message with empty content and no tool_calls
+    """
     kept = []
     for row in rows:
         msgs = row.get("messages", [])
         if not msgs:
             continue
         last = msgs[-1]
-        if last.get("role") == "assistant" and last.get("tool_calls"):
-            kept.append(row)
+        if last.get("role") != "assistant":
             continue
-        if last.get("role") == "assistant" and (last.get("content") or "").strip():
-            kept.append(row)
+        if last.get("tool_calls"):
+            # Mid-tool-call fragment: assistant emitted tool_calls as the final
+            # message and no tool reply / final text follows. Not trainable.
             continue
+        if not (last.get("content") or "").strip():
+            continue
+        kept.append(row)
     return kept
 
 

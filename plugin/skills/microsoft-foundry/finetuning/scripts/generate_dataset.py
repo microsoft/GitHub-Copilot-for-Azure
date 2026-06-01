@@ -47,7 +47,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
@@ -79,30 +79,43 @@ def convert_openai_tools_to_openapi(tools):
 
 
 def _load_openapi_spec(path):
-    """Parse an OpenAPI 3.0 file (JSON or YAML) into a dict for the Foundry API."""
-    suffix = path.lower().rsplit(".", 1)[-1]
-    with open(path, encoding="utf-8") as f:
-        text = f.read()
-    if suffix == "json":
-        return json.loads(text)
-    if suffix in ("yaml", "yml"):
+    """Parse an OpenAPI 3.0 file (JSON or YAML) into a dict for the Foundry API.
+
+    Single-return-point function so CodeQL doesn't flag mixed implicit/explicit
+    returns. Each branch builds `spec` then falls through to a final return.
+    """
+    def _try_yaml(text_):
         try:
             import yaml  # pyyaml — declared in PEP 723 deps
         except ImportError:
-            print(f"❌ pyyaml required to parse {path}. pip install pyyaml")
+            return None, "pyyaml not installed (pip install pyyaml)"
+        try:
+            return yaml.safe_load(text_), None
+        except yaml.YAMLError as e:
+            return None, f"YAML parse error: {e}"
+
+    suffix = path.lower().rsplit(".", 1)[-1] if "." in os.path.basename(path) else ""
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+
+    if suffix == "json":
+        return json.loads(text)
+    if suffix in ("yaml", "yml"):
+        spec, err = _try_yaml(text)
+        if spec is None:
+            print(f"❌ Could not parse {path}: {err}")
             sys.exit(1)
-        return yaml.safe_load(text)
-    # Unknown extension — try JSON first, then YAML, then fail clearly.
+        return spec
+
+    # Unknown extension — try JSON, then YAML, then fail clearly.
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        pass
-    try:
-        import yaml
-        return yaml.safe_load(text)
-    except (ImportError, Exception):
-        pass
-    print(f"❌ Could not parse {path} as JSON or YAML. Save with .json, .yaml, or .yml extension.")
+        pass  # not JSON, try YAML next
+    spec, err = _try_yaml(text)
+    if spec is not None:
+        return spec
+    print(f"❌ Could not parse {path} as JSON or YAML ({err}). Save with .json, .yaml, or .yml extension.")
     sys.exit(1)
 
 
@@ -163,8 +176,12 @@ def poll_until_done(project_client, job_id, poll_seconds=10, timeout_seconds=720
     raise TimeoutError(f"Datagen job {job_id} did not reach terminal status within {timeout_seconds}s")
 
 
-def download_result(project_client, openai_client, job, output_path):
-    """Download the SUCCEEDED job's output JSONL to output_path. Returns row count."""
+def download_result(openai_client, job, output_path):
+    """Download the SUCCEEDED job's output JSONL to output_path. Returns row count.
+
+    Foundry datagen result files live in the OpenAI files API, so only the
+    openai_client is needed — no AIProjectClient call here.
+    """
     result_file_id = getattr(job, "result_file_id", None) or getattr(job, "output_file_id", None)
     if not result_file_id:
         raise RuntimeError(f"Job {job.id} succeeded but no result_file_id was returned")
@@ -287,7 +304,7 @@ def main():
             print(f"   error: {err}")
         sys.exit(1)
 
-    rows = download_result(project_client, openai_client, job, args.output)
+    rows = download_result(openai_client, job, args.output)
     print(f"✅ Generated {rows} samples → {args.output}")
 
 

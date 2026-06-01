@@ -66,7 +66,7 @@ If you only have OpenAI tool definitions (the `tools=[...]` array), convert firs
 python scripts/generate_dataset.py --convert-tools my_tools.json --out my_tools.openapi.json
 ```
 
-The converter is bidirectional-safe — round-tripping `openai → openapi → openai` is lossless for type/required/description fields.
+The converter preserves each tool's JSON-schema `parameters` block and `description`, which is what the Foundry ToolUse recipe consumes. It does not emit other OpenAPI features (security, servers, component refs, richer parameter metadata beyond the JSON schema) — for tools that need those, hand-author the OpenAPI 3.0 spec.
 
 ### Traces (passthrough)
 

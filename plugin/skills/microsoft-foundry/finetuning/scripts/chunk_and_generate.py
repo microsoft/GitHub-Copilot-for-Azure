@@ -39,7 +39,7 @@ try:
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 except (AttributeError, OSError):
-    pass
+    pass  # Stream not reconfigurable (older Python or non-tty); default encoding is fine
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import HelpOnErrorParser, get_clients
@@ -116,7 +116,7 @@ def submit_and_wait(project_client, openai_client, chunk_text_str, chunk_idx, ar
                         try:
                             rows.append(json.loads(line))
                         except json.JSONDecodeError:
-                            pass
+                            pass  # Skip malformed rows from the datagen output; surface count in the summary
                 print(f"[chunk {chunk_idx}] ✅ {len(rows)} rows")
                 return rows
             time.sleep(args.poll_seconds)
@@ -130,14 +130,27 @@ def submit_and_wait(project_client, openai_client, chunk_text_str, chunk_idx, ar
                   file=sys.stderr)
 
 
+def _user_text(msg):
+    """Extract plain text from a message's content field (handles str or list parts)."""
+    c = msg.get("content")
+    if isinstance(c, str):
+        return c
+    if isinstance(c, list):
+        return "\n".join(part.get("text", "") for part in c
+                         if isinstance(part, dict) and part.get("type") == "text")
+    return ""
+
+
 def dedup_by_first_user(rows):
-    """Dedupe rows by the first user message text."""
+    """Dedupe rows by the first user message text (after normalizing content)."""
     seen = set()
     unique = []
     for row in rows:
         msgs = row.get("messages") or []
-        user = next((m.get("content", "") for m in msgs if m.get("role") == "user"), "")
-        key = (user or "").strip().lower()
+        first_user = next((m for m in msgs if m.get("role") == "user"), None)
+        if not first_user:
+            continue
+        key = _user_text(first_user).strip().lower()
         if key and key not in seen:
             seen.add(key)
             unique.append(row)

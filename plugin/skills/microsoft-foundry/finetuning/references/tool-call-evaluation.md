@@ -18,15 +18,40 @@ Drop this evaluator into any `azure.ai.evaluation.evaluate()` call when training
 
 ## Evaluator
 
+Compares emitted tool calls to expected tool calls as a **multiset** keyed by `(name, canonicalized-args)`. Tool-call order is not significant (parallel tool calls can return in any order), and JSON-arg differences in whitespace/key order are normalized so they don't produce false mismatches.
+
 ```python
 from azure.ai.evaluation import AzureOpenAIPythonGrader
 
 tool_call_grader = AzureOpenAIPythonGrader(
     name="tool_call_match",
     source="""
+import json
+from collections import Counter
+
+def _canon_args(args):
+    # Parse JSON-string args then re-serialize with sorted keys so logically
+    # equivalent payloads compare equal regardless of whitespace/key order.
+    if isinstance(args, str):
+        try:
+            args = json.loads(args)
+        except json.JSONDecodeError:
+            return args  # keep raw string if not valid JSON
+    if isinstance(args, dict):
+        return json.dumps(args, sort_keys=True, separators=(",", ":"))
+    return json.dumps(args, sort_keys=True, separators=(",", ":"), default=str)
+
+def _key_multiset(calls):
+    return Counter(
+        (c.get("function", {}).get("name", ""), _canon_args(c.get("function", {}).get("arguments", "")))
+        for c in calls
+    )
+
+def _name_multiset(calls):
+    return Counter(c.get("function", {}).get("name", "") for c in calls)
+
 def grade(item, sample):
-    import json
-    expected = item.get("tool_calls", [])
+    expected = item.get("tool_calls", []) or []
     out = sample.get("tool_calls")
     if out is None:
         # Some target wrappers serialize tool_calls into output_text as JSON.
@@ -38,17 +63,19 @@ def grade(item, sample):
         return {"score": 1.0, "reason": "no tools expected or emitted"}
     if not out:
         return {"score": 0.1, "reason": "expected tool call, model emitted text"}
-    exp_names = {c["function"]["name"] for c in expected}
-    out_names = {c["function"]["name"] for c in out}
-    overlap = exp_names & out_names
-    if not overlap:
-        return {"score": 0.1, "reason": f"tool name miss: {out_names} vs {exp_names}"}
+    exp_full = _key_multiset(expected)
+    out_full = _key_multiset(out)
+    if exp_full == out_full:
+        return {"score": 1.0, "reason": "exact match (names + canonicalized args)"}
+    exp_names = _name_multiset(expected)
+    out_names = _name_multiset(out)
     if exp_names == out_names:
-        exact = all(c.get("function", {}).get("arguments") == e.get("function", {}).get("arguments")
-                    for c, e in zip(out, expected))
-        return {"score": 1.0 if exact else 0.8, "reason": "args match" if exact else "names match, args differ"}
-    return {"score": len(overlap) / len(exp_names),
-            "reason": f"partial name overlap: {overlap}"}
+        return {"score": 0.8, "reason": "names match, args differ"}
+    common = sum((exp_names & out_names).values())
+    if common == 0:
+        return {"score": 0.1, "reason": f"tool name miss: {dict(out_names)} vs {dict(exp_names)}"}
+    return {"score": common / max(sum(exp_names.values()), 1),
+            "reason": f"partial name overlap: {common}/{sum(exp_names.values())}"}
 """,
     pass_threshold=0.7,
 )

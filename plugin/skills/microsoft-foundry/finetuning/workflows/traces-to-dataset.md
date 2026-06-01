@@ -90,7 +90,7 @@ For distillation, the **goal is parity** (lift ≈ 0) at much lower cost/latency
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `validate_sft.py` reports "content cannot be null" | Step 3 of transform skipped | Re-run `transform_traces.py` |
+| `validate_sft.py` reports `content` issues on assistant tool-call rows | Raw traces export emits `content: "null"` (the string), which Azure FT preprocessing rejects. Step 3 of the transform replaces it with JSON `null`. | Re-run `transform_traces.py` on the raw export (the validator runs against the transform's output). |
 | Most rows dropped during transform | Agent emits text-only turns (no tools) | This is expected — text-only rows are kept, fragments aren't |
 | Job `FAILED: tool name mismatch` | Tools file out of sync with deployed agent | Re-export current tools from the agent project |
 | Student tool-call accuracy << teacher | Training set too small (<200 useful rows) | Widen `--hours` or run agent with more probes; consider `score_dataset.py` to drop noise |
