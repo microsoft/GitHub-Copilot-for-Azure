@@ -7,12 +7,7 @@
 
 name: azure-kubernetes-integration-eval
 description: |
-  Integration evaluation for azure-kubernetes and azure-kubernetes-automatic-readiness skills
-  — migrated from Jest integration tests.
-  Covers routing/skill invocation (5 runs, 80% threshold) and output quality for
-  AKS cluster creation, node autoscaling, pod rightsizing, spot node pools, VPA,
-  and AKS Automatic migration readiness checks.
-
+  Integration evaluation for azure-kubernetes skill
 tags:
   type: integration
   skill: azure-kubernetes
