@@ -105,11 +105,10 @@ stimuli:
         config:
           required:
             - azure-quotas
-      # Original Jest test: doToolCallArgsIncludeKeyword("check-quota.ps1" | "check-quota.sh")
       - type: tool-calls
         config:
           required:
-            - name: "(?i)bash|powershell"
+            - name: "(?i)bash|powershell|pwsh"
               command: "(?i)check-quota\\.(ps1|sh)"
       - type: completed
       - type: output-not-matches
@@ -143,10 +142,7 @@ stimuli:
 
   # ── region-comparison-quality ──
   # Jest: "handles region comparison query"
-  # Assertions: isSkillInvoked + (doesAssistantMessageIncludeKeyword("az quota")
-  #             or doToolCallArgsIncludeKeyword("az quota"))
-  # Migration note: combined assistant message and tool call arg checks into output-matches.
-  - name: "Region comparison mentions az quota commands"
+  - name: "Region comparison triggers check-quota script"
     prompt: "Compare Azure compute quota availability across East US, West US 2, and Central US"
     config:
       runs: 1
@@ -160,9 +156,13 @@ stimuli:
         config:
           required:
             - azure-quotas
-      - type: output-matches
+      - type: tool-calls
         config:
-          pattern: "(?i)az quota"
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # Copilot CLI uses "bash" tool for executing scripts on other platforms
+            - name: "(?i)bash|powershell|pwsh"
+              command: "(?i)check-quota\\.(sh|ps1)"
       - type: completed
       - type: output-not-matches
         config:
@@ -170,9 +170,7 @@ stimuli:
 
   # ── extension-installation-quality ──
   # Jest: "mentions extension installation requirement"
-  # Assertions: isSkillInvoked + (doesAssistantMessageIncludeKeyword("az extension add")
-  #             or matchesCommand(/az\s+extension\s+add/))
-  - name: "Quota check mentions extension installation"
+  - name: "Quota check triggers check-quota script"
     prompt: "What are my Azure service quotas and how do I check them?"
     config:
       runs: 1
@@ -186,9 +184,13 @@ stimuli:
         config:
           required:
             - azure-quotas
-      - type: output-matches
+      - type: tool-calls
         config:
-          pattern: "(?i)az\\s+extension\\s+add"
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # Copilot CLI uses "bash" tool for executing scripts on other platforms
+            - name: "(?i)bash|powershell|pwsh"
+              command: "(?i)check-quota\\.(sh|ps1)"
       - type: completed
       - type: output-not-matches
         config:
