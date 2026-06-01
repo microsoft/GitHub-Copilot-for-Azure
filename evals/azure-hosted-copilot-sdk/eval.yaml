@@ -26,7 +26,7 @@ environment:
 config:
   runs: 1
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -46,6 +46,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-hosted-copilot-sdk
     constraints:
@@ -72,6 +73,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-hosted-copilot-sdk
     constraints:
@@ -98,6 +100,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-hosted-copilot-sdk
     constraints:
@@ -130,6 +133,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-hosted-copilot-sdk
     constraints:
@@ -166,6 +170,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output
       skill: azure-hosted-copilot-sdk
     constraints:
@@ -208,6 +213,7 @@ stimuli:
     tags:
       type: trigger
       tier: smoke
+      cost: llm
       area: routing
       skill: azure-hosted-copilot-sdk
     constraints:

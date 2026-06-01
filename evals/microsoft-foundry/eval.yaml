@@ -23,7 +23,7 @@ environment:
 config:
   runs: 5
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -78,7 +78,7 @@ stimuli:
   # Jest: "invokes microsoft-foundry skill for RBAC role assignment prompt"
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "RBAC role assignment on Foundry project"
-    prompt: "Grant a user the Azure AI User role on my Foundry project"
+    prompt: "Grant a user the Foundry User role on my Foundry project"
     tags:
       type: integration
       tier: full

@@ -58,7 +58,10 @@ const describeIntegration = skipTests ? describe.skip : describe;
 // --- Tests ---
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
 

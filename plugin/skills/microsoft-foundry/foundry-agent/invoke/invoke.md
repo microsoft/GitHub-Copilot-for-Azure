@@ -37,18 +37,19 @@ For session file operation tools (`session_file_upload`, `session_file_download`
 
 ## Protocols
 
-Hosted agents support two invocation protocols declared at deployment time.
+Hosted agents support three protocols declared at deployment time. They are distinct contracts — pick per use case (an agent may declare more than one and serve them from the same container):
 
 | Protocol | Recommended Version | Route | Best For |
 |----------|-------------------|-------|----------|
 | `responses` | `1.0.0` | `.../agents/{agentName}/endpoint/protocols/openai/responses` | Conversational agents, OpenAI-compatible |
 | `invocations` | `1.0.0` | `.../agents/{agentName}/endpoint/protocols/invocations` | Custom payloads, protocol bridges, webhook callers |
+| `invocations_ws` | `1.0.0` | `wss://.../agents/endpoint/protocols/invocations_ws` | Duplex WebSocket — voice, WebRTC signaling, custom real-time streams. See the dedicated [invocations-ws skill](../invocations-ws/invocations-ws.md); `agent_invoke` does **not** speak WebSocket. |
 
 Key difference: `responses` takes a natural language `inputText` message with platform-managed history. `invocations` is **bytes in, bytes out** — the request body is forwarded as-is to the container and the raw response is returned. The developer defines the schema; the platform is pure pass-through. See [Invocations Protocol Guide](references/invocations-protocol.md) for I/O details, schema discovery, and examples.
 
 > ⚠️ **Critical for invocations:** `inputText` is forwarded as the raw HTTP request body. The agent developer defines what the container accepts. **Do not guess** — fetch the agent's OpenAPI spec or inspect its source code first.
 
-> 💡 **Tip:** The `agent_invoke` MCP tool supports both protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
+> 💡 **Tip:** The `agent_invoke` MCP tool supports both `responses` and `invocations` protocols. Set `protocol: 'invocations'` when targeting an invocations-protocol agent.
 
 ## Workflow
 
