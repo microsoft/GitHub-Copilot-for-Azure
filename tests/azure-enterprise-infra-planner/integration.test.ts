@@ -209,6 +209,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         // Verify plan file was created
         expect(testWorkspacePath).toBeDefined();
+
+        // Verify that no Bicep or Terraform was generated
+        const allFiles = listFilesRecursive(testWorkspacePath!);
+        const bicepFiles = allFiles.filter(f => f.endsWith(".bicep"));
+        const terraformFiles = allFiles.filter(f => f.endsWith(".tf") || f.endsWith(".tfvars"));
+        expect(bicepFiles).toEqual([]);
+        expect(terraformFiles).toEqual([]);
+
         const planPath = path.join(testWorkspacePath!, ".azure", "infrastructure-plan.json");
         expect(fs.existsSync(planPath)).toBe(true);
 
