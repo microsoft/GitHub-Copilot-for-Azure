@@ -346,9 +346,11 @@ stimuli:
         config:
           required:
             - azure-kubernetes
-      - type: output-contains
+      - type: tool-calls
         config:
-          substring: "azure-kubernetes-automatic-readiness"
+          required:
+            - name: "(?i)view"
+              command: "(?i)azure-kubernetes-automatic-readiness"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
