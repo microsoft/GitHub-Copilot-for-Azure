@@ -3,6 +3,7 @@
 #   "openai>=1.0",
 #   "azure-identity",
 #   "azure-ai-projects>=1.0.0b9",
+#   "pyyaml>=6.0",
 # ]
 # ///
 """
@@ -77,6 +78,34 @@ def convert_openai_tools_to_openapi(tools):
     }
 
 
+def _load_openapi_spec(path):
+    """Parse an OpenAPI 3.0 file (JSON or YAML) into a dict for the Foundry API."""
+    suffix = path.lower().rsplit(".", 1)[-1]
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    if suffix == "json":
+        return json.loads(text)
+    if suffix in ("yaml", "yml"):
+        try:
+            import yaml  # pyyaml — declared in PEP 723 deps
+        except ImportError:
+            print(f"❌ pyyaml required to parse {path}. pip install pyyaml")
+            sys.exit(1)
+        return yaml.safe_load(text)
+    # Unknown extension — try JSON first, then YAML, then fail clearly.
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    try:
+        import yaml
+        return yaml.safe_load(text)
+    except (ImportError, Exception):
+        pass
+    print(f"❌ Could not parse {path} as JSON or YAML. Save with .json, .yaml, or .yml extension.")
+    sys.exit(1)
+
+
 def submit_file_job(project_client, source_id, recipe, scenario, teacher, max_samples, name):
     """Submit a file-source datagen job. Returns job_id."""
     return project_client.fine_tuning.datagen.jobs.create(
@@ -119,13 +148,14 @@ def submit_traces_job(project_client, agent_name, agent_version, hours, scenario
 
 def poll_until_done(project_client, job_id, poll_seconds=10, timeout_seconds=7200):
     """Poll a datagen job until terminal. Returns the final job object."""
-    deadline = time.time() + timeout_seconds
+    start = time.time()
+    deadline = start + timeout_seconds
     last_status = None
     while time.time() < deadline:
         job = project_client.fine_tuning.datagen.jobs.retrieve(job_id)
         status = getattr(job, "status", "unknown")
         if status != last_status:
-            print(f"   t+{int(time.time() - (deadline - timeout_seconds))}s  status={status}")
+            print(f"   t+{int(time.time() - start)}s  status={status}")
             last_status = status
         if str(status).lower() in ("succeeded", "failed", "cancelled"):
             return job
@@ -233,8 +263,7 @@ def main():
             parser.error("--source-file is required for source=openapi")
         if not args.teacher:
             parser.error("--teacher is required for source=openapi")
-        with open(args.source_file, encoding="utf-8") as f:
-            openapi_doc = json.load(f) if args.source_file.endswith(".json") else f.read()
+        openapi_doc = _load_openapi_spec(args.source_file)
         print(f"📤 Submitting '{args.name}' (source=openapi, recipe=ToolUse, scenario={args.scenario})")
         job_id = submit_openapi_job(project_client, openapi_doc, args.scenario,
                                     args.teacher, args.max_samples, args.name)

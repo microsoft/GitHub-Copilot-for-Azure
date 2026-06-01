@@ -66,7 +66,11 @@ def chunk_text(text, chunk_size, overlap=2000):
 
 
 def submit_and_wait(project_client, openai_client, chunk_text_str, chunk_idx, args):
-    """Upload a chunk, submit datagen, poll, return list of dicts (rows)."""
+    """Upload a chunk, submit datagen, poll, return list of dicts (rows).
+
+    Cleans up the uploaded chunk file in a finally block — without it, each
+    chunked run permanently consumes a Foundry file-quota slot.
+    """
     chunk_path = Path(args.work_dir) / f"chunk_{chunk_idx:03d}.md"
     chunk_path.write_text(chunk_text_str, encoding="utf-8")
     print(f"[chunk {chunk_idx}] {len(chunk_text_str)} chars  uploading...")
@@ -75,47 +79,55 @@ def submit_and_wait(project_client, openai_client, chunk_text_str, chunk_idx, ar
         up = openai_client.files.create(file=f, purpose="fine-tune")
     print(f"[chunk {chunk_idx}] file_id={up.id}  submitting...")
 
-    job = project_client.fine_tuning.datagen.jobs.create(
-        source={"type": "file", "file_id": up.id},
-        recipe={"type": args.recipe},
-        scenario=args.scenario,
-        teacher_model=args.teacher,
-        max_samples=args.max_samples_per_chunk,
-        name=f"{args.name_prefix}-chunk{chunk_idx}",
-    )
-    print(f"[chunk {chunk_idx}] job_id={job.id}  polling...")
+    rows = []
+    try:
+        job = project_client.fine_tuning.datagen.jobs.create(
+            source={"type": "file", "file_id": up.id},
+            recipe={"type": args.recipe},
+            scenario=args.scenario,
+            teacher_model=args.teacher,
+            max_samples=args.max_samples_per_chunk,
+            name=f"{args.name_prefix}-chunk{chunk_idx}",
+        )
+        print(f"[chunk {chunk_idx}] job_id={job.id}  polling...")
 
-    deadline = time.time() + args.timeout_seconds
-    last_status = None
-    while time.time() < deadline:
-        j = project_client.fine_tuning.datagen.jobs.retrieve(job.id)
-        status = str(getattr(j, "status", "unknown")).lower()
-        if status != last_status:
-            print(f"[chunk {chunk_idx}] status={status}")
-            last_status = status
-        if status in ("succeeded", "failed", "cancelled"):
-            if status != "succeeded":
-                err = getattr(j, "error", None) or getattr(j, "last_error", None)
-                print(f"[chunk {chunk_idx}] ❌ {status}: {err}")
-                return []
-            result_file_id = getattr(j, "result_file_id", None) or getattr(j, "output_file_id", None)
-            if not result_file_id:
-                return []
-            content = openai_client.files.content(result_file_id).read()
-            if isinstance(content, bytes):
-                content = content.decode("utf-8")
-            rows = []
-            for line in content.splitlines():
-                if line.strip():
-                    try:
-                        rows.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        pass
-            print(f"[chunk {chunk_idx}] ✅ {len(rows)} rows")
-            return rows
-        time.sleep(args.poll_seconds)
-    print(f"[chunk {chunk_idx}] ⏰ timed out")
-    return []
+        start = time.time()
+        deadline = start + args.timeout_seconds
+        last_status = None
+        while time.time() < deadline:
+            j = project_client.fine_tuning.datagen.jobs.retrieve(job.id)
+            status = str(getattr(j, "status", "unknown")).lower()
+            if status != last_status:
+                print(f"[chunk {chunk_idx}] t+{int(time.time() - start)}s  status={status}")
+                last_status = status
+            if status in ("succeeded", "failed", "cancelled"):
+                if status != "succeeded":
+                    err = getattr(j, "error", None) or getattr(j, "last_error", None)
+                    print(f"[chunk {chunk_idx}] ❌ {status}: {err}")
+                    return rows
+                result_file_id = getattr(j, "result_file_id", None) or getattr(j, "output_file_id", None)
+                if not result_file_id:
+                    return rows
+                content = openai_client.files.content(result_file_id).read()
+                if isinstance(content, bytes):
+                    content = content.decode("utf-8")
+                for line in content.splitlines():
+                    if line.strip():
+                        try:
+                            rows.append(json.loads(line))
+                        except json.JSONDecodeError:
+                            pass
+                print(f"[chunk {chunk_idx}] ✅ {len(rows)} rows")
+                return rows
+            time.sleep(args.poll_seconds)
+        print(f"[chunk {chunk_idx}] ⏰ timed out")
+        return rows
+    finally:
+        try:
+            openai_client.files.delete(up.id)
+        except Exception as e:
+            print(f"[chunk {chunk_idx}] ⚠️ failed to delete uploaded chunk file {up.id}: {e}",
+                  file=sys.stderr)
 
 
 def dedup_by_first_user(rows):
@@ -153,6 +165,9 @@ def main():
     parser.add_argument("--poll-seconds", type=int, default=10)
     parser.add_argument("--timeout-seconds", type=int, default=7200)
     args = parser.parse_args()
+
+    if args.chunk_overlap >= args.chunk_size:
+        parser.error(f"--chunk-overlap ({args.chunk_overlap}) must be < --chunk-size ({args.chunk_size})")
 
     Path(args.work_dir).mkdir(parents=True, exist_ok=True)
 

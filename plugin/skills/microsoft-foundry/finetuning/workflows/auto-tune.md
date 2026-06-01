@@ -101,16 +101,16 @@ Record `baseline["metrics"]["task_quality.pass_rate"]` and mean score.
 
 ## Phase 5 — Candidates
 
-Default first iteration: **lr=1.0, epochs=2, default batch size, suffix=`{task}-iter1`.**
+Default first iteration: see the **starting values** in `references/hyperparameters.md` (typically `lr_multiplier=1.0, epochs=2`, default batch size). Suffix the FT model name like `{task}-iter1`.
 
-After ITERATE, generate a `candidate_plan.json` with 2–4 variations of the dimension flagged by `diagnose_iteration.py`. Examples by root cause:
+After ITERATE, generate a `candidate_plan.json` with 2–4 variations of the dimension flagged by `diagnose_iteration.py`. Examples by root cause (see `references/iteration-diagnosis.md` and `references/hyperparameters.md` for the full sweep ranges):
 
-| Root cause | Sweep |
-|------------|-------|
-| `wrong_hps` (overfit) | lr ∈ {0.5, 0.3}, epochs ∈ {1} |
-| `wrong_hps` (underfit) | lr ∈ {1.5, 2.0}, epochs ∈ {2, 3} |
-| `model_mismatch` | swap base ∈ {gpt-4.1-mini, gpt-4.1-nano, gpt-4.1} |
-| `data_quality` | re-generate with stricter filter; do NOT change HPs |
+| Root cause | Sweep dimension |
+|------------|-----------------|
+| `wrong_hps_overfit` | lower LR, fewer epochs |
+| `wrong_hps_underfit` | higher LR, more epochs |
+| `model_mismatch` | swap base model |
+| `data_quality` | re-generate or quality-filter, hold HPs constant |
 
 ## Phase 6 — Execute
 
@@ -124,36 +124,24 @@ python scripts/monitor_training.py --job-id {id}
 python scripts/deploy_model.py --model-id {ft_model} --name {task}-iter{i}-{j} --capacity 50
 ```
 
-Cancel any job that stays `running` > 30 min with no event updates (known silent-hang bug — see `references/platform-gotchas.md`).
+Cancel any job that stays `running` > 30 min with no event updates (silent-hang issue; see `references/platform-gotchas.md`).
 
 ## Phase 7 — Evaluate
 
-**Use the SAME `evaluate()` call from Phase 4** with `target` swapped to each FT deployment. Compare metrics. For tool-using SFT, add a structural tool-call grader:
+**Use the SAME `evaluate()` call from Phase 4** with `target` swapped to each FT deployment. Compare metrics. For tool-using SFT, **also** add the structural tool-call grader from `references/tool-call-evaluation.md` — the default LLM judge skips rows whose reference is a `tool_calls` array.
 
 ```python
-from azure.ai.evaluation import AzureOpenAIPythonGrader
+from azure.ai.evaluation import evaluate
+# Import or define tool_call_grader per references/tool-call-evaluation.md
 
-tool_call_grader = AzureOpenAIPythonGrader(
-    name="tool_call_match",
-    source="""
-def grade(item, sample):
-    import json
-    expected = item.get("tool_calls", [])
-    out = sample.get("tool_calls") or json.loads(sample.get("output_text", "[]") or "[]")
-    if not expected and not out:
-        return {"score": 1.0, "reason": "no tools expected or emitted"}
-    if not out:
-        return {"score": 0.1, "reason": "expected tool call, got text"}
-    exp_names = {c["function"]["name"] for c in expected}
-    out_names = {c["function"]["name"] for c in out}
-    overlap = exp_names & out_names
-    if not overlap:
-        return {"score": 0.1, "reason": f"tool name miss: {out_names} vs {exp_names}"}
-    exact = all(c.get("function", {}).get("arguments") == e.get("function", {}).get("arguments")
-                for c, e in zip(out, expected))
-    return {"score": 1.0 if exact else 0.8, "reason": "args match" if exact else "args differ"}
-""",
-    pass_threshold=0.7,
+ft_result = evaluate(
+    data="prepared/test.jsonl",
+    target=lambda row: call_model(ft_deployment, row),
+    evaluators={
+        "task_quality": grader,                # from Phase 4
+        "tool_call_match": tool_call_grader,   # only if rows have tool_calls
+    },
+    output_path=f"evals/iter{i}_{candidate}.json",
 )
 ```
 

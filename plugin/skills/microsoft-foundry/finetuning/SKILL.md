@@ -1,6 +1,6 @@
 ---
 name: finetuning
-description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, Foundry Data Generation API (file/openapi/traces), training job submission, deployment, evaluation, and an auto-tune autopilot loop with iteration diagnosis. USE FOR: fine-tune, SFT, DPO, RFT, training data, grader, distillation, fine-tuned model, training job, large file upload, calibrate grader, deploy fine-tuned model, evaluate fine-tuned model, auto-tune, autopilot, synthetic data generation, Foundry Data Generation API, traces to dataset, iteration diagnosis. DO NOT USE FOR: general model deployment without fine-tuning (use deploy-model), agent creation (use agents), prompt optimization without training (use prompt-optimizer)."
+description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, the Foundry Data Generation API (file/openapi/traces sources), training submission, deployment, evaluation via azure-ai-evaluation, and an auto-tune fine-tuning autopilot with iteration diagnosis. USE FOR: fine-tune, SFT, DPO, RFT, training data, grader, distillation, fine-tuned model, training job, large file upload, calibrate grader, deploy fine-tuned model, evaluate fine-tuned model, auto-tune fine-tuning, fine-tune autopilot, Foundry Data Generation, generate training data, traces to dataset, iteration diagnosis. DO NOT USE FOR: general model deployment without fine-tuning (use deploy-model), agent creation (use agents), prompt optimization without training (use prompt-optimizer)."
 license: MIT
 metadata:
   author: Microsoft
@@ -48,6 +48,7 @@ Use this sub-skill when the user asks about:
 | Data formats | [references/dataset-formats.md](references/dataset-formats.md) |
 | Foundry Data Generation API | [references/data-generation-api.md](references/data-generation-api.md) |
 | Iteration diagnosis (auto-tune) | [references/iteration-diagnosis.md](references/iteration-diagnosis.md) |
+| Tool-call evaluation | [references/tool-call-evaluation.md](references/tool-call-evaluation.md) |
 | Grader design (RFT) | [references/grader-design.md](references/grader-design.md) |
 | Reward hacking | [references/reward-hacking.md](references/reward-hacking.md) |
 | Agentic RFT (tools) | [references/agentic-rft.md](references/agentic-rft.md) |
@@ -99,7 +100,7 @@ Use this sub-skill when the user asks about:
 | Evaluate model | `python scripts/evaluate_model.py --deployment-name my-eval --test-file test.jsonl` |
 | Generate from doc | `python scripts/generate_dataset.py --source file --source-file doc.md --recipe SimpleQnA --scenario sft --teacher gpt-4.1 --max-samples 200 --name faq --output faq.jsonl` |
 | Tool-use from OpenAPI | `python scripts/generate_dataset.py --source openapi --source-file tools.openapi.json --recipe ToolUse --scenario sft --teacher gpt-4.1 --name tools --output tools.jsonl` |
-| Distill from traces | `python scripts/generate_dataset.py --source traces --agent-name X --agent-version N --hours 168 --scenario sft --name distil --output traces.jsonl` then `python scripts/transform_traces.py --input traces.jsonl --output ready.jsonl --system-prompt-file sys.md --tools-file tools.json` |
+| Distill from traces | See `workflows/traces-to-dataset.md` (export via `generate_dataset.py --source traces`, then `transform_traces.py`) |
 | Diagnose ITERATE | `python scripts/diagnose_iteration.py --task-spec spec.json --baseline baseline.json --candidates evals/ --train train.jsonl --test test.jsonl --output diag.json` |
 
 ## Error Handling

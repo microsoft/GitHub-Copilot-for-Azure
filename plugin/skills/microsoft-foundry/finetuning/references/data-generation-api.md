@@ -86,8 +86,8 @@ No "recipe" — the API extracts user/assistant/tool turns from App Insights `de
 
 | Resource | Default | How to bump |
 |----------|---------|-------------|
-| Concurrent datagen jobs / project | 5 | File quota request |
-| Teacher TPM (gpt-4.1) | 500 K | PATCH on deployment via REST or portal |
+| Concurrent datagen jobs / project | Check Azure portal → Quotas | File a quota request |
+| Teacher TPM (gpt-4.1) | 500 K | PATCH on the deployment via REST or portal |
 | Max source file size | 100 MB | See `references/large-file-uploads.md` |
 
 ## See Also

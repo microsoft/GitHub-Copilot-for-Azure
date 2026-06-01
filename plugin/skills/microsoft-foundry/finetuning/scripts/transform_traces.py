@@ -90,21 +90,28 @@ def step3_strip_null_strings(rows):
 
 
 def step4_merge_consecutive_asst(rows):
-    """Merge consecutive assistant messages (e.g., tool_calls then a final text)."""
+    """Merge consecutive assistant messages (e.g., tool_calls then a final text).
+
+    Uses positional iteration (not `msgs.index(...)`) so that two structurally
+    identical assistant messages aren't conflated into the same position.
+    """
     for row in rows:
         msgs = row.get("messages", [])
         merged = []
-        for m in msgs:
+        # Index of the original-list position of merged[-1], for the
+        # "is there a tool reply in between?" check.
+        last_orig_idx = -1
+        for orig_idx, m in enumerate(msgs):
             if (merged
                 and merged[-1].get("role") == "assistant"
                 and m.get("role") == "assistant"
-                and not _has_tool_reply_between(msgs, merged[-1], m)):
+                and not _has_tool_reply_in_range(msgs, last_orig_idx + 1, orig_idx)):
                 prev = merged[-1]
                 prev_tools = prev.get("tool_calls") or []
                 new_tools = m.get("tool_calls") or []
                 if prev_tools or new_tools:
                     prev["tool_calls"] = prev_tools + new_tools
-                # Combine content (last non-empty wins; concatenate otherwise)
+                # Combine content (last non-empty wins; concatenate when both present).
                 p_content = prev.get("content") or ""
                 n_content = m.get("content") or ""
                 if p_content and n_content:
@@ -114,21 +121,14 @@ def step4_merge_consecutive_asst(rows):
                 # leave as is otherwise
             else:
                 merged.append(m)
+            last_orig_idx = orig_idx
         row["messages"] = merged
     return rows
 
 
-def _has_tool_reply_between(msgs, prev, curr):
-    """True if a 'tool' role message appears between prev and curr."""
-    try:
-        pi = msgs.index(prev)
-        ci = msgs.index(curr)
-    except ValueError:
-        return False
-    for m in msgs[pi + 1:ci]:
-        if m.get("role") == "tool":
-            return True
-    return False
+def _has_tool_reply_in_range(msgs, start, end):
+    """True if any msgs[start:end] has role == 'tool'."""
+    return any(m.get("role") == "tool" for m in msgs[start:end])
 
 
 def step5_inject_system_and_tools(rows, system_prompt, tools):

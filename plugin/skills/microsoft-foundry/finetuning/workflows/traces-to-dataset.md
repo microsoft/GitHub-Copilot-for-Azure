@@ -67,28 +67,20 @@ python scripts/deploy_model.py --model-id <ft_id> --name retail-distil --capacit
 
 ## Step 4 — Evaluate the Student vs the Teacher Agent
 
-Run the same `azure-ai-evaluation` suite against both deployments. Use a structural tool-call grader so tool-using rows are scored (the default LLM-judge skips them):
+Run the same `azure-ai-evaluation` suite against both deployments. Use the **structural tool-call grader from `references/tool-call-evaluation.md`** so tool-using rows are scored — the default LLM-judge skips them.
 
 ```python
-from azure.ai.evaluation import evaluate, AzureOpenAIPythonGrader, AzureOpenAIScoreModelGrader
+from azure.ai.evaluation import evaluate
+# Import or define tool_call_grader per references/tool-call-evaluation.md
 
-tool_call_grader = AzureOpenAIPythonGrader(name="tool_call_match", source="""
-def grade(item, sample):
-    expected = item.get("tool_calls", [])
-    out = sample.get("tool_calls") or []
-    if not expected and not out: return {"score": 1.0, "reason": "ok"}
-    if not out: return {"score": 0.1, "reason": "missed tool call"}
-    exp = {c["function"]["name"] for c in expected}
-    got = {c["function"]["name"] for c in out}
-    return {"score": len(exp & got) / max(len(exp), 1), "reason": f"{got} vs {exp}"}
-""", pass_threshold=0.7)
-
-teacher = evaluate(data="prepared/test.jsonl", target=lambda r: call("my-retail-agent", r),
+teacher = evaluate(data="prepared/test.jsonl",
+                   target=lambda r: call("my-retail-agent", r),
                    evaluators={"tool_match": tool_call_grader})
-student = evaluate(data="prepared/test.jsonl", target=lambda r: call("retail-distil", r),
+student = evaluate(data="prepared/test.jsonl",
+                   target=lambda r: call("retail-distil", r),
                    evaluators={"tool_match": tool_call_grader})
 
-lift = (student["metrics"]["tool_match.score"] - teacher["metrics"]["tool_match.score"])
+lift = student["metrics"]["tool_match.score"] - teacher["metrics"]["tool_match.score"]
 print(f"Lift: {lift:+.1%}  (positive = student matches teacher better than baseline)")
 ```
 

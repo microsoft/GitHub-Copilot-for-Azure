@@ -19,3 +19,5 @@
 9. **FT deployments at capacity=1 are severely rate-limited (~1 RPM)** — evaluating 10 samples takes ~10 minutes. Use capacity ≥ 100 for eval workloads and exponential backoff.
 
 10. **Wrong resource endpoint is a silent killer** — jobs submitted to the wrong Foundry resource succeed via API but don't appear in the portal. Always verify the endpoint matches your Foundry project.
+
+11. **Training jobs can silently hang in `running` state** — occasionally a job stops emitting events partway through (e.g., after step 60-400) and never reaches a terminal status. The Foundry portal shows ongoing progress that never advances. Workaround: monitor wall-clock time between events; if > 30 min with no new event, cancel with `client.fine_tuning.jobs.cancel(job_id)` and resubmit.
