@@ -108,7 +108,7 @@ stimuli:
       - type: tool-calls
         config:
           required:
-            - name: "(?i)bash|powershell"
+            - name: "(?i)bash|powershell|pwsh"
               command: "(?i)check-quota\\.(ps1|sh)"
       - type: completed
       - type: output-not-matches
@@ -161,7 +161,7 @@ stimuli:
           required:
             # Copilot CLI uses "powershell" tool for executing scripts on Windows
             # Copilot CLI uses "bash" tool for executing scripts on other platforms
-            - name: "(?i)bash|powershell"
+            - name: "(?i)bash|powershell|pwsh"
               command: "(?i)check-quota\\.(sh|ps1)"
       - type: completed
       - type: output-not-matches
@@ -189,7 +189,7 @@ stimuli:
           required:
             # Copilot CLI uses "powershell" tool for executing scripts on Windows
             # Copilot CLI uses "bash" tool for executing scripts on other platforms
-            - name: "(?i)bash|powershell"
+            - name: "(?i)bash|powershell|pwsh"
               command: "(?i)check-quota\\.(sh|ps1)"
       - type: completed
       - type: output-not-matches
