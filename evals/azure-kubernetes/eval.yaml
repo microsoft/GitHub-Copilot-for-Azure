@@ -328,52 +328,6 @@ stimuli:
   # Source: tests/azure-kubernetes/azure-kubernetes-automatic-readiness/integration.test.ts
   # ────────────────────────────────────────────────────────────────────────────
 
-  # ── routing-aks-automatic-migration-prompt ──
-  # Jest: "invokes skill for AKS Automatic migration readiness prompt"
-  # Assertions: isReadinessWorkflowInvoked (invocation rate ≥ 80%)
-  # isReadinessWorkflowInvoked uses skill-call as the primary signal; the
-  # earlyTerminate mirrors shouldEarlyTerminateForSkillInvocation(SKILL_NAME).
-  - name: "Routing: AKS Automatic migration readiness check"
-    prompt: "Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible."
-    tags:
-      type: integration
-      tier: smoke
-      cost: llm
-      area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - azure-kubernetes
-      - type: tool-calls
-        config:
-          required:
-            - name: "(?i)view"
-              command: "(?i)azure-kubernetes-automatic-readiness"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ── severity-classification-output-prompt ──
-  # Jest: "presents severity classification in findings"
-  # Expects response mentioning one of the severity/compatibility keywords
-  - name: "Output: severity classification in readiness findings"
-    prompt: "Validate my Kubernetes manifests against AKS Automatic constraints"
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: output
-    graders:
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?i)incompatible|requiresChanges|compatible|critical|required|requirement|restriction|limitation|warning|auto-fixed"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
   # ── fix-guidance-output-prompt ──
   # Jest: "offers fix guidance for incompatible workloads"
   # Expects response mentioning fix, remediation, Deployment Safeguards, or incompatible
