@@ -146,7 +146,7 @@ stimuli:
   # Assertions: isSkillInvoked + (doesAssistantMessageIncludeKeyword("az quota")
   #             or doToolCallArgsIncludeKeyword("az quota"))
   # Migration note: combined assistant message and tool call arg checks into output-matches.
-  - name: "Region comparison mentions az quota commands"
+  - name: "Region comparison mentions check-quota script"
     prompt: "Compare Azure compute quota availability across East US, West US 2, and Central US"
     config:
       runs: 1
@@ -160,9 +160,13 @@ stimuli:
         config:
           required:
             - azure-quotas
-      - type: output-matches
+      - type: tool-calls
         config:
-          pattern: "(?i)az quota"
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # Copilot CLI uses "bash" tool for executing scripts on other platforms
+            - name: bash|powershell
+              command: "check-quota.sh|check-quota.ps1"
       - type: completed
       - type: output-not-matches
         config:
@@ -186,9 +190,13 @@ stimuli:
         config:
           required:
             - azure-quotas
-      - type: output-matches
+      - type: tool-calls
         config:
-          pattern: "(?i)az\\s+extension\\s+add"
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # Copilot CLI uses "bash" tool for executing scripts on other platforms
+            - name: bash|powershell
+              command: "check-quota.sh|check-quota.ps1"
       - type: completed
       - type: output-not-matches
         config:
