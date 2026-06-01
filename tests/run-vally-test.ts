@@ -7,8 +7,9 @@
 
 import * as path from "node:path";
 import * as fs from "fs/promises";
+import * as os from "os";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
+import { ChildProcess, spawn } from "node:child_process";
 import { normalizeTestName } from "./vally/utils";
 import { isSkillInvocationTest } from "./vally/tag-helpers";
 
@@ -228,16 +229,27 @@ function printUsage(): void {
 
 async function runVallyCommand(args: string[]): Promise<number> {
   return await new Promise<number>((resolve, reject) => {
-    const child = spawn("npx", ["@microsoft/vally-cli", "eval", ...args], {
-      stdio: ["inherit", "pipe", "pipe"],
-    });
+    let child: ChildProcess;
+    // On windows, directly spawning a child process with "npx" as the command results in ENOENT error for "npx". This behavior is different from other platforms such as macOS or Linux.
+    // Using the "cmd" command to invoke the npx command works around this problem.
+    // However, vally has a bug causing the executor to fail to remove the test workspace on Windows. Unfortunately, it also drops the trajectory for grading even if the trajectory may have been generated.
+    // Testing with vally on Windows is blocked until https://github.com/microsoft/vally/issues/440 is resolved.
+    if (os.platform() === "win32") {
+      child = spawn("cmd", ["/c", "npx", "-y", "@microsoft/vally-cli", "eval", ...args], {
+        stdio: ["inherit", "pipe", "pipe"],
+      });
+    } else {
+      child = spawn("npx", ["-y", "@microsoft/vally-cli", "eval", ...args], {
+        stdio: ["inherit", "pipe", "pipe"],
+      });
+    }
 
-    child.stdout.on("data", (chunk: Buffer) => {
+    child.stdout?.on("data", (chunk: Buffer) => {
       process.stdout.write(chunk);
     });
 
     // Forward child stderr to parent stdout as requested.
-    child.stderr.on("data", (chunk: Buffer) => {
+    child.stderr?.on("data", (chunk: Buffer) => {
       process.stdout.write(chunk);
     });
 
