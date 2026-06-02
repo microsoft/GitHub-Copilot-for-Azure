@@ -6,7 +6,7 @@
 2. **Primary**: Kubernetes checks with `kubectl`. **Fallback**: `az aks command invoke`. If both unavailable, mark `Not assessed`.
 3. Prefer read-only commands.
 4. Capture evidence: short outputs, key fields, timestamps (UTC and local).
-5. **Node image staleness**: `az aks nodepool list --query "[].{name:name,nodeImageVersion:nodeImageVersion}"`. Flag Critical if any pool image >90 days old. Cross-reference `nodeOsUpgradeChannel`.
+5. **Node image staleness**: `az aks nodepool list -g <resourceGroup> --cluster-name <clusterName> --query "[].{name:name,nodeImageVersion:nodeImageVersion}"`. Flag Critical if any pool image >90 days old. Cross-reference `nodeOsUpgradeChannel`.
 6. **Inline secrets** (`CTR-CFG-01`): Scan all container env vars for sensitive values. Report exact count — don't dismiss partial findings.
 7. Determine status per check: `Meets`, `Partially meets`, `Does not meet`, `Not applicable`, `Not assessed`.
 8. **Conservative rule**: Failed/timed-out/insufficient commands → `Not assessed`, never `Meets`.

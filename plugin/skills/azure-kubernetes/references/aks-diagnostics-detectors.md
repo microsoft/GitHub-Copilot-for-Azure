@@ -8,21 +8,29 @@ This reference documents the AKS built-in diagnostics detectors available throug
 
 Use the AKS MCP tools to extract diagnostics data programmatically:
 
-1. **List all available detectors**:
-   - Tool: `mcp_aks_mcp_list_detectors`
-   - Parameters: `cluster_resource_id` (full ARM resource ID of the managed cluster, e.g. `/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.ContainerService/managedClusters/<cluster>`)
-   - Returns: List of all detector names, descriptions, and categories.
+1. **Discover available AKS actions first**:
+  - Tool: `mcp_azure_mcp_aks`
+  - Pattern: call discovery on the AKS MCP entry point (for example, `discover`/`learn`) and read the returned action names and schemas.
+  - Rule: do not hardcode detector action names; use whatever the live MCP surface returns.
 
-2. **Run detectors by category**:
-   - Tool: `mcp_aks_mcp_run_detectors_by_category`
-   - Parameters: `cluster_resource_id`, `category`
-   - Run once per category listed below.
+2. **List all available detectors**:
+  - Tool: `mcp_azure_mcp_aks`
+  - Action: use the discovered list-detectors action from step 1.
+  - Parameters: use the discovered schema. This usually includes cluster targeting fields (for example, a full cluster ARM resource ID, or subscription/resource group/cluster name).
+  - Returns: List of detector names, descriptions, and categories.
 
-3. **Run a specific detector** (for deeper investigation):
-   - Tool: `mcp_aks_mcp_run_detector`
-   - Parameters: `cluster_resource_id`, `detector_name`
+3. **Run detectors by category**:
+  - Tool: `mcp_azure_mcp_aks`
+  - Action: use the discovered run-by-category action.
+  - Parameters: use the discovered schema for category execution and cluster targeting.
+  - Run once per category listed below.
 
-> 💡 **Tip:** A live `mcp_aks_mcp_list_detectors` call against a representative AKS cluster returned ~119 detectors across 14 categories (8 core + 6 supplemental). Treat the cluster's live inventory as authoritative; the tables below are reference baselines.
+4. **Run a specific detector** (for deeper investigation):
+  - Tool: `mcp_azure_mcp_aks`
+  - Action: use the discovered run-single-detector action.
+  - Parameters: use the discovered schema for detector name and cluster targeting.
+
+> 💡 **Tip:** A live detector-list call via `mcp_azure_mcp_aks` against a representative AKS cluster returned ~119 detectors across 14 categories (8 core + 6 supplemental). Treat the cluster's live inventory as authoritative; the tables below are reference baselines.
 
 ### 2. Azure REST API (Fallback)
 
@@ -68,7 +76,7 @@ The detector inventory has two layers of category handling:
 
 ### Supplemental Live Categories
 
-The live detector catalog can also return additional categories. These are not a replacement for the core eight. They should be enumerated from `mcp_aks_mcp_list_detectors` and incorporated into the report when present.
+The live detector catalog can also return additional categories. These are not a replacement for the core eight. They should be enumerated using the discovered detector-list action via `mcp_azure_mcp_aks` and incorporated into the report when present.
 
 | Category | Typical Content | Handling Guidance |
 | --- | --- | --- |

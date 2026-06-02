@@ -6,12 +6,12 @@ See [AKS Diagnostics Detectors Reference](./aks-diagnostics-detectors.md) for ex
 
 ### Primary Method: AKS MCP Server
 
-1. Call `mcp_aks_mcp_list_detectors` to enumerate available detectors.
+1. Call `mcp_azure_mcp_aks` first to discover available AKS actions and parameter schemas (do not hardcode action names).
 2. **Core audit categories** (always query all 8): `Best Practices`, `Cluster and Control Plane Availability and Performance`, `Connectivity Issues`, `Create, Upgrade, Delete and Scale`, `Deprecations`, `Identity and Security`, `Node Health`, `Storage`.
-3. Call `mcp_aks_mcp_run_detectors_by_category` for each core category.
+3. Use `mcp_azure_mcp_aks` with the discovered run-by-category action for each core category.
 4. Enumerate **supplemental categories** from live catalog (e.g., `Risk Alerts`, `Control Plane`, `Keystone`, `Workflow Nodes`).
-5. For supplemental categories: prefer category-level execution; if unsupported, run individual detectors via `mcp_aks_mcp_run_detector` and record why.
-6. For Critical/Warning findings needing deeper investigation, call `mcp_aks_mcp_run_detector` with specific detector name.
+5. For supplemental categories: prefer category-level execution using the discovered action; if unsupported, run individual detectors using the discovered run-single-detector action and record why.
+6. For Critical/Warning findings needing deeper investigation, call `mcp_azure_mcp_aks` with the discovered single-detector action and the target detector name.
 
 ### Fallback Method
 

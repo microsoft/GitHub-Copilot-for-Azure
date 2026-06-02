@@ -242,7 +242,7 @@ _Include this sub-section when any workload has recurring `Unhealthy` events (â‰
 |---|---|
 | Cluster config | `az aks show -g <resourceGroup> -n <clusterName> -o json` |
 | Node pools | `az aks nodepool list -g <resourceGroup> --cluster-name <clusterName> -o table` |
-| Node image versions | `az aks nodepool list --query "[].{name:name,nodeImageVersion:nodeImageVersion}" -o table` |
+| Node image versions | `az aks nodepool list -g <resourceGroup> --cluster-name <clusterName> --query "[].{name:name,nodeImageVersion:nodeImageVersion}" -o table` |
 | Namespaces | `kubectl get namespaces --context <kubeContext>` |
 | Network policies | `kubectl get networkpolicy -A --context <kubeContext>` |
 | PSS labels | `kubectl get ns -L pod-security.kubernetes.io/enforce --context <kubeContext>` |
