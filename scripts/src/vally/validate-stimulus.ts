@@ -19,6 +19,7 @@ type Stimuli = {
   name?: string;
   graders?: Array<{
     type?: string;
+    config?: unknown;
   }>;
   tags?: {
     type?: string;
@@ -87,6 +88,103 @@ function validateJsonObjectTag(
     `tags.${tagName} must be parsable JSON`,
   );
   return false;
+}
+
+function validateJsonObjectRulesGrader(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  grader: { type?: string; config?: unknown },
+): boolean {
+  if (grader.type !== "json-object-rules") {
+    return true;
+  }
+
+  if (!isPlainObject(grader.config)) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules must define a config object with path and rules",
+    );
+    return false;
+  }
+
+  const { path, rules } = grader.config;
+  if (typeof path !== "string" || path.trim().length === 0) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.path must be a non-empty string",
+    );
+    return false;
+  }
+
+  if (typeof rules !== "string") {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.rules must be a JSON string",
+    );
+    return false;
+  }
+
+  let parsedRules: unknown;
+  try {
+    parsedRules = JSON.parse(rules);
+  } catch {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.rules must be valid JSON",
+    );
+    return false;
+  }
+
+  if (!isPlainObject(parsedRules)) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.rules must parse to an object",
+    );
+    return false;
+  }
+
+  if (parsedRules.type !== "has-property") {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.rules.type must be 'has-property'",
+    );
+    return false;
+  }
+
+  if (typeof parsedRules.key !== "string" || parsedRules.key.trim().length === 0) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.rules.key must be a non-empty string",
+    );
+    return false;
+  }
+
+  if (parsedRules.value !== undefined && typeof parsedRules.value !== "string") {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.rules.value must be undefined or a string",
+    );
+    return false;
+  }
+
+  return true;
 }
 
 function validateFollowUpTag(
@@ -236,6 +334,19 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         typedStimulus.tags?.takeScreenshot,
       )) {
         fileHasErrors = true;
+      }
+
+      if (Array.isArray(typedStimulus.graders)) {
+        for (const grader of typedStimulus.graders) {
+          if (!validateJsonObjectRulesGrader(
+            displayPath,
+            stimulusIndex,
+            typedStimulus.name,
+            grader,
+          )) {
+            fileHasErrors = true;
+          }
+        }
       }
 
       if (typedStimulus.tags?.earlyTerminate && hasCompletedGrader(typedStimulus)) {

@@ -865,6 +865,10 @@ stimuli:
           required: ["azure-enterprise-infra-planner"]
       # File paths use `**/...` globs because the agent non-deterministically
       # writes plan files either at workspace root or in a skill-named subdir.
+      - type: json-object-rules
+        config:
+          path: "\\.azure/infrastructure-plan.json"
+          rules: '{"type":"has-property","key":"plan.resources"}'
       - type: file-exists
         config:
           path: "**/.azure/insights.json"
@@ -875,52 +879,52 @@ stimuli:
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"meta\".*\"planId\""
+          pattern: '(?s)"meta".*"planId"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"meta\".*\"status\""
+          pattern: '(?s)"meta".*"status"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"meta\".*\"version\""
+          pattern: '(?s)"meta".*"version"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"inputs\".*\"userGoal\""
+          pattern: '(?s)"inputs".*"userGoal"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"inputs\".*\"insightsApplied\""
+          pattern: '(?s)"inputs".*"insightsApplied"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"plan\".*\"resources\""
+          pattern: '(?s)"plan".*"resources"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"plan\".*\"overallReasoning\""
+          pattern: '(?s)"plan".*"overallReasoning"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"plan\".*\"validation\""
+          pattern: '(?s)"plan".*"validation"'
       # Per-resource required fields (Jest: for (const resource of plan.plan.resources) ...)
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"resources\".*\"name\""
+          pattern: '(?s)"resources".*"name"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"resources\".*\"type\""
+          pattern: '(?s)"resources".*"type"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"resources\".*\"location\""
+          pattern: '(?s)"resources".*"location"'
       - type: file-matches
         config:
           path: "**/.azure/infrastructure-plan.json"
-          pattern: "(?s)\"resources\".*\"reasoning\""
+          pattern: '(?s)"resources".*"reasoning"'
       # hasNetworking + hasCompute (Jest: resourceTypes.some(...))
       - type: file-matches
         config:
