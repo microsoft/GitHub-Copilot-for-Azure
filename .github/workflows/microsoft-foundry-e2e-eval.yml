@@ -11,10 +11,6 @@ jobs:
   eval:
     name: Run Microsoft Foundry E2E evals
     runs-on: ubuntu-latest
-    env:
-      AZURE_CLIENT_ID: ${{ vars.FOUNDRY_E2E_EVAL_AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ vars.FOUNDRY_E2E_EVAL_AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ vars.FOUNDRY_E2E_EVAL_AZURE_SUBSCRIPTION_ID }}
 
     steps:
       - name: Checkout repository
@@ -54,7 +50,7 @@ jobs:
         run: |
           set -euo pipefail
           current_subscription="$(az account show --query id -o tsv)"
-          test "$current_subscription" = "${AZURE_SUBSCRIPTION_ID}"
+          test "$current_subscription" = "${{ vars.FOUNDRY_E2E_EVAL_AZURE_SUBSCRIPTION_ID }}"
           az account show --output table
 
       - name: Configure azd authentication
@@ -62,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           azd config set auth.useAzCliAuth "true"
-          azd config set defaults.subscription "${AZURE_SUBSCRIPTION_ID}"
+          azd config set defaults.subscription "${{ vars.FOUNDRY_E2E_EVAL_AZURE_SUBSCRIPTION_ID }}"
 
       - name: Install repository dependencies
         run: npm ci
