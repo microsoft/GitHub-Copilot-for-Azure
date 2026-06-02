@@ -30,6 +30,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: |
             package-lock.json
+            scripts/package-lock.json
             tests/package-lock.json
 
       - name: Set up Python
@@ -90,8 +91,8 @@ jobs:
             tag_args+=(--tag "id=${STIMULUS_ID}")
           fi
 
-          npx --yes @microsoft/vally-cli@^0.4.0 eval \
-            --suite microsoft-foundry-e2e \
+          npx --yes @microsoft/vally-cli@^0.5.0 eval \
+            --eval-spec evals/microsoft-foundry/e2e-eval.yaml \
             "${tag_args[@]}" \
             --executor-plugin "${{ github.workspace }}/tests/vally/vally-executor.ts" \
             --output-dir ./results \
