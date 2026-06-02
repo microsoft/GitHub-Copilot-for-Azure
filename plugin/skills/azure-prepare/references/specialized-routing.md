@@ -4,14 +4,15 @@
 
 ## Prompt-Based Routing Table
 
-> **⚠️ PRIORITY RULE**: Check rows **top to bottom**. The first match wins. If the prompt mentions **AWS Lambda migration or AWS Lambda**, invoke **azure-cloud-migrate** even if Azure Functions are also mentioned.
+> **⚠️ PRIORITY RULE**: Check rows **top to bottom**. The first match wins. **Python + App Service is the highest priority** — when both keywords appear, route to `python-appservice-deploy` immediately, before any other check. If the prompt mentions **AWS Lambda migration or AWS Lambda**, invoke **azure-cloud-migrate** even if Azure Functions are also mentioned.
 
 | Priority | User prompt mentions | Invoke skill FIRST | Then resume azure-prepare at |
 |----------|---------------------|--------------------|-----------------------------|
-| **1 (highest)** | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** | Phase 1 Step 4 (Select Recipe) — azure-cloud-migrate does assessment + code conversion, then azure-prepare takes over for infrastructure, local testing, or deployment |
-| 2 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
-| 3 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
-| 4 (lowest) | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** | Phase 1 Step 4 — select **durable** recipe. **MUST** load [durable.md](services/functions/durable.md), [DTS reference](services/durable-task-scheduler/README.md), and [DTS Bicep patterns](services/durable-task-scheduler/bicep.md). |
+| **1 (highest)** | Python + Azure App Service (e.g., "deploy Python to App Service", "Flask on App Service", "Python web app on App Service") | **python-appservice-deploy** | This is a code-deploy skill. If the user truly needs full infrastructure (VNet, Key Vault, DB), python-appservice-deploy will hand off back to azure-prepare. Otherwise, do not resume. |
+| 2 | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** | Phase 1 Step 4 (Select Recipe) — azure-cloud-migrate does assessment + code conversion, then azure-prepare takes over for infrastructure, local testing, or deployment |
+| 3 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
+| 4 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
+| 5 (lowest) | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** | Phase 1 Step 4 — select **durable** recipe. **MUST** load [durable.md](services/functions/durable.md), [DTS reference](services/durable-task-scheduler/README.md), and [DTS Bicep patterns](services/durable-task-scheduler/bicep.md). |
 
 > ⚠️ This checks the user's **prompt text**, not just existing code. Essential for greenfield projects where there is no codebase to scan.
 

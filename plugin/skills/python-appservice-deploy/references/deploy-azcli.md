@@ -1,0 +1,90 @@
+# Deploy via `az` CLI
+
+Use this path when there is **no** `azure.yaml` or it doesn't target `appservice`.
+
+> ⛔ **NEVER USE `az webapp up`** — this command is deprecated. Use the explicit create + deploy commands below.
+
+## Prerequisites
+
+- `az login` complete
+- Subscription, resource group, region, and app name decided (see [create-app.md](create-app.md))
+- App Service Plan (Linux, P0V3) and Web App (Python runtime) exist (see [create-app.md](create-app.md))
+
+## 1. Enable server-side build
+
+```bash
+az webapp config appsettings set \
+  -n <app> -g <rg> \
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+```
+
+This tells Oryx to run `pip install -r requirements.txt` during deploy.
+
+## 2. Startup command — Flask, Django, FastAPI (3.14), or set it for FastAPI on <3.14
+
+Azure App Service (Oryx) auto-detects **Flask**, **Django**, and **FastAPI on Python 3.14** — **do not set a startup command** for any of these. Skip this step entirely.
+
+For **FastAPI on Python <3.14**, set the uvicorn startup command:
+
+```bash
+az webapp config set -n <app> -g <rg> \
+  --startup-file "python -m uvicorn main:app --host 0.0.0.0"
+```
+
+(Replace `main:app` if the FastAPI entry point differs — e.g., `app.main:app`.)
+
+For other frameworks (generic WSGI / ASGI / unknown), **skip this step** and emit the manual-startup warning. See [startup-commands.md](startup-commands.md).
+
+## 3. Package the code
+
+Zip the project (excluding venv, caches, git, node_modules):
+
+```bash
+# bash
+zip -r app.zip . \
+  -x ".git/*" -x ".venv/*" -x "venv/*" -x "__pycache__/*" \
+  -x "*.pyc" -x ".env" -x "node_modules/*"
+```
+
+```powershell
+# PowerShell
+$exclude = @('.git','.venv','venv','__pycache__','node_modules')
+$items = Get-ChildItem -Force | Where-Object { $exclude -notcontains $_.Name }
+Compress-Archive -Path $items -DestinationPath app.zip -Force
+```
+
+## 4. Deploy the zip
+
+```bash
+az webapp deploy \
+  -n <app> -g <rg> \
+  --src-path app.zip \
+  --type zip \
+  --track-status false
+```
+
+> 💡 `--track-status false` fires the deploy and returns immediately without waiting for the container to report ready. This avoids false timeouts that can occur when the platform doesn't send a timely completion signal. When the command returns without an error, the deploy succeeded — proceed to the next step.
+
+## 5. Stop. Report the endpoint to the user.
+
+After `az webapp deploy` returns, the skill is done.
+
+> ⛔ **Do NOT run** `az webapp log tail`, `curl`, `Invoke-WebRequest`, `wget`, or any other "verify startup" command. App Service routinely needs **2–3 minutes** to warm the container; a quiet log stream or a 5xx in the first couple of minutes is **not** a failure signal, and running these probes here will mislead the user.
+
+Resolve the host name without hitting the site:
+
+```bash
+HOST=$(az webapp show -n <app> -g <rg> --query defaultHostName -o tsv)
+echo "https://$HOST"
+```
+
+Then print the post-deploy message from [post-deploy-message.md](post-deploy-message.md) and end the turn. The user will run `az webapp log tail -n <app> -g <rg>` themselves if they want to watch logs.
+
+## Common pitfalls
+
+| Pitfall | Fix |
+|---------|-----|
+| Deployed code missing dependencies | `SCM_DO_BUILD_DURING_DEPLOYMENT=true` not set — re-run step 1 then redeploy |
+| Container ping timeout on port 8000 | Wrong startup command — see [startup-commands.md](startup-commands.md) |
+| Zip too large (>500 MB) | Exclude `.venv`, caches; consider `.deployment` `.gitignore`-style file |
+| `webapp up` examples in older docs | Replace with `az webapp create` + `az webapp deploy` (this file) |

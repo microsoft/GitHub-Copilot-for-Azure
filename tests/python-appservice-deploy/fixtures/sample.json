@@ -1,0 +1,13 @@
+{
+  "samplePrompts": {
+    "shouldTrigger": [
+      "Deploy my Flask app to App Service",
+      "Deploy Django to Azure App Service",
+      "Deploy FastAPI to Azure App Service"
+    ],
+    "shouldNotTrigger": [
+      "Deploy my Java Spring Boot app to App Service",
+      "Deploy my Python app to Container Apps"
+    ]
+  }
+}

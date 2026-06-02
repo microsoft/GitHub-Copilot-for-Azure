@@ -1,0 +1,144 @@
+# Vally eval config for python-appservice-deploy
+# Migration: Jest → Vally (new skill, authored directly as Vally per tests/README.md)
+# Source: tests/python-appservice-deploy/{triggers,integration}.test.ts (now removed)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: python-appservice-deploy-eval
+description: |
+  Evaluation suite for the python-appservice-deploy skill.
+  Validates routing and post-deploy behavior for deploying Python web apps
+  (Flask, Django, FastAPI, generic) to Azure App Service. Key invariants:
+  - Skill is invoked for Python + App Service deployment prompts.
+  - Post-deploy guidance does NOT probe the endpoint (no curl, no
+    Invoke-WebRequest, no `az webapp log tail` as verification).
+  - The app URL and the `az webapp log tail` command are surfaced to the
+    user (with a "2-3 minutes" startup note), then the skill stops.
+
+tags:
+  type: integration
+  skill: python-appservice-deploy
+
+environment:
+  skills:
+    - ../../plugin/skills/python-appservice-deploy
+
+config:
+  runs: 3
+  timeout: "10m"
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── flask-routing ──
+  # Jest source: integration.test.ts "invokes skill for Python + App Service prompt"
+  # Validates skill invocation for the canonical Flask deployment prompt.
+  - name: "Flask app deployment routing"
+    prompt: "Deploy my Python Flask app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: flask
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+      # Skill rule: do NOT probe the deployed endpoint
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+
+  # ── django-routing ──
+  # Triggers source: triggers.test.ts shouldTriggerPrompts (Django entries)
+  # Validates Django prompts route to the same skill (Oryx auto-detects Django).
+  - name: "Django app deployment routing"
+    prompt: "Deploy this Django app to Azure App Service"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      framework: django
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+      # Skill rule: do NOT probe the deployed endpoint
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+
+  # ── fastapi-routing ──
+  # Triggers source: triggers.test.ts shouldTriggerPrompts (FastAPI entries)
+  # Validates FastAPI prompts route to the skill (skill handles 3.14 and <3.14).
+  - name: "FastAPI app deployment routing"
+    prompt: "Deploy this FastAPI app to Azure App Service"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      framework: fastapi
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+      # Skill rule: do NOT probe the deployed endpoint
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+
+  # ── generic-python-routing ──
+  # Triggers source: triggers.test.ts shouldTriggerPrompts (generic Python entries)
+  # Validates generic Python (non-Flask/Django/FastAPI) prompts route to the
+  # skill, which should warn the user to set a startup command after deploy.
+  - name: "Generic Python app deployment routing"
+    prompt: "Deploy my Python app to Azure App Service"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      framework: generic
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+      # Skill rule: do NOT probe the deployed endpoint
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
