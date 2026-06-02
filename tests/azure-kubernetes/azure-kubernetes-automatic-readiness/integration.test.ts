@@ -9,10 +9,6 @@
  * 2. Run `copilot` and authenticate
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { fileURLToPath } from "url";
-
 import {
   useAgentRunner,
   doesAssistantMessageIncludeKeyword,
@@ -26,10 +22,6 @@ import {
   shouldEarlyTerminateForSkillInvocation,
   withTestResult
 } from "../../utils/evaluate";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const FIXTURES_DIR = path.join(__dirname, "fixtures");
 
 const SKILL_NAME = "azure-kubernetes-automatic-readiness";
 const RUNS_PER_PROMPT = 5;
@@ -57,45 +49,6 @@ function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvo
     return true;
   }
 
-  // Parent skill invoked + response covers readiness domain content.
-  // The sub-skill is nested under azure-kubernetes, so the parent is often
-  // invoked first and then routes internally to readiness assessment logic.
-  if (isSkillInvoked(agentMetadata, "azure-kubernetes")) {
-    if (doesAssistantMessageIncludeKeyword(agentMetadata, "AKS Automatic") ||
-        doesAssistantMessageIncludeKeyword(agentMetadata, "Automatic")) {
-      const domainHits = [
-        doesAssistantMessageIncludeKeyword(agentMetadata, "migrat"),
-        doesAssistantMessageIncludeKeyword(agentMetadata, "compatib"),
-        doesAssistantMessageIncludeKeyword(agentMetadata, "readiness"),
-        doesAssistantMessageIncludeKeyword(agentMetadata, "Deployment Safeguards"),
-        doesAssistantMessageIncludeKeyword(agentMetadata, "workload"),
-        doesAssistantMessageIncludeKeyword(agentMetadata, "constraint"),
-        doesAssistantMessageIncludeKeyword(agentMetadata, "assessment"),
-      ].filter(Boolean).length;
-      if (domainHits >= 1) {
-        return true;
-      }
-    }
-  }
-
-  // Fallback for environments without skill routing: require "AKS Automatic"
-  // plus at least two domain-specific terms to avoid false positives from
-  // the agent merely restating the user prompt.
-  if (doesAssistantMessageIncludeKeyword(agentMetadata, "AKS Automatic")) {
-    const domainHits = [
-      doesAssistantMessageIncludeKeyword(agentMetadata, "migrat"),
-      doesAssistantMessageIncludeKeyword(agentMetadata, "compatib"),
-      doesAssistantMessageIncludeKeyword(agentMetadata, "readiness"),
-      doesAssistantMessageIncludeKeyword(agentMetadata, "Deployment Safeguards"),
-      doesAssistantMessageIncludeKeyword(agentMetadata, "workload"),
-      doesAssistantMessageIncludeKeyword(agentMetadata, "constraint"),
-      doesAssistantMessageIncludeKeyword(agentMetadata, "assessment"),
-    ].filter(Boolean).length;
-    if (domainHits >= 2) {
-      return true;
-    }
-  }
-
   // Router-only invocation does NOT count — it doesn't prove readiness workflow ran.
   return false;
 }
@@ -110,10 +63,7 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner({
-    isTest: true,
-    useJest: true
-  });
+  const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
     test("invokes skill for AKS Automatic migration readiness prompt", async () => {
@@ -121,12 +71,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         let invocationCount = 0;
         for (let i = 0; i < RUNS_PER_PROMPT; i++) {
           const agentMetadata = await agent.run({
-            setup: async (workspace: string) => {
-              fs.copyFileSync(
-                path.join(FIXTURES_DIR, "workloads.yaml"),
-                path.join(workspace, "workloads.yaml")
-              );
-            },
             prompt: "Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible.",
             shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
           });
@@ -147,12 +91,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("presents severity classification in findings", async () => {
       await withTestResult(async () => {
         const agentMetadata = await agent.run({
-          setup: async (workspace: string) => {
-            fs.copyFileSync(
-              path.join(FIXTURES_DIR, "deployment.yaml"),
-              path.join(workspace, "deployment.yaml")
-            );
-          },
           prompt: "Validate my Kubernetes manifests against AKS Automatic constraints"
         });
 
@@ -163,9 +101,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           doesAssistantMessageIncludeKeyword(agentMetadata, "Compatible") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "critical") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "required") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "requirement") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "restriction") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "limitation") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "warning") ||
           doesAssistantMessageIncludeKeyword(agentMetadata, "auto-fixed");
         expect(hasSeverityContent).toBe(true);

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Vally eval config — migrated from Jest integration tests
 # Source: tests/azure-kubernetes/integration.test.ts
 # Migration: Jest → Vally
@@ -8,6 +9,20 @@
 name: azure-kubernetes-integration-eval
 description: |
   Integration evaluation for azure-kubernetes skill
+=======
+# Vally eval config — fixture-based tests for azure-kubernetes-automatic-readiness
+# These stimuli were removed from PR #2472 because they lacked proper fixture files.
+# Re-added per review comment: https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2472#issuecomment-4596446181
+#
+# Tests:
+# 1. Manifest validation against AKS Automatic constraints (deployment.yaml fixture)
+# 2. AKS Automatic migration compatibility check (workloads.yaml fixture)
+
+name: azure-kubernetes-integration-eval
+description: |
+  Integration evaluation for azure-kubernetes skill — fixture-based tests for
+  AKS Automatic readiness assessment requiring workspace manifests.
+>>>>>>> 62ab087 (fix: replace Jest fixtures with Vally eval for automatic-readiness tests)
 tags:
   type: integration
   skill: azure-kubernetes
@@ -26,6 +41,7 @@ scoring:
   threshold: 0.8
 
 stimuli:
+<<<<<<< HEAD
   # ── routing-aks-creation-prompt ──
   # Jest: "invokes azure-kubernetes skill for AKS cluster creation prompt"
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
@@ -37,30 +53,79 @@ stimuli:
       cost: llm
       area: routing
       earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
+=======
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Fixture-based: manifest validation against AKS Automatic constraints
+  # Original Jest: "Validate my Kubernetes manifests against AKS Automatic constraints"
+  # Requires: deployment.yaml with intentional violations (hostNetwork, NET_ADMIN,
+  #   missing resource requests, missing probes)
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: "Fixture: validate manifests against AKS Automatic constraints"
+    prompt: "Validate my Kubernetes manifests against AKS Automatic constraints"
+    environment:
+      files:
+        - src: fixture/deployment.yaml
+          dest: deployment.yaml
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: workspace-fixture
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes-automatic-readiness"},{"type":"tool-call-count","count":3}]'
+>>>>>>> 62ab087 (fix: replace Jest fixtures with Vally eval for automatic-readiness tests)
     graders:
       - type: skill-invocation
         config:
           required:
+<<<<<<< HEAD
             - azure-kubernetes
+=======
+            - azure-kubernetes-automatic-readiness
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)hostNetwork|NET_ADMIN|resource requests|resource limits|probes|Deployment Safeguards|incompatible|violation"
+>>>>>>> 62ab087 (fix: replace Jest fixtures with Vally eval for automatic-readiness tests)
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+<<<<<<< HEAD
   # ── routing-pod-rightsizing-prompt ──
   # Jest: "invokes azure-kubernetes skill for pod rightsizing prompt"
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: pod rightsizing"
     prompt: "My AKS pods are over-provisioned, how do I rightsize them?"
+=======
+  # ──────────────────────────────────────────────────────────────────────────────
+  # Fixture-based: AKS Automatic migration compatibility assessment
+  # Original Jest: "Can I migrate my AKS cluster to AKS Automatic? Check if my
+  #   workloads are compatible."
+  # Requires: workloads.yaml with production-like manifests to evaluate
+  # ──────────────────────────────────────────────────────────────────────────────
+  - name: "Fixture: AKS Automatic migration compatibility check"
+    prompt: "Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible."
+    environment:
+      files:
+        - src: fixture/workloads.yaml
+          dest: workloads.yaml
+>>>>>>> 62ab087 (fix: replace Jest fixtures with Vally eval for automatic-readiness tests)
     tags:
       type: integration
       tier: full
       cost: llm
+<<<<<<< HEAD
       area: routing
       earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
+=======
+      area: workspace-fixture
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes-automatic-readiness"},{"type":"tool-call-count","count":3}]'
+>>>>>>> 62ab087 (fix: replace Jest fixtures with Vally eval for automatic-readiness tests)
     graders:
       - type: skill-invocation
         config:
           required:
+<<<<<<< HEAD
             - azure-kubernetes
       - type: output-not-matches
         config:
@@ -357,6 +422,13 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)Safeguards|policy|resource requests|probes"
+=======
+            - azure-kubernetes-automatic-readiness
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)compatible|migration|readiness|AKS Automatic|toleration|workload"
+>>>>>>> 62ab087 (fix: replace Jest fixtures with Vally eval for automatic-readiness tests)
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"

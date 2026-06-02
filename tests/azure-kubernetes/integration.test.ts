@@ -31,10 +31,7 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner({
-    isTest: true,
-    useJest: true
-  });
+  const agent = useAgentRunner();
 
   describe("skill-invocation", () => {
     test("invokes azure-kubernetes skill for AKS cluster creation prompt", async () => {
@@ -166,8 +163,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasDay0Content = doesAssistantMessageIncludeKeyword(agentMetadata, "tier") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "networking") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "API server");
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "networking") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "API server");
         expect(hasDay0Content).toBe(true);
       });
     });
@@ -179,7 +176,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasSkuGuidance = doesAssistantMessageIncludeKeyword(agentMetadata, "Automatic") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "Standard");
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "Standard");
         expect(hasSkuGuidance).toBe(true);
       });
     });
@@ -191,8 +188,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasNetworkingContent = doesAssistantMessageIncludeKeyword(agentMetadata, "CNI") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "overlay") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "VNet");
+                                     doesAssistantMessageIncludeKeyword(agentMetadata, "overlay") ||
+                                     doesAssistantMessageIncludeKeyword(agentMetadata, "VNet");
         expect(hasNetworkingContent).toBe(true);
       });
     });
@@ -204,9 +201,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         });
 
         const hasSecurityContent = doesAssistantMessageIncludeKeyword(agentMetadata, "identity") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "Entra") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "workload") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "Key Vault");
+                                   doesAssistantMessageIncludeKeyword(agentMetadata, "Entra") ||
+                                   doesAssistantMessageIncludeKeyword(agentMetadata, "workload") ||
+                                   doesAssistantMessageIncludeKeyword(agentMetadata, "Key Vault");
         expect(hasSecurityContent).toBe(true);
       });
     });
@@ -219,8 +216,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         const hasRightsizingContent = doesAssistantMessageIncludeKeyword(agentMetadata, "kubectl top") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "VPA") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "resource requests");
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "VPA") ||
+                                      doesAssistantMessageIncludeKeyword(agentMetadata, "resource requests");
         expect(hasRightsizingContent).toBe(true);
       });
     });
@@ -233,8 +230,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         const hasCASContent = doesAssistantMessageIncludeKeyword(agentMetadata, "enable-cluster-autoscaler") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "min-count") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down");
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "min-count") ||
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down");
         expect(hasCASContent).toBe(true);
       });
     });
@@ -247,14 +244,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         const hasTuneContent = doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-unneeded-time") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "utilization-threshold") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "cluster-autoscaler-profile") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-delay") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "scaleDown") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "autoscaler profile") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "scan-interval") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "unneeded");
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "utilization-threshold") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "cluster-autoscaler-profile") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "scale-down-delay");
         expect(hasTuneContent).toBe(true);
       });
     });
@@ -267,8 +259,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         const hasSpotContent = doesAssistantMessageIncludeKeyword(agentMetadata, "Spot") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "eviction-policy") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "scalesetpriority");
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "eviction-policy") ||
+                               doesAssistantMessageIncludeKeyword(agentMetadata, "scalesetpriority");
         expect(hasSpotContent).toBe(true);
       });
     });
@@ -281,8 +273,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         const hasVPAContent = doesAssistantMessageIncludeKeyword(agentMetadata, "VerticalPodAutoscaler") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "updateMode") ||
-          doesAssistantMessageIncludeKeyword(agentMetadata, "VPA");
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "updateMode") ||
+                              doesAssistantMessageIncludeKeyword(agentMetadata, "VPA");
         expect(hasVPAContent).toBe(true);
       });
     });
