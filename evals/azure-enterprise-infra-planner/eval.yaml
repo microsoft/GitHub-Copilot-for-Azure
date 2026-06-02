@@ -856,7 +856,7 @@ stimuli:
       skill: azure-enterprise-infra-planner
       followUp:
         - "The resource list looks good, proceed with generating the plan."
-        - "Approve the plan as-is. Do not generate any IaC — stop here after the plan is written."
+        - "Approve the plan as-is. Do not generate any IaC."
     constraints:
       max_turns: 50
     graders:
