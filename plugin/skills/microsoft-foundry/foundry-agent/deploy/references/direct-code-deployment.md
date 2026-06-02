@@ -34,7 +34,7 @@ Global direct-code limits:
 
 - Agent name: at most 63 characters, alphanumeric and hyphens only.
 - Multipart upload zip: at most 250 MB.
-- CPU/memory: use conservative defaults such as `0.5` CPU and `1Gi` when the project does not specify resources.
+- CPU/memory: prefer the existing agent version's resources when updating; otherwise use defaults of `1` CPU and `2Gi` when the project does not specify resources. Using `0.5` CPU / `1Gi` often causes `session_not_ready` timeouts during cold start.
 
 ## Task 2: Detect Runtime and Entry Point
 
@@ -133,8 +133,8 @@ Example C#/.NET metadata:
         "version": "1.0.0"
       }
     ],
-    "cpu": "0.5",
-    "memory": "1Gi",
+    "cpu": "1",
+    "memory": "2Gi",
     "environment_variables": {
       "AZURE_AI_MODEL_DEPLOYMENT_NAME": "<model-deployment>"
     },
