@@ -50,7 +50,7 @@ jobs:
           npm run vally validate-stimulus
 
       - name: Lint skill and eval specs
-        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/ --strict
+        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
 
       - name: Determine suite
         if: github.event_name != 'pull_request'
