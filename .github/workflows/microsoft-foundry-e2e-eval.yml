@@ -2,12 +2,6 @@ name: Microsoft Foundry E2E Evaluations
 
 on:
   workflow_dispatch:
-    inputs:
-      suite:
-        description: "Microsoft Foundry Vally suite to run"
-        required: true
-        default: "microsoft-foundry-e2e"
-        type: string
 
 permissions:
   id-token: write
@@ -17,7 +11,6 @@ jobs:
   eval:
     name: Run Microsoft Foundry E2E evals
     runs-on: ubuntu-latest
-    environment: cideploytest
     env:
       AZURE_CLIENT_ID: ${{ vars.FOUNDRY_E2E_EVAL_AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.FOUNDRY_E2E_EVAL_AZURE_TENANT_ID }}
@@ -84,27 +77,17 @@ jobs:
       - name: Lint Microsoft Foundry E2E eval spec
         run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/microsoft-foundry/e2e-eval.yaml --strict
 
-      - name: Validate Microsoft Foundry suite input
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ "${{ inputs.suite }}" != "microsoft-foundry-e2e" ]; then
-            echo "::error::Suite must be microsoft-foundry-e2e."
-            exit 1
-          fi
-
       - name: Run Microsoft Foundry Vally evals
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
         run: |
           npx --yes @microsoft/vally-cli@^0.4.0 eval \
-            --suite "${{ inputs.suite }}" \
+            --suite microsoft-foundry-e2e \
             --executor-plugin "${{ github.workspace }}/tests/vally/vally-executor.ts" \
             --output-dir ./results \
             --output jsonl \
             --junit \
-            --threshold 0.8 \
-            --skill-dir output/skills
+            --threshold 0.8
 
       - name: Upload Vally results
         if: always()
