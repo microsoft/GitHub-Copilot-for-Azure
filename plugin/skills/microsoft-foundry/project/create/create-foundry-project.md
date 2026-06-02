@@ -49,11 +49,23 @@ azd auth login --check-status
 
 If not logged in, run `azd auth login` and complete browser auth.
 
-### Step 2: Ask User for Project Details
+### Step 2: Resolve Project Details
 
-Use AskUserQuestion for:
+Collect only values the user has not already provided. For values not specified, use defaults:
 
-1. **Project name** — used as azd environment name and resource group (`rg-<name>`). Must contain only alphanumeric characters and hyphens. Examples: `my-ai-project`, `dev-agents`
+1. **Project name** — used as azd environment name and resource group (`rg-<name>`). Must contain only alphanumeric characters and hyphens.
+   - If the user provided a name, use it as-is.
+   - If the user did NOT provide a name, **auto-generate a unique name** using the pattern `ai-project-<random>` where `<random>` is a short random suffix (6-8 lowercase alphanumeric characters). Generate the suffix with a platform-appropriate method:
+     ```bash
+     # bash/zsh
+     echo "ai-project-$(openssl rand -hex 4)"
+     ```
+     ```powershell
+     # PowerShell
+     "ai-project-$(-join ((48..57)+(97..122) | Get-Random -Count 8 | ForEach-Object {[char]$_}))"
+     ```
+   - Show the generated name to the user before proceeding, but do not block on confirmation — proceed unless the user objects.
+   - Examples: `ai-project-3f8a1b2c`, `my-ai-project`, `dev-agents`
 2. **Azure location** (optional) — defaults to North Central US (required for hosted agents preview)
 3. **Enable hosted agents?** (yes/no) — provisions a capability host and Container Registry for deploying hosted agents. Defaults to no.
 
