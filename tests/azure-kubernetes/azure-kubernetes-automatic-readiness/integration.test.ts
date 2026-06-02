@@ -57,6 +57,27 @@ function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvo
     return true;
   }
 
+  // Parent skill invoked + response covers readiness domain content.
+  // The sub-skill is nested under azure-kubernetes, so the parent is often
+  // invoked first and then routes internally to readiness assessment logic.
+  if (isSkillInvoked(agentMetadata, "azure-kubernetes")) {
+    if (doesAssistantMessageIncludeKeyword(agentMetadata, "AKS Automatic") ||
+        doesAssistantMessageIncludeKeyword(agentMetadata, "Automatic")) {
+      const domainHits = [
+        doesAssistantMessageIncludeKeyword(agentMetadata, "migrat"),
+        doesAssistantMessageIncludeKeyword(agentMetadata, "compatib"),
+        doesAssistantMessageIncludeKeyword(agentMetadata, "readiness"),
+        doesAssistantMessageIncludeKeyword(agentMetadata, "Deployment Safeguards"),
+        doesAssistantMessageIncludeKeyword(agentMetadata, "workload"),
+        doesAssistantMessageIncludeKeyword(agentMetadata, "constraint"),
+        doesAssistantMessageIncludeKeyword(agentMetadata, "assessment"),
+      ].filter(Boolean).length;
+      if (domainHits >= 1) {
+        return true;
+      }
+    }
+  }
+
   // Fallback for environments without skill routing: require "AKS Automatic"
   // plus at least two domain-specific terms to avoid false positives from
   // the agent merely restating the user prompt.
@@ -67,6 +88,8 @@ function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvo
       doesAssistantMessageIncludeKeyword(agentMetadata, "readiness"),
       doesAssistantMessageIncludeKeyword(agentMetadata, "Deployment Safeguards"),
       doesAssistantMessageIncludeKeyword(agentMetadata, "workload"),
+      doesAssistantMessageIncludeKeyword(agentMetadata, "constraint"),
+      doesAssistantMessageIncludeKeyword(agentMetadata, "assessment"),
     ].filter(Boolean).length;
     if (domainHits >= 2) {
       return true;
