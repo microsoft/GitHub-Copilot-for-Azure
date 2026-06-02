@@ -1,8 +1,8 @@
 # Direct Code Deployment Reference
 
-Use this reference only when the user explicitly requested direct code deployment.
+**This is the recommended default deployment method for hosted agents.** It requires no Docker, no ACR, and no `azd provision`. Use it unless the agent specifically needs a custom Dockerfile or system-level packages.
 
-This reference covers only direct-code deployment from [deploy.md](../deploy.md) Step 3. After deployment completes, proceed directly back to [deploy.md Step 7: Test the Agent](../deploy.md#step-7-test-the-agent).
+This reference covers the complete direct-code deployment workflow. After deployment completes, proceed to [deploy.md Step 4: Verify the Deployment](../deploy.md) for smoke testing.
 
 Direct-code deployment uses local project files plus the Foundry REST API for upload and version operations. Azure MCP discovery and context lookup are optional context, not a prerequisite when project endpoint, model deployment, and agent name are already resolved. For the code upload itself, follow the REST endpoints below instead of the Docker/ACR `agent_update` path.
 
@@ -34,7 +34,7 @@ Global direct-code limits:
 
 - Agent name: at most 63 characters, alphanumeric and hyphens only.
 - Multipart upload zip: at most 250 MB.
-- CPU/memory: use conservative defaults such as `0.5` CPU and `1Gi` when the project does not specify resources.
+- CPU/memory: prefer the existing agent version's resources when updating; otherwise use defaults of `1` CPU and `2Gi` when the project does not specify resources. Using `0.5` CPU / `1Gi` often causes `session_not_ready` timeouts during cold start.
 
 ## Task 2: Detect Runtime and Entry Point
 
@@ -66,7 +66,7 @@ Ask only for values not already resolved:
 - `projectEndpoint`
 - `agentName` - prefer `agent.yaml` or `agent.manifest.yaml` name, then folder name
 - model deployment environment variable, usually `AZURE_AI_MODEL_DEPLOYMENT_NAME`
-- CPU and memory - prefer `agent.yaml` resources, otherwise use conservative defaults (`0.5` CPU, `1Gi` memory)
+- CPU and memory - prefer `agent.yaml` resources, otherwise use recommended defaults (`1` CPU, `2Gi` memory). Smaller values such as `0.5` CPU / `1Gi` may cause `session_not_ready` failures due to readiness probe timeouts during cold start (dependency loading + credential initialization can exceed the probe deadline on constrained resources). Using `1` CPU / `2Gi` significantly reduces cold-start time (from 90+ seconds to ~60 seconds).
 - protocol/version - prefer `agent.yaml` protocols, otherwise `responses` `1.0.0`
 
 Do not put `FOUNDRY_PROJECT_ENDPOINT` in `environment_variables`; the platform injects it for hosted agents. Include only custom variables that the agent code reads at runtime, such as `AZURE_AI_MODEL_DEPLOYMENT_NAME`.
@@ -106,8 +106,8 @@ Example Python metadata:
         "version": "1.0.0"
       }
     ],
-    "cpu": "0.5",
-    "memory": "1Gi",
+    "cpu": "1",
+    "memory": "2Gi",
     "environment_variables": {
       "AZURE_AI_MODEL_DEPLOYMENT_NAME": "<model-deployment>"
     },
@@ -133,8 +133,8 @@ Example C#/.NET metadata:
         "version": "1.0.0"
       }
     ],
-    "cpu": "0.5",
-    "memory": "1Gi",
+    "cpu": "1",
+    "memory": "2Gi",
     "environment_variables": {
       "AZURE_AI_MODEL_DEPLOYMENT_NAME": "<model-deployment>"
     },
@@ -333,7 +333,55 @@ Authorization: Bearer <access-token>
 Foundry-Features: CodeAgents=V1Preview,HostedAgents=V1Preview
 ```
 
-Loop until the version status is no longer `creating`.
+Loop until the version status is no longer `creating`. Poll every 15 seconds. Typical `remote_build` completes in 60-120 seconds (4-8 polls). The upload + poll cycle together takes roughly 2-3 minutes, not longer.
 
-- `active` -> proceed directly back to [deploy.md Step 7: Test the Agent](../deploy.md#step-7-test-the-agent).
+- `active` -> proceed to Task 8 (role assignment) before smoke-testing.
 - `failed` -> read the error from the version object. There is no runtime session yet, so `:logstream` will not help.
+
+## Task 8: Assign Agent Identity Role
+
+After the agent version becomes `active`, assign the `Cognitive Services User` role to the agent's managed identity **before** attempting the first invocation. Without this role, the agent cannot access the model deployment and sessions will fail with `session_not_ready`.
+
+Extract the agent's `instance_identity.principal_id` from the create/version response, then assign the role on the Foundry account scope:
+
+```bash
+az role assignment create \
+  --assignee-object-id <agent-principal-id> \
+  --assignee-principal-type ServicePrincipal \
+  --role "Cognitive Services User" \
+  --scope /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<account>
+```
+
+Wait 30-60 seconds for role propagation before invoking the agent. This avoids repeated `session_not_ready` failures during cold start.
+
+> **Timing context:** From deployment to first successful invocation, expect:
+> - Upload + version poll: ~2-3 minutes
+> - Role assignment + propagation: ~30-60 seconds
+> - First session cold start (dependency installation): ~60-90 seconds
+> - **Total: ~4-6 minutes** from upload to first successful response
+
+## Task 9: Verify Capability Host
+
+Before invoking, verify a capability host exists on the Foundry account. Without it, all invocations will fail with `session_not_ready` regardless of RBAC or cold-start timing.
+
+```bash
+az rest --method get \
+  --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<account>/capabilityHosts?api-version=2025-04-01-preview" \
+  --query "value[].name" -o tsv
+```
+
+If the output is empty, create one:
+
+```bash
+curl -s -X PUT \
+  "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<account>/capabilityHosts/agents?api-version=2025-04-01-preview" \
+  -H "Authorization: Bearer $(az account get-access-token --query accessToken -o tsv)" \
+  -H "Content-Type: application/json" \
+  -d '{"properties":{"capabilityHostKind":"Agents","vectorStoreConnections":[],"storageConnections":[],"aiServicesConnections":[]}}'
+```
+
+Poll `provisioningState` until `Succeeded` (typically < 30 seconds). Then wait 30-60 seconds for the host to be fully available before the first invocation.
+
+> **Common cause of persistent `session_not_ready`:** If `azd provision` failed partway through (e.g. `RoleAssignmentUpdateNotPermitted`) or `ENABLE_HOSTED_AGENTS` was not set, the capability host may not have been created. Always check before the first invocation attempt.
+
+After capability host verification, proceed to [deploy.md Step 4: Verify the Deployment](../deploy.md), then [invoke](../invoke/invoke.md) for smoke testing.
