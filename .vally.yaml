@@ -29,3 +29,8 @@ suites:
   full:
     description: "All evals including LLM graders — nightly"
     filter: {}
+
+  microsoft-foundry-e2e:
+    description: "Microsoft Foundry E2E evals for Azure-authenticated workflow runs"
+    evals:
+      - evals/microsoft-foundry/e2e-eval.yaml

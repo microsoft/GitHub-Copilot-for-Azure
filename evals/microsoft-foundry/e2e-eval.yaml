@@ -1,0 +1,59 @@
+# Vally eval config for Azure-authenticated Microsoft Foundry E2E checks.
+# The filename is e2e-eval.yaml so default discovery does not include it in full.
+
+name: microsoft-foundry-e2e-eval
+description: |
+  E2E evaluation for the microsoft-foundry skill in a workflow that has already
+  logged into Azure CLI and configured azd to use Azure CLI authentication.
+
+environment:
+  skills:
+    - ../../plugin/skills/microsoft-foundry
+
+config:
+  runs: 1
+  timeout: "20m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Check Foundry model deployment readiness"
+    prompt: |
+      Use the microsoft-foundry skill to check whether I can deploy models to my
+      Azure AI Foundry project. Use the current Azure CLI and azd login context,
+      inspect permissions and quota where possible, and summarize blockers
+      without making changes.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)(foundry|azure ai).*(permission|quota|deploy|deployment)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Plan Foundry agent evaluation setup"
+    prompt: |
+      Use the microsoft-foundry skill to prepare an evaluation setup plan for a
+      deployed Foundry agent in this Azure environment. Check the available Azure
+      context first, then identify which project endpoint, agent name, datasets,
+      and evaluators are still needed before any remote evaluation run.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)(project endpoint|agent name|dataset|evaluator|evaluation)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
