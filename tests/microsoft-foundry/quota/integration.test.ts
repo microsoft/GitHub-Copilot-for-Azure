@@ -32,7 +32,10 @@ const SKILL_NAME = "microsoft-foundry";
 const describeIntegration = shouldSkipIntegrationTests() ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("View Quota Usage", () => {
     test("invokes skill for quota usage check", () => withTestResult(async () => {
@@ -354,8 +357,8 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
       // Check if Azure CLI commands are mentioned in responses or tool execution data
       const mentionsAzCli = doesAssistantOrToolsIncludeKeyword(agentMetadata, "az cognitiveservices") ||
-                            doesAssistantOrToolsIncludeKeyword(agentMetadata, "az rest") ||
-                            doesAssistantOrToolsIncludeKeyword(agentMetadata, "az ai");
+        doesAssistantOrToolsIncludeKeyword(agentMetadata, "az rest") ||
+        doesAssistantOrToolsIncludeKeyword(agentMetadata, "az ai");
 
       // Pass if agent used Azure MCP tools, CLI, or mentioned CLI commands in response/reasoning
       expect(usedAzureMcp || usedCli || mentionsAzCli).toBe(true);

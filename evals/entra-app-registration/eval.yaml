@@ -22,7 +22,7 @@ environment:
 config:
   runs: 5
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -39,13 +39,12 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-app-registration"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - entra-app-registration
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -61,13 +60,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-app-registration"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - entra-app-registration
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:

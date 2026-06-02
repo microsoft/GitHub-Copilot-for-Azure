@@ -37,7 +37,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   async function expectPromptToInvokeWorkflow(prompt: string, workflowPathPattern: RegExp): Promise<{
     skillInvocationCount: number,

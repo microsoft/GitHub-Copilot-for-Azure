@@ -36,7 +36,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_create - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
   describe("skill-invocation", () => {
     test("invokes skill for agent creation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;

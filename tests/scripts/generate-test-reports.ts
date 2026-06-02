@@ -29,7 +29,10 @@ const TEST_RUN_PREFIX = "test-run-";
 const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
 const SKILL_REPORT_SUFFIX = "-SKILL-REPORT.md";
-const agent = useAgentRunner();
+const agent = useAgentRunner({
+  isTest: false,
+  useJest: false
+});
 
 /**
  * Parse command-line arguments.
@@ -315,7 +318,9 @@ async function main() {
   await processTestRun(targetPath, skill);
 }
 
-main().catch(error => {
+main().then(() => {
+  process.exit(0);
+}).catch(error => {
   console.error("Error:", error);
   process.exit(1);
 });

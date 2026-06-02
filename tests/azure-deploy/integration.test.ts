@@ -42,7 +42,10 @@ const pseudoRandomResourceGroupNameSystemPromptModifier = {
 };
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
   describe("skill-invocation", () => {
     const followUp = ["Continue with recommended options until complete."];
     test("invokes azure-deploy skill for deployment prompt", async () => {

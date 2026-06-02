@@ -24,7 +24,7 @@ environment:
 config:
   runs: 3
   timeout: "7m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -48,6 +48,7 @@ stimuli:
       type: integration
       skill: azure-deploy
       tier: full
+      cost: llm
       area: output
     graders:
       # Task: expected.output_contains
@@ -86,6 +87,7 @@ stimuli:
       type: integration
       skill: azure-deploy
       tier: full
+      cost: llm
       area: output
     graders:
       # Task: expected.output_contains

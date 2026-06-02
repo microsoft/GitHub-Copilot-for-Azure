@@ -21,7 +21,7 @@ The following files have their versions automatically stamped at build time:
 
 The `CHANGELOG.md` is automatically generated at build time by the Gulp pipeline. It includes merged PRs that:
 - Touch the `plugin/` directory
-- Have titles starting with `fix:`, `feat:`, or `feature:`
+- Have titles starting with `fix:`, `feat:`, or `feature:`, etc. See [gulpfile](../gulpfile.ts) for the exhaustive list of supported prefixes.
 
 Each entry is associated with the NBGV height-based version (`{major}.{minor}.{height}`) of the commit that introduced it.
 
