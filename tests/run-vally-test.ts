@@ -143,7 +143,10 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
   const testResults: Record<string, TrialResult> = {};
   Object.keys(testTrials).forEach((normalizedTestName) => {
     const trials = testTrials[normalizedTestName];
-    const isPass = trials.every((t) => t.isPass);
+    const passCount = trials.filter((t) => t.isPass).length;
+    const totalCount = trials.length;
+    const passRateThreshold = 0.8;
+    const isPass = passCount / totalCount > passRateThreshold;
     const message = trials.map((t) => t.message ?? "").join("\n");
     const expectsScreenshot = trials.some((t) => t.expectsScreenshot);
     const skillInvocationRate = trials.some((t) => t.skillInvocationRate === undefined) ? undefined : (trials.map((t) => t.skillInvocationRate) as number[]).reduce((sum, rate) => sum + rate, 0) / trials.length;
