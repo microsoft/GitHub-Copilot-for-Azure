@@ -36,7 +36,7 @@ Example: folder `my-flask-app/`, GUID `a3f9c1d2-...` → `my-flask-app-a3f9c1d2`
 | App Service Plan | `<app-name>-plan` |
 
 ### 1d. Region (NEVER ask unless forced)
-1. `az config get defaults.location -o tsv 2>$null` → use it if set.
+1. `az config get defaults.location -o tsv 2>/dev/null` (bash/zsh) or `az config get defaults.location -o tsv 2>$null` (PowerShell) → use it if set.
 2. Else default to `eastus2`.
 3. Only call `ask_user` if `az group create` later fails with a region/quota/availability error.
 
@@ -123,7 +123,7 @@ az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
 
 > ⚠️ **Shell safety**: Always use the **colon** form `PYTHON:3.14` — never the pipe form `PYTHON|3.14`. The pipe character is a shell operator in PowerShell, Bash, and cmd, and breaks the command even when quoted in some contexts. The colon form is fully supported by `az webapp create --runtime` and is shell-safe everywhere.
 
-> 💡 **Hostname scope**: Use `--domain-name-scope TenantReuse` so the default `<app>.azurewebsites.net` hostname only needs to be unique within your Entra tenant (not globally). This dramatically reduces name-collision failures when auto-generating app names.
+> 💡 **Hostname scope**: Use `--domain-name-scope TenantReuse` so the default `<app>.azurewebsites.net` hostname only needs to be unique within your Entra tenant (not globally). This dramatically reduces name-collision failures when auto-generating app names. Requires Azure CLI ≥ 2.47; if the flag is not recognised, omit it — the app name must then be globally unique.
 
 ```bash
 az webapp show -n <app> -g <rg> --only-show-errors 2>/dev/null || \

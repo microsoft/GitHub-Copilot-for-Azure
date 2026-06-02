@@ -72,7 +72,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       // here. The trigger matcher is keyword-based and can't model LLM routing
       // disambiguation. Those cases are handled at routing time by the description's
       // "PREFER OVER azure-prepare" and "DO NOT USE FOR" guidance, and are covered
-      // by the integration test / vally eval suites instead.
+      // by the integration test / Vally eval suites instead.
     ];
 
     test.each(shouldNotTriggerPrompts)('does not trigger on: "%s"', (prompt) => {

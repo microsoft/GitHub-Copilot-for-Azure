@@ -22,7 +22,7 @@ Deploy failed?
 | `An app with name '<app>' already exists` | Global name collision | Pick a different name (App Service host names are globally unique) |
 | `az webapp up` shown in user's notes | Deprecated command | Replace with `az webapp create` + `az webapp deploy --type zip` |
 | `azd up` provisions Container Apps instead of App Service | azure.yaml host isn't `appservice` | Either fix the template's `host:` or fall back to az CLI path |
-| Deployment hangs in "Building..." | Oryx pip install failing on native deps | Inspect `az webapp log deployment list-versions` then `... log show`; pin known-good versions in requirements |
+| Deployment hangs in "Building..." | Oryx pip install failing on native deps | Run `az webapp log deployment list -n <app> -g <rg>` to find the deployment ID, then `az webapp log deployment show -n <app> -g <rg> --deployment-id <id>`; pin known-good versions in requirements |
 | 401 / unauthorized on deploy | `az login` expired or wrong subscription | `az login` + `az account set -s <sub>` |
 | `LinuxFxVersion` shows `DOCKER\|...` | Web app was created as custom container | Recreate with `--runtime "PYTHON:3.14"` (colon form is shell-safe) |
 

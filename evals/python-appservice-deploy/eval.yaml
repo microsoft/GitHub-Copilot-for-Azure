@@ -1,6 +1,6 @@
 # Vally eval config for python-appservice-deploy
-# Migration: Jest → Vally (new skill, authored directly as Vally per tests/README.md)
-# Source: tests/python-appservice-deploy/{triggers,integration}.test.ts (now removed)
+# Coverage: authored in parallel with Jest tests in tests/python-appservice-deploy/
+# (triggers.test.ts covers keyword routing; this file covers live invocation + behavior graders)
 #
 # Global graders (evaluate#125 workaround): completed and no_runtime_failure
 # are duplicated into every stimulus block below.
