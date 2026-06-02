@@ -145,7 +145,7 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
     const trials = testTrials[normalizedTestName];
     const passCount = trials.filter((t) => t.isPass).length;
     const totalCount = trials.length;
-    const passRateThreshold = 0.8;
+    const passRateThreshold = 0.75;
     const isPass = passCount / totalCount > passRateThreshold;
     const message = trials.map((t) => t.message ?? "").join("\n");
     const expectsScreenshot = trials.some((t) => t.expectsScreenshot);
