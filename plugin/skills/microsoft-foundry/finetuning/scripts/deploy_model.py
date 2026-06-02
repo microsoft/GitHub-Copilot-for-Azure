@@ -60,13 +60,27 @@ if not AZ_CLI:
     if not AZ_CLI:
         AZ_CLI = "az"  # last resort, hope it's on PATH
 
-# Model format auto-detection rules
+# Model format auto-detection rules.
+# Order matters — more-specific patterns must come first.
+# The catalog format ("OpenAI-OSS") and the ARM REST format ("Microsoft") for
+# the same model can differ; these rules return the ARM REST format that
+# `create_deployment` puts in the request body.
 FORMAT_RULES = [
+    # Fireworks-hosted models always use the "FW-" name prefix (e.g.,
+    # FW-Qwen3-14B, FW-DeepSeek-V3.1, FW-Qwen3.5-9B). They take format
+    # "Fireworks", NOT the underlying-provider format. This rule must come
+    # before the qwen/llama/etc. rules below — those would otherwise return
+    # the wrong format and the deployment fails with HTTP 500.
+    (lambda m: m.lower().startswith("fw-") or "fw-" in m.lower().split(".ft-")[0],
+        "Fireworks", "GlobalStandard"),
     (lambda m: "oss-20b" in m.lower() or "oss20b" in m.lower(), "Microsoft", "GlobalStandard"),
+    (lambda m: "oss-120b" in m.lower(), "Microsoft", "GlobalStandard"),
     (lambda m: "ministral" in m.lower() or "mistral" in m.lower(), "Mistral AI", "GlobalStandard"),
     (lambda m: "llama" in m.lower() or "meta" in m.lower(), "Meta", "GlobalStandard"),
     (lambda m: "qwen" in m.lower() or "alibaba" in m.lower(), "Alibaba", "GlobalStandard"),
-    (lambda m: True, "OpenAI", "Standard"),  # Default fallback
+    (lambda m: "deepseek" in m.lower(), "DeepSeek", "GlobalStandard"),
+    (lambda m: "phi-" in m.lower(), "Microsoft", "GlobalStandard"),
+    (lambda m: True, "OpenAI", "Standard"),  # Default fallback for OpenAI models
 ]
 
 
