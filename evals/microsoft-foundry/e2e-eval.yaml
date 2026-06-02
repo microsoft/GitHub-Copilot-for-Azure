@@ -18,7 +18,7 @@ scoring:
 stimuli:
   - name: "Build hosted math agent"
     prompt: |
-      Build a hosted agent in Azure AI Foundry that can do basic math.
+      Build a hosted agent in Microsoft Foundry that can do basic math.
       Create the agent files directly in the current working directory.
       Do not create a nested project folder or subfolder for the agent.
     graders:
