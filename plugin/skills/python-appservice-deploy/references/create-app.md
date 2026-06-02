@@ -2,6 +2,8 @@
 
 This skill creates resources only when they don't already exist. Always check first.
 
+> 💡 **Shell note**: The idempotency checks in §§2–4 below use `2>/dev/null` (bash/zsh — Linux, macOS). On **PowerShell** (Windows), replace `2>/dev/null` with `2>$null` wherever it appears.
+
 ## 1. Resolve Azure context — minimize prompts
 
 **Goal: ask the user at most ONE question (the app name).** Everything else is derived or defaulted. Never ask the user for resource group name, app service plan name, region, or subscription unless an error forces it.
@@ -99,7 +101,7 @@ done
 ## 2. Resource Group
 
 ```bash
-az group show -n <rg> --only-show-errors 2>$null || \
+az group show -n <rg> --only-show-errors 2>/dev/null || \
   az group create -n <rg> -l <region>
 ```
 
@@ -108,7 +110,7 @@ az group show -n <rg> --only-show-errors 2>$null || \
 > ⚠️ **MANDATORY**: Use `--is-linux` and `--sku P0V3`. Do not change OS or SKU unless the user explicitly requests it.
 
 ```bash
-az appservice plan show -n <plan> -g <rg> --only-show-errors 2>$null || \
+az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
   az appservice plan create \
     -n <plan> \
     -g <rg> \
@@ -124,7 +126,7 @@ az appservice plan show -n <plan> -g <rg> --only-show-errors 2>$null || \
 > 💡 **Hostname scope**: Use `--domain-name-scope TenantReuse` so the default `<app>.azurewebsites.net` hostname only needs to be unique within your Entra tenant (not globally). This dramatically reduces name-collision failures when auto-generating app names.
 
 ```bash
-az webapp show -n <app> -g <rg> --only-show-errors 2>$null || \
+az webapp show -n <app> -g <rg> --only-show-errors 2>/dev/null || \
   az webapp create \
     -n <app> \
     -g <rg> \
