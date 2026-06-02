@@ -1,0 +1,9 @@
+/* ── Token Usage page ───────────────────────────────────────────────────── */
+/* Layout and controls are shared with the MSBench Performance Dashboard
+   (pd- classes). This file holds token-usage-specific overrides only. */
+
+.pd-chart-section h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
