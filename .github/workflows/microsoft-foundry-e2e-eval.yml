@@ -2,6 +2,11 @@ name: Microsoft Foundry E2E Evaluations
 
 on:
   workflow_dispatch:
+    inputs:
+      stimulus_id:
+        description: "Optional stimulus id tag to run, for example: build-hosted-math-agent"
+        required: false
+        type: string
 
 permissions:
   id-token: write
@@ -76,9 +81,18 @@ jobs:
       - name: Run Microsoft Foundry Vally evals
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          STIMULUS_ID: ${{ inputs.stimulus_id }}
         run: |
+          set -euo pipefail
+
+          tag_args=()
+          if [[ -n "${STIMULUS_ID}" ]]; then
+            tag_args+=(--tag "id=${STIMULUS_ID}")
+          fi
+
           npx --yes @microsoft/vally-cli@^0.4.0 eval \
             --suite microsoft-foundry-e2e \
+            "${tag_args[@]}" \
             --executor-plugin "${{ github.workspace }}/tests/vally/vally-executor.ts" \
             --output-dir ./results \
             --output jsonl \

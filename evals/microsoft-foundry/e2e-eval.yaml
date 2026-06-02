@@ -6,6 +6,10 @@ description: |
   E2E evaluation for the microsoft-foundry skill in a workflow that has already
   logged into Azure CLI and configured azd to use Azure CLI authentication.
 
+tags:
+  type: e2e
+  skill: microsoft-foundry
+
 config:
   runs: 1
   timeout: "20m"
@@ -17,6 +21,8 @@ scoring:
 
 stimuli:
   - name: "Build hosted math agent"
+    tags:
+      id: build-hosted-math-agent
     prompt: |
       Build a hosted agent in Microsoft Foundry that can do basic math.
       Create the agent files directly in the current working directory.
