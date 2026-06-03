@@ -61,7 +61,7 @@ async function getTokenUsage(request: HttpRequest, context: InvocationContext): 
                 branch: entity.branch,
                 runId: entity.runId,
                 runDate: entity.runDate,
-                timestamp: entity.timestamp,
+                runTimestamp: entity.runTimestamp,
                 model: entity.model,
                 inputTokens: entity.inputTokens,
                 outputTokens: entity.outputTokens,

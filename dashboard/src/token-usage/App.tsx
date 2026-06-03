@@ -16,7 +16,7 @@ interface TokenUsageRow {
     branch: string;
     runId: string;
     runDate: string;
-    timestamp: string;
+    runTimestamp: string;
     model: string;
     inputTokens: number;
     outputTokens: number;
@@ -113,7 +113,7 @@ export default function App() {
             endDate = "";
         }
         return rows.filter((row) => {
-            const date = row.runDate || (row.timestamp ? row.timestamp.slice(0, 10) : "");
+            const date = row.runDate || (row.runTimestamp ? row.runTimestamp.slice(0, 10) : "");
             if (startDate && date < startDate) return false;
             if (endDate && date > endDate) return false;
             return true;
@@ -126,8 +126,8 @@ export default function App() {
         const byRun = new Map<string, { total: number; timestamp: string; runDate: string; runId: string }>();
         for (const row of filteredRows) {
             const runId = row.runId || "unknown";
-            const runDate = row.runDate || (row.timestamp ? row.timestamp.slice(0, 10) : "");
-            const ts = row.timestamp || `${runDate}T00:00:00.000Z`;
+            const runDate = row.runDate || (row.runTimestamp ? row.runTimestamp.slice(0, 10) : "");
+            const ts = row.runTimestamp || `${runDate}T00:00:00.000Z`;
             const existing = byRun.get(runId);
             const total = Number(row.totalTokens) || 0;
             if (existing) {

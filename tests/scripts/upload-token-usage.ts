@@ -239,7 +239,7 @@ async function main(): Promise<void> {
         branch,
         runId,
         runDate,
-        timestamp: usage.timestamp,
+        runTimestamp: usage.timestamp,
         model: usage.model,
         inputTokens: usage.inputTokens,
         outputTokens: usage.outputTokens,
