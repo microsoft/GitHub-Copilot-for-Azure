@@ -6,7 +6,7 @@
 
 - [ ] Tests pass locally (`cd tests && npm test`)
 - [ ] Title has one of the prefixes: `fix:`, `feat:`, `feature:`, `chore:`, `misc:`, `test:`, `eval:`
-- [ ] **If modifying skill descriptions:** verified routing correctness with integration tests (`npm run test:skills:integration -- <skill>` or `npm run test:vally -- --skill <skill>`)
+- [ ] **If modifying skill descriptions:** verified routing correctness with integration tests (In `tests/`, `npm run test:integration -- <skill>` or `npm run test:vally -- --skill <skill>`)
 
 ## Related Issues
 
