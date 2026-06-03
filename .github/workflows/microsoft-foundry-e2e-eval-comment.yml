@@ -49,12 +49,12 @@ jobs:
             }
 
             const body = context.payload.comment.body;
-            const commandPattern = /^\/foundry-e2e(?:\s+e2e-branch=([A-Za-z0-9._/-]+))?$/i;
+            const commandPattern = /^\/foundry-e2e(?:\s+e2e-branch=([A-Za-z0-9._/-]+))?$/;
             const commandLine = body
               .split(/\r?\n/)
               .map((line) => line.trim())
               .find((line) =>
-                /^\/foundry-e2e\b/i.test(line)
+                /^\/foundry-e2e\b/.test(line)
               );
 
             if (!commandLine) {
