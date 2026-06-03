@@ -4,11 +4,11 @@
 
 ## Prompt-Based Routing Table
 
-> **⚠️ PRIORITY RULE**: Check rows **top to bottom**. The first match wins. **Python + App Service is the highest priority** — when both keywords appear, route to `python-appservice-deploy` immediately, before any other check. If the prompt mentions **AWS Lambda migration or AWS Lambda**, invoke **azure-cloud-migrate** even if Azure Functions are also mentioned.
+> **⚠️ PRIORITY RULE**: Check rows **top to bottom**. The first match wins. **Python + App Service (code-only) is the highest priority** — route to `python-appservice-deploy` ONLY when the prompt is a code-deploy request **without** IaC or infra keywords (see Priority 1 qualifier below). If the prompt mentions **AWS Lambda migration or AWS Lambda**, invoke **azure-cloud-migrate** even if Azure Functions are also mentioned.
 
 | Priority | User prompt mentions | Invoke skill FIRST | Then resume azure-prepare at |
 |----------|---------------------|--------------------|-----------------------------|
-| **1 (highest)** | Python + Azure App Service (e.g., "deploy Python to App Service", "Flask on App Service", "Python web app on App Service") | **python-appservice-deploy** | This is a code-deploy skill. If the user truly needs full infrastructure (VNet, Key Vault, DB), python-appservice-deploy will hand off back to azure-prepare. Otherwise, do not resume. |
+| **1 (highest)** | Python + Azure App Service **AND NOT** any of: `Terraform`, `Bicep`, `IaC`, `VNet`, `private endpoint`, `Key Vault`, `Cosmos`, `Postgres`, `MySQL`, `SQL`, `Front Door`, `multi-environment` (e.g., "deploy Python to App Service", "Flask on App Service", "Python web app on App Service") | **python-appservice-deploy** | This is a code-only deploy skill. Do not resume `azure-prepare`. If the prompt contains any IaC or infra keyword above, **skip this row** and continue to row 2+ (i.e., stay in `azure-prepare` for the full infrastructure path). |
 | 2 | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** | Phase 1 Step 4 (Select Recipe) — azure-cloud-migrate does assessment + code conversion, then azure-prepare takes over for infrastructure, local testing, or deployment |
 | 3 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
 | 4 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |

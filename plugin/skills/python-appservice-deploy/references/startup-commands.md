@@ -1,6 +1,6 @@
 # Startup Commands by Framework
 
-Linux App Service (Oryx) auto-detects **Flask**, **Django**, and **FastAPI on Python 3.14** — **no startup command is needed for any of these**. This skill only sets a startup command for **FastAPI on Python <3.14** and for non-Flask/Django/FastAPI frameworks (as a manual hint).
+Linux App Service (Oryx) auto-detects **Flask** and **Django** — no startup command is needed for these. **FastAPI does NOT rely on Oryx auto-detection** in this skill: we always set an explicit uvicorn startup command so the behavior is identical on every supported Python runtime (3.12, 3.13, 3.14, …). This skill also sets a startup command (or emits a manual hint) for non-Flask/Django/FastAPI frameworks.
 
 ## Flask — no startup command needed
 
@@ -15,17 +15,9 @@ Make sure the project has:
 - `<project>/wsgi.py` at a path Oryx can discover (the default Django layout works out of the box)
 - `ALLOWED_HOSTS` includes `<app>.azurewebsites.net` (or `*` for first-deploy validation — tighten later)
 
-## FastAPI — version-dependent
+## FastAPI — always set the uvicorn startup command
 
-FastAPI behavior depends on the Python runtime the web app is using:
-
-### FastAPI on Python 3.14 — no startup command needed
-
-Oryx on Python 3.14 auto-detects FastAPI and starts uvicorn against the discovered entry point. **Do not set a startup command.** Treat exactly like Flask/Django.
-
-### FastAPI on Python <3.14 — set startup command
-
-Older Python runtimes do **not** auto-start FastAPI. The skill must set the startup command itself:
+The skill sets the startup command unconditionally for FastAPI, regardless of the Python runtime version. Oryx FastAPI auto-detection is **not** relied on — an explicit startup command always works and avoids version-dependent surprises:
 
 ```bash
 az webapp config set -n <app> -g <rg> \
@@ -35,17 +27,6 @@ az webapp config set -n <app> -g <rg> \
 Replace `main:app` with the discovered entry point if different (e.g., `app.main:app`, `src.api:app`). The `--host 0.0.0.0` flag is mandatory — uvicorn defaults to 127.0.0.1, which causes App Service container-ping timeouts.
 
 Make sure `requirements.txt` contains both `fastapi` and `uvicorn` (or `uvicorn[standard]`).
-
-### How to tell which Python version the app uses
-
-This skill defaults to `PYTHON:3.14`. If the web app already exists with a different version, check it before deciding on a FastAPI startup command:
-
-```bash
-az webapp config show -n <app> -g <rg> --query linuxFxVersion -o tsv
-# Returns e.g. PYTHON|3.14 or PYTHON|3.13
-```
-
-Anything below `3.14` → set the uvicorn startup command above.
 
 ## Not auto-configured — warn & deploy anyway
 

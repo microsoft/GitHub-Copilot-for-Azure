@@ -142,3 +142,75 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+
+  # ── negative: Java on App Service must NOT route here ──
+  # Routing boundary: this skill is Python-only. Java/Spring Boot belongs to azure-prepare.
+  - name: "Java App Service prompt does not trigger python skill"
+    prompt: "Deploy my Java Spring Boot app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+      - type: completed
+
+  # ── negative: Python on Container Apps must NOT route here ──
+  # Routing boundary: this skill is App Service only. Container Apps belongs to azure-prepare.
+  - name: "Python Container Apps prompt does not trigger python skill"
+    prompt: "Deploy my Python app to Azure Container Apps"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+      - type: completed
+
+  # ── negative: Python on Functions must NOT route here ──
+  # Routing boundary: this skill is App Service only. Azure Functions belongs to azure-prepare.
+  - name: "Python Functions prompt does not trigger python skill"
+    prompt: "Deploy my Python app to Azure Functions"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+      - type: completed
+
+  # ── negative: Python + App Service + Terraform must NOT route here ──
+  # Routing boundary: IaC keyword (Terraform) escalates to azure-prepare even with App Service.
+  - name: "Python App Service Terraform prompt routes to azure-prepare"
+    prompt: "Deploy my Flask app to Azure App Service using Terraform"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+      - type: completed

@@ -21,7 +21,7 @@ This skill owns Python code deployments to Azure App Service, including **Flask*
 | Deploy tools | `azd` (if `azure.yaml` targets App Service) else `az` CLI |
 | Forbidden | ⛔ `az webapp up` (deprecated) |
 | Package | `az webapp deploy --type zip` |
-| Auto-startup | Flask, Django, and FastAPI-on-Python-3.14 — auto-detected by Oryx (no startup command set). FastAPI on Python <3.14 → skill sets a uvicorn startup command. Other frameworks get a manual-startup warning. |
+| Auto-startup | Flask and Django — auto-detected by Oryx (no startup command set). FastAPI — skill always sets a uvicorn startup command (`python -m uvicorn main:app --host 0.0.0.0`) for reliability across all Python runtimes. Other frameworks get a manual-startup warning. |
 
 ## When to Use
 
@@ -59,7 +59,7 @@ If during execution the user clearly needs infrastructure beyond RG/Plan/WebApp,
 | 2 | Detect framework (advisory). Scan `requirements.txt` / `pyproject.toml`. NEVER blocks deploy. | [detect.md](references/detect.md) |
 | 3 | Choose path: `azure.yaml` targets App Service → **azd**; else **az CLI**. | [deploy-azd.md](references/deploy-azd.md) / [deploy-azcli.md](references/deploy-azcli.md) |
 | 4 | Ensure resources exist: RG → Plan (`P0V3 --is-linux`) → Web App (`--runtime "PYTHON:3.14"` — colon form, never the pipe form). Skip if already present. **Silently retry transient ARM errors** (connection reset / 502 / 503 / 504) up to 2 times — see [create-app.md](references/create-app.md) §1f. | [create-app.md](references/create-app.md) |
-| 5 | Set the startup command per [startup-commands.md](references/startup-commands.md): Flask / Django / **FastAPI on Python 3.14** → **no startup command** (Oryx auto-detects). **FastAPI on Python <3.14** → set `python -m uvicorn main:app --host 0.0.0.0`. Other frameworks → warn user, deploy anyway. NEVER blocks deploy. | [startup-commands.md](references/startup-commands.md) |
+| 5 | Set the startup command per [startup-commands.md](references/startup-commands.md): Flask / Django → **no startup command** (Oryx auto-detects). **FastAPI** → always set `python -m uvicorn main:app --host 0.0.0.0` (works on every Python runtime; Oryx FastAPI auto-detection is not relied on). Other frameworks → warn user, deploy anyway. NEVER blocks deploy. | [startup-commands.md](references/startup-commands.md) |
 | 6 | Set `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. | [deploy-azcli.md](references/deploy-azcli.md) |
 | 7 | Deploy: `azd deploy` OR `az webapp deploy --type zip --track-status false`. ⛔ never `az webapp up`. ⛔ **Do NOT tail logs** and ⛔ **do NOT probe the endpoint** after deploy. | [deploy-azcli.md](references/deploy-azcli.md) |
 | 8 | **STOP.** Print the post-deploy message ([post-deploy-message.md](references/post-deploy-message.md)) — use the **standard** template for Flask/Django/FastAPI, or the **unknown-framework** template (adds a "we couldn't detect your framework — set a startup command" warning) when Step 2 detected `wsgi-generic`, `asgi-generic`, or `unknown`. Include URL as `https://...`, "may take 2–3 minutes to start", and the `az webapp log tail` command. Then end the turn. | [post-deploy-message.md](references/post-deploy-message.md) |
@@ -79,8 +79,7 @@ If during execution the user clearly needs infrastructure beyond RG/Plan/WebApp,
 | Python | 3.14 |
 | Flask startup | Not set — Oryx auto-detects Flask (no startup command needed) |
 | Django startup | Not set — Oryx auto-detects Django via `wsgi.py` (no startup command needed) |
-| FastAPI startup (Python 3.14) | Not set — Oryx auto-detects FastAPI on 3.14 |
-| FastAPI startup (Python <3.14) | Auto-set: `python -m uvicorn main:app --host 0.0.0.0` (adjust `<module>:app` if entry point differs) |
+| FastAPI startup | Auto-set: `python -m uvicorn main:app --host 0.0.0.0` (adjust `<module>:app` if entry point differs). Always set — does not depend on the Python runtime version. |
 | Non-Flask/Django/FastAPI startup | Not set — warn user (see [startup-commands.md](references/startup-commands.md)) |
 | App name | Ask user once; if no answer, generate `<folder-slug>-<first-8-chars-of-new-GUID>` (lowercase, hyphens, ≤40 chars, globally unique) |
 | Resource group | **Auto-derive** as `<app-name>-rg` — do NOT ask |

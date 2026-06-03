@@ -31,11 +31,10 @@ Framework detection is **advisory only**. The deployment never blocks because of
 |---|---|
 | `flask` | Skip startup auto-config. Oryx auto-detects Flask and starts it. |
 | `django` | Skip startup auto-config. Oryx auto-detects Django via `wsgi.py` and starts it. |
-| `fastapi` + Python **3.14** runtime | Skip startup auto-config. Oryx auto-detects FastAPI on 3.14 and starts it. |
-| `fastapi` + Python **<3.14** runtime | **Auto-set** startup: `python -m uvicorn main:app --host 0.0.0.0` (replace `main:app` with the discovered entry point if different — e.g., `app.main:app`). |
+| `fastapi` (any Python version) | **Always auto-set** startup: `python -m uvicorn main:app --host 0.0.0.0` (replace `main:app` with the discovered entry point if different — e.g., `app.main:app`). The skill does not rely on Oryx FastAPI auto-detection. |
 | `wsgi-generic`, `asgi-generic`, `unknown` | Skip startup auto-config. Emit warning: *"Could not auto-detect a supported framework (only Flask, Django, and FastAPI are auto-configured today). The app will deploy, but you may need to set the startup command manually: `az webapp config set --startup-file '<your-command>'`"* |
 
-> Determining the runtime version: this skill defaults to `PYTHON:3.14` (see [create-app.md](create-app.md) §4). If the existing web app uses a different version, check it with `az webapp config show -n <app> -g <rg> --query linuxFxVersion -o tsv` — it returns e.g. `PYTHON|3.13`. Treat anything below `3.14` as "Python <3.14" for FastAPI startup decisions.
+> Priority rule when multiple framework markers are present (e.g., `flask` + `fastapi` in the same `requirements.txt`): treat **FastAPI** as the winner if any FastAPI module is imported from the entry point; otherwise prefer the framework whose tokens appear first in `requirements.txt`.
 
 ## Important rules
 
@@ -65,16 +64,7 @@ or
 ```
 Detected: FastAPI (Python 3.14)
 Entry point: main.py → app
-Startup command will be auto-detected by Oryx — no startup command needed.
-```
-
-or
-
-```
-Detected: FastAPI (Python 3.13)
-Entry point: main.py → app
-Python runtime is older than 3.14, so Oryx will not auto-start FastAPI.
-Setting startup command:
+Setting startup command (always set for FastAPI):
   python -m uvicorn main:app --host 0.0.0.0
 ```
 

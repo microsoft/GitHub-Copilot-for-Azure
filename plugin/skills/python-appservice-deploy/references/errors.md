@@ -16,7 +16,7 @@ Deploy failed?
 | `Container ... didn't respond to HTTP pings on port: 8000` | Wrong/missing startup command, or app bound to 127.0.0.1 | Set startup to bind `0.0.0.0:8000` ([startup-commands.md](startup-commands.md)) |
 | `ModuleNotFoundError: No module named 'flask'` (or any dep) | Build skipped, deps not installed | `az webapp config appsettings set --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true` then redeploy |
 | `gunicorn: command not found` | `gunicorn` missing from `requirements.txt` | Add `gunicorn>=21` to requirements, redeploy |
-| Deploy returns 202 but site still shows default page | Async deploy not finished | Wait, or re-run with `--async false`; check `az webapp log deployment list` |
+| Deploy returns 202 but site still shows default page | Async deploy not finished | Wait, or re-run with `--track-status true` to make the CLI block until completion; check `az webapp log deployment list` |
 | `OperationNotAllowed: ... requires the plan to be Linux` | Plan was created as Windows | Recreate plan with `--is-linux` ([create-app.md](create-app.md)) |
 | `Resource group '<rg>' could not be found` | RG missing | `az group create -n <rg> -l <region>` |
 | `An app with name '<app>' already exists` | Global name collision | Pick a different name (App Service host names are globally unique) |

@@ -59,47 +59,26 @@ Do **not** call `ask_user` for confirmation here — just print the summary and 
 
 ## 1f. Transient error handling for create commands
 
-ARM `PUT` operations (`az group create`, `az appservice plan create`, `az webapp create`) occasionally fail with **transient** errors such as `Connection reset`, `Connection aborted`, `ConnectionError`, `HTTPSConnectionPool ... Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `TooManyRequests` (HTTP `429`), or HTTP `502 / 503 / 504`. These are **not** configuration problems — they're flaky ARM frontend / network blips and they almost always succeed on the next attempt.
+ARM `PUT` operations (`az group create`, `az appservice plan create`, `az webapp create`) sometimes fail with **transient** errors (`Connection reset`, `Connection aborted`, `ConnectionError`, `Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `TooManyRequests` / HTTP `429`, or HTTP `502`/`503`/`504`). These are flaky ARM frontend / network blips, not configuration problems — they almost always succeed on retry.
 
-**Rule for the agent:** Apply this retry pattern to every `az ... create` command in this skill (sections 2, 3, and 4 below) **without narrating "let me retry"** to the user. Just do it silently.
+**Rules:**
 
-- Up to **2 retries** (3 attempts total).
-- Wait **5 seconds** before retry #1, **15 seconds** before retry #2 (simple backoff). If the error includes a `Retry-After` header, honour that value instead of the fixed delay.
-- **Always wrap the full idempotent pair** `(az ... show ... 2>/dev/null) || (az ... create ...)` — never the bare `create`. If a previous attempt succeeded server-side but the client lost the connection, the `show` short-circuits the next attempt and avoids a false `Conflict / NameAlreadyExists` failure.
-- **Only retry** when stderr matches one of: `Connection reset`, `Connection aborted`, `ConnectionError`, `Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `Max retries exceeded`, `TooManyRequests`, HTTP `429`, `502`, `503`, `504`.
-- **Do NOT retry** on: `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, or any `4xx` other than `429`. (`Conflict` / `NameAlreadyExists` will be short-circuited by the `show` half of the idempotent pair above and should not be hit during retry.)
-- After the final failed attempt, surface the original error to the user with one line of context (e.g. "ARM frontend is returning transient errors — please retry in a few minutes").
-
-PowerShell pattern (apply around the full `show || create` pair from sections 2, 3, and 4):
-
-```powershell
-$attempt = 0; $maxAttempts = 3
-while ($true) {
-  $attempt++
-  # Wrap the full idempotent pair, not just `create`:
-  $err = (& { <az-show-command> -o none 2>$null; if ($LASTEXITCODE -ne 0) { <az-create-command> -o none } }) 2>&1
-  if ($LASTEXITCODE -eq 0) { break }
-  $transient = $err -match 'Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'
-  if (-not $transient -or $attempt -ge $maxAttempts) { Write-Error $err; throw "az create failed" }
-  Start-Sleep -Seconds (@(5,15)[$attempt-1])
-}
-```
-
-Bash equivalent (wrap the full `show || create` pair; same retry / non-retry classification):
+- Apply to every `az ... create` in this skill (§§2–4); retry **silently** (do not narrate "let me retry").
+- Up to **2 retries** (3 attempts total); wait **5s** before retry #1 and **15s** before retry #2. If the error carries a `Retry-After` header, honour that value instead.
+- **Wrap the full idempotent pair** `(az ... show ...) || (az ... create ...)` — never the bare `create`. The `show` short-circuits any partially-succeeded prior attempt and avoids false `Conflict` / `NameAlreadyExists`.
+- **Retry only** when stderr matches the `TRANSIENT` regex below. Do **NOT** retry on `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, or any non-429 4xx. After 3 failed attempts, surface the original error with one line of context (e.g., "ARM frontend is returning transient errors — please retry in a few minutes").
 
 ```bash
+TRANSIENT='Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'
 for attempt in 1 2 3; do
-  # Wrap the full idempotent pair, not just `create`:
   if err=$({ <az-show-command> -o none 2>/dev/null || <az-create-command> -o none; } 2>&1); then break; fi
-  if ! echo "$err" | grep -qE 'Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'; then
-    echo "$err" >&2; exit 1
-  fi
+  if ! echo "$err" | grep -qE "$TRANSIENT"; then echo "$err" >&2; exit 1; fi
   [ $attempt -eq 3 ] && { echo "$err" >&2; exit 1; }
   sleep $([ $attempt -eq 1 ] && echo 5 || echo 15)
 done
 ```
 
-> 💡 Because the retry wraps `(show || create)`, a `Conflict` / `NameAlreadyExists` from a partial first attempt cannot bubble up — the second attempt's `show` succeeds and short-circuits the `create`.
+**PowerShell adaptation:** replace `2>/dev/null` → `2>$null`; swap the loop for `for ($i=1; $i -le 3; $i++)`; use `$err -match $TRANSIENT` instead of `grep -qE`; use `Start-Sleep -Seconds (@(5,15)[$i-1])`. Same `TRANSIENT` regex.
 
 ## 2. Resource Group
 
