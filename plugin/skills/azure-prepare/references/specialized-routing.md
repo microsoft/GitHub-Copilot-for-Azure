@@ -9,9 +9,8 @@
 | Priority | User prompt mentions | Invoke skill FIRST | Then resume azure-prepare at |
 |----------|---------------------|--------------------|-----------------------------|
 | **1 (highest)** | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** | Phase 1 Step 4 (Select Recipe) — azure-cloud-migrate does assessment + code conversion, then azure-prepare takes over for infrastructure, local testing, or deployment |
-| 2 | copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient, sendAndWait, copilot-sdk-service | **azure-hosted-copilot-sdk** | Phase 1 Step 4 (Select Recipe) |
-| 3 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
-| 4 (lowest) | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** | Phase 1 Step 4 — select **durable** recipe. **MUST** load [durable.md](services/functions/durable.md), [DTS reference](services/durable-task-scheduler/README.md), and [DTS Bicep patterns](services/durable-task-scheduler/bicep.md). |
+| 2 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, queue trigger, func new, func start | Stay in **azure-prepare** | Phase 1 Step 4 (Select Recipe) — prefer Azure Functions templates |
+| 3 (lowest) | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** | Phase 1 Step 4 — select **durable** recipe. **MUST** load [durable.md](services/functions/durable.md), [DTS reference](services/durable-task-scheduler/README.md), and [DTS Bicep patterns](services/durable-task-scheduler/bicep.md). |
 
 > ⚠️ This checks the user's **prompt text**, not just existing code. Essential for greenfield projects where there is no codebase to scan.
 
@@ -23,8 +22,6 @@ azure-prepare is the default entry point for all Azure app work. Some technologi
 - Optimized infrastructure patterns
 
 Without this check, azure-prepare generates generic infrastructure that misses these optimizations.
-
-> ⚠️ **Re-entry guard**: When azure-prepare is invoked as a **resume** from a specialized skill (e.g., azure-hosted-copilot-sdk Step 4), **skip this routing check** and proceed directly to Step 4. The specialized skill has already completed its work.
 
 ## Flow
 
