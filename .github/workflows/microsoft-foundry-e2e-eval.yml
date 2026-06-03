@@ -196,7 +196,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          eval_results_md="$(find ./results -mindepth 2 -maxdepth 2 -type f -name eval-results.md | sort | tail -n 1 || true)"
+          eval_results_md="$(find ./results -type f -name eval-results.md -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
           if [[ -z "${eval_results_md}" ]]; then
             echo "::error::No eval-results.md found under ./results."
             exit 1

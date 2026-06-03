@@ -49,7 +49,7 @@ jobs:
             }
 
             const body = context.payload.comment.body;
-            const commandPattern = /^\/foundry-e2e(?:\s+branch=([A-Za-z0-9._/-]+))?$/i;
+            const commandPattern = /^\/foundry-e2e(?:\s+e2e-branch=([A-Za-z0-9._/-]+))?$/i;
             const commandLine = body
               .split(/\r?\n/)
               .map((line) => line.trim())
@@ -64,7 +64,7 @@ jobs:
             const commandMatch = commandPattern.exec(commandLine);
             if (!commandMatch) {
               throw new Error(
-                'Invalid command. Use "/foundry-e2e" or "/foundry-e2e branch=<branch>".'
+                'Invalid command. Use "/foundry-e2e" or "/foundry-e2e e2e-branch=<branch>".'
               );
             }
 
