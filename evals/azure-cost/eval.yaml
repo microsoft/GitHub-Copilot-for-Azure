@@ -372,6 +372,48 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ═══════════════════════════════════════════
+  # App Service Cost Optimization routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── appservice-idle-slots-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "App Service idle deployment slots cost"
+    prompt: "I have deployment slots on my App Service that aren't being used, how much are they costing me?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── appservice-plan-downgrade-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "App Service plan downgrade savings"
+    prompt: "Can I save money by downgrading my Premium App Service plans in dev/test to a cheaper tier?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
   # Response quality tests
   # ═══════════════════════════════════════════
 

@@ -57,13 +57,14 @@ azure__get_azure_bestpractices({
 
 Wait for user response before proceeding.
 
-## Step 1.7: Storage-Specific Analysis (Conditional)
+## Steps 1.7–1.75: Service-Specific Analysis (Conditional)
 
-**If the user requests Storage cost optimization**, load: [Azure Storage Cost Optimization](./services/storage/azure-storage.md)
+For service-focused requests, load the relevant guide and follow it. For general optimization, skip to Step 2.
 
-**Triggers:** "storage account cost", "blob storage savings", "LRS/GRS/ZRS downgrade", "storage lifecycle savings", "reduce storage spending".
-
-For Storage-only requests, follow the Storage reference. For general optimization that includes storage, continue to Step 2.
+| Triggers | Reference |
+|----------|-----------|
+| "storage account cost", "blob savings", "LRS/GRS downgrade", "storage lifecycle savings" | [Storage](./services/storage/azure-storage.md) |
+| "app service cost", "plan savings", "web app spending", "idle slots", "overprovisioned plan" | [App Service](./services/appservice/azure-app-service.md) |
 
 ## Step 1.8: AKS-Specific Analysis (Conditional)
 
@@ -75,14 +76,14 @@ For Storage-only requests, follow the Storage reference. For general optimizatio
 - User reports a cost spike, unusual cluster utilization, or wants budget alerts
 
 **Tool Selection:**
-- **Prefer MCP first**: Use `azure__aks` for AKS operations (list clusters, get node pools, inspect configuration) — it provides richer metadata and is consistent with AKS skill conventions in this repo
-- **Fall back to CLI**: Use `az aks` and `kubectl` only when the specific operation cannot be performed via the MCP surface
+- **Prefer MCP first**: Use `azure__aks` for AKS operations (list clusters, get node pools, inspect configuration)
+- **Fall back to CLI**: Use `az aks` and `kubectl` only when MCP doesn't cover the operation
 
-**Reference files (load only what is needed for the request):**
-- [Cost Analysis Add-on](./azure-aks-cost-addon.md) — enable namespace-level cost visibility
-- [Anomaly Investigation](./azure-aks-anomalies.md) — cost spikes, scaling events, budget alerts
+**Reference files:**
+- [Cost Analysis Add-on](./azure-aks-cost-addon.md)
+- [Anomaly Investigation](./azure-aks-anomalies.md)
 
-> **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the relevant reference file above.
+For general optimization (including AKS resource groups), continue to Step 2.
 
 ## Step 1.9: Choose Analysis Scope (for AKS-specific analysis)
 

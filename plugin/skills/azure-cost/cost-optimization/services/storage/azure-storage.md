@@ -1,6 +1,6 @@
 ## Azure Storage Cost Optimization
 
-Reference guide for identifying cost savings opportunities in Azure Storage accounts through tier analysis, lifecycle policies, and orphaned resource detection.
+Identify cost savings in Azure Storage through tier analysis, lifecycle policies, and orphaned resource detection.
 
 ## Subscription Input Options
 
