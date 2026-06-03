@@ -131,7 +131,7 @@ stimuli:
       cost: llm
       area: deploy
     prompt: |
-      Build a hosted agent in Microsoft Foundry that can do basic math, and then deploy.
+      Build a hosted agent in Microsoft Foundry that can do basic math, and then deploy. Use an agent name with the `foundry-skill-e2e` prefix and add a random suffix.
 
       Use the current workspace root as the project root. Create generated files directly in the current workspace root. Do not create a nested project folder.
       Use these environment variables as the Foundry-related configuration values:
