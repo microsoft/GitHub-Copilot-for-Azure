@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       stimulus_id:
-        description: "Optional stimulus id tag to run, for example: build-hosted-math-agent"
+        description: "Optional stimulus id tag to run, for example: create-hotel-booking-agent"
         required: false
         type: string
 
@@ -83,6 +83,10 @@ jobs:
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           STIMULUS_ID: ${{ inputs.stimulus_id }}
+          FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT }}
+          FOUNDRY_E2E_EVAL_ARM_RESOURCE: ${{ secrets.FOUNDRY_E2E_EVAL_ARM_RESOURCE }}
+          FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL: ${{ secrets.FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL }}
+          FOUNDRY_E2E_EVAL_ACR: ${{ secrets.FOUNDRY_E2E_EVAL_ACR }}
         run: |
           set -euo pipefail
 
@@ -99,6 +103,10 @@ jobs:
             --output jsonl \
             --junit \
             --threshold 0.8
+
+      - name: Write Microsoft Foundry E2E summary
+        if: always()
+        run: node tests/scripts/write-vally-e2e-summary.js --results-dir ./results
 
       - name: Upload Vally results
         if: always()
