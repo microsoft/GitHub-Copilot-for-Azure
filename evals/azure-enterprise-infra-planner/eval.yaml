@@ -62,7 +62,7 @@ stimuli:
       # Task grader: plan_generated (file must_exist)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -164,10 +164,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)recovery|replicate|failover"
       # Global: has_output
       - type: completed
@@ -234,10 +234,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)container.?app"
       # Global: has_output
       - type: completed
@@ -376,10 +376,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)iot|iothub"
       # Global: has_output
       - type: completed
@@ -446,10 +446,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)ml|machinelearning|endpoint"
       # Global: has_output
       - type: completed
@@ -516,10 +516,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)ml|machinelearning|workspace"
       # Global: has_output
       - type: completed
@@ -586,10 +586,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)function|eventgrid|serverless"
       # Global: has_output
       - type: completed
@@ -692,10 +692,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)virtual.?machine|vm"
       # Global: has_output
       - type: completed
