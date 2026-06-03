@@ -25,7 +25,7 @@ azure-prepare is the default entry point for all Azure app work. Some technologi
 
 Without this check, azure-prepare generates generic infrastructure that misses these optimizations.
 
-> ⚠️ **Re-entry guard**: When azure-prepare is invoked as a **resume** from a specialized skill (e.g., azure-hosted-copilot-sdk Step 4), **skip this routing check** and proceed directly to Step 4. The specialized skill has already completed its work.
+> ⚠️ **Re-entry guard**: When azure-prepare is invoked as a **resume** from a specialized skill (e.g., `azure-hosted-copilot-sdk` Step 4, or `python-appservice-deploy` handing back for full-infra needs like VNet / Key Vault / DB provisioning), **skip this routing check** and proceed directly to Step 4. The specialized skill has already completed its work.
 
 ## Flow
 

@@ -8,7 +8,7 @@ Use this path when there is **no** `azure.yaml` or it doesn't target `appservice
 
 - `az login` complete
 - Subscription, resource group, region, and app name decided (see [create-app.md](create-app.md))
-- App Service Plan (Linux, P0V3) and Web App (Python runtime) exist (see [create-app.md](create-app.md))
+- App Service Plan (Linux, P0v3) and Web App (Python runtime) exist (see [create-app.md](create-app.md))
 
 ## 1. Enable server-side build
 

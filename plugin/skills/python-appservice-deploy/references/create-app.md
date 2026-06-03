@@ -49,7 +49,7 @@ Using these defaults for your Python App Service deployment:
   • Resource group  : flask-app-demo-27may-rg     (auto-derived)
   • App Service Plan: flask-app-demo-27may-plan   (auto-derived)
   • Region          : eastus2                     (CLI default)
-  • Plan SKU        : P0V3 Linux
+  • Plan SKU        : P0v3 Linux
   • Runtime         : PYTHON:3.14
 
 Proceeding with create. Reply "stop" within the next message to change any value.
@@ -89,7 +89,7 @@ az group show -n <rg> --only-show-errors 2>/dev/null || \
 
 ## 3. App Service Plan — **Linux, P0v3 by default**
 
-> ⚠️ **MANDATORY**: Use `--is-linux` and `--sku P0V3`. Do not change OS or SKU unless the user explicitly requests it.
+> ⚠️ **MANDATORY**: Use `--is-linux` and `--sku P0v3`. Do not change OS or SKU unless the user explicitly requests it.
 
 ```bash
 az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
@@ -97,7 +97,7 @@ az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
     -n <plan> \
     -g <rg> \
     --is-linux \
-    --sku P0V3 \
+    --sku P0v3 \
     -l <region>
 ```
 

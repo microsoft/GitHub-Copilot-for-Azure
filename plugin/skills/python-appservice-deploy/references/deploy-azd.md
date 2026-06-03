@@ -33,7 +33,7 @@ If no `azd` environment exists in this folder:
 azd env new <env-name>
 azd env set AZURE_LOCATION <region>
 # Optional: override default SKU via the template's parameters
-azd env set APP_SERVICE_SKU P0V3
+azd env set APP_SERVICE_SKU P0v3
 ```
 
 Then provision + deploy in one call:
