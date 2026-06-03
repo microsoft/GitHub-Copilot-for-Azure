@@ -23,6 +23,10 @@ stimuli:
   - name: "Create hotel booking agent"
     tags:
       id: create-hotel-booking-agent
+      type: e2e
+      tier: full
+      cost: llm
+      area: create
     prompt: |
       Create a hotel booking AI agent app. The app should leverage an AI language model to help users search for available hotels in Seattle based on check-in/check-out dates and budget preferences. Generate the code to current workspace and if current workspace already contains a project, ask the user where to put the generated code.
 
@@ -68,6 +72,10 @@ stimuli:
   - name: "Create writer reviewer workflow"
     tags:
       id: create-writer-reviewer-workflow
+      type: e2e
+      tier: full
+      cost: llm
+      area: create
     prompt: |
       Create a multi-agent workflow app with Agent Framework SDK.
       Scenario:
@@ -118,6 +126,10 @@ stimuli:
   - name: "Deploy hosted math agent"
     tags:
       id: deploy-hosted-math-agent
+      type: e2e
+      tier: full
+      cost: llm
+      area: deploy
     prompt: |
       Build a hosted agent in Microsoft Foundry that can do basic math, and then deploy.
 

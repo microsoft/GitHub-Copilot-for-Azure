@@ -60,10 +60,10 @@ jobs:
                 username: actorToAuthorize,
               });
 
-            const allowedPermissions = new Set(['admin', 'write']);
+            const allowedPermissions = new Set(['admin', 'maintain', 'write']);
             const permission = collaboratorPermission.permission;
             if (!allowedPermissions.has(permission)) {
-              throw new Error(`${actorToAuthorize} has ${permission} permission; write permission is required.`);
+              throw new Error(`${actorToAuthorize} has ${permission} permission; write, maintain, or admin permission is required.`);
             }
 
             core.info(`Authorized ${actorToAuthorize} with ${permission} permission.`);

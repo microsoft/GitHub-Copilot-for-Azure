@@ -12,10 +12,7 @@ jobs:
     if: >
       github.repository == 'microsoft/GitHub-Copilot-for-Azure' &&
       github.event.issue.pull_request &&
-      (
-        contains(github.event.comment.body, '@copilot run foundry e2e') ||
-        contains(github.event.comment.body, '/foundry-e2e')
-      )
+      contains(github.event.comment.body, '/foundry-e2e')
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -35,10 +32,10 @@ jobs:
                 username: context.payload.comment.user.login,
               });
 
-            const allowedPermissions = new Set(['admin', 'write']);
+            const allowedPermissions = new Set(['admin', 'maintain', 'write']);
             const permission = collaboratorPermission.permission;
             if (!allowedPermissions.has(permission)) {
-              throw new Error(`Commenter has ${permission} permission; write permission is required.`);
+              throw new Error(`Commenter has ${permission} permission; write, maintain, or admin permission is required.`);
             }
 
             const prNumber = context.payload.issue.number;
@@ -52,12 +49,12 @@ jobs:
             }
 
             const body = context.payload.comment.body;
-            const commandPattern = /^(?:@copilot\s+run\s+foundry\s+e2e|\/foundry-e2e)(?:\s+branch=([A-Za-z0-9._/-]+))?$/i;
+            const commandPattern = /^\/foundry-e2e(?:\s+branch=([A-Za-z0-9._/-]+))?$/i;
             const commandLine = body
               .split(/\r?\n/)
               .map((line) => line.trim())
               .find((line) =>
-                /^(?:@copilot\s+run\s+foundry\s+e2e|\/foundry-e2e)\b/i.test(line)
+                /^\/foundry-e2e\b/i.test(line)
               );
 
             if (!commandLine) {
@@ -67,7 +64,7 @@ jobs:
             const commandMatch = commandPattern.exec(commandLine);
             if (!commandMatch) {
               throw new Error(
-                'Invalid command. Use "@copilot run foundry e2e" or "@copilot run foundry e2e branch=<branch>".'
+                'Invalid command. Use "/foundry-e2e" or "/foundry-e2e branch=<branch>".'
               );
             }
 
