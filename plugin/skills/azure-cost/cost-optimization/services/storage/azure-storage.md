@@ -20,7 +20,7 @@ When analyzing each storage account, apply these prioritized rules:
 
 | Priority | Rule | Detection Logic | Recommendation | Avg Savings |
 |----------|------|----------------|----------------|-------------|
-| 🔴 Critical | Orphaned Disks | Managed disks with `managedBy` empty | Delete or snapshot and delete | $20-500/mo |
+| 🔴 Critical | Orphaned Managed Disks (Compute) | Managed disks with `managedBy` empty (billed as storage) | Delete or snapshot and delete | $20-500/mo |
 | 🔴 Critical | Premium in Dev | `sku.name` contains `Premium` AND `tags.environment in ['dev','test','staging']` | Downgrade to Standard | $50-400/mo |
 | 🟠 High | No Lifecycle Policy | Blob service has no lifecycle management rules configured | Add tiering/deletion rules | $50-300/mo |
 | 🟠 High | Hot-Only with Infrequent Access | >80% of blobs unaccessed for 30+ days AND all in Hot tier | Move to Cool or enable auto-tiering | $30-200/mo |

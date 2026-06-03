@@ -317,7 +317,7 @@ stimuli:
   # ── storage-lifecycle-policy-prompt ──
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Storage lifecycle policy optimization"
-    prompt: "Help me set up lifecycle policies for my Azure storage accounts to move old data to cool and archive tiers"
+    prompt: "Help me reduce storage costs by setting up lifecycle policies to move old data to cheaper tiers"
     tags:
       type: integration
       tier: full
@@ -355,7 +355,7 @@ stimuli:
   # ── storage-blob-tiering-prompt ──
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Blob access tier optimization"
-    prompt: "Analyze my blob storage and recommend which containers should be moved from hot to cool tier"
+    prompt: "Analyze my blob storage costs and recommend which containers should move to cheaper tiers to save money"
     tags:
       type: integration
       tier: full

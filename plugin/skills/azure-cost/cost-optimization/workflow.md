@@ -61,9 +61,7 @@ Wait for user response before proceeding.
 
 **If the user requests Storage cost optimization**, load: [Azure Storage Cost Optimization](./services/storage/azure-storage.md)
 
-**Triggers:** user mentions "storage account", "blob", "tiering", "lifecycle policy", "archive", orphaned disks, or redundancy.
-
-> For general optimization, skip to Step 2.
+**Triggers:** "storage account cost", "blob storage savings", "LRS/GRS/ZRS downgrade", "storage lifecycle savings", "reduce storage spending".
 
 ## Step 1.8: AKS-Specific Analysis (Conditional)
 
