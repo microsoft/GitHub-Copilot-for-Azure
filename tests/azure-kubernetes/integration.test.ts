@@ -30,8 +30,11 @@ if (skipTests && skipReason) {
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
     test("invokes azure-kubernetes skill for AKS cluster creation prompt", async () => {

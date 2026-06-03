@@ -38,7 +38,7 @@ function isReadinessWorkflowInvoked(agentMetadata: Parameters<typeof isSkillInvo
     isToolCalled(
       agentMetadata,
       "view",
-      /azure-kubernetes\/azure-kubernetes-automatic-readiness\//,
+      /azure-kubernetes[/\\]azure-kubernetes-automatic-readiness[/\\]/,
     )
   ) {
     return true;
@@ -57,13 +57,16 @@ const skipTests = shouldSkipIntegrationTests();
 const skipReason = getIntegrationSkipReason();
 
 if (skipTests && skipReason) {
-  console.log(`Skipping integration tests: ${skipReason}`);
+  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;
 
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+describeIntegration(`${SKILL_NAME} - Integration Tests`, () => {
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
     test("invokes skill for AKS Automatic migration readiness prompt", async () => {
