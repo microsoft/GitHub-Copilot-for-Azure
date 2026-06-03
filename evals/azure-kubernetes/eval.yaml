@@ -1,15 +1,13 @@
 # Vally eval config — migrated from Jest integration tests
 # Source: tests/azure-kubernetes/integration.test.ts
-#         tests/azure-kubernetes/azure-kubernetes-automatic-readiness/integration.test.ts
 # Migration: Jest → Vally
 #
-# Fixture-based stimuli re-added per PR #2472 review comment:
-# https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2472#issuecomment-4596446181
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
 
 name: azure-kubernetes-integration-eval
 description: |
-  Integration evaluation for azure-kubernetes skill — covers routing, output quality,
-  and fixture-based AKS Automatic readiness assessment tests.
+  Integration evaluation for azure-kubernetes skill
 tags:
   type: integration
   skill: azure-kubernetes
@@ -29,6 +27,8 @@ scoring:
 
 stimuli:
   # ── routing-aks-creation-prompt ──
+  # Jest: "invokes azure-kubernetes skill for AKS cluster creation prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: production-ready AKS cluster creation"
     prompt: "Help me create a production-ready AKS cluster with best practices"
     tags:
@@ -47,6 +47,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── routing-pod-rightsizing-prompt ──
+  # Jest: "invokes azure-kubernetes skill for pod rightsizing prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: pod rightsizing"
     prompt: "My AKS pods are over-provisioned, how do I rightsize them?"
     tags:
@@ -65,6 +67,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── routing-cluster-autoscaler-prompt ──
+  # Jest: "invokes azure-kubernetes skill for cluster autoscaler prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: enable Cluster Autoscaler"
     prompt: "How do I enable and configure Cluster Autoscaler on my AKS cluster?"
     tags:
@@ -83,6 +87,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── routing-cas-profile-tuning-prompt ──
+  # Jest: "invokes azure-kubernetes skill for CAS profile tuning prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: CAS aggressive scale-down tuning"
     prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down"
     tags:
@@ -101,6 +107,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── routing-spot-node-pool-prompt ──
+  # Jest: "invokes azure-kubernetes skill for spot node pool prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: add Spot VM node pool"
     prompt: "How do I add a Spot VM node pool to my AKS cluster?"
     tags:
@@ -119,6 +127,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── routing-vpa-setup-prompt ──
+  # Jest: "invokes azure-kubernetes skill for VPA setup prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Routing: enable Vertical Pod Autoscaler"
     prompt: "How do I enable Vertical Pod Autoscaler on AKS to get rightsizing recommendations?"
     tags:
@@ -137,6 +147,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── day0-guidance-output-prompt ──
+  # Jest: "responds with Day-0 vs Day-1 guidance"
+  # Expects response mentioning tier, networking, or API server
   - name: "Output: Day-0 AKS decisions"
     prompt: "What Day-0 decisions do I need to make for AKS?"
     tags:
@@ -154,6 +166,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── aks-sku-recommendation-output-prompt ──
+  # Jest: "recommends AKS Automatic vs Standard appropriately"
+  # Expects response mentioning Automatic or Standard SKU
   - name: "Output: AKS Automatic vs Standard recommendation"
     prompt: "Should I use AKS Automatic or Standard for my production workload?"
     tags:
@@ -171,6 +185,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── networking-cni-output-prompt ──
+  # Jest: "provides networking recommendations"
+  # Expects response mentioning CNI, overlay, or VNet
   - name: "Output: AKS networking with VNet-routable IPs"
     prompt: "How should I configure AKS networking for pods that need VNet-routable IPs?"
     tags:
@@ -188,6 +204,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── security-best-practices-output-prompt ──
+  # Jest: "covers security best practices"
+  # Expects response mentioning identity, Entra, workload, or Key Vault
   - name: "Output: AKS security best practices"
     prompt: "What security best practices should I follow for AKS?"
     tags:
@@ -205,6 +223,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── pod-rightsizing-output-prompt ──
+  # Jest: "response mentions resource requests and limits for pod rightsizing prompt"
+  # Expects response mentioning kubectl top, VPA, or resource requests
   - name: "Output: pod rightsizing with kubectl or VPA"
     prompt: "My AKS pods are over-provisioned, how do I rightsize them?"
     tags:
@@ -222,6 +242,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── cluster-autoscaler-output-prompt ──
+  # Jest: "response mentions autoscaler commands for cluster autoscaler prompt"
+  # Expects response mentioning enable-cluster-autoscaler, min-count, or scale-down
   - name: "Output: Cluster Autoscaler configuration commands"
     prompt: "How do I enable and configure Cluster Autoscaler on my AKS cluster?"
     tags:
@@ -239,6 +261,9 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── cas-profile-tuning-output-prompt ──
+  # Jest: "response mentions autoscaler profile parameters for CAS tuning prompt"
+  # Expects response mentioning scale-down-unneeded-time, utilization-threshold,
+  # cluster-autoscaler-profile, or scale-down-delay
   - name: "Output: CAS profile parameters for aggressive scale-down"
     prompt: "CAS is enabled but idle nodes persist due to conservative profile settings, tune it for more aggressive scale-down"
     tags:
@@ -256,6 +281,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── spot-node-pool-output-prompt ──
+  # Jest: "response mentions spot priority and eviction for spot node pool prompt"
+  # Expects response mentioning Spot, eviction-policy, or scalesetpriority
   - name: "Output: Spot VM node pool with eviction policy"
     prompt: "How do I add a Spot VM node pool to my AKS cluster?"
     tags:
@@ -273,6 +300,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── vpa-setup-output-prompt ──
+  # Jest: "response mentions VPA and recommendation mode for VPA setup prompt"
+  # Expects response mentioning VerticalPodAutoscaler, updateMode, or VPA
   - name: "Output: VPA setup with recommendation mode"
     prompt: "How do I enable Vertical Pod Autoscaler on AKS to get rightsizing recommendations?"
     tags:
@@ -291,9 +320,12 @@ stimuli:
 
   # ────────────────────────────────────────────────────────────────────────────
   # azure-kubernetes-automatic-readiness stimuli
+  # Source: tests/azure-kubernetes/azure-kubernetes-automatic-readiness/integration.test.ts
   # ────────────────────────────────────────────────────────────────────────────
 
   # ── fix-guidance-output-prompt ──
+  # Jest: "offers fix guidance for incompatible workloads"
+  # Expects response mentioning fix, remediation, Deployment Safeguards, or incompatible
   - name: "Output: fix guidance for incompatible workloads"
     prompt: "What would break if I switch my AKS Standard cluster to AKS Automatic?"
     tags:
@@ -311,6 +343,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── deployment-safeguards-output-prompt ──
+  # Jest: "covers Deployment Safeguards policies"
+  # Expects response mentioning Safeguards, policy, resource requests, or probes
   - name: "Output: Deployment Safeguards policies coverage"
     prompt: "What AKS Automatic policies will deny my deployments?"
     tags:
@@ -329,10 +363,13 @@ stimuli:
 
   # ────────────────────────────────────────────────────────────────────────────
   # Fixture-based: AKS Automatic readiness tests (require workspace manifests)
-  # Re-added per PR #2472 review — these were removed because they lacked fixtures
+  # Re-added per PR #2472 review:
+  # https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2472#issuecomment-4596446181
   # ────────────────────────────────────────────────────────────────────────────
 
   # ── fixture-manifest-validation ──
+  # Jest: "validates manifests against AKS Automatic constraints"
+  # Expects response identifying hostNetwork, NET_ADMIN, missing resources/probes
   - name: "Fixture: validate manifests against AKS Automatic constraints"
     prompt: "I have a deployment.yaml in my workspace. Validate my Kubernetes manifests against AKS Automatic constraints and tell me what violations exist."
     environment:
@@ -358,6 +395,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── fixture-migration-compatibility ──
+  # Jest: "checks AKS Automatic migration compatibility for workloads"
+  # Expects response mentioning compatibility, migration readiness, or tolerations
   - name: "Fixture: AKS Automatic migration compatibility check"
     prompt: "I have a workloads.yaml in my workspace. Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible."
     environment:
