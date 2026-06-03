@@ -1,0 +1,63 @@
+# Vally eval config for Azure-authenticated Microsoft Foundry E2E checks.
+# The filename is e2e-eval.yaml so default discovery does not include it in full.
+
+name: microsoft-foundry-e2e-eval
+description: |
+  E2E evaluation for the microsoft-foundry skill in a workflow that has already
+  logged into Azure CLI and configured azd to use Azure CLI authentication.
+
+tags:
+  type: e2e
+  skill: microsoft-foundry
+
+config:
+  runs: 1
+  timeout: "20m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Build hosted math agent"
+    tags:
+      id: build-hosted-math-agent
+      type: e2e
+      tier: full
+      cost: llm
+      area: create
+    prompt: |
+      Build a hosted agent in Microsoft Foundry that can do basic math.
+      Create the agent files directly in the current working directory.
+      Do not create a nested project folder or subfolder for the agent.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Verify that the coding agent invoked the microsoft-foundry skill,
+            downloaded an appropriate hosted-agent sample from GitHub, and
+            customized it based on the user's request to build a basic math
+            agent. Fail if the agent only gave instructions without creating or
+            customizing project files.
+      - name: static-required-files
+        type: run-command
+        config:
+          command: node
+          args:
+            - -e
+            - |
+              const fs = require("fs");
+              const required = [".env.example", ".gitignore", "agent.yaml"];
+              const missing = required.filter((file) => !fs.existsSync(file));
+              if (missing.length > 0) {
+                console.error(`Missing required file(s): ${missing.join(", ")}`);
+                process.exit(1);
+              }
+              console.log(`Found required files: ${required.join(", ")}`);
