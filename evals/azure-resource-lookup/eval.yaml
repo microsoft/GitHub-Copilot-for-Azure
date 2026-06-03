@@ -2,13 +2,14 @@
 # Source: tests/azure-resource-lookup/integration.test.ts
 # Migration: Jest → Vally
 #
-# The original Jest tests check:
-# 1. Skill routing (isSkillInvoked) — mapped to skill-invocation grader
-# 2. Keyword presence in assistant output — mapped to output-matches grader
+# The original Jest tests were single-run and checked:
+# 1. Keyword presence in assistant output (6 tests)
+# 2. Skill routing via isSkillInvoked (1 test — "List the websites" prompt only)
 #
-# Note on runs:
-# - Routing stimuli use 5 runs with 80% threshold (matching original Jest config).
-# - Response-quality stimuli use 1 run (single-shot keyword checks).
+# In the Vally migration:
+# - Routing stimuli add invocation-rate coverage (5 runs, 80% threshold) beyond
+#   the single isSkillInvoked check in the original Jest suite.
+# - Response-quality stimuli preserve the original keyword-presence checks (1 run).
 # - Stimuli with earlyTerminate tags must NOT use the `completed` grader.
 
 name: azure-resource-lookup-integration-eval
@@ -43,7 +44,7 @@ stimuli:
 
   # ── cross-subscription-resource-inventory ──
   # Jest: "handles cross-subscription resource inventory"
-  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "resource")
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Cross-subscription resource inventory"
     prompt: "How many resources do I have by type across all subscriptions?"
     tags:
@@ -63,7 +64,7 @@ stimuli:
 
   # ── resources-by-location ──
   # Jest: "finds resources by location"
-  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "location")
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Resources by location across subscriptions"
     prompt: "Show me resources by location across subscriptions"
     tags:
@@ -83,7 +84,7 @@ stimuli:
 
   # ── orphaned-disks ──
   # Jest: "finds orphaned disks"
-  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "disk")
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Find orphaned or unattached disks"
     prompt: "Find orphaned or unattached disks in my subscription"
     tags:
@@ -103,7 +104,7 @@ stimuli:
 
   # ── resources-missing-tags ──
   # Jest: "finds resources missing tags"
-  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "tag")
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Find resources missing required tags"
     prompt: "Find resources missing required tags in my subscription"
     tags:
@@ -122,8 +123,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── list-websites ──
-  # Jest: "lists websites in subscription"
-  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "web"|"app"|"site")
+  # Jest: "lists websites in subscription" + "skill should be invoked for resource listing prompts"
+  # Vally: checks skill invocation (preserves original Jest isSkillInvoked assertion)
   - name: "List websites in subscription"
     prompt: "List the websites in my subscription"
     tags:
@@ -143,7 +144,7 @@ stimuli:
 
   # ── resource-health-status ──
   # Jest: "checks resource health status"
-  # Assertions: doesAssistantMessageIncludeKeyword(agentMetadata, "health"|"available"|"resource")
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Find unhealthy or degraded resources"
     prompt: "Find resources in unhealthy or degraded state"
     tags:
