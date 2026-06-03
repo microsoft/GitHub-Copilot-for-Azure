@@ -168,9 +168,9 @@ Include: account name, resource group, SKU/redundancy, kind, monthly cost, capac
 
 **Azure CLI:**
 - `az storage account list --subscription <id>` - List accounts
-- `az storage account show --name <name>` - Get details
-- `az storage account management-policy show` - Check lifecycle policy
-- `az storage account blob-service-properties show --account-name <name> --query lastAccessTimeTrackingPolicy` - Check access tracking
+- `az storage account show --name <name> --resource-group <rg>` - Get details
+- `az storage account management-policy show --account-name <name> --resource-group <rg>` - Check lifecycle policy
+- `az storage account blob-service-properties show --account-name <name> --resource-group <rg> --query lastAccessTimeTrackingPolicy` - Check access tracking
 - `az monitor metrics list --resource <id> --metric UsedCapacity` - Capacity metrics
 - `az monitor metrics list --resource <id> --metric Transactions --dimension ApiName` - Access patterns
 
