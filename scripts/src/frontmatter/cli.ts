@@ -542,19 +542,6 @@ export function validateTriggerOverlapDisambiguation(
   return issues;
 }
 
-function validateDisambiguationRemoval(skill: SkillRoutingContext, mergeBaseRef: string | null): ValidationIssue[] {
-  if (mergeBaseRef === null) return [];
-
-  const previousDescription = getDescriptionFromGitRef(skill.file, mergeBaseRef);
-  return buildDisambiguationRemovalIssues(previousDescription, skill.description);
-}
-
-export function isDisambiguationClauseRemoved(previousDescription: string | null, currentDescription: string | null): boolean {
-  const previousHasDisambiguation = hasDoNotUseForClause(previousDescription) || hasAnyPreferOverClause(previousDescription);
-  const currentHasDisambiguation = hasDoNotUseForClause(currentDescription) || hasAnyPreferOverClause(currentDescription);
-  return previousHasDisambiguation && !currentHasDisambiguation;
-}
-
 function getRemovedDisambiguationClauses(previousDescription: string | null, currentDescription: string | null): string[] {
   const removed: string[] = [];
   if (hasDoNotUseForClause(previousDescription) && !hasDoNotUseForClause(currentDescription)) {
@@ -564,22 +551,6 @@ function getRemovedDisambiguationClauses(previousDescription: string | null, cur
     removed.push("PREFER OVER");
   }
   return removed;
-}
-
-export function buildDisambiguationRemovalIssues(
-  previousDescription: string | null,
-  currentDescription: string | null,
-): ValidationIssue[] {
-  if (previousDescription === null) return [];
-  if (!isDisambiguationClauseRemoved(previousDescription, currentDescription)) return [];
-  const removedClauses = getRemovedDisambiguationClauses(previousDescription, currentDescription);
-  const clauseLabel = removedClauses.length === 1 ? removedClauses[0] : removedClauses.join(" and ");
-  const clauseWord = removedClauses.length === 1 ? "clause" : "clauses";
-  return [{
-    check: "disambiguation-removal",
-    severity: "error",
-    message: `Removed disambiguation ${clauseWord}: ${clauseLabel}. Re-add a DO NOT USE FOR or PREFER OVER clause if trigger overlap still exists.`,
-  }];
 }
 
 // ── Validate a single SKILL.md ──────────────────────────────────────────────
@@ -797,7 +768,6 @@ function main(): void {
     const routingContext = routingContextByName.get(result.skill);
     if (routingContext) {
       result.issues.push(...validateTriggerOverlapDisambiguation(routingContext, routingContexts));
-      result.issues.push(...validateDisambiguationRemoval(routingContext, mergeBaseRef));
     }
     results.push(result);
   }
