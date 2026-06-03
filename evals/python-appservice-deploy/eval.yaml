@@ -60,6 +60,18 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+      # Post-deploy contract: present app URL as https://...azurewebsites.net
+      - type: output-matches
+        config:
+          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
+      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
+      - type: output-matches
+        config:
+          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
+      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
+      - type: output-matches
+        config:
+          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── django-routing ──
   # Triggers source: triggers.test.ts shouldTriggerPrompts (Django entries)
@@ -87,6 +99,18 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+      # Post-deploy contract: present app URL as https://...azurewebsites.net
+      - type: output-matches
+        config:
+          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
+      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
+      - type: output-matches
+        config:
+          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
+      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
+      - type: output-matches
+        config:
+          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── fastapi-routing ──
   # Triggers source: triggers.test.ts shouldTriggerPrompts (FastAPI entries)
@@ -114,6 +138,18 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+      # Post-deploy contract: present app URL as https://...azurewebsites.net
+      - type: output-matches
+        config:
+          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
+      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
+      - type: output-matches
+        config:
+          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
+      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
+      - type: output-matches
+        config:
+          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── generic-python-routing ──
   # Triggers source: triggers.test.ts shouldTriggerPrompts (generic Python entries)
@@ -142,6 +178,18 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+      # Post-deploy contract: present app URL as https://...azurewebsites.net
+      - type: output-matches
+        config:
+          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
+      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
+      - type: output-matches
+        config:
+          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
+      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
+      - type: output-matches
+        config:
+          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── negative: Java on App Service must NOT route here ──
   # Routing boundary: this skill is Python-only. Java/Spring Boot belongs to azure-prepare.

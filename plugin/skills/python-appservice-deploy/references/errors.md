@@ -28,6 +28,17 @@ Deploy failed?
 
 ## Where logs live
 
+> ⚠️ **Prereq for `az webapp log tail` on a fresh app**: filesystem logging must be enabled, otherwise the stream stays empty. Run **once** after the app is created:
+>
+> ```bash
+> az webapp log config -n <app> -g <rg> \
+>   --application-logging filesystem \
+>   --web-server-logging filesystem \
+>   --level information
+> ```
+>
+> `az webapp log deployment list/show` and `az webapp log download` do **not** require this — they read from a different store.
+
 | Log | Command |
 |---|---|
 | Live stream | `az webapp log tail -n <app> -g <rg>` |

@@ -34,7 +34,7 @@ Framework detection is **advisory only**. The deployment never blocks because of
 | `fastapi` (any Python version) | **Always auto-set** startup: `python -m uvicorn main:app --host 0.0.0.0` (replace `main:app` with the discovered entry point if different — e.g., `app.main:app`). The skill does not rely on Oryx FastAPI auto-detection. |
 | `wsgi-generic`, `asgi-generic`, `unknown` | Skip startup auto-config. Emit warning: *"Could not auto-detect a supported framework (only Flask, Django, and FastAPI are auto-configured today). The app will deploy, but you may need to set the startup command manually: `az webapp config set --startup-file '<your-command>'`"* |
 
-> Priority rule when multiple framework markers are present (e.g., `flask` + `fastapi` in the same `requirements.txt`): treat **FastAPI** as the winner if any FastAPI module is imported from the entry point; otherwise prefer the framework whose tokens appear first in `requirements.txt`.
+> Priority rule when both `flask` and `fastapi` appear in `requirements.txt` (or `pyproject.toml`): **always treat as FastAPI** — set the explicit uvicorn startup command. This is deterministic and avoids relying on import-order or token-order heuristics. Rationale: Flask is happily auto-detected by Oryx with no startup command, but FastAPI requires the explicit uvicorn command to run reliably; if the project actually uses Flask as the served app, the user can override the startup command later, but if it uses FastAPI and we silently picked Flask, the container ping fails.
 
 ## Important rules
 

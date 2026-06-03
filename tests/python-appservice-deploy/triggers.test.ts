@@ -21,6 +21,9 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe("Should Trigger", () => {
+    // NOTE: FastAPI uses one code path regardless of Python version (the skill
+    // always sets the uvicorn startup command). No version-keyed trigger tests
+    // are needed — Phase 2 collapsed the previous 3.14-vs-older branch.
     const shouldTriggerPrompts: string[] = [
       // Direct activation phrases from the skill description
       "Deploy my Flask app to App Service",

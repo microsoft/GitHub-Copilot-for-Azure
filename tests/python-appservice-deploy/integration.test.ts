@@ -88,7 +88,7 @@ function extractResourceGroupFromRun(
   return undefined;
 }
 
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
+describeIntegration(`${SKILL_NAME}_deployment-flow - Integration Tests`, () => {
   const agent = useAgentRunner({
     isTest: true,
     useJest: true,

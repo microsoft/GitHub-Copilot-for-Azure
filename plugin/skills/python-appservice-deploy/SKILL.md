@@ -9,101 +9,55 @@ metadata:
 
 # Python on Azure App Service — Code Deploy
 
-This skill owns Python code deployments to Azure App Service, including **Flask**, **Django**, and **FastAPI**. When the prompt mentions **Python**, **Flask**, **Django**, or **FastAPI** + **App Service**, run this FIRST — do not route to `azure-prepare`. Code-deploy only: will create RG + Plan + Web App if missing. For VNet, Key Vault, or databases, hand off to `azure-prepare`.
+Deploys Python (Flask, Django, FastAPI, generic) code to Azure App Service Linux. Creates RG + Plan + Web App if missing. For full infra (VNet, Key Vault, DBs, IaC) hand off to `azure-prepare`.
 
 ## Quick Reference
 
 | Property | Value |
 |---|---|
-| OS | Linux (always) |
-| SKU default | P0v3 |
-| Python default | 3.14 |
-| Deploy tools | `azd` (if `azure.yaml` targets App Service) else `az` CLI |
+| OS · SKU · Python | Linux · P0v3 · 3.14 |
+| Deploy tool | `azd` if `azure.yaml` host: appservice, else `az` CLI `webapp deploy --type zip` |
 | Forbidden | ⛔ `az webapp up` (deprecated) |
-| Package | `az webapp deploy --type zip` |
-| Auto-startup | Flask and Django — auto-detected by Oryx (no startup command set). FastAPI — skill always sets a uvicorn startup command (`python -m uvicorn main:app --host 0.0.0.0`) for reliability across all Python runtimes. Other frameworks get a manual-startup warning. |
+| Auto-startup | Flask/Django → none (Oryx). FastAPI → always `python -m uvicorn main:app --host 0.0.0.0`. Other → warn. |
 
-## When to Use
+## When to Use This Skill
 
-Activate when user wants to deploy/publish/push/ship **any Python web app** to Azure App Service. Flask, Django, and FastAPI are first-class (auto-startup); other frameworks (generic WSGI/ASGI, custom, or unknown) deploy fine too — the skill prints a "framework not detected, please set a startup command" warning after the deploy.
-
-**Do NOT activate for:** non-Python languages, Container Apps / Functions / AKS, full infra design (VNet, KV, DBs), or generic "deploy to Azure" with no App Service mention — route to `azure-prepare`.
-
-## Routing
-
-This skill is the FIRST match for prompts containing **Python**, **Flask**, **Django**, or **FastAPI** + **App Service**. No codebase scan required at routing time.
-
-| Situation | Skill |
-|---|---|
-| "Deploy my Python/Flask/Django/FastAPI app to App Service" | **python-appservice-deploy** ✅ |
-| "Deploy my Python app to Container Apps" | `azure-prepare` |
-| "Deploy Django on App Service with VNet + Postgres" | `azure-prepare` |
-| "Deploy FastAPI on App Service with VNet + Key Vault" | `azure-prepare` |
-
-If during execution the user clearly needs infrastructure beyond RG/Plan/WebApp, stop and hand off to `azure-prepare`.
+Deploy/publish a **Python** web app (Flask, Django, FastAPI, generic) to **Azure App Service**. Do NOT use for non-Python, Container Apps / Functions / AKS, full-infra (VNet, Key Vault, DBs, Terraform/Bicep/IaC), or cross-cloud migration (Lambda, Fargate, Cloud Run).
 
 ## MCP Tools
 
 | Tool | Purpose |
 |---|---|
-| `mcp_azure_mcp_subscription_list` | Discover subscription when missing |
-| `mcp_azure_mcp_group_list` | List resource groups |
+| `mcp_azure_mcp_subscription_list`, `mcp_azure_mcp_group_list` | Discover subscription / RG |
 | `mcp_azure_mcp_appservice` | App Service operations |
-| `mcp_azure_mcp_azd` | `azd` commands when an `azd` template is present |
+| `mcp_azure_mcp_azd` | `azd` when an `azd` template is present |
 
 ## Workflow
 
-| # | Action | Reference |
-|---|---|---|
-| 1 | Resolve Azure context with **smart defaults — minimize prompts**. Only the app name is interactive; everything else is derived. See [create-app.md](references/create-app.md) §1 for the rules. Show the defaults summary to the user before creating. | [create-app.md](references/create-app.md) |
-| 2 | Detect framework (advisory). Scan `requirements.txt` / `pyproject.toml`. NEVER blocks deploy. | [detect.md](references/detect.md) |
-| 3 | Choose path: `azure.yaml` targets App Service → **azd**; else **az CLI**. | [deploy-azd.md](references/deploy-azd.md) / [deploy-azcli.md](references/deploy-azcli.md) |
-| 4 | Ensure resources exist: RG → Plan (`P0V3 --is-linux`) → Web App (`--runtime "PYTHON:3.14"` — colon form, never the pipe form). Skip if already present. **Silently retry transient ARM errors** (connection reset / 502 / 503 / 504) up to 2 times — see [create-app.md](references/create-app.md) §1f. | [create-app.md](references/create-app.md) |
-| 5 | Set the startup command per [startup-commands.md](references/startup-commands.md): Flask / Django → **no startup command** (Oryx auto-detects). **FastAPI** → always set `python -m uvicorn main:app --host 0.0.0.0` (works on every Python runtime; Oryx FastAPI auto-detection is not relied on). Other frameworks → warn user, deploy anyway. NEVER blocks deploy. | [startup-commands.md](references/startup-commands.md) |
-| 6 | Set `SCM_DO_BUILD_DURING_DEPLOYMENT=true`. | [deploy-azcli.md](references/deploy-azcli.md) |
-| 7 | Deploy: `azd deploy` OR `az webapp deploy --type zip --track-status false`. ⛔ never `az webapp up`. ⛔ **Do NOT tail logs** and ⛔ **do NOT probe the endpoint** after deploy. | [deploy-azcli.md](references/deploy-azcli.md) |
-| 8 | **STOP.** Print the post-deploy message ([post-deploy-message.md](references/post-deploy-message.md)) — use the **standard** template for Flask/Django/FastAPI, or the **unknown-framework** template (adds a "we couldn't detect your framework — set a startup command" warning) when Step 2 detected `wsgi-generic`, `asgi-generic`, or `unknown`. Include URL as `https://...`, "may take 2–3 minutes to start", and the `az webapp log tail` command. Then end the turn. | [post-deploy-message.md](references/post-deploy-message.md) |
+1. **Resolve context — smart defaults, minimal prompts.** Only the app name is interactive; RG (`<app>-rg`), Plan (`<app>-plan`), region (current `az` default or `eastus2`), subscription are derived. [create-app.md](references/create-app.md) §1.
+2. **Detect framework** (advisory, never blocks). [detect.md](references/detect.md).
+3. **Choose path** — `azure.yaml` host: appservice → [deploy-azd.md](references/deploy-azd.md); else [deploy-azcli.md](references/deploy-azcli.md).
+4. **Ensure RG → Plan (`P0V3 --is-linux`) → Web App (`--runtime "PYTHON:3.14"`)** exist. Retry transient ARM errors silently. [create-app.md](references/create-app.md) §1f.
+5. **Set startup** per [startup-commands.md](references/startup-commands.md).
+6. **Set `SCM_DO_BUILD_DURING_DEPLOYMENT=true`**.
+7. **Deploy** — `azd deploy` or `az webapp deploy --type zip --track-status false`.
+8. **STOP. Print the post-deploy message** ([post-deploy-message.md](references/post-deploy-message.md)) — `https://` URL, "2–3 min" warmup, `az webapp log tail` command. End the turn.
 
-> ⛔ **URL FORMAT RULE** — Always present endpoints as fully-qualified `https://` URLs.
->
-> ⛔ **SHELL SAFETY RULE** — For `az webapp create --runtime`, always use the **colon** form `"PYTHON:3.14"`. **Never** use `"PYTHON|3.14"` — the pipe character is interpreted as a shell pipeline operator in PowerShell, Bash, and cmd, and breaks the command. Both forms are equivalent to the Azure CLI, but only colon is shell-safe.
->
-> ⛔ **NO POST-DEPLOY VERIFICATION RULE** — After the deploy command returns, the skill is done. Do **NOT** run `az webapp log tail`, `curl`, `Invoke-WebRequest`, `wget`, or any other startup/health check. App Service routinely needs 2–3 minutes to warm the container; a quiet log stream or a 5xx in the first couple of minutes is **not** a failure signal. Print the message in [post-deploy-message.md](references/post-deploy-message.md) and stop. The user runs `az webapp log tail` themselves if they want to watch.
+### Hard rules
 
-## Defaults
-
-| Setting | Default |
-|---|---|
-| OS | Linux (cannot be overridden by this skill) |
-| Plan SKU | P0v3 |
-| Python | 3.14 |
-| Flask startup | Not set — Oryx auto-detects Flask (no startup command needed) |
-| Django startup | Not set — Oryx auto-detects Django via `wsgi.py` (no startup command needed) |
-| FastAPI startup | Auto-set: `python -m uvicorn main:app --host 0.0.0.0` (adjust `<module>:app` if entry point differs). Always set — does not depend on the Python runtime version. |
-| Non-Flask/Django/FastAPI startup | Not set — warn user (see [startup-commands.md](references/startup-commands.md)) |
-| App name | Ask user once; if no answer, generate `<folder-slug>-<first-8-chars-of-new-GUID>` (lowercase, hyphens, ≤40 chars, globally unique) |
-| Resource group | **Auto-derive** as `<app-name>-rg` — do NOT ask |
-| App Service Plan | **Auto-derive** as `<app-name>-plan` — do NOT ask |
-| Region | Reuse current az CLI default (`az config get defaults.location -o tsv`); else `eastus2`. Do NOT ask unless creation fails with a region/quota error. |
-| Subscription | Use the active subscription from `az account show`; only ask if multiple are configured and none is current. |
+- ⛔ **NO POST-DEPLOY VERIFICATION** — after the deploy returns, do not run `az webapp log tail`, `curl`, `Invoke-WebRequest`, or any health probe. App Service needs 2–3 min to warm; a quiet log or early 5xx is not failure.
+- ⛔ **SHELL SAFETY** — for `--runtime` always use `"PYTHON:3.14"` (colon). Never `"PYTHON|3.14"` (pipe is a shell operator).
+- ✅ **URL FORMAT** — present endpoints as `https://...` URLs.
 
 ## Error Handling
 
-| Symptom | Fix |
-|---|---|
-| Plan/app `ResourceNotFound` | Step 4 creates them — re-run |
-| `Container didn't respond to HTTP pings on port: 8000` | Set/correct startup-file ([startup-commands.md](references/startup-commands.md)) |
-| Deploy ok, site returns 500 / `ModuleNotFoundError` | Ensure `SCM_DO_BUILD_DURING_DEPLOYMENT=true`, redeploy |
-| `az webapp up` in user notes | Replace with Step 7 commands |
+Full troubleshooting matrix: [errors.md](references/errors.md). Common cases:
 
-Full matrix: [errors.md](references/errors.md).
+- `ResourceNotFound` for plan/app → re-run Step 4 (it creates them).
+- `Container didn't respond to HTTP pings on port 8000` → fix startup ([startup-commands.md](references/startup-commands.md)).
+- Site `ModuleNotFoundError` after a successful deploy → ensure `SCM_DO_BUILD_DURING_DEPLOYMENT=true`, redeploy.
+- User notes mention `az webapp up` → replace with Step 7 commands.
 
 ## References
 
-- [detect.md](references/detect.md) — Framework detection (advisory)
-- [create-app.md](references/create-app.md) — RG + Plan + Web App (Linux P0v3)
-- [deploy-azd.md](references/deploy-azd.md) — azd path
-- [deploy-azcli.md](references/deploy-azcli.md) — az CLI path (no `az webapp up`)
-- [startup-commands.md](references/startup-commands.md) — Per-framework startup + manual fallback
-- [post-deploy-message.md](references/post-deploy-message.md) — What to tell the user after deploy (no endpoint probing)
-- [errors.md](references/errors.md) — Troubleshooting matrix
+[create-app.md](references/create-app.md) · [detect.md](references/detect.md) · [deploy-azd.md](references/deploy-azd.md) · [deploy-azcli.md](references/deploy-azcli.md) · [startup-commands.md](references/startup-commands.md) · [post-deploy-message.md](references/post-deploy-message.md) · [errors.md](references/errors.md)

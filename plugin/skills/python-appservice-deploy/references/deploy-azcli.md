@@ -63,7 +63,7 @@ az webapp deploy \
   --track-status false
 ```
 
-> 💡 `--track-status false` fires the deploy and returns immediately without waiting for the container to report ready. This avoids false timeouts that can occur when the platform doesn't send a timely completion signal. When the command returns without an error, the deploy succeeded — proceed to the next step.
+> 💡 `--track-status false` returns once the ZIP is **accepted by the SCM endpoint** — this is **not** the same as "Oryx build succeeded". The server-side `pip install` / startup-command rendering happens asynchronously after the CLI returns. A zero exit code only confirms the upload + a deployment record. If the site never starts, inspect the build outcome via `az webapp log deployment list/show` — that is the only authoritative confirmation that the build itself succeeded.
 
 ## 5. Stop. Report the endpoint to the user.
 

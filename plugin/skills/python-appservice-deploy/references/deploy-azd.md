@@ -57,6 +57,12 @@ After `azd deploy` returns, **stop**. Do not run `azd monitor`, `az webapp log t
 Read the endpoint from azd without hitting the site:
 
 ```bash
+# bash
+azd env get-values | grep -E '^SERVICE_.*_URI='
+```
+
+```powershell
+# PowerShell
 azd env get-values | Select-String "SERVICE_.*_URI"
 ```
 

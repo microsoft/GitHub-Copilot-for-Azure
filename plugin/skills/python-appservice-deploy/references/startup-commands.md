@@ -73,6 +73,6 @@ Look for:
 - `ModuleNotFoundError` → wrong `<module>:<callable>` in startup command, or build didn't install deps
 - `gunicorn: command not found` / `uvicorn: command not found` → add `gunicorn` / `uvicorn` to `requirements.txt`
 
-## Why `--host 0.0.0.0` / `--bind=0.0.0.0` matters
+## Why `--host 0.0.0.0` matters
 
-App Service forwards traffic to the container on the port the runtime listens on (8000 by default for gunicorn; uvicorn picks one or honors `$PORT`). The startup command must bind to `0.0.0.0` so the platform's ping reaches it. Binding to `127.0.0.1` will cause ping timeouts.
+App Service forwards traffic to the container on the port the runtime listens on (8000 by default). The startup command must bind to `0.0.0.0` so the platform's ping reaches it — binding to `127.0.0.1` causes ping timeouts.
