@@ -57,7 +57,15 @@ azure__get_azure_bestpractices({
 
 Wait for user response before proceeding.
 
-## Step 1.7: AKS-Specific Analysis (Conditional)
+## Step 1.7: Storage-Specific Analysis (Conditional)
+
+**If the user requests Storage cost optimization**, load: [Azure Storage Cost Optimization](./services/storage/azure-storage.md)
+
+**Triggers:** user mentions "storage account", "blob", "tiering", "lifecycle policy", "archive", orphaned disks, or redundancy.
+
+> For general optimization, skip to Step 2.
+
+## Step 1.8: AKS-Specific Analysis (Conditional)
 
 **If the user specifically requests AKS cost optimization**, use the specialized AKS reference files:
 
@@ -76,7 +84,7 @@ Wait for user response before proceeding.
 
 > **Note**: For general subscription-wide cost optimization (including AKS resource groups), continue with Step 2. For AKS-focused analysis, follow the instructions in the relevant reference file above.
 
-## Step 1.8: Choose Analysis Scope (for AKS-specific analysis)
+## Step 1.9: Choose Analysis Scope (for AKS-specific analysis)
 
 **If performing AKS cost optimization**, ask the user to select their analysis scope:
 

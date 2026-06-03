@@ -311,6 +311,67 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ═══════════════════════════════════════════
+  # Storage Cost Optimization routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── storage-lifecycle-policy-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Storage lifecycle policy optimization"
+    prompt: "Help me set up lifecycle policies for my Azure storage accounts to move old data to cool and archive tiers"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-redundancy-downgrade-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Storage redundancy downgrade for dev"
+    prompt: "I have GRS storage accounts in my dev environment, can I save money by downgrading to LRS?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-blob-tiering-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Blob access tier optimization"
+    prompt: "Analyze my blob storage and recommend which containers should be moved from hot to cool tier"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
   # Response quality tests
   # ═══════════════════════════════════════════
 
@@ -372,6 +433,26 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)kubectl top|az monitor metrics|az consumption budget"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-lifecycle-policy-quality ──
+  # Assertions: assistant output mentions lifecycle policy concepts
+  - name: "Storage optimization mentions lifecycle policies and tiers"
+    prompt: "How can I optimize costs on my Azure storage accounts that have data sitting in hot tier for months?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)lifecycle|cool|archive|tiering|access tier"
       - type: completed
       - type: output-not-matches
         config:
