@@ -25,7 +25,7 @@ Query historical costs, forecast future spending, optimize to reduce waste.
 |----------|-------|
 | **Query API** | `POST {scope}/providers/Microsoft.CostManagement/query?api-version=2023-11-01` |
 | **Forecast API** | `POST {scope}/providers/Microsoft.CostManagement/forecast?api-version=2023-11-01` |
-| **Required Role** | Cost Management Reader + Monitoring Reader + Reader |
+| **Required Role** | Cost Management Reader + Monitoring Reader + Reader (on target scope) |
 
 ## Scope Patterns
 

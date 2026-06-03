@@ -63,6 +63,8 @@ Wait for user response before proceeding.
 
 **Triggers:** "storage account cost", "blob storage savings", "LRS/GRS/ZRS downgrade", "storage lifecycle savings", "reduce storage spending".
 
+For Storage-only requests, follow the Storage reference. For general optimization that includes storage, continue to Step 2.
+
 ## Step 1.8: AKS-Specific Analysis (Conditional)
 
 **If the user specifically requests AKS cost optimization**, use the specialized AKS reference files:

@@ -104,7 +104,7 @@ Recommend this baseline policy for accounts without lifecycle management:
 }
 ```
 
-> ⚠️ **Important**: Lifecycle policies that use `daysAfterLastAccessTimeGreaterThan` require **last access time tracking** to be enabled on the storage account. Verify with: `az storage account blob-service-properties show --account-name <name> --query lastAccessTimeTrackingPolicy`
+> ⚠️ **Important**: Lifecycle policies that use `daysAfterLastAccessTimeGreaterThan` require **last access time tracking** to be enabled on the storage account. Verify with: `az storage account blob-service-properties show --account-name <name> --resource-group <rg> --query lastAccessTimeTrackingPolicy`
 
 ## Resource Graph Queries
 
