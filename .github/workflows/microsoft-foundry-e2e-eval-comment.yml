@@ -4,50 +4,41 @@ on:
   issue_comment:
     types: [created]
 
-permissions:
-  actions: write
-  contents: read
-  issues: write
-  pull-requests: read
+permissions: {}
 
 jobs:
   dispatch:
     name: Dispatch Microsoft Foundry E2E eval
     if: >
+      github.repository == 'microsoft/GitHub-Copilot-for-Azure' &&
       github.event.issue.pull_request &&
       (
         contains(github.event.comment.body, '@copilot run foundry e2e') ||
         contains(github.event.comment.body, '/foundry-e2e')
       )
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+      pull-requests: read
 
     steps:
       - name: Dispatch eval workflow
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           script: |
-            let collaboratorPermission;
-            try {
-              const response = await github.rest.repos.getCollaboratorPermissionLevel({
+            const { data: collaboratorPermission } =
+              await github.rest.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 username: context.payload.comment.user.login,
               });
-              collaboratorPermission = response.data;
-            } catch (error) {
-              if (error.status === 404) {
-                core.info('Ignoring command from commenter without repository access.');
-                return;
-              }
-              throw error;
-            }
 
-            const allowedPermissions = new Set(['admin', 'maintain', 'write']);
+            const allowedPermissions = new Set(['admin', 'write']);
             const permission = collaboratorPermission.permission;
-            const roleName = collaboratorPermission.role_name;
-            if (!allowedPermissions.has(permission) && !allowedPermissions.has(roleName)) {
-              core.info(`Ignoring command from commenter with ${permission} permission and ${roleName} role.`);
-              return;
+            if (!allowedPermissions.has(permission)) {
+              throw new Error(`Commenter has ${permission} permission; write permission is required.`);
             }
 
             const prNumber = context.payload.issue.number;
@@ -57,8 +48,7 @@ jobs:
               pull_number: prNumber,
             });
             if (pullRequest.state !== 'open') {
-              core.info(`Ignoring command on ${pullRequest.state} PR #${prNumber}.`);
-              return;
+              throw new Error(`PR #${prNumber} is ${pullRequest.state}; only open PRs can trigger this workflow.`);
             }
 
             const body = context.payload.comment.body;
@@ -71,16 +61,14 @@ jobs:
               );
 
             if (!commandLine) {
-              core.info('No exact Microsoft Foundry E2E command line found.');
-              return;
+              throw new Error('No exact Microsoft Foundry E2E command line found.');
             }
 
             const commandMatch = commandPattern.exec(commandLine);
             if (!commandMatch) {
-              core.setFailed(
+              throw new Error(
                 'Invalid command. Use "@copilot run foundry e2e" or "@copilot run foundry e2e branch=<branch>".'
               );
-              return;
             }
 
             const ref = commandMatch[1] || 'main';
@@ -92,23 +80,14 @@ jobs:
               ref.includes('@{') ||
               ref.split('/').some((part) => part.startsWith('.') || part.endsWith('.lock'))
             ) {
-              core.setFailed(`Invalid branch/ref: ${ref}`);
-              return;
+              throw new Error(`Invalid branch/ref: ${ref}`);
             }
 
-            try {
-              await github.rest.repos.getBranch({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                branch: ref,
-              });
-            } catch (error) {
-              if (error.status === 404) {
-                core.setFailed(`Branch does not exist in this repository: ${ref}`);
-                return;
-              }
-              throw error;
-            }
+            await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: ref,
+            });
 
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
