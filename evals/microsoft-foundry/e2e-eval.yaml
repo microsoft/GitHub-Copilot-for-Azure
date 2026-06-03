@@ -151,6 +151,7 @@ stimuli:
           threshold: 1
           prompt: |
             Verify that the coding agent generated hosted-agent code, deployed the agent
-            successfully to Microsoft Foundry, and ran a smoke test after deployment that
-            passed. Fail if code was not generated, deployment did not succeed, or no
-            successful post-deployment smoke test was run.
+            successfully to Microsoft Foundry, invoked the deployed agent after deployment,
+            and received a successful response from that deployed agent. Fail if
+            code was not generated, deployment did not succeed, the deployed agent was not
+            actually invoked after deployment, or the deployed agent invocation failed.
