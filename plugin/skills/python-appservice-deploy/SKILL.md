@@ -1,6 +1,6 @@
 ---
 name: python-appservice-deploy
-description: "Deploy Python, Flask, Django, or FastAPI apps to Azure App Service (Linux). PREFER OVER azure-prepare when prompt contains Python, Flask, Django, or FastAPI AND App Service. Defaults to Linux + P0v3 SKU + Python 3.14. Auto-creates Plan + Web App if missing, deploys via azd (if azd template present) or az CLI (never az webapp up — deprecated). Flask, Django, and FastAPI-on-Python-3.14 are auto-detected by Oryx — no startup command needed. FastAPI on <3.14 gets a uvicorn startup command set automatically. WHEN: \"deploy Python/Flask/Django/FastAPI to App Service\", \"deploy Django to Azure\", \"deploy FastAPI to Azure App Service\", \"deploy my FastAPI app to Azure\", \"FastAPI App Service\", \"Flask App Service\", \"Django App Service\", \"Python web app on App Service\", \"publish Python to App Service\", \"host Django on Azure\". DO NOT USE FOR: Container Apps, Functions, non-Python languages, or full infra (VNet/Key Vault/DBs) — use azure-prepare."
+description: "Deploy Python (Flask/Django/FastAPI) code to Azure App Service Linux. WHEN: \"Flask App Service\", \"Django App Service\", \"FastAPI App Service\", \"deploy Python to App Service\". DO NOT USE FOR: Container Apps, Functions, non-Python, Terraform/Bicep/IaC, full infra — use azure-prepare."
 license: MIT
 metadata:
   author: Microsoft

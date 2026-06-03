@@ -59,36 +59,39 @@ Do **not** call `ask_user` for confirmation here — just print the summary and 
 
 ## 1f. Transient error handling for create commands
 
-ARM `PUT` operations (`az group create`, `az appservice plan create`, `az webapp create`) occasionally fail with **transient** errors such as `Connection reset`, `Connection aborted`, `ConnectionError`, `HTTPSConnectionPool ... Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, or HTTP `502 / 503 / 504`. These are **not** configuration problems — they're flaky ARM frontend / network blips and they almost always succeed on the next attempt.
+ARM `PUT` operations (`az group create`, `az appservice plan create`, `az webapp create`) occasionally fail with **transient** errors such as `Connection reset`, `Connection aborted`, `ConnectionError`, `HTTPSConnectionPool ... Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `TooManyRequests` (HTTP `429`), or HTTP `502 / 503 / 504`. These are **not** configuration problems — they're flaky ARM frontend / network blips and they almost always succeed on the next attempt.
 
 **Rule for the agent:** Apply this retry pattern to every `az ... create` command in this skill (sections 2, 3, and 4 below) **without narrating "let me retry"** to the user. Just do it silently.
 
 - Up to **2 retries** (3 attempts total).
-- Wait **5 seconds** before retry #1, **15 seconds** before retry #2 (simple backoff).
-- **Only retry** when stderr matches one of: `Connection reset`, `Connection aborted`, `ConnectionError`, `Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `Max retries exceeded`, HTTP `502`, `503`, `504`.
-- **Do NOT retry** on: `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, `Conflict` / `NameAlreadyExists`, or any `4xx` other than `429`.
+- Wait **5 seconds** before retry #1, **15 seconds** before retry #2 (simple backoff). If the error includes a `Retry-After` header, honour that value instead of the fixed delay.
+- **Always wrap the full idempotent pair** `(az ... show ... 2>/dev/null) || (az ... create ...)` — never the bare `create`. If a previous attempt succeeded server-side but the client lost the connection, the `show` short-circuits the next attempt and avoids a false `Conflict / NameAlreadyExists` failure.
+- **Only retry** when stderr matches one of: `Connection reset`, `Connection aborted`, `ConnectionError`, `Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `Max retries exceeded`, `TooManyRequests`, HTTP `429`, `502`, `503`, `504`.
+- **Do NOT retry** on: `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, or any `4xx` other than `429`. (`Conflict` / `NameAlreadyExists` will be short-circuited by the `show` half of the idempotent pair above and should not be hit during retry.)
 - After the final failed attempt, surface the original error to the user with one line of context (e.g. "ARM frontend is returning transient errors — please retry in a few minutes").
 
-PowerShell pattern (apply around any `az ... create` invocation below):
+PowerShell pattern (apply around the full `show || create` pair from sections 2, 3, and 4):
 
 ```powershell
 $attempt = 0; $maxAttempts = 3
 while ($true) {
   $attempt++
-  $err = (& <az-create-command> -o none) 2>&1
+  # Wrap the full idempotent pair, not just `create`:
+  $err = (& { <az-show-command> -o none 2>$null; if ($LASTEXITCODE -ne 0) { <az-create-command> -o none } }) 2>&1
   if ($LASTEXITCODE -eq 0) { break }
-  $transient = $err -match 'Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|\b50[234]\b'
+  $transient = $err -match 'Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'
   if (-not $transient -or $attempt -ge $maxAttempts) { Write-Error $err; throw "az create failed" }
   Start-Sleep -Seconds (@(5,15)[$attempt-1])
 }
 ```
 
-Bash equivalent (use the same retry / non-retry classification):
+Bash equivalent (wrap the full `show || create` pair; same retry / non-retry classification):
 
 ```bash
 for attempt in 1 2 3; do
-  if err=$(<az-create-command> -o none 2>&1); then break; fi
-  if ! echo "$err" | grep -qE 'Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|\b50[234]\b'; then
+  # Wrap the full idempotent pair, not just `create`:
+  if err=$({ <az-show-command> -o none 2>/dev/null || <az-create-command> -o none; } 2>&1); then break; fi
+  if ! echo "$err" | grep -qE 'Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'; then
     echo "$err" >&2; exit 1
   fi
   [ $attempt -eq 3 ] && { echo "$err" >&2; exit 1; }
@@ -96,7 +99,7 @@ for attempt in 1 2 3; do
 done
 ```
 
-> 💡 The `az webapp show` / `az appservice plan show` / `az group show` **idempotency checks** in sections 2-4 already protect against duplicate creates on retry — if the first attempt actually succeeded server-side before the client error, the show call will short-circuit the second attempt.
+> 💡 Because the retry wraps `(show || create)`, a `Conflict` / `NameAlreadyExists` from a partial first attempt cannot bubble up — the second attempt's `show` succeeds and short-circuits the `create`.
 
 ## 2. Resource Group
 
@@ -123,17 +126,19 @@ az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
 
 > ⚠️ **Shell safety**: Always use the **colon** form `PYTHON:3.14` — never the pipe form `PYTHON|3.14`. The pipe character is a shell operator in PowerShell, Bash, and cmd, and breaks the command even when quoted in some contexts. The colon form is fully supported by `az webapp create --runtime` and is shell-safe everywhere.
 
-> 💡 **Hostname scope**: Use `--domain-name-scope TenantReuse` so the default `<app>.azurewebsites.net` hostname only needs to be unique within your Entra tenant (not globally). This dramatically reduces name-collision failures when auto-generating app names. Requires Azure CLI ≥ 2.47; if the flag is not recognised, omit it — the app name must then be globally unique.
-
 ```bash
 az webapp show -n <app> -g <rg> --only-show-errors 2>/dev/null || \
   az webapp create \
     -n <app> \
     -g <rg> \
     -p <plan> \
-    --runtime "PYTHON:3.14" \
-    --domain-name-scope TenantReuse
+    --runtime "PYTHON:3.14"
 ```
+
+> 💡 **Optional flag (newer CLI only)**: If `az webapp create --help` lists `--domain-name-scope`, you may append `--domain-name-scope TenantReuse` so the default `<app>.azurewebsites.net` hostname only needs to be unique within your Entra tenant. This flag was added to `az webapp create` in **July 2025** (Azure CLI ≥ 2.76). On older CLIs it produces `unrecognized arguments` and the create fails — so the skill omits it by default and relies on the 8-hex-char GUID suffix in §1b for collision avoidance. If you want to use it, gate it on a capability check:
+> ```bash
+> if az webapp create --help 2>&1 | grep -q -- '--domain-name-scope'; then DNS_FLAG="--domain-name-scope TenantReuse"; else DNS_FLAG=""; fi
+> ```
 
 ### Discover available runtimes
 
