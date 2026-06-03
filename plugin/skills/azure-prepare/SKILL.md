@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). DO NOT USE FOR: copilot-sdk apps (use microsoft-foundry). WHEN: create app, build web app, create API, create serverless HTTP API, create frontend, create back end, build a service, modernize application, update application, add authentication, add caching, host on Azure, create and deploy, deploy to Azure, deploy to Azure using Terraform, deploy to Azure App Service, deploy to Azure App Service using Terraform, deploy to Azure Container Apps, deploy to Azure Container Apps using Terraform, generate Terraform, generate Bicep, function app, timer trigger, service bus trigger, event-driven function, containerized Node.js app, social media app, static portfolio website, todo list with frontend and API, prepare my Azure application to use Key Vault, managed identity."
+description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). WHEN: create app, build web app, create API, create serverless HTTP API, create frontend, create back end, build a service, modernize application, update application, add authentication, add caching, host on Azure, create and deploy, deploy to Azure, deploy to Azure using Terraform, deploy to Azure App Service, deploy to Azure App Service using Terraform, deploy to Azure Container Apps, deploy to Azure Container Apps using Terraform, generate Terraform, generate Bicep, function app, timer trigger, service bus trigger, event-driven function, containerized Node.js app, social media app, static portfolio website, todo list with frontend and API, prepare my Azure application to use Key Vault, managed identity."
 license: MIT
 metadata:
   author: Microsoft
@@ -73,15 +73,6 @@ Activate this skill when user wants to:
 | APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
 | AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
 | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** — select **durable** recipe in Step 4. **MUST** load [durable.md](references/services/functions/durable.md), [DTS reference](references/services/durable-task-scheduler/README.md), and [DTS Bicep patterns](references/services/durable-task-scheduler/bicep.md). |
-
-### Check 2: Codebase markers (even if prompt is generic like "deploy to Azure")
-
-| Codebase marker | Where | Invoke FIRST |
-|----------------|-------|-------------|
-| `@github/copilot-sdk` in dependencies | `package.json` | **microsoft-foundry** |
-| `copilot-sdk` in name or dependencies | `package.json` | **microsoft-foundry** |
-| `CopilotClient` import | `.ts`/`.js` source files | **microsoft-foundry** |
-| `createSession` + `sendAndWait` calls | `.ts`/`.js` source files | **microsoft-foundry** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 
