@@ -4,6 +4,17 @@
 #
 # Global graders (evaluate#125 workaround): no_runtime_failure
 # is duplicated into every stimulus block below.
+#
+# Note on runs:
+# - Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
+#   a stimulus-level `config.runs: 1` to match original intent.
+#
+# Note on output-matches scope:
+# - The original Jest suite searched both assistant messages and tool-call/script content
+#   (via getSearchableContent in utils.ts). Vally's output-matches grader evaluates
+#   trajectory.output (assistant messages only). This is an accepted known limitation
+#   consistent with other migrated eval suites.
 
 name: entra-agent-id-integration-eval
 description: |
@@ -195,6 +206,9 @@ stimuli:
   # Assertions: mentionsBlueprintCreation, mentionsBlueprintPrincipalStep, mentionsSponsorsBinding
   - name: "Blueprint creation content quality"
     prompt: "Walk me through creating a Microsoft Entra Agent Identity Blueprint with a user sponsor using Microsoft Graph. Include the BlueprintPrincipal step and the exact request body shape."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
     tags:
       type: integration
       tier: full
@@ -226,6 +240,9 @@ stimuli:
   # Assertions: mentionsAgentIdentityCreation, mentionsBlueprintBackreference
   - name: "Per-instance identity content quality"
     prompt: "Show me the Microsoft Graph request to create a per-instance Agent Identity service principal under an existing Blueprint, including how to reference the Blueprint."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
     tags:
       type: integration
       tier: full
@@ -253,6 +270,9 @@ stimuli:
   # Assertions: mentionsFmiPathExchange (fmi_path + client_credentials + AzureADTokenExchange or /.default)
   - name: "fmi_path token exchange content quality"
     prompt: "Show me the two-step fmi_path token exchange so an Agent Identity gets its own Microsoft Graph access token. Include the grant type and scopes."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
     tags:
       type: integration
       tier: full
@@ -284,6 +304,9 @@ stimuli:
   # Assertions: recommendsSupportedAuth (ClientSecretCredential | client_credentials | Connect-MgGraph)
   - name: "Auth guidance content quality"
     prompt: "What credential should I use to call the Microsoft Entra Agent Identity APIs in Microsoft Graph?"
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
     tags:
       type: integration
       tier: full
@@ -307,6 +330,9 @@ stimuli:
   # Assertions: mentionsPerAgentPermissionGrant (appRoleAssignments | oauth2PermissionGrants)
   - name: "Permission grant content quality"
     prompt: "Grant User.Read.All application permission to a specific Agent Identity service principal."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
     tags:
       type: integration
       tier: full
