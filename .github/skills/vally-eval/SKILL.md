@@ -59,6 +59,10 @@ npm run test:vally -- --skill $SKILL
 
 `--eval-spec ../evals/<skill-name>/eval.yaml` tells vally which eval spec to run. The path is relative to the current working directory of the process running the command. `--output-dir ./results` tells vally to write its output to a `results/` directory relative to the current working directory of the process running the command. `--executor-plugin ../../tests/vally/vally-executor.ts` tells vally to load and execute the code in this module, which registers the custom executor used by azure-skill vally eval suites. Note that this path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
 
+## Extend with custom grader
+
+Custom graders can be added to grade trajectories in ways built-in graders don't support. To add a custom grader, follow the examples in the official vally documentation to create a `tests/vally/<custom-name>-grader.ts` module and register the new custom grader in `tests/vally/vally-graders.ts`. The `npm run test:vally` command internally loads all the custom graders when testing skills.
+
 ## Re-grade an existing trajectory
 
 Test authors commonly need to fine-tune grader configurations to reduce result flakiness. Vally supports re-grading an existing trajectory using a command like this:
@@ -68,7 +72,9 @@ Test authors commonly need to fine-tune grader configurations to reduce result f
 npx @microsoft/vally-cli grade --eval-spec ../evals/<skill-name>/eval.yaml --verbose < results/<test-run-name>/results.jsonl
 ```
 
- You can keep tuning the grader config in `eval.yaml` and re-grade the trajectory until the results meet your expectations.
+You can keep tuning the grader config in `eval.yaml` and re-grade the trajectory until the results meet your expectations.
+
+If your skill uses a custom grader, add `--grader-plugin ./tests/vally/vally-graders.ts` to load the custom graders.
 
 ### Collect test results
 
