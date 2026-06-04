@@ -9,7 +9,7 @@ Reference guide for reducing App Service costs through plan rightsizing, idle sl
 | 🔴 Critical | Stopped App on Paid Plan | `state == 'Stopped'` AND `sku.tier != 'Free/Shared'` | Delete or move to Free tier (stopped apps still incur plan cost) | $50-500/mo |
 | 🔴 Critical | Empty App Service Plan | Plan has zero apps deployed | Delete the plan | $50-400/mo |
 | 🟠 High | Premium in Non-Production | `sku.tier in ['PremiumV2','PremiumV3']` AND `tags.environment in ['dev','test','staging']` | Downgrade to Basic or Standard | $100-600/mo |
-| 🟠 High | Idle Deployment Slots | Non-production slots with zero traffic for 14+ days | Delete unused slots (each slot = separate app instance cost) | $50-300/mo |
+| 🟠 High | Idle Deployment Slots | Non-production slots with zero traffic for 14+ days | Delete unused slots (slots share plan workers but increase utilization, driving scale-out) | $30-150/mo |
 | 🟠 High | Over-Provisioned Plan | CPU avg <20% AND memory avg <30% over 14 days | Scale down SKU or reduce instance count | $50-400/mo |
 | 🟡 Medium | No Auto-Scale Rules | Production plan with fixed instance count >2 | Add auto-scale rules to scale in during low traffic | $30-200/mo |
 | 🟡 Medium | Missing Dev/Test Pricing | Dev/test workloads on regular pricing | Enable Dev/Test pricing via subscription offer | 30-55% savings |
@@ -28,7 +28,7 @@ Reference guide for reducing App Service costs through plan rightsizing, idle sl
 
 ## Resource Graph Queries
 
-**Find stopped apps on paid plans:**
+**Find stopped apps (review for deletion or plan downgrade):**
 
 ```kql
 Resources
@@ -59,7 +59,7 @@ Resources
 
 ## Tools & Commands
 
-**MCP Tool:** `azure__appservice` for listing and managing App Service resources
+**Discovery:** Use Azure Resource Graph or `az` CLI for listing App Service resources (the `azure__appservice` MCP tool has limited list support).
 
 **Azure CLI:**
 - `az appservice plan list --resource-group <rg>` - List plans
@@ -78,6 +78,6 @@ Approximate monthly costs (Linux, East US):
 - **Standard S1**: ~$69/mo (1 core, 1.75 GB, auto-scale, slots)
 - **Premium P1v3**: ~$138/mo (2 cores, 8 GB, better perf)
 
-Each deployment slot runs as a separate instance at full plan cost. Windows plans cost ~30% more than Linux.
+Deployment slots share the plan's compute workers (no separate per-slot charge), but extra slots increase resource utilization and can trigger scale-out. Windows plans cost ~30% more than Linux.
 
 Always validate from [official pricing](https://azure.microsoft.com/pricing/details/app-service/).
