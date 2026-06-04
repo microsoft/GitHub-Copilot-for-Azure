@@ -21,6 +21,9 @@ param msbenchReportsContainerName string = 'msbench-reports'
 @description('Name of the Azure Table that stores integration-test token usage history.')
 param tokenUsageTableName string = 'integrationtokenusage'
 
+@description('Principal (object) ID of the user-assigned managed identity used by the integration test pipeline to write token usage rows (skillcitestidentity).')
+param ciTestIdentityPrincipalId string = '531282f7-49cb-4149-af74-6c84a5270e87'
+
 var tags = {
   'azd-env-name': environmentName
   skipDelete: true
@@ -48,6 +51,8 @@ module identity './modules/managed-identity.bicep' = {
 //
 // The dashboard MI (identity) is also granted Storage Table Data Reader on the integration-reports
 // storage account (see storage.bicep) so it can read integration-test token usage history.
+// The integration test pipeline identity (ciTestIdentityName) is granted Storage Table Data
+// Contributor on that same account (see storage.bicep) so the pipeline can write token usage rows.
 //
 // The sync MI (syncIdentity) has the following permissions to the msbenchnightlydata storage account:
 // - Storage Blob Data Reader: read blobs in any container (read eval_report.json files for syncing).
@@ -71,6 +76,7 @@ module storage './modules/storage.bicep' = {
     environmentName: environmentName
     principalId: identity.outputs.identityPrincipalId
     tokenUsageTableName: tokenUsageTableName
+    ciTestIdentityPrincipalId: ciTestIdentityPrincipalId
   }
 }
 

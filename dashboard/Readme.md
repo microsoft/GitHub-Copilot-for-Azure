@@ -112,10 +112,11 @@ Configuration:
 
 - Workflow variables: `REPORT_STORAGE_ACCOUNT` (reused as the table's storage
   account) and optionally `TOKEN_USAGE_TABLE` (defaults to `integrationtokenusage`).
-- RBAC: the workflow's Managed Identity needs **Storage Table Data Contributor** on
-  the storage account (to write rows). The dashboard's Managed Identity is granted
-  **Storage Table Data Reader** on the same account by `infra/modules/storage.bicep`
-  (to read rows).
+- RBAC (provisioned by `infra/modules/storage.bicep`): the dashboard's Managed
+  Identity is granted **Storage Table Data Reader** (to read rows), and the
+  integration test pipeline identity `skillcitestidentity` is granted **Storage
+  Table Data Contributor** (to write rows) via the `ciTestIdentityPrincipalId`
+  parameter.
 - The table itself is provisioned by `infra/modules/storage.bicep`.
 
 ## Overall Health Data

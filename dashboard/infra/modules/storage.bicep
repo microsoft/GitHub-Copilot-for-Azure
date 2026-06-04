@@ -15,10 +15,14 @@ param principalId string
 @description('Name of the Azure Table that stores integration-test token usage history.')
 param tokenUsageTableName string = 'integrationtokenusage'
 
+@description('Principal (object) ID of the user-assigned managed identity used by the integration test pipeline to write token usage rows (skillcitestidentity in the skillcitest resource group, GithubCopilotForAzure-Testing subscription).')
+param ciTestIdentityPrincipalId string = '531282f7-49cb-4149-af74-6c84a5270e87'
+
 var resourceSuffix = take(uniqueString(subscription().id, resourceGroup().name, environmentName), 6)
 var storagePrefix = take(replace(environmentName, '-', ''), 14)
 var storageBlobDataReaderRoleId = '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1'
 var storageTableDataReaderRoleId = '76199698-9eea-4c19-bc75-cec21354c6b6'
+var storageTableDataContributorRoleId = '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   name: 'str${storagePrefix}${resourceSuffix}'
@@ -110,6 +114,17 @@ resource storageTableDataReaderRole 'Microsoft.Authorization/roleAssignments@202
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageTableDataReaderRoleId)
     principalId: principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Allows the integration test pipeline identity to write token-usage entities to the table.
+resource storageTableDataContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, ciTestIdentityPrincipalId, storageTableDataContributorRoleId)
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageTableDataContributorRoleId)
+    principalId: ciTestIdentityPrincipalId
     principalType: 'ServicePrincipal'
   }
 }
