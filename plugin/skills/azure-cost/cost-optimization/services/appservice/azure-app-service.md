@@ -1,18 +1,22 @@
 ## Azure App Service Cost Optimization
 
-Reference guide for reducing App Service costs through plan rightsizing, idle slot cleanup, and dev/test pricing.
+Reduce App Service costs through plan rightsizing, idle slot cleanup, and dev/test pricing.
+
+## Subscription Input Options
+
+Accept any of these to scope the analysis: Subscription ID, Subscription Name, Resource Group, or "All my subscriptions".
 
 ## Cost Optimization Rules
 
 | Priority | Rule | Detection Logic | Recommendation | Avg Savings |
 |----------|------|----------------|----------------|-------------|
-| 🔴 Critical | Stopped App on Paid Plan | `state == 'Stopped'` AND `sku.tier != 'Free/Shared'` | Delete or move to Free tier (stopped apps still incur plan cost) | $50-500/mo |
+| 🔴 Critical | Stopped App on Paid Plan | `state == 'Stopped'` AND `sku.tier not in ['Free', 'Shared']` | Delete or move to Free tier (stopped apps still incur plan cost) | $50-500/mo |
 | 🔴 Critical | Empty App Service Plan | Plan has zero apps deployed | Delete the plan | $50-400/mo |
 | 🟠 High | Premium in Non-Production | `sku.tier in ['PremiumV2','PremiumV3']` AND `tags.environment in ['dev','test','staging']` | Downgrade to Basic or Standard | $100-600/mo |
 | 🟠 High | Idle Deployment Slots | Non-production slots with zero traffic for 14+ days | Delete unused slots (slots share plan workers but increase utilization, driving scale-out) | $30-150/mo |
 | 🟠 High | Over-Provisioned Plan | CPU avg <20% AND memory avg <30% over 14 days | Scale down SKU or reduce instance count | $50-400/mo |
 | 🟡 Medium | No Auto-Scale Rules | Production plan with fixed instance count >2 | Add auto-scale rules to scale in during low traffic | $30-200/mo |
-| 🟡 Medium | Missing Dev/Test Pricing | Dev/test workloads on regular pricing | Enable Dev/Test pricing via subscription offer | 30-55% savings |
+| 🟡 Medium | Missing Dev/Test Pricing | Dev/test workloads on regular pricing | Apply Azure Dev/Test subscription offer (subscription-level, not plan-level) | 30-55% savings |
 | 🟡 Medium | Always On for Non-Production | `alwaysOn == true` on dev/test apps | Disable Always On (apps cold-start on first request) | Reduced idle cost |
 | 🟢 Low | Untagged App Service | Missing `environment`, `owner`, or `costCenter` tags | Apply tags for cost allocation | N/A |
 | 🟢 Low | Old Deployment Slots | Slots older than 90 days not used for blue-green | Review if still needed | Variable |

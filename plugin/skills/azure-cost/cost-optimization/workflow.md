@@ -57,7 +57,7 @@ azure__get_azure_bestpractices({
 
 Wait for user response before proceeding.
 
-## Steps 1.7–1.75: Service-Specific Analysis (Conditional)
+## Step 1.7: Service-Specific Analysis (Conditional)
 
 For service-focused requests, load the relevant guide and follow it. For general optimization, skip to Step 2.
 

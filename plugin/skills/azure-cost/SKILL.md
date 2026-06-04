@@ -32,10 +32,13 @@ Query historical costs, forecast future spending, optimize to reduce waste.
 - Subscription: `/subscriptions/<id>`
 - Resource Group: `/subscriptions/<id>/resourceGroups/<name>`
 - Management Group: `/providers/Microsoft.Management/managementGroups/<id>`
+- Billing Account: `/providers/Microsoft.Billing/billingAccounts/<id>`
 
 ## Service Optimization Guides
 
-[Redis](cost-optimization/services/redis/azure-cache-for-redis.md) | [Storage](cost-optimization/services/storage/azure-storage.md) | [App Service](cost-optimization/services/appservice/azure-app-service.md)
+- [Redis](cost-optimization/services/redis/azure-cache-for-redis.md)
+- [Storage](cost-optimization/services/storage/azure-storage.md)
+- [App Service](cost-optimization/services/appservice/azure-app-service.md)
 
 ## References
 
