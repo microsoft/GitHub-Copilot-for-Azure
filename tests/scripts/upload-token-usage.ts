@@ -100,6 +100,43 @@ function isPermissionError(err: unknown): boolean {
   return e?.statusCode === 403 || e?.code === "AuthorizationPermissionMismatch";
 }
 
+/**
+ * Render an Azure/REST error with the fields that actually help diagnose it:
+ * the OData error code, HTTP status, and the service message. The Azure SDK
+ * surfaces these as `code` / `statusCode` on the error; the readable message
+ * may live on `.message` or in the parsed `.details` body.
+ */
+function formatAzureError(err: unknown): string {
+  const e = err as {
+    code?: string;
+    statusCode?: number;
+    message?: string;
+    details?: { odataError?: { message?: { value?: string } } };
+  };
+  const parts: string[] = [];
+  if (e?.code) parts.push(`code=${e.code}`);
+  if (typeof e?.statusCode === "number") parts.push(`statusCode=${e.statusCode}`);
+  const serviceMessage = e?.details?.odataError?.message?.value || e?.message;
+  if (serviceMessage) parts.push(`message=${serviceMessage}`);
+  return parts.length > 0 ? parts.join(" ") : String(err);
+}
+
+/**
+ * Validate a name against the Azure Table naming rules and throw an actionable
+ * error if it is invalid. Table names must be alphanumeric only, may not start
+ * with a digit, and must be 3-63 characters long. Violations otherwise surface
+ * from the service as an opaque "InvalidResourceName" error.
+ */
+function assertValidTableName(name: string): void {
+  if (!/^[A-Za-z][A-Za-z0-9]{2,62}$/.test(name)) {
+    throw new Error(
+      `Invalid TOKEN_USAGE_TABLE_NAME '${name}'. Azure Table names must be ` +
+        "alphanumeric only (no hyphens, underscores, or dots), must start with a " +
+        "letter, and be 3-63 characters long (e.g. 'integrationtokenusage').",
+    );
+  }
+}
+
 /** Recursively find all token-summary.jsonl files under a directory. */
 function findTokenSummaryFiles(dir: string): string[] {
   const found: string[] = [];
@@ -191,6 +228,9 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Fail fast with an actionable message rather than an opaque service error.
+  assertValidTableName(tableName);
+
   const files = findTokenSummaryFiles(reportsDir);
   if (files.length === 0) {
     console.log(`No ${TOKEN_SUMMARY_FILENAME} files found under ${reportsDir}; nothing to upload.`);
@@ -209,10 +249,12 @@ async function main(): Promise<void> {
   }
 
   const credential = new DefaultAzureCredential();
-  const tableClient = new TableClient(
-    `https://${storageAccount}.table.core.windows.net`,
-    tableName,
-    credential,
+  const tableEndpoint = `https://${storageAccount}.table.core.windows.net`;
+  const tableClient = new TableClient(tableEndpoint, tableName, credential);
+
+  console.log(
+    `Uploading token usage to ${tableEndpoint} table='${tableName}' ` +
+      `(skill='${skill}', branch='${branch}', run='${runId}', rows=${aggregated.length}).`,
   );
 
   // Ensure the table exists (idempotent; ignores "already exists").
@@ -221,6 +263,7 @@ async function main(): Promise<void> {
   } catch (err) {
     const statusCode = (err as { statusCode?: number })?.statusCode;
     if (statusCode !== 409) {
+      console.error(`createTable failed for table='${tableName}': ${formatAzureError(err)}`);
       throw err;
     }
   }
@@ -229,26 +272,35 @@ async function main(): Promise<void> {
   for (const usage of aggregated) {
     const totalTokens = usage.inputTokens + usage.outputTokens;
     const runDate = usage.timestamp.slice(0, 10);
+    const partitionKey = sanitizeKey(skill);
     const rowKey = buildRowKey(branch, runId, usage.testName);
-    await tableClient.upsertEntity(
-      {
-        partitionKey: sanitizeKey(skill),
-        rowKey,
-        skill,
-        testName: usage.testName,
-        branch,
-        runId,
-        runDate,
-        runTimestamp: usage.timestamp,
-        model: usage.model,
-        inputTokens: usage.inputTokens,
-        outputTokens: usage.outputTokens,
-        cacheReadTokens: usage.cacheReadTokens,
-        cacheWriteTokens: usage.cacheWriteTokens,
-        totalTokens,
-      },
-      "Replace",
-    );
+    try {
+      await tableClient.upsertEntity(
+        {
+          partitionKey,
+          rowKey,
+          skill,
+          testName: usage.testName,
+          branch,
+          runId,
+          runDate,
+          runTimestamp: usage.timestamp,
+          model: usage.model,
+          inputTokens: usage.inputTokens,
+          outputTokens: usage.outputTokens,
+          cacheReadTokens: usage.cacheReadTokens,
+          cacheWriteTokens: usage.cacheWriteTokens,
+          totalTokens,
+        },
+        "Replace",
+      );
+    } catch (err) {
+      console.error(
+        `upsertEntity failed for table='${tableName}' ` +
+          `partitionKey='${partitionKey}' rowKey='${rowKey}': ${formatAzureError(err)}`,
+      );
+      throw err;
+    }
     uploaded++;
   }
 
@@ -267,6 +319,6 @@ main().catch((err) => {
     );
     return;
   }
-  console.error("Failed to upload token usage:", err?.message || err);
+  console.error("Failed to upload token usage:", formatAzureError(err));
   process.exit(1);
 });
