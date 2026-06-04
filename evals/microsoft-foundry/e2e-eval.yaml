@@ -14,7 +14,7 @@ config:
   runs: 3
   timeout: "30m"
   executor: integration-test-agent-runner
-  model: claude-opus-4.7
+  model: claude-sonnet-4.6
 
 scoring:
   threshold: 0.8
