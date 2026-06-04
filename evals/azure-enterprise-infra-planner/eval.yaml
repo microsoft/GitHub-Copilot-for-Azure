@@ -865,10 +865,6 @@ stimuli:
           required: ["azure-enterprise-infra-planner"]
       # File paths use `**/...` globs because the agent non-deterministically
       # writes plan files either at workspace root or in a skill-named subdir.
-      - type: json-object-rules
-        config:
-          path: "\\.azure/infrastructure-plan.json"
-          rules: '{"type":"has-property","key":"plan.resources"}'
       - type: file-exists
         config:
           path: "**/.azure/insights.json"
@@ -876,38 +872,26 @@ stimuli:
         config:
           path: "**/.azure/infrastructure-plan.json"
       # Plan-level required fields (Jest: expect(plan.meta|inputs|plan).toHaveProperty)
-      - type: file-matches
+      - type: json-object-rules
         config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"meta".*"planId"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"meta".*"status"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"meta".*"version"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"inputs".*"userGoal"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"inputs".*"insightsApplied"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"plan".*"resources"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"plan".*"overallReasoning"'
-      - type: file-matches
-        config:
-          path: "**/.azure/infrastructure-plan.json"
-          pattern: '(?s)"plan".*"validation"'
+          path: "\\.azure/infrastructure-plan.json"
+          rules:
+            - type: has-property
+              key: meta.planId
+            - type: has-property
+              key: meta.status
+            - type: has-property
+              key: meta.version
+            - type: has-property
+              key: inputs.userGoal
+            - type: has-property
+              key: inputs.insightsApplied
+            - type: has-property
+              key: plan.resources
+            - type: has-property
+              key: plan.overallReasoning
+            - type: has-property
+              key: plan.validation
       # Per-resource required fields (Jest: for (const resource of plan.plan.resources) ...)
       - type: file-matches
         config:
