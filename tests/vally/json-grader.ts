@@ -92,7 +92,6 @@ export class JsonGrader implements Grader {
     if (!input.trajectory) {
       throw new Error("Missing trajectory");
     }
-    console.log("input.config", input.config);
 
     if (!input.config || typeof input.config !== "object") {
       throw new Error(`Invalid ${this.metadata.name} grader config`);
@@ -100,8 +99,6 @@ export class JsonGrader implements Grader {
 
     const rawPath = input.config.path;
     const rawRules = input.config.rules;
-    console.log("rawPath", rawPath);
-    console.log("rawRules", rawRules);
 
     if (typeof rawPath !== "string" || rawPath.trim().length === 0) {
       throw new Error(`Invalid ${this.metadata.name} grader config. path is not a string`);
