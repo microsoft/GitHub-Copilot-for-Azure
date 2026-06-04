@@ -11,8 +11,8 @@ tags:
   skill: microsoft-foundry
 
 config:
-  runs: 1
-  timeout: "20m"
+  runs: 3
+  timeout: "30m"
   executor: integration-test-agent-runner
   model: claude-opus-4.7
 
