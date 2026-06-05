@@ -67,6 +67,7 @@ export default function App() {
     const [rows, setRows] = useState<TokenUsageRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [filtersReady, setFiltersReady] = useState(false);
 
     const loadFilters = () =>
         fetch("/api/token-usage/filters")
@@ -78,7 +79,8 @@ export default function App() {
                 setFilters({ ...data, testsBySkill: data.testsBySkill ?? {} });
                 if (data.branches?.includes("main")) setSelectedBranch("main");
             })
-            .catch((err) => setError(err.message));
+            .catch((err) => setError(err.message))
+            .finally(() => setFiltersReady(true));
 
     const loadRows = () => {
         setLoading(true);
@@ -104,9 +106,10 @@ export default function App() {
     }, []);
 
     useEffect(() => {
+        if (!filtersReady) return;
         loadRows();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedSkill, selectedTest, selectedBranch]);
+    }, [filtersReady, selectedSkill, selectedTest, selectedBranch]);
 
     // Tests available for the current skill selection. With no skill chosen,
     // show all tests; otherwise restrict to that skill's associated tests.
