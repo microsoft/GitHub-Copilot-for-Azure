@@ -95,7 +95,7 @@ stimuli:
             - azure-resource-visualizer
       - type: file-matches
         config:
-          path: "architecture.md"
+          path: "**/architecture*.md"
           pattern: "(?i)graph\\s+(TB|LR)"
       # Global: no_runtime_failure
       - type: output-not-matches
@@ -125,7 +125,7 @@ stimuli:
             - azure-resource-visualizer
       - type: file-matches
         config:
-          path: "architecture.md"
+          path: "**/architecture*.md"
           pattern: "(?i)graph\\s+(TB|LR)"
       # Global: no_runtime_failure
       - type: output-not-matches
