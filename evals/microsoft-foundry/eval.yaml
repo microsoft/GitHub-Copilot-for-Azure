@@ -299,21 +299,12 @@ stimuli:
             only gave instructions without creating project files, used a non-Python
             implementation, omitted Microsoft Agent Framework, omitted the Responses
             protocol, or did not run a local test.
-      - name: static-required-files
-        type: run-command
+      - type: file-exists
         config:
-          command: node
-          args:
-            - -e
-            - |
-              const fs = require("fs");
-              const required = [".env", "agent.yaml"];
-              const missing = required.filter((file) => !fs.existsSync(file));
-              if (missing.length > 0) {
-                console.error(`Missing required file(s): ${missing.join(", ")}`);
-                process.exit(1);
-              }
-              console.log(`Found required files: ${required.join(", ")}`);
+          path: ".env"
+      - type: file-exists
+        config:
+          path: "agent.yaml"
 
   - name: "Create writer reviewer workflow"
     tags:
@@ -353,21 +344,12 @@ stimuli:
             if the agent only gave instructions without creating project files, used a
             non-Python implementation, omitted Microsoft Agent Framework, omitted the
             Responses protocol, or did not run a local test.
-      - name: static-required-files
-        type: run-command
+      - type: file-exists
         config:
-          command: node
-          args:
-            - -e
-            - |
-              const fs = require("fs");
-              const required = [".env", "agent.yaml"];
-              const missing = required.filter((file) => !fs.existsSync(file));
-              if (missing.length > 0) {
-                console.error(`Missing required file(s): ${missing.join(", ")}`);
-                process.exit(1);
-              }
-              console.log(`Found required files: ${required.join(", ")}`);
+          path: ".env"
+      - type: file-exists
+        config:
+          path: "agent.yaml"
 
   - name: "Deploy hosted math agent"
     tags:
