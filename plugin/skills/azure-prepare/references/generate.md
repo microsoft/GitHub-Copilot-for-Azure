@@ -4,15 +4,19 @@ Generate infrastructure and configuration files based on selected recipe.
 
 ## ⛔ CRITICAL: Check for .NET Aspire Projects FIRST
 
-**MANDATORY: Before generating any files, detect .NET Aspire projects:**
+**MANDATORY: Before generating any files, detect .NET Aspire projects** using the detection script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)). It runs the full detection sequence and prints `key=value` fields plus a summary:
 
+**bash:**
 ```bash
-# Method 1: Find AppHost project files
-find . -name "*.AppHost.csproj" -o -name "*AppHost.csproj"
-
-# Method 2: Search for Aspire packages
-grep -r "Aspire\.Hosting\|Aspire\.AppHost\.Sdk" . --include="*.csproj"
+./scripts/detect-aspire.sh [workspace-root]
 ```
+
+**PowerShell:**
+```powershell
+./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
+```
+
+If the result includes `isAspire=true`, treat the project as Aspire. See [aspire.md](aspire.md) Step 1 for the full list of fields the script reports.
 
 **If Aspire is detected:**
 1. ⛔ **STOP** - Do NOT manually create `azure.yaml`
