@@ -182,7 +182,8 @@
             "--env", "GITHUB_MCP_SERVER_TOKEN CAPI_INTEGRATION_ID CAPI_HMAC_KEY USE_COPILOT_CLI_VERSION",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",
-            "--no-wait"
+            "--no-wait",
+            "--confirm"
         )
 
         if ($env:SYSTEM_DEBUG -eq "true") {
