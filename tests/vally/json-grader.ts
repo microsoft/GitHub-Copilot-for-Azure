@@ -24,14 +24,14 @@ type JsonGraderRule = {
 
 type JsonGraderConfig = {
   /**
-   * Regex pattern for the json document to look for.
+  * Glob pattern for the json document to look for.
    */
   path: string;
 
   rules: JsonGraderRule | JsonGraderRule[];
 };
 
-function findMatchingPaths(workDir: string, pattern: RegExp): string[] {
+function findMatchingPaths(workDir: string, globPattern: string): string[] {
   const matches = new Set<string>();
 
   function walk(currentDir: string): void {
@@ -42,11 +42,9 @@ function findMatchingPaths(workDir: string, pattern: RegExp): string[] {
       const normalizedFullPath = fullPath.replace(/\\/g, "/");
       const relativePath = path.relative(workDir, fullPath).replace(/\\/g, "/");
 
-      const candidatePattern = new RegExp(pattern.source, pattern.flags);
-      if (candidatePattern.test(relativePath) || candidatePattern.test(normalizedFullPath)) {
+      if (path.matchesGlob(relativePath, globPattern) || path.matchesGlob(normalizedFullPath, globPattern)) {
         matches.add(path.resolve(fullPath));
       }
-      candidatePattern.lastIndex = 0;
 
       if (entry.isDirectory()) {
         walk(fullPath);
@@ -79,7 +77,7 @@ function hasProperty(value: unknown, keyPath: string, expectedValue?: string | n
 export class JsonGrader implements Grader {
   metadata: GraderMetadata = {
     name: "json-object-rules",
-    description: "Checks if a json files satisfies the given rules",
+    description: "Checks whether a JSON file satisfies the given rules",
     behavior: { execution: "single" },
     costProfile: "free",
     portability: "t1-universal",
@@ -117,13 +115,15 @@ export class JsonGrader implements Grader {
       rules: typeof rawRules === "string" ? JSON.parse(rawRules) : rawRules,
     } as JsonGraderConfig;
 
-    let pattern: RegExp;
+    const globPattern = config.path.replace(/\\/g, "/");
     try {
-      pattern = new RegExp(config.path);
+      // Validate glob syntax up front.
+      path.matchesGlob("", globPattern);
     } catch {
-      throw new Error(`Invalid ${this.metadata.name} grader config. path is not a valid regex`);
+      throw new Error(`Invalid ${this.metadata.name} grader config. path is not a valid glob pattern`);
     }
-    const matchedPaths = findMatchingPaths(workDir, pattern);
+
+    const matchedPaths = findMatchingPaths(workDir, globPattern);
 
     const rules = Array.isArray(config.rules) ? config.rules : [config.rules];
     const hasExactSingleMatch = matchedPaths.length === 1;
@@ -165,7 +165,7 @@ export class JsonGrader implements Grader {
       label: passed ? "correct" : "incorrect",
       metadata: {
         matchedPaths,
-        pattern: config.path,
+        pattern: globPattern
       },
     };
   }

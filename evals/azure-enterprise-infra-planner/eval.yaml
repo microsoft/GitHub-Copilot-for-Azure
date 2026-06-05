@@ -874,7 +874,7 @@ stimuli:
       # Plan-level required fields (Jest: expect(plan.meta|inputs|plan).toHaveProperty)
       - type: json-object-rules
         config:
-          path: "\\.azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           rules:
             - type: has-property
               key: meta.planId

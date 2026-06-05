@@ -127,13 +127,15 @@ function validateSingleRule(
     return false;
   }
 
-  if (rule.value !== undefined && typeof rule.value !== "string") {
-    reportValidationError(
-      displayPath,
-      stimulusIndex,
-      stimulusName,
-      `${ruleLabel}.value must be undefined or a string`,
-    );
+  if (rule.value !== undefined) {
+    if (rule.value !== "string" && rule.value !== "number") {
+      reportValidationError(
+        displayPath,
+        stimulusIndex,
+        stimulusName,
+        `${ruleLabel}.value must be undefined or a string or a number`,
+      );
+    }
     return false;
   }
 
