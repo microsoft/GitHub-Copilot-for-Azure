@@ -119,7 +119,7 @@
     }
 
     Write-Host "Installing/upgrading MSBench CLI"
-    python -m pip install msbench-cli msbench-benchmarks<0.0.39 --no-input
+    python -m pip install msbench-cli --no-input
     if ($LASTEXITCODE -ne 0) {
         throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
     }
@@ -184,6 +184,10 @@
             "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait"
         )
+
+        if ($env:SYSTEM_DEBUG -eq "true") {
+            $runArgs += "--verbose"
+        }
 
         Write-Host "Running: msbench-cli $($runArgs -join ' ')"
         $cmdOutput = & 'msbench-cli' @runArgs 2>&1
