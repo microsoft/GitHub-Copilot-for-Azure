@@ -39,14 +39,15 @@ function findMatchingPaths(workDir: string, globPattern: string): string[] {
 
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry.name);
-      const normalizedFullPath = fullPath.replace(/\\/g, "/");
-      const relativePath = path.relative(workDir, fullPath).replace(/\\/g, "/");
+      if (!entry.isDirectory()) {
+        const normalizedFullPath = fullPath.replace(/\\/g, "/");
 
-      if (path.matchesGlob(relativePath, globPattern) || path.matchesGlob(normalizedFullPath, globPattern)) {
-        matches.add(path.resolve(fullPath));
-      }
+        const relativePath = path.relative(workDir, fullPath).replace(/\\/g, "/");
 
-      if (entry.isDirectory()) {
+        if (path.matchesGlob(relativePath, globPattern) || path.matchesGlob(normalizedFullPath, globPattern)) {
+          matches.add(path.resolve(fullPath));
+        }
+      } else {
         walk(fullPath);
       }
     }
