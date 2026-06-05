@@ -1,0 +1,35 @@
+{
+    "location": "eastus",
+    "kind": "Direct",
+    "properties": {
+        "streamDeclarations": {
+            "Custom-MyAppLogs": {
+                "columns": [
+                    { "name": "Time", "type": "datetime" },
+                    { "name": "Computer", "type": "string" },
+                    { "name": "Application", "type": "string" },
+                    { "name": "Level", "type": "string" },
+                    { "name": "Message", "type": "string" },
+                    { "name": "RequestId", "type": "string" },
+                    { "name": "DurationMs", "type": "real" }
+                ]
+            }
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "workspaceResourceId": "/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{ws}",
+                    "name": "myworkspace"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": ["Custom-MyAppLogs"],
+                "destinations": ["myworkspace"],
+                "transformKql": "source | project TimeGenerated = Time, Computer, Application, Level, Message, RequestId, DurationMs | where Level != 'Debug'",
+                "outputStream": "Custom-AppLogs_CL"
+            }
+        ]
+    }
+}
