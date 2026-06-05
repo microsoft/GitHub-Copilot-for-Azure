@@ -15,7 +15,7 @@ Skills in the azure-skills plugin are required to have integration tests that ru
 
 Vally eval suites are written as yaml documents. All eval suites share eval spec.
 
-Refer to the official documentation on the schema of the spec and the schema of the eval suites [writing-eval-specs](https://literate-engine-r3wnl4v.pages.github.io/guides/writing-eval-specs/).
+Refer to the official documentation on the schema of the spec and the schema of the eval suites [writing-eval-specs](https://microsoft.github.io/vally/guides/writing-eval-specs/).
 
 Vally eval suites for azure-skills plugin have the following file layout. The shared eval spec is located at `<repo-root>/.vally.yaml`. The eval suites are categorized by skills. The eval suites for each skill are located at `<repo-root>/evals/<skill-name>/eval.yaml`, e.g. `<repo-root>/evals/azure-ai/eval.yaml`. If a skill needs fixture files for its eval suites, it should organize such fixture files in a `fixture` directory under its directory, e.g. `<repo-root>/evals/azure-ai/fixture/`.
 
@@ -23,7 +23,7 @@ Vally eval suites for azure-skills plugin have the following file layout. The sh
 
 azure-skills plugin have implemented JavaScript integration test using Jest as the underlying test runner. All such integration tests are under `tests/**/integration.test.ts` files.
 
-To migrate integration test for a skill to vally suites, create its eval suite spec at `<repo-root>/evals/<skill-name>/eval.yaml`, add a suite that runs the same prompt and uses vally's built-in graders to grade the trajectory of the agent run. If the integration test grades the agent run in a way that vally's built-in graders don't support, refer to the official documentation on how to create a custom grader [writing-custom-grader](https://literate-engine-r3wnl4v.pages.github.io/guides/writing-custom-graders/).
+To migrate integration test for a skill to vally suites, create its eval suite spec at `<repo-root>/evals/<skill-name>/eval.yaml`, add a suite that runs the same prompt and uses vally's built-in graders to grade the trajectory of the agent run. If the integration test grades the agent run in a way that vally's built-in graders don't support, refer to the official documentation on how to create a custom grader [writing-custom-grader](https://microsoft.github.io/vally/guides/writing-custom-graders/).
 
 ## Why is there a custom executor
 
