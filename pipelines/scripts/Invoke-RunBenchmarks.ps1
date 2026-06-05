@@ -190,9 +190,12 @@
         }
 
         Write-Host "Running: msbench-cli $($runArgs -join ' ')"
-        $cmdOutput = & 'msbench-cli' @runArgs 2>&1
+        $cmdOutput = @()
+        & 'msbench-cli' @runArgs 2>&1 | ForEach-Object {
+            Write-Host $_
+            $cmdOutput += $_
+        }
         $msbenchExitCode = $LASTEXITCODE
-        $cmdOutput | ForEach-Object { Write-Host $_ }
 
         if ($msbenchExitCode -ne 0) {
             Write-Warning "msbench-cli run failed for model '$m' with exit code $msbenchExitCode"
