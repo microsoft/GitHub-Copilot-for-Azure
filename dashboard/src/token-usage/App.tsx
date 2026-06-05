@@ -29,6 +29,7 @@ interface TokenUsageFilters {
     skills: string[];
     tests: string[];
     branches: string[];
+    testsBySkill: Record<string, string[]>;
 }
 
 interface RunPoint {
@@ -41,6 +42,14 @@ interface RunPoint {
 /** Window size for the trailing rolling average series. */
 const ROLLING_WINDOW = 5;
 
+/** Format a token count into a compact, readable label (e.g. 1.2k, 3.4M). */
+function formatCompact(value: number): string {
+    const abs = Math.abs(value);
+    if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+    if (abs >= 1_000) return `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
+    return String(value);
+}
+
 /** Short, stable label for a run on the time axis. */
 function runLabel(runDate: string, runId: string): string {
     const shortId = runId && runId !== "unknown" ? runId.slice(-6) : "";
@@ -48,7 +57,7 @@ function runLabel(runDate: string, runId: string): string {
 }
 
 export default function App() {
-    const [filters, setFilters] = useState<TokenUsageFilters>({ skills: [], tests: [], branches: [] });
+    const [filters, setFilters] = useState<TokenUsageFilters>({ skills: [], tests: [], branches: [], testsBySkill: {} });
     const [selectedSkill, setSelectedSkill] = useState<string>("");
     const [selectedTest, setSelectedTest] = useState<string>("");
     const [selectedBranch, setSelectedBranch] = useState<string>("");
@@ -58,6 +67,7 @@ export default function App() {
     const [rows, setRows] = useState<TokenUsageRow[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [filtersReady, setFiltersReady] = useState(false);
 
     const loadFilters = () =>
         fetch("/api/token-usage/filters")
@@ -65,8 +75,12 @@ export default function App() {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
             })
-            .then((data: TokenUsageFilters) => setFilters(data))
-            .catch((err) => setError(err.message));
+            .then((data: TokenUsageFilters) => {
+                setFilters({ ...data, testsBySkill: data.testsBySkill ?? {} });
+                if (data.branches?.includes("main")) setSelectedBranch("main");
+            })
+            .catch((err) => setError(err.message))
+            .finally(() => setFiltersReady(true));
 
     const loadRows = () => {
         setLoading(true);
@@ -92,9 +106,24 @@ export default function App() {
     }, []);
 
     useEffect(() => {
+        if (!filtersReady) return;
         loadRows();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedSkill, selectedTest, selectedBranch]);
+    }, [filtersReady, selectedSkill, selectedTest, selectedBranch]);
+
+    // Tests available for the current skill selection. With no skill chosen,
+    // show all tests; otherwise restrict to that skill's associated tests.
+    const availableTests = useMemo<string[]>(() => {
+        if (!selectedSkill) return filters.tests;
+        return filters.testsBySkill[selectedSkill] ?? [];
+    }, [selectedSkill, filters]);
+
+    // When the skill changes, drop a selected test that no longer applies.
+    const handleSkillChange = (skill: string) => {
+        setSelectedSkill(skill);
+        const nextTests = skill ? filters.testsBySkill[skill] ?? [] : filters.tests;
+        if (selectedTest && !nextTests.includes(selectedTest)) setSelectedTest("");
+    };
 
     // Filter rows by the selected time range (based on runDate).
     const filteredRows = useMemo(() => {
@@ -162,7 +191,7 @@ export default function App() {
             <div className="pd-filters">
                 <label className="pd-filter">
                     <span>Skill</span>
-                    <select value={selectedSkill} onChange={(e) => setSelectedSkill(e.target.value)}>
+                    <select value={selectedSkill} onChange={(e) => handleSkillChange(e.target.value)}>
                         <option value="">All Skills</option>
                         {filters.skills.map((s) => (
                             <option key={s} value={s}>
@@ -176,7 +205,7 @@ export default function App() {
                     <span>Test</span>
                     <select value={selectedTest} onChange={(e) => setSelectedTest(e.target.value)}>
                         <option value="">All Tests</option>
-                        {filters.tests.map((t) => (
+                        {availableTests.map((t) => (
                             <option key={t} value={t}>
                                 {t}
                             </option>
@@ -251,7 +280,11 @@ export default function App() {
                                     height={70}
                                     tick={{ fontSize: 11 }}
                                 />
-                                <YAxis tick={{ fontSize: 11 }} width={80} />
+                                <YAxis
+                                    tick={{ fontSize: 11 }}
+                                    width={80}
+                                    tickFormatter={(v: number) => formatCompact(v)}
+                                />
                                 <Tooltip
                                     formatter={(value: number, name: string) => [
                                         value.toLocaleString(),
