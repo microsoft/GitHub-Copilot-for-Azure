@@ -3,10 +3,6 @@ name: Microsoft Foundry E2E Evaluations
 on:
   workflow_dispatch:
     inputs:
-      stimulus_id:
-        description: "Optional stimulus id tag to run, for example: create-hotel-booking-agent"
-        required: false
-        type: string
       target_pr_id:
         description: "Optional PR number whose Microsoft Foundry skill should be evaluated, including fork PRs"
         required: false
@@ -151,13 +147,12 @@ jobs:
       - name: Build plugin output
         run: npm run build
 
-      - name: Lint Microsoft Foundry E2E eval spec
-        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/microsoft-foundry/e2e-eval.yaml --strict
+      - name: Lint Microsoft Foundry eval spec
+        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/microsoft-foundry/eval.yaml --strict
 
       - name: Run Microsoft Foundry Vally evals
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          STIMULUS_ID: ${{ inputs.stimulus_id }}
           FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT }}
           FOUNDRY_E2E_EVAL_ARM_RESOURCE: ${{ secrets.FOUNDRY_E2E_EVAL_ARM_RESOURCE }}
           FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL: ${{ secrets.FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL }}
@@ -165,14 +160,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          tag_args=()
-          if [[ -n "${STIMULUS_ID}" ]]; then
-            tag_args+=(--tag "id=${STIMULUS_ID}")
-          fi
-
           npx --yes @microsoft/vally-cli@^0.5.0 eval \
-            --eval-spec evals/microsoft-foundry/e2e-eval.yaml \
-            "${tag_args[@]}" \
+            --suite foundry-e2e \
             --executor-plugin "${{ github.workspace }}/tests/vally/vally-executor.ts" \
             --output-dir ./results \
             --output jsonl \
