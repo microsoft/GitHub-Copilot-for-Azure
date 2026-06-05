@@ -119,7 +119,7 @@
     }
 
     Write-Host "Installing/upgrading MSBench CLI"
-    python -m pip install msbench-cli msbench-benchmarks>=0.0.38,<0.0.39 --no-input
+    python -m pip install msbench-cli msbench-benchmarks<0.0.39 --no-input
     if ($LASTEXITCODE -ne 0) {
         throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
     }
