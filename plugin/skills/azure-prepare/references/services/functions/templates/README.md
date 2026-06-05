@@ -76,10 +76,7 @@ Each array entry contains `{ path, content }`. For every entry in BOTH arrays:
 
 ### Step 5: Deploy
 
-```bash
-azd env set AZURE_LOCATION <region>
-azd up --no-prompt
-```
+[sh](../../../scripts/azd-provision-deploy.sh)/[ps1](../../../scripts/azd-provision-deploy.ps1): `./azd-provision-deploy.sh <template> <region> [env-name] [--up]`.
 
 ---
 
@@ -113,9 +110,8 @@ GET https://cdn.functions.azure.com/public/templates-manifest/manifest.json
 ```
 
 > ⚠️ **If manifest fetch fails** (any error):
-> 1. Fall back to the source manifest at `https://github.com/Azure/azure-functions-templates/blob/dev/Functions.Templates/Template-Manifest/manifest.json`
-> 2. If both sources are unreachable, fall back to known-good repos: `Azure-Samples/functions-quickstart-*` keyed by language + resource (e.g., `functions-quickstart-python-http-azd`)
-> 3. If all fallbacks fail, report the error to the user and ask them to retry later
+> 1. Try source manifest: `https://github.com/Azure/azure-functions-templates/blob/dev/Functions.Templates/Template-Manifest/manifest.json`
+> 2. Then known-good `Azure-Samples/functions-quickstart-*` repos by language/resource; if all fail, ask user to retry.
 
 ### Step 2: Filter Templates
 
@@ -165,9 +161,7 @@ The downloaded content is the **same** as MCP `functionFiles[]` + `projectFiles[
 
 ### Step 4: Deploy
 
-```bash
-azd up --no-prompt
-```
+Use Step 5 helper.
 
 ---
 
