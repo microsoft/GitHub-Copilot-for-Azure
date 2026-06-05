@@ -100,11 +100,14 @@ Content-Type: application/json
 Token audience (scope): `https://monitor.azure.com/.default`
 
 ```powershell
-$scope = [System.Web.HttpUtility]::UrlEncode("https://monitor.azure.com//.default")
-$body = "client_id=$appId&scope=$scope&client_secret=$appSecret&grant_type=client_credentials"
-$headers = @{ "Content-Type" = "application/x-www-form-urlencoded" }
+$tokenBody = @{
+    client_id     = $appId
+    scope         = "https://monitor.azure.com/.default"
+    client_secret = $appSecret
+    grant_type    = "client_credentials"
+}
 $uri = "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token"
-$bearerToken = (Invoke-RestMethod -Uri $uri -Method Post -Body $body -Headers $headers).access_token
+$bearerToken = (Invoke-RestMethod -Uri $uri -Method Post -Body $tokenBody -ContentType "application/x-www-form-urlencoded").access_token
 ```
 
 ### Client Libraries

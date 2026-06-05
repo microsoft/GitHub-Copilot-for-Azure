@@ -54,14 +54,16 @@ try {
 }
 
 # Step 1: Get bearer token
-Add-Type -AssemblyName System.Web
-$scope = [System.Web.HttpUtility]::UrlEncode("https://monitor.azure.com//.default")
-$tokenBody = "client_id=$AppId&scope=$scope&client_secret=$AppSecret&grant_type=client_credentials"
-$tokenHeaders = @{ "Content-Type" = "application/x-www-form-urlencoded" }
+$tokenBody = @{
+    client_id     = $AppId
+    scope         = "https://monitor.azure.com/.default"
+    client_secret = $AppSecret
+    grant_type    = "client_credentials"
+}
 $tokenUri = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
 
 try {
-    $tokenResponse = Invoke-RestMethod -Uri $tokenUri -Method Post -Body $tokenBody -Headers $tokenHeaders
+    $tokenResponse = Invoke-RestMethod -Uri $tokenUri -Method Post -Body $tokenBody -ContentType "application/x-www-form-urlencoded"
     $bearerToken = $tokenResponse.access_token
 } catch {
     Write-Error "Failed to acquire token: $_"
@@ -79,7 +81,7 @@ try {
     $response = Invoke-RestMethod -Uri $sendUri -Method Post -Body $data -Headers $sendHeaders
     Write-Host "Data sent successfully. Records: $($parsed.Count)"
 } catch {
-    $statusCode = $_.Exception.Response.StatusCode.value__
+    $statusCode = if ($_.Exception.Response) { $_.Exception.Response.StatusCode.value__ } else { 'N/A' }
     Write-Error "Failed to send data. Status: $statusCode. Error: $_"
     exit 1
 }
