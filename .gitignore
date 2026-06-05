@@ -359,3 +359,4 @@ dashboard/**/dist/
 
 # Local vally eval outputs
 results/
+tmp/

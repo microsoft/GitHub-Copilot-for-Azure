@@ -164,7 +164,7 @@ azd deploy --no-prompt
 
 Each env has its own `AGENT_<SVC>_*` vars.
 
-## Common failure modes -- Hosted
+## Common failure -- Hosted
 
 | Error | Fix |
 |-------|-----|
@@ -176,6 +176,7 @@ Each env has its own `AGENT_<SVC>_*` vars.
 | `container registry endpoint not found` | ACR not configured. Use `azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <url>`, or switch to direct code deployment. |
 | Agent version poll times out | Image still building; retry `azd ai agent show` after a minute. |
 | `session_not_ready` (424) | Cold start — wait 30-60 seconds and retry. For direct code deployments, first invocation installs dependencies. Use `1` CPU / `2Gi` memory minimum. **Also verify:** (1) a capability host exists on the Foundry account (see Step 2 above), (2) the agent's managed identity has `Cognitive Services User` role on the Foundry account — missing capability host or role are the most common causes of persistent `session_not_ready`. See [direct-code-deployment Task 8-9](references/direct-code-deployment.md) and [invoke](../invoke/invoke.md). |
+| `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. Update the agent name to the deployed agent name. |
 | `subscription quota exceeded` | Ask user to request quota; don't auto-retry. |
 | Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
 | `RoleAssignmentUpdateNotPermitted` during provision | A role assignment already exists but conflicts. Check for existing role assignments with `az role assignment list --scope <resource-scope>`. The provision may have succeeded for all resources except RBAC — verify with `azd ai project show` and manually assign the `Cognitive Services User` role to the agent identity if needed. |

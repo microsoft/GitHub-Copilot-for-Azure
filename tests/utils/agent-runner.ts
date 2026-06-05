@@ -147,10 +147,20 @@ export interface AgentRunConfig {
   takeScreenshot?: {
     predicate: (agentMetadata: AgentMetadata) => boolean
   };
+
+  /**
+   * Optional sink for streaming redacted agent output while a run is in progress.
+   * Intended for long-running Vally tests where waiting for final reports is too slow.
+   */
+  realtimeOutputSink?: AgentRealtimeOutputSink;
 }
 
 interface KeywordOptions {
   caseSensitive?: boolean;
+}
+
+export interface AgentRealtimeOutputSink {
+  write: (chunk: string) => void | Promise<void>;
 }
 
 /** Tracks resources that need cleanup after each test */
@@ -161,6 +171,162 @@ interface RunnerCleanup {
   preserveWorkspace?: boolean;
   config?: AgentRunConfig;
   agentMetadata?: AgentMetadata;
+}
+
+function stringifyForLog(value: unknown): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+function truncateForLog(value: string, maxLength = 4000): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength)}... (truncated)`;
+}
+
+function createRealtimeOutputFlusher(sink: AgentRealtimeOutputSink | undefined) {
+  const messageIdsWithDeltas = new Set<string>();
+  const toolStartedAtByCallId = new Map<string, string>();
+  let pendingWrite = Promise.resolve();
+
+  function enqueue(chunk: string): void {
+    if (!sink || !chunk) {
+      return;
+    }
+
+    const redacted = redactSecrets(chunk);
+    pendingWrite = pendingWrite
+      .then(async () => {
+        await sink.write(redacted);
+      })
+      .catch((error: unknown) => {
+        if (process.env.DEBUG) {
+          console.error("Failed to write realtime agent output:", error);
+        }
+      });
+  }
+
+  function flushEvent(event: SessionEvent): void {
+    const timestamp = event.timestamp ?? new Date().toISOString();
+
+    if (event.type === "assistant.message_delta") {
+      const messageId = event.data.messageId as string | undefined;
+      const deltaContent = event.data.deltaContent as string | undefined;
+      if (!deltaContent) {
+        return;
+      }
+
+      if (messageId && !messageIdsWithDeltas.has(messageId)) {
+        messageIdsWithDeltas.add(messageId);
+        enqueue(`\n[${timestamp}] assistant.message_delta\n`);
+      }
+      enqueue(deltaContent);
+      return;
+    }
+
+    if (event.type === "assistant.message") {
+      const messageId = event.data.messageId as string | undefined;
+      const content = event.data.content as string | undefined;
+      if (!content) {
+        return;
+      }
+
+      if (messageId && messageIdsWithDeltas.has(messageId)) {
+        enqueue("\n\n");
+        return;
+      }
+
+      enqueue(`\n[${timestamp}] assistant.message\n${content}\n\n`);
+      return;
+    }
+
+    if (event.type === "tool.execution_start") {
+      const toolName = event.data.toolName as string | undefined;
+      const toolCallId = event.data.toolCallId as string | undefined;
+      if (toolCallId) {
+        toolStartedAtByCallId.set(toolCallId, event.timestamp);
+      }
+
+      const args = truncateForLog(stringifyForLog(event.data.arguments));
+      enqueue([
+        `\n[${timestamp}] tool.execution_start ${toolName ?? "unknown"}`,
+        toolCallId ? `toolCallId: ${toolCallId}` : undefined,
+        args ? `arguments:\n${args}` : undefined,
+        "",
+      ].filter((line) => line !== undefined).join("\n"));
+      return;
+    }
+
+    if (event.type === "tool.execution_complete") {
+      const toolCallId = event.data.toolCallId as string | undefined;
+      const startedAt = toolCallId ? toolStartedAtByCallId.get(toolCallId) : undefined;
+      const durationMs = startedAt
+        ? new Date(timestamp).getTime() - new Date(startedAt).getTime()
+        : undefined;
+      const success = event.data.success as boolean | undefined;
+      const payload = success ? event.data.result : event.data.error;
+      const payloadText = truncateForLog(stringifyForLog(payload));
+
+      enqueue([
+        `\n[${timestamp}] tool.execution_complete`,
+        toolCallId ? `toolCallId: ${toolCallId}` : undefined,
+        `success: ${success === true}`,
+        durationMs !== undefined && Number.isFinite(durationMs) ? `durationMs: ${durationMs}` : undefined,
+        payloadText ? `result:\n${payloadText}` : undefined,
+        "",
+      ].filter((line) => line !== undefined).join("\n"));
+      return;
+    }
+
+    if (event.type === "skill.invoked") {
+      const skillName = event.data.name as string | undefined;
+      const skillPath = event.data.path as string | undefined;
+      enqueue([
+        `\n[${timestamp}] skill.invoked ${skillName ?? "unknown"}`,
+        skillPath ? `path: ${skillPath}` : undefined,
+        "",
+      ].filter((line) => line !== undefined).join("\n"));
+      return;
+    }
+
+    if (event.type === "session.skills_loaded") {
+      const skills = event.data.skills as Array<{
+        name?: string;
+        source?: string;
+        enabled?: boolean;
+        path?: string;
+      }>;
+      const skillLines = skills
+        .map((skill) => [
+          `- ${skill.name ?? "unknown"}`,
+          skill.source ? `source=${skill.source}` : undefined,
+          skill.enabled !== undefined ? `enabled=${skill.enabled}` : undefined,
+          skill.path ? `path=${skill.path}` : undefined,
+        ].filter((part) => part !== undefined).join(" "))
+        .join("\n");
+
+      enqueue(`\n[${timestamp}] session.skills_loaded\n${skillLines}\n\n`);
+    }
+  }
+
+  async function drain(): Promise<void> {
+    await pendingWrite;
+  }
+
+  return { flushEvent, drain };
 }
 
 /**
@@ -643,6 +809,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
+    const realtimeOutput = createRealtimeOutputFlusher(config.realtimeOutputSink);
 
     const entry: RunnerCleanup = { config };
     currentCleanups.push(entry);
@@ -695,6 +862,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
+        // Keep integration tests isolated from user-level skills/config such as
+        // ~/.agents/skills so test runs only exercise the generated output.
+        enableConfigDiscovery: false,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
         mcpServers: {
@@ -724,6 +894,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           }
 
           agentMetadata.events.push(event);
+          realtimeOutput.flushEvent(event);
 
           if (config.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
@@ -847,6 +1018,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       if (!isTest()) {
         await cleanup();
       }
+      await realtimeOutput.drain();
     }
   }
 
@@ -860,6 +1032,24 @@ function buildTestCaseDirPath(testName: string): string {
 function buildShareFilePath(testName: string): string {
   const testCaseArtifactsDir = buildTestCaseDirPath(testName);
   return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+}
+
+export function createRealtimeLogSink(testName: string): AgentRealtimeOutputSink & { filePath: string } {
+  const testCaseArtifactsDir = buildTestCaseDirPath(testName);
+  fs.mkdirSync(testCaseArtifactsDir, { recursive: true });
+  const filePath = path.join(testCaseArtifactsDir, "agent-realtime.log");
+  fs.writeFileSync(
+    filePath,
+    `# Agent realtime log\n\nStarted: ${new Date().toISOString()}\n\n`,
+    "utf-8",
+  );
+
+  return {
+    filePath,
+    write(chunk: string): void {
+      fs.appendFileSync(filePath, chunk, "utf-8");
+    },
+  };
 }
 
 export async function createMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): Promise<void> {

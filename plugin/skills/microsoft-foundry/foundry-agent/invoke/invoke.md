@@ -120,6 +120,7 @@ Use `session_delete` to release compute resources when done. Undeleted sessions 
 | Hosted agent not active | Version still provisioning or failed | Check version status via `agent_get` |
 | Session not found | Invalid ID or expired | Create new session with `session_create` |
 | `424 FailedDependency` or `session_not_ready` | Hosted agent session is still warming up or readiness has not completed | Wait 15-30 seconds, check `session_logstream` if needed, then retry `agent_invoke` with the same `sessionId` if one was returned; if no `sessionId` was returned, retry `session_create`. If this persists across 3+ retries (with exponential backoff: 15s, 30s, 60s), the container likely cannot start within the readiness probe deadline — redeploy with higher CPU/memory (recommended minimum: `1` CPU / `2Gi` for direct-code deployments). Also verify the model deployment name is correct via `model_deployment_get`. |
+| `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. | Update the agent name to the deployed agent name. |
 | Invocation failed | Model error, timeout, or invalid input | Check agent logs, verify model deployment |
 | Invocations schema mismatch | Request body does not match what the agent expects | Inspect agent's route handler or API docs for the correct JSON schema; do not guess |
 | File operation failed | Session not active or invalid path | Verify session with `session_get` |

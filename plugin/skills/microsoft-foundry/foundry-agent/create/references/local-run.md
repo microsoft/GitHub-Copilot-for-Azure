@@ -8,6 +8,14 @@ Use this when iterating on a hosted agent before deploying.
 > AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
+>
+> **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
+> ```bash
+> azd env set FOUNDRY_PROJECT_ENDPOINT "https://<account>.services.ai.azure.com/api/projects/<project>"
+> azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<model-deployment-name>"
+> azd env get-values
+> ```
+> A stale `AZURE_AI_MODEL_DEPLOYMENT_NAME` in `azd env` can make local run call the wrong deployment even when `.env` is correct, commonly surfacing as a Foundry responses API `404 Not Found`.
 
 ## Start the agent locally
 
@@ -19,7 +27,7 @@ What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
 2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
-3. Installs dependencies if needed (`uv pip install -e .`, `npm install`, `dotnet restore`).
+3. Installs dependencies if needed (`pip install -r requirements.txt`, `npm install`, `dotnet restore`).
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 

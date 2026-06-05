@@ -315,6 +315,8 @@ Do not send `x-ms-agent-name` on `POST /agents/<agent-name>/versions` or `POST /
 
 Update agent and create version are idempotent on zip SHA-256 plus agent definition. If both are unchanged from the latest version, the service can return the existing version instead of creating a duplicate. To force a new version, change the zip contents or definition.
 
+If the write response contains `versions.latest`, use `versions.latest.version`, `versions.latest.status`, and `versions.latest.instance_identity.principal_id`. Do not poll `/versions/None`; if no version can be extracted, list versions first and pick the newest returned version.
+
 Other useful REST operations:
 
 | Purpose | Method and endpoint | Notes |
