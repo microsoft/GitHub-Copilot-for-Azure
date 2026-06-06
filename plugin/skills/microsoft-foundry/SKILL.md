@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry
-description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end with azd: hosted agent scaffold/run/deploy (azd ai agent init/run, azd provision, azd deploy), prompt agent create, batch eval, continuous eval, prompt optimizer, Agent Optimizer scaffold, agent.yaml, dataset curation from traces, model fine-tuning (SFT/DPO/RFT). USE FOR: azd ai agent, deploy agent, hosted agent, create agent, add tool to agent, invoke agent, evaluate agent, continuous monitoring, optimize prompt, improve prompt, optimize agent instructions, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, AI Services, create Foundry resource, provision, knowledge index, agent monitoring, customize deployment, fine-tune, training-data, grader, distillation, fine-tuned model. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
+description: "Deploy, evaluate, fine-tune, and manage Foundry agents end-to-end with azd: hosted agent scaffold/run/deploy (azd ai agent init/run, azd provision, azd deploy), prompt agent create, ACR/container deploy when needed, batch eval, continuous eval, prompt optimizer, Agent Optimizer scaffold, agent.yaml, dataset curation from traces, model fine-tuning (SFT/DPO/RFT). USE FOR: azd ai agent, deploy agent, hosted agent, create agent, add tool to agent, invoke agent, evaluate agent, continuous eval, continuous monitoring, optimize prompt, improve prompt, optimize agent instructions, agent optimizer, deploy model, Foundry project, RBAC, role assignment, permissions, quota, capacity, region, troubleshoot agent, deployment failure, AI Services, create Foundry resource, provision, knowledge index, agent monitoring, customize deployment, onboard, availability, fine-tune, SFT, DPO, RFT, training-data, grader, distillation, fine-tuned model, large file upload. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
 license: MIT
 metadata:
   author: Microsoft
@@ -13,7 +13,7 @@ This skill helps developers work with Microsoft Foundry resources, covering mode
 
 ## Pre-Execution Requirements
 
-When a workflow uses Foundry MCP operations, first inspect the available Foundry MCP tools and related parameters. For azd-only workflows, continue with the relevant sub-skill if no Foundry MCP discovery/help tool is exposed; do not invent a tool name.
+Before using Foundry MCP operations, inspect the available Azure MCP `foundry` tools and related parameters. Treat this as the discovery/help step for MCP-based workflows. For azd-only workflows, continue with the relevant sub-skill if no Foundry MCP discovery/help tool is exposed; do not invent a tool name.
 
 ## Sub-Skills
 
@@ -23,13 +23,13 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 
 | Sub-Skill | When to Use | Reference |
 |-----------|-------------|-----------|
-| **deploy** | Deploy hosted agents to Foundry, smoke-test a deployment, create or update prompt agents, and manage agent versions and multi-environment deploys. | [deploy](foundry-agent/deploy/deploy.md) |
+| **deploy** | Deploy hosted agents to Foundry with azd, choosing direct code deploy when `agent.yaml` has `code_configuration` and ACR/container deploy otherwise; smoke-test a deployment, create or update prompt agents, and manage agent versions and multi-environment deploys. | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
 | **invocations-ws** | Build, deploy, and connect to hosted agents that speak the `invocations_ws` duplex WebSocket protocol — voice agents, real-time streams, and signaling for out-of-band media transports. | [invocations-ws](foundry-agent/invocations-ws/invocations-ws.md) |
 | **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, set up CI/CD monitoring, and enable continuous production evaluation | [observe](foundry-agent/observe/observe.md) |
 | **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create** | Create a new hosted Foundry agent from a curated sample or from existing code, run and iterate on it locally before deploying, and add tools (web search, AI Search, MCP, A2A). | [create](foundry-agent/create/create-hosted.md) |
+| **create** | Create new hosted agent applications from curated samples or existing code, run and iterate locally before deploying, and add tools (web search, AI Search, MCP, A2A). Supports Microsoft Agent Framework, LangGraph, or custom frameworks in Python or C#, across `responses`, `invocations`, or `invocations_ws` protocols. | [create](foundry-agent/create/create-hosted.md) |
 | **agent-optimizer** | Make existing Python hosted-agent code optimization-ready, configure eval.yaml, run Agent Optimizer jobs, apply candidates locally, and deploy through azd after review. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
 | **project/create** | Creating a new Azure AI Foundry project for hosting agents and models. Use when onboarding to Foundry or setting up new infrastructure. | [project/create/create-foundry-project.md](project/create/create-foundry-project.md) |

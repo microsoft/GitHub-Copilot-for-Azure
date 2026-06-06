@@ -13,7 +13,9 @@
     "test:watch": "node scripts/run-tests.js watch",
     "test:skill": "node scripts/run-tests.js skill",
     "test:vally": "npx tsx ./run-vally-test.ts",
+    "test:vally:foundry-e2e": "npx tsx ./run-vally-test.ts --eval-spec ../evals/microsoft-foundry/e2e-eval.yaml",
     "report": "npx tsx scripts/generate-test-reports.ts",
+    "upload:token-usage": "npx tsx scripts/upload-token-usage.ts",
     "results": "node scripts/show-test-results.js",
     "update:mcp-tool-snapshot": "node scripts/update-mcp-tool-snapshot.js",
     "update:snapshots": "node scripts/update-snapshots.js",
@@ -27,6 +29,7 @@
     "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "devDependencies": {
+    "@azure/data-tables": "^13.3.2",
     "@azure/identity": "^4.13.1",
     "@eslint/js": "^10.0.0",
     "@github/copilot": "1.0.49",
