@@ -1,7 +1,7 @@
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { computeMetrics } from "@microsoft/vally";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
-import { useAgentRunner, createMarkdownReport, createRealtimeLogSink } from "../utils/agent-runner.ts";
+import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { listSkills } from "../utils/skill-loader.ts";
 import { getEarlyTerminateCondition, getFollowUp, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
@@ -31,8 +31,6 @@ export class IntegrationTestAgentRunner implements Executor {
     const systemPrompt = getSystemPrompt(tags);
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
     const timeout = options.timeout;
-    const realtimeLogSink = createRealtimeLogSink(normalizedTestName);
-    console.log(`Agent realtime log: ${realtimeLogSink.filePath}`);
 
     const runConfig: AgentRunConfig = {
       workspace: workDir,
@@ -44,7 +42,6 @@ export class IntegrationTestAgentRunner implements Executor {
       systemPrompt: systemPrompt,
       followUpTimeout: timeout,
       takeScreenshot: takeScreenshot,
-      realtimeOutputSink: realtimeLogSink,
       // Always make our agent runner preserve workspace.
       // vally will delete the test workspace by default.
       preserveWorkspace: true

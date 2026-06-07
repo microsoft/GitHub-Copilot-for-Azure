@@ -2,12 +2,14 @@
 
 Use this when iterating on a hosted agent before deploying.
 
-> **Prerequisite:** Local run does NOT require `azd provision` or any deployed Azure infrastructure. The agent runs on your machine and calls the Foundry model endpoint directly using your local credentials (`DefaultAzureCredential` — falls back to `az login` / VS Code identity). You only need a `.env` file in the agent source directory with:
+> **Prerequisite:** Local run does NOT require `azd provision` or any deployed Azure infrastructure. The agent runs on your machine and calls the Foundry model endpoint directly using your local credentials (`DefaultAzureCredential` — falls back to `az login` / VS Code identity). You only need a `.env` file in the agent directory with:
 > ```env
 > FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
 > AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
+>
+> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
 >
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
@@ -16,6 +18,17 @@ Use this when iterating on a hosted agent before deploying.
 > azd env get-values
 > ```
 > A stale `AZURE_AI_MODEL_DEPLOYMENT_NAME` in `azd env` can make local run call the wrong deployment even when `.env` is correct, commonly surfacing as a Foundry responses API `404 Not Found`.
+
+## Prepare the local environment
+
+For Python agents, prepare the environment from the agent directory before running `azd ai agent run`:
+
+1. Create a venv, for example `python -m venv .venv`.
+2. Activate the venv.
+3. Install `uv` inside the active venv: `python -m pip install uv`.
+4. Run `azd ai agent run`; it installs `requirements.txt` itself and uses `uv` from the local env for faster Python dependency installation.
+
+> **Important:** Keep the venv active for `azd ai agent run`. Install `uv` before running `azd ai agent run`; otherwise the local run may fall back to slower dependency installation. Do NOT manually install agent packages or run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
 
 ## Start the agent locally
 
@@ -27,7 +40,7 @@ What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
 2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
-3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself; prepare a venv-local `uv` first so this step is fast.
+3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 
@@ -36,15 +49,6 @@ What this does:
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
 For headless or CI runs, pass `--no-inspector` and run the local server in an executor-managed background terminal/session. Wait for the "Agent ready" message, invoke it from a second command, then stop the background terminal/session before deploying or leaving a temporary workspace. Do not use shell job/background operators for the local server; they can detach children and keep files open after the parent shell exits.
-
-For Python agents, prepare the environment from the agent source directory (`<service-dir>`, beside `requirements.txt` and `main.py`) before local run:
-
-1. Create a venv, for example `python -m venv .venv`.
-2. Activate the venv.
-3. Install `uv` inside the active venv: `python -m pip install uv`.
-4. Run `azd ai agent run`; it installs `requirements.txt` itself and uses the venv-local `uv` for faster Python dependency installation.
-
-Keep the venv active for `azd ai agent run`. Install `uv` before running `azd ai agent run`; otherwise the local run may fall back to slower dependency installation. Do not manually run `pip install -r requirements.txt` or `uv pip install -r requirements.txt` in the normal local-run path.
 
 ## Useful flags
 
@@ -90,6 +94,8 @@ azd ai agent invoke --local "hello, are you up?"
 ```
 
 Do not use `--output json` with invoke. The invoke command supports `default` and `raw` output only.
+
+Run one representative local invocation before deploying. If the local invocation returns a model `404` or wrong deployment error, check `azd env get-values` before changing code; stale azd env values are the most common cause.
 
 `--local` differs from a remote invoke in:
 

@@ -10,8 +10,8 @@ azd ai agent show                    # is the agent deployed? what version?
 azd ai agent doctor                  # full health check, suggests fixes
 
 azd ai agent sample list             # curated catalog -- pick a manifestUrl
-azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py
-azd ai agent init --src ./src/my-agent --agent-name my-agent
+azd ai agent init -m <manifestUrl>   # scaffold from a sample
+azd ai agent init --from-code        # scaffold from existing source
 
 azd ai agent run                     # start the agent on localhost:8088
 azd ai agent invoke "<msg>"          # remote invoke (billed; gated)
@@ -34,7 +34,7 @@ azd ai agent eval init / run / show / update / list
 azd ai agent optimize / optimize status / optimize apply / optimize deploy / optimize cancel
 ```
 
-Read-only commands accept `--output json` and never require `--force`. `azd ai agent invoke` supports `default` and `raw`, not `json`. Write commands are gated by a confirmation envelope (see "Confirmation envelope" below).
+Read-only commands accept `--output json` and never require `--force`. Write commands are gated by a confirmation envelope (see "Confirmation envelope" below).
 
 ## Two files, two schemas
 
@@ -43,12 +43,10 @@ After `azd ai agent init`, every hosted agent is defined by **two** files plus t
 | File | What it holds |
 |------|---------------|
 | `<service-dir>/agent.yaml` | The flat `ContainerAgent`: `kind`, `name`, `protocols`, `environment_variables`, `agentEndpoint`, `agentCard`, `code_configuration` / `image`, container `resources` (cpu, memory). |
-| `azure.yaml services.<name>.config` | Model deployments, project connections, toolboxes, tool resources, container settings, `startupCommand`. Keep `<name>` aligned with `agent.yaml name` after renaming an agent. |
+| `azure.yaml services.<name>.config` | Model deployments, project connections, toolboxes, tool resources, container settings, `startupCommand`. |
 | `.azure/<env>/.env` (`azd env set`) | Secrets and `PARAM_<CONN>_<KEY>` credential values referenced from `azure.yaml`. |
 
 `azd deploy` reads `agent.yaml` and creates a new immutable agent version. `azd provision` reads `config.deployments[]` and `config.connections[]` and applies them via Bicep.
-
-The `azure.yaml services` key is the azd service id. For hosted agents, keep that key equal to `agent.yaml name` unless you have a specific multi-service reason not to. If they differ, deploy can create the agent named by `agent.yaml` but postdeploy may try to fetch the service key as an agent name and return 404.
 
 `agent.manifest.yaml` (the file passed to `-m`) is the seed format -- it is NOT on disk after init. Init splits its `parameters:` / `resources:` blocks across the three files above. Don't reintroduce the `template:` wrapper into `agent.yaml`.
 
@@ -67,17 +65,13 @@ resources:
 environment_variables:
   - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
     value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
-code_configuration:
-  runtime: python_3_13
-  entry_point: app.py
-  dependency_resolution: remote_build   # or "bundled"
 ```
 
 - `protocols` -- `responses` (OpenAI), `invocations` (A2A). Editing requires `azd deploy`.
 - `resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
 - `environment_variables` -- `${VAR}` resolves from the active azd env. Not for secrets.
-- `code_configuration` present -> direct code deploy (ZIP, Foundry builds). Absent -> container/ACR deploy (Dockerfile + `docker:` in `azure.yaml`). `image:` skips the Dockerfile build.
-- In non-interactive mode, `azd ai agent init` defaults to container deploy. Pass `--deploy-mode code --runtime <runtime> --entry-point <file>` during init to get `code_configuration`. If an older camelCase `codeConfiguration` block still results in `Packaging container`, convert it to snake_case before retrying deploy.
+- No `code_configuration` -> container/ACR deploy (Dockerfile + `docker:` in `azure.yaml`). `image:` skips the Dockerfile build.
+- `code_configuration` present -> direct code deploy (ZIP, Foundry builds). Pass `--deploy-mode code --runtime <runtime> --entry-point <file>` during init only when choosing direct code deploy.
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 
 ### Minimal `azure.yaml` service config
@@ -87,7 +81,9 @@ services:
   my-agent:
     project: ./src/my-agent
     host: azure.ai.agent
-    language: python
+    language: docker
+    docker:
+      remoteBuild: true
     config:
       startupCommand: "python -m main"
       container:
@@ -120,6 +116,8 @@ services:
 | `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` or `azd ai project show` |
 | `AZURE_AI_PROJECT_ID` | `azd ai agent show` (playground URL) | `azd env set` |
 | `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION` | `azd provision` | `azd config get defaults` |
+| `AZURE_CONTAINER_REGISTRY_ENDPOINT` | Container/ACR deploy publish target | Provision output |
+| `AI_AGENT_PENDING_PROVISION` | Pending init-created infra work | Auto; inspect before deploy; existing project/model values can make provision unnecessary |
 | `AGENT_<SVC>_NAME` / `_VERSION` / `_<PROTO>_ENDPOINT` | Auto-written by deploy | Auto |
 | `PARAM_<CONN>_<KEY>` | Connection credentials in `azure.yaml` | `azd env set` |
 

@@ -8,9 +8,9 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 
 | Property | Value |
 |----------|-------|
-| Agent type | Hosted (container or code) |
+| Agent type | Hosted (container/ACR by default; direct code optional) |
 | Primary CLI | `azd ai agent` (from extension `azure.ai.agents`) |
-| Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py` (or `--src` for brownfield) |
+| Scaffold command | `azd ai agent init -m <manifestUrl>` (or `--from-code` for brownfield); add `--deploy-mode code --runtime ... --entry-point ...` only when explicitly choosing direct code deploy |
 | Local run | `azd ai agent run` + `azd ai agent invoke --local "..."` |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
@@ -79,32 +79,26 @@ List the curated catalog (filter by language if known):
 azd ai agent sample list --featured-only --language python --output json
 ```
 
-Each entry has a `manifestUrl` and an `initCommand`. For standard Python Agent Framework samples, prefer direct code deploy at init time. `--no-prompt` defaults to container deploy unless you pass `--deploy-mode code`, so include the code flags up front:
+Each entry has a `manifestUrl` and an `initCommand`. Container/ACR deploy is the default. Keep `--no-prompt`; add `--deploy-mode code --runtime ... --entry-point ...` only when explicitly choosing direct code deploy.
 
-For generic hosted-agent or persona-only requests, choose the simplest recommended sample for the requested language and protocol. Do not choose toolbox, MCP, local-tools, or RAG samples unless the user asked for those capabilities.
+For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
+Python Example:
 ```bash
 # New Foundry project
-azd ai agent init --no-prompt \
-  -m "<manifestUrl>" \
-  --deploy-mode code \
-  --runtime python_3_13 \
-  --entry-point main.py
+azd ai agent init --no-prompt -m "<manifestUrl>"
 
 # Existing Foundry project
 azd ai agent init --no-prompt \
   --project-id "<resourceId>" \
-  -m "<manifestUrl>" \
-  --deploy-mode code \
-  --runtime python_3_13 \
-  --entry-point main.py
+  -m "<manifestUrl>"
 ```
 
 Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
-`init` writes `azure.yaml` (or appends to it), `<service-dir>/agent.yaml`, and `<service-dir>/.agentignore` (code-deploy only). A successful direct-code init produces `<service-dir>/agent.yaml` with `code_configuration:`. For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
+`init` writes `azure.yaml` (or appends to it) and `<service-dir>/agent.yaml`. The default container/ACR path leaves out `code_configuration:` and deploys through Docker/ACR. A direct-code init adds `code_configuration:` and a code-deploy `.agentignore`. For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
 
 Check the scaffold before local run:
 
@@ -120,14 +114,7 @@ Check the scaffold before local run:
    FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
    AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
    ```
-3. Prefer direct code deployment. Inspect `<service-dir>/agent.yaml`; if `code_configuration:` is missing and the agent does not need a custom Dockerfile or system packages, add it before deployment. Use snake_case for current `azd ai agent` direct-code projects:
-   ```yaml
-   code_configuration:
-     runtime: python_3_13
-     entry_point: main.py
-     dependency_resolution: remote_build
-   ```
-   If the file has an older camelCase `codeConfiguration:` block but `azd deploy` still prints `Packaging container`, replace it with the snake_case block above and retry.
+3. Keep the default container/ACR deployment unless the user explicitly wants direct code deploy. If switching to direct code, add `code_configuration:` before deployment.
 4. If you rename the agent in `<service-dir>/agent.yaml`, also rename the matching key under `azure.yaml services:` to the same value while preserving its `project:` path.
 5. If you change CPU or memory, keep `<service-dir>/agent.yaml` and `azure.yaml services.<name>.config.container.resources` aligned because the `azure.yaml` service config can override the agent file.
 
@@ -138,43 +125,14 @@ Use ONLY when the workspace already contains hand-written agent source.
 ```bash
 azd ai agent init --no-prompt \
   --src ./src/my-agent \
-  --agent-name my-agent \
-  --deploy-mode code \
-  --runtime python_3_13 \
-  --entry-point app.py
+  --agent-name my-agent
 ```
 
-`--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`, `node_22`. `--deploy-mode container` (default) builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
+The default deploy mode builds from `Dockerfile` and pushes through the project ACR. For direct code deploy, use `--deploy-mode code --runtime <runtime> --entry-point <file>`; runtimes include `python_3_13`, `python_3_14`, `dotnet_10`, and `node_22`. For an existing Foundry project, add `--project-id "<resourceId>"`.
 
 ### Step 5 -- Run locally and iterate
 
-> **Run local BEFORE provision/deploy.** Local run does NOT require `azd provision` or any deployed infrastructure. The agent runs on your machine and calls the Foundry model endpoint directly using your local credentials (`DefaultAzureCredential`). This lets you validate agent behavior before spending time on infrastructure provisioning.
->
-> You need only two values (from an existing project, a teammate, or the portal):
-> 1. A Foundry project endpoint.
-> 2. A model deployment name.
->
-> Create a `.env` file in the agent source directory:
-> ```env
-> FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
-> AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
-> ```
-> If you already ran `azd provision`, these values are in `azd env get-values`.
->
-> **If no project endpoint is available yet**, provision first (Step 7 / [deploy.md](../deploy/deploy.md)), then return here for local iteration before deploying the agent.
-
-Prepare the Python environment from the agent source directory (`<service-dir>`, beside `requirements.txt` and `main.py`) before local run:
-
-1. Create a venv, for example `python -m venv .venv`.
-2. Activate the venv.
-3. Install `uv` inside the active venv: `python -m pip install uv`.
-4. Run `azd ai agent run`; it installs `requirements.txt` itself and uses the venv-local `uv` for faster Python dependency installation.
-
-Keep the venv active for `azd ai agent run`. Install `uv` before running `azd ai agent run`; otherwise the local run may fall back to slower dependency installation. Do not manually run `pip install -r requirements.txt` or `uv pip install -r requirements.txt` in the normal local-run path.
-
-In headless runs, start `azd ai agent run --no-inspector` in an executor-managed background terminal/session, wait for "Agent ready", invoke locally from a second command, then stop the background terminal/session before deploying or leaving a temporary workspace. Do not use shell job/background operators for the local server; they can detach children and keep files open after the parent shell exits.
-
-First start takes 30-60 seconds. `Ctrl+C` stops the agent in an interactive terminal. Run one representative local invocation. If the local invocation returns a model `404` or wrong deployment error, check `azd env get-values` before changing code; stale azd env values are the most common cause. For overrides (custom port, custom start command, headless), see [local-run](references/local-run.md).
+Read and follow [local-run](references/local-run.md). Complete one representative local invocation before deploying.
 
 ### Step 6 -- Add tools (optional)
 
@@ -203,7 +161,7 @@ Once local invocation succeeds, tell the user the agent is ready and ask if they
 
 ## Non-Interactive / YOLO Mode
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If project ID is missing and the user wants to use an existing project, stop and ask. In an empty workspace, prefer samples without secret parameters; do not run `azd env set` before init because no azd project exists yet.
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If project ID is missing and the user wants to use an existing project, stop and ask. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 
@@ -216,7 +174,7 @@ Defaults when unspecified: greenfield + Python + `azd ai agent sample list --fea
 | Secret parameter prompt under `--no-prompt` | In an empty workspace, choose a simpler sample without secret parameters. In an existing azd project, set `PARAM_<CONN>_<KEY>` with `azd env set` before init; keep `--no-prompt`. |
 | `cannot use --version with --local` | Drop `--version`, or drop `--local` to hit the deployed agent |
 | `could not detect project type` | Set `startupCommand` in `azure.yaml` or pass `--start-command` |
-| Local agent slow to respond | Wait 30-60 seconds on first start |
+| Local run issue | Follow [local-run](references/local-run.md) common failures |
 
 Run `azd ai agent doctor --output json` to surface failing checks with `suggestion` fields.
 
