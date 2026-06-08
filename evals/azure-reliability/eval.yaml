@@ -63,10 +63,9 @@ stimuli:
         - "No to storage migration — leave storage as-is."
         - "Now re-run the reliability assessment and confirm zone redundancy is ON for the compute plan."
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
-    workspace:
-      git:
-        url: https://github.com/Azure-Samples/functions-quickstart-javascript-azd.git
-        depth: 1
+    environment:
+      commands:
+        - git clone https://github.com/Azure-Samples/functions-quickstart-javascript-azd.git --depth 1
     graders:
       # 1. Skill must be invoked
       - type: skill-invocation
@@ -110,10 +109,9 @@ stimuli:
         - "Yes, deploy now."
         - "Now re-run the reliability assessment and confirm zone redundancy is ON for the App Service plan."
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
-    workspace:
-      git:
-        url: https://github.com/Azure-Samples/quickstart-deploy-aspnet-core-app-service.git
-        depth: 1
+    environment:
+      commands:
+        - git clone https://github.com/Azure-Samples/quickstart-deploy-aspnet-core-app-service.git --depth 1
     graders:
       # 1. Skill must be invoked
       - type: skill-invocation
