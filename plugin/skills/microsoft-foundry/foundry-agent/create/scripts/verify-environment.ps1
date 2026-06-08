@@ -81,33 +81,40 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # 4. Foundry project endpoint (optional at this stage)
-$projectJson = Get-AzdJson @("ai", "project", "show", "--output", "json")
-$endpoint = $null
-if ($projectJson) {
-    foreach ($k in @("endpoint", "projectEndpoint", "aiProjectEndpoint")) {
-        if ($projectJson.PSObject.Properties.Name -contains $k -and $projectJson.$k) {
-            $endpoint = $projectJson.$k
-            break
+# Short-circuit when there's no azd project in cwd: `azd ai project show` / `agent show`
+# would just return nothing after a ~3s subprocess each.
+if (-not (Test-Path "azure.yaml")) {
+    Note-Warn "No Foundry project endpoint set yet. A new project will be created at provision/deploy time, or supply an existing project resource ID."
+    Note-Ok "No agent deployed yet. Proceed with create."
+} else {
+    $projectJson = Get-AzdJson @("ai", "project", "show", "--output", "json")
+    $endpoint = $null
+    if ($projectJson) {
+        foreach ($k in @("endpoint", "projectEndpoint", "aiProjectEndpoint")) {
+            if ($projectJson.PSObject.Properties.Name -contains $k -and $projectJson.$k) {
+                $endpoint = $projectJson.$k
+                break
+            }
         }
     }
-}
-if ($endpoint) {
-    Note-Ok "Foundry project endpoint configured: $endpoint"
-} else {
-    Note-Warn "No Foundry project endpoint set yet. A new project will be created at provision/deploy time, or supply an existing project resource ID."
-}
-
-# 5. Agent deployment status
-$agentJson = Get-AzdJson @("ai", "agent", "show", "--output", "json")
-if ($agentJson) {
-    $status = if ($agentJson.PSObject.Properties.Name -contains "status" -and $agentJson.status) { $agentJson.status } else { "unknown" }
-    switch ($status) {
-        { $_ -in @("active", "deployed") } { Note-Ok "An agent is already deployed (status: $status). Skip to deploy.md to redeploy, or tools to add a tool." }
-        "not_deployed"                     { Note-Ok "No agent deployed yet (status: not_deployed). Proceed with create." }
-        default                            { Note-Warn "Agent status: $status." }
+    if ($endpoint) {
+        Note-Ok "Foundry project endpoint configured: $endpoint"
+    } else {
+        Note-Warn "No Foundry project endpoint set yet. A new project will be created at provision/deploy time, or supply an existing project resource ID."
     }
-} else {
-    Note-Ok "No agent deployed yet. Proceed with create."
+
+    # 5. Agent deployment status
+    $agentJson = Get-AzdJson @("ai", "agent", "show", "--output", "json")
+    if ($agentJson) {
+        $status = if ($agentJson.PSObject.Properties.Name -contains "status" -and $agentJson.status) { $agentJson.status } else { "unknown" }
+        switch ($status) {
+            { $_ -in @("active", "deployed") } { Note-Ok "An agent is already deployed (status: $status). Skip to deploy.md to redeploy, or tools to add a tool." }
+            "not_deployed"                     { Note-Ok "No agent deployed yet (status: not_deployed). Proceed with create." }
+            default                            { Note-Warn "Agent status: $status." }
+        }
+    } else {
+        Note-Ok "No agent deployed yet. Proceed with create."
+    }
 }
 
 Write-Output ""

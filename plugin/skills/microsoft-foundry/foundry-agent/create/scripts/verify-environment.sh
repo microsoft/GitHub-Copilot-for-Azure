@@ -54,10 +54,16 @@ else
 fi
 
 # 4. Foundry project endpoint (optional at this stage)
-PROJECT_JSON="$(azd ai project show --output json 2>/dev/null || echo '')"
-ENDPOINT=""
-if [ -n "$PROJECT_JSON" ]; then
-  ENDPOINT="$(printf '%s' "$PROJECT_JSON" | python3 -c 'import json,sys
+# Short-circuit when there's no azd project in cwd: `azd ai project show` / `agent show`
+# would just return nothing after a ~3s subprocess each.
+if [ ! -f "azure.yaml" ]; then
+  note_warn "No Foundry project endpoint set yet. A new project will be created at provision/deploy time, or supply an existing project resource ID."
+  note_ok "No agent deployed yet. Proceed with create."
+else
+  PROJECT_JSON="$(azd ai project show --output json 2>/dev/null || echo '')"
+  ENDPOINT=""
+  if [ -n "$PROJECT_JSON" ]; then
+    ENDPOINT="$(printf '%s' "$PROJECT_JSON" | python3 -c 'import json,sys
 try:
     d=json.load(sys.stdin)
 except Exception:
@@ -67,29 +73,30 @@ if isinstance(d,dict):
         if d.get(k):
             print(d[k]); break
 ' 2>/dev/null)"
-fi
-if [ -n "$ENDPOINT" ]; then
-  note_ok "Foundry project endpoint configured: ${ENDPOINT}"
-else
-  note_warn "No Foundry project endpoint set yet. A new project will be created at provision/deploy time, or supply an existing project resource ID."
-fi
+  fi
+  if [ -n "$ENDPOINT" ]; then
+    note_ok "Foundry project endpoint configured: ${ENDPOINT}"
+  else
+    note_warn "No Foundry project endpoint set yet. A new project will be created at provision/deploy time, or supply an existing project resource ID."
+  fi
 
-# 5. Agent deployment status
-AGENT_JSON="$(azd ai agent show --output json 2>/dev/null || echo '')"
-if [ -n "$AGENT_JSON" ]; then
-  STATUS="$(printf '%s' "$AGENT_JSON" | python3 -c 'import json,sys
+  # 5. Agent deployment status
+  AGENT_JSON="$(azd ai agent show --output json 2>/dev/null || echo '')"
+  if [ -n "$AGENT_JSON" ]; then
+    STATUS="$(printf '%s' "$AGENT_JSON" | python3 -c 'import json,sys
 try:
     d=json.load(sys.stdin)
 except Exception:
     print("unknown"); raise SystemExit
 print(d.get("status","unknown") if isinstance(d,dict) else "unknown")' 2>/dev/null)"
-  case "$STATUS" in
-    active|deployed) note_ok "An agent is already deployed (status: ${STATUS}). Skip to deploy.md to redeploy, or tools to add a tool." ;;
-    not_deployed)    note_ok "No agent deployed yet (status: not_deployed). Proceed with create." ;;
-    *)               note_warn "Agent status: ${STATUS}." ;;
-  esac
-else
-  note_ok "No agent deployed yet. Proceed with create."
+    case "$STATUS" in
+      active|deployed) note_ok "An agent is already deployed (status: ${STATUS}). Skip to deploy.md to redeploy, or tools to add a tool." ;;
+      not_deployed)    note_ok "No agent deployed yet (status: not_deployed). Proceed with create." ;;
+      *)               note_warn "Agent status: ${STATUS}." ;;
+    esac
+  else
+    note_ok "No agent deployed yet. Proceed with create."
+  fi
 fi
 
 echo ""
