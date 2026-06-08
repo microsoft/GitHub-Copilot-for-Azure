@@ -37,6 +37,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm ci
+
       - name: Build skills
         run: npm run build
 
@@ -64,15 +68,14 @@ jobs:
         if: >-
           github.event_name == 'pull_request' &&
           github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+        working-directory: tests
         run: |
-          npx --yes @microsoft/vally-cli@^0.4.0 eval \
+          npm run test:vally -- \
             --suite smoke \
             --runs 1 \
-            --output-dir ./results \
             --output jsonl \
             --junit \
-            --threshold 0.8 \
-            --skill-dir output/skills
+            --threshold 0.8
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
@@ -80,14 +83,13 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           github.event.pull_request.head.repo.full_name == github.event.pull_request.base.repo.full_name
+        working-directory: tests
         run: |
-          npx --yes @microsoft/vally-cli@^0.4.0 eval \
+          npm run test:vally -- \
             --suite ${{ steps.suite.outputs.name }} \
-            --output-dir ./results \
             --output jsonl \
             --junit \
-            --threshold 0.8 \
-            --skill-dir output/skills
+            --threshold 0.8
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
@@ -96,5 +98,5 @@ jobs:
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: eval-results
-          path: results/
+          path: tests/results/
           retention-days: 30

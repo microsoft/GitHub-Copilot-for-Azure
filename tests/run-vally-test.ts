@@ -278,7 +278,7 @@ async function main(): Promise<void> {
 
   // default options
   forwardedArgs.splice(0, 0, "--output-dir", "./results");
-  forwardedArgs.splice(0, 0, "--executor-plugin", "../../tests/vally/vally-executor.ts");
+  forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
 
   if (options.skill) {
     forwardedArgs.splice(0, 0, "--eval-spec", `../evals/${options.skill}/eval.yaml`);

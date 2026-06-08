@@ -118,8 +118,7 @@ jobs:
           set -euo pipefail
 
           npm run test:vally -- \
-            --skill microsoft-foundry \
-            --tag type=foundry-e2e \
+            --suite foundry-e2e \
             --output jsonl \
             --junit \
             --threshold 0.8
