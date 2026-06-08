@@ -103,7 +103,7 @@ Data flow:
   row is stored **per test, per branch, per run** in the `integrationtokenusage`
   table on the integration-reports storage account. This runs in
   `test-all-integration.yml` (scheduled + manual) and in `test-azure-deploy.yml`
-  whenever its `publish-reports` input is `true` (i.e. on scheduled runs).
+  whenever `REPORT_STORAGE_ACCOUNT` is configured.
 - The frontend never reads the table directly. It calls the Function App API:
   - `GET /api/token-usage` — rows, with optional `skill`, `test`, `branch` filters.
   - `GET /api/token-usage/filters` — distinct skills / tests / branches.
