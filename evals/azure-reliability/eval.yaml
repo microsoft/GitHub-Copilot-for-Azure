@@ -13,8 +13,8 @@
 #   - Storage redundancy upgrade (LRS/GRS → ZRS) — takes hours/days
 #   - Multi-region failover with Azure Front Door — high cost, long deploy
 #
-# Global graders (evaluate#125 workaround): completed and no_runtime_failure
-# are duplicated into every stimulus block below.
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
 
 name: azure-reliability-integration-eval
 description: |
