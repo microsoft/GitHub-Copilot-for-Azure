@@ -48,7 +48,7 @@ Default to direct code for standard hosted-agent code. If `azd deploy` prints `P
 
 ### Step 1 -- Resolve azd environment
 
-If the user provided an existing project endpoint, project ARM ID, or model deployment, set those values before any local run or deploy. Then verify them with `azd env get-values`.
+If the user provided an existing project endpoint, project ARM ID, or model deployment, set those values before deploy. Then verify the azd environment with `azd env get-values`.
 
 ```bash
 azd env set AZURE_AI_PROJECT_ENDPOINT "<project-endpoint>"
@@ -65,6 +65,8 @@ azd ai agent show --output json
 ```
 
 Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (skip Step 2, go to Step 3). If `azd ai project show` fails with `missing_project_endpoint`, do Step 2 first -- `azd provision` will create the project.
+
+> **Important:** Before deploy, also make sure `agent.yaml` and the azd environment are aligned with the user's provided configuration values.
 
 ### Step 2 -- Provision Azure resources (one-time per env)
 
