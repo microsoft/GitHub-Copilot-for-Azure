@@ -670,8 +670,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const envVar: Record<string, string> = {
         SKILLS_INSTRUCTIONS: "true",
         SKILL_CHAR_BUDGET: "20000",
-        NODE_OPTIONS: existingNodeOptions ? `${existingNodeOptions} --no-warnings`
-          : "--no-warnings"
+        NODE_OPTIONS: existingNodeOptions
+          ? `${existingNodeOptions} --disable-warning=ExperimentalWarning`
+          : "--disable-warning=ExperimentalWarning"
       };
 
       const client = new CopilotClient({
