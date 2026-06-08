@@ -37,7 +37,7 @@
     "sirv-cli": "^3.0.1",
     "tsx": "^4.22.1",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.59.0",
+    "typescript-eslint": "^8.60.1",
     "vitest": "^4.0.18"
   },
   "engines": {
