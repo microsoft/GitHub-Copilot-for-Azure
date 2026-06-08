@@ -7,10 +7,6 @@ on:
         description: "Optional PR number whose Microsoft Foundry skill should be evaluated, including fork PRs"
         required: false
         type: string
-      requested_by:
-        description: "Internal: GitHub login that requested this run through a trusted dispatcher"
-        required: false
-        type: string
 
 permissions: {}
 

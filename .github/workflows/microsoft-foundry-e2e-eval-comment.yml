@@ -93,7 +93,6 @@ jobs:
               ref,
               inputs: {
                 target_pr_id: prNumber.toString(),
-                requested_by: context.payload.comment.user.login,
               },
             });
 
