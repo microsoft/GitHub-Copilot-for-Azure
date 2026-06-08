@@ -665,6 +665,15 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         cliArgs.push(buildTestCaseDirPath(getTestName()));
       }
 
+      // Copilot CLI emits lots of warnings about experimental features which clutters the console output so we suppress them.
+      const existingNodeOptions = process.env.NODE_OPTIONS;
+      const envVar: Record<string, string> = {
+        SKILLS_INSTRUCTIONS: "true",
+        SKILL_CHAR_BUDGET: "20000",
+        NODE_OPTIONS: existingNodeOptions ? `${existingNodeOptions} --no-warnings`
+          : "--no-warnings"
+      };
+
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
         cwd: testWorkspace,
@@ -672,8 +681,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         cliPath: getBundledCliPath(),
         env: {
           ...process.env,
-          SKILLS_INSTRUCTIONS: "true",
-          SKILL_CHAR_BUDGET: "20000"
+          ...envVar
         }
       }) as CopilotClient;
       entry.client = client;
@@ -795,15 +803,6 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const { toolCounts, skillFiles } = computeToolAndSkillStats(agentMetadata.events, skillDirectory);
       agentMetadata.toolCounts = toolCounts;
       agentMetadata.skillFiles = skillFiles;
-
-      // Log token usage summary
-      if (tokenUsage.apiCallCount > 0) {
-        console.log(
-          `\n📊 Token Usage: ${tokenUsage.inputTokens.toLocaleString()} in / ${tokenUsage.outputTokens.toLocaleString()} out | ` +
-          `${tokenUsage.apiCallCount} API calls | ` +
-          `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
-        );
-      }
 
       if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
         // Resume the session so it can take a different set of skills and mcp servers.
