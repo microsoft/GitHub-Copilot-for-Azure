@@ -63,7 +63,7 @@ ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init --from-code -e "$ENV_NAME"
 ```
 
-**If `azd init --from-code` fails with `unsupported resource type`:** do not patch AppHost source or proceed. Record a blocker that custom Aspire resource types cannot be deployed to Azure. See [Aspire troubleshooting](aspire-troubleshooting.md).
+**If `azd init --from-code` fails with `unsupported resource type`:** do not patch AppHost source or proceed. Record a blocker that custom Aspire resource types cannot be deployed to Azure. See [Troubleshooting](#troubleshooting).
 
 ### Step 3: Configure Subscription and Location
 
@@ -132,7 +132,7 @@ var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("function
     .WithReference(queues);
 ```
 
-See [aspire-functions-secrets reference](services/functions/aspire-containerapps.md) and [Aspire troubleshooting](aspire-troubleshooting.md) for details.
+See [aspire-functions-secrets reference](services/functions/aspire-containerapps.md) and [Troubleshooting](#troubleshooting) for details.
 
 ## Flags Reference
 
@@ -156,7 +156,145 @@ azd init --from-code -e "$ENV_NAME"
 
 ## Troubleshooting
 
-See [Aspire troubleshooting](aspire-troubleshooting.md) for non-interactive `azd init`, missing AppHost, unsupported resource type, Azure Functions secret storage, and wrong-subscription fixes.
+### Error: "no default response for prompt 'Enter a unique environment name:'"
+
+**Cause:** Missing `-e` flag when running `azd init --from-code` in non-interactive environment  
+**Solution:** Always include the `-e <environment-name>` flag
+
+```bash
+# ❌ Wrong - fails in non-interactive environments (agents, CI/CD)
+azd init --from-code
+
+# ✅ Correct - provides environment name upfront
+ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
+azd init --from-code -e "$ENV_NAME"
+```
+
+**Important:** This error typically occurs when:
+- Running in an agent or automation context
+- No TTY is available for interactive prompts
+- The `-e` flag was omitted
+
+### Error: "no default response for prompt 'How do you want to initialize your app?'"
+
+**Cause:** Missing `--from-code` flag  
+**Solution:** Add `--from-code` to the `azd init` command
+
+```bash
+# ❌ Wrong - requires interactive prompt
+azd init -e "my-env"
+
+# ✅ Correct - auto-detects AppHost
+azd init --from-code -e "my-env"
+```
+
+### No AppHost detected
+
+**Symptoms:** `azd init --from-code` doesn't find the AppHost
+
+**Solutions:**
+1. Verify AppHost project exists: `find . -name "*.AppHost.csproj"`
+2. Check project builds: `dotnet build`
+3. Ensure Aspire.Hosting package is referenced in AppHost project
+
+### Error: "unsupported resource type" during manifest generation
+
+**Symptoms:** `azd init --from-code` fails with output like:
+```
+error: unsupported resource type: <custom-resource-type>
+```
+or the manifest generation step errors on child resources (e.g., ClockHand, or other custom resource types defined in the AppHost).
+
+**Cause:** The AppHost contains custom Aspire resource types that azd cannot convert to Azure deployable resources. These custom types are typically:
+- Demonstration resources showing developers how to build Aspire extensions for local tooling
+- Resources that wrap local services without Azure equivalents
+- Custom child resources (e.g., subcomponents of a custom Aspire integration)
+
+**Resolution:**
+
+1. ⛔ **Do NOT attempt to fix this error by modifying source code** — do not add `.ExcludeFromManifest()` calls or otherwise patch the AppHost
+2. ⛔ **Do NOT proceed with deployment** — this is a deployment blocker, not a recoverable error
+3. ✅ Record a blocker in the deployment plan: "AppHost contains custom Aspire resource types not supported for Azure deployment (unsupported resource type)"
+4. ✅ Inform the user that this application is designed for local development and cannot be meaningfully deployed to Azure
+
+> ⚠️ **Why this is a hard stop:** Custom resource types that produce "unsupported resource type" errors are intentionally not deployable. Adding `.ExcludeFromManifest()` to suppress the error may allow `azd init` to succeed, but the resulting deployment would not represent the application's actual functionality.
+
+### Azure Functions: Secret initialization from Blob storage failed
+
+**Symptoms:** Azure Functions app fails at startup with error:
+```
+System.InvalidOperationException: Secret initialization from Blob storage failed due to missing both
+an Azure Storage connection string and a SAS connection uri.
+```
+
+**Cause:** When using `AddAzureFunctionsProject` with `WithHostStorage(storage)`, Aspire configures identity-based storage access (managed identity). However, Azure Functions' internal secret management does not support identity-based URIs and requires file-based secret storage for Container Apps deployments.
+
+**Solution:** Add `AzureWebJobsSecretStorageType=Files` environment variable to the Functions resource in the AppHost **before running `azd up`**:
+
+```csharp
+var functions = builder.AddAzureFunctionsProject<Projects.ImageGallery_Functions>("functions")
+                       .WithReference(queues)
+                       .WithReference(blobs)
+                       .WaitFor(storage)
+                       .WithRoleAssignments(storage, ...)
+                       .WithHostStorage(storage)
+                       .WithEnvironment("AzureWebJobsSecretStorageType", "Files")  // Required for Container Apps
+                       .WithUrlForEndpoint("http", u => u.DisplayText = "Functions App");
+```
+
+> 💡 **Why this is required:**
+> - `WithHostStorage(storage)` sets identity-based URIs like `AzureWebJobsStorage__blobServiceUri`
+> - This is correct and secure for runtime storage operations
+> - However, Functions' secret/key management doesn't support these URIs
+> - File-based secrets are mandatory for Container Apps deployments
+
+> ⚠️ **Important:** This is required when:
+> - Using `AddAzureFunctionsProject` in Aspire
+> - Using `WithHostStorage()` with identity-based storage
+> - Deploying to Azure Container Apps (the default for Aspire Functions)
+
+**Generated Infrastructure Note:**
+
+If you need to modify the generated Container Apps infrastructure directly, ensure the Functions container app has this environment variable:
+
+```bicep
+resource functionsContainerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  properties: {
+    template: {
+      containers: [
+        {
+          env: [
+            {
+              name: 'AzureWebJobsSecretStorageType'
+              value: 'Files'
+            }
+            // ... other environment variables
+          ]
+        }
+      ]
+    }
+  }
+}
+```
+
+### Error: azd uses wrong subscription despite user confirmation
+
+**Symptoms:** `azd provision --preview` shows a different subscription than the one the user confirmed
+
+**Cause:** The `AZURE_SUBSCRIPTION_ID` was not set immediately after `azd init --from-code`. The Azure CLI and azd can have different default subscriptions.
+
+**Solution:** Always set the subscription immediately after initialization:
+
+```bash
+# After azd init --from-code completes:
+azd env set AZURE_SUBSCRIPTION_ID <user-confirmed-subscription-id>
+azd env set AZURE_LOCATION <location>
+
+# Verify before proceeding:
+azd env get-values
+```
+
+**Prevention:** Follow the complete initialization sequence in the [Flags Reference](#azd-init-for-aspire) section above.
 
 ## References
 
