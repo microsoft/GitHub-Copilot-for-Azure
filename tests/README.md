@@ -26,7 +26,7 @@ Add new test coverage as Vally eval suites in [../evals](../evals).
 
 Typical locations:
 
-- Skill-specific suite: [../evals](../evals)/<skill-name>/eval.yaml
+- Skill-specific suite: [../evals](../evals)/\<skill-name\>/eval.yaml
 - Shared building blocks: [../evals/_base](../evals/_base)
 
 ## Authoring and Running Vally Tests

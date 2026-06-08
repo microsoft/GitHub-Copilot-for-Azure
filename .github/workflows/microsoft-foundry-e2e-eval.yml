@@ -3,10 +3,6 @@ name: Microsoft Foundry E2E Evaluations
 on:
   workflow_dispatch:
     inputs:
-      stimulus_id:
-        description: "Optional stimulus id tag to run, for example: create-hotel-booking-agent"
-        required: false
-        type: string
       target_pr_id:
         description: "Optional PR number whose Microsoft Foundry skill should be evaluated, including fork PRs"
         required: false
@@ -16,10 +12,6 @@ on:
         required: false
         default: true
         type: boolean
-      requested_by:
-        description: "Internal: GitHub login that requested this run through a trusted dispatcher"
-        required: false
-        type: string
 
 permissions: {}
 
@@ -34,47 +26,6 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: Authorize workflow dispatch
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          script: |
-            const expectedRepository = 'microsoft/GitHub-Copilot-for-Azure';
-            const actualRepository = `${context.repo.owner}/${context.repo.repo}`;
-            if (actualRepository !== expectedRepository) {
-              throw new Error(`This workflow can only run in ${expectedRepository}; current repository is ${actualRepository}.`);
-            }
-
-            const requestedBy = (context.payload.inputs?.requested_by ?? '').trim();
-            const targetPrId = (context.payload.inputs?.target_pr_id ?? '').trim();
-            const actor = context.actor;
-            const isBotDispatch = actor === 'github-actions[bot]';
-            if (isBotDispatch && !requestedBy) {
-              throw new Error('Bot-dispatched runs must include requested_by.');
-            }
-            if (isBotDispatch && !targetPrId) {
-              throw new Error('Bot-dispatched runs must include target_pr_id.');
-            }
-
-            const actorToAuthorize = isBotDispatch ? requestedBy : actor;
-            if (!/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(actorToAuthorize)) {
-              throw new Error(`Invalid GitHub login for authorization: ${actorToAuthorize}`);
-            }
-
-            const { data: collaboratorPermission } =
-              await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: actorToAuthorize,
-              });
-
-            const allowedPermissions = new Set(['admin', 'maintain', 'write']);
-            const permission = collaboratorPermission.permission;
-            if (!allowedPermissions.has(permission)) {
-              throw new Error(`${actorToAuthorize} has ${permission} permission; write, maintain, or admin permission is required.`);
-            }
-
-            core.info(`Authorized ${actorToAuthorize} with ${permission} permission.`);
-
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -156,30 +107,17 @@ jobs:
       - name: Build plugin output
         run: npm run build
 
-      - name: Lint Microsoft Foundry E2E eval spec
-        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/microsoft-foundry/e2e-eval.yaml --strict
-
       - name: Run Microsoft Foundry Vally evals
+        working-directory: tests
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          STIMULUS_ID: ${{ inputs.stimulus_id }}
           FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT }}
-          FOUNDRY_E2E_EVAL_ARM_RESOURCE: ${{ secrets.FOUNDRY_E2E_EVAL_ARM_RESOURCE }}
           FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL: ${{ secrets.FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL }}
-          FOUNDRY_E2E_EVAL_ACR: ${{ secrets.FOUNDRY_E2E_EVAL_ACR }}
         run: |
           set -euo pipefail
 
-          tag_args=()
-          if [[ -n "${STIMULUS_ID}" ]]; then
-            tag_args+=(--tag "id=${STIMULUS_ID}")
-          fi
-
-          npx --yes @microsoft/vally-cli@^0.5.0 eval \
-            --eval-spec evals/microsoft-foundry/e2e-eval.yaml \
-            "${tag_args[@]}" \
-            --executor-plugin "${{ github.workspace }}/tests/vally/vally-executor.ts" \
-            --output-dir ./results \
+          npm run test:vally -- \
+            --suite foundry-e2e \
             --output jsonl \
             --junit \
             --threshold 0.8
@@ -191,7 +129,7 @@ jobs:
         with:
           name: microsoft-foundry-e2e-eval-results
           path: |
-            results/
+            tests/results/
             tests/reports/
           retention-days: 30
 
@@ -204,13 +142,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          eval_results_md="$(find ./results -type f -name eval-results.md -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
+          eval_results_md="$(find ./tests/results -type f -name eval-results.md -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
           if [[ -z "${eval_results_md}" ]]; then
-            echo "::warning::No eval-results.md found under ./results."
+            echo "::warning::No eval-results.md found under ./tests/results."
             {
               echo "## Microsoft Foundry E2E Evaluation Results"
               echo
-              echo "No eval-results.md was found under \`./results\`."
+              echo "No eval-results.md was found under \`./tests/results\`."
               echo
               echo "## Download"
               echo
@@ -271,7 +209,7 @@ jobs:
             const artifactUrl = (process.env.ARTIFACT_URL ?? '').trim();
             const evalResultsPath = (process.env.EVAL_RESULTS_MD ?? '').trim();
             const jobStatus = (process.env.JOB_STATUS ?? 'unknown').trim();
-            let evalResults = 'No eval-results.md was found under `./results`.';
+            let evalResults = 'No eval-results.md was found under `./tests/results`.';
 
             if (evalResultsPath && fs.existsSync(evalResultsPath)) {
               evalResults = fs.readFileSync(evalResultsPath, 'utf8').trim();

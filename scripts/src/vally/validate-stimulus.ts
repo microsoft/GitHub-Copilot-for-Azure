@@ -19,6 +19,7 @@ type Stimuli = {
   name?: string;
   graders?: Array<{
     type?: string;
+    config?: unknown;
   }>;
   tags?: {
     type?: string;
@@ -85,6 +86,144 @@ function validateJsonObjectTag(
     stimulusIndex,
     stimulusName,
     `tags.${tagName} must be parsable JSON`,
+  );
+  return false;
+}
+
+function validateSingleRule(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  rule: unknown,
+  ruleLabel: string,
+): boolean {
+  if (!isPlainObject(rule)) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      `${ruleLabel} must be an object`,
+    );
+    return false;
+  }
+
+  if (rule.type !== "has-property") {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      `${ruleLabel}.type must be 'has-property'`,
+    );
+    return false;
+  }
+
+  if (typeof rule.key !== "string" || rule.key.trim().length === 0) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      `${ruleLabel}.key must be a non-empty string`,
+    );
+    return false;
+  }
+
+  if (rule.value !== undefined) {
+    if (rule.value !== "string" && rule.value !== "number") {
+      reportValidationError(
+        displayPath,
+        stimulusIndex,
+        stimulusName,
+        `${ruleLabel}.value must be undefined or a string or a number`,
+      );
+    }
+    return false;
+  }
+
+  return true;
+}
+
+function validateJsonObjectRulesGrader(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  grader: { type?: string; config?: unknown },
+): boolean {
+  if (grader.type !== "json-object-rules") {
+    return true;
+  }
+
+  if (!isPlainObject(grader.config)) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules must define a config object with path and rules",
+    );
+    return false;
+  }
+
+  const { path, rules } = grader.config;
+  if (typeof path !== "string" || path.trim().length === 0) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.json-object-rules.config.path must be a non-empty string",
+    );
+    return false;
+  }
+
+  const ruleLabel = "graders.json-object-rules.config.rules";
+
+  // rules as a JSON string (single rule object serialized)
+  if (typeof rules === "string") {
+    let parsedRules: unknown;
+    try {
+      parsedRules = JSON.parse(rules);
+    } catch {
+      reportValidationError(
+        displayPath,
+        stimulusIndex,
+        stimulusName,
+        `${ruleLabel} must be valid JSON`,
+      );
+      return false;
+    }
+
+    return validateSingleRule(displayPath, stimulusIndex, stimulusName, parsedRules, ruleLabel);
+  }
+
+  // rules as an array of rule objects
+  if (Array.isArray(rules)) {
+    if (rules.length === 0) {
+      reportValidationError(
+        displayPath,
+        stimulusIndex,
+        stimulusName,
+        `${ruleLabel} must not be an empty array`,
+      );
+      return false;
+    }
+
+    let valid = true;
+    for (const [ruleIndex, rule] of rules.entries()) {
+      if (!validateSingleRule(displayPath, stimulusIndex, stimulusName, rule, `${ruleLabel}[${ruleIndex}]`)) {
+        valid = false;
+      }
+    }
+    return valid;
+  }
+
+  // rules as a single inline object
+  if (isPlainObject(rules)) {
+    return validateSingleRule(displayPath, stimulusIndex, stimulusName, rules, ruleLabel);
+  }
+
+  reportValidationError(
+    displayPath,
+    stimulusIndex,
+    stimulusName,
+    `${ruleLabel} must be a JSON string, an object, or an array of objects`,
   );
   return false;
 }
@@ -236,6 +375,19 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         typedStimulus.tags?.takeScreenshot,
       )) {
         fileHasErrors = true;
+      }
+
+      if (Array.isArray(typedStimulus.graders)) {
+        for (const grader of typedStimulus.graders) {
+          if (!validateJsonObjectRulesGrader(
+            displayPath,
+            stimulusIndex,
+            typedStimulus.name,
+            grader,
+          )) {
+            fileHasErrors = true;
+          }
+        }
       }
 
       if (typedStimulus.tags?.earlyTerminate && hasCompletedGrader(typedStimulus)) {
