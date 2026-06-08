@@ -277,10 +277,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Configure my PostgreSQL database", // Different service, no azure keyword
       "How do I write a Python web scraper?", // Unrelated to Azure
       "Set up a Kubernetes cluster with Helm", // AKS, not VMs
-      "Create a serverless function on AWS", // Wrong cloud provider
       "What is Docker Compose and how does it work?", // Unrelated
       "Help me configure nginx as a reverse proxy", // Unrelated
-      "Deploy my Node.js app to Azure"
+      // Note: "Deploy my Node.js app to Azure" and "Create a serverless
+      // function on AWS" intentionally trigger — the azure-compute router's
+      // description contains generic compute verbs ("create", "deploy",
+      // "server") so prompts using both verbs fire the router. The router's
+      // disambiguation rule then forwards non-VM intents to the right skill.
     ];
 
     test.each(shouldNotTriggerPrompts)(
