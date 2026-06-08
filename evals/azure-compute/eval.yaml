@@ -328,6 +328,7 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -374,6 +375,7 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -420,6 +422,7 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -467,6 +470,7 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -509,6 +513,7 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -553,6 +558,7 @@ stimuli:
       type: integration
       tier: full
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -601,6 +607,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -650,6 +657,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -694,6 +702,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -739,6 +748,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -790,6 +800,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -835,6 +846,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -887,6 +899,7 @@ stimuli:
       type: integration
       tier: full
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -937,6 +950,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -988,6 +1002,7 @@ stimuli:
       type: integration
       tier: full
       area: output
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
@@ -1042,6 +1057,7 @@ stimuli:
       type: integration
       tier: full
       area: behavior
+      cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
