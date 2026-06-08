@@ -33,13 +33,21 @@ export const enum AutoUpgradeAction {
 ### CLI
 
 ```bash
-# Read current setting (PATCH the desired state)
+# Enable automatic agent upgrade (PATCH sets the desired state)
 az resource patch \
     --resource-type "Microsoft.HybridCompute/machines" \
     --resource-group <rg> \
     --name <machine-name> \
     --api-version 2025-02-19-preview \
     --properties '{"agentUpgrade":{"enableAutomaticUpgrade":true}}'
+
+# Read the current auto-upgrade setting
+az resource show \
+    --resource-type "Microsoft.HybridCompute/machines" \
+    --resource-group <rg> \
+    --name <machine-name> \
+    --api-version 2025-02-19-preview \
+    --query "properties.agentUpgrade.enableAutomaticUpgrade"
 ```
 
 For a fleet, prefer Azure Policy: there is a built-in initiative

@@ -13,6 +13,7 @@
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-ai/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-aigateway/ @azaslonov @RickWinter
+/plugin/skills/azure-arc-servers/ @deankroker @ryperl_msft @rebro2-msft @RickWinter
 /plugin/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT @RickWinter
 /plugin/skills/azure-compliance/ @saikoumudi @RickWinter
 /plugin/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21 @RickWinter

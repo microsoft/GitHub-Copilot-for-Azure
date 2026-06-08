@@ -64,10 +64,14 @@ ARM64 Linux is supported on a subset; ARM Windows is not.
 
 ### Conflicts to check before installing
 
-- The **Azure VM agent** (`Microsoft.Azure.HybridCompute` extension on
-  an Azure VM) is mutually exclusive with `azcmagent` on the same OS
-  instance. If the machine **is** an Azure VM, the user should not be
-  onboarding it via Arc.
+- If the machine **is already an Azure VM** (`Microsoft.Compute/virtualMachines`),
+  do **not** install `azcmagent` on it. An Azure VM is already projected into
+  Azure through the Azure VM Guest Agent (the Linux Azure Agent `waagent`, or
+  the Windows Guest Agent) and the Compute resource provider; running the
+  Connected Machine agent on top is not a supported configuration and
+  conflicts with the Guest Agent. Arc-enabled servers is only for machines
+  that live **outside** Azure. (If the user actually wants to *create* a VM
+  in Azure, that is the `azure-compute` skill.)
 - The **Log Analytics agent (MMA)** / **Azure Monitor Agent (AMA)** can
   coexist, but a machine that already has direct LA workspace association
   should be migrated to Arc-managed associations to avoid double-ingest.
