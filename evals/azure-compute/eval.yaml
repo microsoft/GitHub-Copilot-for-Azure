@@ -1,40 +1,8 @@
-# Vally eval config — azure-compute skill
-#
-# Coverage strategy (per PR feat/azure-compute-skill):
-#   - Smoke tier (5 stimuli): router accuracy + the agent-pool generalization probe.
-#     Runs on every PR; if these regress the whole skill is broken.
-#   - Full VM surface (4 stimuli): exercises each depth-probe branch the
-#     vm-creator workflow advertises (beginner / spec-deep / security / cost-deep).
-#   - Full VMSS surface (3 stimuli): canonical VMSS shapes (web tier autoscale,
-#     networking-deep, mixed-SKU which forces Flexible orchestration).
-#   - Full agent-pool surface (3 stimuli): GitHub Actions runners, Azure DevOps
-#     agents, ephemeral CI runners. The skill never names "agent pool" — these
-#     probe whether the VMSS branch generalizes to CI/runner use cases.
-#   - Full workflow compliance (1 stimulus): mirrors azure-prepare's
-#     plan-first-001 — user says "skip planning, just give me bicep"; the
-#     Plan Card MUST still render first.
-#
-# Common graders are inlined into every stimulus (evaluate#125 workaround):
-#   - has_output                  (type: completed)
-#   - workflow_progress_signal    (output-matches: workflow engagement vocabulary —
-#                                   intentionally broad because models legitimately
-#                                   vary the surface wording: "questions" / "details"
-#                                   / "defaults" / "design" / "configure" / etc.)
-#   - no_fatal_errors             (output-not-matches: crash strings)
-#   - no_credential_leak          (output-not-matches: SharedAccessKey, account keys)
-#   - no_open_rdp_or_ssh          (output-not-matches: 0.0.0.0/0 on 22/3389)
-#   - no_plaintext_admin_password (output-not-matches: adminPassword: "<literal>")
-#
-# Routing validation:
-#   The four `route-*` smoke stimuli use the `skill-invocation` grader to
-#   assert routing (required/disallowed skills activated). Output-text
-#   regex graders on those stimuli check response *content* (Ubuntu, VMSS,
-#   SKU, pricing, no-VM-artifact), not routing.
-#
-# WORKFLOW_PROGRESS pattern (DRY — used by every stimulus's common-grader block):
-#   (?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-compute/integration.test.ts
+# Migration: Jest → Vally
 
-name: azure-compute-eval
+name: azure-compute-integration-eval
 description: |
   Evaluation suite for the azure-compute skill (VM, VMSS, and agent-pool surfaces).
   Tests across dimensions:
@@ -50,7 +18,7 @@ tags:
   skill: azure-compute
 
 config:
-  runs: 3
+  runs: 5
   timeout: "10m"
   executor: copilot-sdk
   model: claude-sonnet-4.6
@@ -67,6 +35,281 @@ scoring:
     skill-invocation: 1.5
 
 stimuli:
+  # ── routing-web-workload-vm-recommender ──
+  # Jest: "routes web workload recommendation prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: web workload VM recommendation"
+    prompt: "Which Azure VM size should I use for a web server handling 500 concurrent users?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/vm-recommender/vm-recommender\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/vm-recommender/vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-gpu-vm-recommender ──
+  # Jest: "routes GPU VM prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: GPU VM for deep learning"
+    prompt: "I need a GPU VM on Azure for training a deep learning model. What do you recommend?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/vm-recommender/vm-recommender\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/vm-recommender/vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-vmss-autoscale-vm-recommender ──
+  # Jest: "routes VMSS autoscale prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: VMSS autoscaling for API backend"
+    prompt: "Should I use a VM Scale Set with autoscaling for my API backend on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/vm-recommender/vm-recommender\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/vm-recommender/vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-vm-vs-vmss ──
+  # Jest: "routes VM vs VMSS prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vmss-guide) (invocation rate ≥ 80%)
+  - name: "Routing: VM vs VMSS decision"
+    prompt: "When should I use VMSS versus individual VMs on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"references/vmss-guide\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "references/vmss-guide\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-vm-family-comparison ──
+  # Jest: "routes VM family comparison prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: VM family comparison for database"
+    prompt: "Compare Azure VM families for a memory-optimized database workload"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/vm-recommender/vm-recommender\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/vm-recommender/vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-rdp-troubleshooter ──
+  # Jest: "routes RDP troubleshooting prompt to vm-troubleshooter"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-troubleshooter) (invocation rate ≥ 80%)
+  - name: "Routing: RDP connection troubleshooting"
+    prompt: "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/vm-troubleshooter/vm-troubleshooter\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/vm-troubleshooter/vm-troubleshooter\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-ssh-troubleshooter ──
+  # Jest: "routes SSH troubleshooting prompt to vm-troubleshooter"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-troubleshooter) (invocation rate ≥ 80%)
+  - name: "Routing: SSH connection troubleshooting"
+    prompt: "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/vm-troubleshooter/vm-troubleshooter\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/vm-troubleshooter/vm-troubleshooter\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-capacity-reservation-creation ──
+  # Jest: "routes capacity reservation creation prompt to capacity-reservation"
+  # Assertions: isSkillInvoked + isToolCalled(view, capacity-reservation) (rate = 100%)
+  - name: "Routing: capacity reservation group creation"
+    prompt: "I need to create a Capacity Reservation Group in Azure to guarantee Standard_D4s_v5 capacity in East US."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/capacity-reservation/capacity-reservation\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/capacity-reservation/capacity-reservation\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-crg-association ──
+  # Jest: "routes CRG association prompt to capacity-reservation"
+  # Assertions: isSkillInvoked + isToolCalled(view, capacity-reservation) (rate = 100%)
+  - name: "Routing: CRG association with VM"
+    prompt: "How do I associate my Azure VM with a Capacity Reservation Group (CRG) to guarantee reserved compute capacity?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/capacity-reservation/capacity-reservation\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/capacity-reservation/capacity-reservation\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-emm-enable ──
+  # Jest: "routes EMM enable prompt to essential-machine-management"
+  # Assertions: isSkillInvoked + isToolCalled(view, essential-machine-management) (invocation rate ≥ 80%)
+  - name: "Routing: enable Essential Machine Management"
+    prompt: "How do I enable Essential Machine Management on my Azure subscription to onboard VMs for monitoring and security?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/essential-machine-management/essential-machine-management\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/essential-machine-management/essential-machine-management\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-emm-enrollment-status ──
+  # Jest: "routes EMM enrollment status prompt to essential-machine-management"
+  # Assertions: isSkillInvoked + isToolCalled(view, essential-machine-management) (invocation rate ≥ 80%)
+  - name: "Routing: EMM enrollment status check"
+    prompt: "Check which of my Azure subscriptions have machine enrollment enabled for EMM"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"view","argsPattern":"workflows/essential-machine-management/essential-machine-management\\\\.md"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "workflows/essential-machine-management/essential-machine-management\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ════════════════════════════════════════════════════════════════════
   # SMOKE TIER — PR gate. Router + agent-pool generalization probe.
   # ════════════════════════════════════════════════════════════════════
