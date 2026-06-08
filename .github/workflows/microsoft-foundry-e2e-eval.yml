@@ -147,10 +147,8 @@ jobs:
       - name: Build plugin output
         run: npm run build
 
-      - name: Lint Microsoft Foundry eval spec
-        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/microsoft-foundry/eval.yaml --strict
-
       - name: Run Microsoft Foundry Vally evals
+        working-directory: tests
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT: ${{ secrets.FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT }}
@@ -160,10 +158,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          npx --yes @microsoft/vally-cli@^0.5.0 eval \
-            --suite foundry-e2e \
-            --executor-plugin "${{ github.workspace }}/tests/vally/vally-executor.ts" \
-            --output-dir ./results \
+          npm run test:vally -- \
+            --skill microsoft-foundry \
+            --tag type=foundry-e2e \
             --output jsonl \
             --junit \
             --threshold 0.8
@@ -175,7 +172,7 @@ jobs:
         with:
           name: microsoft-foundry-e2e-eval-results
           path: |
-            results/
+            tests/results/
             tests/reports/
           retention-days: 30
 
@@ -188,13 +185,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          eval_results_md="$(find ./results -type f -name eval-results.md -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
+          eval_results_md="$(find ./tests/results -type f -name eval-results.md -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
           if [[ -z "${eval_results_md}" ]]; then
-            echo "::warning::No eval-results.md found under ./results."
+            echo "::warning::No eval-results.md found under ./tests/results."
             {
               echo "## Microsoft Foundry E2E Evaluation Results"
               echo
-              echo "No eval-results.md was found under \`./results\`."
+              echo "No eval-results.md was found under \`./tests/results\`."
               echo
               echo "## Download"
               echo
@@ -255,7 +252,7 @@ jobs:
             const artifactUrl = (process.env.ARTIFACT_URL ?? '').trim();
             const evalResultsPath = (process.env.EVAL_RESULTS_MD ?? '').trim();
             const jobStatus = (process.env.JOB_STATUS ?? 'unknown').trim();
-            let evalResults = 'No eval-results.md was found under `./results`.';
+            let evalResults = 'No eval-results.md was found under `./tests/results`.';
 
             if (evalResultsPath && fs.existsSync(evalResultsPath)) {
               evalResults = fs.readFileSync(evalResultsPath, 'utf8').trim();
