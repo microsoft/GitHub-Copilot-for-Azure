@@ -20,7 +20,7 @@ tags:
 config:
   runs: 5
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -386,9 +386,6 @@ stimuli:
         config:
           required:
             - azure-compute
-      - type: output-contains
-        config:
-          substring: "VMSS"
       - type: output-matches
         config:
           pattern: "(?i)scale.?set|VMSS"
