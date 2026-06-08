@@ -35,8 +35,7 @@ stimuli:
       Use an agent name with the `foundry-skill-e2e` prefix and add a random suffix.
       Use these environment variables as the Foundry-related configuration values:
       FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT for the Foundry project endpoint,
-      FOUNDRY_E2E_EVAL_ARM_RESOURCE for the existing Foundry project ARM resource ID,
-      FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL for the deployment model,
+      FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL for the deployment model
     graders:
       - type: skill-invocation
         config:
