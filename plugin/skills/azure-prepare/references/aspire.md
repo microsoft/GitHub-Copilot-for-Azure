@@ -56,7 +56,7 @@ When scanning the codebase (per [scan.md](scan.md)), run the detection script ([
 
 | Field | Meaning |
 |-------|---------|
-| `isAspire` | `true` if a `*.AppHost.csproj` or `Aspire.Hosting` package reference was found |
+| `isAspire` | `true` if a `*.AppHost.csproj` or an `Aspire.Hosting` / `Aspire.AppHost.Sdk` package reference was found |
 | `appHostPath` | Path to the AppHost project file (empty if none) |
 | `appHostDir` | AppHost source directory derived from `appHostPath` |
 | `hasExcludeFromManifest` | `true` if `ExcludeFromManifest` appears in AppHost `*.cs` (informational — see Step 1a) |

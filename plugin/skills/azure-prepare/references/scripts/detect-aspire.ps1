@@ -6,7 +6,7 @@
 .DESCRIPTION
     Runs the full deterministic detection sequence in one pass:
       1. Find the AppHost project (*.AppHost.csproj)
-      2. Confirm Aspire.Hosting package references
+      2. Confirm Aspire.Hosting or Aspire.AppHost.Sdk package references
       3. Derive the AppHost source directory
       4. Scan the AppHost *.cs for ExcludeFromManifest (informational)
       5. Scan for AddAzureFunctionsProject, and if present, check whether
@@ -47,15 +47,15 @@ $hasExcludeFromManifest = $false
 $hasFunctions = $false
 $secretStorageConfigured = $false
 
-# Step 1: Find the AppHost project
-$appHostProject = Get-ChildItem -Path $WorkspaceRoot -Recurse -Filter "*.AppHost.csproj" -File -ErrorAction SilentlyContinue |
-    Select-Object -First 1
+# Step 1: Find the AppHost project (sorted for deterministic selection)
+$appHostProject = @(Get-ChildItem -LiteralPath $WorkspaceRoot -Recurse -Filter "*.AppHost.csproj" -File -ErrorAction SilentlyContinue |
+    Sort-Object FullName) | Select-Object -First 1
 
-# Step 2: Confirm Aspire.Hosting package references anywhere in the workspace
+# Step 2: Confirm Aspire package references anywhere in the workspace
 $hasAspirePackage = $false
-$csprojFiles = Get-ChildItem -Path $WorkspaceRoot -Recurse -Filter "*.csproj" -File -ErrorAction SilentlyContinue
+$csprojFiles = Get-ChildItem -LiteralPath $WorkspaceRoot -Recurse -Filter "*.csproj" -File -ErrorAction SilentlyContinue
 if ($csprojFiles) {
-    if ($csprojFiles | Select-String -Pattern "Aspire.Hosting" -SimpleMatch -List -ErrorAction SilentlyContinue) {
+    if ($csprojFiles | Select-String -Pattern "Aspire\.Hosting|Aspire\.AppHost\.Sdk" -List -ErrorAction SilentlyContinue) {
         $hasAspirePackage = $true
     }
 }
@@ -65,12 +65,21 @@ if ($appHostProject -or $hasAspirePackage) {
 }
 
 if ($appHostProject) {
-    $appHostPath = $appHostProject.FullName
+    # Emit a workspace-relative, forward-slash path (matches the bash output contract)
+    Push-Location -LiteralPath $WorkspaceRoot
+    try {
+        $appHostPath = (Resolve-Path -LiteralPath $appHostProject.FullName -Relative) -replace '\\', '/'
+    } finally {
+        Pop-Location
+    }
 
     # Step 3: Derive the AppHost source directory
-    $appHostDir = $appHostProject.DirectoryName
+    $appHostDir = $appHostPath -replace '/[^/]+$', ''
+    $appHostDirFull = $appHostProject.DirectoryName
 
-    $appHostCs = Get-ChildItem -Path $appHostDir -Recurse -Filter "*.cs" -File -ErrorAction SilentlyContinue
+    # Scan AppHost *.cs, excluding bin/ and obj/ build output
+    $appHostCs = Get-ChildItem -LiteralPath $appHostDirFull -Recurse -Filter "*.cs" -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
 
     # Step 4: Scan the AppHost source for ExcludeFromManifest (informational)
     if ($appHostCs -and ($appHostCs | Select-String -Pattern "ExcludeFromManifest" -SimpleMatch -List -ErrorAction SilentlyContinue)) {
@@ -102,7 +111,7 @@ Write-Output "secretStorageConfigured=$(ConvertTo-Lower $secretStorageConfigured
 Write-Output ""
 Write-Output "Summary:"
 if (-not $isAspire) {
-    Write-Output "- No .NET Aspire app detected in '$WorkspaceRoot' (no *.AppHost.csproj or Aspire.Hosting package reference)."
+    Write-Output "- No .NET Aspire app detected in '$WorkspaceRoot' (no *.AppHost.csproj or Aspire.Hosting / Aspire.AppHost.Sdk package reference)."
     exit 0
 }
 
@@ -110,7 +119,7 @@ if ($appHostPath) {
     Write-Output "- .NET Aspire app detected. AppHost project: $appHostPath"
     Write-Output "- AppHost source directory: $appHostDir"
 } else {
-    Write-Output "- Aspire.Hosting package reference found, but no *.AppHost.csproj was located."
+    Write-Output "- Aspire.Hosting / Aspire.AppHost.Sdk package reference found, but no *.AppHost.csproj was located."
 }
 
 if ($hasExcludeFromManifest) {

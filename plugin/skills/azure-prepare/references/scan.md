@@ -68,7 +68,7 @@ Detect **.NET Aspire projects** by running the detection script ([detect-aspire.
 ./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
 ```
 
-A project is Aspire when the script returns `isAspire=true` (a `*.AppHost.csproj` or an `Aspire.Hosting` / `Aspire.Hosting.AppHost` package reference was found). See [aspire.md](aspire.md) Step 1 for the full field list.
+A project is Aspire when the script returns `isAspire=true` (a `*.AppHost.csproj` or an `Aspire.Hosting` / `Aspire.Hosting.AppHost` / `Aspire.AppHost.Sdk` package reference was found). See [aspire.md](aspire.md) Step 1 for the full field list.
 
 **When Aspire is detected:**
 - Use `azd init --from-code -e <environment-name>` instead of manual azure.yaml creation
