@@ -8,9 +8,9 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 
 | Property | Value |
 |----------|-------|
-| Agent type | Hosted (container/ACR by default; direct code optional) |
+| Agent type | Hosted (container or code) |
 | Primary CLI | `azd ai agent` (from extension `azure.ai.agents`) |
-| Scaffold command | `azd ai agent init -m <manifestUrl>` (or `--from-code` for brownfield); add `--deploy-mode code --runtime ... --entry-point ...` only when explicitly choosing direct code deploy |
+| Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--from-code` for brownfield) |
 | Local run | `azd ai agent run` + `azd ai agent invoke --local "..."` |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
@@ -79,26 +79,33 @@ List the curated catalog (filter by language if known):
 azd ai agent sample list --featured-only --language python --output json
 ```
 
-Each entry has a `manifestUrl` and an `initCommand`. Container/ACR deploy is the default. Keep `--no-prompt`; add `--deploy-mode code --runtime ... --entry-point ...` only when explicitly choosing direct code deploy.
+Each entry has a `manifestUrl` and an `initCommand`. Prefer direct code deploy at init time. `--no-prompt` defaults to container deploy unless you pass `--deploy-mode code`, so include the code flags up front.
 
 For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
 Python Example:
 ```bash
 # New Foundry project
-azd ai agent init --no-prompt -m "<manifestUrl>"
+azd ai agent init --no-prompt \
+  -m "<manifestUrl>" \
+  --deploy-mode code \
+  --runtime python_3_13 \
+  --entry-point main.py
 
 # Existing Foundry project
 azd ai agent init --no-prompt \
   --project-id "<resourceId>" \
-  -m "<manifestUrl>"
+  -m "<manifestUrl>" \
+  --deploy-mode code \
+  --runtime python_3_13 \
+  --entry-point main.py
 ```
 
 Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
-`init` writes `azure.yaml` (or appends to it) and `<service-dir>/agent.yaml`. The default container/ACR path leaves out `code_configuration:` and deploys through Docker/ACR. A direct-code init adds `code_configuration:` and a code-deploy `.agentignore`. For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
+`init` writes `azure.yaml` (or appends to it), `<service-dir>/agent.yaml`, and `<service-dir>/.agentignore` (code-deploy only). A successful direct-code init produces `<service-dir>/agent.yaml` with `code_configuration:`. For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
 
 Check the scaffold before local run:
 
@@ -114,7 +121,7 @@ Check the scaffold before local run:
    FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
    AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
    ```
-3. Keep the default container/ACR deployment unless the user explicitly wants direct code deploy. If switching to direct code, add `code_configuration:` before deployment.
+3. Prefer direct code deployment. Inspect `<service-dir>/agent.yaml`; if `code_configuration:` is missing and the agent does not need a custom Dockerfile or system packages, add it before deployment.
 4. If you rename the agent in `<service-dir>/agent.yaml`, also rename the matching key under `azure.yaml services:` to the same value while preserving its `project:` path.
 5. If you change CPU or memory, keep `<service-dir>/agent.yaml` and `azure.yaml services.<name>.config.container.resources` aligned because the `azure.yaml` service config can override the agent file.
 
@@ -125,10 +132,13 @@ Use ONLY when the workspace already contains hand-written agent source.
 ```bash
 azd ai agent init --no-prompt \
   --src ./src/my-agent \
-  --agent-name my-agent
+  --agent-name my-agent \
+  --deploy-mode code \
+  --runtime python_3_13 \
+  --entry-point app.py
 ```
 
-The default deploy mode builds from `Dockerfile` and pushes through the project ACR. For direct code deploy, use `--deploy-mode code --runtime <runtime> --entry-point <file>`; runtimes include `python_3_13`, `python_3_14`, `dotnet_10`, and `node_22`. For an existing Foundry project, add `--project-id "<resourceId>"`.
+`--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`, `node_22`. `--deploy-mode container` builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
 
 ### Step 5 -- Run locally and iterate
 

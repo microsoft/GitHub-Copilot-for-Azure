@@ -65,13 +65,17 @@ resources:
 environment_variables:
   - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
     value: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+code_configuration:
+  runtime: python_3_13
+  entry_point: app.py
+  dependency_resolution: remote_build   # or "bundled"
 ```
 
 - `protocols` -- `responses` (OpenAI), `invocations` (A2A). Editing requires `azd deploy`.
 - `resources` -- valid tiers: `0.25/0.5Gi`, `1/2Gi`, `2/4Gi`.
 - `environment_variables` -- `${VAR}` resolves from the active azd env. Not for secrets.
-- No `code_configuration` -> container/ACR deploy (Dockerfile + `docker:` in `azure.yaml`). `image:` skips the Dockerfile build.
-- `code_configuration` present -> direct code deploy (ZIP, Foundry builds). Pass `--deploy-mode code --runtime <runtime> --entry-point <file>` during init only when choosing direct code deploy.
+- `code_configuration` present -> direct code deploy (ZIP, Foundry builds). Absent -> container/ACR deploy (Dockerfile + `docker:` in `azure.yaml`). `image:` skips the Dockerfile build.
+- In non-interactive mode, `azd ai agent init` defaults to container deploy. Pass `--deploy-mode code --runtime <runtime> --entry-point <file>` during init to get `code_configuration`.
 - `agentEndpoint` / `agentCard` -- patch in place with `azd ai agent endpoint update` (no new version).
 
 ### Minimal `azure.yaml` service config
@@ -81,9 +85,7 @@ services:
   my-agent:
     project: ./src/my-agent
     host: azure.ai.agent
-    language: docker
-    docker:
-      remoteBuild: true
+    language: python
     config:
       startupCommand: "python -m main"
       container:
@@ -116,8 +118,6 @@ services:
 | `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` or `azd ai project show` |
 | `AZURE_AI_PROJECT_ID` | `azd ai agent show` (playground URL) | `azd env set` |
 | `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION` | `azd provision` | `azd config get defaults` |
-| `AZURE_CONTAINER_REGISTRY_ENDPOINT` | Container/ACR deploy publish target | Provision output |
-| `AI_AGENT_PENDING_PROVISION` | Pending init-created infra work | Auto; inspect before deploy; existing project/model values can make provision unnecessary |
 | `AGENT_<SVC>_NAME` / `_VERSION` / `_<PROTO>_ENDPOINT` | Auto-written by deploy | Auto |
 | `PARAM_<CONN>_<KEY>` | Connection credentials in `azure.yaml` | `azd env set` |
 
