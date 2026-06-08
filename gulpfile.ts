@@ -128,7 +128,7 @@ function build() {
 
 /**
  * Generates a CHANGELOG.md in the output directory based on merged PRs
- * that touch plugin/ and have titles starting with fix:, feat:, or feature:.
+ * that touch plugin/ and have titles starting with fix:, feat:, feature:, chore:, misc:, test:, or eval:.
  * Each version corresponds to a single first-parent commit touching plugin/
  * since the NBGV baseline commit (when plugin/version.json was introduced).
  */
@@ -166,8 +166,8 @@ function generateChangelog(): void {
     return { hash, subject, height: index + 1 };
   });
 
-  // Filter to only include PRs with fix:/feat:/feature: prefixes.
-  const prefixRe = /^(fix|feat|feature)(\(.+?\))?:/i;
+  // Filter to only include PRs with fix:/feat:/feature:/chore:/misc:/test:/eval: prefixes.
+  const prefixRe = /^(fix|feat|feature|chore|misc|test|eval)(\(.+?\))?:/i;
   const filtered = commits.filter((c) => prefixRe.test(c.subject));
 
   // Determine the repository URL for PR links. Prefer the "upstream" remote

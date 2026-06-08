@@ -126,7 +126,9 @@ jobs:
       # If a test starts after the token expires, it will fail with authentication errors.
       # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
       # Learn more at https://github.com/Azure/login/issues/372
-      - name: Fetch OIDC token every 300 seconds
+      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
+      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
+      - name: Fetch OIDC token every 240 seconds
         shell: bash
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -135,7 +137,7 @@ jobs:
           while true; do
             token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
             az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
-            sleep 300
+            sleep 240
           done &
 
       - name: Setup Node.js
@@ -239,3 +241,16 @@ jobs:
             --source reports/test-run-azure-deploy \
             --auth-mode login \
             --overwrite
+
+      # Upload per-test token usage to the Azure Table that powers the dashboard's
+      # "token usage over time" page.
+      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
+      - name: Upload token usage to table
+        if: always() && inputs.publish-reports && vars.REPORT_STORAGE_ACCOUNT != ''
+        env:
+          TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
+          SKILL: azure-deploy
+          BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: npm run upload:token-usage

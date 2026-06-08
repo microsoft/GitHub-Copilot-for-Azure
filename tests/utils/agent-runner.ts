@@ -16,12 +16,12 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
-import { redactSecrets } from "./redact";
-import { listSkills } from "./skill-loader";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
+import { redactSecrets } from "./redact.ts";
+import { listSkills } from "./skill-loader.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
-export { getAllAssistantMessages } from "./evaluate";
+export { getAllAssistantMessages } from "./evaluate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -114,14 +114,18 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
   nonInteractive?: boolean;
   followUp?: string[];
-  systemPrompt?: {
-    mode: "append" | "replace",
-    content: string
-  };
+  systemPrompt?: SystemMessageConfig;
+
+  /**
+   * Optional. An absolute path to a directory.
+   * if not specified, the agent will create a temporary directory and use it as the workspace.
+   */
+  workspace?: string;
   preserveWorkspace?: boolean;
 
   /**
@@ -425,22 +429,21 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
         break;
       }
 
+      case "skill.invoked": {
+        const skillName = event.data.name;
+        lines.push("```");
+        lines.push(`skill: ${skillName}`);
+        lines.push("```");
+        break;
+      }
+
       case "tool.execution_start": {
         const toolName = event.data.toolName as string;
         const toolCallId = event.data.toolCallId as string;
         const args = event.data.arguments;
 
-        // Check if this is a skill invocation
-        if (toolName === "skill") {
-          const argsStr = JSON.stringify(args);
-          // Extract skill name from arguments
-          const skillMatch = argsStr.match(/"skill"\s*:\s*"([^"]+)"/);
-          const skillName = skillMatch ? skillMatch[1] : "unknown";
-          lines.push("```");
-          lines.push(`skill: ${skillName}`);
-          lines.push("```");
-        } else {
-          // Regular tool call
+        // Exclude skill invocation call and log it on skill.invoked event.
+        if (toolName !== "skill") {
           let argsJson: string;
           try {
             argsJson = JSON.stringify(args, null, 2);
@@ -529,122 +532,34 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   return lines.join("\n");
 }
 
-/**
- * Write markdown report to file
- */
-function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadata): void {
-  try {
-    const filePath = buildShareFilePath();
-    const dir = path.dirname(filePath);
+export type AgentRunnerConfig = {
+  /**
+   * If the runner is running for an integration test.
+   */
+  isTest: boolean;
+  /**
+   * If the runner is running in a jest environment.
+   * Used for backward compatibility.
+   * @todo: Remove this option after migrating all jest integration tests.
+   */
+  useJest: boolean;
 
-    // Ensure directory exists
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
-    // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
-    let reportTargetPath = filePath;
-    let suffix = 0;
-    while (true) {
-      try {
-        fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
-        break;
-      } catch (err: unknown) {
-        console.log("File exists", reportTargetPath);
-        if ((err as { code: string }).code === "EEXIST") {
-          suffix++;
-          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
-          continue;
-        }
-        throw err;
-      }
-    }
-
-    // Write structured agent-metadata.json for machine consumption
-    const jsonPath = path.join(dir, "agent-metadata.json");
-    const jsonData = {
-      prompt: config.prompt || "",
-      events: agentMetadata.events,
-      testComments: agentMetadata.testComments,
-      tokenUsage: agentMetadata.tokenUsage,
-      toolCounts: agentMetadata.toolCounts,
-      skillFiles: agentMetadata.skillFiles,
-    };
-    fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
-
-    if (process.env.DEBUG) {
-      console.log(`Markdown report written to: ${reportTargetPath}`);
-    }
-
-    // Write token usage JSON alongside the markdown report
-    if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
-      writeTokenUsageJson(config, agentMetadata, dir);
-    }
-  } catch (error) {
-    // Don't fail the test if report generation fails
-    if (process.env.DEBUG) {
-      console.error("Failed to write markdown report:", error);
-    }
-  }
-}
-
-/**
- * Write token usage data to a JSON file for dashboard consumption.
- * Also appends to a consolidated token-summary.json in the reports root.
- */
-function writeTokenUsageJson(config: AgentRunConfig, agentMetadata: AgentMetadata, reportDir: string): void {
-  try {
-    const usage = agentMetadata.tokenUsage!;
-    const testName = getTestName();
-    const record = {
-      testName,
-      prompt: config.prompt ? redactSecrets(config.prompt) : config.prompt,
-      timestamp: new Date().toISOString(),
-      model: usage.model,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheWriteTokens: usage.cacheWriteTokens,
-      totalApiDurationMs: usage.totalApiDurationMs,
-      apiCallCount: usage.apiCallCount,
-      perCallUsage: usage.perCallUsage,
-    };
-
-    // Write per-test token JSON
-    const tokenFile = path.join(reportDir, "token-usage.json");
-    fs.writeFileSync(tokenFile, JSON.stringify(record, null, 2), "utf-8");
-
-    // Append to consolidated summary at reports root (JSONL for safe concurrent writes)
-    const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-    const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.jsonl");
-    fs.appendFileSync(summaryFile, JSON.stringify(record) + "\n", "utf-8");
-
-    if (process.env.DEBUG) {
-      console.log(`Token usage written to: ${tokenFile}`);
-    }
-  } catch (error) {
-    if (process.env.DEBUG) {
-      console.error("Failed to write token usage JSON:", error);
-    }
-  }
-}
+  /**
+   * Name of the test.
+   * Only used when the runner is running for a test and isn't running in a jest environment.
+   * @todo: Make this parameter required after migrating all jest integration tests.
+   */
+  testName?: string;
+};
 
 /**
  * Sets up the agent runner with proper per-test cleanup via afterEach.
  * Call once inside each describe() block. Each describe() gets its own
  * isolated cleanup scope via closure, so parallel file execution is safe.
- *
- * Usage:
- *   describe("my suite", () => {
- *     const agent = useAgentRunner();
- *     it("test", async () => {
- *       const metadata = await agent.run({ prompt: "..." });
- *     });
- *   });
  */
-export function useAgentRunner() {
+export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
   let currentCleanups: RunnerCleanup[] = [];
+  const config = agentRunnerConfig;
 
   async function cleanup(): Promise<void> {
     for (const entry of currentCleanups) {
@@ -667,27 +582,64 @@ export function useAgentRunner() {
     currentCleanups = [];
   }
 
-  async function createMarkdownReport(): Promise<void> {
+  // @todo: Remove the code for jest tests.
+  function useJest(): boolean {
+    return config.useJest;
+  }
+
+  function isTest(): boolean {
+    return config.isTest;
+  }
+
+  function getTestName(): string {
+    // @todo: Remove the code for jest tests.
+    if (config.useJest) {
+      try {
+        // Jest provides expect.getState() with current test info
+        const state = expect.getState();
+        const testName = state.currentTestName ?? "unknown-test";
+        // Sanitize for use as filename
+        return sanitizeFileName(testName);
+      } catch {
+        // Fallback if not running in Jest context
+        return `test-${Date.now()}`;
+      }
+    } else {
+      return config.testName ?? "unknown";
+    }
+  }
+
+  /**
+   * @deprecated Migrate jest test cases to vally suites and stop using this function.
+   * @todo: Remove the code for jest tests.
+   */
+  async function createMarkdownReportInternal(): Promise<void> {
     for (const entry of currentCleanups) {
       try {
-        if (isTest() && entry.config && entry.agentMetadata) {
-          writeMarkdownReport(entry.config, entry.agentMetadata);
+        if (isTest() && useJest() && entry.config && entry.agentMetadata) {
+          writeMarkdownReport(getTestName(), entry.config, entry.agentMetadata);
         }
       } catch { /* ignore */ }
     }
   }
 
-  if (isTest()) {
+  // @todo: Remove the code for jest tests.
+  if (isTest() && useJest()) {
     // Guarantees cleanup even if it times out in a test.
     // No harm in running twice if the test also calls cleanup.
     afterEach(async () => {
-      await createMarkdownReport();
+      await createMarkdownReportInternal();
       await cleanup();
     });
   }
 
   async function run(config: AgentRunConfig): Promise<AgentMetadata> {
-    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    let testWorkspace: string;
+    if (config.workspace) {
+      testWorkspace = config.workspace;
+    } else {
+      testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    }
     const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
@@ -710,8 +662,18 @@ export function useAgentRunner() {
       const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
       if (process.env.DEBUG && isTest()) {
         cliArgs.push("--log-dir");
-        cliArgs.push(buildTestCaseDirPath());
+        cliArgs.push(buildTestCaseDirPath(getTestName()));
       }
+
+      // Copilot CLI emits lots of warnings about experimental features which clutters the console output so we suppress them.
+      const existingNodeOptions = process.env.NODE_OPTIONS;
+      const envVar: Record<string, string> = {
+        SKILLS_INSTRUCTIONS: "true",
+        SKILL_CHAR_BUDGET: "20000",
+        NODE_OPTIONS: existingNodeOptions
+          ? `${existingNodeOptions} --disable-warning=ExperimentalWarning`
+          : "--disable-warning=ExperimentalWarning"
+      };
 
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
@@ -720,8 +682,7 @@ export function useAgentRunner() {
         cliPath: getBundledCliPath(),
         env: {
           ...process.env,
-          SKILLS_INSTRUCTIONS: "true",
-          SKILL_CHAR_BUDGET: "20000"
+          ...envVar
         }
       }) as CopilotClient;
       entry.client = client;
@@ -739,7 +700,7 @@ export function useAgentRunner() {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
-      const model = modelOverride || "claude-sonnet-4.6";
+      const model = config.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
@@ -844,20 +805,11 @@ export function useAgentRunner() {
       agentMetadata.toolCounts = toolCounts;
       agentMetadata.skillFiles = skillFiles;
 
-      // Log token usage summary
-      if (tokenUsage.apiCallCount > 0) {
-        console.log(
-          `\n📊 Token Usage: ${tokenUsage.inputTokens.toLocaleString()} in / ${tokenUsage.outputTokens.toLocaleString()} out | ` +
-          `${tokenUsage.apiCallCount} API calls | ` +
-          `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
-        );
-      }
-
       if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
         // Resume the session so it can take a different set of skills and mcp servers.
         // Use playwright mcp server to take a screenshot.
         const screenshotTimeout = 180000; // 3 minutes
-        const screenshotPath = path.join(buildTestCaseDirPath(), "app-snapshot.jpg");
+        const screenshotPath = path.join(buildTestCaseDirPath(getTestName()), "app-snapshot.jpg");
         const playwrightSession = await client.resumeSession(session.sessionId, {
           mcpServers: {
             playwright: {
@@ -899,6 +851,119 @@ export function useAgentRunner() {
   }
 
   return { run };
+}
+
+function buildTestCaseDirPath(testName: string): string {
+  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, testName);
+}
+
+function buildShareFilePath(testName: string): string {
+  const testCaseArtifactsDir = buildTestCaseDirPath(testName);
+  return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+}
+
+export async function createMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): Promise<void> {
+  writeMarkdownReport(testName, config, agentMetadata);
+}
+
+/**
+ * Write token usage data to a JSON file for dashboard consumption.
+ * Also appends to a consolidated token-summary.json in the reports root.
+ */
+function writeTokenUsageJson(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata, reportDir: string): void {
+  try {
+    const usage = agentMetadata.tokenUsage!;
+    const record = {
+      testName,
+      prompt: config.prompt ? redactSecrets(config.prompt) : config.prompt,
+      timestamp: new Date().toISOString(),
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      totalApiDurationMs: usage.totalApiDurationMs,
+      apiCallCount: usage.apiCallCount,
+      perCallUsage: usage.perCallUsage,
+    };
+
+    // Write per-test token JSON
+    const tokenFile = path.join(reportDir, "token-usage.json");
+    fs.writeFileSync(tokenFile, JSON.stringify(record, null, 2), "utf-8");
+
+    // Append to consolidated summary at reports root (JSONL for safe concurrent writes)
+    const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+    const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.jsonl");
+    fs.appendFileSync(summaryFile, JSON.stringify(record) + "\n", "utf-8");
+
+    if (process.env.DEBUG) {
+      console.log(`Token usage written to: ${tokenFile}`);
+    }
+  } catch (error) {
+    if (process.env.DEBUG) {
+      console.error("Failed to write token usage JSON:", error);
+    }
+  }
+}
+
+/**
+ * Write markdown report to file
+ */
+function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): void {
+  try {
+    const filePath = buildShareFilePath(testName);
+    const dir = path.dirname(filePath);
+
+    // Ensure directory exists
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
+    // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
+    let reportTargetPath = filePath;
+    let suffix = 0;
+    while (true) {
+      try {
+        fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
+        break;
+      } catch (err: unknown) {
+        console.log("File exists", reportTargetPath);
+        if ((err as { code: string }).code === "EEXIST") {
+          suffix++;
+          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    // Write structured agent-metadata.json for machine consumption
+    const jsonPath = path.join(dir, "agent-metadata.json");
+    const jsonData = {
+      prompt: config.prompt || "",
+      events: agentMetadata.events,
+      testComments: agentMetadata.testComments,
+      tokenUsage: agentMetadata.tokenUsage,
+      toolCounts: agentMetadata.toolCounts,
+      skillFiles: agentMetadata.skillFiles,
+    };
+    fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
+
+    if (process.env.DEBUG) {
+      console.log(`Markdown report written to: ${reportTargetPath}`);
+    }
+
+    // Write token usage JSON alongside the markdown report
+    if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
+      writeTokenUsageJson(testName, config, agentMetadata, dir);
+    }
+  } catch (error) {
+    // Don't fail the test if report generation fails
+    if (process.env.DEBUG) {
+      console.error("Failed to write markdown report:", error);
+    }
+  }
 }
 
 /**
@@ -998,38 +1063,6 @@ export function getIntegrationSkipReason(): string | undefined {
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
 const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-
-function buildTestCaseDirPath(): string {
-  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName());
-}
-
-function buildShareFilePath(): string {
-  const testCaseArtifactsDir = buildTestCaseDirPath();
-  return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
-}
-
-function isTest(): boolean {
-  try {
-    // Jest provides expect.getState() with current test info
-    const _state = expect.getState();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function getTestName(): string {
-  try {
-    // Jest provides expect.getState() with current test info
-    const state = expect.getState();
-    const testName = state.currentTestName ?? "unknown-test";
-    // Sanitize for use as filename
-    return sanitizeFileName(testName);
-  } catch {
-    // Fallback if not running in Jest context
-    return `test-${Date.now()}`;
-  }
-}
 
 /**
  * Sanitize a string for use as a filename

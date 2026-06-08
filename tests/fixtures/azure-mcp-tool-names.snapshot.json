@@ -1,6 +1,6 @@
 {
   "source": "npx -y @azure/mcp server start (initialize + tools/list)",
-  "azureMcpVersion": "3.0.0-beta.9+ab24b060bee6ca9d6626f3c80c3e78bc0bae25d9",
+  "azureMcpVersion": "3.0.0-beta.16+50c26410d071537feaf6fe8160d7f25f3be99f94",
   "toolNames": [
     "acr",
     "advisor",
@@ -9,6 +9,7 @@
     "applens",
     "applicationinsights",
     "appservice",
+    "arm",
     "azd",
     "azurebackup",
     "azuremigrate",
@@ -59,6 +60,7 @@
     "signalr",
     "speech",
     "sql",
+    "sreagent",
     "storage",
     "storagesync",
     "subscription_list",
