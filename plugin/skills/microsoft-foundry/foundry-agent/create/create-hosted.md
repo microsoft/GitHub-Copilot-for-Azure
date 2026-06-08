@@ -83,23 +83,17 @@ Each entry has a `manifestUrl` and an `initCommand`. Prefer direct code deploy a
 
 For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
-Python Example:
-```bash
-# New Foundry project
-azd ai agent init --no-prompt \
-  -m "<manifestUrl>" \
-  --deploy-mode code \
-  --runtime python_3_13 \
-  --entry-point main.py
+Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
 
-# Existing Foundry project
+```bash
 azd ai agent init --no-prompt \
-  --project-id "<resourceId>" \
   -m "<manifestUrl>" \
   --deploy-mode code \
   --runtime python_3_13 \
   --entry-point main.py
 ```
+
+> `--agent-name` at init names both `agent.yaml name:` and `azure.yaml services:<key>:` in one shot; renaming after init requires editing both files.
 
 Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
 
@@ -122,7 +116,7 @@ Check the scaffold before local run:
    AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
    ```
 3. Prefer direct code deployment. Inspect `<service-dir>/agent.yaml`; if `code_configuration:` is missing and the agent does not need a custom Dockerfile or system packages, add it before deployment.
-4. If you rename the agent in `<service-dir>/agent.yaml`, also rename the matching key under `azure.yaml services:` to the same value while preserving its `project:` path.
+4. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the agent in `<service-dir>/agent.yaml` AND the matching key under `azure.yaml services:` to the same value, preserving its `project:` path.
 5. If you change CPU or memory, keep `<service-dir>/agent.yaml` and `azure.yaml services.<name>.config.container.resources` aligned because the `azure.yaml` service config can override the agent file.
 
 ### Step 4b -- Brownfield: lift existing code

@@ -21,14 +21,15 @@ Use this when iterating on a hosted agent before deploying.
 
 ## Prepare the local environment
 
-For Python agents, prepare the environment from the agent directory before running `azd ai agent run`:
+For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
 
-1. Create a venv, for example `python -m venv .venv`.
-2. Activate the venv.
-3. Install `uv` inside the active venv: `python -m pip install uv`.
-4. Run `azd ai agent run`; it installs `requirements.txt` itself and uses `uv` from the project `.venv` for faster Python dependency installation.
+1. `cd` into the service source directory.
+2. Create a venv, for example `python -m venv .venv`.
+3. Activate the venv.
+4. Install `uv` inside the active venv: `python -m pip install uv`.
+5. Run `azd ai agent run` (from any cwd in the project); it installs `requirements.txt` itself and uses `uv` from the service-dir `.venv` for faster Python dependency installation.
 
-> **Important:** Keep the venv active for `azd ai agent run`. Install `uv` before running `azd ai agent run`; otherwise the local run may fall back to slower dependency installation. Do NOT manually install agent packages or run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
+> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Install `uv` before running `azd ai agent run`; otherwise the local run falls back to slower dependency installation. Do NOT manually run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
 
 ## Start the agent locally
 
