@@ -360,3 +360,63 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # Fixture-based: AKS Automatic readiness tests (require workspace manifests)
+  # Re-added per PR #2472 review:
+  # https://github.com/microsoft/GitHub-Copilot-for-Azure/pull/2472#issuecomment-4596446181
+  # ────────────────────────────────────────────────────────────────────────────
+
+  # ── fixture-manifest-validation ──
+  # Jest: "validates manifests against AKS Automatic constraints"
+  # Expects response identifying hostNetwork, NET_ADMIN, missing resources/probes
+  - name: "Fixture: validate manifests against AKS Automatic constraints"
+    prompt: "I have a deployment.yaml in my workspace. Validate my Kubernetes manifests against AKS Automatic constraints and tell me what violations exist."
+    environment:
+      files:
+        - src: fixture/deployment.yaml
+          dest: deployment.yaml
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: workspace-fixture
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)hostNetwork|NET_ADMIN|resource requests|resource limits|probes|Deployment Safeguards|incompatible|violation|capability"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── fixture-migration-compatibility ──
+  # Jest: "checks AKS Automatic migration compatibility for workloads"
+  # Expects response mentioning compatibility, migration readiness, or tolerations
+  - name: "Fixture: AKS Automatic migration compatibility check"
+    prompt: "I have a workloads.yaml in my workspace. Can I migrate my AKS cluster to AKS Automatic? Check if my workloads are compatible."
+    environment:
+      files:
+        - src: fixture/workloads.yaml
+          dest: workloads.yaml
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: workspace-fixture
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)compatible|migration|readiness|AKS Automatic|toleration|workload|resource"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

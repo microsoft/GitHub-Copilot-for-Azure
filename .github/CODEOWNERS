@@ -36,3 +36,7 @@
 /plugin/skills/entra-agent-id/ @ArLucaID @RickWinter
 /plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan @RickWinter
 /plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/create/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/deploy/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/invoke/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/troubleshoot/ @anchenyi @XiaofuHuang @swatDong @RickWinter
