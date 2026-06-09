@@ -15,9 +15,8 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
   for (const skill of requiredSkills) {
     const skillXml = await formatSkillForToolDescription(skill);
     // +1 for newline between skills
-    charCount += skillXml.length + 1
+    charCount += skillXml.length + 1;
   };
-
 
   // Fisher-Yates shuffle
   for (let i = nonRequiredSkills.length - 1; i > 0; i--) {
