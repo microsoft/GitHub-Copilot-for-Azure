@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
 import type { BlobEntry, BlobTree, BlobTreeNode } from "../shared/blobTree";
+import { apiUrl } from "../shared/apiUrl";
 
 interface FileSection {
     label: string;
@@ -76,7 +77,7 @@ function Dashboard() {
 
     // Fetch available dates on mount
     useEffect(() => {
-        fetch("/api/dates")
+        fetch(apiUrl("/api/dates"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -103,7 +104,7 @@ function Dashboard() {
         setFileSections([]);
         setReportMarkdown("");
 
-        fetch(`/api/data/${encodeURIComponent(selectedDate)}`)
+        fetch(apiUrl(`/api/data/${encodeURIComponent(selectedDate)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -117,7 +118,7 @@ function Dashboard() {
             .catch((err) => setError(err.message))
             .finally(() => setLoadingData(false));
 
-        fetch(`/api/reports/${encodeURIComponent(selectedDate)}`)
+        fetch(apiUrl(`/api/reports/${encodeURIComponent(selectedDate)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load reports: ${res.status}`);
                 return res.text();
