@@ -14,15 +14,6 @@ function FileViewer({ blobPath }: FileViewerProps) {
 
     const fileName = blobPath.split("/").pop() ?? "file";
     const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
-    const container = new URLSearchParams(window.location.search).get("container");
-
-    const buildDownloadUrl = (path: string) => {
-        const params = new URLSearchParams({ path });
-        if (container) {
-            params.set("container", container);
-        }
-        return apiUrl(`/api/download?${params.toString()}`);
-    };
 
     useEffect(() => {
         document.title = fileName;
@@ -33,7 +24,7 @@ function FileViewer({ blobPath }: FileViewerProps) {
         setError(null);
         setContent("");
 
-        fetch(buildDownloadUrl(blobPath))
+        fetch(apiUrl(`/api/download?path=${encodeURIComponent(blobPath)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
                 return res.text();
@@ -44,7 +35,7 @@ function FileViewer({ blobPath }: FileViewerProps) {
     }, [blobPath]);
 
     const handleDownload = () => {
-        window.open(buildDownloadUrl(blobPath), "_blank");
+        window.open(apiUrl(`/api/download?path=${encodeURIComponent(blobPath)}`), "_blank");
     };
 
     const handleBack = () => {

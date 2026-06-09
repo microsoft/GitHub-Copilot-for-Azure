@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
 import type { BlobEntry, BlobTree, BlobTreeNode } from "../shared/blobTree";
-import { apiUrl } from "../shared/apiUrl";
+import { apiUrl, pageUrl } from "../shared/apiUrl";
 
 interface FileSection {
     label: string;
@@ -129,12 +129,7 @@ function Dashboard() {
     }, [selectedDate]);
 
     const handleDownload = useCallback((blobName: string) => {
-        const params = new URLSearchParams({ file: blobName });
-        const container = new URLSearchParams(window.location.search).get("container");
-        if (container) {
-            params.set("container", container);
-        }
-        const viewerUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        const viewerUrl = pageUrl(`${window.location.pathname}?file=${encodeURIComponent(blobName)}`);
         window.open(viewerUrl, "_blank");
     }, []);
 
