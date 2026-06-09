@@ -4,7 +4,7 @@ Generate infrastructure and configuration files based on selected recipe.
 
 ## ⛔ CRITICAL: Check for .NET Aspire Projects FIRST
 
-**MANDATORY: Before generating any files, detect .NET Aspire projects** using the detection script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)). It runs the full detection sequence and prints `key=value` fields plus a summary:
+**MANDATORY: Before generating any files, always check for .NET Aspire projects** using the detection script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)). It runs the full detection sequence and prints `key=value` fields plus a summary:
 
 **bash:**
 ```bash

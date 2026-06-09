@@ -15,27 +15,6 @@ Guidance for preparing .NET Aspire applications for Azure deployment.
 
 .NET Aspire is an opinionated, cloud-ready stack for building observable, production-ready distributed applications. Aspire projects use an AppHost orchestrator to define and configure the application's components, services, and dependencies.
 
-## Detection
-
-A .NET Aspire project is identified by:
-
-| Indicator | Description |
-|-----------|-------------|
-| `*.AppHost.csproj` | AppHost orchestrator project file |
-| `Aspire.Hosting` package | Core Aspire hosting package reference |
-| `Aspire.Hosting.AppHost` | Alternative Aspire hosting package |
-
-**Example project structure:**
-```
-orleans-voting/
-├── OrleansVoting.sln
-├── OrleansVoting.AppHost/
-│   └── OrleansVoting.AppHost.csproj   ← AppHost indicator
-├── OrleansVoting.Web/
-├── OrleansVoting.Api/
-└── OrleansVoting.Grains/
-```
-
 ## Azure Preparation Workflow
 
 ### Step 1: Detection

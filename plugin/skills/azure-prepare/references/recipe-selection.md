@@ -8,7 +8,17 @@ Choose the deployment recipe based on project needs and existing tooling.
 
 | Project Type | Detection | Recipe Selection |
 |--------------|-----------|------------------|
-| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | **AZD (auto via `azd init --from-code`)** → [aspire.md](aspire.md) |
+| **.NET Aspire** | run [detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1) | **AZD (auto via `azd init --from-code`)** → [aspire.md](aspire.md) |
+
+**bash:**
+```bash
+./scripts/detect-aspire.sh [workspace-root]
+```
+
+**PowerShell:**
+```powershell
+./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
+```
 
 > 💡 **Tip:** .NET Aspire projects always use AZD recipe with auto-generated configuration. Do not manually select recipe or create artifacts.
 

@@ -29,7 +29,7 @@ Azure Developer CLI workflow for preparing Azure deployments.
 
 | Pattern | Detection | Action |
 |---------|-----------|--------|
-| **.NET Aspire** | `*.AppHost.csproj` or `Aspire.Hosting` package | Use `azd init --from-code -e <environment-name>` → [aspire.md](../../aspire.md) |
+| **.NET Aspire** | run [detect-aspire.sh](../../scripts/detect-aspire.sh) / [detect-aspire.ps1](../../scripts/detect-aspire.ps1) | Use `azd init --from-code -e <environment-name>` → [aspire.md](../../aspire.md) |
 | **Existing azure.yaml** | `azure.yaml` present | MODIFY mode - update existing config |
 | **New project** | No azure.yaml, no special patterns | Manual generation (steps below) |
 

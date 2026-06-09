@@ -2,14 +2,6 @@
 
 **⛔ MANDATORY: For .NET Aspire projects, NEVER manually create azure.yaml. Use `azd init --from-code` instead.**
 
-## Detection
-
-| Indicator | How to Detect |
-|-----------|---------------|
-| `*.AppHost.csproj` | `find . -name "*.AppHost.csproj"` |
-| `Aspire.Hosting` package | `grep -r "Aspire\.Hosting" . --include="*.csproj"` |
-| `Aspire.AppHost.Sdk` | `grep -r "Aspire\.AppHost\.Sdk" . --include="*.csproj"` |
-
 ## Workflow
 
 ### ⛔ DO NOT (Wrong Approach)
