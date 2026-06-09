@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       target_pr_id:
-        description: "Optional PR number whose Microsoft Foundry skill should be evaluated, including fork PRs"
+        description: "Target PR number (optional)"
         required: false
         type: string
       report-in-pr:
-        description: "Post the evaluation report back to the target PR"
+        description: "Post report to target PR"
         required: false
         default: true
         type: boolean
