@@ -8,6 +8,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+import { apiUrl } from "../shared/apiUrl";
 
 interface EvalMetricRow {
     date: string;
@@ -75,7 +76,7 @@ export default function App() {
     );
 
     const loadFilters = () =>
-        fetch("/api/msbench-eval-metrics/filters")
+        fetch(apiUrl("/api/msbench-eval-metrics/filters"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -92,7 +93,7 @@ export default function App() {
         if (selectedModel) params.set("model", selectedModel);
         if (selectedResolved) params.set("resolved", selectedResolved);
 
-        return fetch(`/api/msbench-eval-metrics?${params}`)
+        return fetch(apiUrl(`/api/msbench-eval-metrics?${params}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();

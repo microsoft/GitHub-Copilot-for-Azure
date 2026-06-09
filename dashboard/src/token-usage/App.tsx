@@ -9,6 +9,7 @@ import {
     Legend,
     ResponsiveContainer,
 } from "recharts";
+import { apiUrl } from "../shared/apiUrl";
 
 interface TokenUsageRow {
     skill: string;
@@ -70,7 +71,7 @@ export default function App() {
     const [filtersReady, setFiltersReady] = useState(false);
 
     const loadFilters = () =>
-        fetch("/api/token-usage/filters")
+        fetch(apiUrl("/api/token-usage/filters"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -91,7 +92,7 @@ export default function App() {
         if (selectedTest) params.set("test", selectedTest);
         if (selectedBranch) params.set("branch", selectedBranch);
 
-        return fetch(`/api/token-usage?${params}`)
+        return fetch(apiUrl(`/api/token-usage?${params}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
