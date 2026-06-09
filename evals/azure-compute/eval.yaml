@@ -86,6 +86,7 @@ stimuli:
       tier: smoke
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -132,6 +133,7 @@ stimuli:
       tier: smoke
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -178,6 +180,7 @@ stimuli:
       tier: smoke
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -225,6 +228,7 @@ stimuli:
       tier: smoke
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -267,6 +271,7 @@ stimuli:
       tier: smoke
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -311,6 +316,7 @@ stimuli:
       tier: full
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -359,6 +365,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -408,6 +415,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -452,6 +460,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -497,6 +506,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -548,6 +558,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -593,6 +604,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -645,6 +657,7 @@ stimuli:
       tier: full
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -695,6 +708,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -746,6 +760,7 @@ stimuli:
       tier: full
       area: output
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -800,6 +815,7 @@ stimuli:
       tier: full
       area: behavior
       skill: azure-compute
+      cost: llm
     constraints:
       max_turns: 40
     graders:
