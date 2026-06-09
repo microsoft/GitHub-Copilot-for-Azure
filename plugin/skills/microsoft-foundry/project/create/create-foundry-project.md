@@ -96,7 +96,7 @@ azd env set ENABLE_CAPABILITY_HOST false
 
 `ENABLE_HOSTED_AGENTS=true` enables hosted-agent deployment and creates an Azure Container Registry for the container image. A capability host (`capabilityHosts/agents`, used by Foundry's **Standard Agent Setup** for bring-your-own storage) is **also** created only when `ENABLE_CAPABILITY_HOST=true`. The default `azd ai agent` flow targets **Basic Agent Setup**, so it sets `ENABLE_CAPABILITY_HOST=false` automatically. The two flags are independent.
 
-> ⚠️ **Footgun:** The Bicep template parameter `enableCapabilityHost` defaults to `true`. If you set `ENABLE_HOSTED_AGENTS` by hand without also setting `ENABLE_CAPABILITY_HOST=false`, you will accidentally provision Standard Setup (with the capability host). Use `azd ai agent init` to set both flags correctly.
+> ⚠️ **Warning:** The Bicep template parameter `enableCapabilityHost` defaults to `true`. If you set `ENABLE_HOSTED_AGENTS` by hand without also setting `ENABLE_CAPABILITY_HOST=false`, you will accidentally provision Standard Setup (with the capability host). Use `azd ai agent init` to set both flags correctly.
 
 See the canonical env-var docs: [azure-dev/cli/azd/docs/environment-variables.md](https://github.com/Azure/azure-dev/blob/main/cli/azd/docs/environment-variables.md).
 
