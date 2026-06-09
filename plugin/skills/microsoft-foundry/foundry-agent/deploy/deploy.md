@@ -125,7 +125,34 @@ azd ai agent invoke "hello, are you up?" --output json
 
 Anything other than a `completed` response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 
-### Step 5 -- Hand off
+### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
+
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary, Playground link, or "deployment complete" message and Step 5 has not run, you are violating this skill. Run Step 5 first.
+>
+> This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below in 5a.
+
+This step is mandatory — not optional — for every hosted-agent deployment, including redeploys, version bumps, and `azd deploy` re-runs against an already-existing agent. In azd projects, resolve deployment context from `azd env get-values` and treat `.foundry/agent-metadata*.yaml` as an overlay/cache instead of copying azd-owned values into it.
+
+**5a. Ask the user (one question, required).** Before generating, inspect the selected agent root for `eval.yaml`, then ask the user to pick a setup source. Recommend local `eval.yaml` when it exists and matches the selected agent; otherwise recommend traces when the agent has recent traces, or current agent code/definition:
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use?*
+> *(a) **Current agent code/definition** — synthetic Q&A from `agent.yaml` / instructions. Best when there's little or no trace history.*
+> *(b) **Historical traces** — last 3 days, ~50 traces. Best if the agent has recent invocations.*
+> *(c) **Existing eval.yaml** — local dataset/evaluator intent from the selected agent folder. Best when azd eval config already exists."*
+
+**5b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below for the generation, polling, persistence, and metadata-update steps. Required parameters and poll-to-terminal rules are non-negotiable.
+
+**5c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally):
+
+- `evaluation_suite_get` → `.foundry/suites/<suite>-v<ver>.json` (full object)
+- `evaluator_catalog_get` → `.foundry/evaluators/<eval>-v<ver>.json` (full definition, NOT a stub)
+- `evaluation_dataset_get` + `evaluation_dataset_sas_url_get` → `.foundry/datasets/<agent>-<dataset>-v<ver>.ref.json` (metadata stub) AND `.foundry/datasets/<dataset>-v<ver>/<blob>` (actual JSONL rows). The SAS-url tool returns a container-scope SAS — list the container then `curl.exe` each blob. See the reference for the exact list+download steps. Set `contentDownloaded: true` in the stub once files are on disk.
+
+Do not write the deployment summary until all cache files exist.
+
+**5d. Skip-only-on-explicit-request.** If — and only if — the user explicitly says "skip eval suite generation," record that decision in your summary and still ensure deployment context remains resolvable from azd or metadata. "The user didn't ask for it" is **not** a valid reason to skip; this step is opt-out, not opt-in.
+
+### Step 6 -- Hand off
 
 - Send more messages -> [invoke](../invoke/invoke.md)
 - Evaluate / optimize -> [observe](../observe/observe.md)
@@ -196,7 +223,24 @@ Prompt agents are not containerized -- they are a model + instructions + optiona
 2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
 3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
 4. **Smoke test** -- follow [invoke](../invoke/invoke.md).
-5. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
+5. **Auto-generate evaluation suite** -- see [Step 6: Auto-Generate Evaluation Suite](#step-6-auto-generate-evaluation-suite-mandatory--runs-automatically) below.
+6. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
+
+### Step 6: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
+
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 6 has not run, you are violating this skill. Run Step 6 first.
+>
+> This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below.
+
+**6a. Ask the user (one question, required).** Before generating, inspect the selected agent root for `eval.yaml`, then ask which setup source to use. Recommend local `eval.yaml` when it exists and matches the selected agent; otherwise recommend recent traces when present, or current agent code/definition:
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use? (a) Current agent code/definition (synthetic Q&A), (b) Historical traces (last 3 days, ~50 traces), or (c) Existing eval.yaml from the selected agent folder?"*
+
+**6b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
+
+**6c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally): suite JSON, evaluator full definition, dataset `.ref.json` PLUS the actual dataset blobs downloaded via `evaluation_dataset_sas_url_get` (container SAS → list → curl each blob). Do not write the deployment summary until those files exist.
+
+**6d. Skip-only-on-explicit-request.** Skip only if the user explicitly says "skip eval suite generation." Keep deployment context resolvable from azd or metadata. "The user didn't ask for it" is **not** a valid reason to skip.
 
 ## Common failure modes -- Prompt
 
@@ -222,6 +266,80 @@ python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRI
 ```
 
 For hosted agents, `playground_url` is in `azd ai agent show --output json`.
+
+## After Deployment — Auto-Generate Evaluation Suite
+
+> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the selected `.foundry` environment for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
+
+### 1. Resolve Effective Context
+
+Use the [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution) flow. In azd projects, resolve project endpoint, agent name/version, ACR, and observability from `azd env get-values`; use `.foundry/agent-metadata*.yaml` only for overlays and synced suite/cache refs. If `eval.yaml` exists in the selected agent root, parse it as local evaluation intent before generating anything new.
+
+### 2. Read Agent Instructions
+
+Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
+
+### 3. Reuse or Refresh Suite Cache
+
+Inspect the selected agent root before generating anything new:
+
+- Reuse a selected environment `evaluationSuites[]` entry when it has `suiteName`, `suiteVersion`, matching `.foundry/datasets/`, and matching `.foundry/evaluators/` cache files.
+- When `eval.yaml` exists and matches the selected agent, prefer verifying/registering its dataset and evaluator references before creating a brand-new generated suite.
+- Call `evaluation_suite_get` to confirm the remote suite still exists before reusing it.
+- Ask before refreshing cached files, replacing thresholds, or writing a new suite version.
+- If cache or the remote suite is missing/stale, generate a new suite and update metadata for the active environment only.
+
+### 4. Identify Generation Deployment
+
+Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
+
+### 5. Generate Evaluation Suite
+
+Read and follow [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md) for source selection, required parameters, polling, and cache writes. In the deploy flow, keep these guardrails:
+
+- Ask the user which setup source to use before calling `evaluation_suite_generation_job_create`; recommend matching `eval.yaml` when present, then recent traces when available, otherwise the current agent code/definition.
+- Use the chat-capable generation deployment selected above and honor the reference's service constraints, especially `maxSamples` (15-1000) and `agentSourceNames: [<agentName>]` for agent-sourced suites.
+- Do not report deployment complete while the generation job is `in_progress`; poll with `evaluation_suite_generation_job_get` until `succeeded`, `failed`, or `canceled`, then inspect the suite with `evaluation_suite_get` and cache artifacts as described in the reference.
+
+### 6. Fallback to Manual Suggestions
+
+If `evaluation_suite_generation_job_create`, `evaluation_suite_generation_job_get`, or `evaluation_suite_get` fails, is unavailable, or returns incomplete artifacts, fall back to the previous manual flow:
+
+1. Call `evaluator_catalog_get` and suggest relevant built-in/custom evaluators.
+2. Read [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md), generate valid local JSONL with `query` and `expected_behavior`, and register it with `evaluation_dataset_create`.
+3. Persist the suite with `generationSource: manual-fallback` and include the fallback reason in the workflow summary.
+
+Do **not** silently ignore generation failures; the user should know whether setup used the generated-suite path or the fallback path.
+
+The local filename must start with the effective selected Foundry agent name before adding stage, environment, or version suffixes.
+
+### 7. Persist Artifacts and Evaluation Suites
+
+Save generated or fallback evaluator definitions, local datasets, and evaluation outputs under `.foundry/` using the cache paths defined in [Evaluation Suite Generation](../observe/references/evaluation-suite-generation.md), then register or update evaluation suites in the selected metadata file for the selected environment:
+
+```text
+.foundry/
+  agent-metadata.yaml
+  agent-metadata.prod.yaml
+  suites/
+    <suite-name>-v<version>.json
+  evaluators/
+    <evaluator-name>-v<version>.json
+  datasets/
+    <agent-name>-<dataset-name>-v<version>.ref.json
+    <dataset-name>-v<version>/<blob>
+  results/
+```
+
+Each evaluation suite should bundle the remote suite reference, local cache paths, thresholds, and a `tags` map (for example, `tier: smoke`, `purpose: baseline`, `stage: generated`). Persist `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `datasetFile`, and `datasetUri` together. Do not persist azd-owned deployment fields when azd resolves them. If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, replace that list with `evaluationSuites[]` in the rewritten metadata and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
+
+### 8. Prompt User
+
+*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains generated evaluation-suite metadata, local dataset/evaluator references, and remote Foundry suite references. Would you like to run an evaluation to identify optimization opportunities?"*
+
+- **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
+- **No** → stop. The user can return later.
+- **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
 
 ## Non-Interactive / YOLO Mode
 
