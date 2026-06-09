@@ -125,7 +125,21 @@ azd ai agent invoke "hello, are you up?" --output json
 
 Anything other than a `completed` response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 
-### Step 5 -- Hand off
+### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
+
+Ask the user (one question) which source to use, then start `azd ai agent eval init` **in a background terminal** using your environment's async execution mechanism. `init` typically takes several minutes; do not block the deployment summary on its completion. See [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below for the full procedure (startup verification, error classification, and later-turn notification).
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use? (a) Current agent instructions (synthetic Q&A), (b) Historical traces (last 3 days), or (c) Existing dataset/evaluators (skip init, run with current `eval.yaml`)."*
+
+| Choice | Command |
+|---|---|
+| (a) Agent instructions | `azd ai agent eval init --gen-instruction "<agent purpose>" --no-prompt` — `--gen-instruction` is required (hosted agents do not auto-derive it); derive the value from `agent.yaml` `description:`. |
+| (b) Historical traces | `azd ai agent eval init --trace-days 3 --max-samples 50 --no-prompt` |
+| (c) Existing `eval.yaml` | Skip `init`; jump to the run step in the reference below |
+
+After confirming the background terminal started without an immediate error, tell the user generation is running in the background and you'll surface status on a later turn, then proceed to Step 6. Skip only if the user explicitly says "skip eval suite generation."
+
+### Step 6 -- Hand off
 
 - Send more messages -> [invoke](../invoke/invoke.md)
 - Evaluate / optimize -> [observe](../observe/observe.md)
@@ -174,6 +188,7 @@ Each env has its own `AGENT_<SVC>_*` vars.
 | `subscription quota exceeded` | Ask user to request quota; do not auto-retry. |
 | Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
 | `RoleAssignmentUpdateNotPermitted` during provision | A role assignment already exists but conflicts. Check for existing role assignments with `az role assignment list --scope <resource-scope>`. The provision may have succeeded for all resources except RBAC — verify with `azd ai project show` and manually assign the `Cognitive Services User` role to the agent identity if needed. |
+| `eval init`: `one of --gen-instruction ... is required` | Retry with `--gen-instruction "<agent purpose>"` (Step 5 option (a)). |
 
 For deeper logs, see [troubleshoot](../troubleshoot/troubleshoot.md).
 
@@ -196,7 +211,22 @@ Prompt agents are not containerized -- they are a model + instructions + optiona
 2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
 3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
 4. **Smoke test** -- follow [invoke](../invoke/invoke.md).
-5. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
+5. **Auto-generate evaluation suite** -- see [Step 5: Auto-Generate Evaluation Suite (Prompt)](#step-5-auto-generate-evaluation-suite-prompt-mandatory--runs-automatically) below.
+6. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
+
+### Step 5: Auto-Generate Evaluation Suite (Prompt) (MANDATORY — RUNS AUTOMATICALLY)
+
+Ask the user (one question) which source to use, then start `azd ai agent eval init` **in a background terminal** using your environment's async execution mechanism. `init` typically takes several minutes; do not block the deployment summary on its completion. See [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below for the full procedure (startup verification, error classification, and later-turn notification).
+
+> *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use? (a) Current agent instructions (synthetic Q&A), (b) Historical traces (last 3 days), or (c) Existing dataset/evaluators (skip init, run with current `eval.yaml`)."*
+
+| Choice | Command |
+|---|---|
+| (a) Agent instructions | `azd ai agent eval init --gen-instruction "<agent purpose>" --no-prompt` |
+| (b) Historical traces | `azd ai agent eval init --trace-days 3 --max-samples 50 --no-prompt` |
+| (c) Existing `eval.yaml` | Skip `init`; jump to the run step in the reference below |
+
+After confirming the background terminal started without an immediate error, tell the user generation is running in the background and you'll surface status on a later turn. Skip only if the user explicitly says "skip eval suite generation."
 
 ## Common failure modes -- Prompt
 
@@ -222,6 +252,63 @@ python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRI
 ```
 
 For hosted agents, `playground_url` is in `azd ai agent show --output json`.
+
+## After Deployment — Auto-Generate Evaluation Suite
+
+> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the evaluation suite without waiting for the user to request it. This matches the eval-driven optimization loop.
+
+### 1. Inspect existing eval.yaml
+
+Check the selected agent root for `eval.yaml`:
+
+- **Exists and matches the selected agent** → skip `init`; go to step 3 (run).
+- **Missing or stale** → continue to step 2.
+
+### 2. Generate the suite (asynchronously)
+
+`azd ai agent eval init` typically takes several minutes (dataset + rubric generation, judge calls, artifact download). Start it in a background terminal using whatever async execution mechanism your environment provides so the user is not blocked. On completion it writes:
+
+- Agent instructions snapshot to `.agent_configs/baseline/instructions.md`.
+- Dataset to `datasets/<suite-name>/*.jsonl`.
+- Weighted rubric to `evaluators/<suite-name>/rubric_dimensions.json`.
+- `eval.yaml` at the agent root, referencing the above via `local_uri` + versioned `dataset_reference` / `evaluators[]`.
+
+**Skill behavior:**
+
+1. Start `azd ai agent eval init <flags>` in a background terminal; capture the terminal/handle id.
+2. Wait for the initial idle or output signal, then inspect the snapshot to verify startup. Do **not** wait for completion.
+3. **Classify the snapshot** before proceeding:
+   - **Progress output** (e.g., "Submitting jobs", "Generating", spinner output, no error text) → record the handle, tell the user *"Eval suite generation started in the background. You can keep working; I'll surface status on a later turn."*, and proceed to Step 6.
+   - **Auto-fixable error** — the error message names a missing input the agent can derive from the current environment (for example, project endpoint resolvable via `azd env get-values`) → apply the fix, restart the background terminal **once**, re-inspect. If the second start still fails, fall through to the next bucket.
+   - **Known cause, no auto-fix** (model not found, quota exceeded, permission denied, ambiguous agent name in a multi-service project, etc.) → surface the cause in one short message and ask the obvious follow-up. Do not restart automatically.
+   - **Unknown error** → surface the raw error tail and recommend the user run `azd ai agent eval init` in the foreground for diagnostics. Stop.
+4. On every later turn until the background terminal exits, re-check its output. When it reaches a terminal state, prepend a one-line status to that turn's response:
+   - **Success** → *"`eval.yaml` is ready. Run `azd ai agent eval run` when you want to evaluate."*
+   - **Failure** → show the error tail and recommend foreground `azd ai agent eval init` for diagnostics.
+
+If your environment has no async execution mechanism (or the user is running commands manually), run `init` foreground instead and warn the user it will block until the suite is ready.
+
+### 3. Run the suite
+
+```bash
+azd ai agent eval run
+```
+
+Use `azd ai agent eval show -O results.json` to inspect run details, or `azd ai agent eval list` to see history.
+
+### 4. Refresh datasets/evaluators (later)
+
+When local files under `datasets/<suite>/` or `evaluators/<suite>/` change, run `azd ai agent eval update --dataset-only` or `--evaluator-only` to upload new versions. azd bumps the `version` fields in `eval.yaml`.
+
+### 5. Prompt User
+
+If the background `init` from section 2 has not yet completed, defer this prompt — surface it together with the success message on the later turn when `eval.yaml` becomes ready.
+
+*"Your agent is deployed and evaluation is set up. Would you like to run an evaluation now to identify optimization opportunities?"*
+
+- **Yes** → run `azd ai agent eval run`, then follow the [observe skill](../observe/observe.md) to interpret results.
+- **No** → stop. The user can return later via `azd ai agent eval run`.
+- **Production trace analysis** → follow the [trace skill](../trace/trace.md).
 
 ## Non-Interactive / YOLO Mode
 
