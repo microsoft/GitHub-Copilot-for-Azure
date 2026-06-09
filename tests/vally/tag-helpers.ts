@@ -49,6 +49,11 @@ export type TakeScreenshotCondition = {
   urlPattern: string;
 }
 
+export type RequiredSkillsCondition = {
+  type: "required-skills"
+  skills: string[];
+}
+
 export function isSkillInvocationTest(tags: Record<string, string | string[]> | undefined): boolean {
   return tags?.area === "routing";
 }
@@ -195,5 +200,23 @@ export function getTakeScreenshotCondition(tags: Record<string, string[] | strin
   } catch (error) {
     console.error("Failed to parse takeScreenshot condition", value, error);
     return {};
+  }
+}
+
+export function getRequiredSkillsCondition(tags: Record<string, string[] | string> | undefined): string[] | undefined {
+  if (!tags) {
+    return undefined;
+  }
+
+  const value = tags["requiredSkills"];
+
+  if (!value) {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  } else {
+    console.error("Failed to get requiredSkills from tags", value);
+    return undefined;
   }
 }

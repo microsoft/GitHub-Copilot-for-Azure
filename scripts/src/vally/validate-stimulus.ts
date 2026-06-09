@@ -27,9 +27,10 @@ type Stimuli = {
     cost?: string;
     area?: string;
     earlyTerminate?: string;
-    followUp?: string[] | string;
+    followUp?: string[];
     systemPrompt?: string;
     takeScreenshot?: string;
+    requiredSkills?: string[];
   };
 };
 
@@ -251,6 +252,29 @@ function validateFollowUpTag(
   return false;
 }
 
+function validateRequiredSkillsTag(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  value: string[] | string | undefined,
+): boolean {
+  if (value === undefined) {
+    return true;
+  }
+
+  if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
+    return true;
+  }
+
+  reportValidationError(
+    displayPath,
+    stimulusIndex,
+    stimulusName,
+    "tags.requiredSkills must be a string array",
+  );
+  return false;
+}
+
 function reportValidationError(
   displayPath: string,
   stimulusIndex: number,
@@ -353,6 +377,15 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         stimulusIndex,
         typedStimulus.name,
         typedStimulus.tags?.followUp,
+      )) {
+        fileHasErrors = true;
+      }
+
+      if (!validateRequiredSkillsTag(
+        displayPath,
+        stimulusIndex,
+        typedStimulus.name,
+        typedStimulus.tags?.requiredSkills
       )) {
         fileHasErrors = true;
       }
