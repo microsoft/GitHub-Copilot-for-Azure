@@ -677,7 +677,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const existingNodeOptions = process.env.NODE_OPTIONS;
       const envVar: Record<string, string> = {
         SKILLS_INSTRUCTIONS: "true",
-        SKILL_CHAR_BUDGET: "20000",
+        SKILL_CHAR_BUDGET: `${DEFAULT_SKILL_CHAR_BUDGET}`,
         NODE_OPTIONS: existingNodeOptions
           ? `${existingNodeOptions} --disable-warning=ExperimentalWarning`
           : "--disable-warning=ExperimentalWarning"

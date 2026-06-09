@@ -49,11 +49,6 @@ export type TakeScreenshotCondition = {
   urlPattern: string;
 }
 
-export type RequiredSkillsCondition = {
-  type: "required-skills"
-  skills: string[];
-}
-
 export function isSkillInvocationTest(tags: Record<string, string | string[]> | undefined): boolean {
   return tags?.area === "routing";
 }

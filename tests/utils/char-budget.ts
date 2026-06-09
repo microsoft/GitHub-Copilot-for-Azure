@@ -9,6 +9,10 @@ export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
  */
 export async function truncateSkills(requiredSkills: string[], charBudget: number): Promise<string[] | undefined> {
   const skills = listSkills();
+  const invalidSkills = requiredSkills.filter((s) => !skills.includes(s));
+  if (invalidSkills.length > 0) {
+    throw new Error(`Invalid requiredSkills. ${invalidSkills} do not exist in azure-skills plugin.`);
+  }
   const nonRequiredSkills = skills.filter((s) => !requiredSkills.includes(s));
   let charCount = 0;
 
@@ -16,7 +20,7 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
     const skillXml = await formatSkillForToolDescription(skill);
     // +1 for newline between skills
     charCount += skillXml.length + 1;
-  };
+  }
 
   // Fisher-Yates shuffle
   for (let i = nonRequiredSkills.length - 1; i > 0; i--) {
@@ -33,7 +37,6 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
     } else {
       charCount += skillXml.length + 1;
     }
-    console.log("skill", skill, "chatCount", charCount);
   }
 
   return [];
