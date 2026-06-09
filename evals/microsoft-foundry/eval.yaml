@@ -274,13 +274,7 @@ stimuli:
       cost: llm
       area: create
     prompt: |
-      Create a Python hosted agent for B2B customer onboarding and deploy it to my existing Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly.
-
-      Always create a new .venv in the working directory and install the agent's dependencies there, instead of installing them globally.
-      Use an agent name with the `foundry-skill-e2e` prefix and add a random suffix.
-      Use these environment variables as the Foundry-related configuration values:
-      FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT for the Foundry project endpoint,
-      FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL for the deployment model
+      Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly
     graders:
       - type: skill-invocation
         config:
@@ -292,8 +286,8 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent generated hosted-agent code, ran local testing, deployed the agent
+            Verify that the coding agent generated hosted-agent code, create new foundry project and model deployment, ran local testing, deployed the agent
             successfully to Microsoft Foundry using direct code deploy, invoked the deployed agent after deployment,
             and received a successful response from that deployed agent. Fail if
-            code was not generated, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
+            code was not generated, no new foundry project or model is created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
             actually invoked after deployment, or the deployed agent invocation failed.
