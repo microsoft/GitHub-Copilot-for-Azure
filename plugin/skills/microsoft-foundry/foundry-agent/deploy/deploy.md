@@ -223,24 +223,24 @@ Prompt agents are not containerized -- they are a model + instructions + optiona
 2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
 3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
 4. **Smoke test** -- follow [invoke](../invoke/invoke.md).
-5. **Auto-generate evaluation suite** -- see [Step 6: Auto-Generate Evaluation Suite](#step-6-auto-generate-evaluation-suite-mandatory--runs-automatically) below.
+5. **Auto-generate evaluation suite** -- see [Step 5: Auto-Generate Evaluation Suite (Prompt)](#step-5-auto-generate-evaluation-suite-prompt-mandatory--runs-automatically) below.
 6. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
 
-### Step 6: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
+### Step 5: Auto-Generate Evaluation Suite (Prompt) (MANDATORY — RUNS AUTOMATICALLY)
 
-> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 6 has not run, you are violating this skill. Run Step 6 first.
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
 >
 > This step **runs automatically** without waiting for the user to ask. The only user input required is the one-question prompt below.
 
-**6a. Ask the user (one question, required).** Before generating, inspect the selected agent root for `eval.yaml`, then ask which setup source to use. Recommend local `eval.yaml` when it exists and matches the selected agent; otherwise recommend recent traces when present, or current agent code/definition:
+**5a. Ask the user (one question, required).** Before generating, inspect the selected agent root for `eval.yaml`, then ask which setup source to use. Recommend local `eval.yaml` when it exists and matches the selected agent; otherwise recommend recent traces when present, or current agent code/definition:
 
 > *"Your agent is deployed. I'll now auto-generate an evaluation suite. Which source should I use? (a) Current agent code/definition (synthetic Q&A), (b) Historical traces (last 3 days, ~50 traces), or (c) Existing eval.yaml from the selected agent folder?"*
 
-**6b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
+**5b. Follow the full procedure.** Read and follow [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) below.
 
-**6c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally): suite JSON, evaluator full definition, dataset `.ref.json` PLUS the actual dataset blobs downloaded via `evaluation_dataset_sas_url_get` (container SAS → list → curl each blob). Do not write the deployment summary until those files exist.
+**5c. Cache artifacts locally (MANDATORY after `succeeded`).** Once the suite-generation job is `succeeded`, perform the required cache calls described in [Evaluation Suite Generation → Cache Artifacts Locally](../observe/references/evaluation-suite-generation.md#cache-artifacts-locally): suite JSON, evaluator full definition, dataset `.ref.json` PLUS the actual dataset blobs downloaded via `evaluation_dataset_sas_url_get` (container SAS → list → curl each blob). Do not write the deployment summary until those files exist.
 
-**6d. Skip-only-on-explicit-request.** Skip only if the user explicitly says "skip eval suite generation." Keep deployment context resolvable from azd or metadata. "The user didn't ask for it" is **not** a valid reason to skip.
+**5d. Skip-only-on-explicit-request.** Skip only if the user explicitly says "skip eval suite generation." Keep deployment context resolvable from azd or metadata. "The user didn't ask for it" is **not** a valid reason to skip.
 
 ## Common failure modes -- Prompt
 
