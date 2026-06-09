@@ -54,13 +54,18 @@ Branch on the reported agent status:
 
 ### Step 2 -- New or existing Foundry project?
 
-Ask: "Do you want to create a new Foundry project, or use an existing one?"
+Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the prompt already says to use an existing project or supplies a Foundry project endpoint / project ARM resource ID.
 
 - **New project** -- do NOT pass `--project-id`. `azd provision` (in deploy) will create it.
-- **Existing project** -- ask for the ARM resource ID:
-  > Open https://ai.azure.com -> Operate -> Admin -> select the project -> Copy the Resource ID.
+- **Existing project with ARM resource ID** -- pass that exact ID to `azd ai agent init --project-id`.
+- **Existing project with Foundry project endpoint only** -- resolve the project ARM resource ID with the bundled script, then pass the returned `id` to `azd ai agent init --project-id`:
+  ```bash
+  ./scripts/resolve-project-id.sh --endpoint "<foundry-project-endpoint>"     # macOS / Linux
+  ./scripts/resolve-project-id.ps1 -Endpoint "<foundry-project-endpoint>"     # Windows (pwsh)
+  ```
+- **Existing project with neither endpoint nor ARM ID** -- ask for the ARM resource ID.
 
-Do not guess or shell out to `az` to discover the ID.
+Do not guess, derive, or construct the project ID from the endpoint. For `--project-id`, pass either the user-supplied project ARM resource ID or the `id` returned by Azure lookup / the bundled resolve script.
 
 ### Step 3 -- Pick the scaffolding source
 
@@ -165,7 +170,7 @@ Once local invocation succeeds, tell the user the agent is ready and ask if they
 
 ## Non-Interactive / YOLO Mode
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If project ID is missing and the user wants to use an existing project, stop and ask. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. Stop and ask only when neither an ARM ID nor a resolvable endpoint is available. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 

@@ -27,9 +27,9 @@ For Python agents, prepare the environment from the **agent's service source dir
 2. Create a venv, for example `python -m venv .venv`.
 3. Activate the venv.
 4. Install `uv` inside the active venv: `python -m pip install uv`.
-5. Run `azd ai agent run` (from any cwd in the project); it installs `requirements.txt` itself and uses `uv` from the service-dir `.venv` for faster Python dependency installation.
+5. In the same shell with the service-dir `.venv` activated, run `azd ai agent run` (from any cwd in the project); it installs `requirements.txt` itself and uses `uv` from the active venv for faster Python dependency installation.
 
-> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Install `uv` before running `azd ai agent run`; otherwise the local run falls back to slower dependency installation. Do NOT manually run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
+> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Install `uv` before running `azd ai agent run`, and keep that venv activated when running the command; otherwise the local run falls back to slower dependency installation. Do NOT manually run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
 
 ## Start the agent locally
 
