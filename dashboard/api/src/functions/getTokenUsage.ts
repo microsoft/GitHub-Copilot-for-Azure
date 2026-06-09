@@ -98,6 +98,7 @@ async function getTokenUsageFilters(request: HttpRequest, context: InvocationCon
         const skills = new Set<string>();
         const tests = new Set<string>();
         const branches = new Set<string>();
+        const testsBySkillSets = new Map<string, Set<string>>();
 
         for await (const entity of tableClient.listEntities({
             queryOptions: { select: ["skill", "testName", "branch"] },
@@ -105,6 +106,20 @@ async function getTokenUsageFilters(request: HttpRequest, context: InvocationCon
             if (entity.skill) skills.add(entity.skill as string);
             if (entity.testName) tests.add(entity.testName as string);
             if (entity.branch) branches.add(entity.branch as string);
+            if (entity.skill && entity.testName) {
+                const skill = entity.skill as string;
+                let set = testsBySkillSets.get(skill);
+                if (!set) {
+                    set = new Set<string>();
+                    testsBySkillSets.set(skill, set);
+                }
+                set.add(entity.testName as string);
+            }
+        }
+
+        const testsBySkill: Record<string, string[]> = {};
+        for (const [skill, set] of testsBySkillSets) {
+            testsBySkill[skill] = [...set].sort();
         }
 
         return {
@@ -114,6 +129,7 @@ async function getTokenUsageFilters(request: HttpRequest, context: InvocationCon
                 skills: [...skills].sort(),
                 tests: [...tests].sort(),
                 branches: [...branches].sort(),
+                testsBySkill,
             }),
         };
     } catch (err: any) {

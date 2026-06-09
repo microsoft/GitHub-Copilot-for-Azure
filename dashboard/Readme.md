@@ -101,9 +101,9 @@ Data flow:
 - The integration test pipelines upload that data **directly** to an Azure Table by
   running `npm run upload:token-usage` (`tests/scripts/upload-token-usage.ts`). One
   row is stored **per test, per branch, per run** in the `integrationtokenusage`
-  table on the integration-reports storage account. This runs in
-  `test-all-integration.yml` (scheduled + manual) and in `test-azure-deploy.yml`
-  whenever its `publish-reports` input is `true` (i.e. on scheduled runs).
+  table on the integration-reports storage account. This runs in both
+  `test-all-integration.yml` and `test-azure-deploy.yml` on scheduled and manual
+  runs alike (whenever `REPORT_STORAGE_ACCOUNT` is configured).
 - The frontend never reads the table directly. It calls the Function App API:
   - `GET /api/token-usage` — rows, with optional `skill`, `test`, `branch` filters.
   - `GET /api/token-usage/filters` — distinct skills / tests / branches.

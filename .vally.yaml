@@ -26,6 +26,11 @@ suites:
     filter:
       type: integration
 
+  foundry-e2e:
+    description: "Azure-authenticated Microsoft Foundry E2E evals"
+    filter:
+      type: foundry-e2e
+
   full:
     description: "All evals including LLM graders — nightly"
     filter: {}
