@@ -129,7 +129,12 @@ function Dashboard() {
     }, [selectedDate]);
 
     const handleDownload = useCallback((blobName: string) => {
-        const viewerUrl = `${window.location.origin}${window.location.pathname}?file=${encodeURIComponent(blobName)}`;
+        const params = new URLSearchParams({ file: blobName });
+        const container = new URLSearchParams(window.location.search).get("container");
+        if (container) {
+            params.set("container", container);
+        }
+        const viewerUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
         window.open(viewerUrl, "_blank");
     }, []);
 
