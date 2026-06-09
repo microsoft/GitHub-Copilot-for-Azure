@@ -8,7 +8,7 @@ When a user asks to scaffold, create, or add tests for a skill, follow these ste
 
 ### Step 1: Read the vally-eval skill
 
-Skills in azure-skills plugin use [vally](https://literate-engine-r3wnl4v.pages.github.io/get-started/) to run integration tests that run prompts against an LLM Agent and evaluate the outcome. The vally-eval skill provides the knowledge on where to add the test code, how to run the tests and where to collect the test results. Combine the instructions in vally-eval skill, the official documentation of vally and the rest of the instructions in this file to learn how to write vally eval suites for azure-skills plugin. 
+Skills in azure-skills plugin use [vally](https://microsoft.github.io/vally/get-started/) to run integration tests that run prompts against an LLM Agent and evaluate the outcome. The vally-eval skill provides the knowledge on where to add the test code, how to run the tests and where to collect the test results. Combine the instructions in vally-eval skill, the official documentation of vally and the rest of the instructions in this file to learn how to write vally eval suites for azure-skills plugin. 
 
 ### Step 2: Read the skill's SKILL.md
 Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
@@ -28,7 +28,7 @@ Follow the vally documentation to write the eval suite for each test case. Each 
 
 1. The environment in which the user prompts the agent. This can include source code in the local workspace, access to local CLI tools, access to Cloud resources, etc. For example, if the user prompt asks the agent to deploy an app to Azure, the workspace should already have the source code of the app.
 2. The user prompt that triggers the agent to do work. The user prompt should imitate what a reasonable user would submit in practice. Avoid giving too little or too much details in the test user prompt. If a test case naturally requires multi-turn agent interaction, such as user confirmation, it can specify follow up prompts to simulate multi-turn interactions with the agent.
-3. The pass/fail criterion for the outcome. For example, a test case can expect the agent to load a certain skill, emit certain tokens to the user as assistant messages, not emit certain tokens, etc. See [vally-graders-catalog](https://literate-engine-r3wnl4v.pages.github.io/reference/graders/) to learn what graders are supported.
+3. The pass/fail criterion for the outcome. For example, a test case can expect the agent to load a certain skill, emit certain tokens to the user as assistant messages, not emit certain tokens, etc. See [vally-graders-catalog](https://microsoft.github.io/vally/reference/graders/) to learn what graders are supported.
 
 ### Step 4: Run and verify locally
 
