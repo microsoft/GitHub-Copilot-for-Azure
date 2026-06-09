@@ -269,7 +269,7 @@ stimuli:
   - name: "Golden Path - Create and deploy hosted agent"
     tags:
       id: golden-path-create-and-deploy-hosted-agent
-      type: e2e
+      type: foundry-e2e
       tier: full
       cost: llm
       area: create
