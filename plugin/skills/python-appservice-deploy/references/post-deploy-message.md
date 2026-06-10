@@ -21,7 +21,9 @@ Use this when Step 2 detected a known framework (`flask`, `django`, or `fastapi`
    warming up the container. Open it in your browser after a short wait.
 
 📜 If you want to watch live logs:
+   az webapp log config -n <app> -g <rg> --application-logging filesystem --level information
    az webapp log tail -n <app> -g <rg>
+   (The first command is a one-time prereq on a fresh app — without it the stream stays empty.)
 ```
 
 ## Message template — unknown framework
@@ -51,7 +53,9 @@ Use this when Step 2 detected `wsgi-generic`, `asgi-generic`, or `unknown` (i.e.
    See references/startup-commands.md for more guidance.
 
 📜 If you want to watch live logs:
+   az webapp log config -n <app> -g <rg> --application-logging filesystem --level information
    az webapp log tail -n <app> -g <rg>
+   (The first command is a one-time prereq on a fresh app — without it the stream stays empty.)
 ```
 
 Replace `<module>:<callable>` with the user's actual entry point (e.g. `app:app`, `main:application`, `myapp.wsgi:application`). If you can identify a likely entry point from the source code, **suggest a concrete command** instead of leaving placeholders.

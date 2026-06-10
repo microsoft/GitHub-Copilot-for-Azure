@@ -41,7 +41,7 @@ Deploy/publish a **Python** web app (Flask, Django, FastAPI, generic) to **Azure
 5. **Set startup** per [startup-commands.md](references/startup-commands.md).
 6. **Set `SCM_DO_BUILD_DURING_DEPLOYMENT=true`**.
 7. **Deploy** — `azd deploy` or `az webapp deploy --type zip --track-status false`.
-8. **STOP. Print the post-deploy message** ([post-deploy-message.md](references/post-deploy-message.md)) — `https://` URL, "2–3 min" warmup, `az webapp log tail` command. End the turn.
+8. **STOP. Print the post-deploy message** ([post-deploy-message.md](references/post-deploy-message.md)) — `https://` URL, "2–3 min" warmup, and the `az webapp log config` + `az webapp log tail` pair (config is a one-time prereq on a fresh app). End the turn.
 
 ### Hard rules
 
