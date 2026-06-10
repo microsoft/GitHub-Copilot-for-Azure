@@ -14,7 +14,7 @@ environment:
     - ../../plugin/skills/microsoft-foundry
 
 config:
-  runs: 1
+  runs: 5
   timeout: "30m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6

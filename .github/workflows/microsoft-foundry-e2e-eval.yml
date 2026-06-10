@@ -12,6 +12,11 @@ on:
         required: false
         default: true
         type: boolean
+      runs:
+        description: "Number of Vally trials per stimulus"
+        required: false
+        default: 1
+        type: number
 
 permissions: {}
 
@@ -112,11 +117,18 @@ jobs:
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           FOUNDRY_E2E_EVAL_RG: ${{ secrets.FOUNDRY_E2E_EVAL_RG }}
+          VALLY_RUNS: ${{ inputs.runs }}
         run: |
           set -euo pipefail
 
+          if [[ ! "${VALLY_RUNS}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::runs must be a positive integer."
+            exit 1
+          fi
+
           npm run test:vally -- \
             --suite foundry-e2e \
+            --runs "${VALLY_RUNS}" \
             --output jsonl \
             --junit \
             --threshold 0.8
