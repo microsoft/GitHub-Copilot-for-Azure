@@ -10,7 +10,7 @@ Accept any of these to scope the analysis: Subscription ID, Subscription Name, R
 
 | Priority | Rule | Detection Logic | Recommendation | Avg Savings |
 |----------|------|----------------|----------------|-------------|
-| 🔴 Critical | Stopped App on Paid Plan | `state == 'Stopped'` AND `sku.tier not in ['Free', 'Shared']` | Delete or move to Free tier (stopped apps still incur plan cost) | $50-500/mo |
+| 🔴 Critical | Stopped App on Paid Plan | Site `properties.state == 'Stopped'` and associated plan tier is not Free/Shared | Delete the app or move it to a Free/Shared plan; if it’s the only app on the plan, delete/scale down the plan | $50-500/mo |
 | 🔴 Critical | Empty App Service Plan | Plan has zero apps deployed | Delete the plan | $50-400/mo |
 | 🟠 High | Premium in Non-Production | `sku.tier in ['PremiumV2','PremiumV3']` AND `tags.environment in ['dev','test','staging']` | Downgrade to Basic or Standard | $100-600/mo |
 | 🟠 High | Idle Deployment Slots | Non-production slots with zero traffic for 14+ days | Delete unused slots (slots share plan workers but increase utilization, driving scale-out) | $30-150/mo |
