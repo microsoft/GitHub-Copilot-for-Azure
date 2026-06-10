@@ -56,7 +56,7 @@ Before classifying components, grep dependency files for SDKs that require a spe
 
 ### .NET Aspire Detection
 
-Always check **.NET Aspire projects** by running the detection script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)), which reports `isAspire` along with AppHost path, `ExcludeFromManifest`, and Azure Functions signals:
+Always check **.NET Aspire projects** by running the presence script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)), which reports just `isAspire` and `appHostPath` so you can branch quickly. Once Aspire is confirmed, [aspire.md](aspire.md) gathers the deeper facts (`ExcludeFromManifest`, Azure Functions signals) via `gather-aspire-info`:
 
 **bash:**
 ```bash
@@ -68,13 +68,13 @@ Always check **.NET Aspire projects** by running the detection script ([detect-a
 ./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
 ```
 
-A project is Aspire when the script returns `isAspire=true` (a `*.AppHost.csproj` or an `Aspire.Hosting` / `Aspire.Hosting.AppHost` / `Aspire.AppHost.Sdk` package reference was found). See [aspire.md](aspire.md) Step 1 for the full field list.
+A project is Aspire when the script returns `isAspire=true` (a `*.AppHost.csproj` or an `Aspire.Hosting` / `Aspire.Hosting.AppHost` / `Aspire.AppHost.Sdk` package reference was found). See [aspire.md](aspire.md) Step 1 for the full field list gathered by `gather-aspire-info`.
 
 **When Aspire is detected:**
 - Use `azd init --from-code -e <environment-name>` instead of manual azure.yaml creation
 - The `--from-code` flag automatically detects the AppHost and generates appropriate configuration
 - The `-e` flag is **required** for non-interactive environments (agents, CI/CD)
-- ⚠️ **CRITICAL:** If the script reports `hasFunctions=true` and `secretStorageConfigured=false`, you **MUST** add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions builder chain BEFORE deployment. Without this, Functions will fail at startup with `Secret initialization from Blob storage failed`. See [aspire.md](aspire.md) Step 4b for the complete fix procedure.
+- ⚠️ **CRITICAL:** Run `gather-aspire-info` (per [aspire.md](aspire.md) Step 1). If it reports `hasFunctions=true` and `secretStorageConfigured=false`, you **MUST** add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the Functions builder chain BEFORE deployment. Without this, Functions will fail at startup with `Secret initialization from Blob storage failed`. See [aspire.md](aspire.md) Step 4b for the complete fix procedure.
 - See [aspire.md](aspire.md) for detailed Aspire-specific guidance
 
 ## Output

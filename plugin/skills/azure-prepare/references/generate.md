@@ -4,7 +4,7 @@ Generate infrastructure and configuration files based on selected recipe.
 
 ## ⛔ CRITICAL: Check for .NET Aspire Projects FIRST
 
-**MANDATORY: Before generating any files, always check for .NET Aspire projects** using the detection script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)). It runs the full detection sequence and prints `key=value` fields plus a summary:
+**MANDATORY: Before generating any files, always check for .NET Aspire projects** using the presence script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)). It reports `isAspire` and `appHostPath`:
 
 **bash:**
 ```bash
@@ -16,7 +16,7 @@ Generate infrastructure and configuration files based on selected recipe.
 ./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
 ```
 
-If the result includes `isAspire=true`, treat the project as Aspire. See [aspire.md](aspire.md) Step 1 for the full list of fields the script reports.
+If the result includes `isAspire=true`, treat the project as Aspire. See [aspire.md](aspire.md) Step 1 for gathering the full set of Aspire facts with `gather-aspire-info`.
 
 **If Aspire is detected:**
 1. ⛔ **STOP** - Do NOT manually create `azure.yaml`

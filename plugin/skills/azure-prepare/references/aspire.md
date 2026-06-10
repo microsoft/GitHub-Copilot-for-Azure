@@ -19,16 +19,16 @@ Guidance for preparing .NET Aspire applications for Azure deployment.
 
 ### Step 1: Detection
 
-When scanning the codebase (per [scan.md](scan.md)), run the detection script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)). It performs the full deterministic detection sequence in one pass and prints `key=value` lines plus a human-readable summary, so you can branch on the result instead of parsing raw `find`/`grep` output.
+When scanning the codebase (per [scan.md](scan.md)), Aspire presence is established with `detect-aspire`. Once confirmed, gather the full set of facts by running [gather-aspire-info.sh](scripts/gather-aspire-info.sh) / [gather-aspire-info.ps1](scripts/gather-aspire-info.ps1). It performs the full deterministic detection sequence in one pass and prints `key=value` lines plus a human-readable summary, so you can branch on the result instead of parsing raw `find`/`grep` output.
 
 **bash:**
 ```bash
-./scripts/detect-aspire.sh [workspace-root]
+./scripts/gather-aspire-info.sh [workspace-root]
 ```
 
 **PowerShell:**
 ```powershell
-./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
+./scripts/gather-aspire-info.ps1 -WorkspaceRoot <workspace-root>
 ```
 
 `workspace-root` defaults to the current directory. The script reports these fields:
@@ -56,7 +56,7 @@ If `isAspire=false`, this is not an Aspire app — continue with the normal reci
 
 ### ⛔ Step 1a: Pre-Check for Custom/Non-Deployable Resources (MANDATORY)
 
-**Before running `azd init --from-code`, understand whether the app may contain local-only custom resources.** The detection script from Step 1 already reports this as the `hasExcludeFromManifest` field — no separate scan is needed.
+**Before running `azd init --from-code`, understand whether the app may contain local-only custom resources.** The `gather-aspire-info` run from Step 1 already reports this as the `hasExcludeFromManifest` field — no separate scan is needed.
 
 - `hasExcludeFromManifest=true` → the AppHost source uses `.ExcludeFromManifest()`.
 - `hasExcludeFromManifest=false` → no such usage was found.
@@ -177,16 +177,16 @@ This step **MUST** run BEFORE `azd up` or `azd provision`. Skipping it causes a 
 
 **1. Detect Azure Functions in the AppHost:**
 
-Use the `hasFunctions` field from the Step 1 detection script. If you have not run it yet (or the workspace changed), re-run it:
+Use the `hasFunctions` field from the Step 1 `gather-aspire-info` run. If you have not run it yet (or the workspace changed), re-run it:
 
 **bash:**
 ```bash
-./scripts/detect-aspire.sh [workspace-root]
+./scripts/gather-aspire-info.sh [workspace-root]
 ```
 
 **PowerShell:**
 ```powershell
-./scripts/detect-aspire.ps1 -WorkspaceRoot <workspace-root>
+./scripts/gather-aspire-info.ps1 -WorkspaceRoot <workspace-root>
 ```
 
 **If `hasFunctions=false` → skip this step.**

@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
 # detect-aspire.sh
-# Detects whether a workspace is a .NET Aspire application and gathers the
-# facts the azure-prepare skill needs to plan deployment.
+# Presence check: determines whether a workspace is a .NET Aspire application.
+# Use this at detection/routing points where you only need a yes/no answer.
+# To gather the deeper deployment facts (ExcludeFromManifest, Azure Functions,
+# secret storage, AppHost source dir), use gather-aspire-info.sh instead.
 #
-# It runs the full deterministic detection sequence in one pass:
+# It runs the minimal deterministic presence sequence:
 #   1. Find the AppHost project (*.AppHost.csproj)
 #   2. Confirm Aspire.Hosting or Aspire.AppHost.Sdk package references
-#   3. Derive the AppHost source directory
-#   4. Scan the AppHost *.cs for ExcludeFromManifest (informational)
-#   5. Scan for AddAzureFunctionsProject, and if present, check whether
-#      AzureWebJobsSecretStorageType is already configured
 #
-# Output: key=value lines the agent can branch on, followed by a human-readable
-# summary. The remediation decision (whether/how to add
-# .WithEnvironment("AzureWebJobsSecretStorageType", "Files")) stays with the agent.
+# Output: key=value lines (isAspire, appHostPath) followed by a short
+# human-readable summary.
 #
 # Usage:
 #   ./detect-aspire.sh [workspace-root]
@@ -49,21 +46,9 @@ csproj_match() {
     [ -n "$(find "$dir" -type f -name '*.csproj' -exec grep -lE "$pattern" {} + 2>/dev/null)" ]
 }
 
-# Portable recursive match over *.cs files, pruning bin/ and obj/ build output.
-# Returns 0 if the extended-regex pattern is found in any *.cs under the directory.
-cs_match() {
-    local dir="$1" pattern="$2"
-    [ -n "$(find "$dir" -type d \( -name bin -o -name obj \) -prune -o \
-        -type f -name '*.cs' -exec grep -lE "$pattern" {} + 2>/dev/null)" ]
-}
-
 # Defaults (emitted when the workspace is not an Aspire app)
 IS_ASPIRE="false"
 APPHOST_PATH=""
-APPHOST_DIR=""
-HAS_EXCLUDE_FROM_MANIFEST="false"
-HAS_FUNCTIONS="false"
-SECRET_STORAGE_CONFIGURED="false"
 
 # Step 1: Find the AppHost project (case-insensitive sort for deterministic,
 # cross-shell-consistent selection)
@@ -81,32 +66,11 @@ fi
 
 if [ -n "$APPHOST_RAW" ]; then
     APPHOST_PATH=$(to_relative "$APPHOST_RAW")
-
-    # Step 3: Derive the AppHost source directory (scan the real path on disk)
-    APPHOST_DIR=$(dirname "$APPHOST_PATH")
-    APPHOST_DIR_RAW=$(dirname "$APPHOST_RAW")
-
-    # Step 4: Scan the AppHost source for ExcludeFromManifest (informational)
-    if cs_match "$APPHOST_DIR_RAW" "ExcludeFromManifest"; then
-        HAS_EXCLUDE_FROM_MANIFEST="true"
-    fi
-
-    # Step 5: Detect Azure Functions and secret-storage configuration
-    if cs_match "$APPHOST_DIR_RAW" "AddAzureFunctionsProject"; then
-        HAS_FUNCTIONS="true"
-        if cs_match "$APPHOST_DIR_RAW" "AzureWebJobsSecretStorageType"; then
-            SECRET_STORAGE_CONFIGURED="true"
-        fi
-    fi
 fi
 
 # Machine-readable result
 echo "isAspire=$IS_ASPIRE"
 echo "appHostPath=$APPHOST_PATH"
-echo "appHostDir=$APPHOST_DIR"
-echo "hasExcludeFromManifest=$HAS_EXCLUDE_FROM_MANIFEST"
-echo "hasFunctions=$HAS_FUNCTIONS"
-echo "secretStorageConfigured=$SECRET_STORAGE_CONFIGURED"
 
 # Human-readable summary
 echo ""
@@ -118,23 +82,7 @@ fi
 
 if [ -n "$APPHOST_PATH" ]; then
     echo "- .NET Aspire app detected. AppHost project: $APPHOST_PATH"
-    echo "- AppHost source directory: $APPHOST_DIR"
 else
     echo "- Aspire.Hosting / Aspire.AppHost.Sdk package reference found, but no *.AppHost.csproj was located."
 fi
-
-if [ "$HAS_EXCLUDE_FROM_MANIFEST" = "true" ]; then
-    echo "- ExcludeFromManifest found in AppHost source (informational): the app may contain local-only resources."
-else
-    echo "- No ExcludeFromManifest usage found in AppHost source."
-fi
-
-if [ "$HAS_FUNCTIONS" = "true" ]; then
-    if [ "$SECRET_STORAGE_CONFIGURED" = "true" ]; then
-        echo "- AddAzureFunctionsProject found; AzureWebJobsSecretStorageType is configured in the AppHost source."
-    else
-        echo "- AddAzureFunctionsProject found; AzureWebJobsSecretStorageType is not configured in the AppHost source."
-    fi
-else
-    echo "- AddAzureFunctionsProject not found in AppHost source."
-fi
+echo "- Run gather-aspire-info.sh for AppHost source dir, ExcludeFromManifest, and Azure Functions details."

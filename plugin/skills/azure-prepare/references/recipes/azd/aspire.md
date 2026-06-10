@@ -2,6 +2,8 @@
 
 **⛔ MANDATORY: For .NET Aspire projects, NEVER manually create azure.yaml. Use `azd init --from-code` instead.**
 
+> 📋 **Gather facts first:** Run [gather-aspire-info.sh](../../scripts/gather-aspire-info.sh) / [gather-aspire-info.ps1](../../scripts/gather-aspire-info.ps1) to capture the `appHostPath`, `hasExcludeFromManifest`, and Azure Functions signals before generating anything. See [aspire.md](../../aspire.md) Step 1 for the full field list.
+
 ## Workflow
 
 ### ⛔ DO NOT (Wrong Approach)

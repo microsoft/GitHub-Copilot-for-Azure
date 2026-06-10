@@ -1,20 +1,17 @@
 <#
 .SYNOPSIS
-    Detects whether a workspace is a .NET Aspire application and gathers the
-    facts the azure-prepare skill needs to plan deployment.
+    Presence check: determines whether a workspace is a .NET Aspire application.
+    Use this at detection/routing points where you only need a yes/no answer.
+    To gather the deeper deployment facts (ExcludeFromManifest, Azure Functions,
+    secret storage, AppHost source dir), use gather-aspire-info.ps1 instead.
 
 .DESCRIPTION
-    Runs the full deterministic detection sequence in one pass:
+    Runs the minimal deterministic presence sequence:
       1. Find the AppHost project (*.AppHost.csproj)
       2. Confirm Aspire.Hosting or Aspire.AppHost.Sdk package references
-      3. Derive the AppHost source directory
-      4. Scan the AppHost *.cs for ExcludeFromManifest (informational)
-      5. Scan for AddAzureFunctionsProject, and if present, check whether
-         AzureWebJobsSecretStorageType is already configured
 
-    Output: key=value lines the agent can branch on, followed by a
-    human-readable summary. The remediation decision (whether/how to add
-    .WithEnvironment("AzureWebJobsSecretStorageType", "Files")) stays with the agent.
+    Output: key=value lines (isAspire, appHostPath) followed by a short
+    human-readable summary.
 
 .PARAMETER WorkspaceRoot
     Workspace root directory to scan. Defaults to the current directory.
@@ -42,10 +39,6 @@ if (-not (Test-Path -LiteralPath $WorkspaceRoot -PathType Container)) {
 # Defaults (emitted when the workspace is not an Aspire app)
 $isAspire = $false
 $appHostPath = ""
-$appHostDir = ""
-$hasExcludeFromManifest = $false
-$hasFunctions = $false
-$secretStorageConfigured = $false
 
 # Step 1: Find the AppHost project (sorted for deterministic selection)
 $appHostProject = @(Get-ChildItem -LiteralPath $WorkspaceRoot -Recurse -Filter "*.AppHost.csproj" -File -ErrorAction SilentlyContinue |
@@ -72,27 +65,6 @@ if ($appHostProject) {
     } finally {
         Pop-Location
     }
-
-    # Step 3: Derive the AppHost source directory
-    $appHostDir = $appHostPath -replace '/[^/]+$', ''
-    $appHostDirFull = $appHostProject.DirectoryName
-
-    # Scan AppHost *.cs, excluding bin/ and obj/ build output
-    $appHostCs = Get-ChildItem -LiteralPath $appHostDirFull -Recurse -Filter "*.cs" -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
-
-    # Step 4: Scan the AppHost source for ExcludeFromManifest (informational)
-    if ($appHostCs -and ($appHostCs | Select-String -Pattern "ExcludeFromManifest" -SimpleMatch -List -ErrorAction SilentlyContinue)) {
-        $hasExcludeFromManifest = $true
-    }
-
-    # Step 5: Detect Azure Functions and secret-storage configuration
-    if ($appHostCs -and ($appHostCs | Select-String -Pattern "AddAzureFunctionsProject" -SimpleMatch -List -ErrorAction SilentlyContinue)) {
-        $hasFunctions = $true
-        if ($appHostCs | Select-String -Pattern "AzureWebJobsSecretStorageType" -SimpleMatch -List -ErrorAction SilentlyContinue) {
-            $secretStorageConfigured = $true
-        }
-    }
 }
 
 function ConvertTo-Lower([bool]$value) {
@@ -102,10 +74,6 @@ function ConvertTo-Lower([bool]$value) {
 # Machine-readable result
 Write-Output "isAspire=$(ConvertTo-Lower $isAspire)"
 Write-Output "appHostPath=$appHostPath"
-Write-Output "appHostDir=$appHostDir"
-Write-Output "hasExcludeFromManifest=$(ConvertTo-Lower $hasExcludeFromManifest)"
-Write-Output "hasFunctions=$(ConvertTo-Lower $hasFunctions)"
-Write-Output "secretStorageConfigured=$(ConvertTo-Lower $secretStorageConfigured)"
 
 # Human-readable summary
 Write-Output ""
@@ -117,23 +85,7 @@ if (-not $isAspire) {
 
 if ($appHostPath) {
     Write-Output "- .NET Aspire app detected. AppHost project: $appHostPath"
-    Write-Output "- AppHost source directory: $appHostDir"
 } else {
     Write-Output "- Aspire.Hosting / Aspire.AppHost.Sdk package reference found, but no *.AppHost.csproj was located."
 }
-
-if ($hasExcludeFromManifest) {
-    Write-Output "- ExcludeFromManifest found in AppHost source (informational): the app may contain local-only resources."
-} else {
-    Write-Output "- No ExcludeFromManifest usage found in AppHost source."
-}
-
-if ($hasFunctions) {
-    if ($secretStorageConfigured) {
-        Write-Output "- AddAzureFunctionsProject found; AzureWebJobsSecretStorageType is configured in the AppHost source."
-    } else {
-        Write-Output "- AddAzureFunctionsProject found; AzureWebJobsSecretStorageType is not configured in the AppHost source."
-    }
-} else {
-    Write-Output "- AddAzureFunctionsProject not found in AppHost source."
-}
+Write-Output "- Run gather-aspire-info.ps1 for AppHost source dir, ExcludeFromManifest, and Azure Functions details."
