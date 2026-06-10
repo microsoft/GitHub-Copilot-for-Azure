@@ -277,6 +277,7 @@ stimuli:
       Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly
 
       The new Foundry project and related resources must be created in the resource group specified by the FOUNDRY_E2E_EVAL_RG environment variable.
+      Always skip the "Auto-Generate Evaluation Suite" step after deployment.
     graders:
       - type: skill-invocation
         config:
