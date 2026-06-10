@@ -40,7 +40,8 @@ async function getData(request: HttpRequest, context: InvocationContext): Promis
         return { status: 400, body: "Missing date parameter" };
     }
 
-    const root = await enumerateBlobs(`${date}/`);
+    const container = request.query.get("container") || undefined;
+    const root = await enumerateBlobs(`${date}/`, container);
 
     return {
         status: 200,

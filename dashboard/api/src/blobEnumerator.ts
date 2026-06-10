@@ -2,7 +2,11 @@ import { BlobServiceClient, ContainerClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import type { BlobEntry, BlobTree, BlobTreeNode } from "./shared/blobTree";
 
-const INTEGRATION_REPORTS_CONTAINER_NAME = process.env.INTEGRATION_REPORTS_CONTAINER_NAME || "integration-reports";
+const DEFAULT_CONTAINER_NAME = "integration-reports";
+
+function resolveContainerName(override?: string): string {
+    return override || process.env.INTEGRATION_REPORTS_CONTAINER_NAME || DEFAULT_CONTAINER_NAME;
+}
 
 const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
 
@@ -122,20 +126,20 @@ export async function downloadBlobContent(containerClient: ContainerClient, blob
 
 // --- Integration-reports-specific wrappers ---
 
-export async function listDates(): Promise<string[]> {
-    return listDatePrefixes(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME));
+export async function listDates(containerName?: string): Promise<string[]> {
+    return listDatePrefixes(getContainerClient(resolveContainerName(containerName)));
 }
 
-export async function enumerateBlobs(prefix?: string): Promise<BlobTree> {
-    return enumerateBlobTree(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), prefix);
+export async function enumerateBlobs(prefix?: string, containerName?: string): Promise<BlobTree> {
+    return enumerateBlobTree(getContainerClient(resolveContainerName(containerName)), prefix);
 }
 
-export async function getBlobContent(blobPath: string): Promise<string> {
-    return downloadBlobContent(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
+export async function getBlobContent(blobPath: string, containerName?: string): Promise<string> {
+    return downloadBlobContent(getContainerClient(resolveContainerName(containerName)), blobPath);
 }
 
-export async function getBlobBuffer(blobPath: string): Promise<Buffer> {
-    return downloadBlobBuffer(getContainerClient(INTEGRATION_REPORTS_CONTAINER_NAME), blobPath);
+export async function getBlobBuffer(blobPath: string, containerName?: string): Promise<Buffer> {
+    return downloadBlobBuffer(getContainerClient(resolveContainerName(containerName)), blobPath);
 }
 
 const azureDeploySkillName = "azure-deploy";
