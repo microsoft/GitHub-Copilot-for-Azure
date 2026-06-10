@@ -20,11 +20,11 @@ az webapp config appsettings set \
 
 This tells Oryx to run `pip install -r requirements.txt` during deploy.
 
-## 2. Startup command — Flask, Django, FastAPI (3.14), or set it for FastAPI on <3.14
+## 2. Startup command — skip for Flask/Django, always set for FastAPI
 
-Azure App Service (Oryx) auto-detects **Flask**, **Django**, and **FastAPI on Python 3.14** — **do not set a startup command** for any of these. Skip this step entirely.
+Azure App Service (Oryx) auto-detects **Flask** and **Django** — **do not set a startup command** for these. Skip this step entirely.
 
-For **FastAPI on Python <3.14**, set the uvicorn startup command:
+For **FastAPI**, always set the uvicorn startup command, regardless of the Python runtime version. This skill does **not** rely on Oryx FastAPI auto-detection, so the behavior is identical on every supported runtime (3.12, 3.13, 3.14, …):
 
 ```bash
 az webapp config set -n <app> -g <rg> \
