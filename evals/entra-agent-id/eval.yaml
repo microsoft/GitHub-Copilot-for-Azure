@@ -326,10 +326,8 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── permission-grant-content ──
-  # Jest: "Permission grant prompt uses appRoleAssignments or oauth2PermissionGrants on the Agent Identity SP"
-  # Assertions: mentionsPerAgentPermissionGrant (appRoleAssignments | oauth2PermissionGrants)
   - name: "Permission grant content quality"
-    prompt: "Grant User.Read.All application permission to a specific Agent Identity service principal."
+    prompt: "How to grant User.Read.All application permission to a specific Agent Identity service principal?"
     # Original Jest test ran once. Override eval-level runs for content assertions.
     config:
       runs: 1
@@ -343,10 +341,10 @@ stimuli:
         config:
           required:
             - entra-agent-id
-      # mentionsPerAgentPermissionGrant: appRoleAssignments or oauth2PermissionGrants
+      # mentionsPerAgentPermissionGrant: appRoleAssignment or oauth2PermissionGrant
       - type: output-matches
         config:
-          pattern: "(?i)(appRoleAssignments|oauth2PermissionGrants)"
+          pattern: "(?i)(appRoleAssignment|oauth2PermissionGrant)"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
