@@ -69,6 +69,8 @@ az webapp deploy \
 
 After `az webapp deploy` returns, the skill is done.
 
+> ℹ️ `az webapp deploy` does **not** initiate a cold start by pinging the site. With `--track-status false`, it returns as soon as the SCM endpoint accepts the ZIP; the Oryx build and container restart happen asynchronously on the SCM side. The container only warms up when an inbound HTTP request actually hits `https://<app>.azurewebsites.net` — which is why the post-deploy message tells the user to expect a 2–3 minute wait on their first visit.
+
 > ⛔ **Do NOT run** `az webapp log tail`, `curl`, `Invoke-WebRequest`, `wget`, or any other "verify startup" command. App Service routinely needs **2–3 minutes** to warm the container; a quiet log stream or a 5xx in the first couple of minutes is **not** a failure signal, and running these probes here will mislead the user.
 
 Resolve the host name without hitting the site:

@@ -6,7 +6,9 @@ This skill creates resources only when they don't already exist. Always check fi
 
 ## 1. Resolve Azure context — minimize prompts
 
-**Goal: ask the user at most ONE question (the app name).** Everything else is derived or defaulted. Never ask the user for resource group name, app service plan name, region, or subscription unless an error forces it.
+**Goal: ask the user at most ONE question (the app name).** Everything else is derived or defaulted. Never *prompt* the user for resource group name, app service plan name, region, or subscription unless an error forces it.
+
+> 📌 **Honor user-supplied values.** The "one question" rule means *don't interrupt to prompt* — it does **not** mean ignore values the user already provided. If the user's initial request mentions an existing resource group, App Service Plan, region, or subscription (e.g., *"deploy to my-team-rg"*, *"use the prod-plan"*, *"in westus3"*), use those values verbatim and skip the corresponding derivation/default step. The idempotent `show || create` flow in §§2–4 already works correctly against existing resources — `az group show -n my-team-rg` will short-circuit creation if the RG exists. Only fall back to the derived defaults below for values the user did **not** supply.
 
 ### 1a. Subscription
 ```bash
@@ -29,16 +31,19 @@ If empty / "any" / "you choose":
 
 Example: folder `my-flask-app/`, GUID `a3f9c1d2-...` → `my-flask-app-a3f9c1d2`.
 
-### 1c. Derived names (NEVER ask)
+### 1c. Derived names (use only when user did not specify)
+If the user provided an RG or Plan name, use that. Otherwise default to:
+
 | Resource | Default |
 |---|---|
 | Resource group | `<app-name>-rg` |
 | App Service Plan | `<app-name>-plan` |
 
-### 1d. Region (NEVER ask unless forced)
-1. `az config get defaults.location -o tsv 2>/dev/null` (bash/zsh) or `az config get defaults.location -o tsv 2>$null` (PowerShell) → use it if set.
-2. Else default to `eastus2`.
-3. Only call `ask_user` if `az group create` later fails with a region/quota/availability error.
+### 1d. Region (use user-supplied value if given; otherwise never ask unless forced)
+1. If the user already specified a region in their request, use it.
+2. Else `az config get defaults.location -o tsv 2>/dev/null` (bash/zsh) or `az config get defaults.location -o tsv 2>$null` (PowerShell) → use it if set.
+3. Else default to `eastus2`.
+4. Only call `ask_user` if `az group create` later fails with a region/quota/availability error.
 
 ### 1e. Show the defaults summary BEFORE creating
 Output a single concise block so the user sees exactly what will be created and can override before resources are made:
