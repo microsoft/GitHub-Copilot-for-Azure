@@ -118,8 +118,19 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ### Step 6: Next Steps
 
-- Deploy an agent → `agent/deploy` skill
-- Browse models → `foundry_models_list` MCP tool
+> **Next — azd Golden Path:** create a hosted agent with [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md). For headless / scripted flows, **pre-bootstrap the workspace with core `azd init`** so subscription + location are populated before model resolution runs:
+>
+> ```bash
+> azd init -t Azure-Samples/azd-ai-starter-basic . -e <env-name> --subscription <id> -l <region>
+> azd ai agent init -m <manifest-url> --no-prompt --deploy-mode code --runtime python_3_13 --entry-point main.py
+> ```
+>
+> Core `azd init` accepts `--subscription` and `-l/--location`; `azd ai agent init` does not. `azd ai agent init` then resolves the model from the chosen sample's manifest and writes it into `azure.yaml services.<name>.config.deployments[]`; the next `azd provision` creates the deployment through Bicep. **You do not need to deploy a model separately for this path** — no `az cognitiveservices` calls, no `azd env set AI_PROJECT_DEPLOYMENTS`.
+>
+> Use [models/deploy-model](../../models/deploy-model/SKILL.md) **only** for out-of-band scenarios: adding models to a Foundry project that is not managed by this azd project, or ad-hoc deployments outside the azd lifecycle.
+
+- Deploy an existing agent → [foundry-agent/deploy/deploy.md](../../foundry-agent/deploy/deploy.md)
+- Browse model catalog → `foundry_models_list` MCP tool
 - Manage project → https://ai.azure.com
 
 ## Best Practices
