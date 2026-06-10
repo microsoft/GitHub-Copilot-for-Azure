@@ -159,6 +159,25 @@ Full recipes (GitHub MCP, Azure AI Search, A2A, Bing Custom) in [tools](referenc
 
 Once local invocation succeeds, tell the user the agent is ready and ask if they want to deploy. Read [deploy/deploy.md](../deploy/deploy.md).
 
+## Expected env-var fingerprint (post-provision)
+
+After `azd provision` completes for an `azd ai agent`-scaffolded project (default Basic Agent Setup), `azd env get-values` should show this canonical state. Verify before debugging deployment or runtime issues.
+
+| Variable | Expected value | Notes |
+|----------|----------------|-------|
+| `ENABLE_HOSTED_AGENTS` | `true` | Set automatically by `azd ai agent init`. |
+| `ENABLE_CAPABILITY_HOST` | `false` | Set automatically by `azd ai agent init`. Leave as-is unless you are intentionally targeting Standard Agent Setup. |
+| `FOUNDRY_PROJECT_ENDPOINT` | `https://<account>.services.ai.azure.com/api/projects/<project>` | Populated by provision (or pre-set if reusing an existing project). |
+| `AZURE_AI_PROJECT_ID` | Full ARM resource ID of the Foundry project | Populated by provision; required for deploy. |
+| `AZURE_AI_MODEL_DEPLOYMENT_NAME` | Model deployment name (e.g. `gpt-4o`) | Required for local run and deploy. |
+| `AI_AGENT_PENDING_PROVISION` | *(empty / unset)* | Non-empty means provision is still mid-flight; do not deploy. |
+
+`Microsoft.CognitiveServices/accounts/capabilityHosts/agents` is **not** provisioned by `azd ai agent init` (Basic Agent Setup). Its absence is expected. The resource only appears under Standard Agent Setup, which is documented separately in [references/standard-agent-setup.md](../../references/standard-agent-setup.md).
+
+Both `ENABLE_HOSTED_AGENTS` and `ENABLE_CAPABILITY_HOST` are set automatically by `azd ai agent init` — you do not need to manage them. If you ever set them manually outside this flow, see [project/create/create-foundry-project.md](../../project/create/create-foundry-project.md#step-3-create-directory-and-initialize) for the manual-flag procedure.
+
+See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variables.md](https://github.com/Azure/azure-dev/blob/main/cli/azd/docs/environment-variables.md).
+
 ## Common Guidelines
 
 1. **Sample-first** -- always get `manifestUrl` from `azd ai agent sample list`.

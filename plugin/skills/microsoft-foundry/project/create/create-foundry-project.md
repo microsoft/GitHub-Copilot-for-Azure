@@ -9,7 +9,7 @@ allowed-tools: Read, Write, Bash, AskUserQuestion
 
 # Create Azure AI Foundry Project
 
-Create a new Azure AI Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted agents (capability host + Container Registry).
+Create a new Azure AI Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted-agent deployment (adds an Azure Container Registry, and — only when the **Standard Setup** capability-host flag is also enabled — a `capabilityHosts/agents` resource).
 
 **Table of Contents:** [Prerequisites](#prerequisites) · [Workflow](#workflow) · [Best Practices](#best-practices) · [Troubleshooting](#troubleshooting) · [Related Skills](#related-skills) · [Resources](#resources)
 
@@ -67,7 +67,7 @@ Collect only values the user has not already provided. For values not specified,
    - Show the generated name to the user before proceeding, but do not block on confirmation — proceed unless the user objects.
    - Examples: `ai-project-3f8a1b2c`, `my-ai-project`, `dev-agents`
 2. **Azure location** (optional) — defaults to North Central US (required for hosted agents preview)
-3. **Enable hosted agents?** (yes/no) — provisions a capability host and Container Registry for deploying hosted agents. Defaults to no.
+3. **Enable hosted agents?** (yes/no) — enables hosted-agent deployment and provisions an Azure Container Registry. A capability host (`capabilityHosts/agents`, used by Foundry's **Standard Agent Setup** for bring-your-own storage) is also created only when `ENABLE_CAPABILITY_HOST=true`. Defaults to no. See [Step 3](#step-3-create-directory-and-initialize) for how the two flags interact.
 
 ### Step 3: Create Directory and Initialize
 
@@ -91,9 +91,14 @@ If user chose to enable hosted agents:
 
 ```bash
 azd env set ENABLE_HOSTED_AGENTS true
+azd env set ENABLE_CAPABILITY_HOST false
 ```
 
-This provisions a capability host (`capabilityHosts/agents`) on the Foundry account and auto-adds an Azure Container Registry for hosted agent deployments.
+`ENABLE_HOSTED_AGENTS=true` enables hosted-agent deployment and creates an Azure Container Registry for the container image. A capability host (`capabilityHosts/agents`, used by Foundry's **Standard Agent Setup** for bring-your-own storage) is **also** created only when `ENABLE_CAPABILITY_HOST=true`. The default `azd ai agent` flow targets **Basic Agent Setup**, so it sets `ENABLE_CAPABILITY_HOST=false` automatically. The two flags are independent.
+
+> ⚠️ **Warning:** The Bicep template parameter `enableCapabilityHost` defaults to `true`. If you set `ENABLE_HOSTED_AGENTS` by hand without also setting `ENABLE_CAPABILITY_HOST=false`, you will accidentally provision Standard Setup (with the capability host). Use `azd ai agent init` to set both flags correctly.
+
+See the canonical env-var docs: [azure-dev/cli/azd/docs/environment-variables.md](https://github.com/Azure/azure-dev/blob/main/cli/azd/docs/environment-variables.md).
 
 ### Step 4: Provision Infrastructure
 
@@ -101,7 +106,7 @@ This provisions a capability host (`capabilityHosts/agents`) on the Foundry acco
 azd provision --no-prompt
 ```
 
-Takes 5–10 minutes. Creates resource group, Foundry account/project, Application Insights, managed identity, and RBAC roles. If hosted agents enabled, also creates Container Registry and capability host.
+Takes 5–10 minutes. Creates resource group, Foundry account/project, Application Insights, managed identity, and RBAC roles. If `ENABLE_HOSTED_AGENTS=true`, also creates an Azure Container Registry. A `capabilityHosts/agents` resource is created **only** when `ENABLE_CAPABILITY_HOST=true` (Standard Setup); the default Basic Setup uses `ENABLE_CAPABILITY_HOST=false` and no capability host is provisioned — its absence is correct.
 
 ### Step 5: Retrieve Project Details
 
