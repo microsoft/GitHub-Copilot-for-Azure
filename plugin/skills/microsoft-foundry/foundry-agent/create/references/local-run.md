@@ -9,7 +9,7 @@ Use this when iterating on a hosted agent before deploying.
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
 >
-> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
+> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent. When provisioning a new project, run `azd provision --no-prompt` in the background and prepare the local environment at the same time to save time.
 >
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
@@ -21,15 +21,20 @@ Use this when iterating on a hosted agent before deploying.
 
 ## Prepare the local environment
 
-For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
+For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one.
 
 1. `cd` into the service source directory.
 2. Create a venv, for example `python -m venv .venv`.
 3. Activate the venv.
 4. Install `uv` inside the active venv: `python -m pip install uv`.
-5. In the same shell with the service-dir `.venv` activated, run `azd ai agent run` (from any cwd in the project); it installs `requirements.txt` itself and uses `uv` from the active venv for faster Python dependency installation.
+5. In the same shell with the service-dir `.venv` activated, install dependencies yourself:
+   ```bash
+   uv pip install --prerelease=allow -r requirements.txt
+   ```
 
-> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Install `uv` before running `azd ai agent run`, and keep that venv activated when running the command; otherwise the local run falls back to slower dependency installation. Do NOT manually run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
+> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Keep that venv activated when running `azd ai agent run`. `--prerelease=allow` is required because Foundry/agent packages can be prerelease packages.
+>
+> **New-project gate:** Only if this local-run flow started background `azd provision` because no project endpoint was available, wait for that `azd provision` to complete before moving to [Start the agent locally](#start-the-agent-locally).
 
 ## Start the agent locally
 
@@ -41,9 +46,8 @@ What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
 2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
-3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
-4. Starts the agent in the foreground on `localhost:8088` (default).
-5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
+3. Starts the agent in the foreground on `localhost:8088` (default).
+4. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 
 > First startup takes 30-60 seconds. Wait before sending the first invocation.
 

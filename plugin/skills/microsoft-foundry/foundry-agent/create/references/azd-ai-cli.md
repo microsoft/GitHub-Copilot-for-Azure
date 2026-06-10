@@ -93,7 +93,7 @@ services:
           cpu: "0.5"
           memory: "1Gi"
       deployments:
-        - name: AZURE_AI_MODEL_DEPLOYMENT_NAME
+        - name: <deployment-name>
           model:
             name: gpt-4.1-mini
             format: OpenAI
@@ -107,7 +107,7 @@ services:
 
 - `startupCommand` -- what `azd ai agent run` executes locally. Auto-detected at init.
 - `config.container.resources` -- deployment-time CPU/memory. Keep this aligned with `agent.yaml resources`; this value can override the agent file.
-- `deployments[]` -- model deployments provisioned via Bicep. `name` is the env var the agent reads.
+- `deployments[]` -- model deployments provisioned via Bicep. `name` is the concrete Azure deployment resource name, usually the same as the selected model name unless the user supplied a separate deployment name.
 - `connections[]` -- project connections provisioned via Bicep. Use `PARAM_<CONN>_<KEY>` env-var references for secrets.
 - `toolboxes[]` -- declarative record of intent; today you still drive the toolbox CLI to materialize them on Foundry. See [tools](tools.md).
 

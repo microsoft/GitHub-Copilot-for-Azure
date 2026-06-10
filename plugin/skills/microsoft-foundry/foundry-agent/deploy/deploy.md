@@ -54,7 +54,15 @@ If the user provided an existing project endpoint, project ARM ID, or model depl
 azd env set AZURE_AI_PROJECT_ENDPOINT "<project-endpoint>"
 azd env set AZURE_AI_PROJECT_ID "<project-arm-id>"
 azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<model-deployment-name>"
+azd env set AZURE_TENANT_ID "<tenant-id>"
 azd env get-values
+```
+
+Resolve `AZURE_TENANT_ID` before the first deploy when it is missing:
+
+```bash
+az account show --query tenantId -o tsv
+azd env set AZURE_TENANT_ID "<tenant-id-from-az-account-show>"
 ```
 
 Run:
@@ -86,8 +94,11 @@ What this does:
 - Creates project connections declared in `azure.yaml services.<name>.config.connections[]`. `${PARAM_*}` placeholders resolve from the active azd env.
 - Wires model deployments, AI Search, ACR, etc. `infra/layers/` provision in parallel when present.
 
+Model deployments are created during this `azd provision` step from `azure.yaml services.<service>.config.deployments[]`. In each deployment item, `name:` must be the concrete Azure model deployment resource name, usually the selected model name unless the user supplied a separate deployment name. `AZURE_AI_MODEL_DEPLOYMENT_NAME` is only the environment variable key that the agent reads; do not use that literal string as the deployment resource name.
+
 This is a core `azd` command. Skip provision when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` via `azd env set` -- the extension uses the existing project as-is.
 
+After provision completes for a new project, run `azd env get-values` and set missing required azd env values, especially `AZURE_AI_PROJECT_ID` and `AZURE_TENANT_ID`, before local run or the first `azd deploy`.
 
 ### Step 3 -- Deploy the agent
 
@@ -118,12 +129,12 @@ azd ai agent show --output json
 Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Smoke-test:
 
 ```bash
-azd ai agent invoke "hello, are you up?" --output json
+azd ai agent invoke "hello, are you up?"
 ```
 
 > `azd ai agent invoke` is billed, so it prints a confirmation envelope on `--no-prompt`. Summarize `changes[]`, then run `confirmCommand` once consented.
 
-Anything other than a `completed` response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
+Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 
 ### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 
@@ -184,6 +195,7 @@ Each env has its own `AGENT_<SVC>_*` vars.
 | Agent version poll times out | Build still running; retry `azd ai agent show` after a minute. |
 | `session_not_ready` (424) | Cold start or readiness delay. Wait 15-30 seconds and retry. If persistent, use `1` CPU / `2Gi` memory minimum, verify the model deployment name, capability host, and agent identity role. |
 | `invalid value "json" for --output` from `azd ai agent invoke` | Invoke supports only `default` and `raw` currently. Retry without `--output json`. |
+| Model deployment was created as `AZURE_AI_MODEL_DEPLOYMENT_NAME` | `azure.yaml services.<service>.config.deployments[].name` was set to the env var key instead of a concrete deployment name. Change deployment `name:` and azd env `AZURE_AI_MODEL_DEPLOYMENT_NAME` to the real deployment name (usually the model name), then rerun provision/deploy as needed. |
 | `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. Use the service name, update `agent.yaml`, or invoke through the Foundry MCP `agent_invoke` tool. |
 | `subscription quota exceeded` | Ask user to request quota; do not auto-retry. |
 | Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
