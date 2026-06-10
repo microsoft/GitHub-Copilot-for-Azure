@@ -7,16 +7,16 @@ on:
         description: "Target PR number (optional)"
         required: false
         type: string
-      report-in-pr:
-        description: "Post report to target PR"
-        required: false
-        default: true
-        type: boolean
       runs:
         description: "Number of Vally trials per stimulus"
         required: false
         default: 1
         type: number
+      report-in-pr:
+        description: "Post report to target PR"
+        required: false
+        default: true
+        type: boolean
 
 permissions: {}
 
