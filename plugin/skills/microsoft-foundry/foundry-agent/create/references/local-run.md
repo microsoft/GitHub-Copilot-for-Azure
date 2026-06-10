@@ -9,7 +9,9 @@ Use this when iterating on a hosted agent before deploying.
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
 >
-> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent. When provisioning a new project, run `azd provision --no-prompt` in the background and prepare the local environment at the same time to save time.
+> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
+>
+> **New project local-run optimization:** do not wait on `azd provision --no-prompt` before preparing Python dependencies. Start `azd provision --no-prompt` from the azd project root in a background terminal/session, keep its handle, and immediately continue with [Prepare the local environment](#prepare-the-local-environment). Do not run a long foreground `azd provision --no-prompt 2>&1` tool call before venv/`uv` setup.
 >
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
@@ -34,9 +36,11 @@ For Python agents, prepare the environment from the **agent's service source dir
 
 > **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Keep that venv activated when running `azd ai agent run`. `--prerelease=allow` is required because Foundry/agent packages can be prerelease packages.
 >
-> **New-project gate:** Only if this local-run flow started background `azd provision` because no project endpoint was available, wait for that `azd provision` to complete before moving to [Start the agent locally](#start-the-agent-locally).
+> **New-project gate:** Only if this local-run flow started background `azd provision` because no project endpoint was available, do the venv/`uv` install while provision is still running. After dependency install finishes, wait for `azd provision` to complete, run `azd env get-values`, set any missing required azd env values, then create/update `.env` and move to [Start the agent locally](#start-the-agent-locally).
 
 ## Start the agent locally
+
+Activate the service-dir `.venv`, then in that venv run:
 
 ```bash
 azd ai agent run
