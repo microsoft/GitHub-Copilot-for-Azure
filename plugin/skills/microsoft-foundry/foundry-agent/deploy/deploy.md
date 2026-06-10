@@ -54,15 +54,7 @@ If the user provided an existing project endpoint, project ARM ID, or model depl
 azd env set AZURE_AI_PROJECT_ENDPOINT "<project-endpoint>"
 azd env set AZURE_AI_PROJECT_ID "<project-arm-id>"
 azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<model-deployment-name>"
-azd env set AZURE_TENANT_ID "<tenant-id>"
 azd env get-values
-```
-
-Resolve `AZURE_TENANT_ID` before the first deploy when it is missing:
-
-```bash
-az account show --query tenantId -o tsv
-azd env set AZURE_TENANT_ID "<tenant-id-from-az-account-show>"
 ```
 
 Run:

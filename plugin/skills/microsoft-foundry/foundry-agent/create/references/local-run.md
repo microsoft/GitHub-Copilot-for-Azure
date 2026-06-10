@@ -29,12 +29,12 @@ For Python agents, prepare the environment from the **agent's service source dir
 2. Create a venv, for example `python -m venv .venv`.
 3. Activate the venv.
 4. Install `uv` inside the active venv: `python -m pip install uv`.
-5. In the same shell with the service-dir `.venv` activated, install dependencies yourself:
+5. In the same shell with the service-dir `.venv` activated, install dependencies:
    ```bash
    uv pip install --prerelease=allow -r requirements.txt
    ```
 
-> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Keep that venv activated when running `azd ai agent run`. `--prerelease=allow` is required because Foundry/agent packages can be prerelease packages.
+> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. `--prerelease=allow` is required because Foundry/agent packages can be prerelease packages.
 >
 > **New-project gate:** Only if this local-run flow started background `azd provision` because no project endpoint was available, do the venv/`uv` install while provision is still running. After dependency install finishes, wait for `azd provision` to complete, run `azd env get-values`, set any missing required azd env values, then create/update `.env` and move to [Start the agent locally](#start-the-agent-locally).
 
