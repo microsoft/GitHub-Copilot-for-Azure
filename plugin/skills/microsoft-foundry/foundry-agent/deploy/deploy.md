@@ -88,6 +88,7 @@ What this does:
 
 This is a core `azd` command. Skip provision when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` via `azd env set` -- the extension uses the existing project as-is.
 
+After provision completes for a new project, run `azd env get-values` and set missing required azd env values, especially `AZURE_AI_PROJECT_ID` and `AZURE_TENANT_ID`, before local run or the first `azd deploy`.
 
 ### Step 3 -- Deploy the agent
 
@@ -118,12 +119,12 @@ azd ai agent show --output json
 Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Smoke-test:
 
 ```bash
-azd ai agent invoke "hello, are you up?" --output json
+azd ai agent invoke "hello, are you up?"
 ```
 
 > `azd ai agent invoke` is billed, so it prints a confirmation envelope on `--no-prompt`. Summarize `changes[]`, then run `confirmCommand` once consented.
 
-Anything other than a `completed` response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
+Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 
 ### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
 

@@ -11,6 +11,8 @@ Use this when iterating on a hosted agent before deploying.
 >
 > **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
 >
+> **New project local-run optimization:** when no project endpoint is available, start `azd provision --no-prompt` first, before creating a venv, installing `uv`, or doing any other local environment setup. Start it from the azd project root in a background terminal/session, keep its handle, and only after confirming it started continue with [Prepare the local environment](#prepare-the-local-environment) while provision is running. On Windows the background process must be hidden/headless (for example `Start-Process ... -WindowStyle Hidden`) and must not open a visible PowerShell/cmd/terminal window. Do not run a long foreground `azd provision --no-prompt 2>&1` tool call before venv/`uv` setup.
+>
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
 > azd env set FOUNDRY_PROJECT_ENDPOINT "https://<account>.services.ai.azure.com/api/projects/<project>"
@@ -21,17 +23,24 @@ Use this when iterating on a hosted agent before deploying.
 
 ## Prepare the local environment
 
-For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
+For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one.
 
 1. `cd` into the service source directory.
 2. Create a venv, for example `python -m venv .venv`.
 3. Activate the venv.
 4. Install `uv` inside the active venv: `python -m pip install uv`.
-5. In the same shell with the service-dir `.venv` activated, run `azd ai agent run` (from any cwd in the project); it installs `requirements.txt` itself and uses `uv` from the active venv for faster Python dependency installation.
+5. In the same shell with the service-dir `.venv` activated, install dependencies:
+   ```bash
+   uv pip install --prerelease=allow -r requirements.txt
+   ```
 
-> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. Install `uv` before running `azd ai agent run`, and keep that venv activated when running the command; otherwise the local run falls back to slower dependency installation. Do NOT manually run `pip install -r requirements.txt` / `uv pip install -r requirements.txt --prerelease=allow`; let `azd ai agent run` install dependencies.
+> **Important:** The venv must live next to `requirements.txt`, not in the azd project root. `--prerelease=allow` is required because Foundry/agent packages can be prerelease packages.
+>
+> **New-project gate:** Only if this local-run flow started background `azd provision` because no project endpoint was available, do the venv/`uv` install while provision is still running. After dependency install finishes, wait for `azd provision` to complete, run `azd env get-values`, set any missing required azd env values, then create/update `.env` and move to [Start the agent locally](#start-the-agent-locally).
 
 ## Start the agent locally
+
+Activate the service-dir `.venv`, then in that venv run:
 
 ```bash
 azd ai agent run
@@ -41,9 +50,8 @@ What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
 2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
-3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
-4. Starts the agent in the foreground on `localhost:8088` (default).
-5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
+3. Starts the agent in the foreground on `localhost:8088` (default).
+4. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 
 > First startup takes 30-60 seconds. Wait before sending the first invocation.
 

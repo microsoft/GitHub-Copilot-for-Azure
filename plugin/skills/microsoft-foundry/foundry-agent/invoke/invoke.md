@@ -69,6 +69,8 @@ Use `azd ai agent show --output json` only when you need structured status, vers
 
 If `azd ai agent invoke` returns a `confirmation_required` envelope, summarize the change and proceed only when the user already requested remote invocation or explicitly consents. Prefer the returned `confirmCommand` over inventing flags. If azd cannot resolve the service or agent name, fall back to the MCP workflow below with the resolved `projectEndpoint` and `agentName`.
 
+For a post-deploy smoke test, invoke once unless the user explicitly asked to validate multi-turn/session behavior. If that single invoke returns a successful response, the smoke test passes;
+
 ### Step 3: Create Session (Hosted Agents)
 
 For hosted agents, create a session before invoking using `session_create` with `projectEndpoint` and `agentName`. Optionally provide a `sessionId` (must match `^[A-Za-z0-9_-]{8,128}$`). Store the returned `sessionId` for subsequent calls.
