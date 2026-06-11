@@ -2,7 +2,7 @@
 
 This skill creates resources only when they don't already exist. Always check first.
 
-> 💡 **Shell note**: The idempotency checks in §§2–4 below use `2>/dev/null` (bash/zsh — Linux, macOS). On **PowerShell** (Windows), replace `2>/dev/null` with `2>$null` wherever it appears.
+> 💡 **Shell note**: Code blocks below use bash syntax (`\` line continuation, `||`, `2>/dev/null`, `$(…)`). PowerShell equivalents are shown alongside where the bash form doesn't round-trip — substitute `` ` `` for `\`, `2>$null` for `2>/dev/null`, and `$LASTEXITCODE`-checks for `||`.
 
 ## 1. Resolve Azure context — minimize prompts
 
@@ -88,6 +88,10 @@ If any `az ... create` in §§2–4 fails with a connection-level or 429/5xx err
 az group show -n <rg> --only-show-errors 2>/dev/null || \
   az group create -n <rg> -l <region>
 ```
+```powershell
+az group show -n <rg> --only-show-errors 2>$null
+if ($LASTEXITCODE -ne 0) { az group create -n <rg> -l <region> }
+```
 
 ## 3. App Service Plan — **Linux, P0v3 by default**
 
@@ -102,6 +106,17 @@ az appservice plan show -n <plan> -g <rg> --only-show-errors 2>/dev/null || \
     --sku P0v3 \
     -l <region>
 ```
+```powershell
+az appservice plan show -n <plan> -g <rg> --only-show-errors 2>$null
+if ($LASTEXITCODE -ne 0) {
+  az appservice plan create `
+    -n <plan> `
+    -g <rg> `
+    --is-linux `
+    --sku P0v3 `
+    -l <region>
+}
+```
 
 ## 4. Web App — Python 3.14 runtime (Linux)
 
@@ -115,10 +130,23 @@ az webapp show -n <app> -g <rg> --only-show-errors 2>/dev/null || \
     -p <plan> \
     --runtime "PYTHON:3.14"
 ```
+```powershell
+az webapp show -n <app> -g <rg> --only-show-errors 2>$null
+if ($LASTEXITCODE -ne 0) {
+  az webapp create `
+    -n <app> `
+    -g <rg> `
+    -p <plan> `
+    --runtime "PYTHON:3.14"
+}
+```
 
 > 💡 **Optional flag (newer CLI only)**: If `az webapp create --help` lists `--domain-name-scope`, you may append `--domain-name-scope TenantReuse` so the default `<app>.azurewebsites.net` hostname only needs to be unique within your Entra tenant. This flag was added to `az webapp create` in **July 2025** (Azure CLI ≥ 2.76). On older CLIs it produces `unrecognized arguments` and the create fails — so the skill omits it by default and relies on the 8-hex-char GUID suffix in §1b for collision avoidance. If you want to use it, gate it on a capability check:
 > ```bash
 > if az webapp create --help 2>&1 | grep -q -- '--domain-name-scope'; then DNS_FLAG="--domain-name-scope TenantReuse"; else DNS_FLAG=""; fi
+> ```
+> ```powershell
+> $dnsFlag = if ((az webapp create --help 2>&1 | Out-String) -match '--domain-name-scope') { '--domain-name-scope TenantReuse' } else { '' }
 > ```
 
 ### Discover available runtimes

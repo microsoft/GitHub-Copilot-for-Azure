@@ -68,6 +68,10 @@ Replace `<module>:<callable>` with the user's actual entry point (e.g. `app:app`
 > az webapp log config -n <app> -g <rg> \
 >   --application-logging filesystem --web-server-logging filesystem --level information
 > ```
+> ```powershell
+> az webapp log config -n <app> -g <rg> `
+>   --application-logging filesystem --web-server-logging filesystem --level information
+> ```
 >
 > Deployment-build logs do **not** require this — read them with `az webapp log deployment list/show`.
 

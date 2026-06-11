@@ -17,6 +17,11 @@ az webapp config appsettings set \
   -n <app> -g <rg> \
   --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
 ```
+```powershell
+az webapp config appsettings set `
+  -n <app> -g <rg> `
+  --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true
+```
 
 This tells Oryx to run `pip install -r requirements.txt` during deploy.
 
@@ -28,6 +33,10 @@ For **FastAPI**, always set the uvicorn startup command, regardless of the Pytho
 
 ```bash
 az webapp config set -n <app> -g <rg> \
+  --startup-file "python -m uvicorn main:app --host 0.0.0.0"
+```
+```powershell
+az webapp config set -n <app> -g <rg> `
   --startup-file "python -m uvicorn main:app --host 0.0.0.0"
 ```
 
@@ -62,6 +71,13 @@ az webapp deploy \
   --type zip \
   --track-status false
 ```
+```powershell
+az webapp deploy `
+  -n <app> -g <rg> `
+  --src-path app.zip `
+  --type zip `
+  --track-status false
+```
 
 > 💡 `--track-status false` returns once the ZIP is **accepted by the SCM endpoint** — this is **not** the same as "Oryx build succeeded". The server-side `pip install` / startup-command rendering happens asynchronously after the CLI returns. A zero exit code only confirms the upload + a deployment record. If the site never starts, inspect the build outcome via `az webapp log deployment list/show` — that is the only authoritative confirmation that the build itself succeeded.
 
@@ -78,6 +94,10 @@ Resolve the host name without hitting the site:
 ```bash
 HOST=$(az webapp show -n <app> -g <rg> --query defaultHostName -o tsv)
 echo "https://$HOST"
+```
+```powershell
+$host_ = az webapp show -n <app> -g <rg> --query defaultHostName -o tsv
+"https://$host_"
 ```
 
 Then print the post-deploy message from [post-deploy-message.md](post-deploy-message.md) and end the turn. The user will run `az webapp log tail -n <app> -g <rg>` themselves if they want to watch logs.

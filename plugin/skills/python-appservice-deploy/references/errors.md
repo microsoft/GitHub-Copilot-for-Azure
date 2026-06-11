@@ -38,6 +38,12 @@ Deploy failed?
 >   --web-server-logging filesystem \
 >   --level information
 > ```
+> ```powershell
+> az webapp log config -n <app> -g <rg> `
+>   --application-logging filesystem `
+>   --web-server-logging filesystem `
+>   --level information
+> ```
 >
 > `az webapp log deployment list/show` and `az webapp log download` do **not** require this — they read from a different store.
 

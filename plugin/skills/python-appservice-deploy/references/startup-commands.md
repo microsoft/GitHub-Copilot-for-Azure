@@ -23,6 +23,10 @@ The skill sets the startup command unconditionally for FastAPI, regardless of th
 az webapp config set -n <app> -g <rg> \
   --startup-file "python -m uvicorn main:app --host 0.0.0.0"
 ```
+```powershell
+az webapp config set -n <app> -g <rg> `
+  --startup-file "python -m uvicorn main:app --host 0.0.0.0"
+```
 
 Replace `main:app` with the discovered entry point if different (e.g., `app.main:app`, `src.api:app`). The `--host 0.0.0.0` flag is mandatory — uvicorn defaults to 127.0.0.1, which causes App Service container-ping timeouts.
 
@@ -40,11 +44,19 @@ When the detected framework is `wsgi-generic`, `asgi-generic`, or `unknown`, **d
 az webapp config set -n <app> -g <rg> \
   --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 <module>:<callable>"
 ```
+```powershell
+az webapp config set -n <app> -g <rg> `
+  --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 <module>:<callable>"
+```
 
 ### Generic ASGI
 
 ```bash
 az webapp config set -n <app> -g <rg> \
+  --startup-file "python -m uvicorn <module>:<callable> --host 0.0.0.0 --port 8000"
+```
+```powershell
+az webapp config set -n <app> -g <rg> `
   --startup-file "python -m uvicorn <module>:<callable> --host 0.0.0.0 --port 8000"
 ```
 
@@ -54,6 +66,10 @@ Oryx auto-detection covers the standard Django layout. Set this manually **only*
 
 ```bash
 az webapp config set -n <app> -g <rg> \
+  --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 <project>.wsgi"
+```
+```powershell
+az webapp config set -n <app> -g <rg> `
   --startup-file "gunicorn --bind=0.0.0.0 --timeout 600 <project>.wsgi"
 ```
 

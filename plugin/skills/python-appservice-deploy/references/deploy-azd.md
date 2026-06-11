@@ -16,6 +16,10 @@ Use this path when the workspace already has an `azure.yaml` whose service host 
 # Look for `host: appservice` under services in azure.yaml
 grep -E "host:\s*appservice" azure.yaml
 ```
+```powershell
+# Look for `host: appservice` under services in azure.yaml
+Select-String -Path azure.yaml -Pattern 'host:\s*appservice'
+```
 
 If no match → use the az CLI path.
 
@@ -23,6 +27,10 @@ If no match → use the az CLI path.
 
 ```bash
 azd auth login --check-status || azd auth login
+```
+```powershell
+azd auth login --check-status
+if ($LASTEXITCODE -ne 0) { azd auth login }
 ```
 
 ## Provision (first time only)
