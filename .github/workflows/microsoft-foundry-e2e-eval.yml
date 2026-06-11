@@ -87,6 +87,24 @@ jobs:
           tenant-id: ${{ secrets.FOUNDRY_E2E_EVAL_AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.FOUNDRY_E2E_EVAL_AZURE_SUBSCRIPTION_ID }}
 
+      # azure/login only fetches the OIDC access token once.
+      # If the eval runs long enough and the token expires, later Azure CLI or azd calls can fail with authentication errors.
+      # This refreshes the cached OIDC access token periodically so the long-running Foundry E2E eval has a valid token.
+      # Learn more at https://github.com/Azure/login/issues/372
+      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
+      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
+      - name: Fetch OIDC token every 240 seconds
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.FOUNDRY_E2E_EVAL_AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.FOUNDRY_E2E_EVAL_AZURE_TENANT_ID }}
+        run: |
+          while true; do
+            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
+            az login --service-principal -u "$AZURE_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$token" --output none
+            sleep 240
+          done &
+
       - name: Check Azure CLI login
         shell: bash
         run: |
