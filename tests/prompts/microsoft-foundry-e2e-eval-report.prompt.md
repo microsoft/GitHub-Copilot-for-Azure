@@ -2,41 +2,80 @@
 
 You are generating the final Markdown report for a Microsoft Foundry E2E Vally evaluation workflow.
 
-Create the report as a Markdown file at the path specified by the `REPORT_MD` environment variable. Create parent directories if needed. Do not print the report to stdout; write the complete report to `REPORT_MD`. After writing and verifying the file, the final chat response should only say `Report written to <path>`.
+## Overall Guidance
 
-In CI, Vally writes `eval-results.md` and `results.jsonl` under `tests/results/<run-timestamp>/`; the CI runner uses the same repository-relative path. Find the latest `tests/results/<run-timestamp>/results.jsonl`, then use the `eval-results.md` in the same directory. Analyze `results.jsonl` directly. Do not invent numbers.
+Create the report as a Markdown file at the path specified by the `REPORT_MD` environment variable. Create parent directories if needed. Do not print the report to stdout; write the complete report to `REPORT_MD`. After writing and verifying the file, the final chat response should only say `Report written to ` followed by the report path.
+
+In CI, Vally writes `eval-results.md` and `results.jsonl` under a timestamped subdirectory of `tests/results/`; the CI runner uses the same repository-relative path. Find the latest `results.jsonl` under `tests/results/`, then use the `eval-results.md` in the same directory. Analyze `results.jsonl` directly. Do not invent numbers.
 
 Only read existing result files in the current working directory and write the final Markdown file to `REPORT_MD`. Do not scan sibling repositories or user directories. Do not run Vally, tests, package install commands, deployment commands, `azd`, `git`, or any command that creates a new evaluation run. Do not create or modify any file except `REPORT_MD` and its parent directory.
 
-Required output:
-
-1. Start with `# Microsoft Foundry E2E Evaluation Report`.
-2. The first section must be `## Golden Path Result`. Highlight only Golden Path evaluation results. Summarize the Golden Path pass/fail outcome, number of Golden Path trials, and any failed Golden Path stimulus names if present. Do not summarize non-Golden Path stimuli here.
-3. The second section must be `## Golden Path Time Cost`.
-4. The third section must be `## Golden Path Token Cost`.
-5. The fourth section must be `## Download`.
-6. The final section must be `## Raw Results` and must include the `eval-results.md` content. Keep its table content intact. If the source content starts with `## Eval Results`, omit that source heading so `## Raw Results` remains the final top-level report section.
-7. The report file must contain Markdown only. Do not wrap the report in a code fence. Do not include raw event logs.
-8. Use normal Markdown pipe tables, not terminal box-drawing tables.
-9. Do not include preamble, progress narration, or stage notes in the report.
-10. Before finishing, verify that `REPORT_MD` exists and contains all required sections.
-
-## Golden Path Filtering
+The report file must contain Markdown only. Do not wrap the report in a code fence. Use normal Markdown pipe tables, not terminal box-drawing tables. Do not include preamble, progress narration, raw event logs, or free-form stage notes outside the requested sections.
 
 Only analyze test records in `results.jsonl` where `trajectory.stimulus.name` starts with `Golden Path`. Ignore all other stimuli and ignore the final `run-summary` record.
 
-If there are multiple Golden Path trials, calculate averages across those trials. If there is only one trial, report that single trial value as the average.
+## Output Report Structure
 
-## Time Cost Analysis Guideline
+The output report must use this section order:
 
-Runtime is measured from when Copilot starts processing the prompt until Copilot emits its final output:
+1. `# Microsoft Foundry E2E Evaluation Report`
+2. `## Golden Path Result`
+3. `## Golden Path Time Cost`
+4. `## Golden Path Token Cost`
+5. `## Download`
+6. `## Raw Results`
 
-- Timing begins at the first `user_message` event for the trial.
-- Timing ends at the last `assistant_message` event for the trial.
+Do not add other top-level sections. Do not create a `## Links` section. The schemas below show the required shape and example formatting; calculate the actual values from the input files.
+
+## Section: Golden Path Result
+
+Purpose: highlight the Golden Path result first, without mixing in non-Golden Path stimuli.
+
+Guidance:
+
+- Include only Golden Path trials.
+- Report the overall Golden Path outcome as `PASS` only if every Golden Path trial passed; otherwise report `FAIL`.
+- Add one table row per Golden Path trial, in chronological trial order.
+- Use `-` in `Notes` for passed trials. For failed trials, keep the note short and based on the eval result.
+
+Schema example:
+
+```markdown
+# Microsoft Foundry E2E Evaluation Report
+
+## Golden Path Result
+
+**Outcome:** PASS
+
+**Golden Path trials analyzed:** 2
+
+**Passed:** 2
+
+**Failed:** 0
+
+| Run | Stimulus | Result | Notes |
+|---|---|---|---|
+| Run 1 | Golden Path - create and deploy Foundry agent | PASS | - |
+| Run 2 | Golden Path - create and deploy Foundry agent | PASS | - |
+```
+
+## Section: Golden Path Time Cost
+
+Purpose: show Golden Path runtime first as an overall average, then as per-run stage timing.
+
+Guidance:
+
+- Runtime is measured from the first `user_message` event to the last `assistant_message` event for each Golden Path trial.
+- `Total average runtime` must equal the average of the per-run `Total` row values.
 - Report time in `x min Y s` format. Round seconds to an integer. If shorter than 1 minute, report only `Y s`.
 - Always include spaces before units: use `54 s`, not `54s`; use `22 min 45 s`, not `22 min 45s`.
-
-Use the event timeline and event content semantically to divide each Golden Path trial into these stages. Do not rely on one exact tool name or one exact command string; identify the phase by what the agent is doing in the chronological event stream.
+- Use the event timeline and event content semantically to divide each Golden Path trial into stages. Do not rely on one exact tool name or one exact command string.
+- If there is only one Golden Path trial, use the single-trial schema with `Stage` and `Average` columns. Do not use a `Run 1` column.
+- If there are multiple Golden Path trials, use one `Run N` column per Golden Path trial. Do not add an `Average` column.
+- Always include the final `Total` row.
+- Use `N/A` when a stage did not happen in that trial.
+- If `Install package` runs in parallel with `Foundry resources creation` or `azd provision`, do not double-count the overlapped install duration in the run total. Put only the install stage's critical-path contribution in the `Install package` cell, and include the overlapped install duration in parentheses.
+- Do not put a separate note below the table for parallel install. The parallel marker belongs in the table cell.
 
 Main stages:
 
@@ -50,38 +89,120 @@ Main stages:
 - Eval suite
 - Final Output
 
-In the `Golden Path Time Cost` section, include:
+Parallel install examples:
 
-- The number of Golden Path trials analyzed.
-- The total average runtime first.
-- If there is only one Golden Path trial, report only the average values. Use a table with columns `Stage` and `Average`; do not use a `Run 1` column.
-- If there are multiple Golden Path trials, include one table for per-trial time cost:
-  - First column: stage name.
-  - One column per trial/run.
-  - Rows are the main stages above, in the same order.
-  - Each cell is that trial's duration for that stage.
-  - Use `N/A` when a stage did not happen in that trial.
-  - Do not add `Average` or `Total` columns or rows to the per-trial table.
+- Fully overlapped install: `0 (1 min 30 s, in parallel with azd provision)`
+- Partially overlapped install: `20 s (1 min 10 s, in parallel with azd provision)`
 
+Single-trial schema example:
+
+```markdown
+## Golden Path Time Cost
+
+1 Golden Path trials analyzed.
+
+**Total average runtime:** 15 min 43 s
+
+| Stage | Average |
+|---|---:|
+| Collect prerequisite info for agent creation | 54 s |
+| Scaffold agent code and customize for B2B | 1 min 13 s |
+| Foundry resources creation | 1 min 30 s |
+| Install package | 0 (1 min 30 s, in parallel with azd provision) |
+| Test agent locally | 4 min 50 s |
+| Deploy agent to Foundry | 1 min 50 s |
+| Test agent by remote invocation | 4 min 54 s |
+| Eval suite | N/A |
+| Final Output | 12 s |
+| Total | 15 min 43 s |
+```
+
+Multi-trial schema example:
+
+```markdown
+## Golden Path Time Cost
+
+2 Golden Path trials analyzed.
+
+**Total average runtime:** 16 min 7 s
+
+| Stage | Run 1 | Run 2 |
+|---|---:|---:|
+| Collect prerequisite info for agent creation | 55 s | 4 min 33 s |
+| Scaffold agent code and customize for B2B | 1 min 13 s | 3 min 1 s |
+| Foundry resources creation | 1 min 30 s | 1 min 50 s |
+| Install package | 0 (1 min 24 s, in parallel with azd provision) | 0 (1 min 45 s, in parallel with azd provision) |
+| Test agent locally | 4 min 50 s | 3 min 38 s |
+| Deploy agent to Foundry | 1 min 50 s | 2 min 55 s |
+| Test agent by remote invocation | 4 min 54 s | 36 s |
+| Eval suite | N/A | 5 s |
+| Final Output | 12 s | 13 s |
+| Total | 15 min 43 s | 16 min 31 s |
+```
+
+## Section: Golden Path Token Cost
+
+Purpose: show average token usage for Golden Path trials only.
+
+Guidance:
+
+- Calculate token usage from `trajectory.metrics.tokenUsage` when present.
+- If that aggregate is missing, sum token usage from token usage events.
+- Average across Golden Path trials only.
+- Input cache rate is average `cacheReadTokens` divided by average input tokens.
+- Round token counts to integers and format them with thousands separators.
+- Format input cache rate as a percentage with one decimal place.
+
+Schema example:
+
+```markdown
 ## Golden Path Token Cost
 
-For each Golden Path trial, calculate token usage from `trajectory.metrics.tokenUsage` when present. If that aggregate is missing, sum token usage from token usage events.
+2 Golden Path trials analyzed.
 
-Report average token usage across Golden Path trials:
+| Metric | Average |
+|---|---:|
+| Input tokens | 120,000 |
+| cacheReadTokens | 30,000 |
+| Input cache rate | 25.0% |
+| Output tokens | 8,000 |
+| Total tokens | 128,000 |
+```
 
-- Input tokens
-- cacheReadTokens
-- Input cache rate, calculated as average cacheReadTokens divided by average input tokens
-- Output tokens
-- Total tokens
+## Section: Download
 
-Round token counts to integers and format them with thousands separators. Format input cache rate as a percentage with one decimal place.
+Purpose: provide the Vally artifact download link using the existing workflow style.
 
+Guidance:
+
+- If the `ARTIFACT_URL` environment variable is available and non-empty, include exactly `[Download Vally results artifact](${ARTIFACT_URL})`.
+- If `ARTIFACT_URL` is missing or empty, include exactly `Vally results artifact URL is unavailable.`
+- Do not include workflow links here.
+
+Schema example:
+
+```markdown
 ## Download
 
-Use this exact `## Download` section format:
+[Download Vally results artifact](https://example.com/artifact)
+```
 
-- If the `ARTIFACT_URL` environment variable is available and non-empty, include `[Download Vally results artifact](${ARTIFACT_URL})`.
-- If `ARTIFACT_URL` is missing or empty, include `Vally results artifact URL is unavailable.`
+## Section: Raw Results
 
-Do not create a `## Links` section.
+Purpose: keep the original Vally summary available, but put it last so Golden Path analysis is emphasized first.
+
+Guidance:
+
+- Include the full `eval-results.md` content.
+- Keep its table content intact.
+- If the source content starts with `## Eval Results`, omit that source heading so `## Raw Results` remains the final top-level report section.
+
+Schema example:
+
+```markdown
+## Raw Results
+
+The original eval-results.md content goes here, without its leading "## Eval Results" heading.
+```
+
+Before finishing, verify that `REPORT_MD` exists and contains all required report sections.
