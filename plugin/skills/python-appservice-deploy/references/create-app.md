@@ -22,14 +22,22 @@ az account show --query id -o tsv
 Ask the user **once**:
 > "What name would you like for your App Service? (Press Enter to auto-generate one.)"
 
-If empty / "any" / "you choose":
-- Take the current working folder name, lowercase it, replace non-`[a-z0-9]` with `-`, collapse repeats, trim hyphens.
-- Generate a new GUID (PowerShell: `[guid]::NewGuid().ToString()`, Bash: `uuidgen | tr '[:upper:]' '[:lower:]'`).
-- Take the **first 8 hex chars** of the GUID (segment before the first `-`): `<slug>-<8-hex-chars>`.
-- Truncate the slug so total length ≤ 40 chars.
-- Must match `^[a-z][a-z0-9-]{1,38}[a-z0-9]$`.
+If empty / "any" / "you choose", **call the generator script** instead of generating the name inline — the scripts implement the slug rules (lowercase, hyphen-collapse, ≤ 40 chars, leading-letter, `^[a-z][a-z0-9-]{1,38}[a-z0-9]$`) and 8-hex-char GUID suffix in one step:
 
-Example: folder `my-flask-app/`, GUID `a3f9c1d2-...` → `my-flask-app-a3f9c1d2`.
+- Bash / zsh (Linux, macOS): [`scripts/generate-app-name.sh`](../scripts/generate-app-name.sh)
+  ```bash
+  APP_NAME=$(./scripts/generate-app-name.sh)
+  # or pass an explicit folder name:
+  # APP_NAME=$(./scripts/generate-app-name.sh my-flask-app)
+  ```
+- PowerShell (Windows): [`scripts/generate-app-name.ps1`](../scripts/generate-app-name.ps1)
+  ```powershell
+  $appName = & .\scripts\generate-app-name.ps1
+  # or pass an explicit folder name:
+  # $appName = & .\scripts\generate-app-name.ps1 -FolderName "my-flask-app"
+  ```
+
+Example output: folder `my-flask-app/` → `my-flask-app-a3f9c1d2`.
 
 ### 1c. Derived names (use only when user did not specify)
 If the user provided an RG or Plan name, use that. Otherwise default to:
@@ -41,12 +49,20 @@ If the user provided an RG or Plan name, use that. Otherwise default to:
 
 ### 1d. Region (use user-supplied value if given; otherwise never ask unless forced)
 1. If the user already specified a region in their request, use it.
-2. Else `az config get defaults.location -o tsv 2>/dev/null` (bash/zsh) or `az config get defaults.location -o tsv 2>$null` (PowerShell) → use it if set.
+2. Else read the CLI default with `az config get defaults.location -o tsv`. If the exit code is non-zero (no default set), treat as "unset" and continue. If you want to suppress the "Configuration <key> is not set" stderr line for cleanliness, redirect **only when the exit code is also checked** — never blindly drop stderr, since it would also swallow auth or transport errors. A safe pattern:
+   ```bash
+   REGION=$(az config get defaults.location -o tsv 2>/dev/null) || REGION=""
+   ```
+   ```powershell
+   $region = az config get defaults.location -o tsv 2>$null; if ($LASTEXITCODE -ne 0) { $region = "" }
+   ```
 3. Else default to `eastus2`.
 4. Only call `ask_user` if `az group create` later fails with a region/quota/availability error.
 
 ### 1e. Show the defaults summary BEFORE creating
-Output a single concise block so the user sees exactly what will be created and can override before resources are made:
+Output a single concise block so the user sees exactly what will be created and can override before resources are made.
+
+**Example** (substitute the actual values you derived above — these are illustrative, not a literal template to print verbatim):
 
 ```
 Using these defaults for your Python App Service deployment:
@@ -71,19 +87,24 @@ ARM `PUT` operations (`az group create`, `az appservice plan create`, `az webapp
 - Apply to every `az ... create` in this skill (§§2–4); retry **silently** (do not narrate "let me retry").
 - Up to **2 retries** (3 attempts total); wait **5s** before retry #1 and **15s** before retry #2. If the error carries a `Retry-After` header, honour that value instead.
 - **Wrap the full idempotent pair** `(az ... show ...) || (az ... create ...)` — never the bare `create`. The `show` short-circuits any partially-succeeded prior attempt and avoids false `Conflict` / `NameAlreadyExists`.
-- **Retry only** when stderr matches the `TRANSIENT` regex below. Do **NOT** retry on `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, or any non-429 4xx. After 3 failed attempts, surface the original error with one line of context (e.g., "ARM frontend is returning transient errors — please retry in a few minutes").
+- **Retry only** when stderr matches the transient-error pattern (connection resets, 429/502/503/504, timeouts). Do **NOT** retry on `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, or any non-429 4xx. After 3 failed attempts, surface the original error with one line of context (e.g., "ARM frontend is returning transient errors — please retry in a few minutes").
 
-```bash
-TRANSIENT='Connection reset|Connection aborted|ConnectionError|Read timed out|BadGatewayConnection|ServiceUnavailable|Max retries exceeded|TooManyRequests|\b429\b|\b50[234]\b'
-for attempt in 1 2 3; do
-  if err=$({ <az-show-command> -o none 2>/dev/null || <az-create-command> -o none; } 2>&1); then break; fi
-  if ! echo "$err" | grep -qE "$TRANSIENT"; then echo "$err" >&2; exit 1; fi
-  [ $attempt -eq 3 ] && { echo "$err" >&2; exit 1; }
-  sleep $([ $attempt -eq 1 ] && echo 5 || echo 15)
-done
-```
+Both shells have a ready-to-call wrapper that implements the loop, the transient-error filter, and the backoff — prefer these over inlining the loop:
 
-**PowerShell adaptation:** replace `2>/dev/null` → `2>$null`; swap the loop for `for ($i=1; $i -le 3; $i++)`; use `$err -match $TRANSIENT` instead of `grep -qE`; use `Start-Sleep -Seconds (@(5,15)[$i-1])`. Same `TRANSIENT` regex.
+- Bash / zsh (Linux, macOS): [`scripts/retry-az-create.sh`](../scripts/retry-az-create.sh)
+  ```bash
+  ./scripts/retry-az-create.sh \
+      "az group show -n my-rg --only-show-errors" \
+      "az group create -n my-rg -l eastus2"
+  ```
+- PowerShell (Windows): [`scripts/retry-az-create.ps1`](../scripts/retry-az-create.ps1)
+  ```powershell
+  .\scripts\retry-az-create.ps1 `
+      -ShowCommand "az group show -n my-rg --only-show-errors" `
+      -CreateCommand "az group create -n my-rg -l eastus2"
+  ```
+
+Both scripts run the `show` command first, fall through to `create` on failure, and retry up to 2 times on transient errors only.
 
 ## 2. Resource Group
 

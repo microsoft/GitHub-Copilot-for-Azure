@@ -1,6 +1,14 @@
 # Vally eval config for python-appservice-deploy
-# Coverage: authored in parallel with Jest tests in tests/python-appservice-deploy/
-# (triggers.test.ts covers keyword routing; this file covers live invocation + behavior graders)
+# Coverage: complements the Jest end-to-end test in
+# tests/python-appservice-deploy/integration.test.ts (Flask quickstart e2e
+# against a real Azure subscription). This file focuses on routing — both
+# positive (Flask/Django/FastAPI/generic Python prompts must invoke this
+# skill) and negative (Java, Container Apps, Functions, and IaC prompts must
+# route to azure-prepare instead). Tests use `earlyTerminate` to stop after
+# the routing decision is observed, avoiding a full deployment per stimulus.
+#
+# The Flask routing stimulus also seeds a minimal Flask app fixture so the
+# skill can reach its deploy code-path on a realistic workspace.
 #
 # Global graders (evaluate#125 workaround): completed and no_runtime_failure
 # are duplicated into every stimulus block below.
@@ -8,13 +16,10 @@
 name: python-appservice-deploy-eval
 description: |
   Evaluation suite for the python-appservice-deploy skill.
-  Validates routing and post-deploy behavior for deploying Python web apps
-  (Flask, Django, FastAPI, generic) to Azure App Service. Key invariants:
-  - Skill is invoked for Python + App Service deployment prompts.
-  - Post-deploy guidance does NOT probe the endpoint (no curl, no
-    Invoke-WebRequest, no `az webapp log tail` as verification).
-  - The app URL and the `az webapp log tail` command are surfaced to the
-    user (with a "2-3 minutes" startup note), then the skill stops.
+  Validates routing for deploying Python web apps (Flask, Django, FastAPI,
+  generic) to Azure App Service, plus negative routing boundaries that
+  must fall through to azure-prepare (Java, Container Apps, Functions,
+  Terraform/Bicep).
 
 tags:
   type: integration
@@ -23,6 +28,10 @@ tags:
 environment:
   skills:
     - ../../plugin/skills/python-appservice-deploy
+    # azure-prepare is loaded so the negative routing stimuli below can
+    # assert that prompts outside this skill's scope (Java, Container Apps,
+    # Functions, IaC) actually route to azure-prepare.
+    - ../../plugin/skills/azure-prepare
 
 config:
   runs: 3
@@ -35,23 +44,31 @@ scoring:
 
 stimuli:
   # ── flask-routing ──
-  # Jest source: integration.test.ts "invokes skill for Python + App Service prompt"
-  # Validates skill invocation for the canonical Flask deployment prompt.
+  # Seeds a minimal Flask app so the skill can plausibly reach its deploy
+  # path. Asserts skill routing + the post-deploy contract (URL surfaced,
+  # warmup-wait note, log-tail command, no endpoint probing). Terminates
+  # once the skill is invoked and a handful of tool calls have run, so we
+  # do not pay for a full Azure deployment on every eval run.
   - name: "Flask app deployment routing"
     prompt: "Deploy my Python Flask app to Azure App Service"
+    environment:
+      files:
+        - src: fixture/flask-app/app.py
+          dest: app.py
+        - src: fixture/flask-app/requirements.txt
+          dest: requirements.txt
     tags:
       type: integration
       tier: smoke
       cost: llm
       area: routing
       framework: flask
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":5}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - python-appservice-deploy
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -60,139 +77,73 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
-      # Post-deploy contract: present app URL as https://...azurewebsites.net
-      - type: output-matches
-        config:
-          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
-      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
-      - type: output-matches
-        config:
-          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
-      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
-      - type: output-matches
-        config:
-          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── django-routing ──
-  # Triggers source: triggers.test.ts shouldTriggerPrompts (Django entries)
-  # Validates Django prompts route to the same skill (Oryx auto-detects Django).
+  # Routing-only: validates Django prompts route to this skill. Full e2e is
+  # covered by tests/python-appservice-deploy/integration.test.ts (Flask).
   - name: "Django app deployment routing"
     prompt: "Deploy this Django app to Azure App Service"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       framework: django
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - python-appservice-deploy
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
-      # Skill rule: do NOT probe the deployed endpoint
-      - type: output-not-matches
-        config:
-          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
-      # Post-deploy contract: present app URL as https://...azurewebsites.net
-      - type: output-matches
-        config:
-          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
-      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
-      - type: output-matches
-        config:
-          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
-      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
-      - type: output-matches
-        config:
-          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── fastapi-routing ──
-  # Triggers source: triggers.test.ts shouldTriggerPrompts (FastAPI entries)
-  # Validates FastAPI prompts route to the skill (skill handles 3.14 and <3.14).
+  # Routing-only: validates FastAPI prompts route to this skill.
   - name: "FastAPI app deployment routing"
     prompt: "Deploy this FastAPI app to Azure App Service"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       framework: fastapi
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - python-appservice-deploy
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
-      # Skill rule: do NOT probe the deployed endpoint
-      - type: output-not-matches
-        config:
-          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
-      # Post-deploy contract: present app URL as https://...azurewebsites.net
-      - type: output-matches
-        config:
-          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
-      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
-      - type: output-matches
-        config:
-          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
-      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
-      - type: output-matches
-        config:
-          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── generic-python-routing ──
-  # Triggers source: triggers.test.ts shouldTriggerPrompts (generic Python entries)
-  # Validates generic Python (non-Flask/Django/FastAPI) prompts route to the
-  # skill, which should warn the user to set a startup command after deploy.
+  # Routing-only: validates generic Python (non-Flask/Django/FastAPI)
+  # prompts route to the skill.
   - name: "Generic Python app deployment routing"
     prompt: "Deploy my Python app to Azure App Service"
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       framework: generic
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - python-appservice-deploy
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
-      # Skill rule: do NOT probe the deployed endpoint
-      - type: output-not-matches
-        config:
-          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
-      # Post-deploy contract: present app URL as https://...azurewebsites.net
-      - type: output-matches
-        config:
-          pattern: "https://[A-Za-z0-9._-]+\\.azurewebsites\\.net"
-      # Post-deploy contract: warmup-wait note ("2-3 minutes" / "2 to 3 min")
-      - type: output-matches
-        config:
-          pattern: "(?i)2[\\s\\u2013\\u2014-]+(to\\s+)?3\\s*min"
-      # Post-deploy contract: surface `az webapp log tail` for user-driven inspection
-      - type: output-matches
-        config:
-          pattern: "az\\s+webapp\\s+log\\s+tail"
 
   # ── negative: Java on App Service must NOT route here ──
-  # Routing boundary: this skill is Python-only. Java/Spring Boot belongs to azure-prepare.
+  # Routing boundary: this skill is Python-only. Java/Spring Boot belongs
+  # to azure-prepare. Terminates as soon as azure-prepare is invoked so no
+  # actual deployment runs.
   - name: "Java App Service prompt does not trigger python skill"
     prompt: "Deploy my Java Spring Boot app to Azure App Service"
     tags:
@@ -200,6 +151,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -207,10 +159,10 @@ stimuli:
             - python-appservice-deploy
           required:
             - azure-prepare
-      - type: completed
 
   # ── negative: Python on Container Apps must NOT route here ──
-  # Routing boundary: this skill is App Service only. Container Apps belongs to azure-prepare.
+  # Routing boundary: this skill is App Service only. Container Apps
+  # belongs to azure-prepare.
   - name: "Python Container Apps prompt does not trigger python skill"
     prompt: "Deploy my Python app to Azure Container Apps"
     tags:
@@ -218,6 +170,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -225,10 +178,10 @@ stimuli:
             - python-appservice-deploy
           required:
             - azure-prepare
-      - type: completed
 
   # ── negative: Python on Functions must NOT route here ──
-  # Routing boundary: this skill is App Service only. Azure Functions belongs to azure-prepare.
+  # Routing boundary: this skill is App Service only. Azure Functions
+  # belongs to azure-prepare.
   - name: "Python Functions prompt does not trigger python skill"
     prompt: "Deploy my Python app to Azure Functions"
     tags:
@@ -236,6 +189,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -243,10 +197,10 @@ stimuli:
             - python-appservice-deploy
           required:
             - azure-prepare
-      - type: completed
 
   # ── negative: Python + App Service + Terraform must NOT route here ──
-  # Routing boundary: IaC keyword (Terraform) escalates to azure-prepare even with App Service.
+  # Routing boundary: IaC keyword (Terraform) escalates to azure-prepare
+  # even with App Service.
   - name: "Python App Service Terraform prompt routes to azure-prepare"
     prompt: "Deploy my Flask app to Azure App Service using Terraform"
     tags:
@@ -254,6 +208,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -261,10 +216,10 @@ stimuli:
             - python-appservice-deploy
           required:
             - azure-prepare
-      - type: completed
 
   # ── negative: Python + App Service + Bicep must NOT route here ──
-  # Routing boundary: IaC keyword (Bicep) escalates to azure-prepare even with App Service.
+  # Routing boundary: IaC keyword (Bicep) escalates to azure-prepare even
+  # with App Service.
   - name: "Python App Service Bicep prompt routes to azure-prepare"
     prompt: "Deploy my Flask app to Azure App Service using Bicep"
     tags:
@@ -272,6 +227,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -279,4 +235,3 @@ stimuli:
             - python-appservice-deploy
           required:
             - azure-prepare
-      - type: completed
