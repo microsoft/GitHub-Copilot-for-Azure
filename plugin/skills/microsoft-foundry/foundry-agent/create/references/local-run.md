@@ -104,6 +104,8 @@ azd ai agent invoke --local "hello, are you up?"
 
 Do not use `--output json` with invoke. The invoke command supports `default` and `raw` output only.
 
+If the user did not explicitly specify a prompt, use `"hello, are you up"` for the local smoke test; only verify that the agent can return a response.
+
 Run one representative local invocation before deploying. If the local invocation returns a model `404` or wrong deployment error, check `azd env get-values` before changing code; stale azd env values are the most common cause.
 
 `--local` differs from a remote invoke in:
@@ -129,6 +131,8 @@ Local dev validates code shape; remote validates infra + identity + Foundry bind
 - You changed `agent.yaml` `model:`, `tools:`, `connections:`, or `protocols:`. Those only take effect on the deployed agent.
 - You need to test against real Foundry connections (search indexes, Bing, MCP, A2A) that have no local mock.
 - You are ready to publish a new immutable agent version.
+
+Before proceeding to deploy, clean up the local agent process.
 
 Next step -> [deploy/deploy.md](../../deploy/deploy.md).
 
