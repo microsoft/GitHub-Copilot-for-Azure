@@ -279,19 +279,20 @@ stimuli:
       Additional requirements:
       1. After `azd init`:
         (1) You must go to infra/core/ai/ai-project.bicep, and change
-        ```
-          var resourceToken = empty(resourceTokenSalt) 
-          ? uniqueString(subscription().id, resourceGroup().id, location, aiFoundryProjectName) 
-          : uniqueString(subscription().id, resourceGroup().id, location, resourceTokenSalt)
-        ```
-        to 
-        ```
-          var resourceToken = empty(resourceTokenSalt) 
-          ? uniqueString(subscription().id, resourceGroup().id, location, aiFoundryProjectName) 
-          : uniqueString(subscription().id, resourceGroup().id, location, aiFoundryProjectName, resourceTokenSalt)
-        ```
-        this is to add ai foundry project name to form the unique string.
-        (2) You must go to infra/core/ai/ai-project.bicep, and change guid(subscription().id, resourceGroup().id, principalId, '53ca6127-db72-4b80-b1b0-d745d6d5456d') to guid(subscription().id, resourceGroup().id, principalId, '53ca6127-db72-4b80-b1b0-d745d6d5456d', aiAccount::project.name). Need to add the project name to the guid to avoid collision when multiple projects are created in the same resource group.
+            ```
+              var resourceToken = empty(resourceTokenSalt) 
+              ? uniqueString(subscription().id, resourceGroup().id, location, aiFoundryProjectName) 
+              : uniqueString(subscription().id, resourceGroup().id, location, resourceTokenSalt)
+            ```
+            to 
+            ```
+              var resourceToken = empty(resourceTokenSalt) 
+              ? uniqueString(subscription().id, resourceGroup().id, location, aiFoundryProjectName) 
+              : uniqueString(subscription().id, resourceGroup().id, location, aiFoundryProjectName, resourceTokenSalt)
+            ```
+            This is to add ai foundry project name to form the unique string.
+        (2) You must go to infra/core/ai/ai-project.bicep, and change guid(subscription().id, resourceGroup().id, principalId, '53ca6127-db72-4b80-b1b0-d745d6d5456d') to guid(subscription().id, resourceGroup().id, principalId, '53ca6127-db72-4b80-b1b0-d745d6d5456d', aiAccount::project.name). 
+            This is to add the project name to the guid to avoid collision when multiple projects are created in the same resource group.
       
       2. The new Foundry project and related resources must be created in the resource group specified by the FOUNDRY_E2E_EVAL_RG environment variable.
     graders:
