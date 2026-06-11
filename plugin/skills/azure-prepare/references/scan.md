@@ -56,7 +56,7 @@ Before classifying components, grep dependency files for SDKs that require a spe
 
 ### .NET Aspire Detection
 
-Always check **.NET Aspire projects** by running the presence script ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)), which reports just `isAspire` and `appHostPath` so you can branch quickly. Once Aspire is confirmed, [aspire.md](aspire.md) gathers the deeper facts (`ExcludeFromManifest`, Azure Functions signals) via `gather-aspire-info`:
+_Always_ check **.NET Aspire projects** by running ([detect-aspire.sh](scripts/detect-aspire.sh) / [detect-aspire.ps1](scripts/detect-aspire.ps1)), which reports just `isAspire` and `appHostPath` so you can branch quickly. Once Aspire is confirmed, [aspire.md](aspire.md) gathers the deeper facts (`ExcludeFromManifest`, Azure Functions signals) via `gather-aspire-info`:
 
 **bash:**
 ```bash

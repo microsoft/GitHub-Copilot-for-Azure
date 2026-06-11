@@ -85,4 +85,4 @@ if [ -n "$APPHOST_PATH" ]; then
 else
     echo "- Aspire.Hosting / Aspire.AppHost.Sdk package reference found, but no *.AppHost.csproj was located."
 fi
-echo "- Run gather-aspire-info.sh for AppHost source dir, ExcludeFromManifest, and Azure Functions details."
+echo "- Run gather-aspire-info.sh to gather other essential deployment information."

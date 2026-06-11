@@ -88,4 +88,4 @@ if ($appHostPath) {
 } else {
     Write-Output "- Aspire.Hosting / Aspire.AppHost.Sdk package reference found, but no *.AppHost.csproj was located."
 }
-Write-Output "- Run gather-aspire-info.ps1 for AppHost source dir, ExcludeFromManifest, and Azure Functions details."
+Write-Output "- Run gather-aspire-info.ps1 to gather other essential deployment information."

@@ -19,7 +19,7 @@ Guidance for preparing .NET Aspire applications for Azure deployment.
 
 ### Step 1: Detection
 
-When scanning the codebase (per [scan.md](scan.md)), Aspire presence is established with `detect-aspire`. Once confirmed, gather the full set of facts by running [gather-aspire-info.sh](scripts/gather-aspire-info.sh) / [gather-aspire-info.ps1](scripts/gather-aspire-info.ps1). It performs the full deterministic detection sequence in one pass and prints `key=value` lines plus a human-readable summary, so you can branch on the result instead of parsing raw `find`/`grep` output.
+When scanning the codebase (per [scan.md](scan.md)), run [detect-aspire.sh](scripts/detect-aspire.sh)/[detect-aspire.ps1](scripts/detect-aspire.ps1) to determine if this is an Aspire application. Once confirmed, gather the full set of facts by running [gather-aspire-info.sh](scripts/gather-aspire-info.sh)/[gather-aspire-info.ps1](scripts/gather-aspire-info.ps1). It performs the full deterministic detection sequence in one pass and prints `key=value` lines plus a human-readable summary, so you can branch on the result instead of parsing raw `find`/`grep` output.
 
 **bash:**
 ```bash
