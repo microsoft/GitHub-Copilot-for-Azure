@@ -36,12 +36,9 @@ Subscription/regional limits that can be increased via support request.
 - ARM: `Microsoft.Compute/virtualMachines` → Quota: `standardDSv3Family`, `cores`, `virtualMachines`
 
 **Process**:
-1. Install extension: `az extension add --name quota`
-2. Discover quota names: `az quota list --scope /subscriptions/{id}/providers/{Provider}/locations/{region}`
-3. Check usage: `az quota usage show --resource-name {name} --scope ...`
-4. Check limit: `az quota show --resource-name {name} --scope ...`
-5. Calculate: Available = Limit - Current Usage
-6. If exceeded: Request increase via `az quota update`
+1. Discover quota names: `az quota list --scope /subscriptions/{id}/providers/{Provider}/locations/{region}` (or invoke the **azure-quotas** skill to map ARM types to quota names).
+2. Validate capacity with the [`check-quota`](#scripts) script — a single call returns limit, current usage, available capacity, total-after-deploy, and a status for every **supported** resource.
+3. If insufficient: Request increase via `az quota update`.
 
 **Unsupported Providers** (BadRequest error):
 
@@ -63,6 +60,40 @@ Not all providers support quota API. If `az quota list` fails with BadRequest, u
 - ❌ Microsoft.DocumentDB (Cosmos DB)
 - ✅ Microsoft.Compute, Microsoft.Network, Microsoft.App, Microsoft.Storage, Microsoft.MachineLearningServices
 
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| [`scripts/check-quota.sh`](../scripts/check-quota.sh) | Validate quota capacity for a planned deployment (bash) |
+| [`scripts/check-quota.ps1`](../scripts/check-quota.ps1) | Same (PowerShell) |
+
+Pass the region plus one `provider:quota-name:count` triple per resource you intend to deploy, where **`count` is the number of additional resources to deploy** — expressed in the quota's own unit: vCPUs for VM-family quotas (e.g. 3 additional × Standard_D4s_v3 = `12`), or instance count for count-based quotas like `StorageAccounts` or `ManagedEnvironmentCount`. The script installs the `quota` extension if needed, queries the limit and current usage for each **supported** provider, computes available capacity and total-after-deploy (`usage + count`), and prints a markdown checklist table plus an overall verdict — ready to paste into the [Provisioning Limit Checklist](plan-template.md). Providers the quota API rejects (`BadRequest`, e.g. Cosmos DB) are flagged "Unsupported — see docs"; handle those with the manual fallback above.
+
+**Example:**
+
+```bash
+./scripts/check-quota.sh eastus \
+  Microsoft.App:ManagedEnvironmentCount:1 \
+  Microsoft.Compute:standardDSv3Family:12 \
+  Microsoft.Storage:StorageAccounts:2
+```
+```powershell
+.\scripts\check-quota.ps1 -Region eastus -Resources `
+  "Microsoft.App:ManagedEnvironmentCount:1", `
+  "Microsoft.Compute:standardDSv3Family:12", `
+  "Microsoft.Storage:StorageAccounts:2"
+```
+
+**Sample output:**
+
+| Provider | Quota | Region | Limit | Usage | Need | Total After | Available | Status |
+|----------|-------|--------|-------|-------|------|-------------|-----------|--------|
+| Microsoft.App | ManagedEnvironmentCount | eastus | 50 | 8 | 1 | 9 | 42 | ✅ Within limit |
+| Microsoft.Compute | standardDSv3Family | eastus | 350 | 50 | 12 | 62 | 300 | ✅ Within limit |
+| Microsoft.Storage | StorageAccounts | eastus | 250 | 180 | 2 | 182 | 70 | ✅ Within limit |
+
+Overall: ✅ All resources within limits.
+
 ## Workflow
 
 **Phase 1: Identify & Check Hard Limits**
@@ -73,9 +104,7 @@ Not all providers support quota API. If `az quota list` fails with BadRequest, u
 
 **Phase 2: Check Quotas After Region Selection**
 1. Get customer subscription and region preference
-2. For each service/region, check quota:
-   - Use `az quota usage list` and `az quota show`
-   - Calculate available capacity
+2. Run the [`check-quota`](#scripts) script with one `provider:quota-name:count` triple per supported resource — it returns limit, usage, and available capacity in a single call. For unsupported providers, use the BadRequest fallback above.
 3. If quota exceeded: request increase or choose different region
 
 **Phase 3: Validate Region**
@@ -102,6 +131,8 @@ Not all providers support quota API. If `az quota list` fails with BadRequest, u
 | **Functions** | Timeout (Consumption): 10 min, Queue msg: 64KB | ✅ Check function apps quota | Provider: Microsoft.Web |
 
 ## CLI Reference
+
+> The supported-provider limit/usage checks below are wrapped by the [`check-quota`](#scripts) script — prefer the script for capacity validation. Use these commands directly for discovery or for manual/unsupported-provider handling.
 
 **Prerequisites**: `az extension add --name quota`
 
@@ -141,13 +172,11 @@ az quota update --resource-name {quota-name} --scope /subscriptions/{id}/provide
 
 **Phase 2 - Execution**:
 - Get subscription and region preference
-- **Must invoke azure-quotas skill** - Process ONE resource type at a time:
-  a. Try `az quota list` first (required)
-  b. If supported: Use `az quota usage show` and `az quota show`
-  c. If NOT supported (BadRequest): Use Resource Graph + service docs
-  d. Calculate available capacity
-  e. Document in checklist (no "_TBD_" entries allowed)
-  f. If insufficient: Request increase or change region
+- **Must invoke azure-quotas skill** to map ARM types to quota names (`az quota list`)
+- Run the [`check-quota`](#scripts) script with one `provider:quota-name:count` triple per supported resource — it populates the checklist (limit, usage, available, total-after-deploy, status) in a single call
+- For unsupported providers (BadRequest): use Resource Graph + service docs
+- Document every row in the checklist (no "_TBD_" entries allowed)
+- If insufficient: Request increase or change region
 
 **Phase 3 - Generate Artifacts**:
 - Only proceed after Phase 2 complete (all quotas validated)
@@ -229,72 +258,35 @@ Common quotas to check:
 
 # 3. Check Quotas for Customer's Selected Region (East US)
 
-# 3a. Cosmos DB - NOT SUPPORTED by quota API
+# 3a. Supported providers (Storage, Container Apps) - one script call
+# Discover quota names first if unknown (az quota list / azure-quotas skill),
+# then validate all supported resources at once:
+./scripts/check-quota.sh eastus \
+  Microsoft.Storage:StorageAccounts:2 \
+  Microsoft.App:ManagedEnvironmentCount:1 \
+  --subscription abc-123
+# Prints a checklist table + overall verdict (see Scripts section above).
+# Document as: "Fetched from: check-quota script"
+
+# 3b. Cosmos DB - NOT SUPPORTED by quota API (manual fallback)
 az quota list \
   --scope /subscriptions/abc-123/providers/Microsoft.DocumentDB/locations/eastus
 # Error: (BadRequest) Bad request
 
 # Fallback: Get current usage with Azure Resource Graph
-# Install extension first (if needed)
 az extension add --name resource-graph
-
 az graph query -q "resources | where type == 'microsoft.documentdb/databaseaccounts' and location == 'eastus' | count"
 # Result: 3 database accounts currently deployed
-
-# Or use Azure CLI resource list
-az resource list \
-  --subscription "abc-123" \
-  --resource-type "Microsoft.DocumentDB/databaseAccounts" \
-  --location "eastus" | jq 'length'
-# Result: 3
 
 # Get limit from documentation: 50 database accounts per region
 # Calculate: Available = 50 - 3 = 47 ✓
 # Document as: "Fetched from: Azure Resource Graph + Official docs"
 
-# 3b. Storage Accounts
-# Step 1: Discover resource name
-az quota list \
-  --scope /subscriptions/abc-123/providers/Microsoft.Storage/locations/eastus
-
-# Step 2: Check usage (use discovered name "StorageAccounts")
-az quota usage show \
-  --resource-name StorageAccounts \
-  --scope /subscriptions/abc-123/providers/Microsoft.Storage/locations/eastus
-# Current: 180
-
-# Step 3: Check limit
-az quota show \
-  --resource-name StorageAccounts \
-  --scope /subscriptions/abc-123/providers/Microsoft.Storage/locations/eastus
-# Limit: 250
-# Available: 250 - 180 = 70 ✓
-
-# 3c. Container Apps
-# Step 1: Discover resource name
-az quota list \
-  --scope /subscriptions/abc-123/providers/Microsoft.App/locations/eastus
-# Shows: "ManagedEnvironmentCount"
-
-# Step 2: Check usage
-az quota usage show \
-  --resource-name ManagedEnvironmentCount \
-  --scope /subscriptions/abc-123/providers/Microsoft.App/locations/eastus
-# Current: 8
-
-# Step 3: Check limit
-az quota show \
-  --resource-name ManagedEnvironmentCount \
-  --scope /subscriptions/abc-123/providers/Microsoft.App/locations/eastus
-# Limit: 50
-# Available: 50 - 8 = 42 ✓
-
 # 4. Validate Availability
 # ✅ All services have sufficient quota in East US
 # ✅ Proceed with deployment
 
-# Alternative: If quotas were insufficient
-# ❌ Container Apps: 49/50 (only 1 available, need 3)
+# Alternative: If quotas were insufficient (script reports ❌ Insufficient)
 # Action: Request quota increase
 # 
 # az quota update \

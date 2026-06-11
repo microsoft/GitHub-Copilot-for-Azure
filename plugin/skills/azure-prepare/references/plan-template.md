@@ -105,31 +105,37 @@ List all resources to be deployed with their types and quantities. Leave quota/l
 
 ### Phase 2: Fetch Quotas and Validate Capacity
 
-**Action:** **MUST invoke azure-quotas skill first** to populate the remaining columns with actual quota data using Azure quota CLI. Only use fallback methods if quota CLI is not supported.
+**Action:** Populate the remaining columns with actual quota data. For **supported** providers, run the `check-quota` script; for **unsupported** providers, use the manual fallback. Invoke the **azure-quotas** skill if you need help mapping ARM resource types to quota resource names.
 
-> **⚠️ IMPORTANT:** Process **ONE resource type at a time**. Do NOT try to apply all steps to all resources at once. Complete steps 1-7 for the first resource, then move to the next resource, and so on.
+**Supported providers — run the script once for all of them:**
 
-For each resource type:
+```bash
+./scripts/check-quota.sh <region> \
+  <provider:quota-name:count> [more triples...] \
+  --subscription <subscription-id>
+```
+```powershell
+.\scripts\check-quota.ps1 -Region <region> -SubscriptionId <subscription-id> -Resources `
+  "<provider:quota-name:count>", "..."
+```
 
-1. **Check if quota CLI is supported** - Run `az quota list --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}` to verify the provider is supported. If you encounter issues or need help finding the correct resource name, invoke the azure-quotas skill for troubleshooting.
-2. **Get current usage and limit**:
-   - **If quota CLI is supported**:
-     - Get limit: `az quota show --resource-name {quota-resource-name} --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}`
-     - Get current usage: `az quota usage show --resource-name {quota-resource-name} --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}`
-   - **If quota CLI is NOT supported** (returns `BadRequest`):
-     - Get current usage: `az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"` (requires `az extension add --name resource-graph`)
-     - Get limit: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-3. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
-4. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
-5. **Document source** - Note whether data came from "azure-quotas (resource-name)" or "Azure Resource Graph + Official docs"
+The script returns one row per resource with limit, current usage, available capacity, total-after-deploy, and a status (✅ within / ⚠️ near limit / ❌ insufficient), plus an overall verdict — copy these directly into the table above. `count` is the **number of additional resources to deploy**, expressed in the quota's own unit (vCPUs for VM-family quotas, e.g. 3 additional × Standard_D4s_v3 = `12`; instance count otherwise). See [resources-limits-quotas.md → Scripts](resources-limits-quotas.md#scripts) for details and sample output.
+
+**Unsupported providers** (script flags `⚠️ Unsupported`, or `az quota list` returns `BadRequest` — e.g. Microsoft.DocumentDB):
+
+1. **Get current usage**: `az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"` (requires `az extension add --name resource-graph`)
+2. **Get limit**: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
+3. **Calculate total** - Total After Deployment = current usage + Number to Deploy; verify ≤ limit
+
+**Document source** for each row - e.g. "check-quota script (quota-name)" or "Azure Resource Graph + Official docs".
 
 **Completed example:**
 
 | Resource Type | Number to Deploy | Total After Deployment | Limit/Quota | Notes |
 |---------------|------------------|------------------------|-------------|-------|
-| Microsoft.App/managedEnvironments | 1 | 1 | 50 | Fetched from: azure-quotas (ManagedEnvironmentCount) |
-| Microsoft.Compute/virtualMachines (Standard_D4s_v3) | 3 | 15 | 350 vCPUs | Fetched from: azure-quotas (standardDSv3Family) |
-| Microsoft.Network/publicIPAddresses | 2 | 5 | 100 | Fetched from: azure-quotas (PublicIPAddresses) |
+| Microsoft.App/managedEnvironments | 1 | 1 | 50 | Fetched from: check-quota script (ManagedEnvironmentCount) |
+| Microsoft.Compute/virtualMachines (Standard_D4s_v3) | 3 | 15 | 350 vCPUs | Fetched from: check-quota script (standardDSv3Family) |
+| Microsoft.Network/publicIPAddresses | 2 | 5 | 100 | Fetched from: check-quota script (PublicIPAddresses) |
 | Microsoft.DocumentDB/databaseAccounts | 1 | 1 | 50 per region | Fetched from: Official docs (quota CLI not supported) |
 | Microsoft.Storage/storageAccounts | 2 | 8 | 250 per region | Fetched from: Official docs |
 
@@ -138,7 +144,7 @@ For each resource type:
 > **⛔ CRITICAL:** You **CANNOT** present this plan to the customer if ANY cells contain "_TBD_" or "_To be filled in Phase 2_". Phase 2 **MUST** be completed with actual quota data before user presentation.
 
 **Notes:**
-- **MUST use azure-quotas skill first** to check providers via quota CLI (`az quota` commands) - Microsoft.Compute, Microsoft.Network, Microsoft.App, etc.
+- **Use the `check-quota` script** for supported providers (Microsoft.Compute, Microsoft.Network, Microsoft.App, etc.); invoke the **azure-quotas** skill if you need help mapping ARM types to quota resource names
 - Azure quota CLI is **ALWAYS preferred over REST API** for checking quotas
 - **ONLY for unsupported providers** (e.g., Microsoft.DocumentDB returns `BadRequest`), use fallback methods: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
 - If any resource exceeds limits, return to Step 2 to select a different region or request quota increase
