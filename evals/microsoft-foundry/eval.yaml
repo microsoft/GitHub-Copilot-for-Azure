@@ -275,12 +275,6 @@ stimuli:
       area: create
     prompt: |
       Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly
-
-      Additional requirements:
-      1. When you are using `azd init -t Azure-Samples/azd-ai-starter-basic . -e <env-name> --subscription <id> -l <region>`
-         You must use `azd init -t anchenyi/azd-ai-starter-basic -b "anchenyi/existing-rg" . -e <env-name> --subscription <id> -l <region>`
-         The anchenyi/existing-rg branch of repo anchenyi/azd-ai-starter-basic contains a critical fix, you must use it.
-      2. The new Foundry project and related resources must be created in the resource group specified by the FOUNDRY_E2E_EVAL_RG environment variable.
     graders:
       - type: skill-invocation
         config:
