@@ -144,67 +144,52 @@ jobs:
             tests/reports/
           retention-days: 30
 
-      - name: Show Microsoft Foundry E2E eval results
-        id: show-eval-results
+      - name: Install Copilot CLI
+        if: always()
+        shell: bash
+        run: npm install -g @github/copilot
+
+      - name: Generate Microsoft Foundry E2E eval report with Copilot CLI
         if: always()
         shell: bash
         env:
           ARTIFACT_URL: ${{ steps.upload-vally-results.outputs.artifact-url }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_MODEL: 'claude-sonnet-4.6'
+          COPILOT_PROMPT: tests/prompts/microsoft-foundry-e2e-eval-report.prompt.md
+          REPORT_MD: ${{ runner.temp }}/microsoft-foundry-e2e-report/report.md
+        run: copilot -C "${GITHUB_WORKSPACE}" --model "${COPILOT_MODEL}" --disable-builtin-mcps --no-custom-instructions --no-ask-user --allow-all-tools --allow-all-paths --no-color --silent -p "$(cat "${COPILOT_PROMPT}")"
+
+      - name: Publish Microsoft Foundry E2E eval report
+        id: publish-e2e-report
+        if: always()
+        shell: bash
+        env:
+          REPORT_MD: ${{ runner.temp }}/microsoft-foundry-e2e-report/report.md
         run: |
           set -euo pipefail
 
-          eval_results_md="$(find ./tests/results -type f -name eval-results.md -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2- || true)"
-          if [[ -z "${eval_results_md}" ]]; then
-            echo "::warning::No eval-results.md found under ./tests/results."
-            {
-              echo "## Microsoft Foundry E2E Evaluation Results"
-              echo
-              echo "No eval-results.md was found under \`./tests/results\`."
-              echo
-              echo "## Download"
-              echo
-              if [[ -n "${ARTIFACT_URL}" ]]; then
-                echo "[Download Vally results artifact](${ARTIFACT_URL})"
-              else
-                echo "Vally results artifact URL is unavailable."
-              fi
-            } >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
-          fi
-          echo "eval_results_md=${eval_results_md}" >> "${GITHUB_OUTPUT}"
-
-          echo "Microsoft Foundry E2E eval results: ${eval_results_md}"
-          echo
-          cat "${eval_results_md}"
-          echo
-
-          if [[ -n "${ARTIFACT_URL}" ]]; then
-            echo "Vally results artifact: ${ARTIFACT_URL}"
-          else
-            echo "::warning::Vally results artifact URL is unavailable."
+          if [[ -z "${REPORT_MD}" ]]; then
+            REPORT_MD="${RUNNER_TEMP}/microsoft-foundry-e2e-report/report.md"
+            mkdir -p "$(dirname "${REPORT_MD}")"
           fi
 
-          {
-            echo "## Microsoft Foundry E2E Evaluation Results"
-            echo
-            cat "${eval_results_md}"
-            echo
-            echo "## Download"
-            echo
-            if [[ -n "${ARTIFACT_URL}" ]]; then
-              echo "[Download Vally results artifact](${ARTIFACT_URL})"
-            else
-              echo "Vally results artifact URL is unavailable."
-            fi
-          } >> "${GITHUB_STEP_SUMMARY}"
+          if [[ -z "${REPORT_MD}" || ! -s "${REPORT_MD}" ]]; then
+            echo "# Microsoft Foundry E2E Evaluation Report" > "${REPORT_MD}"
+            echo >> "${REPORT_MD}"
+            echo "Report generation did not produce output." >> "${REPORT_MD}"
+          fi
+
+          cat "${REPORT_MD}"
+          cat "${REPORT_MD}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "report_md=${REPORT_MD}" >> "${GITHUB_OUTPUT}"
 
       - name: Comment Microsoft Foundry E2E eval results on PR
         if: ${{ always() && inputs.target_pr_id != '' && inputs['report-in-pr'] }}
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         env:
           TARGET_PR_ID: ${{ inputs.target_pr_id }}
-          EVAL_RESULTS_MD: ${{ steps.show-eval-results.outputs.eval_results_md }}
-          ARTIFACT_URL: ${{ steps.upload-vally-results.outputs.artifact-url }}
+          REPORT_MD: ${{ steps.publish-e2e-report.outputs.report_md }}
           JOB_STATUS: ${{ job.status }}
         with:
           script: |
@@ -217,18 +202,17 @@ jobs:
 
             const serverUrl = process.env.GITHUB_SERVER_URL || 'https://github.com';
             const runUrl = `${serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const artifactUrl = (process.env.ARTIFACT_URL ?? '').trim();
-            const evalResultsPath = (process.env.EVAL_RESULTS_MD ?? '').trim();
+            const reportPath = (process.env.REPORT_MD ?? '').trim();
             const jobStatus = (process.env.JOB_STATUS ?? 'unknown').trim();
-            let evalResults = 'No eval-results.md was found under `./tests/results`.';
+            let report = 'Microsoft Foundry E2E eval report was not generated.';
 
-            if (evalResultsPath && fs.existsSync(evalResultsPath)) {
-              evalResults = fs.readFileSync(evalResultsPath, 'utf8').trim();
+            if (reportPath && fs.existsSync(reportPath)) {
+              report = fs.readFileSync(reportPath, 'utf8').trim();
             }
 
-            const maxEvalResultsLength = 50000;
-            if (evalResults.length > maxEvalResultsLength) {
-              evalResults = `${evalResults.slice(0, maxEvalResultsLength)}\n\n...truncated. See the workflow run or artifact for the full eval results.`;
+            const maxReportLength = 50000;
+            if (report.length > maxReportLength) {
+              report = `${report.slice(0, maxReportLength)}\n\n...truncated. See the workflow run or artifact for the full eval report.`;
             }
 
             const lines = [
@@ -237,10 +221,7 @@ jobs:
               `Workflow run: ${runUrl}`,
               `Job status: ${jobStatus}`,
             ];
-            if (artifactUrl) {
-              lines.push(`Vally results artifact: ${artifactUrl}`);
-            }
-            lines.push('', '## eval-results.md', '', evalResults);
+            lines.push('', report);
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
