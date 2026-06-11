@@ -37,7 +37,7 @@ Deploy/publish a **Python** web app (Flask, Django, FastAPI, generic) to **Azure
 1. **Resolve context — smart defaults, minimal prompts.** Only the app name is interactive; RG (`<app>-rg`), Plan (`<app>-plan`), region (current `az` default or `eastus2`), subscription are derived. [create-app.md](references/create-app.md) §1.
 2. **Detect framework** (advisory, never blocks). [detect.md](references/detect.md).
 3. **Choose path** — `azure.yaml` host: appservice → [deploy-azd.md](references/deploy-azd.md); else [deploy-azcli.md](references/deploy-azcli.md).
-4. **Ensure RG → Plan (`P0v3 --is-linux`) → Web App (`--runtime "PYTHON:3.14"`)** exist. Retry transient ARM errors silently. [create-app.md](references/create-app.md) §1f.
+4. **Ensure RG → Plan (`P0v3 --is-linux`) → Web App (`--runtime "PYTHON:3.14"`)** exist. On transient ARM errors, follow [transient-retry.md](references/transient-retry.md). [create-app.md](references/create-app.md).
 5. **Set startup** per [startup-commands.md](references/startup-commands.md).
 6. **Set `SCM_DO_BUILD_DURING_DEPLOYMENT=true`**.
 7. **Deploy** — `azd deploy` or `az webapp deploy --type zip --track-status false`.
@@ -60,4 +60,4 @@ Full troubleshooting matrix: [errors.md](references/errors.md). Common cases:
 
 ## References
 
-[create-app.md](references/create-app.md) · [detect.md](references/detect.md) · [deploy-azd.md](references/deploy-azd.md) · [deploy-azcli.md](references/deploy-azcli.md) · [startup-commands.md](references/startup-commands.md) · [post-deploy-message.md](references/post-deploy-message.md) · [errors.md](references/errors.md)
+[create-app.md](references/create-app.md) · [detect.md](references/detect.md) · [deploy-azd.md](references/deploy-azd.md) · [deploy-azcli.md](references/deploy-azcli.md) · [startup-commands.md](references/startup-commands.md) · [post-deploy-message.md](references/post-deploy-message.md) · [errors.md](references/errors.md) · [transient-retry.md](references/transient-retry.md)

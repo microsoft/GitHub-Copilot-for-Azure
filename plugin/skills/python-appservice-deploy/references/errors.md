@@ -6,7 +6,9 @@
 Deploy failed?
   ├─ Check `az webapp log tail` first
   ├─ Then `az webapp log deployment list` for build-time errors
-  └─ Then `az webapp config show` to verify runtime + startup
+  ├─ Then `az webapp config show` to verify runtime + startup
+  └─ For `Connection reset` / `429` / `502-504` on create commands,
+      see [transient-retry.md](transient-retry.md)
 ```
 
 ## Symptom → Cause → Fix

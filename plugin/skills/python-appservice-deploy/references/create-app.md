@@ -80,31 +80,7 @@ Do **not** call `ask_user` for confirmation here — just print the summary and 
 
 ## 1f. Transient error handling for create commands
 
-ARM `PUT` operations (`az group create`, `az appservice plan create`, `az webapp create`) sometimes fail with **transient** errors (`Connection reset`, `Connection aborted`, `ConnectionError`, `Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `TooManyRequests` / HTTP `429`, or HTTP `502`/`503`/`504`). These are flaky ARM frontend / network blips, not configuration problems — they almost always succeed on retry.
-
-**Rules:**
-
-- Apply to every `az ... create` in this skill (§§2–4); retry **silently** (do not narrate "let me retry").
-- Up to **2 retries** (3 attempts total); wait **5s** before retry #1 and **15s** before retry #2. If the error carries a `Retry-After` header, honour that value instead.
-- **Wrap the full idempotent pair** `(az ... show ...) || (az ... create ...)` — never the bare `create`. The `show` short-circuits any partially-succeeded prior attempt and avoids false `Conflict` / `NameAlreadyExists`.
-- **Retry only** when stderr matches the transient-error pattern (connection resets, 429/502/503/504, timeouts). Do **NOT** retry on `AuthorizationFailed`, `SubscriptionNotFound`, `ResourceGroupNotFound`, `InvalidTemplateDeployment`, `SkuNotAvailable`, `QuotaExceeded`, or any non-429 4xx. After 3 failed attempts, surface the original error with one line of context (e.g., "ARM frontend is returning transient errors — please retry in a few minutes").
-
-Both shells have a ready-to-call wrapper that implements the loop, the transient-error filter, and the backoff — prefer these over inlining the loop:
-
-- Bash / zsh (Linux, macOS): [`scripts/retry-az-create.sh`](../scripts/retry-az-create.sh)
-  ```bash
-  ./scripts/retry-az-create.sh \
-      "az group show -n my-rg --only-show-errors" \
-      "az group create -n my-rg -l eastus2"
-  ```
-- PowerShell (Windows): [`scripts/retry-az-create.ps1`](../scripts/retry-az-create.ps1)
-  ```powershell
-  .\scripts\retry-az-create.ps1 `
-      -ShowCommand "az group show -n my-rg --only-show-errors" `
-      -CreateCommand "az group create -n my-rg -l eastus2"
-  ```
-
-Both scripts run the `show` command first, fall through to `create` on failure, and retry up to 2 times on transient errors only.
+If any `az ... create` in §§2–4 fails with a connection-level or 429/5xx error (e.g. `Connection reset`, `Read timed out`, `BadGatewayConnection`, `ServiceUnavailable`, `TooManyRequests`/HTTP 429, `502`/`503`/`504`), retry using the wrapper scripts — see [transient-retry.md](transient-retry.md). Configuration errors (`AuthorizationFailed`, `SkuNotAvailable`, `QuotaExceeded`, etc.) must **not** be retried — surface them to the user.
 
 ## 2. Resource Group
 
