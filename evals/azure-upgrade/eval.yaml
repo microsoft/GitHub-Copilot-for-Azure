@@ -274,6 +274,9 @@ stimuli:
               matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
             - glob: "**/pom.xml"
               stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
               matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
             - glob: "**/*.java"
               stripComments: java
