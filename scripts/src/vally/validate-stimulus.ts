@@ -228,6 +228,102 @@ function validateJsonObjectRulesGrader(
   return false;
 }
 
+const VALID_STRIP_COMMENTS = new Set(["xml", "java"]);
+
+function validateFileContentRule(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  rule: unknown,
+  ruleLabel: string,
+): boolean {
+  if (!isPlainObject(rule)) {
+    reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel} must be an object`);
+    return false;
+  }
+
+  let valid = true;
+
+  if (typeof rule.glob !== "string" || rule.glob.trim().length === 0) {
+    reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel}.glob must be a non-empty string`);
+    valid = false;
+  }
+
+  if (rule.stripComments !== undefined && !VALID_STRIP_COMMENTS.has(rule.stripComments as string)) {
+    reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel}.stripComments must be "xml" or "java"`);
+    valid = false;
+  }
+
+  if (rule.scope !== undefined && (typeof rule.scope !== "string" || rule.scope.trim().length === 0)) {
+    reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel}.scope must be a non-empty string`);
+    valid = false;
+  }
+
+  const hasMatches = rule.matches !== undefined;
+  const hasNotMatches = rule["not-matches"] !== undefined;
+  const hasAnyMatches = rule["any-matches"] !== undefined;
+
+  if (!hasMatches && !hasNotMatches && !hasAnyMatches) {
+    reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel} must specify at least one of matches, not-matches, or any-matches`);
+    valid = false;
+  }
+
+  for (const field of ["matches", "not-matches", "any-matches"] as const) {
+    const value = rule[field];
+    if (value === undefined) continue;
+    if (typeof value !== "string" || value.trim().length === 0) {
+      reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel}.${field} must be a non-empty string`);
+      valid = false;
+      continue;
+    }
+    try {
+      new RegExp(value);
+    } catch {
+      reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel}.${field} must be a valid regex pattern`);
+      valid = false;
+    }
+  }
+
+  return valid;
+}
+
+function validateJavaUpgradeFileContentGrader(
+  displayPath: string,
+  stimulusIndex: number,
+  stimulusName: string | undefined,
+  grader: { type?: string; config?: unknown },
+): boolean {
+  if (grader.type !== "java-upgrade-file-content") {
+    return true;
+  }
+
+  if (!isPlainObject(grader.config)) {
+    reportValidationError(
+      displayPath,
+      stimulusIndex,
+      stimulusName,
+      "graders.java-upgrade-file-content must define a config object with rules",
+    );
+    return false;
+  }
+
+  const { rules } = grader.config;
+  const ruleLabel = "graders.java-upgrade-file-content.config.rules";
+
+  if (!Array.isArray(rules) || rules.length === 0) {
+    reportValidationError(displayPath, stimulusIndex, stimulusName, `${ruleLabel} must be a non-empty array`);
+    return false;
+  }
+
+  let valid = true;
+  for (const [ruleIndex, rule] of rules.entries()) {
+    if (!validateFileContentRule(displayPath, stimulusIndex, stimulusName, rule, `${ruleLabel}[${ruleIndex}]`)) {
+      valid = false;
+    }
+  }
+  return valid;
+}
+
 function validateFollowUpTag(
   displayPath: string,
   stimulusIndex: number,
@@ -380,6 +476,14 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
       if (Array.isArray(typedStimulus.graders)) {
         for (const grader of typedStimulus.graders) {
           if (!validateJsonObjectRulesGrader(
+            displayPath,
+            stimulusIndex,
+            typedStimulus.name,
+            grader,
+          )) {
+            fileHasErrors = true;
+          }
+          if (!validateJavaUpgradeFileContentGrader(
             displayPath,
             stimulusIndex,
             typedStimulus.name,
