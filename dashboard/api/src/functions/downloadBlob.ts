@@ -19,8 +19,10 @@ async function downloadBlob(request: HttpRequest, context: InvocationContext): P
         return { status: 400, body: "Invalid path" };
     }
 
+    const container = request.query.get("container") || undefined;
+
     try {
-        const content = await getBlobContent(blobPath);
+        const content = await getBlobContent(blobPath, container);
         const rawFileName = blobPath.split("/").pop() ?? "download";
         const fileName = rawFileName.replace(/[\r\n"\\]/g, "_");
 

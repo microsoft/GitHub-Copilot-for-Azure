@@ -1,0 +1,104 @@
+name: Microsoft Foundry E2E Eval Comment Dispatch
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions: {}
+
+jobs:
+  dispatch:
+    name: Dispatch Microsoft Foundry E2E eval
+    if: >
+      github.repository == 'microsoft/GitHub-Copilot-for-Azure' &&
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/foundry-e2e')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Dispatch eval workflow
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const { data: collaboratorPermission } =
+              await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: context.payload.comment.user.login,
+              });
+
+            const allowedPermissions = new Set(['admin', 'maintain', 'write']);
+            const permission = collaboratorPermission.permission;
+            if (!allowedPermissions.has(permission)) {
+              throw new Error(`Commenter has ${permission} permission; write, maintain, or admin permission is required.`);
+            }
+
+            const prNumber = context.payload.issue.number;
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            if (pullRequest.state !== 'open') {
+              throw new Error(`PR #${prNumber} is ${pullRequest.state}; only open PRs can trigger this workflow.`);
+            }
+
+            const body = context.payload.comment.body;
+            const commandPattern = /^\/foundry-e2e(?:\s+e2e-branch=([A-Za-z0-9._/-]+))?$/;
+            const commandLine = body
+              .split(/\r?\n/)
+              .map((line) => line.trim())
+              .find((line) =>
+                /^\/foundry-e2e\b/.test(line)
+              );
+
+            if (!commandLine) {
+              throw new Error('No exact Microsoft Foundry E2E command line found.');
+            }
+
+            const commandMatch = commandPattern.exec(commandLine);
+            if (!commandMatch) {
+              throw new Error(
+                'Invalid command. Use "/foundry-e2e" or "/foundry-e2e e2e-branch=<branch>".'
+              );
+            }
+
+            const ref = commandMatch[1] || 'main';
+            if (
+              ref.includes('..') ||
+              ref.startsWith('/') ||
+              ref.endsWith('/') ||
+              ref.endsWith('.') ||
+              ref.includes('@{') ||
+              ref.split('/').some((part) => part.startsWith('.') || part.endsWith('.lock'))
+            ) {
+              throw new Error(`Invalid branch/ref: ${ref}`);
+            }
+
+            await github.rest.repos.getBranch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              branch: ref,
+            });
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'microsoft-foundry-e2e-eval.yml',
+              ref,
+              inputs: {
+                target_pr_id: prNumber.toString(),
+              },
+            });
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `Dispatched Microsoft Foundry E2E eval on \`${ref}\` with \`target_pr_id=${prNumber}\`.`,
+            });

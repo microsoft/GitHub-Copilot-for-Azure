@@ -1,6 +1,6 @@
 {
   "source": "npx -y @azure/mcp server start (initialize + tools/list)",
-  "azureMcpVersion": "3.0.0-beta.12+d6e43aeae7450e7b68c5b1252e2a5c6e7bab1938",
+  "azureMcpVersion": "3.0.0-beta.17+b2bea04888804af0016b766b3b6a4f8b46e1a9d6",
   "toolNames": [
     "acr",
     "advisor",
@@ -60,6 +60,7 @@
     "signalr",
     "speech",
     "sql",
+    "sreagent",
     "storage",
     "storagesync",
     "subscription_list",

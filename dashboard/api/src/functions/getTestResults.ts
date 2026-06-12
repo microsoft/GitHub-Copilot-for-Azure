@@ -341,7 +341,8 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         return { status: 400, body: "Missing date parameter" };
     }
 
-    const tree: BlobTree = await enumerateBlobs(`${date}/`);
+    const container = request.query.get("container") || undefined;
+    const tree: BlobTree = await enumerateBlobs(`${date}/`, container);
     const dateNode = tree[date];
     if (!dateNode) {
         return { status: 404, body: `No data found for date: ${date}` };
@@ -375,7 +376,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         rawBySkill.set(skillName, []);
         for (const blobPath of paths.sort()) {
             fetchTasks.push(
-                getBlobContent(blobPath).then((raw) => {
+                getBlobContent(blobPath, container).then((raw) => {
                     try {
                         const parsed: RawTestResults = JSON.parse(raw);
                         rawBySkill.get(skillName)!.push(parsed);
@@ -396,7 +397,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         confidenceBySkill.set(skillName, []);
         for (const blobPath of paths) {
             reportFetchTasks.push(
-                getBlobContent(blobPath).then((raw) => {
+                getBlobContent(blobPath, container).then((raw) => {
                     const conf = extractAverageConfidence(raw);
                     if (conf !== null) {
                         confidenceBySkill.get(skillName)!.push(conf);
@@ -413,7 +414,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
     for (const [testCaseName, paths] of agentMetadataPathsByTestCase) {
         for (const blobPath of paths) {
             retryFetchTasks.push(
-                getBlobContent(blobPath).then((raw) => {
+                getBlobContent(blobPath, container).then((raw) => {
                     const retries = countDeployRetries(raw);
                     if (retries === null) return; // invalid/unreadable — don't skew the average
                     deployRetryTotals.set(
@@ -436,7 +437,7 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         tokenRecordsBySkill.set(skillName, []);
         for (const blobPath of paths) {
             tokenFetchTasks.push(
-                getBlobContent(blobPath).then((raw) => {
+                getBlobContent(blobPath, container).then((raw) => {
                     const records = parseTokenSummaryJsonl(raw);
                     tokenRecordsBySkill.get(skillName)!.push(...records);
                 }).catch(() => { /* skip unreadable files */ }),

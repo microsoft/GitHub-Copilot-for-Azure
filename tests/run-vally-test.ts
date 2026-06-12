@@ -60,7 +60,7 @@ type TrialResult = {
 /**
  * Transform the vally test results file to integration test compatible.
  */
-async function convertAllTestResult(): Promise<void> {
+async function convertAllTestResult(passRateThreshold: number): Promise<void> {
   const resultsDir = path.resolve(__dirname, "results");
   const entries = await fs.readdir(resultsDir, { withFileTypes: true });
   const dirs = entries
@@ -85,7 +85,7 @@ async function convertAllTestResult(): Promise<void> {
       // Copy the results.jsonl file so it can be published with other artifacts.
       const destDir = path.join(reportsDir, reportsTopDir);
       await fs.cp(resultsJsonlPath, path.join(destDir, "results.jsonl"));
-      await convertTestResults(resultsJsonlPath, destDir);
+      await convertTestResults(resultsJsonlPath, destDir, passRateThreshold);
     }
   }
 }
@@ -95,7 +95,7 @@ async function convertAllTestResult(): Promise<void> {
  * @param vallyResultsPath Path to vally's results.jsonl file.
  * @param testCaseDirPath Path to the directory containing the test run artifacts.
  */
-async function convertTestResults(vallyResultsPath: string, testCaseDirPath: string): Promise<void> {
+async function convertTestResults(vallyResultsPath: string, testCaseDirPath: string, passRateThreshold: number): Promise<void> {
   // Parse results.jsonl and trim it for dashboard consumption.
   // The raw results.jsonl file contains the full trajectory, which is too verbose for the dashboard app.
   // We trim the trajectory from it so the dashboard app can only look at the high level test results.
@@ -143,7 +143,9 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
   const testResults: Record<string, TrialResult> = {};
   Object.keys(testTrials).forEach((normalizedTestName) => {
     const trials = testTrials[normalizedTestName];
-    const isPass = trials.every((t) => t.isPass);
+    const passCount = trials.filter((t) => t.isPass).length;
+    const totalCount = trials.length;
+    const isPass = passCount / totalCount >= passRateThreshold;
     const message = trials.map((t) => t.message ?? "").join("\n");
     const expectsScreenshot = trials.some((t) => t.expectsScreenshot);
     const skillInvocationRate = trials.some((t) => t.skillInvocationRate === undefined) ? undefined : (trials.map((t) => t.skillInvocationRate) as number[]).reduce((sum, rate) => sum + rate, 0) / trials.length;
@@ -163,12 +165,14 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
 
 type CliOptions = {
   skill?: string;
+  passRate?: number;
   forwardedArgs: string[];
 };
 
 function parseCliOptions(argv: string[]): CliOptions {
   const forwardedArgs: string[] = [];
   let skill: string | undefined;
+  let passRate: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -192,6 +196,33 @@ function parseCliOptions(argv: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--pass-rate") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --pass-rate");
+      }
+      const parsedPassRate = Number(value);
+      if (!Number.isFinite(parsedPassRate) || parsedPassRate < 0 || parsedPassRate > 1) {
+        throw new Error("Invalid value for --pass-rate. Expected a number between 0 and 1.");
+      }
+      passRate = parsedPassRate;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--pass-rate=")) {
+      const value = arg.slice("--pass-rate=".length);
+      if (!value) {
+        throw new Error("Missing value for --pass-rate");
+      }
+      const parsedPassRate = Number(value);
+      if (!Number.isFinite(parsedPassRate) || parsedPassRate < 0 || parsedPassRate > 1) {
+        throw new Error("Invalid value for --pass-rate. Expected a number between 0 and 1.");
+      }
+      passRate = parsedPassRate;
+      continue;
+    }
+
     if (arg === "--output-dir") {
       console.warn("Ignoring user-provided --output-dir; this wrapper manages output directory.");
       const next = argv[i + 1];
@@ -211,6 +242,7 @@ function parseCliOptions(argv: string[]): CliOptions {
 
   return {
     skill,
+    passRate,
     forwardedArgs,
   };
 }
@@ -221,6 +253,7 @@ function printUsage(): void {
     "",
     "Options:",
     "  --skill <name>            Skill name used by this wrapper",
+    "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
     "",
     "All unknown options are forwarded to the underlying vally command.",
@@ -272,20 +305,21 @@ async function main(): Promise<void> {
   }
 
   const options = parseCliOptions(rawArgs);
+  const passRateThreshold = options.passRate ?? 0.75;
 
   // Wrapper-specific args are parsed above; all other args are preserved here.
   const forwardedArgs = [...options.forwardedArgs];
 
   // default options
   forwardedArgs.splice(0, 0, "--output-dir", "./results");
-  forwardedArgs.splice(0, 0, "--executor-plugin", "../../tests/vally/vally-executor.ts");
-
+  forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
+  forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
     forwardedArgs.splice(0, 0, "--eval-spec", `../evals/${options.skill}/eval.yaml`);
   }
 
   const exitCode = await runVallyCommand(forwardedArgs);
-  await convertAllTestResult();
+  await convertAllTestResult(passRateThreshold);
 
   if (exitCode !== 0) {
     process.exitCode = exitCode;

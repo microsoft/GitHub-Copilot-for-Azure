@@ -1,3 +1,5 @@
+import { apiUrl } from "../shared/apiUrl";
+
 const params = new URLSearchParams(window.location.search);
 const path = params.get("path");
 const container = document.getElementById("container") as HTMLDivElement;
@@ -19,7 +21,7 @@ if (!path) {
     const img = document.createElement("img");
     img.className = "iv-image";
     img.alt = fileName;
-    img.src = `/api/fetch?path=${encodeURIComponent(path)}`;
+    img.src = apiUrl(`/api/fetch?path=${encodeURIComponent(path)}`);
     img.onerror = () => {
         img.remove();
         showError("Failed to load image.");

@@ -5,8 +5,8 @@
 ## Checklist
 
 - [ ] Tests pass locally (`cd tests && npm test`)
-- [ ] **If modifying skill descriptions:** verified routing correctness with integration tests (`npm run test:skills:integration -- <skill>`)
-- [ ] **If modifying skill `USE FOR` / `DO NOT USE FOR` / `PREFER OVER` clauses:** confirmed no routing regressions for competing skills
+- [ ] Title has one of the prefixes: `fix:`, `feat:`, `feature:`, `chore:`, `misc:`, `test:`, `eval:`
+- [ ] **If modifying skill descriptions:** verified routing correctness with integration tests (In `tests/`, `npm run test:integration -- <skill>` or `npm run test:vally -- --skill <skill>`)
 
 ## Related Issues
 

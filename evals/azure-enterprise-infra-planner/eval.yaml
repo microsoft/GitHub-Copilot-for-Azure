@@ -1,20 +1,21 @@
-# Vally eval config — migrated from Waza
-# Source: tests/azure-enterprise-infra-planner/evals/eval.yaml + tasks/*.yaml
-# Migration: Waza → Vally (issue #1817, Phase 1)
+# Vally eval config — migrated from Waza and Jest integration tests
+# Waza source: tests/azure-enterprise-infra-planner/evals/eval.yaml + tasks/*.yaml
+# Jest source: tests/azure-enterprise-infra-planner/{integration,triggers}.test.ts
+# Migration: Waza → Vally; Jest → Vally
 #
 # Global graders (evaluate#125 workaround): has_output, no_runtime_failure,
-# and security_posture are duplicated into every stimulus block below.
+# and security_posture are duplicated into every Waza-migrated stimulus block.
+# Jest-migrated stimuli omit these — the original Jest tests did not assert
+# on runtime failure or security posture.
+#
 # Global efficiency constraint (max_tool_calls: 50) → constraints.max_turns: 50.
 
 name: azure-enterprise-infra-planner-eval
 description: |
-  Evaluation suite for the azure-enterprise-infra-planner skill.
-  Tests across dimensions:
-  - Infrastructure plan quality (resource selection, plan schema, plan-first workflow)
-  - Anti-trigger accuracy (redirects to azure-prepare, azure-deploy, azure-validate)
-  - IaC format awareness (Bicep and Terraform)
-  - Security posture (managed identity, RBAC, no connection strings)
-  - Workload coverage (GenAI, AKS, Container Apps, 3-tier, serverless, data pipeline, ML, IoT, backup/DR)
+  Evaluation suite for the azure-enterprise-infra-planner skill — covers
+  workload planning (GenAI, AKS, Container Apps, 3-tier, serverless, data
+  pipeline, ML, IoT, backup/DR), routing accuracy, plan JSON structure,
+  Bicep generation under infra/, and security posture.
 
 tags:
   type: integration
@@ -61,7 +62,7 @@ stimuli:
       # Task grader: plan_generated (file must_exist)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -163,10 +164,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)recovery|replicate|failover"
       # Global: has_output
       - type: completed
@@ -233,10 +234,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)container.?app"
       # Global: has_output
       - type: completed
@@ -375,10 +376,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)iot|iothub"
       # Global: has_output
       - type: completed
@@ -445,10 +446,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)ml|machinelearning|endpoint"
       # Global: has_output
       - type: completed
@@ -515,10 +516,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)ml|machinelearning|workspace"
       # Global: has_output
       - type: completed
@@ -585,10 +586,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)function|eventgrid|serverless"
       # Global: has_output
       - type: completed
@@ -691,10 +692,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)virtual.?machine|vm"
       # Global: has_output
       - type: completed
@@ -716,3 +717,247 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+
+  # ── trigger-geo-redundant-sql-backup ──
+  # Jest: triggers.test.ts → "Should Trigger" (geo-redundant SQL backup prompt)
+  # Assertions: skill-invocation (mirrors `matcher.shouldTrigger(...).triggered === true`)
+  - name: "Trigger - Geo-Redundant SQL Backup DR"
+    prompt: "Deploy a geo-redundant backup solution for on-premises SQL servers using Azure Backup, configure encryption-at-rest, and automate monthly DR tests."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── trigger-vmware-asr-runbooks ──
+  # Jest: triggers.test.ts → "Should Trigger" (VMware ASR runbooks prompt)
+  # Assertions: skill-invocation. tier:full keeps the smoke suite to 1 stimulus per skill.
+  - name: "Trigger - VMware ASR Runbooks"
+    prompt: "Deploy disaster recovery for VMware VMs using Azure Site Recovery, configure runbooks for smooth failover, and maintain compliance audit trails."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── skill-3tier-hardened-os ──
+  # Jest: integration.test.ts → "invokes skill for hardened 3-tier VM infrastructure prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - 3-Tier Hardened OS Images"
+    prompt: "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── skill-vmss-appgw-waf ──
+  # Jest: integration.test.ts → "invokes skill for VMSS with WAF and encryption prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - VMSS + App Gateway WAF"
+    prompt: "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── skill-azure-backup-ltr ──
+  # Jest: integration.test.ts → "invokes skill for backup and compliance prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - Azure Backup Long-Term Retention"
+    prompt: "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── skill-secure-multi-region-3tier-windows ──
+  # Jest: integration.test.ts → "invokes skill for secure multi-region 3-tier prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - Secure Multi-Region 3-Tier Windows"
+    prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── response-jumpbox-nsgs-internal-lb ──
+  # Jest: integration.test.ts → response-quality "generates infrastructure-plan.json with expected resources"
+  # Assertions: skill-invocation + file-exists(.azure/insights.json, infrastructure-plan.json) + JSON schema markers
+  #   + networking+compute resource types in plan + no IaC files generated (Bicep/Terraform/tfvars).
+  #   followUp 2 explicitly halts the agent at the Phase 6 IaC Gate
+  #   (see plugin/skills/azure-enterprise-infra-planner/references/phases/6-generate-iac.md).
+  - name: "Response - Jumpbox + NSGs + Internal LB (plan only)"
+    prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Approve the plan as-is. Do not generate any IaC."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # File paths use `**/...` globs because the agent non-deterministically
+      # writes plan files either at workspace root or in a skill-named subdir.
+      - type: file-exists
+        config:
+          path: "**/.azure/insights.json"
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      # Plan-level required fields (Jest: expect(plan.meta|inputs|plan).toHaveProperty)
+      - type: json-object-rules
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          rules:
+            - type: has-property
+              key: meta.planId
+            - type: has-property
+              key: meta.status
+            - type: has-property
+              key: meta.version
+            - type: has-property
+              key: inputs.userGoal
+            - type: has-property
+              key: inputs.insightsApplied
+            - type: has-property
+              key: plan.resources
+            - type: has-property
+              key: plan.overallReasoning
+            - type: has-property
+              key: plan.validation
+      # Per-resource required fields (Jest: for (const resource of plan.plan.resources) ...)
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"name"'
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"type"'
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"location"'
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"reasoning"'
+      # hasNetworking + hasCompute (Jest: resourceTypes.some(...))
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualnetwork|networksecuritygroup|loadbalancer"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualmachine|compute"
+      # No IaC generated (Jest: listFilesRecursive filter for .bicep/.tf/.tfvars → expect [])
+      - type: file-not-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-not-exists
+        config:
+          path: "**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "**/*.tfvars"
+
+  # ── response-sap-backup-bicep-generation ──
+  # Jest: integration.test.ts → response-quality "generates Bicep files from approved plan"
+  # Assertions: skill-invocation + file-exists(.azure/insights.json, infra/main.bicep).
+  #   3-step followUp ends with the Phase 6 IaC Gate's example phrasing
+  #   ("Yes, generate the Bicep ...") — see references/phases/6-generate-iac.md.
+  #   The agent creates infra/ + infra/modules/ itself per bicep-generation.md step 1.
+  - name: "Response - SAP Backup Bicep Generation"
+    prompt: "Spin up a policy-driven backup for SAP workloads, ensure encrypted and compressed backups, and provide audit logs for all recovery tests. Assume all defaults to make the plan."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Approve the plan as-is."
+        - "Yes, generate the Bicep IaC for the approved plan."
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # File paths use `**/...` globs because the agent non-deterministically
+      # writes plan files either at workspace root or in a skill-named subdir.
+      - type: file-exists
+        config:
+          path: "**/.azure/insights.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.bicep"

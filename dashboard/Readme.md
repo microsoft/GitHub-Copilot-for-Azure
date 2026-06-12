@@ -88,6 +88,37 @@ You will be prompted to authenticate and select an Azure subscription and locati
 
 Integration test data are published at the end of scheduled integration test runs. See [Integration Test Workflow](../.github/workflows/test-all-integration.yml) for how it's done. You need to configure the `STORAGE_ACCOUNT` and `STORAGE_CONTAINER` environment variable to point the workflow to the target storage account for storing the data and give the Managed Identity used by the workflow the RBAC permission to write to the target storage account. 
 
+## Token Usage Over Time
+
+The **Token Usage** page (`token-usage.html`) charts integration-test token
+consumption over time: total tokens per run plus a trailing rolling average of the
+last five runs. Use the Skill / Test / Branch filters to narrow the view.
+
+Data flow:
+
+- Each integration test already writes per-test token usage to
+  `token-summary.jsonl` (via `tests/utils/agent-runner.ts`).
+- The integration test pipelines upload that data **directly** to an Azure Table by
+  running `npm run upload:token-usage` (`tests/scripts/upload-token-usage.ts`). One
+  row is stored **per test, per branch, per run** in the `integrationtokenusage`
+  table on the integration-reports storage account. This runs in both
+  `test-all-integration.yml` and `test-azure-deploy.yml` on scheduled and manual
+  runs alike (whenever `REPORT_STORAGE_ACCOUNT` is configured).
+- The frontend never reads the table directly. It calls the Function App API:
+  - `GET /api/token-usage` — rows, with optional `skill`, `test`, `branch` filters.
+  - `GET /api/token-usage/filters` — distinct skills / tests / branches.
+
+Configuration:
+
+- Workflow variables: `REPORT_STORAGE_ACCOUNT` (reused as the table's storage
+  account) and optionally `TOKEN_USAGE_TABLE` (defaults to `integrationtokenusage`).
+- RBAC (provisioned by `infra/modules/storage.bicep`): the dashboard's Managed
+  Identity is granted **Storage Table Data Reader** (to read rows), and the
+  integration test pipeline identity `skillcitestidentity` is granted **Storage
+  Table Data Contributor** (to write rows) via the `ciTestIdentityPrincipalId`
+  parameter.
+- The table itself is provisioned by `infra/modules/storage.bicep`.
+
 ## Overall Health Data
 
 Overall health data are collected by running scripts locally, which includes running non-integration tests, running evaluation scripts and extracting key metrics from **local** integration test runs. This can be done by running the `dashboard:collect` command at the root of the repository.
