@@ -307,6 +307,7 @@ jobs:
         run: |
           echo test with $MODEL_OVERRIDE
           npm run test:vally -- --skill $SKILL
+        continue-on-error: false
 
       - name: Generate skill report
         if: always()
