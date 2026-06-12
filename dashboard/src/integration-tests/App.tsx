@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
+import { apiUrl, pageUrl } from "../shared/apiUrl";
 
 interface TestCase {
     testName: string;
@@ -17,7 +18,7 @@ function fetchBlobTree(date: string): Promise<BlobTree> {
     const key = encodeURIComponent(date);
     let cached = blobTreeCache.get(key);
     if (!cached) {
-        cached = fetch(`/api/data/${key}`)
+        cached = fetch(apiUrl(`/api/data/${key}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json() as Promise<BlobTree>;
@@ -67,7 +68,7 @@ async function openAgentMetadataLinks(date: string, testName: string): Promise<v
         // to open the new page after the first one.
         // The user may unblock pop ups from this website or open them individually.
         window.open(
-            `/nightly-runs.html?file=${encodeURIComponent(blobName)}`,
+            pageUrl(`/nightly-runs.html?file=${encodeURIComponent(blobName)}`),
             "_blank",
             "noopener,noreferrer",
         );
@@ -103,7 +104,7 @@ function formatRate(rate: number | null): string {
 }
 
 function formatTestName(name: string): string {
-    return name.replace(/\s+/g, "_").replace(/_+/g, "_");
+    return name.replace(/\s+/g, "_");
 }
 
 function App() {
@@ -117,7 +118,7 @@ function App() {
 
     // Fetch available dates on mount
     useEffect(() => {
-        fetch("/api/dates")
+        fetch(apiUrl("/api/dates"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -141,7 +142,7 @@ function App() {
         setTestResults(null);
         setDetailsPanelSkill(null);
 
-        fetch(`/api/test-results/${encodeURIComponent(selectedDate)}`)
+        fetch(apiUrl(`/api/test-results/${encodeURIComponent(selectedDate)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -273,7 +274,7 @@ function App() {
                                     <li key={idx} className="it-failed-item">
                                         <a
                                             className="it-failed-name"
-                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(ft.testName))}`}
+                                            href={pageUrl(`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(ft.testName))}`)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -313,7 +314,7 @@ function App() {
                                     <li key={idx} className="it-passed-item">
                                         <a
                                             className="it-passed-name"
-                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(pt.testName))}`}
+                                            href={pageUrl(`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(pt.testName))}`)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -408,8 +409,8 @@ function AppSnapshotPreview({ date, testName }: { date: string; testName: string
         );
     }
 
-    const url = `/api/fetch?path=${encodeURIComponent(blobName)}`;
-    const viewerUrl = `/image-viewer.html?path=${encodeURIComponent(blobName)}`;
+    const url = apiUrl(`/api/fetch?path=${encodeURIComponent(blobName)}`);
+    const viewerUrl = pageUrl(`/image-viewer.html?path=${encodeURIComponent(blobName)}`);
     return (
         <div className="it-app-snapshot">
             <a
