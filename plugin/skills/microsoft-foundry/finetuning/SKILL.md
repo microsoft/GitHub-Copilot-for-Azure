@@ -1,6 +1,6 @@
 ---
 name: finetuning
-description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, training job submission, deployment, and evaluation. USE FOR: fine-tune, SFT, DPO, RFT, training data, grader, distillation, fine-tuned model, training job, large file upload, calibrate grader, deploy fine-tuned model, evaluate fine-tuned model. DO NOT USE FOR: general model deployment without fine-tuning (use deploy-model), agent creation (use agents), prompt optimization without training (use prompt-optimizer)."
+description: "Fine-tune models on Azure AI Foundry using SFT (supervised), DPO (preference), or RFT (reinforcement with graders). Covers dataset preparation, the Foundry Data Generation API (file/openapi/traces sources), training submission, deployment, evaluation via azure-ai-evaluation, and an auto-tune fine-tuning autopilot with iteration diagnosis. USE FOR: fine-tune, SFT, DPO, RFT, training data, grader, distillation, fine-tuned model, training job, large file upload, calibrate grader, deploy fine-tuned model, evaluate fine-tuned model, auto-tune fine-tuning, fine-tune autopilot, Foundry Data Generation, generate training data, traces to dataset, iteration diagnosis. DO NOT USE FOR: general model deployment without fine-tuning (use deploy-model), agent creation (use agents), prompt optimization without training (use prompt-optimizer)."
 license: MIT
 metadata:
   author: Microsoft
@@ -32,7 +32,10 @@ Use this sub-skill when the user asks about:
 |-------|-------|
 | **Quick start** | [workflows/quickstart.md](workflows/quickstart.md) |
 | **Full pipeline** | [workflows/full-pipeline.md](workflows/full-pipeline.md) |
+| **Auto-tune (autopilot)** | [workflows/auto-tune.md](workflows/auto-tune.md) |
 | **Create data** | [workflows/dataset-creation.md](workflows/dataset-creation.md) |
+| **Synthetic datagen (Foundry API)** | [workflows/synthetic-datagen.md](workflows/synthetic-datagen.md) |
+| **Traces → dataset** | [workflows/traces-to-dataset.md](workflows/traces-to-dataset.md) |
 | **Iterate** | [workflows/iterative-training.md](workflows/iterative-training.md) |
 | **Diagnose** | [workflows/diagnose-poor-results.md](workflows/diagnose-poor-results.md) |
 
@@ -43,6 +46,9 @@ Use this sub-skill when the user asks about:
 | SFT vs DPO vs RFT | [references/training-types.md](references/training-types.md) |
 | Hyperparameters | [references/hyperparameters.md](references/hyperparameters.md) |
 | Data formats | [references/dataset-formats.md](references/dataset-formats.md) |
+| Foundry Data Generation API | [references/data-generation-api.md](references/data-generation-api.md) |
+| Iteration diagnosis (auto-tune) | [references/iteration-diagnosis.md](references/iteration-diagnosis.md) |
+| Tool-call evaluation | [references/tool-call-evaluation.md](references/tool-call-evaluation.md) |
 | Grader design (RFT) | [references/grader-design.md](references/grader-design.md) |
 | Reward hacking | [references/reward-hacking.md](references/reward-hacking.md) |
 | Agentic RFT (tools) | [references/agentic-rft.md](references/agentic-rft.md) |
@@ -62,10 +68,15 @@ Use this sub-skill when the user asks about:
 | `scripts/calibrate_grader.py` | Find optimal RFT pass_threshold |
 | `scripts/check_training.py` | Analyze curves, list checkpoints |
 | `scripts/deploy_model.py` | Deploy via ARM REST API |
-| `scripts/evaluate_model.py` | LLM judge evaluation |
+| `scripts/evaluate_model.py` | LLM judge evaluation (prefer azure-ai-evaluation SDK in `references/evaluation.md`) |
 | `scripts/convert_dataset.py` | Convert between SFT/DPO/RFT formats |
-| `scripts/generate_distillation_data.py` | Generate synthetic training data |
+| `scripts/generate_distillation_data.py` | Generate synthetic training data from a description (combinatorial prompts → teacher) |
+| `scripts/generate_dataset.py` | Foundry Data Generation API wrapper (file/openapi/traces × SimpleQnA/QnA/Conversation/ToolUse) |
+| `scripts/chunk_and_generate.py` | Parallel chunked datagen — work around SimpleQnA per-source saturation |
+| `scripts/transform_traces.py` | 5-step transform that makes raw Foundry traces export trainable by Azure FT |
 | `scripts/score_dataset.py` | Quality scoring on training data |
+| `scripts/content_safety_check.py` | Pre-screen training rows with `azure-ai-evaluation` ContentSafetyEvaluator |
+| `scripts/diagnose_iteration.py` | LLM-judge root-cause classifier for auto-tune ITERATE outcomes |
 | `scripts/cleanup.py` | Delete old files and deployments |
 | `scripts/validate/` | Data validators (SFT, DPO, RFT) + stats |
 
@@ -87,6 +98,10 @@ Use this sub-skill when the user asks about:
 | Analyze curves | `python scripts/check_training.py --job-id ftjob-xxx` |
 | Deploy model | `python scripts/deploy_model.py --model-id ft:gpt-4.1-mini:... --name my-eval` |
 | Evaluate model | `python scripts/evaluate_model.py --deployment-name my-eval --test-file test.jsonl` |
+| Generate from doc | `python scripts/generate_dataset.py --source file --source-file doc.md --recipe SimpleQnA --scenario sft --teacher gpt-4.1 --max-samples 200 --name faq --output faq.jsonl` |
+| Tool-use from OpenAPI | `python scripts/generate_dataset.py --source openapi --source-file tools.openapi.json --recipe ToolUse --scenario sft --teacher gpt-4.1 --name tools --output tools.jsonl` |
+| Distill from traces | See `workflows/traces-to-dataset.md` (export via `generate_dataset.py --source traces`, then `transform_traces.py`) |
+| Diagnose ITERATE | `python scripts/diagnose_iteration.py --task-spec spec.json --baseline baseline.json --candidates evals/ --train train.jsonl --test test.jsonl --output diag.json` |
 
 ## Error Handling
 

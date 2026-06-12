@@ -19,3 +19,9 @@
 9. **FT deployments at capacity=1 are severely rate-limited (~1 RPM)** — evaluating 10 samples takes ~10 minutes. Use capacity ≥ 100 for eval workloads and exponential backoff.
 
 10. **Wrong resource endpoint is a silent killer** — jobs submitted to the wrong Foundry resource succeed via API but don't appear in the portal. Always verify the endpoint matches your Foundry project.
+
+11. **Training jobs can silently hang in `running` state** — occasionally a job stops emitting events partway through (e.g., after step 60-400) and never reaches a terminal status. The Foundry portal shows ongoing progress that never advances. Workaround: monitor wall-clock time between events; if > 30 min with no new event, cancel with `client.fine_tuning.jobs.cancel(job_id)` and resubmit.
+
+12. **`FW-*` prefixed models use format `"Fireworks"`, not the provider format** — Fireworks-hosted FT models (`FW-Qwen3-14B`, `FW-DeepSeek-V3.1`, `FW-Qwen3.5-9B`, …) deploy with `"format": "Fireworks"` in the ARM REST body, **not** `"Alibaba"`/`"DeepSeek"`/etc. Using the underlying-provider format fails with HTTP 500 and no useful message. Auto-detection in `scripts/deploy_model.py` matches the `FW-` prefix first; keep that rule order.
+
+13. **First inference on a fresh OSS deployment may return `None`** — even after `ProvisioningState: Succeeded`, the first `chat.completions.create()` call to a new OSS deployment occasionally returns `response.choices[0].message.content == None` (model is warming up the LoRA weights). Retry 1–2 times with a 30s backoff. Observed on `gpt-oss-20b-11`; Qwen3-32B has been seen to respond cleanly on the first call.

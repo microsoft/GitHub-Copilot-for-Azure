@@ -7,12 +7,17 @@
 | gpt-4.1-mini | `"OpenAI"` | `"Standard"` | Project |
 | gpt-4.1-nano | `"OpenAI"` | `"Standard"` | Project |
 | o4-mini (RFT) | `"OpenAI"` | `"Standard"` | Project |
-| gpt-oss-20b | `"Microsoft"` | `"GlobalStandard"` | Cognitive Services |
-| Ministral-3B | `"Mistral AI"` | `"GlobalStandard"` | Cognitive Services |
+| gpt-oss-20b, gpt-oss-120b | `"Microsoft"` | `"GlobalStandard"` | Cognitive Services |
+| Phi-3, Phi-3.5, Phi-4 | `"Microsoft"` | `"GlobalStandard"` | Cognitive Services |
+| Ministral-3B, Mistral-* | `"Mistral AI"` | `"GlobalStandard"` | Cognitive Services |
 | Llama-3.3-70B | `"Meta"` | `"GlobalStandard"` | Cognitive Services |
-| Qwen-3-32B | `"Alibaba"` | `"GlobalStandard"` | Cognitive Services |
+| Qwen-3-32B, qwen3-32b | `"Alibaba"` | `"GlobalStandard"` | Cognitive Services |
+| DeepSeek-R1, DeepSeek-V3 | `"DeepSeek"` | `"GlobalStandard"` | Cognitive Services |
+| **`FW-*` prefixed models** (FW-Qwen3-14B, FW-DeepSeek-V3, FW-Qwen3.5-9B, …) | **`"Fireworks"`** | `"GlobalStandard"` | Cognitive Services |
 
 **Format strings are case-sensitive.** `"Mistral AI"` works; `"mistral"` does not.
+
+> ⚠️ **FW-prefixed models DO NOT take the underlying-provider format.** `FW-Qwen3-14B` is `"Fireworks"`, **not** `"Alibaba"`. `FW-DeepSeek-V3.1` is `"Fireworks"`, **not** `"DeepSeek"`. Auto-detection in `scripts/deploy_model.py` matches on the `FW-` prefix *before* the generic provider rules — keep that order if you customize.
 
 ## Two Endpoint Types
 
@@ -41,10 +46,12 @@ az cognitiveservices account deployment create \
 | Base model family | ARM REST `model.format` | CLI `--model-format` |
 |-------------------|------------------------|----------------------|
 | gpt-4.1-mini/nano | `"OpenAI"` | `"OpenAI"` |
-| gpt-oss-20b | `"Microsoft"` | `"OpenAI-OSS"` |
+| gpt-oss-20b, Phi-* | `"Microsoft"` | `"OpenAI-OSS"` |
 | Ministral-3B | `"Mistral AI"` | `"OpenAI-OSS"` |
 | Llama-3.3-70B | `"Meta"` | `"OpenAI-OSS"` |
-| Qwen-3-32B | `"Alibaba"` | `"OpenAI-OSS"` |
+| Qwen-3-32B (non-FW) | `"Alibaba"` | `"OpenAI-OSS"` |
+| DeepSeek (non-FW) | `"DeepSeek"` | `"OpenAI-OSS"` |
+| `FW-*` (FW-Qwen3-14B, FW-DeepSeek-V3, FW-Qwen3.5-9B, …) | `"Fireworks"` | `"OpenAI-OSS"` |
 
 > ⚠️ Using `"OpenAI-OSS"` in ARM REST or `"Microsoft"` in CLI will fail with HTTP 500.
 
@@ -80,9 +87,10 @@ PUT https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{rg}/prov
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| HTTP 500, no message | Wrong `model.format` | Check format table above |
+| HTTP 500, no message | Wrong `model.format` (most commonly: `FW-*` model deployed as `Alibaba`/`Meta`/etc instead of `Fireworks`) | Check format table above; FW-prefixed models always use `"Fireworks"` |
+| HTTP 500, "no useful error" on first inference | OSS deployment warmup — first call sometimes returns empty/null | Retry 1–2 times with 30s backoff; see `references/platform-gotchas.md` |
 | HTTP 409, deployment exists | Name collision | Use unique deployment name |
-| HTTP 403 | ARM token expired | Refresh token |
+| HTTP 403 | ARM token expired | Refresh token (`az account get-access-token`) |
 | HTTP 400, "api-version not allowed" | `AzureOpenAI` client on `/v1/` endpoint | Switch to `openai.OpenAI` |
 | HTTP 429, quota exceeded | Too many deployments | Delete unused, wait 20s |
 | ProvisioningState: Failed | Model not available in region | Try different region |
