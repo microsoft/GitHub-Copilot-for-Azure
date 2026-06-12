@@ -11,10 +11,6 @@ Guidance for preparing .NET Aspire applications for Azure deployment.
 
 **📖 For detailed AZD workflow:** See [recipes/azd/aspire.md](recipes/azd/aspire.md)
 
-## What is .NET Aspire?
-
-.NET Aspire is an opinionated, cloud-ready stack for building observable, production-ready distributed applications. Aspire projects use an AppHost orchestrator to define and configure the application's components, services, and dependencies.
-
 ## Detection
 
 A .NET Aspire project is identified by:
@@ -24,17 +20,6 @@ A .NET Aspire project is identified by:
 | `*.AppHost.csproj` | AppHost orchestrator project file |
 | `Aspire.Hosting` package | Core Aspire hosting package reference |
 | `Aspire.Hosting.AppHost` | Alternative Aspire hosting package |
-
-**Example project structure:**
-```
-orleans-voting/
-├── OrleansVoting.sln
-├── OrleansVoting.AppHost/
-│   └── OrleansVoting.AppHost.csproj   ← AppHost indicator
-├── OrleansVoting.Web/
-├── OrleansVoting.Api/
-└── OrleansVoting.Grains/
-```
 
 ## Azure Preparation Workflow
 
@@ -52,7 +37,7 @@ grep -r "Aspire.Hosting" . --include="*.csproj"
 
 ### ⛔ Step 1a: Pre-Check for Custom/Non-Deployable Resources (MANDATORY)
 
-**Before running `azd init --from-code`, scan the AppHost source code to understand whether the app may contain local-only custom resources.**
+Before `azd init --from-code`, scan AppHost source for local-only custom resources:
 
 ```bash
 # Find the AppHost project and scan only its source directory
@@ -61,20 +46,10 @@ APPHOST_DIR=$(dirname "$APPHOST_PROJECT")
 grep -r "ExcludeFromManifest" "$APPHOST_DIR" --include="*.cs" | head -20
 ```
 
-**PowerShell:**
-```powershell
-# Find the AppHost project and scan only its source directory
-$appHostProject = Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1
-$appHostDir = $appHostProject.DirectoryName
-Get-ChildItem -Path $appHostDir -Recurse -Filter "*.cs" | Select-String "ExcludeFromManifest" | Select-Object -First 20
-```
-
-This scan is informational. `.ExcludeFromManifest()` can appear alongside deployable resources, so a positive match does **not** immediately block deployment. What matters is the final `azure.yaml` output after `azd init --from-code` completes:
+This scan is informational. A positive match does **not** immediately block deployment; final `azure.yaml` output matters:
 
 - If `azd init` **fails** with `unsupported resource type` → see Step 2 error guidance below.
 - If `azd init` **succeeds** but `azure.yaml` has an empty or missing `services` section → see Step 4a below.
-
-> 💡 **Why scan early:** Knowing that `.ExcludeFromManifest()` is present gives useful context when azd errors or generates an empty manifest — it confirms the app intentionally targets local development rather than Azure deployment.
 
 ### Step 2: Initialize with azd
 
@@ -82,33 +57,13 @@ This scan is informational. `.ExcludeFromManifest()` can appear alongside deploy
 
 **⚠️ ALWAYS include the `-e <environment-name>` flag:** Without it, `azd init` will fail in non-interactive environments (agents, CI/CD) with the error: `no default response for prompt 'Enter a unique environment name:'`
 
-The `--from-code` flag:
-- Auto-detects the AppHost orchestrator
-- Reads the Aspire service definitions
-- Generates appropriate `azure.yaml` and infrastructure
-- Works in non-interactive/CI environments when combined with `-e` flag
-
 ```bash
 # Non-interactive initialization for Aspire projects (REQUIRED for agents)
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init --from-code -e "$ENV_NAME"
 ```
 
-**Why both flags are required:**
-- `--from-code`: Tells azd to detect the AppHost automatically (no "How do you want to initialize?" prompt)
-- `-e <name>`: Provides environment name upfront (no "Enter environment name:" prompt)
-- Together, they enable fully non-interactive operation essential for automation, agents, and CI/CD pipelines
-
-**⛔ If `azd init --from-code` fails with "unsupported resource type":**
-
-This error means the AppHost contains custom Aspire resource types that azd cannot process for Azure deployment:
-
-1. ⛔ **Do NOT attempt to fix this error by modifying source code** — do not add `.ExcludeFromManifest()` calls or otherwise patch the AppHost
-2. ⛔ **Do NOT proceed with deployment** — the application is designed for local development only
-3. ✅ Record a blocker: "AppHost contains custom Aspire resource types (`unsupported resource type`) that cannot be deployed to Azure"
-4. ✅ Inform the user: this application uses custom Aspire resource authoring patterns intended for local tooling, not cloud deployment
-
-> ⚠️ **Why modifying source code is forbidden:** Adding `.ExcludeFromManifest()` may suppress the error and allow `azd init` to succeed, but the deployment outcome will not reflect the application's actual intent. The custom resources are deliberately designed to be local-only.
+**If `azd init --from-code` fails with `unsupported resource type`:** do not patch AppHost source or proceed. Record a blocker that custom Aspire resource types cannot be deployed to Azure. See [Troubleshooting](#troubleshooting).
 
 ### Step 3: Configure Subscription and Location
 
@@ -116,20 +71,14 @@ This error means the AppHost contains custom Aspire resource types that azd cann
 >
 > **DO NOT** skip this step or delay it until validation. The `azd init` command creates an environment but does NOT inherit the Azure CLI's subscription. If you skip this step, azd will use its own default subscription, which may differ from the user's confirmed choice.
 
-**Set the subscription and location immediately after initialization:**
+**Set and verify the subscription/location immediately after initialization** with the AZD context helper. It detects existing/default context, sets `AZURE_SUBSCRIPTION_ID` before `AZURE_LOCATION`, verifies both values, and emits `key=value` lines plus a summary:
 
 ```bash
-# Set the user-confirmed subscription ID
-azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
-
-# Set the location
-azd env set AZURE_LOCATION <location>
+./scripts/set-azd-context.sh <subscription-id> <location> <environment-name>
 ```
 
-**Verify the configuration:**
-
-```bash
-azd env get-values
+```powershell
+.\scripts\set-azd-context.ps1 -SubscriptionId <subscription-id> -Location <location> -EnvironmentName <environment-name>
 ```
 
 Confirm that `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` match the user's confirmed choices from [Azure Context](azure-context.md).
@@ -146,83 +95,36 @@ Confirm that `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` match the user's confi
 
 ### ⛔ Step 4a: Validate Generated Output
 
-**MANDATORY: After `azd init --from-code` completes, verify the generated `azure.yaml` contains deployable services.**
+Verify generated `azure.yaml` contains a non-empty `services:` map:
 
 ```bash
 # Check if azure.yaml has a non-empty services section
 cat azure.yaml
 ```
 
-**If the `services` section is empty or missing:** The AppHost has no deployable resources. This happens when all resources use `.ExcludeFromManifest()` (e.g., custom resource demonstrations, local-only tooling). In this case:
+If the `services` section is empty or missing, the AppHost has no deployable resources:
 
-1. ⛔ **Do NOT proceed with deployment** — there is nothing to deploy
-2. ✅ Keep the plan status in a valid state (for example, leave it as **Planning**) and record a blocker in the plan body with the reason: "Application contains only custom/demo Aspire resources with no Azure-deployable services"
-3. ✅ Inform the user that this application is designed for local development and cannot be meaningfully deployed to Azure
-4. ⛔ Do NOT manually create Bicep, Dockerfiles, or azure.yaml to work around this — the absence of services is the correct result
-
-**Example generated azure.yaml:**
-```yaml
-name: orleans-voting
-# metadata section is auto-generated by azd init --from-code
-
-services:
-  web:
-    project: ./OrleansVoting.Web
-    language: dotnet
-    host: containerapp
-
-  api:
-    project: ./OrleansVoting.Api
-    language: dotnet
-    host: containerapp
-```
+1. Do **not** proceed or manually create Bicep, Dockerfiles, or azure.yaml.
+2. Record a blocker: "Application contains only custom/demo Aspire resources with no Azure-deployable services."
+3. Inform the user that this app is local-only.
 
 ### ⛔ Step 4b: Fix Azure Functions Secret Storage (MANDATORY for Aspire + Functions)
 
-**MANDATORY: After `azd init --from-code` succeeds, check if the AppHost contains Azure Functions and fix secret storage configuration.**
-
-This step **MUST** run BEFORE `azd up` or `azd provision`. Skipping it causes a runtime failure: `Secret initialization from Blob storage failed`.
-
-**1. Detect Azure Functions in the AppHost:**
+For Aspire + Functions, ensure file-based secret storage before `azd up`:
 
 ```bash
 APPHOST_DIR=$(dirname "$(find . -name '*.AppHost.csproj' | head -1)")
 grep -n "AddAzureFunctionsProject" "$APPHOST_DIR"/*.cs
 ```
 
-**PowerShell:**
-```powershell
-$appHostDir = (Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1).DirectoryName
-Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AddAzureFunctionsProject"
-```
-
-**If `AddAzureFunctionsProject` is NOT found → skip this step.**
-
-**2. Check if `AzureWebJobsSecretStorageType` is already configured:**
+If `AddAzureFunctionsProject` is absent, skip. If present, check whether `AzureWebJobsSecretStorageType` already exists:
 
 ```bash
 grep -n "AzureWebJobsSecretStorageType" "$APPHOST_DIR"/*.cs
 ```
 
-**PowerShell:**
-```powershell
-Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AzureWebJobsSecretStorageType"
-```
+If absent, add it immediately after `.WithHostStorage(...)`:
 
-**If already present → skip this step.**
-
-**3. Add the environment variable to the Functions builder chain:**
-
-Use the `edit` tool to add `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the `AddAzureFunctionsProject` builder chain in the AppHost source file.
-
-**Before:**
-```csharp
-var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
-    .WithHostStorage(storage)
-    .WithReference(queues);
-```
-
-**After:**
 ```csharp
 var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("functions")
     .WithHostStorage(storage)
@@ -230,11 +132,7 @@ var functions = builder.AddAzureFunctionsProject<Projects.MyFunctions>("function
     .WithReference(queues);
 ```
 
-> 💡 **Tip:** Place `.WithEnvironment(...)` immediately after `.WithHostStorage(...)` for clarity.
-
-> ⚠️ **Why this is required:** When Aspire uses `WithHostStorage(storage)`, it configures identity-based storage URIs (e.g., `AzureWebJobsStorage__blobServiceUri`). Azure Functions' secret/key manager does **not** support these identity-based URIs — it requires either a connection string or file-based storage. Setting `AzureWebJobsSecretStorageType=Files` switches to file-system key storage, bypassing the incompatible blob dependency.
-
-See [aspire-functions-secrets reference](services/functions/aspire-containerapps.md) for additional details.
+See [aspire-functions-secrets reference](services/functions/aspire-containerapps.md) and [Troubleshooting](#troubleshooting) for details.
 
 ## Flags Reference
 
@@ -252,24 +150,9 @@ See [aspire-functions-secrets reference](services/functions/aspire-containerapps
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
 azd init --from-code -e "$ENV_NAME"
 
-# 2. IMMEDIATELY set the user-confirmed subscription
-azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
-
-# 3. Set the location
-azd env set AZURE_LOCATION <location>
-
-# 4. Verify configuration
-azd env get-values
+# 2. IMMEDIATELY detect, set subscription first, set location, and verify
+./scripts/set-azd-context.sh <subscription-id> <location> "$ENV_NAME"
 ```
-
-## Common Aspire Samples
-
-| Sample | Repository | Notes |
-|--------|------------|-------|
-| orleans-voting | [dotnet/aspire-samples](https://github.com/dotnet/aspire-samples/tree/main/samples/orleans-voting) | Orleans cluster with voting app |
-| AspireYarp | [dotnet/aspire-samples](https://github.com/dotnet/aspire-samples/tree/main/samples/AspireYarp) | YARP reverse proxy |
-| AspireWithDapr | [dotnet/aspire-samples](https://github.com/dotnet/aspire-samples/tree/main/samples/AspireWithDapr) | Dapr integration |
-| eShop | [dotnet/eShop](https://github.com/dotnet/eShop) | Reference microservices app |
 
 ## Troubleshooting
 
@@ -424,7 +307,7 @@ azd env get-values
 
 After `azd init --from-code`:
 1. Review generated `azure.yaml` and `infra/` files (if present)
-2. Set AZURE_SUBSCRIPTION_ID and AZURE_LOCATION with `azd env set`
+2. Set and verify AZURE_SUBSCRIPTION_ID and AZURE_LOCATION with [set-azd-context.sh](scripts/set-azd-context.sh) or [set-azd-context.ps1](scripts/set-azd-context.ps1)
 3. Customize infrastructure as needed
 4. Proceed to **azure-validate** skill
 5. Deploy with **azure-deploy** skill
