@@ -53,7 +53,7 @@ What this does:
 
 For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
 
-Do **not** run `azd ai agent run ... &` and then let the parent shell exit. That pattern can detach child processes, lose the process handle, leave `localhost:8088` occupied, and keep workspace files open. If a coding-agent runtime does not provide a managed background-session API, use the host shell's normal process-management pattern instead: capture the exact PID or process object, redirect logs, poll logs for readiness, invoke locally only after readiness, and stop that exact process in cleanup.
+Do **not** start `azd ai agent run` as a detached process that the agent cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
 
 ## Useful flags
 
@@ -119,6 +119,8 @@ Other useful flags:
 | `--input-file request.json` / `-f request.json` | Send a file body instead of a string message. |
 | `--new-session` | Drop the saved local session and start fresh. |
 | `--port <n>` | Match the port you started `run` with. |
+
+After the local invocation completes, stop the `azd ai agent run` process you started before moving on.
 
 ## When to graduate to remote
 
