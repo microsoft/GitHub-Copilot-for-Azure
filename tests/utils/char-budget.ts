@@ -17,9 +17,16 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
   let charCount = 0;
 
   for (const skill of requiredSkills) {
-    const skillXml = await formatSkillForToolDescription(skill);
+    const skillObject = await loadSkill(skill);
+    const skillXml = await getFormattedSkillDescription(skillObject.metadata.name, skillObject.metadata.description);
     // +1 for newline between skills
     charCount += skillXml.length + 1;
+  }
+
+  if (charCount > charBudget) {
+    throw new Error(
+      `requiredSkills exceed SKILL_CHAR_BUDGET (${charBudget}). Required skills consume ${charCount} chars; cannot guarantee required skill descriptions will be preserved.`,
+    );
   }
 
   // Fisher-Yates shuffle
@@ -30,7 +37,8 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
 
   for (let i = 0; i < nonRequiredSkills.length; i++) {
     const skill = nonRequiredSkills[i];
-    const skillXml = await formatSkillForToolDescription(skill);
+    const skillObject = await loadSkill(skill);
+    const skillXml = await getFormattedSkillDescription(skillObject.metadata.name, skillObject.metadata.description);
     if (charCount + skillXml.length + 1 >= charBudget) {
       // Return a list of skills including and after the current one
       return nonRequiredSkills.slice(i);
@@ -42,14 +50,12 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
   return [];
 }
 
-async function formatSkillForToolDescription(skillName: string): Promise<string> {
-  const skill = await loadSkill(skillName);
-
+export async function getFormattedSkillDescription(skillName: string, description: string): Promise<string> {
   // azure plugin skills are loaded from "Custom" locations when they are installed via marketplace.
   // The formatted text may be different but the char count would be similar.
   return `<skill>
-  <name>${escapeXml(skill.metadata.name)}</name>
-  <description>${escapeXml(skill.metadata.description)}</description>
+  <name>${escapeXml(skillName)}</name>
+  <description>${escapeXml(description)}</description>
   <location>Custom</location>
 </skill>`;
 }
