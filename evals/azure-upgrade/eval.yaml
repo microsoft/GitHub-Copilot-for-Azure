@@ -1,18 +1,24 @@
 # Vally eval config — migrated from Jest integration tests
 # Source: tests/azure-upgrade/integration.test.ts
-# Migration: Jest → Vally (Batch 1 — Simple)
+# Migration: Jest → Vally (Full migration — skill-invocation tests)
 #
 # NOTE: azure-upgrade has NO invocation rate (no RUNS_PER_PROMPT).
 # Jest tests use single-run expect(isSkillInvoked(...)).toBe(true).
 # Mapped to runs: 1, threshold: 1.0 (must pass every time).
 #
-# Global graders (evaluate#125 workaround): completed and no_runtime_failure
-# are duplicated into every stimulus block below.
+# The java-sdk-migration-e2e tests (3 tests) are NOT migrated here because
+# they require workspace setup (git clone), file system assertions on migrated
+# code, and multi-turn followUp with extended timeouts (45 min). These need
+# custom grader/executor support that is not yet available in Vally.
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure is duplicated
+# into every stimulus block below.
 
 name: azure-upgrade-integration-eval
 description: |
   Integration evaluation for azure-upgrade skill — migrated from Jest integration tests.
-  Tests skill routing for Azure Functions Consumption-to-Flex migration prompts.
+  Tests skill routing for Azure Functions Consumption-to-Flex migration,
+  Java SDK migration, and Azure Cache for Redis to Azure Managed Redis migration prompts.
   Single-run evaluation (no invocation rate) — skill must be invoked on every run.
 
 tags:
@@ -35,9 +41,7 @@ scoring:
 stimuli:
   # ── consumption-to-flex-migration-prompt ──
   # Jest: "invokes azure-upgrade skill for Functions Consumption to Flex migration prompt"
-  # Assertions: softCheckSkill + expect(isSkillInvoked(...)).toBe(true)
-  # NOTE: Original Jest test used followUp for multi-turn confirmation. Vally single-turn
-  # evaluation may produce lower pass rates. Threshold may need adjustment once multi-turn support lands.
+  # Assertions: softCheckSkill + isSkillInvoked + negative routing (no Redis skills)
   - name: "Functions Consumption to Flex migration"
     prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan"
     tags:
@@ -45,13 +49,18 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-upgrade
-      # Global: has_output
-      - type: completed
+      # Negative routing: Redis migration skills must NOT be surfaced
+      - type: output-not-matches
+        config:
+          pattern: "amr-migration-skill|acre-to-amr-migration-skill"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -59,9 +68,7 @@ stimuli:
 
   # ── upgrade-hosting-plan-prompt ──
   # Jest: "invokes azure-upgrade skill for upgrading Functions plan prompt"
-  # Assertions: softCheckSkill + expect(isSkillInvoked(...)).toBe(true)
-  # NOTE: Original Jest test used followUp for multi-turn confirmation. Vally single-turn
-  # evaluation may produce lower pass rates. Threshold may need adjustment once multi-turn support lands.
+  # Assertions: softCheckSkill + isSkillInvoked
   - name: "Upgrade Functions hosting plan to Flex"
     prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption"
     tags:
@@ -69,13 +76,149 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-upgrade
-      # Global: has_output
-      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── legacy-java-sdk-migration-prompt ──
+  # Jest: "invokes azure-upgrade skill for legacy Azure Java SDK migration prompt (Flow B)"
+  # Assertions: softCheckSkill + isSkillInvoked
+  - name: "Legacy Azure Java SDK migration"
+    prompt: "Migrate my Java project from legacy Azure SDK (com.microsoft.azure) to modern Azure SDK (com.azure)"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── upgrade-legacy-java-libraries-prompt ──
+  # Jest: "invokes azure-upgrade skill for upgrading legacy Azure Java libraries prompt (Flow B)"
+  # Assertions: softCheckSkill + isSkillInvoked
+  - name: "Upgrade legacy Azure Java libraries"
+    prompt: "Upgrade legacy Azure SDKs for Java to the latest modern Azure SDK packages"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-acr-oss-to-amr-prompt ──
+  # Jest: "invokes azure-upgrade skill for Azure Cache for Redis (ACR/OSS) to Azure Managed Redis migration prompt"
+  # Assertions: isSkillInvoked + tool text matches redis-to-amr.md + surfaces amr-migration-skill
+  - name: "Azure Cache for Redis OSS to Azure Managed Redis"
+    prompt: "Migrate my Azure Cache for Redis Premium P2 cache to Azure Managed Redis (AMR)"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Agent must navigate to Redis routing reference doc
+      - type: output-matches
+        config:
+          pattern: "redis-to-amr\\.md"
+      # Agent must surface the ACR/OSS dedicated skill name
+      - type: output-matches
+        config:
+          pattern: "amr-migration-skill"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-acre-to-amr-prompt ──
+  # Jest: "invokes azure-upgrade skill for Azure Cache for Redis Enterprise (ACRE) to Azure Managed Redis migration prompt"
+  # Assertions: isSkillInvoked + tool text matches redis-to-amr.md + surfaces acre-to-amr-migration-skill
+  - name: "Azure Cache for Redis Enterprise to Azure Managed Redis"
+    prompt: "Migrate my Azure Cache for Redis Enterprise (Enterprise_E10) cache to Azure Managed Redis"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Agent must navigate to Redis routing reference doc
+      - type: output-matches
+        config:
+          pattern: "redis-to-amr\\.md"
+      # Agent must surface the ACRE-specific dedicated skill
+      - type: output-matches
+        config:
+          pattern: "acre-to-amr-migration-skill"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-ambiguous-disambiguation-prompt ──
+  # Jest: "invokes azure-upgrade skill and disambiguates Redis tier for ambiguous Redis migration prompt"
+  # Assertions: isSkillInvoked + assistant asks about tier/SKU (disambiguation)
+  - name: "Ambiguous Redis migration triggers disambiguation"
+    prompt: "I want to migrate my Redis cache to Azure Managed Redis"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Agent should ask about the source tier/SKU or reference disambiguation signals
+      - type: output-matches
+        config:
+          pattern: "(?i)enterprise|premium|standard|basic|tier|sku|acre|\\bacr\\b"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
