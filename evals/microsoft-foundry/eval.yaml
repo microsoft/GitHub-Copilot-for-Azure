@@ -275,6 +275,7 @@ stimuli:
       area: create
     prompt: |
       Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly
+      The new resource group name: rg-foundry-skill-e2e-<6 random digits>
     graders:
       - type: skill-invocation
         config:

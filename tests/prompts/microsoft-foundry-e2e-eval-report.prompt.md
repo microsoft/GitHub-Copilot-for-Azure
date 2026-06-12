@@ -68,7 +68,7 @@ Guidance:
 - Runtime is measured from the first `user_message` event to the last `assistant_message` event for each Golden Path trial.
 - `Total average runtime` must equal the average of the per-run `Total` row values.
 - Each stage duration is the AI-driven full wall-clock time for that stage: start when the AI begins working on that stage, and end when the AI completes that stage and moves to the next stage. Include AI reasoning, command execution, waiting, result inspection, retries, and verification within the stage.
-- Each run column's non-overlapped stage durations must sum exactly to that run's `Total` row. Assign all elapsed wall-clock time to exactly one stage, except overlapped install time shown in parentheses for `Install package`, which must not be double-counted.
+- Each run column's stage durations must sum exactly to that run's `Total` row. Assign all elapsed wall-clock time to exactly one stage.
 - Report time in `x min Y s` format. Round seconds to an integer. If shorter than 1 minute, report only `Y s`.
 - Always include spaces before units: use `54 s`, not `54s`; use `22 min 45 s`, not `22 min 45s`.
 - Use the event timeline and event content semantically to divide each Golden Path trial into stages. Do not rely on one exact tool name or one exact command string.
@@ -76,28 +76,19 @@ Guidance:
 - If there are multiple Golden Path trials, use one `Run N` column per Golden Path trial. Do not add an `Average` column.
 - Always include the final `Total` row.
 - Use `N/A` when a stage did not happen in that trial.
-- If `Install package` runs in parallel with `Foundry resources creation` or `azd provision`, do not double-count the overlapped install duration in the run total. Put only the install stage's critical-path contribution in the `Install package` cell, and include the overlapped install duration in parentheses.
-- Do not put a separate note below the table for parallel install. The parallel marker belongs in the table cell.
 
 Main stages:
 
 - Collect prerequisite info for agent creation
 - Scaffold agent code and customize for B2B
 - Foundry resources creation
-- Install package
 - Test agent locally
 - Deploy agent to Foundry
 - Test agent by remote invocation
 - Eval suite
 - Final Output
 
-Parallel install examples:
-
-- Fully overlapped install: `0 (1 min 30 s, in parallel with azd provision)`
-- Partially overlapped install: `20 s (1 min 10 s, in parallel with azd provision)`
-- Non-parallel install: `1 min 30 s`
-
-The `Install package` stage includes the full local environment package setup workflow: setting up the local virtual environment, installing `uv`, and installing project packages from requirements or equivalent package files.
+The `Test agent locally` stage includes creating the local virtual environment, installing `uv`, installing project packages from requirements or equivalent package files, starting the local agent server, and invoking the local agent to verify it responds.
 
 Single-trial schema example:
 
@@ -113,8 +104,7 @@ Single-trial schema example:
 | Collect prerequisite info for agent creation | 54 s |
 | Scaffold agent code and customize for B2B | 1 min 13 s |
 | Foundry resources creation | 1 min 30 s |
-| Install package | 0 (1 min 30 s, in parallel with azd provision) |
-| Test agent locally | 4 min 50 s |
+| Test agent locally | 5 min 10 s |
 | Deploy agent to Foundry | 1 min 50 s |
 | Test agent by remote invocation | 4 min 54 s |
 | Eval suite | N/A |
@@ -136,8 +126,7 @@ Multi-trial schema example:
 | Collect prerequisite info for agent creation | 55 s | 4 min 33 s |
 | Scaffold agent code and customize for B2B | 1 min 13 s | 3 min 1 s |
 | Foundry resources creation | 1 min 30 s | 1 min 50 s |
-| Install package | 0 (1 min 24 s, in parallel with azd provision) | 0 (1 min 45 s, in parallel with azd provision) |
-| Test agent locally | 4 min 50 s | 3 min 38 s |
+| Test agent locally | 5 min 9 s | 3 min 18 s |
 | Deploy agent to Foundry | 1 min 50 s | 2 min 55 s |
 | Test agent by remote invocation | 4 min 54 s | 36 s |
 | Eval suite | N/A | 5 s |
