@@ -67,6 +67,8 @@ Guidance:
 
 - Runtime is measured from the first `user_message` event to the last `assistant_message` event for each Golden Path trial.
 - `Total average runtime` must equal the average of the per-run `Total` row values.
+- Each stage duration is the AI-driven full wall-clock time for that stage: start when the AI begins working on that stage, and end when the AI completes that stage and moves to the next stage. Include AI reasoning, command execution, waiting, result inspection, retries, and verification within the stage.
+- Each run column's non-overlapped stage durations must sum exactly to that run's `Total` row. Assign all elapsed wall-clock time to exactly one stage, except overlapped install time shown in parentheses for `Install package`, which must not be double-counted.
 - Report time in `x min Y s` format. Round seconds to an integer. If shorter than 1 minute, report only `Y s`.
 - Always include spaces before units: use `54 s`, not `54s`; use `22 min 45 s`, not `22 min 45s`.
 - Use the event timeline and event content semantically to divide each Golden Path trial into stages. Do not rely on one exact tool name or one exact command string.
@@ -93,6 +95,9 @@ Parallel install examples:
 
 - Fully overlapped install: `0 (1 min 30 s, in parallel with azd provision)`
 - Partially overlapped install: `20 s (1 min 10 s, in parallel with azd provision)`
+- Non-parallel install: `1 min 30 s`
+
+The `Install package` stage includes the full local environment package setup workflow: setting up the local virtual environment, installing `uv`, and installing project packages from requirements or equivalent package files.
 
 Single-trial schema example:
 

@@ -291,10 +291,3 @@ stimuli:
             and received a successful response from that deployed agent. Fail if
             code was not generated, no new foundry project or model is created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
             actually invoked after deployment, or the deployed agent invocation failed.
-      - type: prompt
-        config:
-          scoring: binary
-          threshold: 1
-          prompt: |
-            Verify that `azd provision` is running in the background, and the `Prepare Local Environment` step runs in parallel with the background `azd provision`.
-            Fail if `azd provision` is not running in the background, or the `Prepare Local Environment` step does not run in parallel with the background `azd provision`.
