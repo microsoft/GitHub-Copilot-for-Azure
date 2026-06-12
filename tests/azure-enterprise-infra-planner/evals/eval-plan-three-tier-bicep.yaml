@@ -1,0 +1,37 @@
+name: azure-enterprise-infra-planner-eval-plan-three-tier-bicep
+description: |
+  3-tier Bicep architecture.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-three-tier-bicep
+    prompt: >
+      Plan a 3-tier web application architecture on Azure with a React frontend
+      hosted on Static Web Apps, a Node.js API layer on App Service, and Azure
+      Database for PostgreSQL. Include a CDN for static assets and Application
+      Gateway for load balancing across the API tier. Assume all defaults to create
+      the preliminary resource list, then approve the preliminary list and proceed
+      to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
