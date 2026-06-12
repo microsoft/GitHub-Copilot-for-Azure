@@ -17,7 +17,7 @@ import {
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { doesWorkspaceFileIncludePattern, expectFiles, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { doesWorkspaceFileIncludePattern, expectFiles, softCheckSkill, isSkillInvoked, matchesCommand, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-prepare";
 const RUNS_PER_PROMPT = 1;
@@ -855,6 +855,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
+        // Verify the agent ran the detect-aspire / gather-aspire-info script
+        // rather than re-deriving the find/grep detection sequence inline.
+        expect(matchesCommand(agentMetadata, /(detect-aspire|gather-aspire-info)\.(sh|ps1)/)).toBe(true);
+
         // Verify azure.yaml exists
         expectFiles(workspacePath!, [/azure\.yaml$/], []);
 
@@ -900,6 +904,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
         expect(workspacePath).toBeDefined();
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+        // Verify the agent ran the detect-aspire / gather-aspire-info script
+        // rather than re-deriving the find/grep detection sequence inline.
+        expect(matchesCommand(agentMetadata, /(detect-aspire|gather-aspire-info)\.(sh|ps1)/)).toBe(true);
+
         expectFiles(workspacePath!, [/azure\.yaml$/], []);
 
         // For Aspire projects, azd init --from-code generates a single "app" service

@@ -15,61 +15,53 @@ Guidance for preparing .NET Aspire applications for Azure deployment.
 
 .NET Aspire is an opinionated, cloud-ready stack for building observable, production-ready distributed applications. Aspire projects use an AppHost orchestrator to define and configure the application's components, services, and dependencies.
 
-## Detection
-
-A .NET Aspire project is identified by:
-
-| Indicator | Description |
-|-----------|-------------|
-| `*.AppHost.csproj` | AppHost orchestrator project file |
-| `Aspire.Hosting` package | Core Aspire hosting package reference |
-| `Aspire.Hosting.AppHost` | Alternative Aspire hosting package |
-
-**Example project structure:**
-```
-orleans-voting/
-├── OrleansVoting.sln
-├── OrleansVoting.AppHost/
-│   └── OrleansVoting.AppHost.csproj   ← AppHost indicator
-├── OrleansVoting.Web/
-├── OrleansVoting.Api/
-└── OrleansVoting.Grains/
-```
-
 ## Azure Preparation Workflow
 
 ### Step 1: Detection
 
-When scanning the codebase (per [scan.md](scan.md)), detect Aspire by:
+When scanning the codebase (per [scan.md](scan.md)), run [detect-aspire.sh](scripts/detect-aspire.sh)/[detect-aspire.ps1](scripts/detect-aspire.ps1) to determine if this is an Aspire application. Once confirmed, gather the full set of facts by running [gather-aspire-info.sh](scripts/gather-aspire-info.sh)/[gather-aspire-info.ps1](scripts/gather-aspire-info.ps1). It performs the full deterministic detection sequence in one pass and prints `key=value` lines plus a human-readable summary, so you can branch on the result instead of parsing raw `find`/`grep` output.
 
+**bash:**
 ```bash
-# Check for AppHost project
-find . -name "*.AppHost.csproj"
-
-# Or check for Aspire.Hosting package reference
-grep -r "Aspire.Hosting" . --include="*.csproj"
-```
-
-### ⛔ Step 1a: Pre-Check for Custom/Non-Deployable Resources (MANDATORY)
-
-**Before running `azd init --from-code`, scan the AppHost source code to understand whether the app may contain local-only custom resources.**
-
-```bash
-# Find the AppHost project and scan only its source directory
-APPHOST_PROJECT=$(find . -name "*.AppHost.csproj" | head -1)
-APPHOST_DIR=$(dirname "$APPHOST_PROJECT")
-grep -r "ExcludeFromManifest" "$APPHOST_DIR" --include="*.cs" | head -20
+./scripts/gather-aspire-info.sh [workspace-root]
 ```
 
 **PowerShell:**
 ```powershell
-# Find the AppHost project and scan only its source directory
-$appHostProject = Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1
-$appHostDir = $appHostProject.DirectoryName
-Get-ChildItem -Path $appHostDir -Recurse -Filter "*.cs" | Select-String "ExcludeFromManifest" | Select-Object -First 20
+./scripts/gather-aspire-info.ps1 -WorkspaceRoot <workspace-root>
 ```
 
-This scan is informational. `.ExcludeFromManifest()` can appear alongside deployable resources, so a positive match does **not** immediately block deployment. What matters is the final `azure.yaml` output after `azd init --from-code` completes:
+`workspace-root` defaults to the current directory. The script reports these fields:
+
+| Field | Meaning |
+|-------|---------|
+| `isAspire` | `true` if a `*.AppHost.csproj` or an `Aspire.Hosting` / `Aspire.AppHost.Sdk` package reference was found |
+| `appHostPath` | Path to the AppHost project file (empty if none) |
+| `appHostDir` | AppHost source directory derived from `appHostPath` |
+| `hasExcludeFromManifest` | `true` if `ExcludeFromManifest` appears in AppHost `*.cs` (informational — see Step 1a) |
+| `hasFunctions` | `true` if `AddAzureFunctionsProject` appears in AppHost `*.cs` (see Step 4b) |
+| `secretStorageConfigured` | `true` if `AzureWebJobsSecretStorageType` is already configured (see Step 4b) |
+
+**Example output:**
+```
+isAspire=true
+appHostPath=./OrleansVoting.AppHost/OrleansVoting.AppHost.csproj
+appHostDir=./OrleansVoting.AppHost
+hasExcludeFromManifest=false
+hasFunctions=true
+secretStorageConfigured=false
+```
+
+If `isAspire=false`, this is not an Aspire app — continue with the normal recipe selection.
+
+### ⛔ Step 1a: Pre-Check for Custom/Non-Deployable Resources (MANDATORY)
+
+**Before running `azd init --from-code`, understand whether the app may contain local-only custom resources.** The `gather-aspire-info` run from Step 1 already reports this as the `hasExcludeFromManifest` field — no separate scan is needed.
+
+- `hasExcludeFromManifest=true` → the AppHost source uses `.ExcludeFromManifest()`.
+- `hasExcludeFromManifest=false` → no such usage was found.
+
+This signal is informational. `.ExcludeFromManifest()` can appear alongside deployable resources, so a positive match does **not** immediately block deployment. What matters is the final `azure.yaml` output after `azd init --from-code` completes:
 
 - If `azd init` **fails** with `unsupported resource type` → see Step 2 error guidance below.
 - If `azd init` **succeeds** but `azure.yaml` has an empty or missing `services` section → see Step 4a below.
@@ -185,31 +177,25 @@ This step **MUST** run BEFORE `azd up` or `azd provision`. Skipping it causes a 
 
 **1. Detect Azure Functions in the AppHost:**
 
+Use the `hasFunctions` field from the Step 1 `gather-aspire-info` run. If you have not run it yet (or the workspace changed), re-run it:
+
+**bash:**
 ```bash
-APPHOST_DIR=$(dirname "$(find . -name '*.AppHost.csproj' | head -1)")
-grep -n "AddAzureFunctionsProject" "$APPHOST_DIR"/*.cs
+./scripts/gather-aspire-info.sh [workspace-root]
 ```
 
 **PowerShell:**
 ```powershell
-$appHostDir = (Get-ChildItem -Recurse -Filter "*.AppHost.csproj" | Select-Object -First 1).DirectoryName
-Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AddAzureFunctionsProject"
+./scripts/gather-aspire-info.ps1 -WorkspaceRoot <workspace-root>
 ```
 
-**If `AddAzureFunctionsProject` is NOT found → skip this step.**
+**If `hasFunctions=false` → skip this step.**
 
 **2. Check if `AzureWebJobsSecretStorageType` is already configured:**
 
-```bash
-grep -n "AzureWebJobsSecretStorageType" "$APPHOST_DIR"/*.cs
-```
+The same script reports this as the `secretStorageConfigured` field.
 
-**PowerShell:**
-```powershell
-Get-ChildItem -Path $appHostDir -Filter "*.cs" | Select-String "AzureWebJobsSecretStorageType"
-```
-
-**If already present → skip this step.**
+**If `secretStorageConfigured=true` → skip this step.**
 
 **3. Add the environment variable to the Functions builder chain:**
 
