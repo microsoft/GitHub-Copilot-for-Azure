@@ -8,7 +8,7 @@
 /.github/workflows/ @microsoft/ghcp4a
 
 # Plugin skills owners
-/plugin/skills/ @RickWinter
+/plugin/skills/ @tmeschter @RickWinter
 /plugin/skills/airunway-aks-setup/ @tmeschter @RickWinter
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-ai/ @JasonYeMSFT @RickWinter
