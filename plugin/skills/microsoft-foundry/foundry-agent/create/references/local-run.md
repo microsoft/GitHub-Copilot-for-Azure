@@ -51,7 +51,9 @@ What this does:
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-inspector` and run the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the background terminal/session before deploying or leaving a temporary workspace. Do not use shell job/background operators for the local server; they can detach children and keep files open after the parent shell exits.
+For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
+
+Do **not** run `azd ai agent run ... &` and then let the parent shell exit. That pattern can detach child processes, lose the process handle, leave `localhost:8088` occupied, and keep workspace files open. If a coding-agent runtime does not provide a managed background-session API, use the host shell's normal process-management pattern instead: capture the exact PID or process object, redirect logs, poll logs for readiness, invoke locally only after readiness, and stop that exact process in cleanup.
 
 ## Useful flags
 
