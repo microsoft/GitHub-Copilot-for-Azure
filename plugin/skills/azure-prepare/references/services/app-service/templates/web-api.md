@@ -159,20 +159,7 @@ resource webApp 'Microsoft.Web/sites@2023-12-01' = {
 
 ## Deployment
 
-```bash
-ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
-azd init -t <template> -e "$ENV_NAME" --no-prompt
-azd env set AZURE_LOCATION eastus2
-azd up --no-prompt
-```
-
-**PowerShell:**
-```powershell
-$ENV_NAME = "$(Split-Path -Leaf (Get-Location) | ForEach-Object { $_.ToLower() -replace '[ _]','-' })-dev"
-azd init -t <template> -e $ENV_NAME --no-prompt
-azd env set AZURE_LOCATION eastus2
-azd up --no-prompt
-```
+Helper: [sh](../../../scripts/azd-provision-deploy.sh)/[ps1](../../../scripts/azd-provision-deploy.ps1). Example: `./azd-provision-deploy.sh <template> eastus2 [env-name] [--up]`.
 
 ## References
 

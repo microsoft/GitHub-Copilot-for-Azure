@@ -25,12 +25,9 @@ IF scenario == 'web-api':
   TEMPLATE = web_api_templates[language]    # See web-api.md
 ELSE IF scenario == 'web-app':
   TEMPLATE = web_app_templates[language]    # See web-app.md
-
-# Non-interactive init
-ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
-# PowerShell: $ENV_NAME = "$(Split-Path -Leaf (Get-Location) | ForEach-Object { $_.ToLower() -replace '[ _]','-' })-dev"
-azd init -t $TEMPLATE -e "$ENV_NAME" --no-prompt
 ```
+
+Init helper: [sh](../../../../scripts/azd-provision-deploy.sh)/[ps1](../../../../scripts/azd-provision-deploy.ps1). Example: `./azd-provision-deploy.sh "$TEMPLATE" eastus2 [env-name] --init-only`.
 
 ### Step 2: Check if Recipe Needed
 
@@ -115,17 +112,9 @@ hooks:
 
 ### Step 7: Validate and Deploy
 
-**Required Environment Setup:**
-```bash
-azd env set AZURE_LOCATION eastus2
-```
-
 **Deployment (two-phase recommended):**
-```bash
-azd provision --no-prompt     # Create resources + RBAC assignments
-sleep 60                       # Wait for RBAC propagation
-azd deploy --no-prompt        # Deploy code (RBAC now active)
-```
+
+Run the same helper without `--init-only`; it skips `azd init` when `azure.yaml` exists. Add `--up`/`-UseUp` only for shorthand.
 
 > **CRITICAL: Never store database passwords in app settings.**
 > The correct approach is managed identity with passwordless connections.
