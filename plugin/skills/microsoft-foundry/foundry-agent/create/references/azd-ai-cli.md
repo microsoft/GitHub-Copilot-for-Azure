@@ -30,7 +30,7 @@ azd ai agent files list / show / upload / download / delete / stat / mkdir
 azd ai agent sessions list / show / create / update / delete
 azd ai agent monitor                 # per-session log stream (SSE)
 
-azd ai agent eval init / run / show / update / list
+azd ai agent eval generate / run / show / update / list
 azd ai agent optimize / optimize status / optimize apply / optimize deploy / optimize cancel
 ```
 

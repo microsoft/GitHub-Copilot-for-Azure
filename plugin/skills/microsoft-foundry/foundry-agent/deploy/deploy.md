@@ -130,16 +130,18 @@ Run one remote invocation only unless the user explicitly asked to test multi-tu
 
 > ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
 
-This step runs automatically after deploy. Ask the user which source to use and start it right after deploy succeeds — `init` returns in seconds and generation runs server-side, so it overlaps with invoke/test steps and finishes faster overall.
+This step runs automatically after deploy. Ask the user which source to use and start it right after deploy succeeds — with `--no-wait`, `generate` returns in seconds and generation runs server-side, so it overlaps with invoke/test steps and finishes faster overall.
 
 > *"Your agent is deployed. Want me to set up an evaluation suite now? (a) Yes — current agent instructions (synthetic Q&A), (b) Yes — historical traces (last 3 days), (c) Yes — use existing `eval.yaml`, (d) No / later."*
 
 | Choice | Command | What's next |
 |---|---|---|
-| (a) Agent instructions | `azd ai agent eval init --gen-instruction "<agent purpose>" --no-wait --no-prompt` — `--gen-instruction` is required (hosted agents don't auto-derive it); use `agent.yaml` `description:`. | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
-| (b) Historical traces | `azd ai agent eval init --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
-| (c) Existing `eval.yaml` | Skip `init`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
-| (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval init` (and then `eval run`) anytime."* |
+| (a) Agent instructions | `azd ai agent eval generate --gen-instruction "<agent purpose>" --no-wait --no-prompt` — `--gen-instruction` is required (hosted agents don't auto-derive it); use `agent.yaml` `description:`. | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
+| (b) Historical traces | `azd ai agent eval generate --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
+| (c) Existing `eval.yaml` | Skip `generate`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
+| (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval generate` (and then `eval run`) anytime."* |
+
+Other useful flags on `generate`: `--dataset <path-or-name>` to reuse an existing dataset instead of generating one, `--evaluator <name>` (repeatable) to pin built-in or custom evaluators, `--eval-model <name>` to choose the model used for generation and evaluation, `--reset-defaults` to overwrite an existing eval config, `--name <suite-name>` and `--out-file <path>` (default `eval.yaml`).
 
 Then proceed to Step 6. See [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) for run/refresh details.
 
@@ -192,7 +194,8 @@ Each env has its own `AGENT_<SVC>_*` vars.
 | `subscription quota exceeded` | Ask user to request quota; do not auto-retry. |
 | Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
 | `RoleAssignmentUpdateNotPermitted` during provision | A role assignment already exists but conflicts. Check for existing role assignments with `az role assignment list --scope <resource-scope>`. The provision may have succeeded for all resources except RBAC — verify with `azd ai project show` and manually assign the `Cognitive Services User` role to the agent identity if needed. |
-| `eval init`: `one of --gen-instruction ... is required` | Retry with `--gen-instruction "<agent purpose>"` (Step 5 option (a)). |
+| `eval generate`: `one of --gen-instruction ... is required` | Retry with `--gen-instruction "<agent purpose>"` (Step 5 option (a)). |
+| `unknown command "init" for "azd ai agent eval"` | Command was renamed: use `azd ai agent eval generate` (requires azd CLI with `azure.ai.agents` extension up to date). |
 
 For deeper logs, see [troubleshoot](../troubleshoot/troubleshoot.md).
 
@@ -222,16 +225,16 @@ Prompt agents are not containerized -- they are a model + instructions + optiona
 
 > ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
 
-This step runs automatically after deploy. Ask the user which source to use and start it right after deploy succeeds — `init` returns in seconds and generation runs server-side, so it overlaps with invoke/test steps and finishes faster overall.
+This step runs automatically after deploy. Ask the user which source to use and start it right after deploy succeeds — with `--no-wait`, `generate` returns in seconds and generation runs server-side, so it overlaps with invoke/test steps and finishes faster overall.
 
 > *"Your agent is deployed. Want me to set up an evaluation suite now? (a) Yes — current agent instructions (synthetic Q&A), (b) Yes — historical traces (last 3 days), (c) Yes — use existing `eval.yaml`, (d) No / later."*
 
 | Choice | Command | What's next |
 |---|---|---|
-| (a) Agent instructions | `azd ai agent eval init --gen-instruction "<agent purpose>" --no-wait --no-prompt` | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
-| (b) Historical traces | `azd ai agent eval init --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
-| (c) Existing `eval.yaml` | Skip `init`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
-| (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval init` (and then `eval run`) anytime."* |
+| (a) Agent instructions | `azd ai agent eval generate --gen-instruction "<agent purpose>" --no-wait --no-prompt` | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
+| (b) Historical traces | `azd ai agent eval generate --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
+| (c) Existing `eval.yaml` | Skip `generate`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
+| (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval generate` (and then `eval run`) anytime."* |
 
 ## Common failure modes -- Prompt
 
@@ -260,27 +263,27 @@ For hosted agents, `playground_url` is in `azd ai agent show --output json`.
 
 ## After Deployment — Auto-Generate Evaluation Suite
 
-> Reference for Step 5 options (a) and (b) — start `init` right after deploy so its server-side generation overlaps with invoke/test steps and finishes faster. Options (c) and (d) skip `init` and go straight to section 3 (run) or stop.
+> Reference for Step 5 options (a) and (b) — start `generate` right after deploy so its server-side generation overlaps with invoke/test steps and finishes faster. Options (c) and (d) skip `generate` and go straight to section 3 (run) or stop.
 
 ### 1. Inspect existing eval.yaml
 
 Check the selected agent root for `eval.yaml`:
 
-- **Exists and matches the selected agent** → skip `init`; go to step 3 (run).
+- **Exists and matches the selected agent** → skip `generate`; go to step 3 (run).
 - **Missing or stale** → continue to step 2.
 
 ### 2. Submit generation (asynchronous, server-side)
 
-Run `azd ai agent eval init --no-wait` with the user's chosen flags (see the Step 5 table). The command:
+Run `azd ai agent eval generate --no-wait` with the user's chosen flags (see the Step 5 table). The command:
 
 - Submits dataset + evaluator generation jobs server-side.
 - Returns in seconds.
-- Writes pending operation IDs to local azd state (`InitStatus: pending`).
-- Writes a placeholder `eval.yaml` at the agent root.
+- Writes pending operation IDs to local azd state.
+- Writes a placeholder `eval.yaml` at the agent root (override with `--out-file <path>`).
 
-No skill-side polling, terminal handle, or later-turn re-check is needed. `azd ai agent eval run` (section 3) automatically detects `InitStatus: pending`, resumes the in-flight init, downloads artifacts, finalizes `eval.yaml`, then runs the eval.
+No skill-side polling, terminal handle, or later-turn re-check is needed. `azd ai agent eval run` (section 3) automatically resumes a pending generation, downloads artifacts, finalizes `eval.yaml`, then runs the eval.
 
-If the user wants to wait synchronously instead (e.g., to inspect `eval.yaml` before running), drop `--no-wait` — `init` will then poll for several minutes before returning.
+If the user wants to wait synchronously instead (e.g., to inspect `eval.yaml` before running), drop `--no-wait` — `generate` will then submit the jobs, wait for completion, download review artifacts, and write the finalized `eval.yaml` before returning (typically several minutes).
 
 ### 3. Run the suite
 
@@ -298,8 +301,8 @@ When local files under `datasets/<suite>/` or `evaluators/<suite>/` change, run 
 
 *"Your agent is deployed and evaluation suite generation is **submitted server-side** (still running, takes several minutes). Would you like to run an evaluation now? `azd ai agent eval run` will wait for generation to finish, then execute the eval."*
 
-- **Yes** → run `azd ai agent eval run` (this resumes the pending init, then runs the eval — may take several minutes the first time), then follow the [observe skill](../observe/observe.md) to interpret results.
-- **No** → stop. The user can return later via `azd ai agent eval run` — it will pick up wherever the pending init is.
+- **Yes** → run `azd ai agent eval run` (this resumes the pending generation, then runs the eval — may take several minutes the first time), then follow the [observe skill](../observe/observe.md) to interpret results.
+- **No** → stop. The user can return later via `azd ai agent eval run` — it will pick up wherever the pending generation is.
 - **Production trace analysis** → follow the [trace skill](../trace/trace.md).
 
 ## Non-Interactive / YOLO Mode
