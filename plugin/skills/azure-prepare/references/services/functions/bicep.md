@@ -121,6 +121,17 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
     principalType: 'ServicePrincipal'
   }
 }
+
+// Add this when the app uses Azure Table Storage SDKs
+resource tableRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(storageAccount.id, functionApp.id, 'Storage Table Data Contributor')
+  scope: storageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3')
+    principalId: functionApp.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
 ```
 
 > 💡 **Key Points:**
@@ -128,7 +139,8 @@ resource storageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
 > - Use `AzureWebJobsStorage__blobServiceUri` instead of connection string
 > - Set `allowSharedKeyAccess: false` for enhanced security
 > - Use `SystemAssignedIdentity` for deployment authentication
-> - Grant `Storage Blob Data Owner` role for full access to blobs, queues, and tables
+> - Grant `Storage Blob Data Owner` for blob runtime/deployment access
+> - Add `Storage Table Data Contributor` when app code uses Table Storage
 
 ## Consumption Plan (Legacy)
 

@@ -16,6 +16,7 @@ For intent-to-resource mapping and selection algorithm, see [selection.md](../se
 | [mcp](mcp/README.md) | `mcp` |
 | [sql](sql/README.md) | `sql` |
 | [blob-eventgrid](blob-eventgrid/README.md) | `blob` |
+| [table-storage](table-storage/README.md) | `http` + `table` integration |
 
 ## Composition
 

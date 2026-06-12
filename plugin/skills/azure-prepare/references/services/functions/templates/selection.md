@@ -14,6 +14,7 @@ Map user intent to MCP template `resource` filter.
 | "Event Hub", "streaming", "events" | `EventHubTrigger`, `@app.event_hub`, `event_hub_output` | `eventhub` | [recipes/eventhubs/README.md](recipes/eventhubs/README.md) |
 | "Service Bus", "queue", "message" | `ServiceBusTrigger`, `@app.service_bus_queue` | `servicebus` | [recipes/servicebus/README.md](recipes/servicebus/README.md) |
 | "blob", "file", "storage trigger" | `BlobTrigger`, `@app.blob`, `blob_input`, `blob_output` | `blob` | [recipes/blob-eventgrid/README.md](recipes/blob-eventgrid/README.md) |
+| "Table Storage", "table", "key-value storage" | `TableServiceClient`, `TableClient`, `Azure.Data.Tables`, `@azure/data-tables` | `http` (base) + table recipe | [recipes/table-storage/README.md](recipes/table-storage/README.md) |
 | "SQL", "database trigger" | `SqlTrigger`, `@app.sql`, `sql_input`, `SqlOutput` | `sql` | [recipes/sql/README.md](recipes/sql/README.md) |
 | "MCP", "MCP server", "tools" | `McpToolTrigger`, `@app.mcp_tool`, `mcp` in project | `mcp` | [recipes/mcp/README.md](recipes/mcp/README.md) |
 | "durable", "workflow", "orchestration" | `DurableOrchestrationTrigger`, `orchestrator`, `durable_functions` | `durable` | [recipes/durable/README.md](recipes/durable/README.md) |
