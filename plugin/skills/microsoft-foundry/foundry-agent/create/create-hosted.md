@@ -196,7 +196,7 @@ azd ai agent init --no-prompt \
 
 ### Step 5 -- Run locally and iterate
 
-Read and follow [local-run](references/local-run.md). It owns local setup, including the new-project case where provisioning can run in the background while preparing the local environment. Complete one representative local invocation before deploying.
+Read and follow [local-run](references/local-run.md). Complete one representative local invocation before deploying.
 
 ### Step 6 -- Add tools (optional)
 
