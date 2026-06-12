@@ -1,0 +1,83 @@
+{
+    "location": "eastus",
+    "properties": {
+        "streamDeclarations": {
+            "Custom-SecurityEvents": {
+                "columns": [
+                    { "name": "TimeGenerated", "type": "datetime" },
+                    { "name": "Computer", "type": "string" },
+                    { "name": "EventID", "type": "int" },
+                    { "name": "Channel", "type": "string" },
+                    { "name": "UserName", "type": "string" },
+                    { "name": "EventDescription", "type": "string" }
+                ]
+            }
+        },
+        "dataSources": {
+            "windowsEventLogs": [
+                {
+                    "name": "securityEvents",
+                    "xPathQueries": [
+                        "Security!*[System[(EventID=4624 or EventID=4625 or EventID=4648)]]"
+                    ],
+                    "streams": ["Custom-SecurityEvents"],
+                    "transform": "parse_security_events"
+                },
+                {
+                    "name": "systemEvents",
+                    "xPathQueries": [
+                        "System!*[System[(Level=1 or Level=2 or Level=3)]]"
+                    ],
+                    "streams": ["Microsoft-Event"]
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "name": "myWorkspace",
+                    "workspaceResourceId": "/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{ws}",
+                    "workspaceId": "{workspace-guid}"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": ["Custom-SecurityEvents"],
+                "destinations": ["myWorkspace"],
+                "outputStream": "Custom-SecurityEvents_CL"
+            },
+            {
+                "streams": ["Microsoft-Event"],
+                "destinations": ["myWorkspace"],
+                "outputStream": "Microsoft-Event"
+            }
+        ],
+        "transformations": [
+            {
+                "name": "parse_security_events",
+                "headerProcessor": {
+                    "processor": "header.WindowsEvents"
+                },
+                "processors": [
+                    {
+                        "processor": "parse.XmlPath",
+                        "configuration": {
+                            "columnName": "RawXml",
+                            "all": [
+                                { "path": "/Event/System/EventID", "nameAs": "EventID", "typeAs": "int" },
+                                { "path": "/Event/EventData/Data[@Name='TargetUserName']", "nameAs": "UserName", "typeAs": "string" }
+                            ]
+                        }
+                    },
+                    {
+                        "processor": "map.Drop",
+                        "configuration": {
+                            "columnNames": ["RawXml", "RenderingInfo", "EventRecordId", "PublisherId"]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
