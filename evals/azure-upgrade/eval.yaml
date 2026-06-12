@@ -6,10 +6,9 @@
 # Jest tests use single-run expect(isSkillInvoked(...)).toBe(true).
 # Mapped to runs: 1, threshold: 1.0 (must pass every time).
 #
-# The java-sdk-migration-e2e tests (3 tests) are NOT migrated here because
-# they require workspace setup (git clone), file system assertions on migrated
-# code, and multi-turn followUp with extended timeouts (45 min). These need
-# custom grader/executor support that is not yet available in Vally.
+# The java-sdk-migration-e2e tests (3 tests) are included below with TODO
+# comments marking the workspace-setup fixture and workspace-file-assertions
+# custom grader that need to be implemented before they can run end-to-end.
 #
 # Global graders (evaluate#125 workaround): no_runtime_failure is duplicated
 # into every stimulus block below.
@@ -219,6 +218,174 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)enterprise|premium|standard|basic|tier|sku|acre|\\bacr\\b"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Java SDK Migration E2E Tests
+  # ═══════════════════════════════════════════════════════════════════
+  #
+  # These tests require workspace setup and file-system assertions that
+  # are not yet supported by Vally's built-in graders.
+  #
+  # TODO: Implement a "workspace-setup" tag (or equivalent fixture mechanism)
+  #   so the custom executor can clone the test repo before the agent runs.
+  #   Config needed:
+  #     repoUrl: https://github.com/weidongxu-microsoft/java-update-examples.git
+  #     commitId: 6d071296df8929482b0903241a23713a0bb952a4
+  #     depth: 1
+  #     sparseCheckoutPath: <per-stimulus, see individual tags below>
+  #
+  # TODO: Implement a "workspace-file-assertions" custom grader that can:
+  #   1. Glob for files in the agent's working directory
+  #   2. Strip XML comments from .xml files
+  #   3. Strip Java line/block comments from .java files
+  #   4. Run matches / not-matches assertions on stripped file content
+  #   5. Scope assertions to specific XML elements (e.g. <dependency> blocks only)
+
+  # ── java-sdk-client-init-migration ──
+  # Jest: "migrates legacy file-based Azure auth (client init) to DefaultAzureCredential"
+  # Setup: sparse checkout "azure-legacy-sdk-update-azure-client-initialization"
+  # Assertions (post-migration file inspection):
+  #   1. pom.xml: no <dependency> with groupId com.microsoft.azure
+  #   2. pom.xml: azure-sdk-bom artifact present under com.azure groupId
+  #   3. pom.xml: at least one com.azure.resourcemanager dependency
+  #   4. All .java files: no AZURE_AUTH_LOCATION references (comments stripped)
+  - name: "Java SDK migration - client init to DefaultAzureCredential"
+    prompt: >-
+      Migrate my Java project from legacy Azure SDK to modern Azure SDK.
+      The project can be found under azure-legacy-sdk-update-azure-client-initialization.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+      # TODO: Add workspace-setup tag once fixture mechanism is implemented
+      # workspaceSetup: '{"repoUrl":"https://github.com/weidongxu-microsoft/java-update-examples.git","commitId":"6d071296df8929482b0903241a23713a0bb952a4","sparseCheckoutPath":"azure-legacy-sdk-update-azure-client-initialization"}'
+    config:
+      timeout: "45m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # TODO: Replace with workspace-file-assertions grader once implemented
+      # - type: workspace-file-assertions
+      #   config:
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       scope: dependency          # only inspect <dependency> blocks
+      #       not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
+      #     - glob: "**/*.java"
+      #       stripComments: java
+      #       not-matches: "AZURE_AUTH_LOCATION"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── java-sdk-eventhubs-migration ──
+  # Jest: "migrates EventProcessorHost InMemory managers to BlobCheckpointStore"
+  # Setup: sparse checkout "azure-legacy-sdk-update-eventhubs-v3"
+  # Assertions (post-migration file inspection):
+  #   1. pom.xml: no <dependency> with groupId com.microsoft.azure
+  #   2. pom.xml: azure-sdk-bom artifact present under com.azure groupId
+  #   3. All .java files: no InMemory* checkpoint/lease types (comments stripped)
+  #   4. At least one .java file: BlobCheckpointStore is used
+  - name: "Java SDK migration - EventProcessorHost to BlobCheckpointStore"
+    prompt: >-
+      Migrate my Java project from legacy Azure SDK to modern Azure SDK.
+      The project can be found under azure-legacy-sdk-update-eventhubs-v3.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+      # TODO: Add workspace-setup tag once fixture mechanism is implemented
+      # workspaceSetup: '{"repoUrl":"https://github.com/weidongxu-microsoft/java-update-examples.git","commitId":"6d071296df8929482b0903241a23713a0bb952a4","sparseCheckoutPath":"azure-legacy-sdk-update-eventhubs-v3"}'
+    config:
+      timeout: "45m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # TODO: Replace with workspace-file-assertions grader once implemented
+      # - type: workspace-file-assertions
+      #   config:
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       scope: dependency
+      #       not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       matches: "<groupId>\\s*com\\.azure\\s*</groupId>"
+      #     - glob: "**/*.java"
+      #       stripComments: java
+      #       not-matches: "\\bInMemory[A-Z]\\w*"
+      #     - glob: "**/*.java"
+      #       stripComments: java
+      #       any-matches: "\\bBlobCheckpointStore\\b"   # at least one file must match
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── java-sdk-batch-migration ──
+  # Jest: "migrates Batch defineNewApplicationPackage chain to applicationPackages().define()"
+  # Setup: sparse checkout "azure-legacy-sdk-update-batch-java-manage-batch-accounts"
+  # Assertions (post-migration file inspection):
+  #   1. pom.xml: no <dependency> with groupId com.microsoft.azure
+  #   2. pom.xml: at least one com.azure.resourcemanager dependency
+  #   3. At least one .java file: applicationPackages().define( pattern present
+  - name: "Java SDK migration - Batch applicationPackages define"
+    prompt: >-
+      Migrate my Java project from legacy Azure SDK to modern Azure SDK.
+      The project can be found under azure-legacy-sdk-update-batch-java-manage-batch-accounts.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+      # TODO: Add workspace-setup tag once fixture mechanism is implemented
+      # workspaceSetup: '{"repoUrl":"https://github.com/weidongxu-microsoft/java-update-examples.git","commitId":"6d071296df8929482b0903241a23713a0bb952a4","sparseCheckoutPath":"azure-legacy-sdk-update-batch-java-manage-batch-accounts"}'
+    config:
+      timeout: "45m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # TODO: Replace with workspace-file-assertions grader once implemented
+      # - type: workspace-file-assertions
+      #   config:
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       scope: dependency
+      #       not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+      #     - file: "pom.xml"
+      #       stripComments: xml
+      #       matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
+      #     - glob: "**/*.java"
+      #       stripComments: java
+      #       any-matches: "applicationPackages\\(\\s*\\)\\s*\\.define\\s*\\("
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
