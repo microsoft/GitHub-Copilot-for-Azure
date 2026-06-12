@@ -20,7 +20,6 @@
 /plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk @RickWinter
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi @RickWinter
 /plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @RickWinter
-/plugin/skills/azure-hosted-copilot-sdk/ @tmeschter @JasonYeMSFT @RickWinter
 /plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @RickWinter
 /plugin/skills/azure-kusto/ @saikoumudi @RickWinter
 /plugin/skills/azure-messaging/ @kashifkhan @RickWinter
