@@ -6,9 +6,9 @@
 # Jest tests use single-run expect(isSkillInvoked(...)).toBe(true).
 # Mapped to runs: 1, threshold: 1.0 (must pass every time).
 #
-# The java-sdk-migration-e2e tests (3 tests) are included below with TODO
-# comments marking the workspace-setup fixture and workspace-file-assertions
-# custom grader that need to be implemented before they can run end-to-end.
+# The java-sdk-migration-e2e tests (3 tests) are included below using
+# environment.commands for workspace setup and the java-upgrade-file-content
+# custom grader for post-migration file assertions.
 #
 # Global graders (evaluate#125 workaround): no_runtime_failure is duplicated
 # into every stimulus block below.
@@ -227,15 +227,8 @@ stimuli:
   # Java SDK Migration E2E Tests
   # ═══════════════════════════════════════════════════════════════════
   #
-  # These tests require workspace setup and file-system assertions that
-  # are not yet supported by Vally's built-in graders.
-  #
-  # TODO: Implement a "workspace-file-assertions" custom grader that can:
-  #   1. Glob for files in the agent's working directory
-  #   2. Strip XML comments from .xml files
-  #   3. Strip Java line/block comments from .java files
-  #   4. Run matches / not-matches assertions on stripped file content
-  #   5. Scope assertions to specific XML elements (e.g. <dependency> blocks only)
+  # These tests use environment.commands for workspace setup and the
+  # java-upgrade-file-content custom grader for post-migration assertions.
 
   # ── java-sdk-client-init-migration ──
   # Jest: "migrates legacy file-based Azure auth (client init) to DefaultAzureCredential"
@@ -268,22 +261,23 @@ stimuli:
         config:
           required:
             - azure-upgrade
-      # TODO: Replace with workspace-file-assertions grader once implemented
-      # - type: workspace-file-assertions
-      #   config:
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       scope: dependency          # only inspect <dependency> blocks
-      #       not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
-      #     - glob: "**/*.java"
-      #       stripComments: java
-      #       not-matches: "AZURE_AUTH_LOCATION"
+      # Post-migration file assertions
+      - type: java-upgrade-file-content
+        config:
+          rules:
+            - glob: "**/pom.xml"
+              stripComments: xml
+              scope: dependency
+              not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
+            - glob: "**/*.java"
+              stripComments: java
+              not-matches: "AZURE_AUTH_LOCATION"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -320,25 +314,26 @@ stimuli:
         config:
           required:
             - azure-upgrade
-      # TODO: Replace with workspace-file-assertions grader once implemented
-      # - type: workspace-file-assertions
-      #   config:
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       scope: dependency
-      #       not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       matches: "<groupId>\\s*com\\.azure\\s*</groupId>"
-      #     - glob: "**/*.java"
-      #       stripComments: java
-      #       not-matches: "\\bInMemory[A-Z]\\w*"
-      #     - glob: "**/*.java"
-      #       stripComments: java
-      #       any-matches: "\\bBlobCheckpointStore\\b"   # at least one file must match
+      # Post-migration file assertions
+      - type: java-upgrade-file-content
+        config:
+          rules:
+            - glob: "**/pom.xml"
+              stripComments: xml
+              scope: dependency
+              not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\s*</groupId>"
+            - glob: "**/*.java"
+              stripComments: java
+              not-matches: "\\bInMemory[A-Z]\\w*"
+            - glob: "**/*.java"
+              stripComments: java
+              any-matches: "\\bBlobCheckpointStore\\b"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -374,19 +369,20 @@ stimuli:
         config:
           required:
             - azure-upgrade
-      # TODO: Replace with workspace-file-assertions grader once implemented
-      # - type: workspace-file-assertions
-      #   config:
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       scope: dependency
-      #       not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
-      #     - file: "pom.xml"
-      #       stripComments: xml
-      #       matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
-      #     - glob: "**/*.java"
-      #       stripComments: java
-      #       any-matches: "applicationPackages\\(\\s*\\)\\s*\\.define\\s*\\("
+      # Post-migration file assertions
+      - type: java-upgrade-file-content
+        config:
+          rules:
+            - glob: "**/pom.xml"
+              stripComments: xml
+              scope: dependency
+              not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
+            - glob: "**/*.java"
+              stripComments: java
+              any-matches: "applicationPackages\\(\\s*\\)\\s*\\.define\\s*\\("
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
