@@ -230,14 +230,6 @@ stimuli:
   # These tests require workspace setup and file-system assertions that
   # are not yet supported by Vally's built-in graders.
   #
-  # TODO: Implement a "workspace-setup" tag (or equivalent fixture mechanism)
-  #   so the custom executor can clone the test repo before the agent runs.
-  #   Config needed:
-  #     repoUrl: https://github.com/weidongxu-microsoft/java-update-examples.git
-  #     commitId: 6d071296df8929482b0903241a23713a0bb952a4
-  #     depth: 1
-  #     sparseCheckoutPath: <per-stimulus, see individual tags below>
-  #
   # TODO: Implement a "workspace-file-assertions" custom grader that can:
   #   1. Glob for files in the agent's working directory
   #   2. Strip XML comments from .xml files
@@ -264,8 +256,11 @@ stimuli:
       area: behavior
       followUp:
         - "Continue with recommended options until complete."
-      # TODO: Add workspace-setup tag once fixture mechanism is implemented
-      # workspaceSetup: '{"repoUrl":"https://github.com/weidongxu-microsoft/java-update-examples.git","commitId":"6d071296df8929482b0903241a23713a0bb952a4","sparseCheckoutPath":"azure-legacy-sdk-update-azure-client-initialization"}'
+    environment:
+      commands:
+        - git clone --depth 1 --sparse https://github.com/weidongxu-microsoft/java-update-examples.git
+        - cd java-update-examples && git sparse-checkout set azure-legacy-sdk-update-azure-client-initialization
+        - cd java-update-examples && git fetch --depth 1 origin 6d071296df8929482b0903241a23713a0bb952a4 && git checkout 6d071296df8929482b0903241a23713a0bb952a4
     config:
       timeout: "45m"
     graders:
@@ -313,8 +308,11 @@ stimuli:
       area: behavior
       followUp:
         - "Continue with recommended options until complete."
-      # TODO: Add workspace-setup tag once fixture mechanism is implemented
-      # workspaceSetup: '{"repoUrl":"https://github.com/weidongxu-microsoft/java-update-examples.git","commitId":"6d071296df8929482b0903241a23713a0bb952a4","sparseCheckoutPath":"azure-legacy-sdk-update-eventhubs-v3"}'
+    environment:
+      commands:
+        - git clone --depth 1 --sparse https://github.com/weidongxu-microsoft/java-update-examples.git
+        - cd java-update-examples && git sparse-checkout set azure-legacy-sdk-update-eventhubs-v3
+        - cd java-update-examples && git fetch --depth 1 origin 6d071296df8929482b0903241a23713a0bb952a4 && git checkout 6d071296df8929482b0903241a23713a0bb952a4
     config:
       timeout: "45m"
     graders:
@@ -364,8 +362,11 @@ stimuli:
       area: behavior
       followUp:
         - "Continue with recommended options until complete."
-      # TODO: Add workspace-setup tag once fixture mechanism is implemented
-      # workspaceSetup: '{"repoUrl":"https://github.com/weidongxu-microsoft/java-update-examples.git","commitId":"6d071296df8929482b0903241a23713a0bb952a4","sparseCheckoutPath":"azure-legacy-sdk-update-batch-java-manage-batch-accounts"}'
+    environment:
+      commands:
+        - git clone --depth 1 --sparse https://github.com/weidongxu-microsoft/java-update-examples.git
+        - cd java-update-examples && git sparse-checkout set azure-legacy-sdk-update-batch-java-manage-batch-accounts
+        - cd java-update-examples && git fetch --depth 1 origin 6d071296df8929482b0903241a23713a0bb952a4 && git checkout 6d071296df8929482b0903241a23713a0bb952a4
     config:
       timeout: "45m"
     graders:
