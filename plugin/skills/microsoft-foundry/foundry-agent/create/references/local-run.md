@@ -51,7 +51,9 @@ What this does:
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-inspector` and run the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the background terminal/session before deploying or leaving a temporary workspace. Do not use shell job/background operators for the local server; they can detach children and keep files open after the parent shell exits.
+For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
+
+Do **not** start `azd ai agent run` as a detached process that you cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
 
 ## Useful flags
 
@@ -117,6 +119,8 @@ Other useful flags:
 | `--input-file request.json` / `-f request.json` | Send a file body instead of a string message. |
 | `--new-session` | Drop the saved local session and start fresh. |
 | `--port <n>` | Match the port you started `run` with. |
+
+After the local invocation completes, stop the `azd ai agent run` process you started before moving on.
 
 ## When to graduate to remote
 
