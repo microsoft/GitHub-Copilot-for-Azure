@@ -288,7 +288,7 @@ stimuli:
           pattern: "(?is)azd\\s+ai\\s+agent\\s+eval\\s+generate.*--dataset"
       - type: output-matches
         config:
-          pattern: "(?is)dataset:.*local_uri|local_uri:.*eval/travel_approval_golden\\.jsonl"
+          pattern: "(?is)(dataset:.*local_uri.*eval/travel_approval_golden\\.jsonl|eval/travel_approval_golden\\.jsonl.*dataset:.*local_uri|local_uri:.*eval/travel_approval_golden\\.jsonl)"
       - type: output-matches
         config:
           pattern: "(?is)max_candidates|model_search_space|optimization_model"

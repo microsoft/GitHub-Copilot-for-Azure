@@ -14,10 +14,8 @@ agent:
   config: .agent_configs/baseline/metadata.yaml
 dataset:
   local_uri: <path-to-jsonl>
-# dataset:
-#   name: <foundry-dataset-name>
-#   version: "<dataset-version>"
-#   local_uri: <local-dataset-jsonl>
+  # name: <foundry-dataset-name>
+  # version: "<dataset-version>"
 # validation_dataset:
 #   name: <validation-dataset-name>
 #   version: "<validation-version>"
