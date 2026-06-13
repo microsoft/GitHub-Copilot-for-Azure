@@ -265,6 +265,198 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── agent-optimizer-prompt ──
+  - name: "Generate evals for Agent Optimizer"
+    prompt: |
+      I have an azd Python hosted agent that is already wired for Foundry Agent Optimizer.
+      Help me create the optimizer eval.yaml from eval/travel_approval_golden.jsonl,
+      generate adaptive evaluators with azd, and run optimization with an allowed
+      optimizer model. Show the current eval.yaml fields I should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)azd\\s+ai\\s+agent\\s+eval\\s+generate.*--dataset"
+      - type: output-matches
+        config:
+          pattern: "(?is)dataset:.*local_uri|local_uri:.*eval/travel_approval_golden\\.jsonl"
+      - type: output-matches
+        config:
+          pattern: "(?is)max_candidates|model_search_space|optimization_model"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)azd\\s+ai\\s+agent\\s+eval\\s+init"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Scaffold Python agent for Agent Optimizer"
+    prompt: |
+      Make my existing azd Python hosted Foundry agent optimizer-ready. Explain the
+      files and code changes you would make, including SDK wiring, baseline config,
+      safe optimization targets, and when to stop for review before deployment.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)azure-ai-agentserver-optimization"
+      - type: output-matches
+        config:
+          pattern: "(?is)load_config\\(\\)|load_config"
+      - type: output-matches
+        config:
+          pattern: "(?is)\\.agent_configs[/\\\\]baseline|\\.agent_configs.*baseline"
+      - type: output-matches
+        config:
+          pattern: "(?is)review|do not deploy|stop"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Apply Agent Optimizer candidate locally"
+    prompt: |
+      Agent Optimizer finished and gave me candidate cand-123. How should I apply
+      that candidate to my azd hosted agent project so the source changes are
+      reviewable before deployment?
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)azd\\s+ai\\s+agent\\s+optimize\\s+apply\\s+--candidate"
+      - type: output-matches
+        config:
+          pattern: "(?is)diff|review|source changes"
+      - type: output-matches
+        config:
+          pattern: "(?is)azd\\s+deploy"
+      - type: output-not-matches
+        config:
+          pattern: "(?is)azd\\s+ai\\s+agent\\s+optimize\\s+deploy\\s+--candidate"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── agent-observe-prompts ──
+  - name: "Evaluate deployed Foundry agent"
+    prompt: |
+      Evaluate my deployed Foundry agent using the evaluation suite in its
+      .foundry metadata. Explain the setup checks and the batch evaluation call
+      you should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)evaluation_agent_batch_eval_create"
+      - type: output-matches
+        config:
+          pattern: "(?is)inputData"
+      - type: output-matches
+        config:
+          pattern: "(?is)evaluation_get|evalRunId|evalId"
+      - type: output-not-matches
+        config:
+          pattern: "(?is)evaluation_suite_run"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Analyze eval failures and optimize prompt"
+    prompt: |
+      My latest Foundry agent evaluation failed several rows. Help me download the
+      detailed eval results, cluster root causes, optimize the agent prompt, and
+      compare the new version against the baseline.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)output_items|download.*results|azure-ai-projects"
+      - type: output-matches
+        config:
+          pattern: "(?is)cluster|root cause|failures"
+      - type: output-matches
+        config:
+          pattern: "(?is)prompt_optimize|optimize.*prompt"
+      - type: output-matches
+        config:
+          pattern: "(?is)evaluation_comparison_create|compare"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Enable continuous evaluation monitoring"
+    prompt: |
+      Set up continuous evaluation monitoring for my Foundry agent in production.
+      Include how to check existing config, choose evaluators, and enable or update
+      monitoring safely.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)continuous_eval_get"
+      - type: output-matches
+        config:
+          pattern: "(?is)continuous_eval_create"
+      - type: output-matches
+        config:
+          pattern: "(?is)evaluator|deploymentName|quality|safety"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ── Foundry E2E checks ──
   - name: "Create hotel booking agent"
     tags:
