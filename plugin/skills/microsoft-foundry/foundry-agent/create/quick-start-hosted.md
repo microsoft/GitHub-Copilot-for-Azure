@@ -190,7 +190,7 @@ azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<deployment-name>"
 
 ### Step 11 — Local smoke test
 
-Set up a venv + `uv` first — pre-installing dependencies under it materially speeds up the subsequent `azd ai agent run` (which would otherwise install them itself, slowly).
+Set up a venv with `uv` installed first. `azd ai agent run` installs Python dependencies on first start; with an activated venv that has `uv` available, it uses `uv` (seconds) instead of plain `pip` (minutes).
 
 > **Important:** the venv must live in `src/<project>/` (next to `requirements.txt`). `azd ai agent run` resolves the venv relative to the service source directory; a venv at the project root is ignored and azd silently creates a second one without `uv`, wasting the speedup.
 
@@ -202,18 +202,20 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1                    # Windows pwsh
 source .venv/bin/activate                       # macOS / Linux
 python -m pip install uv
-uv pip install --prerelease=allow -r requirements.txt    # or pyproject.toml
 cd -                                             # back to project root for the azd commands below
 ```
 
-`--prerelease=allow` is needed because several `agent-framework-*` transitive deps are pre-release pins; without it uv fails resolution.
+**.NET / Node:** no pre-install step — `azd ai agent run` runs `dotnet restore` / `npm install` itself on first start.
 
-**.NET:** `cd src/<project> && dotnet restore && cd -`
-**Node:** `cd src/<project> && npm install && cd -`
+Run the agent locally. For Python, do this **with the service-dir venv still activated** — activation is what lets `azd ai agent run` find `uv` for the fast dependency install. `azd ai agent run` **is** the local server — a foreground process holding port 8088 that must stay alive from start, through every `invoke --local`, until you explicitly stop it.
 
-Run the agent locally with the service-dir venv still activated, in a **managed** background session your tooling can monitor and stop. Do not use detached shell job operators (`&`, `start /B`, `nohup`, popped windows) which orphan the process and hold files in the project.
+Start it in a **managed** background session your shell tool can poll and stop (most tools detect a long-running foreground process and return a session/shell id — use that id). Do **not** use job operators (`bash &`, `nohup`, `start /B`, popped windows): on Linux/macOS the child gets `SIGHUP` and **dies when its parent bash exits**, so the next command sees `could not connect` even though `ss` from inside the *same* bash just showed `:8088` bound.
 
-> ⚠️ **Readiness gate — do not skip.** After starting `azd ai agent run`, **watch the server log for the ready line** (e.g. `Running on http://0.0.0.0:8088`) before issuing any invoke. Local startup may take time; invoking before the socket is bound fails with `could not connect`. Do **not** diagnose with `netstat` / process listings, and do **not** wait long blocks (60s+) hoping it's done. Re-read the log every ~15 seconds and fire the invoke as soon as the ready line appears.
+> ⚠️ **Readiness gate — do not skip.** After starting `azd ai agent run`, **watch the server log for the ready line, something like `Running` (e.g. `Running on http://0.0.0.0:8088`) — not just `Starting …`**, which azd prints as a banner before the Python process has bound the socket. Invoking before the socket is bound fails with `could not connect`.
+> - **Poll the log every ~15 seconds**, fire the invoke as soon as the ready line appears. Do **not** wait long blocks (60s+).
+> - **Don't substitute log polling** with `sleep N && curl`, `netstat` / `ss` / `lsof`, or `ps aux` probes — only the log tells you readiness.
+> - **If `invoke --local` fails,** re-read the server log. Error before the ready line (missing env var, auth, port in use) → fix the cause and restart `azd ai agent run` in the managed session. Ready line present but request still fails → the issue is in the request, not the server. Either way, do **not** bypass with `python main.py` or raw `curl POST /responses` — those skip the wiring the deployed agent uses.
+> - **If `invoke --local` returns `could not connect` after you saw the ready line in a previous shell,** the server died when that shell exited (classic `&` symptom). Restart in the managed session — do not retry with another `&`.
 
 ```bash
 azd ai agent run --no-inspector
@@ -225,7 +227,7 @@ Smoke-invoke (local):
 azd ai agent invoke --local "<short representative prompt for the agent's purpose>"
 ```
 
-Stop the local server before continuing — a stranded process holds open files in the project directory and breaks later cleanup (`EBUSY` on rmdir).
+Stop the local server via the managed session's stop primitive before continuing — a lingering process holds files in the project and breaks later cleanup.
 
 ### Step 12 — Deploy
 
@@ -307,7 +309,6 @@ azd down                                    # tear down all resources when done
 | `agent.yaml` `entry_point` doesn't match any file in `src/<project>/` | You guessed the entry-point in Step 6. Edit `agent.yaml` to the real filename (verify with `ls src/<project>/`). No re-init needed. |
 | `azd deploy` postdeploy hook fails with missing `AZURE_TENANT_ID` | Run `az account show --query tenantId -o tsv` and `azd env set AZURE_TENANT_ID <tenant-id>`, then re-run `azd deploy --no-prompt`. The deployed agent version from the first deploy is still valid; the postdeploy hook just registers env vars. |
 | Scaffold sanity check fails (Step 8) | Pick a recovery path from Step 8. If still failing → [create-hosted.md](create-hosted.md). |
-| `uv pip install` fails with `No solution found when resolving dependencies` on `agent-framework-*` or `azure-search-documents` pins | Add `--prerelease=allow` (already in Step 11). |
 | Local invoke returns model `404` / wrong deployment | Stale `AZURE_AI_MODEL_DEPLOYMENT_NAME` in azd env overrides `.env`. Re-run Step 10 to sync both. |
 | `azd ai agent invoke ... --force` returns `unknown flag: --force` | `--force` is not a valid flag for invoke. Re-run without it. |
 | Anything else | Escape to [create-hosted.md](create-hosted.md). |
