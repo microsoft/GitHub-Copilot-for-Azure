@@ -850,7 +850,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     }
   }
 
-  return { run };
+  return { run, cleanup };
 }
 
 function buildTestCaseDirPath(testName: string): string {
