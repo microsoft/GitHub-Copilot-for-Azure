@@ -297,6 +297,7 @@ jobs:
           fi
         continue-on-error: false
 
+      # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
       - name: Run integration tests (vally) - ${{ matrix.skill }}
         if: ${{ contains(fromJson(env.VALLY_SKILLS), matrix.skill) }}
         env:
@@ -306,7 +307,7 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           echo test with $MODEL_OVERRIDE
-          npm run test:vally -- --skill $SKILL
+          npm run test:vally -- --skill $SKILL --workers 2
 
       - name: Generate skill report
         if: always()
