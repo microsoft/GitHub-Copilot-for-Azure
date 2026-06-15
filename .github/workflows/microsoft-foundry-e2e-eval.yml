@@ -134,7 +134,6 @@ jobs:
         working-directory: tests
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
-          FOUNDRY_E2E_EVAL_RG: ${{ secrets.FOUNDRY_E2E_EVAL_RG }}
           VALLY_RUNS: ${{ inputs.runs }}
         run: |
           set -euo pipefail
