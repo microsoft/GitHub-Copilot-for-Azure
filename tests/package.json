@@ -15,6 +15,7 @@
     "test:vally": "npx tsx ./run-vally-test.ts",
     "report": "npx tsx scripts/generate-test-reports.ts",
     "upload:token-usage": "npx tsx scripts/upload-token-usage.ts",
+    "upload:tool-usage": "npx tsx scripts/upload-tool-usage.ts",
     "results": "node scripts/show-test-results.js",
     "update:mcp-tool-snapshot": "node scripts/update-mcp-tool-snapshot.js",
     "update:snapshots": "node scripts/update-snapshots.js",

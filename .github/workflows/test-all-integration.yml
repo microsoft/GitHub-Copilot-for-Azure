@@ -397,3 +397,16 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           RUN_ID: ${{ github.run_id }}
         run: npm run upload:token-usage
+
+      # Upload per-run tool usage (one row per tool call) to the Azure Table that
+      # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
+      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
+      - name: Upload tool usage to table
+        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        env:
+          TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
+          SKILL: ${{ matrix.skill }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: npm run upload:tool-usage

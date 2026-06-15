@@ -115,6 +115,17 @@ export interface ToolCall {
    * completion event was observed for this call.
    */
   success: boolean | null;
+  /**
+   * Wall-clock duration in milliseconds, computed from the start and matching
+   * completion event timestamps, or `null` when no completion was observed.
+   */
+  durationMs: number | null;
+  /**
+   * UTF-8 byte size of the tool's full textual output (`detailedContent`,
+   * falling back to `content`, then to text/terminal result blocks). Binary
+   * blocks (image/audio) are excluded. `null` when no completion was observed.
+   */
+  outputBytes: number | null;
 }
 
 /**
@@ -335,12 +346,18 @@ function computeToolAndSkillStats(
  *   by `toolCallId`; `null` when no completion event exists.
  */
 export function computeToolUsage(events: SessionEvent[]): ToolCall[] {
-  // First pass: success by toolCallId from completion events.
+  // First pass: success and completion timestamp by toolCallId from completion events.
   const successById = new Map<string, boolean>();
+  const completeTimeById = new Map<string, string>();
+  const outputBytesById = new Map<string, number | null>();
   for (const event of events) {
     if (event.type !== "tool.execution_complete") continue;
     const id = event.data.toolCallId as string | undefined;
-    if (id !== undefined) successById.set(id, Boolean(event.data.success));
+    if (id !== undefined) {
+      successById.set(id, Boolean(event.data.success));
+      completeTimeById.set(id, event.timestamp);
+      outputBytesById.set(id, computeOutputBytes(event.data.result));
+    }
   }
 
   const toolCalls: ToolCall[] = [];
@@ -355,9 +372,54 @@ export function computeToolUsage(events: SessionEvent[]): ToolCall[] {
       toolCallId,
       arguments: event.data.arguments ?? null,
       success: successById.has(toolCallId) ? successById.get(toolCallId)! : null,
+      durationMs: computeDurationMs(event.timestamp, completeTimeById.get(toolCallId)),
+      outputBytes: outputBytesById.has(toolCallId) ? outputBytesById.get(toolCallId)! : null,
     });
   }
   return toolCalls;
+}
+
+/**
+ * UTF-8 byte size of a completion's full textual output. Prefers `detailedContent`,
+ * falls back to `content`, then to concatenated text from text/terminal result
+ * blocks. Binary blocks (image/audio) and resources are excluded. Returns `null`
+ * when no textual output is present.
+ */
+function computeOutputBytes(
+  result:
+    | { content?: string; detailedContent?: string; contents?: unknown[] }
+    | undefined,
+): number | null {
+  if (!result) return null;
+  let text: string | undefined;
+  if (typeof result.detailedContent === "string") {
+    text = result.detailedContent;
+  } else if (typeof result.content === "string") {
+    text = result.content;
+  } else if (Array.isArray(result.contents)) {
+    const parts: string[] = [];
+    for (const block of result.contents) {
+      const blockText = (block as { text?: unknown }).text;
+      if (typeof blockText === "string") parts.push(blockText);
+    }
+    text = parts.length > 0 ? parts.join("") : undefined;
+  }
+  if (text === undefined) return null;
+  return Buffer.byteLength(text, "utf8");
+}
+
+/**
+ * Wall-clock duration in milliseconds between a tool call's start and matching
+ * completion timestamp. Returns `null` when the completion is missing or either
+ * timestamp is unparseable, or when the result would be negative.
+ */
+function computeDurationMs(startTs: string, completeTs: string | undefined): number | null {
+  if (!completeTs) return null;
+  const start = Date.parse(startTs);
+  const end = Date.parse(completeTs);
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  const delta = end - start;
+  return delta >= 0 ? delta : null;
 }
 
 /**
