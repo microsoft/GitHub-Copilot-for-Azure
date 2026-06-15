@@ -27,6 +27,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me with model deployment",
       "Deploy an OpenAI model to my project",
       "Set up a model in my Foundry project",
+      "Deploy a model out-of-band to my Foundry project",
+      "Add an ad-hoc model deployment outside my azd lifecycle",
       "Find capacity for model deployment",
       "Best region for model deployment",
       "Capacity analysis for my model",

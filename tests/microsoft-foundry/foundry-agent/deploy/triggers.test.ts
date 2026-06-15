@@ -34,6 +34,9 @@ describe("deploy - Trigger Tests", () => {
       "Deploy my Foundry agent using direct code deployment",
       "Use upload code deployment for this Azure AI Foundry agent",
       "Direct-code deploy my existing Python agent to Foundry",
+      "Deploy my azd ai agent project to Foundry",
+      "Deploy a hosted Foundry agent with code_configuration",
+      "Smoke test my deployed Foundry agent with azd ai agent invoke",
     ];
 
     test.each(shouldTriggerPrompts)(

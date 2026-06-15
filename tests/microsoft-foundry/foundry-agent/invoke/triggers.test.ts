@@ -27,6 +27,8 @@ describe("invoke - Trigger Tests", () => {
       "Run my Foundry agent with a test prompt",
       "Have a conversation with my Foundry agent",
       "Chat with my agent in Azure AI Foundry",
+      "Use azd ai agent invoke to smoke test my deployed Foundry agent",
+      "Run one remote smoke invocation for my Foundry agent",
     ];
 
     test.each(shouldTriggerPrompts)(
