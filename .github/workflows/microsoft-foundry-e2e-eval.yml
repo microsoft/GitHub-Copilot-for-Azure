@@ -176,7 +176,7 @@ jobs:
           COPILOT_MODEL: 'claude-sonnet-4.6'
           COPILOT_PROMPT: tests/prompts/microsoft-foundry-e2e-eval-report.prompt.md
           REPORT_MD: ${{ runner.temp }}/microsoft-foundry-e2e-report/report.md
-        run: copilot -C "${GITHUB_WORKSPACE}" --model "${COPILOT_MODEL}" --disable-builtin-mcps --no-custom-instructions --no-ask-user --allow-all-tools --allow-all-paths --no-color --silent -p "$(cat "${COPILOT_PROMPT}")"
+        run: copilot -C "${GITHUB_WORKSPACE}" --model "${COPILOT_MODEL}" --disable-builtin-mcps --no-custom-instructions --no-ask-user --allow-all-tools --secret-env-vars=COPILOT_GITHUB_TOKEN --no-color --silent -p "$(cat "${COPILOT_PROMPT}")"
 
       - name: Publish Microsoft Foundry E2E eval report
         id: publish-e2e-report
