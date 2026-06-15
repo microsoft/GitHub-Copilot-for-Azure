@@ -244,7 +244,7 @@ stimuli:
   - name: "Java SDK migration - client init to DefaultAzureCredential"
     prompt: >-
       Migrate my Java project from legacy Azure SDK to modern Azure SDK.
-      The project can be found under azure-legacy-sdk-update-azure-client-initialization.
+      The project can be found under java-update-examples/azure-legacy-sdk-update-azure-client-initialization.
     tags:
       type: integration
       tier: full
@@ -300,7 +300,7 @@ stimuli:
   - name: "Java SDK migration - EventProcessorHost to BlobCheckpointStore"
     prompt: >-
       Migrate my Java project from legacy Azure SDK to modern Azure SDK.
-      The project can be found under azure-legacy-sdk-update-eventhubs-v3.
+      The project can be found under java-update-examples/azure-legacy-sdk-update-eventhubs-v3.
     tags:
       type: integration
       tier: full
@@ -355,7 +355,7 @@ stimuli:
   - name: "Java SDK migration - Batch applicationPackages define"
     prompt: >-
       Migrate my Java project from legacy Azure SDK to modern Azure SDK.
-      The project can be found under azure-legacy-sdk-update-batch-java-manage-batch-accounts.
+      The project can be found under java-update-examples/azure-legacy-sdk-update-batch-java-manage-batch-accounts.
     tags:
       type: integration
       tier: full

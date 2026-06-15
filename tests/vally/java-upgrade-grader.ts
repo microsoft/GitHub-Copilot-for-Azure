@@ -130,8 +130,13 @@ export class JavaUpgradeFileContentGrader implements Grader {
 
     for (const rule of rules) {
       const globPattern = rule.glob.replace(/\\/g, "/");
+      try {
+        path.matchesGlob("", globPattern);
+      } catch {
+        failures.push(`glob "${rule.glob}": invalid glob pattern`);
+        continue;
+      }
       const files = findMatchingFiles(workDir, globPattern);
-
       if (files.length === 0) {
         failures.push(`glob "${rule.glob}": no matching files found`);
         continue;

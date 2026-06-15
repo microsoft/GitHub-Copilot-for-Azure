@@ -61,7 +61,7 @@ export class IntegrationTestAgentRunner implements Executor {
       .filter(e => e.type === "session.start")
       .at(0)?.id;
 
-    await createMarkdownReport(normalizedTestName, runConfig, agentMetadata, agentRunner.agentMetadataPath);
+    await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
 
     // Vally will run the graders and produce results.jsonl.
     // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
