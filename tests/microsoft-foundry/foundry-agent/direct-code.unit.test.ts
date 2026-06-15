@@ -1,9 +1,9 @@
 /**
  * Unit tests for direct-code Foundry agent workflow documentation.
  *
- * These tests lock down service-specific constraints that are easy to
- * regress because direct-code deployment must stay scoped to deploy Step 3
- * and return to the normal hosted-agent workflow afterward.
+ * These tests lock down service-specific constraints that are easy to regress:
+ * direct-code deployment is now the preferred azd path for standard hosted
+ * agents, while container/ACR deployment remains available only when needed.
  */
 
 import { readFile } from "fs/promises";
@@ -15,50 +15,61 @@ const readSkillFile = (relativePath: string) =>
   readFile(path.join(SKILLS_PATH, SKILL_NAME, relativePath), "utf-8");
 
 describe("foundry-agent direct-code workflow docs", () => {
-  test("deploy workflow keeps direct-code deployment explicit opt-in", async () => {
+  test("create and deploy workflows prefer azd direct-code deployment", async () => {
+    const createHosted = await readSkillFile("foundry-agent/create/create-hosted.md");
+    const quickStart = await readSkillFile("foundry-agent/create/quick-start-hosted.md");
     const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
 
-    expect(deploy).toContain("Direct code deployment is opt-in only.");
-    expect(deploy).toContain("references/direct-code-deployment.md");
-    expect(deploy).toContain("- [ ] Step 3 — Deployment method selected and prepared");
-    expect(deploy).toContain("### Step 3: Select Deployment Method and Prepare");
-    expect(deploy).toContain("#### Image built and pushed to ACR");
-    expect(deploy).toContain("deploys the agent directly, then proceeds directly to [Step 7: Test the Agent]");
-    expect(deploy).toContain("Do not infer direct code deployment just because Docker is unavailable");
-    expect(deploy).toContain("Deployment Method Selection");
+    expect(createHosted).toContain("Prefer direct code deploy at init time");
+    expect(createHosted).toContain("--deploy-mode code");
+    expect(createHosted).toContain("--runtime python_3_13");
+    expect(createHosted).toContain("--entry-point main.py");
+    expect(quickStart).toContain("| Deploy mode | `code`");
+    expect(quickStart).toContain("azd ai agent init --no-prompt");
+    expect(quickStart).toContain("--deploy-mode code");
+    expect(deploy).toContain("Prefer **direct code deployment through azd**");
+    expect(deploy).toContain("`code_configuration:` present | **Direct code deploy** through `azd deploy`; no Docker/ACR build.");
+    expect(deploy).toContain("No `code_configuration:` | **Container/ACR deploy** through `azd deploy`");
+    expect(deploy).toContain("Default to direct code for standard hosted-agent code.");
   });
 
-  test("deploy reference includes required REST and packaging invariants", async () => {
-    const reference = await readSkillFile("foundry-agent/deploy/references/direct-code-deployment.md");
-
-    expect(reference).toContain("Foundry-Features: CodeAgents=V1Preview,HostedAgents=V1Preview");
-    expect(reference).toContain("https://ai.azure.com");
-    expect(reference).toContain("Do not use the Cognitive Services token resource");
-    expect(reference).toContain("Do not put `FOUNDRY_PROJECT_ENDPOINT` in `environment_variables`");
-    expect(reference).toContain("metadata.parent.mkdir(parents=True, exist_ok=True)");
-    expect(reference).toContain("The zip must be flat at the root.");
-    expect(reference).toContain("Do not include a top-level wrapper folder");
-    expect(reference).toContain("dependency_resolution: \"remote_build\"");
-    expect(reference).toContain("Missing required query parameter: api-version");
-    expect(reference).toContain("Do not send `x-ms-agent-name` on `POST /agents/<agent-name>/versions`");
-  });
-
-  test("direct-code deployment returns to deploy workflow after publish", async () => {
+  test("legacy manual REST direct-code reference is removed from the workflow", async () => {
+    const createHosted = await readSkillFile("foundry-agent/create/create-hosted.md");
     const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
-    const deployReference = await readSkillFile("foundry-agent/deploy/references/direct-code-deployment.md");
+
+    expect(deploy).not.toContain("references/direct-code-deployment.md");
+    await expect(readSkillFile("foundry-agent/deploy/references/direct-code-deployment.md"))
+      .rejects
+      .toThrow(/ENOENT/);
+    expect(deploy).not.toContain("Foundry-Features: CodeAgents=V1Preview");
+    expect(createHosted).not.toContain("POST /agents/<agent-name>/versions");
+  });
+
+  test("model deployments stay in azure.yaml for the azd golden path", async () => {
+    const createHosted = await readSkillFile("foundry-agent/create/create-hosted.md");
+    const quickStart = await readSkillFile("foundry-agent/create/quick-start-hosted.md");
+    const deployModel = await readSkillFile("models/deploy-model/SKILL.md");
+
+    expect(createHosted).toContain("`azure.yaml services.<name>.config.deployments[]` is the **single source of truth**");
+    expect(createHosted).toContain("Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
+    expect(createHosted).toContain("never `az cognitiveservices account deployment create ...`");
+    expect(quickStart).toContain("Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
+    expect(quickStart).toContain("Never `az cognitiveservices account deployment create`");
+    expect(deployModel).toContain("For azd-managed Foundry projects");
+    expect(deployModel).toContain("declare deployments in `azure.yaml services.<name>.config.deployments[]`");
+    expect(deployModel).toContain("Use this skill only for: (a) Foundry projects not managed by an azd project");
+  });
+
+  test("direct-code deployment uses normal hosted-agent invoke and troubleshoot paths", async () => {
+    const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
     const invoke = await readSkillFile("foundry-agent/invoke/invoke.md");
     const troubleshoot = await readSkillFile("foundry-agent/troubleshoot/troubleshoot.md");
 
-    expect(deploy).toContain("### Step 7: Test the Agent");
-    expect(deploy).toContain("### Step 8: Auto-Generate Evaluation Suite");
-    expect(deployReference).toContain("proceed directly back to [deploy.md Step 7: Test the Agent]");
-    expect(deployReference).not.toContain("Direct code is only a deployment method");
-    expect(deployReference).not.toContain("same hosted-agent protocol path");
-    expect(deployReference).not.toContain("separate hosted-agent kind");
-    expect(deployReference).not.toContain("invoke skill");
-    expect(deployReference).not.toContain("troubleshoot skill");
-    expect(deployReference).not.toContain("direct-code invocation branch");
-    expect(deployReference).not.toContain("agent_session_id");
+    expect(deploy).toContain("### Step 4 -- Verify and invoke");
+    expect(deploy).toContain("azd ai agent invoke \"hello, are you up?\"");
+    expect(deploy).toContain("Run one remote invocation only unless the user explicitly asked");
+    expect(invoke).toContain("### Step 2: Fast smoke test for azd-deployed agents");
+    expect(invoke).toContain("azd ai agent invoke \"hello, are you up?\"");
     expect(invoke).toContain("## Workflow");
     expect(invoke).not.toContain("Direct Code Invocation");
     expect(troubleshoot).toContain("## Workflow");
