@@ -168,6 +168,7 @@ jobs:
 
       - name: Generate Microsoft Foundry E2E eval report with Copilot CLI
         if: always()
+        continue-on-error: true
         shell: bash
         env:
           ARTIFACT_URL: ${{ steps.upload-vally-results.outputs.artifact-url }}
@@ -188,10 +189,11 @@ jobs:
 
           if [[ -z "${REPORT_MD}" ]]; then
             REPORT_MD="${RUNNER_TEMP}/microsoft-foundry-e2e-report/report.md"
-            mkdir -p "$(dirname "${REPORT_MD}")"
           fi
 
-          if [[ -z "${REPORT_MD}" || ! -s "${REPORT_MD}" ]]; then
+          mkdir -p "$(dirname "${REPORT_MD}")"
+
+          if [[ ! -s "${REPORT_MD}" ]]; then
             echo "# Microsoft Foundry E2E Evaluation Report" > "${REPORT_MD}"
             echo >> "${REPORT_MD}"
             echo "Report generation did not produce output." >> "${REPORT_MD}"

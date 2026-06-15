@@ -287,8 +287,8 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent generated hosted-agent code, create new foundry project and model deployment, ran local testing, deployed the agent
+            Verify that the coding agent generated hosted-agent code, created a new Foundry project and model deployment, ran local testing, deployed the agent
             successfully to Microsoft Foundry using direct code deploy, invoked the deployed agent after deployment,
             and received a successful response from that deployed agent. Fail if
-            code was not generated, no new foundry project or model is created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
+            code was not generated, no new Foundry project or model deployment was created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
             actually invoked after deployment, or the deployed agent invocation failed.
