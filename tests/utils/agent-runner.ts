@@ -609,6 +609,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     }
   }
 
+  const agentMetadataPath = buildShareFilePath(getTestName());
+
   /**
    * @deprecated Migrate jest test cases to vally suites and stop using this function.
    * @todo: Remove the code for jest tests.
@@ -617,7 +619,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     for (const entry of currentCleanups) {
       try {
         if (isTest() && useJest() && entry.config && entry.agentMetadata) {
-          writeMarkdownReport(getTestName(), entry.config, entry.agentMetadata);
+          writeMarkdownReport(getTestName(), entry.config, entry.agentMetadata, agentMetadataPath);
         }
       } catch { /* ignore */ }
     }
@@ -850,7 +852,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     }
   }
 
-  return { run };
+  return { run, agentMetadataPath: agentMetadataPath };
 }
 
 function buildTestCaseDirPath(testName: string): string {
@@ -862,8 +864,8 @@ function buildShareFilePath(testName: string): string {
   return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
 }
 
-export async function createMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): Promise<void> {
-  writeMarkdownReport(testName, config, agentMetadata);
+export async function createMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata, agentMetadataPath: string): Promise<void> {
+  writeMarkdownReport(testName, config, agentMetadata, agentMetadataPath);
 }
 
 /**
@@ -909,10 +911,9 @@ function writeTokenUsageJson(testName: string, config: AgentRunConfig, agentMeta
 /**
  * Write markdown report to file
  */
-function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): void {
+function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata, agentMetadataPath: string): void {
   try {
-    const filePath = buildShareFilePath(testName);
-    const dir = path.dirname(filePath);
+    const dir = path.dirname(agentMetadataPath);
 
     // Ensure directory exists
     if (!fs.existsSync(dir)) {
@@ -921,7 +922,7 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
 
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
-    let reportTargetPath = filePath;
+    let reportTargetPath = agentMetadataPath;
     let suffix = 0;
     while (true) {
       try {
@@ -931,7 +932,7 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
         console.log("File exists", reportTargetPath);
         if ((err as { code: string }).code === "EEXIST") {
           suffix++;
-          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
+          reportTargetPath = agentMetadataPath.replace(".md", `-${suffix}.md`);
           continue;
         }
         throw err;
