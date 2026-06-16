@@ -18,9 +18,9 @@
   "devDependencies": {
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^4.3.4",
+    "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^9.1.0",
     "typescript": "6.0.2",
-    "vite": "^6.4.2"
+    "vite": "^8.0.16"
   }
 }
