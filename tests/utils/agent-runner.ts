@@ -19,6 +19,7 @@ import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { listSkills } from "./skill-loader.ts";
+import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate.ts";
@@ -131,6 +132,7 @@ export interface AgentRunConfig {
   /**
    * Skills to include for the agent run.
    * If undefined, all the skills in azure plugin will be included.
+   * If specified, only the skills in this array will be included. This option overrides the required skills specified in the {@link requiredSkills}.
    */
   includeSkills?: string[];
 
@@ -147,6 +149,12 @@ export interface AgentRunConfig {
   takeScreenshot?: {
     predicate: (agentMetadata: AgentMetadata) => boolean
   };
+
+  /**
+   * Skills that must be present with full description.
+   * Skills other than the required ones will be randomly disabled until the estimated char count falls below the char count budget.
+   */
+  requiredSkills?: string[];
 }
 
 interface KeywordOptions {
@@ -633,33 +641,33 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     });
   }
 
-  async function run(config: AgentRunConfig): Promise<AgentMetadata> {
+  async function run(runConfig: AgentRunConfig): Promise<AgentMetadata> {
     let testWorkspace: string;
-    if (config.workspace) {
-      testWorkspace = config.workspace;
+    if (runConfig.workspace) {
+      testWorkspace = runConfig.workspace;
     } else {
       testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
     }
-    const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
+    const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
 
-    const entry: RunnerCleanup = { config };
+    const entry: RunnerCleanup = { config: runConfig };
     currentCleanups.push(entry);
     entry.workspace = testWorkspace;
-    entry.preserveWorkspace = config.preserveWorkspace;
+    entry.preserveWorkspace = runConfig.preserveWorkspace;
 
     const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
     entry.agentMetadata = agentMetadata;
 
     try {
       // Run optional setup
-      if (config.setup) {
-        await config.setup(testWorkspace);
+      if (runConfig.setup) {
+        await runConfig.setup(testWorkspace);
       }
 
       // Copilot client with yolo mode
-      const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
+      const cliArgs: string[] = runConfig.nonInteractive ? ["--yolo"] : [];
       if (process.env.DEBUG && isTest()) {
         cliArgs.push("--log-dir");
         cliArgs.push(buildTestCaseDirPath(getTestName()));
@@ -669,7 +677,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const existingNodeOptions = process.env.NODE_OPTIONS;
       const envVar: Record<string, string> = {
         SKILLS_INSTRUCTIONS: "true",
-        SKILL_CHAR_BUDGET: "20000",
+        SKILL_CHAR_BUDGET: `${DEFAULT_SKILL_CHAR_BUDGET}`,
         NODE_OPTIONS: existingNodeOptions
           ? `${existingNodeOptions} --disable-warning=ExperimentalWarning`
           : "--disable-warning=ExperimentalWarning"
@@ -690,17 +698,24 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const skillDirectory = path.resolve(__dirname, "../../output/skills");
 
       let disabledSkills: string[] | undefined;
-      if (config.includeSkills) {
+      if (runConfig.includeSkills) {
         const skills = listSkills();
-        if (config.includeSkills.some((skillName) => !skills.includes(skillName))) {
-          const invalidSkills = config.includeSkills.filter((skillName) => !skills.includes(skillName));
+        if (runConfig.includeSkills.some((skillName) => !skills.includes(skillName))) {
+          const invalidSkills = runConfig.includeSkills.filter((skillName) => !skills.includes(skillName));
           throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
         }
-        disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
+        disabledSkills = skills.filter((skillName) => !runConfig.includeSkills?.includes(skillName));
+      } else {
+        // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
+        // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
+        // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
+        if (runConfig.requiredSkills) {
+          disabledSkills = await truncateSkills(runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET);
+        }
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
-      const model = config.model ?? modelOverride ?? "claude-sonnet-4.6";
+      const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
@@ -714,7 +729,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
             tools: ["*"]
           }
         },
-        systemMessage: config.systemPrompt
+        systemMessage: runConfig.systemPrompt
       });
       entry.session = session;
 
@@ -734,7 +749,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
           agentMetadata.events.push(event);
 
-          if (config.shouldEarlyTerminate?.(agentMetadata)) {
+          if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
             resolve();
             void session.abort();
@@ -743,12 +758,12 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         });
       });
 
-      await session.send({ prompt: config.prompt });
+      await session.send({ prompt: runConfig.prompt });
       await done;
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      for (const followUpPrompt of config.followUp ?? []) {
+      for (const followUpPrompt of runConfig.followUp ?? []) {
         isComplete = false;
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
@@ -805,7 +820,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       agentMetadata.toolCounts = toolCounts;
       agentMetadata.skillFiles = skillFiles;
 
-      if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
+      if (runConfig.takeScreenshot && runConfig.takeScreenshot.predicate(agentMetadata)) {
         // Resume the session so it can take a different set of skills and mcp servers.
         // Use playwright mcp server to take a screenshot.
         const screenshotTimeout = 180000; // 3 minutes
@@ -850,7 +865,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     }
   }
 
-  return { run };
+  return { run, cleanup };
 }
 
 function buildTestCaseDirPath(testName: string): string {

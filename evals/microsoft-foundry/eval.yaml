@@ -458,22 +458,16 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── Foundry E2E checks ──
-  - name: "Create hotel booking agent"
+  - name: "Golden Path - Create and deploy hosted agent"
     tags:
-      id: create-hotel-booking-agent
+      id: golden-path-create-and-deploy-hosted-agent
       type: foundry-e2e
       tier: full
       cost: llm
       area: create
     prompt: |
-      Create a hotel booking AI agent app. The app should leverage an AI language model to help users search for available hotels in Seattle based on check-in/check-out dates and budget preferences. Generate the code to current workspace and if current workspace already contains a project, ask the user where to put the generated code.
-
-      Use the current workspace root as the project root. Create generated files directly in the current workspace root unless the current workspace already contains a project and the prompt asks you to ask where to put the generated code.
-      Use these environment variables as the Foundry-related configuration values:
-      FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT for the Foundry project endpoint,
-      FOUNDRY_E2E_EVAL_ARM_RESOURCE for the existing Foundry project ARM resource ID,
-      FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL for the deployment model,
-      and FOUNDRY_E2E_EVAL_ACR for the Azure Container Registry endpoint.
+      Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly
+      The new resource group name: rg-foundry-skill-e2e-<6 random digits>
     graders:
       - type: skill-invocation
         config:
@@ -485,93 +479,8 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent generated a Python hotel booking AI agent app,
-            used Microsoft Agent Framework, used the Responses protocol, completed code
-            generation, and ran a local test after code generation. Fail if the agent
-            only gave instructions without creating project files, used a non-Python
-            implementation, omitted Microsoft Agent Framework, omitted the Responses
-            protocol, or did not run a local test.
-      - type: file-exists
-        config:
-          path: ".env"
-      - type: file-exists
-        config:
-          path: "agent.yaml"
-
-  - name: "Create writer reviewer workflow"
-    tags:
-      id: create-writer-reviewer-workflow
-      type: foundry-e2e
-      tier: full
-      cost: llm
-      area: create
-    prompt: |
-      Create a multi-agent workflow app with Agent Framework SDK.
-      Scenario:
-      Writer-Reviewer content collaboration - A multi-agent workflow where a Writer and Reviewer collaborate to create and refine content.
-      High-level flow: 1) writer agent receives a user request and creates initial content. 2) The content is passed to reviewer agent, who provides concise, actionable feedback. 3) Both the writer and reviewer are output executors, so the workflow yields their collaborative result as the final output.
-      Output:
-      The final workflow output is plain text containing the refined content after the writer-reviewer collaboration.
-
-      Use the current workspace root as the project root. Create generated files directly in the current workspace root. Do not create a nested project folder.
-      Use these environment variables as the Foundry-related configuration values:
-      FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT for the Foundry project endpoint,
-      FOUNDRY_E2E_EVAL_ARM_RESOURCE for the existing Foundry project ARM resource ID,
-      FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL for the deployment model,
-      and FOUNDRY_E2E_EVAL_ACR for the Azure Container Registry endpoint.
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - microsoft-foundry
-      - type: completed
-      - type: prompt
-        config:
-          scoring: binary
-          threshold: 1
-          prompt: |
-            Verify that the coding agent generated a Python Writer-Reviewer multi-agent
-            workflow app, used Microsoft Agent Framework, used the Responses protocol,
-            completed code generation, and ran a local test after code generation. Fail
-            if the agent only gave instructions without creating project files, used a
-            non-Python implementation, omitted Microsoft Agent Framework, omitted the
-            Responses protocol, or did not run a local test.
-      - type: file-exists
-        config:
-          path: ".env"
-      - type: file-exists
-        config:
-          path: "agent.yaml"
-
-  - name: "Deploy hosted math agent"
-    tags:
-      id: deploy-hosted-math-agent
-      type: foundry-e2e
-      tier: full
-      cost: llm
-      area: deploy
-    prompt: |
-      Build a hosted agent in Microsoft Foundry that can do basic math, and then deploy. Use an agent name with the `foundry-skill-e2e` prefix and add a random suffix.
-
-      Use the current workspace root as the project root. Create generated files directly in the current workspace root. Do not create a nested project folder.
-      Use these environment variables as the Foundry-related configuration values:
-      FOUNDRY_E2E_EVAL_PROJECT_ENDPOINT for the Foundry project endpoint,
-      FOUNDRY_E2E_EVAL_ARM_RESOURCE for the existing Foundry project ARM resource ID,
-      FOUNDRY_E2E_EVAL_DEPLOYMENT_MODEL for the deployment model,
-      and FOUNDRY_E2E_EVAL_ACR for the Azure Container Registry endpoint.
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - microsoft-foundry
-      - type: completed
-      - type: prompt
-        config:
-          scoring: binary
-          threshold: 1
-          prompt: |
-            Verify that the coding agent generated hosted-agent code, deployed the agent
-            successfully to Microsoft Foundry, invoked the deployed agent after deployment,
+            Verify that the coding agent generated hosted-agent code, created a new Foundry project and model deployment, ran local testing, deployed the agent
+            successfully to Microsoft Foundry using direct code deploy, invoked the deployed agent after deployment,
             and received a successful response from that deployed agent. Fail if
-            code was not generated, deployment did not succeed, the deployed agent was not
+            code was not generated, no new Foundry project or model deployment was created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
             actually invoked after deployment, or the deployed agent invocation failed.
