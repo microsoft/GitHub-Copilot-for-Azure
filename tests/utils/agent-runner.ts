@@ -847,7 +847,10 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
-      if (!isTest()) {
+      // Jest integration tests clean up in afterEach so reports can be written first.
+      // Non-Jest test runners such as Vally must clean up here; otherwise Copilot CLI
+      // child processes keep the Node process alive after results are written.
+      if (!isTest() || !useJest()) {
         await cleanup();
       }
     }
