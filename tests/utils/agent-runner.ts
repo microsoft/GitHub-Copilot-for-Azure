@@ -114,6 +114,7 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  env?: Record<string, string>;
   model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
@@ -682,7 +683,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         cliPath: getBundledCliPath(),
         env: {
           ...process.env,
-          ...envVar
+          ...envVar,
+          ...config.env
         }
       }) as CopilotClient;
       entry.client = client;
