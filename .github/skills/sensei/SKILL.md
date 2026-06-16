@@ -178,7 +178,7 @@ metadata:
 
 > ⚠️ **"DO NOT USE FOR:" carries context-dependent risk.** In multi-skill environments (10+ skills with overlapping domains), anti-trigger clauses introduce the very keywords that cause wrong-skill activation on Claude Sonnet and fast-pattern-matching models ([evidence](https://gist.github.com/kvenkatrajan/52e6e77f5560ca30640490b4cc65d109)). For small, isolated skill sets (1-5 skills), the risk is low. When in doubt, use positive routing with `WHEN:` and distinctive quoted phrases.
 >
-> **Exception:** `DO NOT USE FOR:` is **REQUIRED** when a specialized skill's triggers overlap with a broader skill (e.g., `azure-hosted-copilot-sdk` vs. `azure-prepare` on "deploy to Azure"). Without the negative discriminator, the broader skill captures prompts that should route to the specialized one. Always run integration tests before removing a `DO NOT USE FOR:` clause.
+> **Exception:** `DO NOT USE FOR:` is **REQUIRED** when a specialized skill's triggers overlap with a broader skill (e.g., `azure-prepare` on "deploy to Azure"). Without the negative discriminator, the broader skill captures prompts that should route to the specialized one. Always run integration tests before removing a `DO NOT USE FOR:` clause.
 
 ## Test Scaffolding
 
