@@ -44,3 +44,14 @@ Azure compute intent?
 | **VM Troubleshooter** | [vm-troubleshooter.md](workflows/vm-troubleshooter/vm-troubleshooter.md) | User can't connect, RDP/SSH refused, black screen, needs password reset |
 | **Capacity Reservation** | [capacity-reservation.md](workflows/capacity-reservation/capacity-reservation.md) | User needs to reserve / guarantee VM capacity (CRG create / associate / disassociate) |
 | **Essential Machine Management** | [essential-machine-management.md](workflows/essential-machine-management/essential-machine-management.md) | User asks about EMM / machine enrollment / monitor |
+
+## References
+
+Use these only after opening the relevant workflow, per the routing rule above.
+
+| Reference | File | Use when |
+|---|---|---|
+| **Azure Retail Prices API Guide** | [retail-prices-api.md](references/retail-prices-api.md) | User wants VM price lookup, PAYG vs reservation pricing, or regional SKU pricing |
+| **VM Family Guide** | [vm-families.md](references/vm-families.md) | User needs help choosing the right VM family or mapping workloads to VM series |
+| **VM Quota Validation Guide** | [vm-quotas.md](references/vm-quotas.md) | User needs to validate vCPU quota, family quota, or regional capacity before deployment |
+| **VMSS Guide** | [vmss-guide.md](references/vmss-guide.md) | User needs guidance on when to use VMSS, autoscale, or orchestration mode selection |
