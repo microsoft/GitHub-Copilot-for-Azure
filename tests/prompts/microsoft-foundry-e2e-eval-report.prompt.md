@@ -136,16 +136,32 @@ Multi-trial schema example:
 
 ## Section: Golden Path Token Cost
 
-Purpose: show average token usage for Golden Path trials only.
+Purpose: show average token usage and AI credit cost for Golden Path trials only.
+
+### Pricing Table
+
+Use this GitHub Copilot Anthropic pricing table. Prices are USD per 1M tokens.
+
+| Model | Input | Cached input | Cache write | Output |
+|---|---:|---:|---:|---:|
+| Claude Sonnet 4.6 | $3.00 | $0.30 | $3.75 | $15.00 |
 
 Guidance:
 
-- Calculate token usage from `trajectory.metrics.tokenUsage` when present.
-- If that aggregate is missing, sum token usage from token usage events.
-- Average across Golden Path trials only.
-- Input cache rate is average `cacheReadTokens` divided by average input tokens.
+Step 1: calculate average token usage.
+
+- Calculate token usage directly from `trajectory.metrics.tokenUsage`.
+- Each Golden Path trial has complete token usage fields: `inputTokens`, `cacheReadTokens`, `cacheWriteTokens`, and `outputTokens`.
+- Average these four fields across Golden Path trials only: `inputTokens`, `cacheReadTokens`, `cacheWriteTokens`, and `outputTokens`.
+- Calculate `Total tokens` as average `inputTokens` plus average `outputTokens`.
 - Round token counts to integers and format them with thousands separators.
-- Format input cache rate as a percentage with one decimal place.
+
+Step 2: calculate average AIC.
+
+- `100` AI credits equals `$1.00`.
+- Determine the model used by each Golden Path trial from `trajectory.metrics.tokenUsage.model`, then use the matching model row in the Pricing Table for `inputRate`, `cachedInputRate`, `cacheWriteRate`, and `outputRate`.
+- Calculate `averageAic = ((((averageInputTokens - averageCacheReadTokens - averageCacheWriteTokens) * inputRate) + (averageCacheReadTokens * cachedInputRate) + (averageCacheWriteTokens * cacheWriteRate) + (averageOutputTokens * outputRate)) / 1,000,000) * 100`.
+- Format `Average AIC` with two decimal places.
 
 Schema example:
 
@@ -158,9 +174,10 @@ Schema example:
 |---|---:|
 | Input tokens | 120,000 |
 | cacheReadTokens | 30,000 |
-| Input cache rate | 25.0% |
+| cacheWriteTokens | 5,000 |
 | Output tokens | 8,000 |
 | Total tokens | 128,000 |
+| Average AIC | 8.40 |
 ```
 
 ## Section: Download
