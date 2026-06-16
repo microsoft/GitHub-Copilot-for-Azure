@@ -37,6 +37,8 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Set up a Foundry project for my AI agents",
       "How do I onboard to Microsoft Foundry and create a project?",
       "Provision Foundry infrastructure with azd",
+      "Scaffold and deploy a hosted Foundry agent with azd ai agent",
+      "Create a hosted Foundry agent quick start and run a remote smoke test",
       "I need a new Foundry project to host my models",
     ];
 

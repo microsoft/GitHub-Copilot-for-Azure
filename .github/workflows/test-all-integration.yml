@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Skills that should be tested using vally in a JSON array
-      VALLY_SKILLS: '["azure-ai","azure-aigateway","azure-compliance","azure-diagnostics","azure-kusto","azure-storage","entra-app-registration","azure-messaging","airunway-aks-setup","azure-rbac","appinsights-instrumentation","azure-cost","azure-quotas","azure-kubernetes","azure-enterprise-infra-planner","azure-resource-lookup","azure-resource-visualizer","azure-reliability"]'
+      VALLY_SKILLS: '["azure-ai","azure-aigateway","azure-compliance","azure-diagnostics","azure-kusto","azure-storage","entra-app-registration","azure-messaging","airunway-aks-setup","azure-rbac","appinsights-instrumentation","azure-cost","azure-quotas","azure-kubernetes","azure-enterprise-infra-planner","azure-resource-lookup","azure-resource-visualizer","azure-reliability","entra-agent-id","python-appservice-deploy"]'
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -297,6 +297,7 @@ jobs:
           fi
         continue-on-error: false
 
+      # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
       - name: Run integration tests (vally) - ${{ matrix.skill }}
         if: ${{ contains(fromJson(env.VALLY_SKILLS), matrix.skill) }}
         env:
@@ -306,7 +307,7 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           echo test with $MODEL_OVERRIDE
-          npm run test:vally -- --skill $SKILL
+          npm run test:vally -- --skill $SKILL --workers 2
 
       - name: Generate skill report
         if: always()
