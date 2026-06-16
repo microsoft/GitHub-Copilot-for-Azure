@@ -700,20 +700,23 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
+      const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
       const model = config.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
-        mcpServers: {
-          azure: {
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "@azure/mcp", "server", "start"],
-            tools: ["*"]
+        ...(disableAzureMcp ? {} : {
+          mcpServers: {
+            azure: {
+              type: "stdio",
+              command: "npx",
+              args: ["-y", "@azure/mcp", "server", "start"],
+              tools: ["*"]
+            }
           }
-        },
+        }),
         systemMessage: config.systemPrompt
       });
       entry.session = session;
