@@ -88,7 +88,10 @@ Main stages:
 - Eval suite
 - Final Output
 
-The `Test agent locally` stage includes creating the local virtual environment, installing `uv`, installing project packages from requirements or equivalent package files, starting the local agent server, and invoking the local agent to verify it responds.
+Notes:
+
+- `Foundry resources creation` starts when the AI begins declaring or working on Foundry project/resource creation, `azd provision`, or equivalent `azd provision` tool-call signals, and ends when `azd provision` has fully completed successfully.
+- `Test agent locally` includes creating the local virtual environment, installing `uv`, installing project packages from requirements or equivalent package files, starting the local agent server, and invoking the local agent to verify it responds.
 
 Single-trial schema example:
 
