@@ -25,7 +25,7 @@
     "eval:lint": "vally lint plugin/skills/ --eval evals/ --strict"
   },
   "engines": {
-    "node": "^20.19.0 || ^22.13.0 || >=24"
+    "node": "^22.14.0 || >=24"
   },
   "devDependencies": {
     "@azure/data-tables": "^13.3.2",
