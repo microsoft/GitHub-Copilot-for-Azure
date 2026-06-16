@@ -161,7 +161,6 @@ jobs:
           npm run test:vally -- \
             --suite foundry-e2e \
             --runs "${VALLY_RUNS}" \
-            --output jsonl \
             --junit \
             --threshold 0.8
 
