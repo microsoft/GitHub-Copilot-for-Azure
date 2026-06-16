@@ -38,6 +38,7 @@ export function buildToolUsageFilter(filters: {
     branch?: string;
     runId?: string;
     runToken?: string;
+    runDate?: string;
 }): string | undefined {
     const clauses: string[] = [];
     if (filters.skill) clauses.push(`skill eq '${odataLiteral(filters.skill)}'`);
@@ -45,6 +46,7 @@ export function buildToolUsageFilter(filters: {
     if (filters.branch) clauses.push(`branch eq '${odataLiteral(filters.branch)}'`);
     if (filters.runId) clauses.push(`runId eq '${odataLiteral(filters.runId)}'`);
     if (filters.runToken) clauses.push(`runToken eq '${odataLiteral(filters.runToken)}'`);
+    if (filters.runDate) clauses.push(`runDate eq '${odataLiteral(filters.runDate)}'`);
     return clauses.length > 0 ? clauses.join(" and ") : undefined;
 }
 
@@ -52,7 +54,7 @@ export function buildToolUsageFilter(filters: {
  * Returns integration-test tool usage rows from the table.
  * GET /api/tool-usage
  * Query params: skill (optional), test (optional), branch (optional),
- *               runId (optional), runToken (optional)
+ *               runId (optional), runToken (optional), runDate (optional)
  *
  * Each row represents a single tool call in one run. Full tool arguments are not
  * stored here — they live in the per-run blob and are fetched on demand.
@@ -66,6 +68,7 @@ async function getToolUsage(request: HttpRequest, context: InvocationContext): P
         branch: request.query.get("branch") || undefined,
         runId: request.query.get("runId") || undefined,
         runToken: request.query.get("runToken") || undefined,
+        runDate: request.query.get("runDate") || undefined,
     });
 
     try {
@@ -89,6 +92,8 @@ async function getToolUsage(request: HttpRequest, context: InvocationContext): P
                 toolName: entity.toolName,
                 toolCallId: entity.toolCallId,
                 successState: entity.successState,
+                durationMs: entity.durationMs,
+                outputBytes: entity.outputBytes,
             });
         }
 
