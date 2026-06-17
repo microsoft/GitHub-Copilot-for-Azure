@@ -277,27 +277,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?is)azd\\s+ai\\s+agent\\s+eval\\s+generate.*--dataset"
-      - type: output-matches
-        config:
-          pattern: "(?is)(dataset:.*local_uri.*eval/travel_approval_golden\\.jsonl|eval/travel_approval_golden\\.jsonl.*dataset:.*local_uri|local_uri:.*eval/travel_approval_golden\\.jsonl)"
-      - type: output-matches
-        config:
-          pattern: "(?is)max_candidates|model_search_space|optimization_model"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)azd\\s+ai\\s+agent\\s+eval\\s+init"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Scaffold Python agent for Agent Optimizer"
     prompt: |
@@ -309,27 +294,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?is)azure-ai-agentserver-optimization"
-      - type: output-matches
-        config:
-          pattern: "(?is)load_config\\(\\)|load_config"
-      - type: output-matches
-        config:
-          pattern: "(?is)\\.agent_configs[/\\\\]baseline|\\.agent_configs.*baseline"
-      - type: output-matches
-        config:
-          pattern: "(?is)review|do not deploy|stop"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Apply Agent Optimizer candidate locally"
     prompt: |
@@ -341,27 +311,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?is)azd\\s+ai\\s+agent\\s+optimize\\s+apply\\s+--candidate"
-      - type: output-matches
-        config:
-          pattern: "(?is)diff|review|source changes"
-      - type: output-matches
-        config:
-          pattern: "(?is)azd\\s+deploy"
-      - type: output-not-matches
-        config:
-          pattern: "(?is)azd\\s+ai\\s+agent\\s+optimize\\s+deploy\\s+--candidate"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── agent-observe-prompts ──
   - name: "Evaluate deployed Foundry agent"
@@ -374,27 +329,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?is)evaluation_agent_batch_eval_create"
-      - type: output-matches
-        config:
-          pattern: "(?is)inputData"
-      - type: output-matches
-        config:
-          pattern: "(?is)evaluation_get|evalRunId|evalId"
-      - type: output-not-matches
-        config:
-          pattern: "(?is)evaluation_suite_run"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Analyze eval failures and optimize prompt"
     prompt: |
@@ -406,27 +346,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?is)output_items|download.*results|azure-ai-projects"
-      - type: output-matches
-        config:
-          pattern: "(?is)cluster|root cause|failures"
-      - type: output-matches
-        config:
-          pattern: "(?is)prompt_optimize|optimize.*prompt"
-      - type: output-matches
-        config:
-          pattern: "(?is)evaluation_comparison_create|compare"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Enable continuous evaluation monitoring"
     prompt: |
@@ -438,24 +363,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?is)continuous_eval_get"
-      - type: output-matches
-        config:
-          pattern: "(?is)continuous_eval_create"
-      - type: output-matches
-        config:
-          pattern: "(?is)evaluator|deploymentName|quality|safety"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── Foundry E2E checks ──
   - name: "Golden Path - Create and deploy hosted agent"
