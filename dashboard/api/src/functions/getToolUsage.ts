@@ -71,9 +71,21 @@ async function getToolUsage(request: HttpRequest, context: InvocationContext): P
         runDate: request.query.get("runDate") || undefined,
     });
 
+    // Require at least one filter. An unfiltered scan of the one-row-per-tool-call
+    // table can be very large and risks timeouts / excessive storage reads.
+    if (!filter) {
+        return {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                error: "At least one filter is required: skill, test, branch, runId, runToken, or runDate.",
+            }),
+        };
+    }
+
     try {
         const tableClient = getToolUsageTableClient();
-        const listOptions = filter ? { queryOptions: { filter } } : {};
+        const listOptions = { queryOptions: { filter } };
         const entities: Record<string, unknown>[] = [];
 
         for await (const entity of tableClient.listEntities(listOptions)) {

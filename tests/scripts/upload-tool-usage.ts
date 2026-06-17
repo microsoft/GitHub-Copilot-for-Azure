@@ -35,6 +35,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { TableClient } from "@azure/data-tables";
+import type { TransactionAction } from "@azure/data-tables";
 import { DefaultAzureCredential } from "@azure/identity";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -195,6 +196,33 @@ export function expandToolUsageToRows(
   return rows;
 }
 
+/** Maximum number of entities allowed in a single Azure Table transaction. */
+export const MAX_TABLE_BATCH_SIZE = 100;
+
+/**
+ * Group rows into Azure Table transaction batches. A transaction requires every
+ * entity in the batch to share a PartitionKey and allows at most 100 entities,
+ * so rows are grouped by `partitionKey` and then chunked to `maxBatchSize`.
+ */
+export function groupRowsForTransactions(
+  rows: ToolUsageRow[],
+  maxBatchSize: number = MAX_TABLE_BATCH_SIZE,
+): ToolUsageRow[][] {
+  const byPartition = new Map<string, ToolUsageRow[]>();
+  for (const row of rows) {
+    const list = byPartition.get(row.partitionKey);
+    if (list) list.push(row);
+    else byPartition.set(row.partitionKey, [row]);
+  }
+  const batches: ToolUsageRow[][] = [];
+  for (const list of byPartition.values()) {
+    for (let i = 0; i < list.length; i += maxBatchSize) {
+      batches.push(list.slice(i, i + maxBatchSize));
+    }
+  }
+  return batches;
+}
+
 /** True when an Azure error indicates the caller lacks table write permission. */
 function isPermissionError(err: unknown): boolean {
   const e = err as { statusCode?: number; code?: string };
@@ -333,22 +361,25 @@ async function main(): Promise<void> {
     }
   }
 
+  const batches = groupRowsForTransactions(rows);
   let uploaded = 0;
-  for (const row of rows) {
+  for (const batch of batches) {
+    const actions: TransactionAction[] = batch.map((row) => ["upsert", { ...row }, "Replace"]);
     try {
-      await tableClient.upsertEntity({ ...row }, "Replace");
+      await tableClient.submitTransaction(actions);
     } catch (err) {
       console.error(
-        `upsertEntity failed for table='${tableName}' ` +
-          `partitionKey='${row.partitionKey}' rowKey='${row.rowKey}': ${formatAzureError(err)}`,
+        `submitTransaction failed for table='${tableName}' ` +
+          `partitionKey='${batch[0]?.partitionKey}' size=${batch.length}: ${formatAzureError(err)}`,
       );
       throw err;
     }
-    uploaded++;
+    uploaded += batch.length;
   }
 
   console.log(
-    `Uploaded ${uploaded} tool call row(s) for skill='${skill}', branch='${branch}', run='${runId}'.`,
+    `Uploaded ${uploaded} tool call row(s) in ${batches.length} batch(es) ` +
+      `for skill='${skill}', branch='${branch}', run='${runId}'.`,
   );
 }
 

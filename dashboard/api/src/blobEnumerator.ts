@@ -34,15 +34,7 @@ function getContainerClient(containerName: string): ContainerClient {
 
 function isExcluded(blobName: string): boolean {
     const filename = blobName.split("/").pop() ?? "";
-    if (EXCLUDED_FILENAMES.has(filename)) {
-        return true;
-    }
-    // Per-run tool-usage capture files (tool-usage-<token>.json) are uploaded but
-    // not exposed via the dashboard API yet.
-    if (filename.startsWith("tool-usage-") && filename.endsWith(".json")) {
-        return true;
-    }
-    return false;
+    return EXCLUDED_FILENAMES.has(filename);
 }
 
 /**

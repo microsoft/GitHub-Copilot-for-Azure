@@ -11,7 +11,9 @@ import {
   successStateOf,
   buildToolRowKey,
   expandToolUsageToRows,
+  groupRowsForTransactions,
   type ToolUsageFile,
+  type ToolUsageRow,
   type UploadContext,
 } from "../upload-tool-usage.ts";
 
@@ -132,5 +134,59 @@ describe("expandToolUsageToRows", () => {
     expect(row.sessionId).toBe("");
     expect(row.model).toBe("unknown");
     expect(row.successState).toBe("unknown");
+  });
+});
+
+describe("groupRowsForTransactions", () => {
+  function rowWith(partitionKey: string, rowKey: string): ToolUsageRow {
+    return {
+      partitionKey,
+      rowKey,
+      skill: partitionKey,
+      testName: "t",
+      branch: "main",
+      runId: "123",
+      runDate: "2026-06-15",
+      runTimestamp: "2026-06-15T11:44:05.123Z",
+      runToken: "tok",
+      reportFile: "",
+      sessionId: "",
+      model: "unknown",
+      order: 0,
+      toolName: "bash",
+      toolCallId: "c",
+      successState: "unknown",
+    };
+  }
+
+  test("returns no batches for no rows", () => {
+    expect(groupRowsForTransactions([])).toEqual([]);
+  });
+
+  test("keeps a single small same-partition run in one batch", () => {
+    const rows = [rowWith("s", "a"), rowWith("s", "b"), rowWith("s", "c")];
+    const batches = groupRowsForTransactions(rows);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]).toHaveLength(3);
+  });
+
+  test("chunks a large same-partition run to at most maxBatchSize", () => {
+    const rows = Array.from({ length: 250 }, (_, i) => rowWith("s", `r${i}`));
+    const batches = groupRowsForTransactions(rows, 100);
+    expect(batches.map((b) => b.length)).toEqual([100, 100, 50]);
+    // No batch mixes partition keys.
+    for (const batch of batches) {
+      expect(new Set(batch.map((r) => r.partitionKey)).size).toBe(1);
+    }
+  });
+
+  test("never mixes partition keys within a batch", () => {
+    const rows = [rowWith("a", "1"), rowWith("b", "1"), rowWith("a", "2")];
+    const batches = groupRowsForTransactions(rows);
+    for (const batch of batches) {
+      expect(new Set(batch.map((r) => r.partitionKey)).size).toBe(1);
+    }
+    // All rows are preserved across batches.
+    expect(batches.reduce((n, b) => n + b.length, 0)).toBe(3);
   });
 });
