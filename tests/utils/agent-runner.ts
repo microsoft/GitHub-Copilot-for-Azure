@@ -926,8 +926,8 @@ function writeTokenUsageJson(testName: string, config: AgentRunConfig, agentMeta
  */
 function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): void {
   try {
-    const filePath = buildShareFilePath(testName);
-    const dir = path.dirname(filePath);
+    const agentMetadataPath = buildShareFilePath(testName);
+    const dir = path.dirname(agentMetadataPath);
 
     // Ensure directory exists
     if (!fs.existsSync(dir)) {
@@ -936,7 +936,7 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
 
     const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
     // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
-    let reportTargetPath = filePath;
+    let reportTargetPath = agentMetadataPath;
     let suffix = 0;
     while (true) {
       try {
@@ -946,7 +946,7 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
         console.log("File exists", reportTargetPath);
         if ((err as { code: string }).code === "EEXIST") {
           suffix++;
-          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
+          reportTargetPath = agentMetadataPath.replace(".md", `-${suffix}.md`);
           continue;
         }
         throw err;
