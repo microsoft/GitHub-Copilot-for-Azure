@@ -315,7 +315,16 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
-    forwardedArgs.splice(0, 0, "--eval-spec", `../evals/${options.skill}/eval.yaml`);
+    const evalSpecDir = path.join(__dirname, `../evals/${options.skill}/`);
+    const evalSpecPaths: string[] = [];
+    const allFiles = await fs.readdir(evalSpecDir);
+    for (const file of allFiles) {
+      if (file.endsWith(".yaml")) {
+        evalSpecPaths.push(path.join(evalSpecDir, file));
+      }
+    }
+
+    forwardedArgs.splice(0, 0, ...evalSpecPaths.map(v => ["--eval-spec", v]).flat());
   }
 
   const exitCode = await runVallyCommand(forwardedArgs);
