@@ -164,7 +164,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) ||
+          isSkillInvoked(metadata, SKILL_NAME) ||
+          hasDeploymentCommand(metadata) ||
+          isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
@@ -185,7 +188,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) ||
+          isSkillInvoked(metadata, SKILL_NAME) ||
+          hasDeploymentCommand(metadata) ||
+          isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
@@ -206,7 +212,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) ||
+          isSkillInvoked(metadata, SKILL_NAME) ||
+          hasDeploymentCommand(metadata) ||
+          isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
