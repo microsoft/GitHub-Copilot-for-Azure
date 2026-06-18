@@ -381,7 +381,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^create$","argsPattern":".*"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
@@ -398,7 +398,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^create$","argsPattern":".*"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
