@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Azure Advisor reviews and recommendation workflows using whichever advisor_* MCP tools are available. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: end-to-end Advisor sweeps that combine the recommendation catalog, active recommendations, summaries/aggregates, and IaaC fix suggestions into one chat summary. DO NOT USE FOR: applying changes to Azure resources directly (read-only review), cost analysis beyond Advisor's cost category (use azure-cost), or non-Advisor diagnostics (use azure-diagnostics)."
+description: "Azure Advisor reviews and recommendations using available advisor_* MCP tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only Advisor sweeps with catalog, recommendations, and IaaC fixes. DO NOT USE FOR: changing resources, cost analysis (use azure-cost), or non-Advisor diagnostics (use azure-diagnostics)."
 license: MIT
 metadata:
   author: Microsoft
