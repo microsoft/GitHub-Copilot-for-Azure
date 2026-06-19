@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { listSkills } from "./skill-loader.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
@@ -573,7 +573,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     for (const entry of currentCleanups) {
       try {
         if (entry.session) {
-          await entry.session.destroy();
+          await entry.session.disconnect();
         }
       } catch { /* ignore */ }
       try {
@@ -685,9 +685,11 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
-        cwd: testWorkspace,
-        cliArgs: cliArgs,
-        cliPath: getBundledCliPath(),
+        workingDirectory: testWorkspace,
+        connection: RuntimeConnection.forStdio({
+          path: getBundledCliPath(),
+          args: cliArgs
+        }),
         env: {
           ...process.env,
           ...envVar
@@ -803,11 +805,11 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
             tokenUsage.model = model;
             // Prefer shutdown totals if usage events were missed
             if (tokenUsage.apiCallCount === 0) {
-              tokenUsage.inputTokens = metrics.usage.inputTokens;
-              tokenUsage.outputTokens = metrics.usage.outputTokens;
-              tokenUsage.cacheReadTokens = metrics.usage.cacheReadTokens;
-              tokenUsage.cacheWriteTokens = metrics.usage.cacheWriteTokens;
-              tokenUsage.apiCallCount = metrics.requests.count;
+              tokenUsage.inputTokens = metrics?.usage.inputTokens ?? 0;
+              tokenUsage.outputTokens = metrics?.usage.outputTokens ?? 0;
+              tokenUsage.cacheReadTokens = metrics?.usage.cacheReadTokens ?? 0;
+              tokenUsage.cacheWriteTokens = metrics?.usage.cacheWriteTokens ?? 0;
+              tokenUsage.apiCallCount = metrics?.requests.count ?? 0;
             }
           }
         }
