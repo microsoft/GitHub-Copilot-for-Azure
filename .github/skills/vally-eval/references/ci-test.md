@@ -2,7 +2,7 @@
 
 Follow these steps to add a skill's Vally suites to the CI test workflow so they run nightly and publish results. Because LLM behavior is statistical, accumulating test run results gives us better data to refine skills over time.
 
-## Prerequisite
+## Prerequisites
 
 - The skill's Vally suites are implemented under `evals/<skill-name>/eval.yaml` (or split across multiple YAML files).
 - The Vally suites use the `integration-test-agent-runner` custom executor.
@@ -16,7 +16,7 @@ The scheduled CI test workflow determines which skills to test by reading `tests
 
 Most skills use a shared job template to run eval suites. This template is defined as the `test` job in `.github/workflows/test-all-integration.yml`.
 
-If you use the shared job template, no additional setup is needed after updating `tests/skills.json`. The CI workflow creates one job per skill from this template and runs all eval suites with `npm run test:vally`.
+If you use the shared job template, add the skill in the workflow’s `VALLY_SKILLS` list. Otherwise the job will run Jest-based integration tests instead of `npm run test:vally`. The CI workflow creates one job per skill from this template and runs all eval suites with `npm run test:vally`.
 
 Reuse this template whenever possible. It provisions a test environment, installs common tools (for example, Azure CLI and Azure Developer CLI), connects to a test Azure subscription, and includes utility steps that collect and publish test results to a well-known storage location for downstream processing.
 
