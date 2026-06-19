@@ -1,6 +1,6 @@
 ---
 name: vally-eval
-description: "Author, validate, and run Vally eval.yaml evaluation suites for agent skills. TRIGGERS: create eval, write eval, add eval, run eval, validate eval, vally eval, eval.yaml, add stimulus, map test to eval, migrate test to eval, eval graders, eval scoring."
+description: "Author, validate, and run Vally eval.yaml evaluation suites for agent skills. TRIGGERS: create eval, write eval, add eval, run eval, validate eval, vally eval, eval.yaml, add stimulus, map test to eval, migrate test to eval, eval graders, eval scoring, add eval to CI."
 license: MIT
 metadata:
   author: Microsoft
@@ -18,6 +18,8 @@ Vally eval suites are written as yaml documents. All eval suites share eval spec
 Refer to the official documentation on the schema of the spec and the schema of the eval suites [writing-eval-specs](https://microsoft.github.io/vally/guides/writing-eval-specs/).
 
 Vally eval suites for azure-skills plugin have the following file layout. The shared eval spec is located at `<repo-root>/.vally.yaml`. The eval suites are categorized by skills. The eval suites for each skill are located at `<repo-root>/evals/<skill-name>/eval.yaml`, e.g. `<repo-root>/evals/azure-ai/eval.yaml`. If a skill needs fixture files for its eval suites, it should organize such fixture files in a `fixture` directory under its directory, e.g. `<repo-root>/evals/azure-ai/fixture/`.
+
+The eval suites can be organized into separate files under a skill's eval directory. For example, you can have `<repo-root>/evals/<skill-name>/evalA.yaml` and `<repo-root>/evals/<skill-name>/evalB.yaml`. When running the vally suites using `npm run test:vally` command, the test script will run suites from all these .yaml files.
 
 ## Migrate integration tests
 
@@ -48,7 +50,7 @@ npm run vally validate-stimulus
 
 Extended features such as early termination are implemented using tags and many of them use serialized JSON objects as input. This validation script also validates the values of these special tags.
 
-## Run vally eval suites
+## Run vally eval suites locally
 
 Use vally-cli to run vally eval suites. In most cases, you would like to use a command like this.
 
@@ -58,6 +60,10 @@ npm run test:vally -- --skill $SKILL
 ```
 
 `--eval-spec ../evals/<skill-name>/eval.yaml` tells vally which eval spec to run. The path is relative to the current working directory of the process running the command. `--output-dir ./results` tells vally to write its output to a `results/` directory relative to the current working directory of the process running the command. `--executor-plugin ../../tests/vally/vally-executor.ts` tells vally to load and execute the code in this module, which registers the custom executor used by azure-skill vally eval suites. Note that this path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
+
+## Run vally eval suites in CI
+
+Vally eval suites implemented in this repo can be added to the CI test workflow to be run nightly and publish results for reviewing. Refer to [ci-test](./references/ci-test.md) on how to add the Vally eval suites to the CI test workflow.
 
 ## Extend with custom grader
 
