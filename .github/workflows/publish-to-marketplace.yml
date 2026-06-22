@@ -16,7 +16,7 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: source-repo
           fetch-depth: 0 # Full history required for NBGV version computation
@@ -112,7 +112,7 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: source-repo
           fetch-depth: 0 # Full history required for NBGV version computation
@@ -191,7 +191,7 @@ jobs:
           TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
-              if matches=$(grep -rli --exclude='CHANGELOG.md' --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
+              if matches=$(grep -rli --include='*.md' --include='*.json' --exclude='CHANGELOG.md' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
                 echo "$matches" | while IFS= read -r file; do
                   sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
                   sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
