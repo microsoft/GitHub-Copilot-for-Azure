@@ -16,13 +16,6 @@ tags:
   type: integration
   skill: azure-hosted-copilot-sdk
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-hosted-copilot-sdk
-    - ../../plugin/skills/azure-prepare
-    - ../../plugin/skills/azure-validate
-    - ../../plugin/skills/azure-deploy
-
 config:
   runs: 1
   timeout: "10m"

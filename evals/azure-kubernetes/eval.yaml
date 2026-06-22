@@ -12,10 +12,6 @@ tags:
   type: integration
   skill: azure-kubernetes
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-kubernetes
-
 config:
   runs: 5
   timeout: "10m"

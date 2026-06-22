@@ -28,14 +28,6 @@ tags:
   type: integration
   skill: python-appservice-deploy
 
-environment:
-  skills:
-    - ../../plugin/skills/python-appservice-deploy
-    # azure-prepare is loaded so the negative routing stimuli below can
-    # assert that prompts outside this skill's scope (Java, Container Apps,
-    # Functions, IaC) actually route to azure-prepare.
-    - ../../plugin/skills/azure-prepare
-
 config:
   runs: 3
   # 35m global timeout accommodates the Flask e2e stimulus, which runs a
