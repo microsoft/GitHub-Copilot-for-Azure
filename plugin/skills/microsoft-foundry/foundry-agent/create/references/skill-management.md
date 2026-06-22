@@ -101,6 +101,7 @@ azd ai skill update my-skill --set-default-version 1
 The SDK uses `AIProjectClient.beta.skills` (preview API surface, requires `allow_preview=True`).
 
 ```python
+import os
 from azure.ai.projects.aio import AIProjectClient
 from azure.identity.aio import DefaultAzureCredential
 
