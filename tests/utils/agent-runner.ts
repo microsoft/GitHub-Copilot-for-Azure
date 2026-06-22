@@ -879,7 +879,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
             tools: ["*"]
           }
         },
-        systemMessage: runConfig.systemPrompt
+        systemMessage: runConfig.systemPrompt,
+        // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
+        enableSessionTelemetry: false
       });
       entry.session = session;
 
@@ -985,7 +987,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               tools: ["*"]
             }
           },
-          onPermissionRequest: approveAll
+          onPermissionRequest: approveAll,
+          // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
+          enableSessionTelemetry: false
         });
         await playwrightSession.sendAndWait({
           prompt: `Use playwright mcp tools to take a screenshot of the deployed app. Save the screenshot to this directory at this file location ${screenshotPath}`
