@@ -16,10 +16,6 @@ tags:
   type: integration
   skill: azure-compliance
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-compliance
-
 config:
   runs: 5
   timeout: "10m"
