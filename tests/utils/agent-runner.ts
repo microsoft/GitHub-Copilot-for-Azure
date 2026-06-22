@@ -99,6 +99,55 @@ export interface AgentMetadata {
 }
 
 /**
+ * A single tool invocation captured during an agent run, in emission order.
+ * Includes the `skill` pseudo-tool so the full sequence can be reconstructed.
+ */
+export interface ToolCall {
+  /** 0-based index over `tool.execution_start` events in emission order. */
+  order: number;
+  /** Raw `event.data.toolName` (e.g. "skill", "bash", an MCP tool name). */
+  toolName: string;
+  /** Correlates the start event to its `tool.execution_complete`. */
+  toolCallId: string;
+  /** Full tool arguments, secret-redacted on write, untruncated. */
+  arguments: unknown;
+  /**
+   * Success of the matching `tool.execution_complete`, or `null` when no
+   * completion event was observed for this call.
+   */
+  success: boolean | null;
+  /**
+   * Wall-clock duration in milliseconds, computed from the start and matching
+   * completion event timestamps, or `null` when no completion was observed.
+   */
+  durationMs: number | null;
+  /**
+   * UTF-8 byte size of the tool's full textual output (`detailedContent`,
+   * falling back to `content`, then to text/terminal result blocks). Binary
+   * blocks (image/audio) are excluded. `null` when no completion was observed.
+   */
+  outputBytes: number | null;
+}
+
+/**
+ * Structured, per-run record of the tools called during a single agent run.
+ * Written alongside (and named to match) that run's markdown report so the tool
+ * sequence for a specific run can be reconstructed even when the same stimulus
+ * runs multiple times in the same test-case directory.
+ */
+export interface ToolUsageRecord {
+  testName: string;
+  /** Basename of this run's `agent-metadata-<token>.md` report (1:1 correlation). */
+  reportFile: string;
+  /** Session id from the `session.start` event, if present. */
+  sessionId: string | null;
+  model: string | undefined;
+  /** ISO-8601 timestamp of when this file was written. */
+  timestamp: string;
+  toolCalls: ToolCall[];
+}
+
+/**
  * A unique identifier to use for the test run name.
  * By default, reports for each test run will be written to a pseudo-unique directory under "reports/test-run-{timestamp}/".
  * If {@link testRunId} is non-empty, reports for this test run will be written to a directory under "reports/test-run-{testRunId}/".
@@ -294,6 +343,105 @@ function computeToolAndSkillStats(
   }
 
   return { toolCounts, skillFiles };
+}
+
+/**
+ * Build the ordered list of tool calls for a single run from its session events.
+ *
+ * - One entry per `tool.execution_start` event, in emission order, including the
+ *   `skill` pseudo-tool.
+ * - `success` is resolved by joining each start to its `tool.execution_complete`
+ *   by `toolCallId`; `null` when no completion event exists.
+ */
+export function computeToolUsage(events: SessionEvent[]): ToolCall[] {
+  // First pass: success and completion timestamp by toolCallId from completion events.
+  const successById = new Map<string, boolean>();
+  const completeTimeById = new Map<string, string>();
+  const outputBytesById = new Map<string, number | null>();
+  for (const event of events) {
+    if (event.type !== "tool.execution_complete") continue;
+    const id = event.data.toolCallId as string | undefined;
+    if (id !== undefined) {
+      successById.set(id, Boolean(event.data.success));
+      completeTimeById.set(id, event.timestamp);
+      outputBytesById.set(id, computeOutputBytes(event.data.result));
+    }
+  }
+
+  const toolCalls: ToolCall[] = [];
+  for (const event of events) {
+    if (event.type !== "tool.execution_start") continue;
+    const toolName = event.data.toolName as string | undefined;
+    const toolCallId = event.data.toolCallId as string | undefined;
+    if (!toolName || toolCallId === undefined) continue;
+    toolCalls.push({
+      order: toolCalls.length,
+      toolName,
+      toolCallId,
+      arguments: event.data.arguments ?? null,
+      success: successById.has(toolCallId) ? successById.get(toolCallId)! : null,
+      durationMs: computeDurationMs(event.timestamp, completeTimeById.get(toolCallId)),
+      outputBytes: outputBytesById.has(toolCallId) ? outputBytesById.get(toolCallId)! : null,
+    });
+  }
+  return toolCalls;
+}
+
+/**
+ * UTF-8 byte size of a completion's full textual output. Prefers `detailedContent`,
+ * falls back to `content`, then to concatenated text from text/terminal result
+ * blocks. Binary blocks (image/audio) and resources are excluded. Returns `null`
+ * when no textual output is present.
+ */
+function computeOutputBytes(
+  result:
+    | { content?: string; detailedContent?: string; contents?: unknown[] }
+    | undefined,
+): number | null {
+  if (!result) return null;
+  let text: string | undefined;
+  if (typeof result.detailedContent === "string") {
+    text = result.detailedContent;
+  } else if (typeof result.content === "string") {
+    text = result.content;
+  } else if (Array.isArray(result.contents)) {
+    const parts: string[] = [];
+    for (const block of result.contents) {
+      const blockText = (block as { text?: unknown }).text;
+      if (typeof blockText === "string") parts.push(blockText);
+    }
+    text = parts.length > 0 ? parts.join("") : undefined;
+  }
+  if (text === undefined) return null;
+  return Buffer.byteLength(text, "utf8");
+}
+
+/**
+ * Wall-clock duration in milliseconds between a tool call's start and matching
+ * completion timestamp. Returns `null` when the completion is missing or either
+ * timestamp is unparseable, or when the result would be negative.
+ */
+function computeDurationMs(startTs: string, completeTs: string | undefined): number | null {
+  if (!completeTs) return null;
+  const start = Date.parse(startTs);
+  const end = Date.parse(completeTs);
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  const delta = end - start;
+  return delta >= 0 ? delta : null;
+}
+
+/**
+ * Derive the per-run tool-usage JSON path from a run's markdown report path,
+ * so the two share the same `<token>` and correlate 1:1.
+ * `.../agent-metadata-<token>.md` -> `.../tool-usage-<token>.json`
+ */
+export function deriveToolUsageFileName(reportFilePath: string): string {
+  const dir = path.dirname(reportFilePath);
+  const base = path
+    .basename(reportFilePath)
+    .replace(/^agent-metadata-/, "tool-usage-")
+    .replace(/\.md$/, ".json");
+  return path.join(dir, base);
 }
 
 /**
@@ -966,6 +1114,34 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
       skillFiles: agentMetadata.skillFiles,
     };
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
+
+    // Write per-run tool-usage JSON (Phase 1: capture for review). Named to match
+    // this run's markdown report so the tool sequence for a specific run can be
+    // reconstructed even when the same stimulus runs multiple times in one
+    // directory (where agent-metadata.json is overwritten). Best-effort: never
+    // fail a test because capture failed.
+    try {
+      const toolUsagePath = deriveToolUsageFileName(reportTargetPath);
+      const sessionId =
+        agentMetadata.events.find((e) => e.type === "session.start")?.id ?? null;
+      const toolUsage: ToolUsageRecord = {
+        testName,
+        reportFile: path.basename(reportTargetPath),
+        sessionId,
+        model: config.model ?? agentMetadata.tokenUsage?.model,
+        timestamp: new Date().toISOString(),
+        toolCalls: computeToolUsage(agentMetadata.events),
+      };
+      fs.writeFileSync(
+        toolUsagePath,
+        redactSecrets(JSON.stringify(toolUsage, null, 2)),
+        "utf-8",
+      );
+    } catch (error) {
+      if (process.env.DEBUG) {
+        console.error("Failed to write tool usage JSON:", error);
+      }
+    }
 
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${reportTargetPath}`);
