@@ -98,8 +98,10 @@ Skills are exposed through the MCP **resources** protocol (not `tools/list`):
 ```bash
 # Get a bearer token
 TOK=$(az account get-access-token --resource "https://ai.azure.com" --query accessToken -o tsv)
-URL="$PE/toolboxes/<toolbox>/mcp?api-version=v1"
 
+# Foundry project endpoint (no trailing slash)
+PE="<FOUNDRY_PROJECT_ENDPOINT>"
+URL="$PE/toolboxes/<toolbox>/mcp?api-version=v1"
 # List available skills (resources/list)
 curl -s -X POST "$URL" \
   -H "Authorization: Bearer $TOK" \
