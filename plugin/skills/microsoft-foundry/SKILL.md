@@ -238,3 +238,13 @@ Use `agent_get` MCP tool to determine an agent's type when needed.
 ## SDK Quick Reference
 
 - [Python](references/sdk/foundry-sdk-py.md)
+
+## Network Isolation Errors
+
+Applies to **any** call against a Foundry project or its parent AI Services account — Foundry MCP tools, `az` CLI, `curl`, REST, or SDK.
+
+If an error matches `Public access is disabled` / `PublicNetworkAccessDisabled` / `403 Forbidden` from a private endpoint / connection timeout / the project endpoint FQDN resolves to a public IP, then the project (or its parent AI Services account) has `publicNetworkAccess=Disabled` or `Enabled from selected IP addresses`, and the current shell is outside the project's VNet.
+
+Supported connection options are documented in [Choose a secure connection method to Foundry](https://learn.microsoft.com/azure/foundry/how-to/configure-private-link#choose-a-secure-connection-method-to-foundry).
+
+> ℹ️ Foundry MCP tools cannot reach a VNet-isolated project even from inside the VNet.
