@@ -326,7 +326,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -374,7 +373,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -419,7 +417,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -468,7 +465,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -512,7 +508,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -558,7 +553,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -608,7 +602,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -659,7 +652,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -705,7 +697,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -752,7 +743,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -805,7 +795,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -852,7 +841,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -906,7 +894,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -958,7 +945,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -1011,7 +997,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
@@ -1067,7 +1052,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      cost: llm
     constraints:
       max_turns: 40
     graders:
