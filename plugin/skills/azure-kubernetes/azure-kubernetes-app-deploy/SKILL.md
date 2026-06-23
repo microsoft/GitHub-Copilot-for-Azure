@@ -1,10 +1,21 @@
 ---
-name: deploy-to-aks
+name: azure-kubernetes-app-deploy
 license: MIT
 metadata:
   author: Microsoft
   version: "1.0.0"
-description: "Use when deploying a web application or API to an existing Azure Kubernetes Service cluster. Detects framework, generates Dockerfile and Kubernetes manifests, validates against AKS Deployment Safeguards, and deploys with verification. WHEN: deploy to AKS, deploy app to Kubernetes, containerize for AKS, deploy to existing AKS cluster, generate K8s manifests for Azure, set up CI/CD for AKS, migrate app to AKS, deploy container to Azure, I have a Django/Express/Spring Boot app and want to run it on AKS, my AKS deployment is failing safeguard checks."
+description: >-
+  Use when deploying an existing web application or API to an already-running
+  Azure Kubernetes Service cluster. Detects the framework, generates a
+  Dockerfile and Kubernetes manifests, validates against AKS Deployment
+  Safeguards, and deploys with verification. WHEN: deploy app to AKS, deploy
+  to existing AKS cluster, containerize app for Kubernetes, generate K8s
+  manifests for Azure, set up CI/CD for AKS, my AKS deployment is failing
+  safeguard checks, I have a Django/Express/Spring Boot app to run on AKS.
+  DO NOT USE FOR: creating or provisioning an AKS cluster (use
+  azure-kubernetes), assessing migration to AKS Automatic (use
+  azure-kubernetes-automatic-readiness), or deploying to non-AKS targets like
+  Web Apps, Container Apps, or Functions.
 ---
 
 # Deploy to AKS
@@ -21,7 +32,8 @@ Deploy applications to an existing AKS cluster with production-grade artifacts. 
 - You're migrating an application from another platform to AKS
 
 **Do NOT use this skill for:**
-- Provisioning or creating a new AKS cluster (use a separate provisioning skill)
+- Provisioning or creating a new AKS cluster (use the `azure-kubernetes` skill)
+- Assessing workload migration to AKS Automatic (use the `azure-kubernetes-automatic-readiness` skill)
 - Deploying to non-AKS compute targets (Web Apps, Container Apps, etc.)
 - Managing cluster infrastructure, scaling policies, or node pools
 - Performing Kubernetes cluster administration tasks (RBAC, networking policies, etc.)
@@ -67,7 +79,7 @@ Follow the quick deploy workflow in `phases/quick-deploy.md`. The workflow has 5
 | Best for | Deploying apps to an existing AKS cluster |
 | MCP Tools | `azure-documentation` |
 | CLI | `az acr build`, `kubectl apply`, `kubectl rollout status` |
-| Related skills | azure-kubernetes (cluster provisioning), azure-diagnostics (troubleshooting) |
+| Related skills | azure-kubernetes (cluster provisioning), azure-kubernetes-automatic-readiness (Automatic migration), azure-diagnostics (troubleshooting) |
 
 ## Workflow Quick Reference
 
