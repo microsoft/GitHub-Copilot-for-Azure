@@ -680,7 +680,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
         // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /container_image|image_name/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
         // AcrPull role assignment ensures managed identity can pull from ACR
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
@@ -722,7 +722,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
         // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /container_image|image_name/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
         // AcrPull role assignment ensures managed identity can pull from ACR
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
@@ -764,7 +764,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
         // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /container_image|image_name/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
         // AcrPull role assignment ensures managed identity can pull from ACR
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
