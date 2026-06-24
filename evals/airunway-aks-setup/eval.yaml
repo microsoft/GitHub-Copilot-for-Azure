@@ -21,10 +21,6 @@ tags:
   type: integration
   skill: airunway-aks-setup
 
-environment:
-  skills:
-    - ../../plugin/skills/airunway-aks-setup
-
 config:
   runs: 5
   timeout: "10m"

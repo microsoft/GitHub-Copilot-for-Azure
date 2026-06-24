@@ -128,3 +128,7 @@ npm run dashboard:collect
 ```
 
 The collected data will be saved at `data/latest.json` file. To deploy it to the website, move this file into `dashboard/public/data/latest.json` and redeploy the app. The web app will pick up the data and use it to render the dashboard.
+
+## Custom Container
+
+When viewing integration test results in the dashboard, you can read data from a custom blob container in the configured storage account by adding the `container` query parameter (for example, `?container=<container-name>`). Manual runs of the CI integration test workflow write test results to the `manual-integration-reports` container; to view them, open the dashboard with `?container=manual-integration-reports` (or `&container=manual-integration-reports` if the page already has query parameters).
