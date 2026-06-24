@@ -810,7 +810,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ expectScreenshot }) => {
         expectScreenshot();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed";
+        const MVCMOVIE10_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed";
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
@@ -818,7 +818,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
               repoUrl: ASPNETCORE_DOCS_REPO,
               targetDir: workspace,
               depth: 1,
-              sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+              sparseCheckoutPath: MVCMOVIE10_SPARSE_PATH,
             });
           },
           prompt:
@@ -827,7 +827,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use my current subscription. " +
             "This is for a small scale production environment. " +
             "Use standard SKUs. " +
-            `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
+            `The app can be found under ${MVCMOVIE10_SPARSE_PATH}.`,
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
