@@ -2,13 +2,14 @@
 # Go Production Dockerfile
 # =============================================================================
 # Customize the following before use:
-#   - APP_NAME:    Replace "app" in the binary name and CMD
+#   - APP_NAME:    Replace "app" in the binary name (go build -o /bin/app)
+#                  and in the ENTRYPOINT ["/app"] line
 #   - PORT:        Change EXPOSE port if not 8080
 #   - MODULE_PATH: Ensure go.mod module path matches your project
 #
 # Notes:
 #   - CGO_ENABLED=0 produces a fully static binary that runs on distroless
-#   - The distroless runtime has no shell — use the exec form for CMD
+#   - The distroless runtime has no shell — use the exec form for ENTRYPOINT
 #   - To debug, swap the runtime to gcr.io/distroless/static-debian12:debug
 #     which includes busybox
 # =============================================================================
