@@ -8,7 +8,7 @@
 /.github/workflows/ @microsoft/ghcp4a
 
 # Plugin skills owners
-/plugin/skills/ @RickWinter
+/plugin/skills/ @tmeschter @RickWinter
 /plugin/skills/airunway-aks-setup/ @tmeschter @RickWinter
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-ai/ @JasonYeMSFT @RickWinter
@@ -17,14 +17,14 @@
 /plugin/skills/azure-compliance/ @saikoumudi @RickWinter
 /plugin/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21 @RickWinter
 /plugin/skills/azure-cost/ @saikoumudi @RickWinter
-/plugin/skills/azure-deploy/ @tmeschter @wbreza @kvenkatrajan @paulyuk @RickWinter
+/plugin/skills/azure-deploy/ @tmeschter @kvenkatrajan @paulyuk @RickWinter
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi @RickWinter
 /plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @RickWinter
 /plugin/skills/azure-hosted-copilot-sdk/ @tmeschter @JasonYeMSFT @RickWinter
 /plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @RickWinter
 /plugin/skills/azure-kusto/ @saikoumudi @RickWinter
 /plugin/skills/azure-messaging/ @kashifkhan @RickWinter
-/plugin/skills/azure-prepare/ @tmeschter @wbreza @kvenkatrajan @RickWinter
+/plugin/skills/azure-prepare/ @tmeschter @kvenkatrajan @RickWinter
 /plugin/skills/azure-quotas/ @rakal-dyh @RickWinter
 /plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman @RickWinter
 /plugin/skills/azure-reliability/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
@@ -32,7 +32,7 @@
 /plugin/skills/azure-resource-visualizer/ @tmeschter @RickWinter
 /plugin/skills/azure-storage/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
-/plugin/skills/azure-validate/ @wbreza @tmeschter @kvenkatrajan @RickWinter
+/plugin/skills/azure-validate/ @tmeschter @kvenkatrajan @RickWinter
 /plugin/skills/entra-agent-id/ @ArLucaID @RickWinter
 /plugin/skills/entra-app-registration/ @JasonYeMSFT @kvenkatrajan @RickWinter
 /plugin/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
@@ -40,3 +40,4 @@
 /plugin/skills/microsoft-foundry/foundry-agent/deploy/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/invoke/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/troubleshoot/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter

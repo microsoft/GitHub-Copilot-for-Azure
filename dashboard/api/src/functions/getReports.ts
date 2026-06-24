@@ -32,7 +32,8 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
         return { status: 400, body: "Missing date parameter" };
     }
 
-    const tree: BlobTree = await enumerateBlobs(`${date}/`);
+    const container = request.query.get("container") || undefined;
+    const tree: BlobTree = await enumerateBlobs(`${date}/`, container);
     const dateNode = tree[date];
     if (!dateNode) {
         return { status: 404, body: `No reports found for date: ${date}` };
@@ -47,7 +48,7 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
 
     const sections: string[] = [];
     for (const path of reportPaths) {
-        const content = await getBlobContent(path);
+        const content = await getBlobContent(path, container);
         sections.push(content);
     }
 

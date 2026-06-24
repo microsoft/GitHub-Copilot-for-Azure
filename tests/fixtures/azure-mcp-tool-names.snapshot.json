@@ -1,6 +1,6 @@
 {
   "source": "npx -y @azure/mcp server start (initialize + tools/list)",
-  "azureMcpVersion": "3.0.0-beta.16+50c26410d071537feaf6fe8160d7f25f3be99f94",
+  "azureMcpVersion": "3.0.0-beta.17+b2bea04888804af0016b766b3b6a4f8b46e1a9d6",
   "toolNames": [
     "acr",
     "advisor",
