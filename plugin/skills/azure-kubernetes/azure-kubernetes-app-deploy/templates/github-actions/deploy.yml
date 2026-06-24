@@ -91,10 +91,12 @@ jobs:
               grep -rn '__[A-Z_]\+__' k8s/ || true
               PLACEHOLDERS_FOUND=1
             fi
-            # <placeholder> style (angle-bracket style used in K8s manifest templates)
-            if grep -rqP '<[a-z][a-z0-9-]*>' k8s/; then
+            # <placeholder> style (angle-bracket style used in K8s manifest templates).
+            # Exclude <image>: it is intentionally left in place here and replaced
+            # with the SHA-tagged image in the "Substitute image tag" step below.
+            if grep -rnP '<[a-z][a-z0-9-]*>' k8s/ | grep -vq '<image>'; then
               echo "❌ Angle-bracket placeholders found in k8s/ manifests:"
-              grep -rnP '<[a-z][a-z0-9-]*>' k8s/ || true
+              grep -rnP '<[a-z][a-z0-9-]*>' k8s/ | grep -v '<image>' || true
               PLACEHOLDERS_FOUND=1
             fi
           fi

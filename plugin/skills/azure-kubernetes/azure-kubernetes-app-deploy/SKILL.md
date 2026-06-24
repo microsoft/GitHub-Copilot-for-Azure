@@ -4,18 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "1.0.0"
-description: >-
-  Use when deploying an existing web application or API to an already-running
-  Azure Kubernetes Service cluster. Detects the framework, generates a
-  Dockerfile and Kubernetes manifests, validates against AKS Deployment
-  Safeguards, and deploys with verification. WHEN: deploy app to AKS, deploy
-  to existing AKS cluster, containerize app for Kubernetes, generate K8s
-  manifests for Azure, set up CI/CD for AKS, my AKS deployment is failing
-  safeguard checks, I have a Django/Express/Spring Boot app to run on AKS.
-  DO NOT USE FOR: creating or provisioning an AKS cluster (use
-  azure-kubernetes), assessing migration to AKS Automatic (use
-  azure-kubernetes-automatic-readiness), or deploying to non-AKS targets like
-  Web Apps, Container Apps, or Functions.
+description: "Use when deploying an existing web application or API to an already-running Azure Kubernetes Service cluster. Detects the framework, generates a Dockerfile and Kubernetes manifests, validates against AKS Deployment Safeguards, and deploys with verification. WHEN: deploy app to AKS, deploy to existing AKS cluster, containerize app for Kubernetes, generate K8s manifests for Azure, set up CI/CD for AKS, my AKS deployment is failing safeguard checks, I have a Django/Express/Spring Boot app to run on AKS. DO NOT USE FOR: creating or provisioning an AKS cluster (use azure-kubernetes), assessing migration to AKS Automatic (use azure-kubernetes-automatic-readiness), or deploying to non-AKS targets like Web Apps, Container Apps, or Functions."
 ---
 
 # Deploy to AKS
