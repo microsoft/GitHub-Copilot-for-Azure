@@ -806,11 +806,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys MvcMovie 90", async () => {
+    test("deploys MvcMovie 10", async () => {
       await withTestResult(async ({ expectScreenshot }) => {
         expectScreenshot();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/9.0-completed";
+        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed";
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
