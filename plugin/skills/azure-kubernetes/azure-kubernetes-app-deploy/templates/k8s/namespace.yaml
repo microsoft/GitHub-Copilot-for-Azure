@@ -12,4 +12,4 @@ kind: Namespace
 metadata:
   name: <namespace>
   labels:
-    app.kubernetes.io/managed-by: deploy-to-aks-skill
+    app.kubernetes.io/managed-by: azure-kubernetes-app-deploy
