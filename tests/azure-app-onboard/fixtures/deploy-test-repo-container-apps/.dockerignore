@@ -1,0 +1,12 @@
+node_modules
+.git
+.gitignore
+*.md
+*.yml
+*.png
+**/*.conf
+**/*.service
+dist
+build
+docs
+Dockerfile
