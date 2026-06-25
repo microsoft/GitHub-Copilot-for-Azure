@@ -1,68 +1,30 @@
 # AKS Deployment Safeguards Reference
 
-> **Last updated:** 2026-04-02
+> **Source of truth:** the Deployment Safeguards policy initiative is defined
+> once in
+> `../azure-kubernetes-automatic-readiness/references/constraint-spec-v1.yaml`
+> (initiative `c047ea8e-…`). This file is the **deploy-time checklist**: which
+> rules the app-deploy workflow auto-fixes vs. warns on, and how. When the
+> policy set changes, update the constraint spec; only the app-deploy-specific
+> fix behavior below is maintained here.
 
-AKS Deployment Safeguards enforce best practices on Kubernetes manifests at admission time. This reference covers every rule the skill validates **before** deployment.
-
----
+This checklist maps each safeguard to how the quick-deploy workflow handles it.
 
 ## DS001 — Resource Limits Required (Error)
 
 Every container needs `resources.requests` AND `resources.limits` for both `cpu` and `memory`.
 
-```yaml
-resources:
-  requests:
-    cpu: "100m"
-    memory: "128Mi"
-  limits:
-    cpu: "500m"
-    memory: "256Mi"
-```
-
 ## DS002 — Liveness Probe Required (Warning)
 
-Every container needs a `livenessProbe`. Use `httpGet`, `tcpSocket`, or `exec`:
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: /healthz
-    port: 8080
-  initialDelaySeconds: 10
-  periodSeconds: 15
-```
+Every container needs a `livenessProbe`. Use `httpGet`, `tcpSocket`, or `exec`.
 
 ## DS003 — Readiness Probe Required (Warning)
 
-Every container needs a `readinessProbe`:
-
-```yaml
-readinessProbe:
-  httpGet:
-    path: /ready
-    port: 8080
-  initialDelaySeconds: 5
-  periodSeconds: 10
-```
+Every container needs a `readinessProbe`.
 
 ## DS004 — runAsNonRoot Required (Error)
 
-Set at **both** pod and container level:
-
-```yaml
-# Pod level
-spec:
-  securityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-
-# Container level
-securityContext:
-  runAsNonRoot: true
-```
+Set at **both** pod and container level.
 
 ## DS005 — No hostNetwork (Error)
 
@@ -90,19 +52,11 @@ Set `spec.replicas: 2` or higher. Pair with a PodDisruptionBudget.
 
 ## DS011 — allowPrivilegeEscalation: false (Error)
 
-Every container must have:
-
-```yaml
-securityContext:
-  allowPrivilegeEscalation: false
-```
+Every container must set `securityContext.allowPrivilegeEscalation: false`.
 
 ## DS012 — readOnlyRootFilesystem: true (Warning)
 
-```yaml
-securityContext:
-  readOnlyRootFilesystem: true
-```
+Every container must set `securityContext.readOnlyRootFilesystem: true`.
 
 If the app writes to specific paths, mount `emptyDir` volumes:
 
@@ -120,12 +74,7 @@ Common writable paths: Spring Boot `/tmp`, ASP.NET `/tmp`, Django `/tmp`, Expres
 
 ## DS013 — automountServiceAccountToken: false (Warning)
 
-```yaml
-spec:
-  automountServiceAccountToken: false
-```
-
-Set to `true` only if the app genuinely calls the K8s API (scope with RBAC).
+Set `spec.automountServiceAccountToken: false`. Set to `true` only if the app genuinely calls the K8s API (scope with RBAC).
 
 ---
 
