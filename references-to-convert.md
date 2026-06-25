@@ -9,7 +9,7 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [ ] references/auth-best-practices.md
 - [x] references/azure-context.md
 - [ ] references/functional-verification.md
-- [ ] references/generate.md
+- [x] references/generate.md
 - [ ] references/global-rules.md
 - [ ] references/plan-template.md
 - [x] references/recipe-selection.md

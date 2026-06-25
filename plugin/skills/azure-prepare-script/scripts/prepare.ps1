@@ -952,10 +952,24 @@ Set `input.researchDone` to true when finished.
     },
     @{
         id = 'generate'; phase = 2; title = 'Generate artifacts'
-        refs = @('references/generate.md')
+        refs = @(
+            'references/recipes/azd/README.md',
+            'references/recipes/azcli/README.md',
+            'references/recipes/bicep/README.md',
+            'references/recipes/terraform/README.md'
+        )
         guidance = @'
-Generate infrastructure and configuration files into the workspace (./infra, azure.yaml
-for AZD, Dockerfiles under src/<component>/ as needed).
+Generate infrastructure and configuration files for the selected recipe. Research
+(prior step) MUST be complete and its findings applied.
+
+⛔ FIRST — .NET Aspire (`auto.componentSignals.aspire` true): do NOT hand-create
+azure.yaml or infra/ files. USE `azd init --from-code -e <env>` (it generates infra
+from the AppHost). Then IMMEDIATELY `azd env set AZURE_SUBSCRIPTION_ID <id>`. See
+`references/aspire.md` and `references/recipes/azd/aspire.md`. Manually authoring
+azure.yaml for Aspire is the most common deployment failure.
+
+Other special patterns: complex existing codebase → consider `azd init --from-code`;
+existing azure.yaml (`auto.existingInfra.azureYaml`) → MODIFY the existing config.
 
 ⛔ If the target compute is Azure Functions, load the composition algorithm BEFORE
 generating any infrastructure:
@@ -968,8 +982,30 @@ generating any infrastructure:
   The Functions bicep.md/terraform.md files are REFERENCE DOCS, not templates to copy —
   hand-writing from them yields missing RBAC and broken managed identity.
 For other compute (Container Apps, App Service, Static Web Apps) load their
-`references/services/<service>/README.md` for guidance.
+`references/services/<service>/README.md`. Load the selected recipe's README (above)
+for detailed generation steps.
 
+Generation order: (1) azure.yaml (AZD only) → (2) app code scaffolding (entry points,
+health endpoints) → (3) Dockerfiles (if containerized) → (4) IaC in ./infra/ →
+(5) CI/CD (if requested). Typical layout: .azure/, infra/{main.bicep|main.tf,modules/},
+src/<component>/Dockerfile, azure.yaml.
+
+⚠️ Create the full directory tree (`mkdir -p`) BEFORE writing files — the `create`
+tool does NOT make parent directories.
+
+Security requirements (MANDATORY):
+  - No hardcoded secrets; Key Vault for sensitive values; Managed Identity for auth;
+    HTTPS only, TLS 1.2+.
+  - SQL Server Bicep MUST use Entra-only auth — omit administratorLogin /
+    administratorLoginPassword entirely (incl. conditional branches); these names must
+    not appear in any .bicep. See `references/services/sql-database/bicep.md`.
+  - SQL + Managed Identity → MUST generate scripts/grant-sql-access.sh + .ps1 and a
+    `postprovision` hook in azure.yaml (ARM role assignments only grant control-plane).
+  - App Service Bicep → every Microsoft.Web/sites MUST carry
+    tags: union(tags, { 'azd-service-name': serviceName }) or `azd deploy` can't find it.
+  - Containerized apps → apply runtime production settings (e.g. `references/runtimes/nodejs.md`).
+
+After generation: record the generated file list in `.azure/deployment-plan.md`.
 Set `input.generateDone` to true when artifacts are written.
 '@
         needs = @(
