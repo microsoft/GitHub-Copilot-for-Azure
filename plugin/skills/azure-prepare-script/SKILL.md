@@ -99,7 +99,6 @@ for provisioning-limit checks.
 The driver script points you to these references at the relevant step. They remain
 authoritative for deep detail; consult the one the `NEXT ACTION` block names.
 
-- Planning: [region-availability.md](references/region-availability.md)
 - Functions: [services/functions/durable.md](references/services/functions/durable.md), [services/durable-task-scheduler/README.md](references/services/durable-task-scheduler/README.md), [services/durable-task-scheduler/bicep.md](references/services/durable-task-scheduler/bicep.md), [services/sql-database/bicep.md](references/services/sql-database/bicep.md)
 - SDK: [azd](references/sdk/azd-deployment.md), Azure Identity ([py](references/sdk/azure-identity-py.md) · [dotnet](references/sdk/azure-identity-dotnet.md) · [ts](references/sdk/azure-identity-ts.md) · [java](references/sdk/azure-identity-java.md)), App Configuration ([py](references/sdk/azure-appconfiguration-py.md) · [ts](references/sdk/azure-appconfiguration-ts.md) · [java](references/sdk/azure-appconfiguration-java.md))
 

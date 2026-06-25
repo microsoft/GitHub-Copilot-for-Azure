@@ -787,7 +787,7 @@ Include the supporting services as their own entries.
     },
     @{
         id = 'azure-context'; phase = 1; title = 'Confirm Azure subscription and location'
-        refs = @('references/region-availability.md')
+        refs = @('scripts/references/region-availability.md')
         guidance = @'
 Detect, confirm, and apply the Azure subscription and target region. The script
 already collected:
@@ -802,10 +802,15 @@ already collected:
 3. Confirm subscription via `ask_user` showing the ACTUAL name AND id
    (e.g. "Use current: <name> (<id>)"). Never offer a vague "use default" choice.
    If the user wants a different one, list via `az account list -o table`.
-4. Confirm region via `ask_user`. Consult `references/region-availability.md` and
-   present ONLY regions that support ALL selected services — a region missing a
-   service will fail deployment. Honor any data-residency constraint in
-   `input.requirements.compliance`.
+4. Confirm region via `ask_user`. Present ONLY regions that support ALL selected
+   services — a region missing a service will fail deployment. Most services
+   (Container Apps, Functions, App Service, SQL, Cosmos, Key Vault, Storage, Service
+   Bus, Event Grid, App Insights/Log Analytics) are broadly available. LIMITED ones
+   need a region check: Static Web Apps (~5 regions), Azure AI Foundry (very limited,
+   by model), AKS and Azure Database for PostgreSQL (limited in some regions) — use
+   the Azure quota MCP tool (`quota_region_availability_list`) and the service-specific
+   region-availability references to verify. See `scripts/references/region-availability.md`.
+   Honor any data-residency constraint in `input.requirements.compliance`.
 5. Provisioning limits for the chosen region are validated in the next (quota)
    step via the azure-quotas skill; if capacity is insufficient, return here and
    pick another region.
@@ -916,7 +921,7 @@ plan regenerates before asking again.
     },
     @{
         id = 'research'; phase = 2; title = 'Research components'
-        refs = @('references/region-availability.md')
+        refs = @('scripts/references/region-availability.md')
         guidance = @'
 For each Azure service in `input.architecture`, gather best practices BEFORE
 generating artifacts, then record findings.
@@ -931,7 +936,7 @@ Process:
   4. Load the selected recipe's guide + its IaC rules / MCP best practices / schema
      tools (see the recipe README chosen earlier).
   5. Verify every service is available in the target region
-     (`references/region-availability.md`).
+     (`scripts/references/region-availability.md`).
   6. Provisioning limits/quota were validated in the quota step — re-check if the
      architecture changed.
   7. For containerized apps, load runtime production settings (e.g.
