@@ -995,7 +995,7 @@ Process:
   6. Provisioning limits/quota were validated in the quota step — re-check if the
      architecture changed.
   7. For containerized apps, load runtime production settings (e.g.
-     `references/runtimes/nodejs.md`).
+     `scripts/references/runtimes/nodejs.md`).
   8. Invoke related skills for deeper guidance (see routing below).
   9. Document findings in `.azure/deployment-plan.md` under `## Research Summary`.
 
@@ -1104,7 +1104,7 @@ Security requirements (MANDATORY):
     `postprovision` hook in azure.yaml (ARM role assignments only grant control-plane).
   - App Service Bicep → every Microsoft.Web/sites MUST carry
     tags: union(tags, { 'azd-service-name': serviceName }) or `azd deploy` can't find it.
-  - Containerized apps → apply runtime production settings (e.g. `references/runtimes/nodejs.md`).
+  - Containerized apps → apply runtime production settings (e.g. `scripts/references/runtimes/nodejs.md`).
 
 After generation: record the generated file list in `.azure/deployment-plan.md`.
 Set `input.generateDone` to true when artifacts are written.

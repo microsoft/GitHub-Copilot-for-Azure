@@ -30,7 +30,7 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [x] references/requirements.md
 - [x] references/research.md
 - [x] references/resources-limits-quotas.md
-- [ ] references/runtimes/nodejs.md
+- [x] references/runtimes/nodejs.md
 - [x] references/scan.md
 - [ ] references/sdk/azd-deployment.md
 - [ ] references/sdk/azure-appconfiguration-java.md
