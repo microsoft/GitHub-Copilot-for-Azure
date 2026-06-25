@@ -4,7 +4,7 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 
 - [x] references/analyze.md
 - [ ] references/apim.md
-- [ ] references/architecture.md
+- [x] references/architecture.md
 - [ ] references/aspire.md
 - [ ] references/auth-best-practices.md
 - [ ] references/azure-context.md

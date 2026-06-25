@@ -676,17 +676,61 @@ README above for the generate step.
     },
     @{
         id = 'architecture'; phase = 1; title = 'Plan architecture'
-        refs = @('references/architecture.md')
+        refs = @()
         guidance = @'
-Map each component to an Azure service and SKU. Load service references under
-`references/services/<service>/README.md` as needed.
+Select a hosting stack, map each component to an Azure service + SKU, and record
+rationale. Load per-service detail under `references/services/<service>/README.md`
+as needed.
+
+Stack selection:
+  - Containers  → Docker experience, complex deps, microservices
+                  (Container Apps, AKS, ACR)
+  - Serverless  → event-driven, variable traffic, cost optimization
+                  (Functions, Logic Apps, Event Grid)
+  - App Service → traditional web apps, PaaS preference
+                  (App Service, Static Web Apps)
+  Lean Serverless for event-driven/minimal-ops; Containers for complex deps or
+  long-running; App Service for traditional PaaS web apps.
+
+Container hosting — Container Apps vs AKS:
+  - Container Apps → microservices without K8s, KEDA/Dapr built-in, scale-to-zero,
+                     teams without K8s expertise.
+  - AKS           → need K8s API/kubectl, custom operators/CRDs, service mesh
+                     (Istio), GPU/ML, complex/multi-tenant networking.
+  ⮕ If AKS is chosen, invoke the **azure-kubernetes** skill for SKU (Automatic vs
+     Standard), networking, identity, scaling, and security configuration.
+
+Hosting service mapping (component type → primary [→ alternatives]):
+  - SPA Frontend       → Static Web Apps [Blob + CDN]
+  - SSR Web App        → Container Apps [App Service, AKS]
+  - REST/GraphQL API   → Container Apps [App Service, Functions, AKS]
+  - Background Worker  → Container Apps [Functions, AKS]
+  - Scheduled Task     → Functions (Timer) [Container Apps Jobs, AKS CronJob]
+  - Event Processor    → Functions [Container Apps, AKS + KEDA]
+  - Microservices(K8s) → AKS [Container Apps]
+  - GPU/ML Workloads   → AKS [Azure ML]
+
+Data: Relational→Azure SQL [PostgreSQL/MySQL]; Document→Cosmos DB [MongoDB];
+  Cache→Redis; Files→Blob Storage; Search→AI Search.
+Integration: Queue→Service Bus; Pub/Sub→Event Grid; Streaming→Event Hubs.
+
+Workflow & orchestration:
+  - Multi-step workflow → Durable Functions + Durable Task Scheduler (DTS).
+    ⚠️ DTS is the REQUIRED managed backend — do NOT use Azure Storage or MSSQL
+    backends. See `references/services/functions/durable.md`.
+  - Low-code / visual workflow → Logic Apps.
+
+Supporting services — ALWAYS include: Log Analytics (logging), Application
+Insights (monitoring/APM), Key Vault (secrets), Managed Identity (svc-to-svc auth).
+
 Set `input.stack` to "Containers" | "Serverless" | "App Service" (or a hybrid label).
 Set `input.architecture` to an array of objects:
-  [ { "component": "...", "azureService": "...", "sku": "..." } ]
+  [ { "component": "...", "azureService": "...", "sku": "...", "rationale": "..." } ]
+Include the supporting services as their own entries.
 '@
         needs = @(
             @{ Path = 'input.stack'; Prompt = 'Stack: Containers | Serverless | App Service' },
-            @{ Path = 'input.architecture'; Prompt = 'Array of mappings: { component, azureService, sku }' }
+            @{ Path = 'input.architecture'; Prompt = 'Array of mappings: { component, azureService, sku, rationale }' }
         )
     },
     @{
