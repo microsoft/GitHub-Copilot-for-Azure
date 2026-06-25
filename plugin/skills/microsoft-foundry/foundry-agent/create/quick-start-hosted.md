@@ -34,10 +34,11 @@ Run the bundled script:
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Act on prefixes: `[OK]` continue; `[WARN]` continue; `[ACTION]` resolve first.
+Act on the summary prefixes:
 
-- Missing `azure.ai.agents` extension → `azd extension install azure.ai.agents`.
-- Not logged in → STOP. Ask the user to run `azd auth login`. Never run `azd auth login` yourself.
+- `[OK]` -- nothing to do.
+- `[WARN]` -- non-blocking; continue.
+- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before any init, provision, or deploy command. Missing `azure.ai.agents` / `azure.ai.projects` extensions may be resolved with `azd extension install <name>`.
 
 ### Step 2 — Collect remaining inputs (one batch)
 
