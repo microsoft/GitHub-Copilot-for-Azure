@@ -2,48 +2,14 @@
 
 > **Applies to:** Projects detected with `requirements.txt`, `pyproject.toml`, or `Pipfile` containing `fastapi`
 
----
+## Quick Reference
 
-## Dockerfile Patterns
-
-### Multi-stage build with virtual environment
-
-Using a virtual environment in a multi-stage build keeps the final image lean by copying only installed packages:
-
-```dockerfile
-# Build stage
-FROM python:3.12-slim AS build
-WORKDIR /app
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-
-# Runtime stage
-FROM python:3.12-slim AS runtime
-WORKDIR /app
-RUN addgroup --system app && adduser --system --ingroup app app
-COPY --from=build /opt/venv /opt/venv
-COPY --from=build /app .
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-USER app:app
-EXPOSE 8000
-# HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle
-# health checks in AKS. See deployment.yaml for probe configuration.
-ENTRYPOINT ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### Key points
-
-- **Base image:** `python:3.12-slim` over Alpine — Alpine uses musl libc which causes build failures with many Python C extensions (numpy, psycopg2, cryptography)
-- **`PYTHONDONTWRITEBYTECODE=1`** prevents `.pyc` files from bloating the image
-- **`PYTHONUNBUFFERED=1`** ensures logs appear immediately in `kubectl logs` without buffering
-- **`--no-cache-dir`** for pip avoids caching wheel files in the image layer
-- **Non-root user** (`app`) satisfies DS004
-- **Virtual environment copy** (`/opt/venv`) cleanly separates dependencies from build tools
+| Property | Value |
+|----------|-------|
+| Signal files | `requirements.txt`/`pyproject.toml`/`Pipfile` containing `fastapi` |
+| Default port | `8000` |
+| Health path | `/health` + `/ready` |
+| Base template | `templates/dockerfiles/python.Dockerfile` (+ `references/base-images.md`) |
 
 ---
 
@@ -184,7 +150,8 @@ FastAPI with Uvicorn is async and lightweight. Size for workload concurrency.
 ## Port Configuration
 
 - **Default port:** 8000
-- **CLI flag:** `--port 8000` passed to `uvicorn`
+- **CLI flag:** `--host 0.0.0.0 --port 8000` passed to `uvicorn` — must include `--host 0.0.0.0` (uvicorn defaults to `127.0.0.1`, unreachable from Kubernetes probes)
+- **Workers:** use `--workers 1` for pure-async apps (async code uses a single event loop); `2 * CPU_CORES + 1` only for sync/blocking handlers
 - **Env var override:** `PORT` (read via `uvicorn --port $PORT` or `int(os.environ.get("PORT", 8000))`)
 
 Uvicorn logs the port on startup: `Uvicorn running on http://0.0.0.0:8000`
@@ -209,6 +176,6 @@ The `--no-cache-dir` flag (pip) and `--no-interaction` flag (Poetry) suppress in
 |-------|---------|-----|
 | Uvicorn workers misconfigured | High latency under load, single-core CPU usage | Set `--workers` to `2 * CPU_CORES + 1` for sync code, or `1` when using async handlers (async code uses a single event loop) |
 | Async DB pool exhaustion | `asyncpg.exceptions.TooManyConnectionsError` | Configure pool size with `create_async_engine(pool_size=5, max_overflow=10)` and match PostgreSQL `max_connections` |
-| Alpine build fails | `gcc` errors installing `cryptography`, `psycopg2`, `numpy` | Use `python:3.12-slim` (Debian-based) instead of `python:3.12-alpine` |
+| Alpine build fails | `gcc` errors installing `cryptography`, `psycopg2`, `numpy` | Use the Debian-slim Python base (see `references/base-images.md`) instead of Alpine |
 | Uvicorn binds to localhost | Connection refused from Kubernetes probes | Set `--host 0.0.0.0` — uvicorn defaults to `127.0.0.1` which is unreachable from outside the container |
 | Missing uvicorn in production | `ModuleNotFoundError: No module named 'uvicorn'` | Ensure `uvicorn[standard]` is in `requirements.txt` — it is often only in dev dependencies |

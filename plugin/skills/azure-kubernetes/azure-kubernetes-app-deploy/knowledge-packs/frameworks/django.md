@@ -2,55 +2,14 @@
 
 > **Applies to:** Projects detected with `requirements.txt`, `pyproject.toml`, or `Pipfile` containing `django`, or presence of `manage.py`
 
----
+## Quick Reference
 
-## Dockerfile Patterns
-
-### Multi-stage build with virtual environment and collectstatic
-
-Django requires a build stage that installs dependencies **and** collects static assets before the runtime stage:
-
-```dockerfile
-# Build stage
-FROM python:3.12-slim AS build
-WORKDIR /app
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-RUN SECRET_KEY=build-placeholder python manage.py collectstatic --noinput
-```
-
-The `SECRET_KEY=build-placeholder` is necessary because `collectstatic` imports Django settings, which require a `SECRET_KEY` — but the real secret is never baked into the image.
-
-```dockerfile
-# Runtime stage
-FROM python:3.12-slim AS runtime
-WORKDIR /app
-RUN addgroup --system app && adduser --system --ingroup app app
-COPY --from=build /opt/venv /opt/venv
-COPY --from=build /app .
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-USER app:app
-EXPOSE 8000
-# HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle
-# health checks in AKS. See deployment.yaml for probe configuration.
-ENTRYPOINT ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
-```
-
-### Key points
-
-- **Base image:** `python:3.12-slim` over Alpine — Alpine uses musl libc which causes build failures with many Python C extensions (psycopg2, Pillow, cryptography)
-- **`PYTHONDONTWRITEBYTECODE=1`** prevents `.pyc` files from bloating the image
-- **`PYTHONUNBUFFERED=1`** ensures logs appear immediately in `kubectl logs` without buffering
-- **`--no-cache-dir`** for pip avoids caching wheel files in the image layer
-- **Non-root user** (`app`) satisfies DS004
-- **`gunicorn`** is the production WSGI server — never use `manage.py runserver` in production (it is single-threaded, unoptimized, and not designed for production traffic)
-- **Workers formula:** `2 * CPU_CORES + 1` — for a 1-vCPU container, use `--workers 3`
-- **WSGI module path** varies by project scaffold: `config.wsgi:application`, `myproject.wsgi:application`, or `app.wsgi:application` — check `wsgi.py` location
+| Property | Value |
+|----------|-------|
+| Signal files | `requirements.txt`/`pyproject.toml`/`Pipfile` containing `django`, or `manage.py` |
+| Default port | `8000` (gunicorn) |
+| Health path | `/health/` (django-health-check) |
+| Base template | `templates/dockerfiles/python.Dockerfile` (+ `references/base-images.md`) |
 
 ---
 
@@ -197,6 +156,8 @@ Django with Gunicorn runs multiple worker processes. Size for the number of work
 - **Default port:** 8000
 - **CLI flag:** `--bind 0.0.0.0:8000` passed to `gunicorn`
 - **Env var override:** `PORT` (read via `gunicorn --bind 0.0.0.0:$PORT` or `int(os.environ.get("PORT", 8000))`)
+- **Workers formula:** `2 * CPU_CORES + 1` (e.g. `--workers 3` for a 1-vCPU container)
+- **WSGI module path** varies by project scaffold: `config.wsgi:application`, `myproject.wsgi:application`, or `app.wsgi:application` — check `wsgi.py` location
 
 Gunicorn logs the port on startup: `Listening at: http://0.0.0.0:8000`
 

@@ -2,68 +2,14 @@
 
 > **Applies to:** Projects detected with `requirements.txt`, `pyproject.toml`, or `Pipfile` containing `flask`
 
----
+## Quick Reference
 
-## Dockerfile Patterns
-
-### Multi-stage build with virtual environment
-
-Flask requires a production WSGI server — never use `flask run` or `app.run()` in production. Gunicorn is the standard choice:
-
-```dockerfile
-# Build stage
-FROM python:3.12-slim AS build
-WORKDIR /app
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . .
-
-# Runtime stage
-FROM python:3.12-slim AS runtime
-WORKDIR /app
-RUN addgroup --system app && adduser --system --ingroup app app
-COPY --from=build /opt/venv /opt/venv
-COPY --from=build /app .
-ENV PATH="/opt/venv/bin:$PATH" \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-USER app:app
-EXPOSE 8000
-# HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle
-# health checks in AKS. See deployment.yaml for probe configuration.
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "app:app"]
-```
-
-### Key points
-
-- **Base image:** `python:3.12-slim` over Alpine — Alpine uses musl libc which causes build failures with many Python C extensions (psycopg2, cryptography)
-- **`PYTHONDONTWRITEBYTECODE=1`** prevents `.pyc` files from bloating the image
-- **`PYTHONUNBUFFERED=1`** ensures logs appear immediately in `kubectl logs` without buffering
-- **`--no-cache-dir`** for pip avoids caching wheel files in the image layer
-- **Non-root user** (`app`) satisfies DS004
-- **Virtual environment copy** (`/opt/venv`) cleanly separates dependencies from build tools
-- **Never use `flask run` or `app.run()` in production** — these start the Werkzeug development server which is single-threaded, not hardened, and not suitable for production traffic
-
-### Entry point variants
-
-- **Module-level `app` object:** `gunicorn "app:app"` — the most common pattern where `app = Flask(__name__)` is defined at module level
-- **Application factory pattern:** `gunicorn "myapp:create_app()"` — when the app is created via a factory function like `def create_app(): app = Flask(__name__); return app`
-
-### Workers formula
-
-Set gunicorn workers to `2 * CPU_CORES + 1`. For a container with a 1-core CPU limit, use `--workers 3`. Adjust via the `WEB_CONCURRENCY` env var at runtime:
-
-```dockerfile
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
-```
-
-```yaml
-env:
-  - name: WEB_CONCURRENCY
-    value: "3"
-```
+| Property | Value |
+|----------|-------|
+| Signal files | `requirements.txt`/`pyproject.toml`/`Pipfile` containing `flask` |
+| Default port | `8000` prod (`5000` dev — never in prod) |
+| Health path | `/health` + `/ready` |
+| Base template | `templates/dockerfiles/python.Dockerfile` (+ `references/base-images.md`) |
 
 ---
 
@@ -220,6 +166,8 @@ Flask with Gunicorn runs multiple worker processes. Size for the number of worke
 - **Production port:** 8000 (gunicorn convention)
 - **CLI flag:** `--bind 0.0.0.0:8000` passed to `gunicorn`
 - **Env var override:** `PORT` (read via `gunicorn --bind 0.0.0.0:$PORT` or in app code `int(os.environ.get("PORT", 8000))`)
+- **Workers formula:** `2 * CPU_CORES + 1` — override at runtime via `WEB_CONCURRENCY` env var
+- **Entry point variants:** `gunicorn "app:app"` (module-level) or `gunicorn "myapp:create_app()"` (application factory)
 
 Gunicorn logs the port on startup: `Listening at: http://0.0.0.0:8000`
 
