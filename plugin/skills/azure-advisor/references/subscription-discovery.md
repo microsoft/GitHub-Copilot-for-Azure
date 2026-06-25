@@ -9,7 +9,7 @@ Subscription **must never be hardcoded**. Resolve in this order and stop at the 
    - `azure.yaml` → `subscriptionId:` key
    - `.azure/*/config.json` → `subscriptionId` field
    - `*.bicepparam` / `*.parameters.json` → `subscriptionId` / `subscription` parameter
-   - `.env*` files → `AZURE_SUBSCRIPTION_ID` line
+   - `.env*` files → read **only** the `AZURE_SUBSCRIPTION_ID` line; never load, echo, or summarize other `.env*` contents (they routinely hold secrets)
    - `infra/**/main.parameters.json`
 2. **Environment variable** `AZURE_SUBSCRIPTION_ID`.
 3. **Ask the user.** Do not guess. Say which files were scanned and what was missing.

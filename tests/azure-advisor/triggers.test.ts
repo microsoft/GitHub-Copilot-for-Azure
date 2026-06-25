@@ -48,6 +48,11 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Help me write a poem",
       "Explain quantum computing",
       "How do I write a Python web scraper?",
+      "Analyze my Azure costs and spending trends",
+      "Troubleshoot my Azure App Service deployment failure",
+      "Help me set up Azure Key Vault for secrets management",
+      "Deploy my web app to Azure App Service",
+      "Set up Azure RBAC role assignments for my team",
     ];
 
     test.each(shouldNotTriggerPrompts)(

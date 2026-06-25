@@ -2,7 +2,7 @@
 
 Drive an end-to-end Azure Advisor sweep using whichever `advisor_*` MCP tools the
 connected Azure MCP server exposes. Designed to stay useful as new advisor tools
-land — it routes by *capability* (catalog, recommendations, summary, IaaC fix),
+land — it routes by *capability* (catalog, recommendations, summary, IaC fix),
 not by hard-coded tool name lists.
 
 ## When to Use This Sub-Skill
@@ -16,7 +16,7 @@ Use this sub-skill when the user wants to:
 - Quickly check whether their tenant even has Advisor data yet (new/empty subs)
 
 This is a **read-only** review. Even if an `apply`-style advisor tool exists, this
-sub-skill only proposes IaaC fix snippets — it never modifies cloud state.
+sub-skill only proposes IaC fix snippets — it never modifies cloud state.
 
 ## Shared References
 
@@ -24,7 +24,7 @@ This capability builds on two product-area references shared by every `azure-adv
 capability — read them before running the workflow:
 
 - **[Capability Routing](../references/capability-routing.md)** — how to pick the right
-  `advisor_*` MCP tool by capability (catalog, recommendations, summary, IaaC fix).
+  `advisor_*` MCP tool by capability (catalog, recommendations, summary, IaC fix).
 - **[Subscription Discovery](../references/subscription-discovery.md)** — how to resolve
   the target subscription from repo config / env without hardcoding.
 
@@ -65,7 +65,7 @@ list.
 ### Step 5 — Spotlight high-impact items
 
 From the Step 3 results, pick up to **5 distinct High-impact recommendations** across
-different resource types. For each, if an **IaaC remediation** capability exists and
+different resource types. For each, if an **IaC remediation** capability exists and
 the recommendation's resource type matches a supported type, fetch a fix snippet.
 
 ### Step 6 — Compose chat summary
@@ -85,7 +85,7 @@ Reply in chat with this structure (no files written):
 
 ### High-impact spotlight (up to 5)
 1. <recommendation text> — <resource type> — <resource id>
-   <IaaC fix snippet if available, fenced as bash/json>
+   <IaC fix snippet if available, fenced as bash/json>
 ...
 
 ### Notes
@@ -102,7 +102,7 @@ Do **not** write any file to disk. The summary lives only in the chat response.
 - ✅ **Always** mention which steps were skipped because no matching capability was found.
 - ❌ **Never** hardcode a subscription id, tenant id, or resource group.
 - ❌ **Never** modify Azure state — this sub-skill is read + suggest only.
-- ❌ **Never** call non-`advisor_*` tools as substitutes; if no capability matches, report it and skip.
+- ❌ **Never** call a tool whose name does not contain `advisor_` as a substitute; if no capability matches, report it and skip. (Match on the substring `advisor_` — clients prepend a server-name prefix like `azure-mcp-`.)
 - ❌ **Never** write the summary to a file unless the user explicitly asks for one in their prompt.
 - ❌ **Never** write helper scripts, scratch files, or parsing utilities to disk (no `.tmp/*.js`, no `.tmp/*.json`, no temp files of any kind). Reason over MCP tool responses directly in-context. Prefer aggregating via the `advisor_recommendation_summary` tool over computing counts yourself.
 - ❌ **Never** shell out to `node`, `python`, `pwsh`, `powershell`, `jq`, or any other interpreter to read, parse, group, or count MCP tool responses. The tool responses are already in your context — reason over them directly. If you need server-side aggregation, use the `advisor_recommendation_summary` tool.
@@ -111,8 +111,8 @@ Do **not** write any file to disk. The summary lives only in the chat response.
 
 | Symptom | Probable cause | Action |
 |---|---|---|
-| `advisor_*` tools missing entirely | MCP server not configured / not running | Tell user to check `.vscode/mcp.json` and that `azmcp.exe` is reachable. |
+| No tool name contains `advisor_` | MCP server not configured / not running, **or** a strict starts-with match rejected prefixed names | Substring-match on `advisor_` (names look like `azure-mcp-advisor_*`). If still none, tell user to check `.vscode/mcp.json`, that `azmcp.exe` is reachable, and that tools are exposed individually (`--mode all`). |
 | Catalog call returns empty | Tenant has no Advisor coverage yet | Stop after Step 2; report empty tenant. |
 | Recommendation list 401/403 | Auth not scoped to subscription | Tell user to run `az login` and verify subscription access. |
 | Aggregation tool errors on `group-by` | Field name not in supported list | Re-call with a value drawn from Step 2's catalog. |
-| IaaC tool says "unknown resource" | Resource type not in its supported list | Skip the fix for that recommendation; keep the rest. |
+| IaC tool says "unknown resource" | Resource type not in its supported list | Skip the fix for that recommendation; keep the rest. |
