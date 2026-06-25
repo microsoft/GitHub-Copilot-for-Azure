@@ -10,7 +10,7 @@
 #   - .NET 8+ defaults to port 8080 (ASPNETCORE_HTTP_PORTS), not 80
 #   - The "app" user is built into the aspnet runtime image since .NET 8
 #   - For self-contained deployment, add --self-contained to dotnet publish
-#     and switch the runtime image to mcr.microsoft.com/dotnet/runtime-deps:9.0
+#     and switch the runtime image to mcr.microsoft.com/dotnet/runtime-deps:<LATEST_STABLE_DOTNET_ASPNET>
 # =============================================================================
 
 # ---------------------------------------------------------------------------
