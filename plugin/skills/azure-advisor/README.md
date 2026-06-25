@@ -16,11 +16,9 @@ user intent. Each capability is a self-contained folder; shared concerns live in
 | Path | Purpose |
 |------|---------|
 | [SKILL.md](SKILL.md) | **Router.** Frontmatter (makes the skill discoverable) + a capability table that routes intent to a capability file. Keep it thin. |
-| [references/capability-routing.md](references/capability-routing.md) | **Shared, capability-agnostic docs** reused by every capability. Don't duplicate these inside a capability. |
-| [references/capability-routing.md](references/capability-routing.md) | How to resolve an `advisor_*` MCP tool by capability (catalog, recommendations, summary, IaC fix). |
+| [references/capability-routing.md](references/capability-routing.md) | **Shared.** Capability-agnostic routing docs reused by every capability: resolve which `advisor_*` MCP tool to call for each capability (catalog, recommendations, summary, IaC fix). |
 | [references/subscription-discovery.md](references/subscription-discovery.md) | How to resolve the target subscription from repo config / env without hardcoding. |
-| [review/review.md](review/review.md) | **Capability:** holistic read-only Advisor sweep. |
-| [review/review.md](review/review.md) | The review workflow (the only file the agent reads for this capability). |
+| [review/review.md](review/review.md) | **Capability:** holistic read-only Advisor sweep (the only file the agent reads for this capability). |
 
 ## Conventions (match the rest of the repo)
 
