@@ -100,7 +100,6 @@ The driver script points you to these references at the relevant step. They rema
 authoritative for deep detail; consult the one the `NEXT ACTION` block names.
 
 - Functions: [services/functions/durable.md](references/services/functions/durable.md), [services/durable-task-scheduler/README.md](references/services/durable-task-scheduler/README.md), [services/durable-task-scheduler/bicep.md](references/services/durable-task-scheduler/bicep.md), [services/sql-database/bicep.md](references/services/sql-database/bicep.md)
-- SDK: [azd](scripts/references/sdk/azd-deployment.md), Azure Identity ([py](scripts/references/sdk/azure-identity-py.md) · [dotnet](scripts/references/sdk/azure-identity-dotnet.md) · [ts](scripts/references/sdk/azure-identity-ts.md) · [java](scripts/references/sdk/azure-identity-java.md)), App Configuration ([py](scripts/references/sdk/azure-appconfiguration-py.md) · [ts](scripts/references/sdk/azure-appconfiguration-ts.md) · [java](scripts/references/sdk/azure-appconfiguration-java.md))
 
 ## Next
 

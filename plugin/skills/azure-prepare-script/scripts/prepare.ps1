@@ -563,17 +563,57 @@ function New-RecipeScaffold {
     return $created
 }
 
+function Get-SdkLanguageCodes {
+    # Maps the project's languages (auto-detected files + LM-provided component technologies)
+    # to Azure SDK quick-reference language codes (nodejs/js/ts -> ts, python -> py, etc.).
+    # $Kind filters to the codes that actually have a reference file for that SDK family
+    # (App Configuration has no .NET quick-reference, so 'dotnet' is dropped for appconfig).
+    param([hashtable]$State, [string]$Kind = 'identity')
+    $available = if ($Kind -eq 'appconfig') { @('py', 'ts', 'java') } else { @('py', 'dotnet', 'ts', 'java') }
+    $codes = [System.Collections.Generic.List[string]]::new()
+    $add = { param($c) if (($available -contains $c) -and -not $codes.Contains($c)) { $codes.Add($c) } }
+
+    foreach ($l in @($State.auto.detectedLanguages)) {
+        switch ($l) {
+            'nodejs' { & $add 'ts' }
+            'python' { & $add 'py' }
+            'dotnet' { & $add 'dotnet' }
+            'java'   { & $add 'java' }
+        }
+    }
+    foreach ($comp in @($State.input.components)) {
+        $t = "$($comp.technology)".ToLower()
+        if ($t -match 'node|javascript|typescript|\bts\b|\bjs\b') { & $add 'ts' }
+        if ($t -match 'python|\bpy\b|flask|django|fastapi')        { & $add 'py' }
+        if ($t -match '\.net|dotnet|c#|csharp|asp')                { & $add 'dotnet' }
+        if ($t -match 'java|spring')                               { & $add 'java' }
+    }
+    return @($codes)
+}
+
+function Test-ArchitectureUsesService {
+    # Returns $true if any service named in the LM-provided architecture matches the given
+    # name pattern (e.g. 'App Configuration'), so steps can surface service-specific refs.
+    param([hashtable]$State, [string]$Pattern)
+    foreach ($a in @($State.input.architecture)) {
+        if ("$($a.azureService)" -match $Pattern) { return $true }
+    }
+    return $false
+}
+
 # ---------------------------------------------------------------------------
 # Step definitions (ordered). Each step:
-#   id        unique id, also key under state.steps
-#   phase     1 (planning) or 2 (execution)
-#   title     short human title
-#   refs      reference files (relative to skill root) the LM should read for detail
-#   needs     array of @{ Path = 'input.x'; Prompt = '...' } — LM-provided fields
-#   auto      optional scriptblock ($State) that fills fields / may satisfy needs
-#   onDone    optional scriptblock ($State) run once when the step completes
-#   gate      $true if this step is a user-approval gate
-#   guidance  instruction text shown to the LM when the step needs LM input
+#   id          unique id, also key under state.steps
+#   phase       1 (planning) or 2 (execution)
+#   title       short human title
+#   refs        reference files (relative to skill root) the LM should read for detail
+#   dynamicRefs optional scriptblock ($State) returning extra ref paths computed from
+#               detected languages / chosen architecture (merged with refs at output time)
+#   needs       array of @{ Path = 'input.x'; Prompt = '...' } — LM-provided fields
+#   auto        optional scriptblock ($State) that fills fields / may satisfy needs
+#   onDone      optional scriptblock ($State) run once when the step completes
+#   gate        $true if this step is a user-approval gate
+#   guidance    instruction text shown to the LM when the step needs LM input
 # ---------------------------------------------------------------------------
 $Steps = @(
     @{
@@ -1033,6 +1073,17 @@ Set `input.researchDone` to true when finished.
             'scripts/references/recipes/bicep/README.md',
             'scripts/references/recipes/terraform/README.md'
         )
+        dynamicRefs = {
+            param($State)
+            $r = @()
+            # azd deployment quick-reference applies to any azd-based recipe.
+            if ((Get-ByPath $State 'input.recipe') -match 'AZD') { $r += 'scripts/references/sdk/azd-deployment.md' }
+            # App Configuration SDK reference, per project language, when it's in the architecture.
+            if (Test-ArchitectureUsesService $State 'App Configuration') {
+                foreach ($c in (Get-SdkLanguageCodes $State 'appconfig')) { $r += "scripts/references/sdk/azure-appconfiguration-$c.md" }
+            }
+            $r
+        }
         guidance = @'
 Generate infrastructure and configuration files for the selected recipe. Research
 (prior step) MUST be complete and its findings applied.
@@ -1123,6 +1174,14 @@ Set `input.generateDone` to true when artifacts are written.
     @{
         id = 'security'; phase = 2; title = 'Harden security'
         refs = @('scripts/references/security.md')
+        dynamicRefs = {
+            param($State)
+            # Surface the Azure Identity quick-reference for each language in the project so the
+            # LM wires DefaultAzureCredential / ManagedIdentityCredential correctly per stack.
+            $r = @()
+            foreach ($c in (Get-SdkLanguageCodes $State 'identity')) { $r += "scripts/references/sdk/azure-identity-$c.md" }
+            $r
+        }
         guidance = @'
 Harden the generated artifacts following Zero Trust: never trust/always verify,
 least privilege, defense in depth, encryption everywhere.
@@ -1241,9 +1300,14 @@ function Write-NextAction {
     Write-Output 'What to do:'
     foreach ($line in ($Step.guidance -split "`n")) { Write-Output ("  " + $line.TrimEnd()) }
     Write-Output ''
-    if ($Step.refs.Count -gt 0) {
+    $allRefs = @($Step.refs)
+    if ($Step.ContainsKey('dynamicRefs') -and $Step.dynamicRefs) {
+        $allRefs += @(& $Step.dynamicRefs $State)
+    }
+    $allRefs = @($allRefs | Where-Object { $_ } | Select-Object -Unique)
+    if ($allRefs.Count -gt 0) {
         Write-Output 'Read for detail:'
-        foreach ($r in $Step.refs) { Write-Output "  - $r" }
+        foreach ($r in $allRefs) { Write-Output "  - $r" }
         Write-Output ''
     }
     Write-Output 'Fill these keys in the state file (currently null):'
