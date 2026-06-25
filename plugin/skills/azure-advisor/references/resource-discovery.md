@@ -28,6 +28,11 @@ signals, in this order. Collect every distinct hit (a repo may define several):
    - Bicep `resource x 'Microsoft.<Provider>/<type>@...'` → `Microsoft.<Provider>/<type>`
    - ARM `"type": "Microsoft.<Provider>/<type>"`
    - Terraform `resource "azurerm_<kind>"` → map to its `Microsoft.*` provider type
+   - Bicep and ARM give the provider type **literally** (extract it as-is). The Terraform
+     `azurerm_<kind>` → `Microsoft.*` mapping must be **derived** and is not always obvious
+     (e.g. `azurerm_linux_function_app` → `Microsoft.Web/sites`). If a Terraform type mapping
+     is uncertain, **do not guess** — fall back to the resource group filter for that resource
+     rather than risk a wrong type filter that hides real recommendations.
 3. **Specific resource id(s)** — only when a fully-qualified ARM id is present in
    params/env (`/subscriptions/.../resourceGroups/.../providers/...`).
 
