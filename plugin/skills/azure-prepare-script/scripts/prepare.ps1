@@ -863,7 +863,7 @@ Set `input.policyConstraints` to an array of short strings (empty array if none)
     },
     @{
         id = 'quota'; phase = 1; title = 'Validate provisioning limits'
-        refs = @('scripts/references/resources-limits-quotas.md', 'references/plan-template.md')
+        refs = @('scripts/references/resources-limits-quotas.md', 'scripts/references/plan-template.md')
         guidance = @'
 Build the provisioning-limit checklist for all resources to be deployed, then
 validate capacity in the confirmed subscription + region.
