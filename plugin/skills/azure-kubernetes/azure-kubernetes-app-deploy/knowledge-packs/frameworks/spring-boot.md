@@ -2,64 +2,20 @@
 
 > **Applies to:** Projects detected with `pom.xml` containing `spring-boot-starter-web` or `build.gradle`/`build.gradle.kts` containing `org.springframework.boot`
 
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| Signal files | `pom.xml` with `spring-boot-starter-web` or `build.gradle(.kts)` with `org.springframework.boot` |
+| Default port | `8080` |
+| Health path | `/actuator/health/liveness` + `/actuator/health/readiness` |
+| Base template | `templates/dockerfiles/java.Dockerfile` (+ `references/base-images.md`) |
+
 ---
 
 ## Dockerfile Patterns
 
-### Multi-stage build with layered JAR extraction
-
-Spring Boot 2.3+ supports layered JARs for optimized Docker layer caching:
-
-```dockerfile
-# Build stage
-FROM eclipse-temurin:21-jdk-alpine AS build
-WORKDIR /app
-COPY pom.xml mvnw ./
-COPY .mvn .mvn
-RUN ./mvnw dependency:go-offline -B
-COPY src src
-RUN ./mvnw package -DskipTests -B
-
-# Extract layers for caching
-FROM eclipse-temurin:21-jdk-alpine AS extract
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-RUN java -Djarmode=layertools -jar app.jar extract
-
-# Runtime stage
-FROM eclipse-temurin:21-jre-alpine AS runtime
-WORKDIR /app
-RUN addgroup -S spring && adduser -S spring -G spring
-COPY --from=extract /app/dependencies/ ./
-COPY --from=extract /app/spring-boot-loader/ ./
-COPY --from=extract /app/snapshot-dependencies/ ./
-COPY --from=extract /app/application/ ./
-USER spring:spring
-EXPOSE 8080
-# HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle
-# health checks in AKS. See deployment.yaml for probe configuration.
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.LaunchedClassPathJarLauncher"]
-```
-
-### Key points
-
-- **Base image:** Eclipse Temurin (Adoptium) is the recommended OpenJDK distribution for production
-- **Alpine variant** reduces image size by ~60% compared to Debian-based
-- **Layered JAR extraction** means only changed layers are rebuilt/pushed — dependencies rarely change
-- **Non-root user** (`spring`) satisfies DS004
-
-### ACR-compatible flattening
-
-If the layered extraction fails (older Spring Boot versions), flatten the layers:
-
-```dockerfile
-COPY --from=extract /app/dependencies/ ./
-COPY --from=extract /app/spring-boot-loader/ ./
-COPY --from=extract /app/snapshot-dependencies/ ./
-COPY --from=extract /app/application/ ./
-```
-
-This is compatible with ACR's layer deduplication.
+The base template handles the multi-stage build. One Spring Boot-specific optimization worth applying: use layered JAR extraction (`java -Djarmode=layertools -jar app.jar extract`) so that dependencies, Spring Boot loader, and application code land in separate Docker layers — only changed layers are rebuilt or pushed on each deployment.
 
 ---
 
@@ -110,7 +66,7 @@ readinessProbe:
   failureThreshold: 3
 ```
 
-**Important:** Spring Boot apps need a `startupProbe` because JVM warmup and Spring context initialization typically take 15-60 seconds. Without it, the liveness probe may kill the pod before it finishes starting. The startup probe gives the app up to 300 seconds to become healthy before the liveness probe takes over. Uncomment the `startupProbe` section in the deployment template.
+**Important:** Spring Boot apps require a `startupProbe`. JVM warmup and Spring context initialization typically take 15–60 seconds. Without it, the liveness probe may kill the pod before it finishes starting. The startup probe gives the app up to 300 seconds to become healthy before the liveness probe takes over. Uncomment the `startupProbe` section in the deployment template.
 
 ---
 

@@ -2,37 +2,23 @@
 
 > **Applies to:** Projects detected with `go.mod` containing `github.com/gin-gonic/gin`, `github.com/labstack/echo`, `github.com/gofiber/fiber`, or any Go project using the standard library `net/http` for HTTP serving
 
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| Signal files | `go.mod` (gin/echo/fiber or stdlib `net/http`) |
+| Default port | `8080` |
+| Health path | `/healthz` + `/ready` |
+| Base template | `templates/dockerfiles/go.Dockerfile` (+ `references/base-images.md`) |
+
 ---
 
-## Dockerfile Patterns
+## Build Flags
 
-### Static binary with distroless runtime
+Two flags are required for a correct production build:
 
-Go compiles to a single static binary, producing some of the smallest production images possible:
-
-```dockerfile
-# Build stage
-FROM golang:1.23-alpine AS build
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o /app/server ./cmd/server
-
-# Runtime stage
-FROM gcr.io/distroless/static-debian12 AS runtime
-COPY --from=build /app/server /server
-USER 65534
-EXPOSE 8080
-ENTRYPOINT ["/server"]
-```
-
-### Key points
-
-- **`CGO_ENABLED=0`** produces a fully static binary with no libc dependency — required for `distroless/static`
-- **`-ldflags="-s -w"`** strips debug symbols and DWARF info, reducing binary size by ~30%
-- **`distroless/static-debian12`** is ~2MB — no shell, no package manager, minimal attack surface
-- **`USER 65534`** is the `nobody` user in distroless, satisfying DS004
+- **`CGO_ENABLED=0`** produces a fully static binary with no libc dependency — required when targeting the distroless static image. If CGO is needed (e.g., for sqlite3 or cgo bindings), use the distroless cc image instead.
+- **`-ldflags="-s -w"`** strips debug symbols and DWARF info, reducing binary size by ~30%.
 
 ---
 
@@ -78,6 +64,12 @@ readinessProbe:
 ```
 
 **Note:** Go binaries start in milliseconds — `initialDelaySeconds: 3` is generous. No JVM warmup or interpreter startup to wait for.
+
+---
+
+## Graceful Shutdown
+
+Implement `signal.NotifyContext` with `srv.Shutdown(ctx)` to allow in-flight requests to complete before the pod exits during a rolling update. Without this, connections are dropped and callers receive 502 errors.
 
 ---
 
@@ -143,7 +135,7 @@ data:
 When `readOnlyRootFilesystem: true` is set, Go apps typically need **no writable paths**:
 
 - Go compiles to a static binary — no temp files, no interpreted bytecode, no session storage
-- The `distroless/static` base image has no shell or package manager that writes to disk
+- The distroless static base image has no shell or package manager that writes to disk
 
 ### Optional `/tmp` mount
 
@@ -179,6 +171,7 @@ Go compiles to a static binary with no runtime — it is the most resource-effic
 
 - **Default port:** 8080 (Go convention, not enforced by any framework)
 - **Env var override:** `PORT` (commonly used pattern)
+- **Bind port >= 1024** — lower ports require elevated privileges; running as non-root (uid 65534) means port 80 or 443 will fail with `permission denied`.
 
 ### Code pattern
 
@@ -211,8 +204,8 @@ The `./cmd/server` path is conventional for Go projects using the [Standard Go P
 
 | Issue | Symptom | Fix |
 |-------|---------|-----|
-| Binary not statically linked | `exec format error` or `not found` in distroless | Ensure `CGO_ENABLED=0` is set during build; if CGO is required, use `distroless/cc` instead of `distroless/static` |
-| DNS resolution issues with Alpine | `dial tcp: lookup ... no such host` during build | Use `golang:1.23-alpine` with `RUN apk add --no-cache ca-certificates` or switch to `golang:1.23` (Debian-based) for the build stage |
+| Binary not statically linked | `exec format error` or `not found` in distroless | Ensure `CGO_ENABLED=0` is set during build; if CGO is required, use the distroless cc image instead of the distroless static image |
+| DNS resolution issues during build | `dial tcp: lookup ... no such host` | Add `ca-certificates` to the build stage or use a Debian-based build image |
 | Graceful shutdown not implemented | Connections dropped during rolling update, 502 errors | Implement `signal.NotifyContext` with `srv.Shutdown(ctx)` — give in-flight requests time to complete before exit |
 | Binary name mismatch | `exec /server: no such file or directory` | Verify the `-o` flag in `go build` matches the `ENTRYPOINT` path in the Dockerfile |
 | Port < 1024 with non-root user | `bind: permission denied` | Use port 8080 (or any port >= 1024); never bind to 80 or 443 inside the container |

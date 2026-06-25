@@ -2,44 +2,14 @@
 
 > **Applies to:** Projects detected with `*.csproj` containing `Microsoft.NET.Sdk.Web` or referencing `Microsoft.AspNetCore.*` packages
 
----
+## Quick Reference
 
-## Dockerfile Patterns
-
-### Multi-stage build with project-file-first NuGet restore
-
-Copying only `*.csproj` and restoring before copying source ensures NuGet restore is cached unless dependencies change:
-
-```dockerfile
-# Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
-WORKDIR /app
-COPY *.csproj ./
-RUN dotnet restore
-COPY . .
-RUN dotnet publish -c Release -o /app/publish
-
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
-WORKDIR /app
-ENV DOTNET_EnableDiagnostics=0 \
-    DOTNET_RUNNING_IN_CONTAINER=true
-COPY --from=build /app/publish .
-USER app
-EXPOSE 8080
-ENTRYPOINT ["dotnet", "<app-name>.dll"]
-```
-
-### Key points
-
-- **Base image:** `mcr.microsoft.com/dotnet/aspnet` is the official Microsoft runtime image — minimal and supported
-- **Alpine variant** reduces image size by ~60% compared to the Debian-based tag
-- **Project-file-first copy** (`COPY *.csproj`) means `dotnet restore` layer is cached until dependencies change
-- **Non-root user** (`app`, uid 1654) is built into .NET 8+ images — no need to create one manually; satisfies DS004
-- **`DOTNET_EnableDiagnostics=0`** disables diagnostic pipes that require writable paths not available in read-only filesystems
-- **`DOTNET_RUNNING_IN_CONTAINER=true`** signals the runtime to optimize for container environments (GC, thread pool)
-
-
+| Property | Value |
+|----------|-------|
+| Signal files | `*.csproj` with `Microsoft.NET.Sdk.Web` or `Microsoft.AspNetCore.*` |
+| Default port | `8080` (.NET 8+) |
+| Health path | `/healthz` + `/ready` |
+| Base template | `templates/dockerfiles/dotnet.Dockerfile` (+ `references/base-images.md`) |
 
 ---
 
@@ -211,7 +181,7 @@ ASP.NET Core on the .NET runtime is efficient but needs moderate memory for the 
 - **Env var override:** `ASPNETCORE_URLS=http://+:8080` or `ASPNETCORE_HTTP_PORTS=8080`
 - **Code override:** `builder.WebHost.UseUrls("http://+:8080")` in `Program.cs`
 
-The port change from 80 to 8080 in .NET 8 aligns with non-root container best practices — port 80 requires elevated privileges.
+The port change from 80 to 8080 in .NET 8 aligns with non-root container best practices — port 80 requires elevated privileges. Set `DOTNET_EnableDiagnostics=0` to disable diagnostic pipes that require writable paths not available in read-only filesystems.
 
 ---
 
@@ -227,6 +197,12 @@ The `-c Release` flag enables compiler optimizations and disables debug symbols 
 
 ---
 
+## EF Core Migrations
+
+Run `dotnet ef database update` as an init container — never in the Dockerfile build stage (no database access) and never in the entrypoint (race condition when multiple replicas start simultaneously).
+
+---
+
 ## Common Issues on AKS
 
 | Issue | Symptom | Fix |
@@ -234,5 +210,5 @@ The `-c Release` flag enables compiler optimizations and disables debug symbols 
 | Kestrel bound to port 80 | `CrashLoopBackOff` — permission denied binding to port 80 as non-root | Set `ASPNETCORE_HTTP_PORTS=8080` or upgrade to .NET 8+ which defaults to 8080 |
 | Data Protection keys lost on restart | Users logged out after pod restart, anti-forgery token validation failures | Persist keys to Azure Blob Storage or a PVC — do not rely on in-memory default |
 | EF Core migrations not applied | `NpgsqlException: relation "..." does not exist` | Run `dotnet ef database update` as an init container or at startup with `Database.Migrate()` |
-| Image too large (>500MB) | Slow pulls, high ACR storage | Use self-contained + trimmed publish with `runtime-deps` Alpine base image |
+| Image too large (>500MB) | Slow pulls, high ACR storage | Use self-contained + trimmed publish with the runtime-deps Alpine base image |
 | HTTPS redirect loop behind gateway | Infinite 307/308 redirects, `ERR_TOO_MANY_REDIRECTS` | Disable HTTPS redirection in `Program.cs` when behind a TLS-terminating gateway — configure `ForwardedHeaders` middleware instead |
