@@ -2,57 +2,28 @@
 
 > **Applies to:** Projects detected with `package.json` containing `@nestjs/core` as a dependency
 
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| Signal files | `package.json` containing `@nestjs/core` |
+| Default port | `3000` |
+| Health path | `/health` |
+| Base template | `templates/dockerfiles/node.Dockerfile` (+ `references/base-images.md`) |
+
 ---
 
-## Dockerfile Patterns
+## Signal Handling
 
-### Multi-stage build with TypeScript compilation
+NestJS lifecycle events (`OnModuleDestroy`, `BeforeApplicationShutdown`) fire only when shutdown hooks are enabled. Call `app.enableShutdownHooks()` in `main.ts` so `SIGTERM` from Kubernetes triggers graceful teardown of HTTP connections, database pools, and message queue consumers:
 
-NestJS compiles TypeScript to JavaScript via `nest build`, outputting to `dist/`. Use `dumb-init` for proper signal handling:
-
-```dockerfile
-# Build stage
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Runtime stage
-FROM node:22-alpine AS runtime
-RUN apk add --no-cache dumb-init
-WORKDIR /app
-COPY --from=build /app/package.json /app/package-lock.json ./
-RUN npm ci --omit=dev
-COPY --from=build /app/dist ./dist
-USER node
-EXPOSE 3000
-# HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle
-# health checks in AKS. See deployment.yaml for probe configuration.
-ENTRYPOINT ["dumb-init", "node", "dist/main.js"]
+```typescript
+const app = await NestFactory.create(AppModule);
+app.enableShutdownHooks();
+await app.listen(process.env.PORT || 3000);
 ```
 
-### Key points
-
-- **Base image:** Official `node:22-alpine` — minimal footprint, receives LTS security patches
-- **Alpine variant** reduces image size by ~70% compared to Debian-based `node:22`
-- **`dumb-init`** ensures `SIGTERM` from Kubernetes is forwarded to the Node process so graceful shutdown works
-- **`npm ci --omit=dev`** strips dev dependencies (including `typescript`, `@nestjs/cli`, `@nestjs/schematics`) from the runtime image
-- **`USER node`** — the official Node Alpine image ships with a built-in `node` user (uid 1000), satisfying DS004 without creating a custom user
-- **`dist/main.js`** is the default entrypoint — NestJS compiles `src/main.ts` to `dist/main.js`
-
-### Monorepo projects
-
-For NestJS monorepos, compile specific apps with `npx nest build <app-name>` and adjust `ENTRYPOINT` to `node dist/apps/<app-name>/main.js`.
-
-### Package manager variants
-
-| Package Manager | Install (all) | Install (prod only) |
-|----------------|---------------|---------------------|
-| npm | `npm ci` | `npm ci --omit=dev` |
-| yarn | `yarn install --frozen-lockfile` | `yarn install --frozen-lockfile --production` |
-| pnpm | `pnpm install --frozen-lockfile` | `pnpm install --frozen-lockfile --prod` |
+The base template uses `dumb-init` as the entrypoint to forward `SIGTERM` to the Node process when running as PID 1. Both are required: `dumb-init` routes the signal, `enableShutdownHooks()` handles it.
 
 ---
 
@@ -122,7 +93,7 @@ readinessProbe:
   failureThreshold: 3
 ```
 
-**Note:** NestJS apps start quickly (typically under 2 seconds), so `initialDelaySeconds: 5` is sufficient. If the app performs heavy initialization (e.g., loading large config, running migrations), increase to 10-15s or add a `startupProbe`.
+**Note:** NestJS apps start quickly (typically under 2 seconds), so `initialDelaySeconds: 5` is sufficient. If the app performs heavy initialization (e.g., loading large config, running migrations), increase to 10–15s or add a `startupProbe`.
 
 ---
 
@@ -155,7 +126,7 @@ When `readOnlyRootFilesystem: true` is set, NestJS apps need only `/tmp` writabl
 
 - **Multipart uploads** (e.g., `@nestjs/platform-express` with `multer`) stage files to `/tmp`
 - **Logging libraries** that buffer to disk use `/tmp`
-- **No other writable paths** are typically needed — `node_modules` and `dist/` are read-only at runtime
+- **`node_modules` and `dist/`** are read-only at runtime
 
 ### Required volume mount
 
@@ -169,8 +140,6 @@ containers:
       - name: tmp
         mountPath: /tmp
 ```
-
-No other writable paths are typically needed for production NestJS apps.
 
 ---
 

@@ -2,55 +2,22 @@
 
 > **Applies to:** Projects detected with `package.json` containing `next` as a dependency
 
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| Signal files | `package.json` containing `next` |
+| Default port | `3000` |
+| Health path | `/api/health` |
+| Base template | `templates/dockerfiles/node.Dockerfile` (+ `references/base-images.md`) |
+
 ---
 
-## Dockerfile Patterns
+## Standalone Output (Required)
 
-### Multi-stage build with standalone output
+Next.js standalone output mode is critical for containerized deployments — it reduces the image from ~1GB to ~100MB by bundling only the files needed to run the server. Without it, the build copies all of `node_modules` into the image.
 
-Next.js standalone output mode is critical for containerized deployments — it reduces the image from ~1GB to ~100MB by bundling only the files needed to run the server:
-
-```dockerfile
-# Build stage
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
-
-# Runtime stage
-FROM node:22-alpine AS runtime
-WORKDIR /app
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-
-RUN addgroup -S nextjs && adduser -S nextjs -G nextjs
-
-COPY --from=build /app/public ./public
-COPY --from=build --chown=nextjs:nextjs /app/.next/standalone ./
-COPY --from=build --chown=nextjs:nextjs /app/.next/static ./.next/static
-
-USER nextjs
-EXPOSE 3000
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-CMD ["node", "server.js"]
-```
-
-### Key points
-
-- **Standalone output** requires `output: 'standalone'` in `next.config.js` — without this, the build copies all of `node_modules` into the image
-- **No `dumb-init` needed** — the standalone `server.js` handles `SIGTERM` signals correctly as PID 1
-- **`NEXT_TELEMETRY_DISABLED=1`** prevents Next.js from sending anonymous telemetry from the build and runtime containers
-- **Three COPY steps** are required: `public/` for static assets, `.next/standalone` for the server, `.next/static` for client-side JS/CSS bundles
-- **`USER nextjs`** satisfies DS004 — create a dedicated non-root user since the official Node Alpine `node` user also works
-- **`HOSTNAME="0.0.0.0"`** is required in Next.js 14+ (replaces the older `-H 0.0.0.0` CLI flag) to listen on all interfaces
-
-### Enabling standalone output
-
-In `next.config.js` (or `next.config.mjs` / `next.config.ts`):
+Enable it in `next.config.js` (or `next.config.mjs` / `next.config.ts`):
 
 ```js
 /** @type {import('next').NextConfig} */
@@ -61,17 +28,21 @@ const nextConfig = {
 module.exports = nextConfig;
 ```
 
-### sharp for next/image optimization
+The build then produces `.next/standalone/server.js`, a self-contained HTTP server that does not require the `next` CLI at runtime.
 
-If the app uses `next/image`, install `sharp` explicitly: `RUN npm install sharp`. Without it, Next.js falls back to the slower `squoosh` library.
+### Three required COPY targets
 
-### Package manager variants
+The Dockerfile runtime stage needs exactly three items from the build stage:
 
-| Package Manager | Install Command | Lock File |
-|----------------|-----------------|-----------|
-| npm | `npm ci` | `package-lock.json` |
-| yarn | `yarn install --frozen-lockfile` | `yarn.lock` |
-| pnpm | `pnpm install --frozen-lockfile` | `pnpm-lock.yaml` |
+1. `public/` — static assets served directly
+2. `.next/standalone/` — the standalone server and its bundled dependencies
+3. `.next/static/` — client-side JS/CSS bundles (must be copied into `.next/static` inside the standalone directory, not alongside it)
+
+### Hostname binding
+
+Set `HOSTNAME="0.0.0.0"` as a runtime environment variable (required for Next.js 14+). The standalone `server.js` reads this variable on startup to listen on all interfaces. Without it, the server binds to `127.0.0.1` and Kubernetes probes fail.
+
+Set `NEXT_TELEMETRY_DISABLED=1` in both the build stage and the runtime stage to prevent outbound telemetry calls to `telemetry.nextjs.org` from the container.
 
 ---
 
@@ -197,7 +168,7 @@ Next.js SSR needs more memory than a plain API due to React rendering. Static-on
 
 - **Default port:** 3000
 - **Env var override:** `PORT=3000`
-- **Hostname binding:** `HOSTNAME="0.0.0.0"` (Next.js 14+) or `-H 0.0.0.0` CLI flag (Next.js 13)
+- **Hostname binding:** `HOSTNAME="0.0.0.0"` (Next.js 14+)
 
 The standalone `server.js` reads the `PORT` and `HOSTNAME` environment variables automatically. No code changes are needed to customize the port.
 
@@ -207,12 +178,14 @@ The standalone `server.js` reads the `PORT` and `HOSTNAME` environment variables
 
 | Scenario | Build Command | Output | Entrypoint |
 |----------|---------------|--------|------------|
-| Standard build | `npm run build` | `.next/` (full) | `next start` |
-| Standalone build (recommended) | `npm run build` with `output: 'standalone'` | `.next/standalone/server.js` | `node server.js` |
+| Standalone build (required) | `npm run build` with `output: 'standalone'` | `.next/standalone/server.js` | `node server.js` |
+| Standard build (not for containers) | `npm run build` | `.next/` (full) | `next start` |
 
-The `output: 'standalone'` setting in `next.config.js` changes what `npm run build` produces — no separate command is needed. The standalone `server.js` includes a built-in HTTP server and does not require the `next` CLI at runtime.
+Always use the standalone build for container deployments. The standard build requires the full `node_modules` directory at runtime, resulting in images 5–10x larger.
 
-**Important:** Always use the standalone build for container deployments. The standard build requires the full `node_modules` directory at runtime, resulting in images 5-10x larger.
+### sharp for next/image
+
+If the app uses `next/image`, install `sharp` explicitly in the runtime stage. Without it, Next.js falls back to the slower `squoosh` library and image optimization may fail under load.
 
 ---
 
@@ -223,6 +196,6 @@ The `output: 'standalone'` setting in `next.config.js` changes what `npm run bui
 | Image too large without standalone | Image > 1GB, slow pulls from ACR | Set `output: 'standalone'` in `next.config.js` — reduces image to ~100MB |
 | Static assets 404 | CSS/JS files return 404 after deployment | Ensure `.next/static` is copied to `.next/static` in the runtime stage (not into `standalone/.next/static`) |
 | ISR fails with read-only filesystem | `EROFS: read-only file system` when revalidating pages | Mount `emptyDir` volume at `/app/.next/cache` — ISR writes regenerated pages to the cache directory |
-| next/image optimization fails | Images return 500 or timeout under load | Install `sharp` explicitly (`npm install sharp`); the standalone build may not include it automatically |
+| next/image optimization fails | Images return 500 or timeout under load | Install `sharp` explicitly; the standalone build may not include it automatically |
 | Env vars undefined (`NEXT_PUBLIC_` prefix) | Client-side code sees `undefined` for environment variables | `NEXT_PUBLIC_` vars are inlined at **build time**, not runtime; set them as build args in the Dockerfile or use runtime config via `publicRuntimeConfig` |
 | Telemetry calls from container | Unexpected outbound network requests to `telemetry.nextjs.org` | Set `NEXT_TELEMETRY_DISABLED=1` in both the build stage and runtime stage of the Dockerfile |

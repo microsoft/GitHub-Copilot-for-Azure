@@ -2,45 +2,20 @@
 
 > **Applies to:** Projects detected with `package.json` containing `express` or `fastify` as a dependency
 
+## Quick Reference
+
+| Property | Value |
+|----------|-------|
+| Signal files | `package.json` containing `express` or `fastify` |
+| Default port | `3000` |
+| Health path | `/healthz` |
+| Base template | `templates/dockerfiles/node.Dockerfile` (+ `references/base-images.md`) |
+
 ---
 
-## Dockerfile Patterns
+## Signal Handling
 
-### Multi-stage build with dumb-init for signal handling
-
-Node.js does not handle `SIGTERM` correctly when running as PID 1. Use `dumb-init` as the entrypoint to forward signals properly:
-
-```dockerfile
-# Build stage
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build --if-present
-
-# Runtime stage
-FROM node:22-alpine AS runtime
-RUN apk add --no-cache dumb-init
-WORKDIR /app
-COPY --from=build /app/package.json /app/package-lock.json ./
-RUN npm ci --omit=dev
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/src ./src
-USER node
-EXPOSE 3000
-# HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle
-# health checks in AKS. See deployment.yaml for probe configuration.
-ENTRYPOINT ["dumb-init", "node", "dist/index.js"]
-```
-
-### Key points
-
-- **Base image:** Official `node:22-alpine` — minimal footprint, receives LTS security patches
-- **Alpine variant** reduces image size by ~70% compared to Debian-based `node:22`
-- **`dumb-init`** ensures `SIGTERM` from Kubernetes is forwarded to the Node process so graceful shutdown works
-- **`npm ci --omit=dev`** strips dev dependencies from the runtime image, cutting image size and attack surface
-- **`USER node`** — the official Node Alpine image ships with a built-in `node` user (uid 1000), satisfying DS004 without creating a custom user
+Node.js does not handle `SIGTERM` correctly when running as PID 1. The base template includes `dumb-init` as the entrypoint to forward signals properly; no application-level changes are needed unless the app registers explicit cleanup handlers.
 
 ### Fastify listen caveat
 
@@ -50,7 +25,7 @@ Fastify defaults to listening on `127.0.0.1`, which is unreachable from outside 
 await fastify.listen({ port: 3000, host: '0.0.0.0' });
 ```
 
-If the pod starts but health probes fail with `connection refused`, this is almost always the cause.
+If the pod starts but health probes fail with `connection refused`, this is almost always the cause. Express already binds to `0.0.0.0` by default — no change needed for Express apps.
 
 ### Package manager variants
 
@@ -142,21 +117,6 @@ env:
 
 For Workload Identity with passwordless authentication, use the `@azure/identity` package with `pg` to obtain Azure AD tokens instead of passwords.
 
-### ConfigMap pattern
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{APP_NAME}}-config
-data:
-  NODE_ENV: "production"
-  PGHOST: "{{PG_SERVER_NAME}}.postgres.database.azure.com"
-  PGDATABASE: "{{DB_NAME}}"
-  PGPORT: "5432"
-  PGSSLMODE: "require"
-```
-
 ---
 
 ## Writable Paths (DS012 Compliance)
@@ -165,7 +125,6 @@ When `readOnlyRootFilesystem: true` is set, Node.js apps need only `/tmp` writab
 
 - **Multipart uploads** (e.g., `multer`, `@fastify/multipart`) stage files to `/tmp`
 - **Logging libraries** that buffer to disk use `/tmp`
-- **No other writable paths** are typically needed — `node_modules` is read-only at runtime
 
 ### Required volume mount
 
@@ -179,8 +138,6 @@ containers:
       - name: tmp
         mountPath: /tmp
 ```
-
-No other writable paths are typically needed for production Node.js apps.
 
 ---
 
