@@ -162,5 +162,5 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [ ] references/services/storage/access.md
 - [ ] references/services/storage/bicep.md
 - [ ] references/services/storage/README.md
-- [ ] references/specialized-routing.md
+- [x] references/specialized-routing.md
 

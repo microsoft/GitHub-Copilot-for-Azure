@@ -99,7 +99,7 @@ for provisioning-limit checks.
 The driver script points you to these references at the relevant step. They remain
 authoritative for deep detail; consult the one the `NEXT ACTION` block names.
 
-- Routing: [specialized-routing.md](references/specialized-routing.md), [apim.md](references/apim.md)
+- Routing: [apim.md](references/apim.md)
 - Planning: [region-availability.md](references/region-availability.md), [plan-template.md](references/plan-template.md)
 - Execution: [global-rules.md](references/global-rules.md)
 - Functions: [services/functions/durable.md](references/services/functions/durable.md), [services/durable-task-scheduler/README.md](references/services/durable-task-scheduler/README.md), [services/durable-task-scheduler/bicep.md](references/services/durable-task-scheduler/bicep.md), [services/sql-database/bicep.md](references/services/sql-database/bicep.md)
