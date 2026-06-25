@@ -508,6 +508,61 @@ function Set-PlanStatus {
     $content | Set-Content -LiteralPath $planFile -Encoding utf8
 }
 
+function New-RecipeScaffold {
+    # Deterministically creates the ./infra tree and writes the standard IaC parameter
+    # stub for the selected recipe (main.parameters.json for Bicep, main.tfvars.json for
+    # azd+Terraform). Idempotent: never overwrites existing files, and skips .NET Aspire
+    # (azd init --from-code generates its own infra). Returns the list of created paths.
+    param([hashtable]$State)
+    $recipe = (Get-ByPath $State 'input.recipe')
+    if (-not $recipe) { return @() }
+    $a = $State['auto']
+    if ($a -and $a['componentSignals'] -and $a['componentSignals']['aspire']) { return @() }
+
+    $created = @()
+    $infra   = Join-Path $RepoPath 'infra'
+    if (-not (Test-Path -LiteralPath $infra)) {
+        New-Item -ItemType Directory -Force -Path $infra | Out-Null; $created += 'infra/'
+    }
+    $modules = Join-Path $infra 'modules'
+    if (-not (Test-Path -LiteralPath $modules)) {
+        New-Item -ItemType Directory -Force -Path $modules | Out-Null; $created += 'infra/modules/'
+    }
+
+    # Bicep-based recipes share the same ARM-JSON parameters stub.
+    if ($recipe -match 'Bicep' -or $recipe -eq 'AZCLI') {
+        $paramFile = Join-Path $infra 'main.parameters.json'
+        if (-not (Test-Path -LiteralPath $paramFile)) {
+            @'
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": { "value": "${AZURE_ENV_NAME}" },
+    "location": { "value": "${AZURE_LOCATION}" }
+  }
+}
+'@ | Set-Content -LiteralPath $paramFile -Encoding utf8
+            $created += 'infra/main.parameters.json'
+        }
+    }
+    # azd+Terraform uses a ${VAR}-substituted tfvars file that azd resolves via envsubst.
+    elseif ($recipe -eq 'AZD (Terraform)') {
+        $tfvars = Join-Path $infra 'main.tfvars.json'
+        if (-not (Test-Path -LiteralPath $tfvars)) {
+            @'
+{
+  "environment_name": "${AZURE_ENV_NAME}",
+  "location": "${AZURE_LOCATION}",
+  "subscription_id": "${AZURE_SUBSCRIPTION_ID}"
+}
+'@ | Set-Content -LiteralPath $tfvars -Encoding utf8
+            $created += 'infra/main.tfvars.json'
+        }
+    }
+    return $created
+}
+
 # ---------------------------------------------------------------------------
 # Step definitions (ordered). Each step:
 #   id        unique id, also key under state.steps
@@ -682,10 +737,10 @@ Set `input.components` to an array of objects:
     @{
         id = 'recipe'; phase = 1; title = 'Select recipe'
         refs = @(
-            'references/recipes/azd/README.md',
-            'references/recipes/azcli/README.md',
-            'references/recipes/bicep/README.md',
-            'references/recipes/terraform/README.md'
+            'scripts/references/recipes/azd/README.md',
+            'scripts/references/recipes/azcli/README.md',
+            'scripts/references/recipes/bicep/README.md',
+            'scripts/references/recipes/terraform/README.md'
         )
         guidance = @'
 Choose the IaC recipe. The script computed a suggestion in `auto.suggestedRecipe`
@@ -973,10 +1028,10 @@ Set `input.researchDone` to true when finished.
     @{
         id = 'generate'; phase = 2; title = 'Generate artifacts'
         refs = @(
-            'references/recipes/azd/README.md',
-            'references/recipes/azcli/README.md',
-            'references/recipes/bicep/README.md',
-            'references/recipes/terraform/README.md'
+            'scripts/references/recipes/azd/README.md',
+            'scripts/references/recipes/azcli/README.md',
+            'scripts/references/recipes/bicep/README.md',
+            'scripts/references/recipes/terraform/README.md'
         )
         guidance = @'
 Generate infrastructure and configuration files for the selected recipe. Research
@@ -993,7 +1048,7 @@ record a blocker and STOP, do NOT hand-author artifacts to work around it. If
 patch the source. For Aspire + Azure Functions, add
 `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the
 `AddAzureFunctionsProject` chain before `azd up`. See `scripts/references/aspire.md` and
-`references/recipes/azd/aspire.md`. Manually authoring azure.yaml for Aspire is the most
+`scripts/references/recipes/azd/aspire.md`. Manually authoring azure.yaml for Aspire is the most
 common deployment failure.
 
 Other special patterns: complex existing codebase → consider `azd init --from-code`;
@@ -1020,13 +1075,24 @@ For other compute (Container Apps, App Service, Static Web Apps) load their
 `references/services/<service>/README.md`. Load the selected recipe's README (above)
 for detailed generation steps.
 
+Before generating IaC, research best practices via MCP (per recipe):
+  - Bicep recipes (AZD Bicep / AZCLI / Bicep): `mcp_bicep_get_bicep_best_practices`,
+    `mcp_bicep_list_avm_metadata`, `mcp_bicep_get_az_resource_type_schema`.
+  - Terraform recipes (AZD Terraform / Terraform): `mcp_azure_mcp_azureterraformbestpractices`.
+  - General: `mcp_azure_mcp_get_azure_bestpractices`.
+  AVM module selection order is MANDATORY: prefer AVM Pattern modules → AVM Resource
+  modules → AVM Utility modules (same order for Bicep and Terraform); only fall back to
+  non-AVM when no AVM module exists. See the recipe README + iac-rules.md for detail.
+
 Generation order: (1) azure.yaml (AZD only) → (2) app code scaffolding (entry points,
 health endpoints) → (3) Dockerfiles (if containerized) → (4) IaC in ./infra/ →
 (5) CI/CD (if requested). Typical layout: .azure/, infra/{main.bicep|main.tf,modules/},
 src/<component>/Dockerfile, azure.yaml.
 
 ⚠️ Create the full directory tree (`mkdir -p`) BEFORE writing files — the `create`
-tool does NOT make parent directories.
+tool does NOT make parent directories. The script already scaffolded the `infra/` tree
+and a standard parameters stub for the selected recipe — see `auto.scaffold` for the
+files it created (do NOT recreate them; fill in `infra/main.bicep`/`main.tf` + modules).
 
 Security requirements (MANDATORY):
   - No hardcoded secrets; Key Vault for sensitive values; Managed Identity for auth;
@@ -1043,6 +1109,13 @@ Security requirements (MANDATORY):
 After generation: record the generated file list in `.azure/deployment-plan.md`.
 Set `input.generateDone` to true when artifacts are written.
 '@
+        auto = {
+            param($State)
+            # Pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
+            # templates rather than re-creating boilerplate; records what it made in auto.scaffold.
+            $made = New-RecipeScaffold $State
+            Set-ByPath $State 'auto.scaffold' $made
+        }
         needs = @(
             @{ Path = 'input.generateDone'; Prompt = 'true when infrastructure/config artifacts are generated' }
         )

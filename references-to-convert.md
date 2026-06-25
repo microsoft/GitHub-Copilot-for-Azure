@@ -13,19 +13,19 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [x] references/global-rules.md
 - [x] references/plan-template.md
 - [x] references/recipe-selection.md
-- [ ] references/recipes/azcli/commands.md
-- [ ] references/recipes/azcli/README.md
-- [ ] references/recipes/azcli/scripts.md
-- [ ] references/recipes/azd/aspire.md
-- [ ] references/recipes/azd/azure-yaml.md
-- [ ] references/recipes/azd/docker.md
-- [ ] references/recipes/azd/iac-rules.md
-- [ ] references/recipes/azd/README.md
-- [ ] references/recipes/azd/terraform.md
-- [ ] references/recipes/bicep/patterns.md
-- [ ] references/recipes/bicep/README.md
-- [ ] references/recipes/terraform/patterns.md
-- [ ] references/recipes/terraform/README.md
+- [x] references/recipes/azcli/commands.md
+- [x] references/recipes/azcli/README.md
+- [x] references/recipes/azcli/scripts.md
+- [x] references/recipes/azd/aspire.md
+- [x] references/recipes/azd/azure-yaml.md
+- [x] references/recipes/azd/docker.md
+- [x] references/recipes/azd/iac-rules.md
+- [x] references/recipes/azd/README.md
+- [x] references/recipes/azd/terraform.md
+- [x] references/recipes/bicep/patterns.md
+- [x] references/recipes/bicep/README.md
+- [x] references/recipes/terraform/patterns.md
+- [x] references/recipes/terraform/README.md
 - [x] references/region-availability.md
 - [x] references/requirements.md
 - [x] references/research.md
