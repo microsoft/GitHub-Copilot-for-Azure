@@ -53,7 +53,7 @@ Act on the summary prefixes:
 
 - `[OK]` -- nothing to do.
 - `[WARN]` -- non-blocking; continue.
-- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually. Missing `azure.ai.agents` / `azure.ai.projects` extensions may be resolved with `azd extension install <name>`. Failed `az` or `azd` auth checks must stop the workflow until the user logs in manually.
+- `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually. Missing `azure.ai.agents` / `azure.ai.projects` extensions may be resolved with `azd extension install <name>`. Failed `az` or `azd` auth checks must stop the workflow until the user logs in manually.
 
 > **Preflight: get `AZURE_SUBSCRIPTION_ID` + `AZURE_LOCATION` into the azd env *before* the first `azd ai agent init`.** Without both, init defers model resolution -> `azure.yaml services.<name>.config.deployments[]` ends up empty -> `AI_PROJECT_DEPLOYMENTS=[]` -> `azd provision` creates zero model deployments -> `agent.yaml` keeps the literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` placeholder. `azd ai agent init` itself has **no** `--subscription` / `--location` flags (those live on core `azd init`). Pick the **first** option that fits, ranked best-first:
 >
