@@ -1063,7 +1063,7 @@ Monitoring: enable Microsoft Defender for Cloud on production workloads; diagnos
 
 SDK auth: use the language Azure Identity package; `DefaultAzureCredential` for LOCAL
   dev only — in production use `ManagedIdentityCredential` (Rust: `DeveloperToolsCredential`).
-  See `references/auth-best-practices.md`.
+  See `scripts/references/auth-best-practices.md`.
 
 See `scripts/references/security.md` for the full checklists, MCP/CLI commands, RBAC
 tables, and SDK package matrix.
