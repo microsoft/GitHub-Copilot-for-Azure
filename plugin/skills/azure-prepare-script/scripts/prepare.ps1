@@ -848,11 +848,21 @@ Set `input.policyConstraints` to an array of short strings (empty array if none)
     },
     @{
         id = 'quota'; phase = 1; title = 'Validate provisioning limits'
-        refs = @('references/resources-limits-quotas.md', 'references/plan-template.md')
+        refs = @('scripts/references/resources-limits-quotas.md', 'references/plan-template.md')
         guidance = @'
-Build the provisioning-limit checklist for all resources to be deployed. Invoke the
-azure-quotas skill to fetch real quota/usage via the Azure quota CLI. NO "_TBD_"
-entries may remain. Render the completed Section 6 table(s) as markdown.
+Build the provisioning-limit checklist for all resources to be deployed, then
+validate capacity in the confirmed subscription + region.
+
+Invoke the **azure-quotas** skill to fetch real quota/usage via the Azure quota
+CLI. Process ONE resource type at a time: `az quota list` first; if the provider
+returns BadRequest (e.g. Microsoft.DocumentDB), fall back to Azure Resource Graph
++ official limits docs. Compute Available = Limit − Current Usage. If insufficient,
+request an increase or return to the azure-context step for another region.
+
+NO "_TBD_" entries may remain. Render the completed Section 6 table(s) as markdown.
+See `scripts/references/resources-limits-quotas.md` for the full limits catalog,
+CLI reference, service patterns, and a worked example.
+
 Set `input.quotaChecklistMarkdown` to that markdown block.
 '@
         needs = @(
