@@ -12,7 +12,7 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [ ] references/generate.md
 - [ ] references/global-rules.md
 - [ ] references/plan-template.md
-- [ ] references/recipe-selection.md
+- [x] references/recipe-selection.md
 - [ ] references/recipes/azcli/commands.md
 - [ ] references/recipes/azcli/README.md
 - [ ] references/recipes/azcli/scripts.md

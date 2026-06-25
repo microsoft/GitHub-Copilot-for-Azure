@@ -194,6 +194,19 @@ function Invoke-AutoCollect {
         dockerfile = [bool]($files | Where-Object { $_.Name -like 'Dockerfile*' })
         githubActions = [bool]($files | Where-Object { $_.FullName -like '*\.github\workflows\*' -or $_.FullName -like '*/.github/workflows/*' })
         azurePipelines = [bool]($files | Where-Object { $_.Name -eq 'azure-pipelines.yml' })
+        azureYamlProvider = $null
+    }
+
+    # --- azure.yaml IaC provider (terraform vs bicep/default) ---
+    $azureYamlFile = $files | Where-Object { $_.Name -in @('azure.yaml', 'azure.yml') } | Select-Object -First 1
+    if ($azureYamlFile) {
+        try {
+            if ((Get-Content -LiteralPath $azureYamlFile.FullName -Raw) -match '(?im)provider\s*:\s*terraform') {
+                $existingInfra.azureYamlProvider = 'terraform'
+            }
+            else { $existingInfra.azureYamlProvider = 'bicep' }
+        }
+        catch { }
     }
 
     # --- .NET Aspire detection (AppHost project or Aspire.Hosting reference) ---
@@ -282,6 +295,21 @@ function Get-ProposedMode {
     if ($a['workspaceEmpty']) { return 'NEW' }
     if ($a['existingInfra']['azureYaml'] -or $a['existingInfra']['bicep'] -or $a['existingInfra']['terraform']) { return 'MODIFY' }
     return 'MODERNIZE'
+}
+
+function Get-ProposedRecipe {
+    # Proposes an IaC recipe from the auto-detected signals (Aspire, azure.yaml provider, *.tf, *.bicep); the LM confirms it later.
+    param([hashtable]$State)
+    $a = $State['auto']
+    $infra = $a['existingInfra']
+    if ($a['componentSignals'] -and $a['componentSignals']['aspire']) { return 'AZD (Aspire, via azd init --from-code)' }
+    if ($infra['azureYaml']) {
+        if ($infra['azureYamlProvider'] -eq 'terraform') { return 'AZD (Terraform)' }
+        return 'AZD (Bicep)'
+    }
+    if ($infra['terraform']) { return 'AZD (Terraform)' }
+    if ($infra['bicep']) { return 'Bicep' }
+    return 'AZD (Bicep)'
 }
 
 # ---------------------------------------------------------------------------
@@ -601,15 +629,48 @@ Set `input.components` to an array of objects:
     },
     @{
         id = 'recipe'; phase = 1; title = 'Select recipe'
-        refs = @('references/recipe-selection.md')
+        refs = @(
+            'references/recipes/azd/README.md',
+            'references/recipes/azcli/README.md',
+            'references/recipes/bicep/README.md',
+            'references/recipes/terraform/README.md'
+        )
         guidance = @'
-Choose the IaC recipe. Default is AZD unless the user/codebase indicates otherwise.
-The script detected existing IaC in `auto.existingInfra` (bicep/terraform/azureYaml).
-Set `input.recipe` to "AZD" | "AZCLI" | "Bicep" | "Terraform".
-Set `input.recipeRationale` to a short reason.
+Choose the IaC recipe. The script computed a suggestion in `auto.suggestedRecipe`
+from existing tooling (`auto.existingInfra`, including `azureYamlProvider`) and
+`auto.componentSignals.aspire`. Confirm or override it.
+
+Special case — .NET Aspire (`auto.componentSignals.aspire` true):
+  Always use AZD with auto-generated config (`azd init --from-code`). Do NOT
+  manually select a recipe or hand-author artifacts. See `references/aspire.md`.
+
+Default is AZD unless requirements indicate otherwise. azd supports both Bicep and
+Terraform as IaC providers; when Terraform is wanted for an Azure deployment,
+prefer AZD (Terraform) for the best DX.
+
+Decision criteria:
+  - AZD (Bicep)     → new/multi-service apps, simplest deploy (`azd up`)
+  - AZD (Terraform) → DEFAULT when Terraform is wanted + azd simplicity
+  - AZCLI           → existing az scripts, imperative control, custom pipelines, AKS
+  - Bicep           → IaC-first, no CLI wrapper, direct ARM deployment
+  - Terraform       → multi-cloud (non-Azure-first) or TF workflows incompatible with azd
+
+Auto-detection mapping (already applied to `auto.suggestedRecipe`):
+  azure.yaml provider=terraform → AZD (Terraform); azure.yaml else → AZD (Bicep);
+  *.tf no azure.yaml → AZD (Terraform); *.bicep no azure.yaml → Bicep/AZCLI;
+  nothing → AZD (Bicep).
+
+Set `input.recipe` to one of: "AZD (Bicep)" | "AZD (Terraform)" | "AZCLI" | "Bicep" | "Terraform".
+Set `input.recipeRationale` to a short reason. Then load the matching recipe
+README above for the generate step.
 '@
+        auto = {
+            param($State)
+            # Compute a suggested recipe from programmatic signals so the LM can confirm rather than derive it.
+            Set-ByPath $State 'auto.suggestedRecipe' (Get-ProposedRecipe $State)
+        }
         needs = @(
-            @{ Path = 'input.recipe'; Prompt = 'Recipe: AZD | AZCLI | Bicep | Terraform' },
+            @{ Path = 'input.recipe'; Prompt = 'Recipe: AZD (Bicep) | AZD (Terraform) | AZCLI | Bicep | Terraform (see auto.suggestedRecipe)' },
             @{ Path = 'input.recipeRationale'; Prompt = 'Why this recipe' }
         )
     },
