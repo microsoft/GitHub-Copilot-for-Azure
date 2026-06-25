@@ -34,7 +34,7 @@ relevant one before acting:
 | Reference | Purpose |
 |-----------|---------|
 | [Capability Routing](references/capability-routing.md) | Resolve which `advisor_*` MCP tool to call for each capability (catalog, recommendations, summary, IaC fix). |
-| [Subscription Discovery](references/subscription-discovery.md) | Resolve the target subscription from repo config / env without hardcoding. |
+| [Subscription Discovery](references/subscription-discovery.md) | Resolve a single target subscription, or enumerate and classify all subscriptions by environment, without hardcoding. |
 
 ## Capabilities
 
@@ -43,7 +43,7 @@ skill when they match the task:**
 
 | Capability | When to Use | Reference |
 |-----------|-------------|-----------|
-| **review** | Run a holistic, read-only Advisor sweep across a subscription — probe the catalog, pull active recommendations, aggregate by category/impact, spotlight high-impact items, and propose IaC fix snippets. | [review](review/review.md) |
+| **review** | Run a holistic, read-only Advisor sweep across one subscription — or **all** subscriptions classified by environment (dev/staging/prod) — probing the catalog, pulling active recommendations, aggregating by category/impact, spotlighting high-impact items, and proposing IaC fix snippets. | [review](review/review.md) |
 
 ### Roadmap (not yet implemented)
 

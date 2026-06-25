@@ -91,6 +91,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       const result2 = triggerMatcher.shouldTrigger(
         "run an azure advisor review"
       );
+      expect(result1.triggered).toBe(true);
       expect(result1.triggered).toBe(result2.triggered);
     });
   });
