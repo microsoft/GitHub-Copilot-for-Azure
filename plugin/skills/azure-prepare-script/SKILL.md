@@ -82,7 +82,7 @@ for provisioning-limit checks.
 > to `true` after they approve.
 >
 > ⛔ **Never delete the user's project or workspace directory.** Destructive actions
-> require `ask_user`. See [Global Rules](references/global-rules.md).
+> require `ask_user`. See [Global Rules](scripts/references/global-rules.md).
 
 ## Error Handling
 
@@ -100,7 +100,6 @@ The driver script points you to these references at the relevant step. They rema
 authoritative for deep detail; consult the one the `NEXT ACTION` block names.
 
 - Planning: [region-availability.md](references/region-availability.md), [plan-template.md](references/plan-template.md)
-- Execution: [global-rules.md](references/global-rules.md)
 - Functions: [services/functions/durable.md](references/services/functions/durable.md), [services/durable-task-scheduler/README.md](references/services/durable-task-scheduler/README.md), [services/durable-task-scheduler/bicep.md](references/services/durable-task-scheduler/bicep.md), [services/sql-database/bicep.md](references/services/sql-database/bicep.md)
 - SDK: [azd](references/sdk/azd-deployment.md), Azure Identity ([py](references/sdk/azure-identity-py.md) · [dotnet](references/sdk/azure-identity-dotnet.md) · [ts](references/sdk/azure-identity-ts.md) · [java](references/sdk/azure-identity-java.md)), App Configuration ([py](references/sdk/azure-appconfiguration-py.md) · [ts](references/sdk/azure-appconfiguration-ts.md) · [java](references/sdk/azure-appconfiguration-java.md))
 

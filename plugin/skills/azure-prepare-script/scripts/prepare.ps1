@@ -994,6 +994,13 @@ common deployment failure.
 Other special patterns: complex existing codebase → consider `azd init --from-code`;
 existing azure.yaml (`auto.existingInfra.azureYaml`) → MODIFY the existing config.
 
+⛔ Global rules (see `scripts/references/global-rules.md`): destructive actions
+(delete/overwrite/purge/expensive provisioning/RBAC changes) ALWAYS require `ask_user`
+first — never delete the user's project or workspace directory. `azd init -t <template>`
+is for NEW projects only: run it ONLY in an empty/new directory. To re-init an existing
+project, scaffold in a separate new dir and migrate changes in with confirmed edits;
+`azd init` WITHOUT a template arg is fine in existing workspaces.
+
 ⛔ If the target compute is Azure Functions, load the composition algorithm BEFORE
 generating any infrastructure:
   1. Load `references/services/functions/templates/selection.md` (base template + recipe).
