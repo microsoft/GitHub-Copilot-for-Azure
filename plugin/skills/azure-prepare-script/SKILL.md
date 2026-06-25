@@ -100,7 +100,7 @@ The driver script points you to these references at the relevant step. They rema
 authoritative for deep detail; consult the one the `NEXT ACTION` block names.
 
 - Routing: [specialized-routing.md](references/specialized-routing.md), [apim.md](references/apim.md)
-- Planning: [azure-context.md](references/azure-context.md), [plan-template.md](references/plan-template.md)
+- Planning: [region-availability.md](references/region-availability.md), [plan-template.md](references/plan-template.md)
 - Execution: [research.md](references/research.md), [generate.md](references/generate.md), [security.md](references/security.md), [functional-verification.md](references/functional-verification.md), [global-rules.md](references/global-rules.md)
 - Functions: [services/functions/durable.md](references/services/functions/durable.md), [services/durable-task-scheduler/README.md](references/services/durable-task-scheduler/README.md), [services/durable-task-scheduler/bicep.md](references/services/durable-task-scheduler/bicep.md), [services/sql-database/bicep.md](references/services/sql-database/bicep.md)
 - SDK: [azd](references/sdk/azd-deployment.md), Azure Identity ([py](references/sdk/azure-identity-py.md) · [dotnet](references/sdk/azure-identity-dotnet.md) · [ts](references/sdk/azure-identity-ts.md) · [java](references/sdk/azure-identity-java.md)), App Configuration ([py](references/sdk/azure-appconfiguration-py.md) · [ts](references/sdk/azure-appconfiguration-ts.md) · [java](references/sdk/azure-appconfiguration-java.md))

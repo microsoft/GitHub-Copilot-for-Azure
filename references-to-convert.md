@@ -7,7 +7,7 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [x] references/architecture.md
 - [ ] references/aspire.md
 - [ ] references/auth-best-practices.md
-- [ ] references/azure-context.md
+- [x] references/azure-context.md
 - [ ] references/functional-verification.md
 - [ ] references/generate.md
 - [ ] references/global-rules.md

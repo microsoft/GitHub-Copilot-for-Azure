@@ -263,7 +263,44 @@ function Invoke-AutoCollect {
         gitRoot          = $gitRoot
         existingPlan     = (Test-Path -LiteralPath $planPath)
         azContext        = (Get-AzContext)
+        azdContext       = (Get-AzdContext)
     }
+}
+
+function Get-AzdContext {
+    # Best-effort read of azd's configured defaults and current environment values (subscription/location) from the repo, or an "unavailable" result if azd is missing.
+    $result = @{ available = $false; defaults = @{ subscription = $null; location = $null }; env = @{ name = $null; subscriptionId = $null; location = $null } }
+    $azd = Get-Command azd -ErrorAction SilentlyContinue
+    if (-not $azd) { return $result }
+    Push-Location -LiteralPath $RepoPath
+    try {
+        $result.available = $true
+        try {
+            $def = & azd config get defaults -o json 2>$null
+            if ($LASTEXITCODE -eq 0 -and $def) {
+                $d = ($def | ConvertFrom-Json)
+                $result.defaults.subscription = $d.subscription
+                $result.defaults.location     = $d.location
+            }
+        }
+        catch { }
+        try {
+            # azd env values only exist for azd projects; skip the call when there is no azure.yaml.
+            $hasAzureYaml = (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yaml')) -or (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yml'))
+            if ($hasAzureYaml) {
+                $vals = & azd env get-values -o json 2>$null
+                if ($LASTEXITCODE -eq 0 -and $vals) {
+                    $v = ($vals | ConvertFrom-Json)
+                    $result.env.subscriptionId = $v.AZURE_SUBSCRIPTION_ID
+                    $result.env.location       = $v.AZURE_LOCATION
+                    $result.env.name           = $v.AZURE_ENV_NAME
+                }
+            }
+        }
+        catch { }
+    }
+    finally { Pop-Location }
+    return $result
 }
 
 function Get-AzContext {
@@ -735,13 +772,39 @@ Include the supporting services as their own entries.
     },
     @{
         id = 'azure-context'; phase = 1; title = 'Confirm Azure subscription and location'
-        refs = @('references/azure-context.md')
+        refs = @('references/region-availability.md')
         guidance = @'
-Confirm the Azure subscription and target region with the user via `ask_user`.
-The script attempted `az account show`; results are in `auto.azContext`.
-Set `input.subscription` to the subscription name or id.
-Set `input.location` to the Azure region (e.g., "eastus2"). Honor any data-residency
-constraint captured in `input.requirements.compliance` when choosing the region.
+Detect, confirm, and apply the Azure subscription and target region. The script
+already collected:
+  - `auto.azContext`  — `az account show` (subscriptionName/Id, tenantId)
+  - `auto.azdContext` — azd defaults + current env (AZURE_SUBSCRIPTION_ID/LOCATION)
+
+1. Existing AZD env (when `auto.existingInfra.azureYaml` is true): if
+   `auto.azdContext.env` already has subscription/location, `ask_user` to confirm
+   reuse; if accepted, skip re-detection.
+2. Defaults: offer `auto.azdContext.defaults` then `auto.azContext` as the
+   RECOMMENDED values (`auto.suggestedSubscription` holds the best guess).
+3. Confirm subscription via `ask_user` showing the ACTUAL name AND id
+   (e.g. "Use current: <name> (<id>)"). Never offer a vague "use default" choice.
+   If the user wants a different one, list via `az account list -o table`.
+4. Confirm region via `ask_user`. Consult `references/region-availability.md` and
+   present ONLY regions that support ALL selected services — a region missing a
+   service will fail deployment. Honor any data-residency constraint in
+   `input.requirements.compliance`.
+5. Provisioning limits for the chosen region are validated in the next (quota)
+   step via the azure-quotas skill; if capacity is insufficient, return here and
+   pick another region.
+6. Apply to the azd environment — REQUIRED for AZD/Aspire recipes, immediately
+   after `azd init`/`azd env new` (do NOT defer to deploy; az and azd keep
+   separate config contexts):
+     azd env new <env> --no-prompt      # or: azd init --from-code -e <env> --no-prompt
+     azd env set AZURE_SUBSCRIPTION_ID <id>
+     azd env set AZURE_LOCATION <location>
+     azd env get-values                 # verify
+   Record the environment name in `input.azdEnvName` ("n/a" for non-azd recipes).
+
+Set `input.subscription` to the confirmed subscription name or id.
+Set `input.location` to the confirmed Azure region (e.g., "eastus2").
 
 After the subscription is confirmed, query Azure Policy assignments to discover
 enforcement constraints BEFORE finalizing architecture (skipping this causes
@@ -761,16 +824,25 @@ Set `input.policyConstraints` to an array of short strings (empty array if none)
         needs = @(
             @{ Path = 'input.subscription'; Prompt = 'Confirmed subscription name or id (auto.azContext has the detected one)' },
             @{ Path = 'input.location'; Prompt = 'Confirmed Azure region' },
+            @{ Path = 'input.azdEnvName'; Prompt = 'azd environment name applied with subscription/location ("n/a" for non-azd recipes)' },
             @{ Path = 'input.policyConstraints'; Prompt = 'Array of policy constraint strings (empty array if none found)' }
         )
         auto = {
             param($State)
-            # If az already resolved a subscription and the LM has not overridden it, prefill.
-            $ctx = Get-ByPath $State 'auto.azContext'
-            if ($ctx -and $ctx['available'] -and -not (Test-Provided $State 'input.subscription')) {
-                $name = $ctx['subscriptionName']; if (-not $name) { $name = $ctx['subscriptionId'] }
+            # Prefill the suggested subscription from azd env, then azd defaults, then az account, when the LM has not chosen one.
+            if (-not (Test-Provided $State 'input.subscription')) {
+                $suggest = $null
+                $azd = Get-ByPath $State 'auto.azdContext'
+                if ($azd -and $azd['available']) {
+                    if ($azd['env'] -and $azd['env']['subscriptionId']) { $suggest = $azd['env']['subscriptionId'] }
+                    elseif ($azd['defaults'] -and $azd['defaults']['subscription']) { $suggest = $azd['defaults']['subscription'] }
+                }
+                if (-not $suggest) {
+                    $ctx = Get-ByPath $State 'auto.azContext'
+                    if ($ctx -and $ctx['available']) { $suggest = $ctx['subscriptionName']; if (-not $suggest) { $suggest = $ctx['subscriptionId'] } }
+                }
                 # Do NOT auto-confirm location — region is a deliberate user choice.
-                Set-ByPath $State 'auto.suggestedSubscription' $name
+                if ($suggest) { Set-ByPath $State 'auto.suggestedSubscription' $suggest }
             }
         }
     },
