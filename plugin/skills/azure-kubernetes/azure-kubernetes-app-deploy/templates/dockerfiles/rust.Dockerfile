@@ -19,7 +19,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-FROM rust:1.83-slim AS build
+# Base: current stable Rust, Debian-slim. See references/base-images.md.
+FROM rust:<LATEST_STABLE_RUST>-slim AS build
 
 WORKDIR /app
 

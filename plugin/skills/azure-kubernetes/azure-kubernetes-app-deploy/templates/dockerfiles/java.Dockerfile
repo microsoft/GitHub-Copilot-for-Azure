@@ -19,7 +19,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-FROM eclipse-temurin:21-jdk-alpine AS build
+# Base: current Java LTS (Temurin). See references/base-images.md for the Microsoft OpenJDK alternative.
+FROM eclipse-temurin:<LATEST_STABLE_JAVA_JDK>-jdk-alpine AS build
 
 WORKDIR /app
 
@@ -44,7 +45,7 @@ RUN ./mvnw package spring-boot:repackage -DskipTests -B \
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:<LATEST_STABLE_JAVA_JRE>-jre-alpine
 
 WORKDIR /app
 

@@ -16,7 +16,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+# Base: current .NET LTS (Microsoft official). See references/base-images.md.
+FROM mcr.microsoft.com/dotnet/sdk:<LATEST_STABLE_DOTNET_SDK> AS build
 
 WORKDIR /src
 
@@ -38,7 +39,8 @@ RUN dotnet publish src/MyApp/MyApp.csproj \
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Base: current .NET LTS (Microsoft official). See references/base-images.md.
+FROM mcr.microsoft.com/dotnet/aspnet:<LATEST_STABLE_DOTNET_ASPNET>
 
 WORKDIR /app
 

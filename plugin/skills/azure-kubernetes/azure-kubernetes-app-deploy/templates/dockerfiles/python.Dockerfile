@@ -14,7 +14,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim AS build
+# Base: latest stable Python, Debian-slim (NOT Alpine — musl breaks many C extensions). See references/base-images.md.
+FROM python:<LATEST_STABLE_PYTHON>-slim AS build
 
 WORKDIR /app
 
@@ -37,7 +38,7 @@ COPY . .
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim
+FROM python:<LATEST_STABLE_PYTHON>-slim
 
 WORKDIR /app
 

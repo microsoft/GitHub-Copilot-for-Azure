@@ -18,7 +18,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS build
+# Base: current Node LTS, Alpine variant. See references/base-images.md.
+FROM node:<LATEST_STABLE_NODE>-alpine AS build
 
 WORKDIR /app
 
@@ -42,7 +43,7 @@ RUN npm prune --omit=dev
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM node:22-alpine
+FROM node:<LATEST_STABLE_NODE>-alpine
 
 # Security: install dumb-init so Node runs as PID > 1 and signals propagate
 # correctly — avoids zombie processes inside the container.

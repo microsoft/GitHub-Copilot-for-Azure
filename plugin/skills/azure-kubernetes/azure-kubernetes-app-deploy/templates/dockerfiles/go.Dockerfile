@@ -17,7 +17,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-FROM golang:<go-version>-alpine AS build
+# Base: current stable Go. See references/base-images.md.
+FROM golang:<LATEST_STABLE_GO>-alpine AS build
 
 WORKDIR /src
 
