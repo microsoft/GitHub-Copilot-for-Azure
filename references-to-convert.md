@@ -3,7 +3,7 @@
 Markdown files under `azure-prepare-script/references` to fold into `scripts/prepare.ps1`. Delete each from `references/` once its content is folded in.
 
 - [x] references/analyze.md
-- [ ] references/apim.md
+- [x] references/apim.md
 - [x] references/architecture.md
 - [ ] references/aspire.md
 - [ ] references/auth-best-practices.md

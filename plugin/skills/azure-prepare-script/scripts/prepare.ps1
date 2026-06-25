@@ -944,7 +944,7 @@ Service → reference / related skill (load README under references/services/<sv
   - AKS → +azure-networking
   - Functions → (stay here; see composition mandate below)
   - Storage → +azure-storage
-  - API Management → references/apim.md, +azure-aigateway (AI Gateway policies)
+  - API Management → scripts/references/apim.md, +azure-aigateway (AI Gateway policies)
   - Durable Functions → services/functions/durable.md + services/durable-task-scheduler/
   - Key Vault → +azure-keyvault-expiration-audit;  Managed Identity → +entra-app-registration
   - Application Insights → +appinsights-instrumentation;  Log Analytics → +azure-observability, azure-kusto
