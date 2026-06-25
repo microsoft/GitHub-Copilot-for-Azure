@@ -28,6 +28,9 @@ capability — read them before running the workflow:
   `advisor_*` MCP tool by capability (catalog, recommendations, summary, IaC fix).
 - **[Subscription Discovery](../references/subscription-discovery.md)** — how to resolve
   the target subscription from repo config / env without hardcoding.
+- **[Resource Scope Discovery](../references/resource-discovery.md)** — how to narrow the
+  review to the resources this repo deploys (resource group / type / id) without
+  hardcoding.
 
 ## Workflow
 
@@ -46,6 +49,14 @@ Steps 2–5 **once per discovered subscription**.
 Mention each subscription's *source* and the environment breakdown in the final chat
 summary. Never hardcode ids.
 
+### Step 1b — Resolve repo resource scope
+
+Run [Resource Scope Discovery](../references/resource-discovery.md) to find the resource
+group(s), resource **type(s)**, and resource id(s) this repo defines. Collect **every**
+distinct signal — a repo usually defines **multiple** resource types, so do **not** stop
+after the first. Save them all with their *source(s)*. Only if the repo defines no Azure
+resources at all, fall back to a full-subscription review and note that in the summary.
+
 ### Step 2 — Probe the catalog (metadata)
 
 Invoke the **metadata / catalog** capability (see
@@ -58,13 +69,17 @@ that and stop early.
 
 ### Step 3 — Pull active recommendations
 
-Invoke the **active recommendations** capability with the resolved subscription and
-**no filters first** to get raw counts. Limit output to a manageable page if the tool
-supports it.
+Invoke the **active recommendations** capability with the resolved subscription. If
+Step 1b found a repo scope, pass it as the matching filter (resource group / resource
+type / resource id) per [Capability Routing](../references/capability-routing.md); if the
+tool has no such filter, pull unfiltered and **post-filter** the list to the discovered
+scope in-context. Otherwise pull the whole subscription. Limit output to a manageable
+page if the tool supports it.
 
 ### Step 4 — Aggregate (if available)
 
-If a **summary / aggregation** capability exists, call it twice:
+If a **summary / aggregation** capability exists, call it twice (applying the same Step 1b
+scope filter, if any):
 
 - Once grouped by **category** (Cost, Security, Reliability, etc.)
 - Once grouped by **impact** (High, Medium, Low)
@@ -88,7 +103,7 @@ Reply in chat with this structure (no files written).
 ## Azure Advisor Review
 
 **Subscription:** <id> (from <source>)
-**Tenant catalog:** N categories, M impact levels, K resource types
+**Scope:** <resource group / type / id and its source, or "whole subscription — no repo scope found">
 
 ### Snapshot
 - Total active recommendations: X
@@ -154,6 +169,8 @@ Do **not** write any file to disk. The summary lives only in the chat response.
 |---|---|---|
 | No tool name contains `advisor_` | MCP server not configured / not running, **or** a strict starts-with match rejected prefixed names | Substring-match on `advisor_` (names look like `azure-mcp-advisor_*`). If still none, tell user to check `.vscode/mcp.json`, that `azmcp.exe` is reachable, and that tools are exposed individually (`--mode all`). |
 | Tenant-wide enumeration requested but no subscription-list tool | Azure MCP subscription tool not exposed | Fall back to repo-discovered subscriptions; if none, ask the user. |
-| Catalog call returns empty | Tenant has no Advisor coverage yet | Stop after Step 2; report empty tenant. || Recommendation list 401/403 | Auth not scoped to subscription | Tell user to run `az login` and verify subscription access. |
+| Recommendations tool has no resource-scope filter | Tool only accepts a subscription | Pull unfiltered and post-filter the list to the Step 1b scope in-context. |
+| Catalog call returns empty | Tenant has no Advisor coverage yet | Stop after Step 2; report empty tenant. |
+| Recommendation list 401/403 | Auth not scoped to subscription | Tell user to run `az login` and verify subscription access. |
 | Aggregation tool errors on `group-by` | Field name not in supported list | Re-call with a value drawn from Step 2's catalog. |
 | IaC tool says "unknown resource" | Resource type not in its supported list | Skip the fix for that recommendation; keep the rest. |

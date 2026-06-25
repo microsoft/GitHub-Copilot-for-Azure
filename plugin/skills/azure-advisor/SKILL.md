@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Azure Advisor reviews and recommendations using available advisor_* MCP tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only Advisor sweeps with catalog, recommendations, and IaC fixes. DO NOT USE FOR: changing resources, billing analysis (use azure-cost), or non-Advisor troubleshooting (use azure-diagnostics)."
+description: "Azure Advisor reviews resources and provides recommendations using advisor_* MCP tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only sweeps with catalog, recommendations, and IaC fixes. DO NOT USE FOR: changing resources, billing analysis (use azure-cost), or non-Advisor troubleshooting (use azure-diagnostics)."
 license: MIT
 metadata:
   author: Microsoft
@@ -35,6 +35,7 @@ relevant one before acting:
 |-----------|---------|
 | [Capability Routing](references/capability-routing.md) | Resolve which `advisor_*` MCP tool to call for each capability (catalog, recommendations, summary, IaC fix). |
 | [Subscription Discovery](references/subscription-discovery.md) | Resolve a single target subscription, or enumerate and classify all subscriptions by environment, without hardcoding. |
+| [Resource Scope Discovery](references/resource-discovery.md) | Narrow a review to the resources defined in this repo (resource group / type / id) without hardcoding. |
 
 ## Capabilities
 
@@ -56,6 +57,8 @@ reusing the shared references above. Add a row to the table above when one ships
 - **cost** — Advisor cost-category optimization (coordinates with `azure-cost`)
 - **reliability** — Advisor reliability-category reviews
 - **governance** — Advisor operational-excellence / governance reviews
+- **security** — Advisor security-category reviews
+- **performance** — Advisor performance-category reviews
 
 ## Constraints
 
