@@ -27,11 +27,11 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [ ] references/recipes/terraform/patterns.md
 - [ ] references/recipes/terraform/README.md
 - [ ] references/region-availability.md
-- [ ] references/requirements.md
+- [x] references/requirements.md
 - [ ] references/research.md
 - [ ] references/resources-limits-quotas.md
 - [ ] references/runtimes/nodejs.md
-- [ ] references/scan.md
+- [x] references/scan.md
 - [ ] references/sdk/azd-deployment.md
 - [ ] references/sdk/azure-appconfiguration-java.md
 - [ ] references/sdk/azure-appconfiguration-py.md

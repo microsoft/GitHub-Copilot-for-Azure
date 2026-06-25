@@ -192,7 +192,41 @@ function Invoke-AutoCollect {
         bicep      = [bool]($files | Where-Object { $_.Extension -eq '.bicep' })
         terraform  = [bool]($files | Where-Object { $_.Extension -eq '.tf' })
         dockerfile = [bool]($files | Where-Object { $_.Name -like 'Dockerfile*' })
+        githubActions = [bool]($files | Where-Object { $_.FullName -like '*\.github\workflows\*' -or $_.FullName -like '*/.github/workflows/*' })
+        azurePipelines = [bool]($files | Where-Object { $_.Name -eq 'azure-pipelines.yml' })
     }
+
+    # --- .NET Aspire detection (AppHost project or Aspire.Hosting reference) ---
+    $aspire = [bool]($files | Where-Object { $_.Name -like '*.AppHost.csproj' })
+    if (-not $aspire) {
+        foreach ($csproj in @($files | Where-Object { $_.Extension -eq '.csproj' })) {
+            try {
+                if ((Get-Content -LiteralPath $csproj.FullName -Raw) -match 'Aspire\.Hosting') { $aspire = $true; break }
+            }
+            catch { }
+        }
+    }
+
+    # --- Azure Functions detection (host.json, SDK dependency, or WebJobs reference) ---
+    $azureFunctions = [bool]($files | Where-Object { $_.Name -eq 'host.json' })
+    if (-not $azureFunctions -and $pkg) {
+        try {
+            if ((Get-Content -LiteralPath $pkg.FullName -Raw) -match '@azure/functions|azure-functions') { $azureFunctions = $true }
+        }
+        catch { }
+    }
+    if (-not $azureFunctions) {
+        foreach ($csproj in @($files | Where-Object { $_.Extension -eq '.csproj' })) {
+            try {
+                if ((Get-Content -LiteralPath $csproj.FullName -Raw) -match 'Microsoft\.Azure\.(Functions|WebJobs)') { $azureFunctions = $true; break }
+            }
+            catch { }
+        }
+    }
+
+    # --- pure static site detection (HTML/assets only, no build tooling or framework) ---
+    $hasHtml = [bool]($files | Where-Object { $_.Extension -in @('.html', '.htm') })
+    $pureStaticSite = ($hasHtml -and $langs.Count -eq 0 -and $frameworks.Count -eq 0)
 
     # --- workspace emptiness ---
     $workspaceEmpty = ($files.Count -eq 0)
@@ -211,6 +245,7 @@ function Invoke-AutoCollect {
         detectedLanguages  = @($langs | Select-Object -Unique)
         detectedFrameworks = @($frameworks | Select-Object -Unique)
         existingInfra    = $existingInfra
+        componentSignals = @{ aspire = $aspire; azureFunctions = $azureFunctions; pureStaticSite = $pureStaticSite }
         codebaseMarkers  = @{ copilotSdk = $copilotSdk }
         gitRoot          = $gitRoot
         existingPlan     = (Test-Path -LiteralPath $planPath)
@@ -276,6 +311,7 @@ function Write-DeploymentPlan {
     $classification = if ($req) { $req['classification'] } else { '_TBD_' }
     $scale          = if ($req) { $req['scale'] } else { '_TBD_' }
     $budget         = if ($req) { $req['budget'] } else { '_TBD_' }
+    $compliance     = if ($req -and $req['compliance']) { $req['compliance'] } else { '_TBD_' }
 
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.AppendLine('# Azure Deployment Plan')
@@ -301,9 +337,17 @@ function Write-DeploymentPlan {
     [void]$sb.AppendLine("| Classification | $classification |")
     [void]$sb.AppendLine("| Scale | $scale |")
     [void]$sb.AppendLine("| Budget | $budget |")
+    [void]$sb.AppendLine("| Compliance | $compliance |")
     [void]$sb.AppendLine("| **Subscription** | $sub |")
     [void]$sb.AppendLine("| **Location** | $loc |")
     [void]$sb.AppendLine('')
+    $policy = (Get-ByPath $State 'input.policyConstraints')
+    if ($policy -and @($policy).Count -gt 0) {
+        [void]$sb.AppendLine('### Policy Constraints')
+        [void]$sb.AppendLine('')
+        foreach ($p in $policy) { [void]$sb.AppendLine("- $p") }
+        [void]$sb.AppendLine('')
+    }
     [void]$sb.AppendLine('---')
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine('## 3. Components Detected')
@@ -481,29 +525,78 @@ Also set `input.goal` to a one-line statement of what the user wants.
     },
     @{
         id = 'requirements'; phase = 1; title = 'Gather requirements'
-        refs = @('references/requirements.md')
+        refs = @()
         guidance = @'
-Use `ask_user` to gather deployment requirements, then record them.
+Use `ask_user` to gather deployment requirements, then record them. Confirm each
+of: classification, scale, budget, and compliance/data-residency needs.
+
+Classification (drives reliability + monitoring footprint):
+  - POC          → minimal infra, cost-optimized
+  - Development   → balanced, team-focused internal tooling
+  - Production    → full reliability, monitoring, customer-facing
+
+Scale (drives SKUs + redundancy):
+  - Small  (<1K users)     → single region, basic SKUs
+  - Medium (1K-100K users) → auto-scaling, multi-zone
+  - Large  (100K+ users)   → multi-region, premium SKUs
+
+Budget (drives SKU tier):
+  - Cost-Optimized → minimize spend, lower SKUs
+  - Balanced        → value for money, standard SKUs
+  - Performance     → maximum capability, premium SKUs
+
+Compliance (drives region + security controls): data residency (region
+constraints), industry regulations (security controls), internal policies
+(approval workflows).
+
 Set `input.requirements` to an object:
   { "classification": "POC|Development|Production",
     "scale": "Small|Medium|Large",
-    "budget": "Cost-Optimized|Balanced|Performance" }
+    "budget": "Cost-Optimized|Balanced|Performance",
+    "compliance": "free text, or 'None' " }
+
+Note: Azure Policy enforcement constraints are gathered separately in the
+azure-context step once a subscription is confirmed.
 '@
         needs = @(
-            @{ Path = 'input.requirements'; Prompt = 'Requirements object: { classification, scale, budget }' }
+            @{ Path = 'input.requirements'; Prompt = 'Requirements object: { classification, scale, budget, compliance }' }
         )
     },
     @{
         id = 'scan'; phase = 1; title = 'Scan codebase'
-        refs = @('references/scan.md')
+        refs = @()
         guidance = @'
-The script auto-detected languages/frameworks (`auto.detectedLanguages`,
-`auto.detectedFrameworks`). Review the code and produce a confirmed component list.
+The script already auto-detected (see `auto.*`):
+  - `auto.detectedLanguages`  — nodejs/dotnet/python/java/go/rust
+  - `auto.detectedFrameworks` — react/next/express/flask/django/fastapi/etc.
+  - `auto.existingInfra`      — azureYaml/bicep/terraform/dockerfile/githubActions/azurePipelines
+  - `auto.componentSignals`   — aspire / azureFunctions / pureStaticSite
+  - `auto.codebaseMarkers`    — copilotSdk (specialized-skill trigger)
+
+Review the code and classify each component. Map signals to component types:
+  - React/Vue/Angular in package.json        → SPA Frontend
+  - Only .html/.css/.js, no package.json       → Pure Static Site
+  - Express/Fastify/Koa, Flask/FastAPI/Django → API Service
+  - Next.js/Nuxt                               → SSR Web App
+  - Celery/Bull/Agenda                         → Background Worker
+  - azure-functions SDK                        → Azure Function
+  - *.AppHost.csproj / Aspire.Hosting          → .NET Aspire App
+
+Caveats:
+  - Pure Static Site (`auto.componentSignals.pureStaticSite` true): do NOT add a
+    `language` field to azure.yaml — it triggers unwanted build steps.
+  - .NET Aspire (`auto.componentSignals.aspire` true): prefer
+    `azd init --from-code -e <env>` over manual azure.yaml. If the AppHost calls
+    `AddAzureFunctionsProject`, you MUST add
+    `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` before deploy.
+    See `references/aspire.md` for the full procedure.
+
 Set `input.components` to an array of objects:
-  [ { "name": "...", "type": "Frontend|API|Worker|...", "technology": "...", "path": "..." } ]
+  [ { "name": "...", "type": "Frontend|API|Worker|Function|Aspire|Static|...",
+      "technology": "...", "path": "...", "dependsOn": ["PostgreSQL", "api", ...] } ]
 '@
         needs = @(
-            @{ Path = 'input.components'; Prompt = 'Array of components: { name, type, technology, path }' }
+            @{ Path = 'input.components'; Prompt = 'Array of components: { name, type, technology, path, dependsOn }' }
         )
     },
     @{
@@ -542,11 +635,28 @@ Set `input.architecture` to an array of objects:
 Confirm the Azure subscription and target region with the user via `ask_user`.
 The script attempted `az account show`; results are in `auto.azContext`.
 Set `input.subscription` to the subscription name or id.
-Set `input.location` to the Azure region (e.g., "eastus2").
+Set `input.location` to the Azure region (e.g., "eastus2"). Honor any data-residency
+constraint captured in `input.requirements.compliance` when choosing the region.
+
+After the subscription is confirmed, query Azure Policy assignments to discover
+enforcement constraints BEFORE finalizing architecture (skipping this causes
+deployment failures when policy denies resource creation):
+  mcp_azure_mcp_policy(command: "policy_assignment_list", subscription: "<subscriptionId>")
+
+Record discovered constraints so they feed architecture + generation. Watch for:
+  - Blocked resource types / SKUs  → exclude from architecture
+  - Required tags                  → add to all Bicep/Terraform resources
+  - Allowed regions                → restrict location choices
+  - Network restrictions (no public endpoints) → adjust networking/access
+  - Storage policies (deny shared key) → use policy-compliant auth
+  - Naming conventions             → apply to resource naming
+
+Set `input.policyConstraints` to an array of short strings (empty array if none).
 '@
         needs = @(
             @{ Path = 'input.subscription'; Prompt = 'Confirmed subscription name or id (auto.azContext has the detected one)' },
-            @{ Path = 'input.location'; Prompt = 'Confirmed Azure region' }
+            @{ Path = 'input.location'; Prompt = 'Confirmed Azure region' },
+            @{ Path = 'input.policyConstraints'; Prompt = 'Array of policy constraint strings (empty array if none found)' }
         )
         auto = {
             param($State)
