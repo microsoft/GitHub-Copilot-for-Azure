@@ -416,10 +416,23 @@ $Steps = @(
         id = 'specialized-check'; phase = 1; title = 'Specialized technology check'
         refs = @('references/specialized-routing.md')
         guidance = @'
-Decide whether a specialized skill should handle this request FIRST.
-- Codebase markers already scanned by the script are in `auto.codebaseMarkers`.
-- ALSO inspect the user's PROMPT for keywords (copilot SDK, AWS/GCP/Lambda migration,
-  APIM, AI gateway, Azure Functions, durable/orchestration). See the routing reference.
+Decide whether a specialized skill should handle this request FIRST. Check the user's
+PROMPT TEXT, not just existing code — critical for greenfield projects with no codebase.
+Codebase markers already scanned by the script are in `auto.codebaseMarkers`.
+
+Routing (see specialized-routing.md for the full table):
+- copilot SDK / copilot app / @github/copilot-sdk / CopilotClient / sendAndWait
+    -> invoke **azure-hosted-copilot-sdk**, then resume by re-running this script.
+- AWS / GCP / Lambda cross-cloud migration
+    -> invoke **azure-cloud-migrate** (do NOT continue here).
+- Azure Functions / function app / timer or service-bus trigger / func new
+    -> STAY here; prefer Azure Functions templates at the architecture/generate steps.
+- APIM / AI gateway / durable orchestration
+    -> STAY here; load the matching service reference when you reach architecture.
+
+Re-entry guard: if this run is a RESUME from a specialized skill that already executed,
+set matched=false with notes="resumed from <skill>" so the workflow proceeds.
+
 Set `input.specializedRouting` to an object:
   { "matched": true|false, "skill": "<skill-name or null>", "notes": "<why>" }
 If matched (and not a resume), invoke that skill first, then re-run this script.
@@ -430,13 +443,30 @@ If matched (and not a resume), invoke that skill first, then re-run this script.
     },
     @{
         id = 'analyze'; phase = 1; title = 'Analyze workspace (NEW / MODIFY / MODERNIZE)'
-        refs = @('references/analyze.md')
+        refs = @()
         guidance = @'
-Confirm the workspace mode. The script proposed one from file signals
-(`auto.workspaceEmpty`, `auto.existingInfra`). Confirm or correct it.
-- NEW: empty workspace or brand-new app
-- MODIFY: existing Azure app, adding features
-- MODERNIZE: existing non-Azure app being moved to Azure
+Choose exactly one workspace mode. The script proposed one in `auto.proposedMode` from
+file signals (`auto.workspaceEmpty`, `auto.existingInfra`). Confirm or correct it.
+
+Modes:
+- NEW       — empty workspace, or the user wants to create a new app from scratch.
+- MODIFY    — existing Azure app (has azure.yaml/infra); user adds features/components.
+- MODERNIZE — existing non-Azure app being moved to Azure (add Azure support first).
+
+Decision tree:
+- Create a new application                      -> NEW
+- Add/change features to an existing app
+    - has azure.yaml or infra (see auto.existingInfra) -> MODIFY
+    - no Azure config                                  -> MODERNIZE
+- Migrate/modernize for Azure
+    - cross-cloud (AWS/GCP/Lambda) -> stop; this should have routed to azure-cloud-migrate
+    - on-prem or generic           -> MODERNIZE
+
+Detection signals (already gathered in `auto`):
+  azureYaml=AZD project (MODIFY likely) · bicep/terraform=existing IaC ·
+  dockerfile=containerized · workspaceEmpty=NEW or MODERNIZE.
+Note: having azure.yaml does NOT mean skip to validate — the user may want to extend it.
+
 Set `input.mode` to "NEW", "MODIFY", or "MODERNIZE".
 Also set `input.goal` to a one-line statement of what the user wants.
 '@
@@ -589,8 +619,21 @@ Set `input.researchDone` to true when finished.
         refs = @('references/generate.md')
         guidance = @'
 Generate infrastructure and configuration files into the workspace (./infra, azure.yaml
-for AZD, Dockerfiles under src/<component>/ as needed). For Azure Functions, follow the
-composition rules and use the functions_template_get MCP tool — never hand-write IaC.
+for AZD, Dockerfiles under src/<component>/ as needed).
+
+⛔ If the target compute is Azure Functions, load the composition algorithm BEFORE
+generating any infrastructure:
+  1. Load `references/services/functions/templates/selection.md` (base template + recipe).
+  2. Load `references/services/functions/templates/recipes/composition.md` (the algorithm).
+  3. Use the `functions_template_get` MCP tool to list/fetch templates and write
+     functionFiles[] + projectFiles[] directly — NEVER hand-write Bicep/Terraform.
+     Fallback to `azd init -t <template>` / `func init` / `func new` only when composing
+     multiple recipes and the required templates are not found.
+  The Functions bicep.md/terraform.md files are REFERENCE DOCS, not templates to copy —
+  hand-writing from them yields missing RBAC and broken managed identity.
+For other compute (Container Apps, App Service, Static Web Apps) load their
+`references/services/<service>/README.md` for guidance.
+
 Set `input.generateDone` to true when artifacts are written.
 '@
         needs = @(
