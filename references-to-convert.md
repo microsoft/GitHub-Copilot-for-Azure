@@ -32,14 +32,14 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [x] references/resources-limits-quotas.md
 - [x] references/runtimes/nodejs.md
 - [x] references/scan.md
-- [ ] references/sdk/azd-deployment.md
-- [ ] references/sdk/azure-appconfiguration-java.md
-- [ ] references/sdk/azure-appconfiguration-py.md
-- [ ] references/sdk/azure-appconfiguration-ts.md
-- [ ] references/sdk/azure-identity-dotnet.md
-- [ ] references/sdk/azure-identity-java.md
-- [ ] references/sdk/azure-identity-py.md
-- [ ] references/sdk/azure-identity-ts.md
+- [x] references/sdk/azd-deployment.md
+- [x] references/sdk/azure-appconfiguration-java.md
+- [x] references/sdk/azure-appconfiguration-py.md
+- [x] references/sdk/azure-appconfiguration-ts.md
+- [x] references/sdk/azure-identity-dotnet.md
+- [x] references/sdk/azure-identity-java.md
+- [x] references/sdk/azure-identity-py.md
+- [x] references/sdk/azure-identity-ts.md
 - [x] references/security.md
 - [ ] references/services/aks/addons.md
 - [ ] references/services/aks/bicep.md
