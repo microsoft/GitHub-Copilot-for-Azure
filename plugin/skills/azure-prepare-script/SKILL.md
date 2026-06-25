@@ -94,13 +94,6 @@ for provisioning-limit checks.
 | Quota step blocks with `_TBD_` entries | Provisioning checklist incomplete | Invoke **azure-quotas**, complete the table, set `input.quotaChecklistMarkdown` |
 | Plan file missing after `finalize-plan` | Step not reached yet | Continue the loop; the script generates it automatically before `approval` |
 
-## Reference Index
-
-The driver script points you to these references at the relevant step. They remain
-authoritative for deep detail; consult the one the `NEXT ACTION` block names.
-
-- Functions: [services/functions/durable.md](references/services/functions/durable.md), [services/durable-task-scheduler/README.md](references/services/durable-task-scheduler/README.md), [services/durable-task-scheduler/bicep.md](references/services/durable-task-scheduler/bicep.md), [services/sql-database/bicep.md](references/services/sql-database/bicep.md)
-
 ## Next
 
 > **⛔ MANDATORY NEXT STEP — DO NOT SKIP**

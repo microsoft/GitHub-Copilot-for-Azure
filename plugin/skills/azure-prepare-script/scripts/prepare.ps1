@@ -601,6 +601,38 @@ function Test-ArchitectureUsesService {
     return $false
 }
 
+function Get-ServiceReadmeRefs {
+    # Maps each Azure service named in the LM-provided architecture to its reference README
+    # under scripts/references/services/, so the research step can name the exact files to
+    # read instead of a <service> placeholder. Returns a deduped list of README paths.
+    param([hashtable]$State)
+    $map = [ordered]@{
+        'container app'                     = 'container-apps'
+        'app service'                       = 'app-service'
+        'static web'                        = 'static-web-apps'
+        'aks|kubernetes'                    = 'aks'
+        'cosmos'                            = 'cosmos-db'
+        'sql'                               = 'sql-database'
+        'key vault'                         = 'key-vault'
+        'service bus'                       = 'service-bus'
+        'event grid'                        = 'event-grid'
+        'logic app'                         = 'logic-apps'
+        'storage|blob'                      = 'storage'
+        'application insights|app insights' = 'app-insights'
+        'openai|foundry|cognitive'          = 'foundry'
+        'durable'                           = 'durable-task-scheduler'
+        'function'                          = 'functions'
+    }
+    $dirs = [System.Collections.Generic.List[string]]::new()
+    foreach ($a in @($State.input.architecture)) {
+        $svc = "$($a.azureService)".ToLower()
+        foreach ($pat in $map.Keys) {
+            if ($svc -match $pat) { $d = $map[$pat]; if (-not $dirs.Contains($d)) { $dirs.Add($d) } }
+        }
+    }
+    return @($dirs | ForEach-Object { "scripts/references/services/$_/README.md" })
+}
+
 # ---------------------------------------------------------------------------
 # Step definitions (ordered). Each step:
 #   id          unique id, also key under state.steps
@@ -644,8 +676,8 @@ Routing table — check TOP TO BOTTOM, first match wins:
 5. (LOWEST) workflow / orchestration / multi-step / pipeline / fan-out-fan-in / saga /
    long-running process / durable / order processing
      -> STAY here; select the **durable** recipe. You MUST load the durable + DTS
-        references (services/functions/durable.md, services/durable-task-scheduler/
-        README.md, services/durable-task-scheduler/bicep.md) at architecture/generate.
+        references (scripts/references/services/functions/durable.md, scripts/references/services/durable-task-scheduler/
+        README.md, scripts/references/services/durable-task-scheduler/bicep.md) at architecture/generate.
 
 Re-entry guard: if this run is a RESUME from a specialized skill that already executed
 (e.g. azure-hosted-copilot-sdk handing back, or python-appservice-deploy needing full
@@ -826,7 +858,7 @@ README above for the generate step.
         refs = @()
         guidance = @'
 Select a hosting stack, map each component to an Azure service + SKU, and record
-rationale. Load per-service detail under `references/services/<service>/README.md`
+rationale. Load per-service detail under `scripts/references/services/<service>/README.md`
 as needed.
 
 Stack selection:
@@ -864,7 +896,7 @@ Integration: Queue→Service Bus; Pub/Sub→Event Grid; Streaming→Event Hubs.
 Workflow & orchestration:
   - Multi-step workflow → Durable Functions + Durable Task Scheduler (DTS).
     ⚠️ DTS is the REQUIRED managed backend — do NOT use Azure Storage or MSSQL
-    backends. See `references/services/functions/durable.md`.
+    backends. See `scripts/references/services/functions/durable.md`.
   - Low-code / visual workflow → Logic Apps.
 
 Supporting services — ALWAYS include: Log Analytics (logging), Application
@@ -1017,13 +1049,19 @@ plan regenerates before asking again.
     @{
         id = 'research'; phase = 2; title = 'Research components'
         refs = @('scripts/references/region-availability.md')
+        dynamicRefs = {
+            param($State)
+            # Name the exact per-service README for every service in the architecture so the
+            # LM reads the right reference rather than resolving a <service> placeholder.
+            Get-ServiceReadmeRefs $State
+        }
         guidance = @'
 For each Azure service in `input.architecture`, gather best practices BEFORE
 generating artifacts, then record findings.
 
 Process:
   1. List all services from the architecture plan.
-  2. Load each service's `references/services/<service>/README.md` first, then
+  2. Load each service's `scripts/references/services/<service>/README.md` first, then
      specific files (bicep.md / terraform.md / scaling.md / auth.md / sdk.md / etc.)
      only as needed (progressive loading).
   3. Check resource naming rules (valid chars, length, uniqueness scope) per
@@ -1039,21 +1077,21 @@ Process:
   8. Invoke related skills for deeper guidance (see routing below).
   9. Document findings in `.azure/deployment-plan.md` under `## Research Summary`.
 
-Service → reference / related skill (load README under references/services/<svc>/):
+Service → reference / related skill (load README under scripts/references/services/<svc>/):
   - Container Apps / App Service → +azure-diagnostics, azure-observability, azure-nodejs-production
   - AKS → +azure-networking
   - Functions → (stay here; see composition mandate below)
   - Storage → +azure-storage
   - API Management → scripts/references/apim.md, +azure-aigateway (AI Gateway policies)
-  - Durable Functions → services/functions/durable.md + services/durable-task-scheduler/
+  - Durable Functions → scripts/references/services/functions/durable.md + scripts/references/services/durable-task-scheduler/
   - Key Vault → +azure-keyvault-expiration-audit;  Managed Identity → +entra-app-registration
   - Application Insights → +appinsights-instrumentation;  Log Analytics → +azure-observability, azure-kusto
-  - Azure OpenAI → services/foundry/ + microsoft-foundry;  AI Search → +azure-ai
+  - Azure OpenAI → scripts/references/services/foundry/ + microsoft-foundry;  AI Search → +azure-ai
 
 Skill routing for special scenarios:
   - GitHub Copilot SDK → invoke **azure-hosted-copilot-sdk** (scaffold+config), then resume.
-  - Azure Functions → STAY here: load services/functions/templates/selection.md (decision
-    tree) → follow services/functions/templates/recipes/composition.md (algorithm). Never
+  - Azure Functions → STAY here: load scripts/references/services/functions/templates/selection.md (decision
+    tree) → follow scripts/references/services/functions/templates/recipes/composition.md (algorithm). Never
     synthesize IaC by hand.
   - PostgreSQL passwordless / security hardening → handle directly with service refs.
   - App Insights instrumentation → appinsights-instrumentation; AI apps → microsoft-foundry;
@@ -1114,8 +1152,8 @@ project, scaffold in a separate new dir and migrate changes in with confirmed ed
 
 ⛔ If the target compute is Azure Functions, load the composition algorithm BEFORE
 generating any infrastructure:
-  1. Load `references/services/functions/templates/selection.md` (base template + recipe).
-  2. Load `references/services/functions/templates/recipes/composition.md` (the algorithm).
+  1. Load `scripts/references/services/functions/templates/selection.md` (base template + recipe).
+  2. Load `scripts/references/services/functions/templates/recipes/composition.md` (the algorithm).
   3. Use the `functions_template_get` MCP tool to list/fetch templates and write
      functionFiles[] + projectFiles[] directly — NEVER hand-write Bicep/Terraform.
      Fallback to `azd init -t <template>` / `func init` / `func new` only when composing
@@ -1123,7 +1161,7 @@ generating any infrastructure:
   The Functions bicep.md/terraform.md files are REFERENCE DOCS, not templates to copy —
   hand-writing from them yields missing RBAC and broken managed identity.
 For other compute (Container Apps, App Service, Static Web Apps) load their
-`references/services/<service>/README.md`. Load the selected recipe's README (above)
+`scripts/references/services/<service>/README.md`. Load the selected recipe's README (above)
 for detailed generation steps.
 
 Before generating IaC, research best practices via MCP (per recipe):
@@ -1150,7 +1188,7 @@ Security requirements (MANDATORY):
     HTTPS only, TLS 1.2+.
   - SQL Server Bicep MUST use Entra-only auth — omit administratorLogin /
     administratorLoginPassword entirely (incl. conditional branches); these names must
-    not appear in any .bicep. See `references/services/sql-database/bicep.md`.
+    not appear in any .bicep. See `scripts/references/services/sql-database/bicep.md`.
   - SQL + Managed Identity → MUST generate scripts/grant-sql-access.sh + .ps1 and a
     `postprovision` hook in azure.yaml (ARM role assignments only grant control-plane).
   - App Service Bicep → every Microsoft.Web/sites MUST carry

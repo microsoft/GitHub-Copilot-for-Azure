@@ -41,126 +41,126 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [x] references/sdk/azure-identity-py.md
 - [x] references/sdk/azure-identity-ts.md
 - [x] references/security.md
-- [ ] references/services/aks/addons.md
-- [ ] references/services/aks/bicep.md
-- [ ] references/services/aks/manifests.md
-- [ ] references/services/aks/README.md
-- [ ] references/services/app-insights/README.md
-- [ ] references/services/app-service/bicep.md
-- [ ] references/services/app-service/custom-domains.md
-- [ ] references/services/app-service/deployment-slots.md
-- [ ] references/services/app-service/networking.md
-- [ ] references/services/app-service/README.md
-- [ ] references/services/app-service/scaling.md
-- [ ] references/services/app-service/sku-selection.md
-- [ ] references/services/app-service/templates/recipes/auth/README.md
-- [ ] references/services/app-service/templates/recipes/auth/source/dotnet.md
-- [ ] references/services/app-service/templates/recipes/auth/source/nodejs.md
-- [ ] references/services/app-service/templates/recipes/auth/source/python.md
-- [ ] references/services/app-service/templates/recipes/composition.md
-- [ ] references/services/app-service/templates/recipes/cosmos/README.md
-- [ ] references/services/app-service/templates/recipes/cosmos/source/dotnet.md
-- [ ] references/services/app-service/templates/recipes/cosmos/source/nodejs.md
-- [ ] references/services/app-service/templates/recipes/cosmos/source/python.md
-- [ ] references/services/app-service/templates/recipes/README.md
-- [ ] references/services/app-service/templates/recipes/redis/README.md
-- [ ] references/services/app-service/templates/recipes/redis/source/dotnet.md
-- [ ] references/services/app-service/templates/recipes/redis/source/nodejs.md
-- [ ] references/services/app-service/templates/recipes/redis/source/python.md
-- [ ] references/services/app-service/templates/recipes/sql/README.md
-- [ ] references/services/app-service/templates/recipes/sql/source/dotnet.md
-- [ ] references/services/app-service/templates/recipes/sql/source/nodejs.md
-- [ ] references/services/app-service/templates/recipes/sql/source/python.md
-- [ ] references/services/app-service/templates/selection.md
-- [ ] references/services/app-service/templates/web-api.md
-- [ ] references/services/app-service/templates/web-app.md
-- [ ] references/services/container-apps/bicep.md
-- [ ] references/services/container-apps/day2-operations.md
-- [ ] references/services/container-apps/environment.md
-- [ ] references/services/container-apps/health-probes.md
-- [ ] references/services/container-apps/networking.md
-- [ ] references/services/container-apps/README.md
-- [ ] references/services/container-apps/revisions.md
-- [ ] references/services/container-apps/scaling.md
-- [ ] references/services/container-apps/terraform.md
-- [ ] references/services/cosmos-db/bicep.md
-- [ ] references/services/cosmos-db/partitioning.md
-- [ ] references/services/cosmos-db/README.md
-- [ ] references/services/cosmos-db/sdk.md
-- [ ] references/services/durable-task-scheduler/bicep.md
-- [ ] references/services/durable-task-scheduler/dotnet.md
-- [ ] references/services/durable-task-scheduler/java.md
-- [ ] references/services/durable-task-scheduler/javascript.md
-- [ ] references/services/durable-task-scheduler/python.md
-- [ ] references/services/durable-task-scheduler/README.md
-- [ ] references/services/event-grid/bicep.md
-- [ ] references/services/event-grid/README.md
-- [ ] references/services/event-grid/subscriptions.md
-- [ ] references/services/foundry/README.md
-- [ ] references/services/foundry/region-availability.md
-- [ ] references/services/functions/aspire-containerapps.md
-- [ ] references/services/functions/bicep.md
-- [ ] references/services/functions/durable.md
-- [ ] references/services/functions/README.md
-- [ ] references/services/functions/templates/base/eval/python.md
-- [ ] references/services/functions/templates/base/eval/summary.md
-- [ ] references/services/functions/templates/base/eval/typescript.md
-- [ ] references/services/functions/templates/README.md
-- [ ] references/services/functions/templates/recipes/blob-eventgrid/eval/python.md
-- [ ] references/services/functions/templates/recipes/blob-eventgrid/eval/summary.md
-- [ ] references/services/functions/templates/recipes/blob-eventgrid/README.md
-- [ ] references/services/functions/templates/recipes/common/dotnet-entry-point.md
-- [ ] references/services/functions/templates/recipes/common/error-handling.md
-- [ ] references/services/functions/templates/recipes/common/health-check.md
-- [ ] references/services/functions/templates/recipes/common/nodejs-entry-point.md
-- [ ] references/services/functions/templates/recipes/composition.md
-- [ ] references/services/functions/templates/recipes/cosmosdb/eval/python.md
-- [ ] references/services/functions/templates/recipes/cosmosdb/eval/summary.md
-- [ ] references/services/functions/templates/recipes/cosmosdb/eval/typescript.md
-- [ ] references/services/functions/templates/recipes/cosmosdb/README.md
-- [ ] references/services/functions/templates/recipes/durable/eval/python.md
-- [ ] references/services/functions/templates/recipes/durable/eval/summary.md
-- [ ] references/services/functions/templates/recipes/durable/README.md
-- [ ] references/services/functions/templates/recipes/eventhubs/eval/python.md
-- [ ] references/services/functions/templates/recipes/eventhubs/eval/summary.md
-- [ ] references/services/functions/templates/recipes/eventhubs/README.md
-- [ ] references/services/functions/templates/recipes/mcp/eval/python.md
-- [ ] references/services/functions/templates/recipes/mcp/eval/summary.md
-- [ ] references/services/functions/templates/recipes/mcp/README.md
-- [ ] references/services/functions/templates/recipes/README.md
-- [ ] references/services/functions/templates/recipes/servicebus/eval/python.md
-- [ ] references/services/functions/templates/recipes/servicebus/eval/summary.md
-- [ ] references/services/functions/templates/recipes/servicebus/eval/typescript.md
-- [ ] references/services/functions/templates/recipes/servicebus/README.md
-- [ ] references/services/functions/templates/recipes/sql/eval/python.md
-- [ ] references/services/functions/templates/recipes/sql/eval/summary.md
-- [ ] references/services/functions/templates/recipes/sql/README.md
-- [ ] references/services/functions/templates/recipes/timer/eval/python.md
-- [ ] references/services/functions/templates/recipes/timer/eval/summary.md
-- [ ] references/services/functions/templates/recipes/timer/README.md
-- [ ] references/services/functions/templates/selection.md
-- [ ] references/services/functions/terraform.md
-- [ ] references/services/key-vault/bicep.md
-- [ ] references/services/key-vault/README.md
-- [ ] references/services/key-vault/sdk.md
-- [ ] references/services/logic-apps/bicep.md
-- [ ] references/services/logic-apps/README.md
-- [ ] references/services/logic-apps/triggers.md
-- [ ] references/services/service-bus/bicep.md
-- [ ] references/services/service-bus/patterns.md
-- [ ] references/services/service-bus/README.md
-- [ ] references/services/sql-database/auth.md
-- [ ] references/services/sql-database/bicep.md
-- [ ] references/services/sql-database/README.md
-- [ ] references/services/sql-database/sdk.md
-- [ ] references/services/static-web-apps/bicep.md
-- [ ] references/services/static-web-apps/deployment.md
-- [ ] references/services/static-web-apps/README.md
-- [ ] references/services/static-web-apps/region-availability.md
-- [ ] references/services/static-web-apps/routing.md
-- [ ] references/services/static-web-apps/terraform.md
-- [ ] references/services/storage/access.md
-- [ ] references/services/storage/bicep.md
-- [ ] references/services/storage/README.md
+- [x] references/services/aks/addons.md
+- [x] references/services/aks/bicep.md
+- [x] references/services/aks/manifests.md
+- [x] references/services/aks/README.md
+- [x] references/services/app-insights/README.md
+- [x] references/services/app-service/bicep.md
+- [x] references/services/app-service/custom-domains.md
+- [x] references/services/app-service/deployment-slots.md
+- [x] references/services/app-service/networking.md
+- [x] references/services/app-service/README.md
+- [x] references/services/app-service/scaling.md
+- [x] references/services/app-service/sku-selection.md
+- [x] references/services/app-service/templates/recipes/auth/README.md
+- [x] references/services/app-service/templates/recipes/auth/source/dotnet.md
+- [x] references/services/app-service/templates/recipes/auth/source/nodejs.md
+- [x] references/services/app-service/templates/recipes/auth/source/python.md
+- [x] references/services/app-service/templates/recipes/composition.md
+- [x] references/services/app-service/templates/recipes/cosmos/README.md
+- [x] references/services/app-service/templates/recipes/cosmos/source/dotnet.md
+- [x] references/services/app-service/templates/recipes/cosmos/source/nodejs.md
+- [x] references/services/app-service/templates/recipes/cosmos/source/python.md
+- [x] references/services/app-service/templates/recipes/README.md
+- [x] references/services/app-service/templates/recipes/redis/README.md
+- [x] references/services/app-service/templates/recipes/redis/source/dotnet.md
+- [x] references/services/app-service/templates/recipes/redis/source/nodejs.md
+- [x] references/services/app-service/templates/recipes/redis/source/python.md
+- [x] references/services/app-service/templates/recipes/sql/README.md
+- [x] references/services/app-service/templates/recipes/sql/source/dotnet.md
+- [x] references/services/app-service/templates/recipes/sql/source/nodejs.md
+- [x] references/services/app-service/templates/recipes/sql/source/python.md
+- [x] references/services/app-service/templates/selection.md
+- [x] references/services/app-service/templates/web-api.md
+- [x] references/services/app-service/templates/web-app.md
+- [x] references/services/container-apps/bicep.md
+- [x] references/services/container-apps/day2-operations.md
+- [x] references/services/container-apps/environment.md
+- [x] references/services/container-apps/health-probes.md
+- [x] references/services/container-apps/networking.md
+- [x] references/services/container-apps/README.md
+- [x] references/services/container-apps/revisions.md
+- [x] references/services/container-apps/scaling.md
+- [x] references/services/container-apps/terraform.md
+- [x] references/services/cosmos-db/bicep.md
+- [x] references/services/cosmos-db/partitioning.md
+- [x] references/services/cosmos-db/README.md
+- [x] references/services/cosmos-db/sdk.md
+- [x] references/services/durable-task-scheduler/bicep.md
+- [x] references/services/durable-task-scheduler/dotnet.md
+- [x] references/services/durable-task-scheduler/java.md
+- [x] references/services/durable-task-scheduler/javascript.md
+- [x] references/services/durable-task-scheduler/python.md
+- [x] references/services/durable-task-scheduler/README.md
+- [x] references/services/event-grid/bicep.md
+- [x] references/services/event-grid/README.md
+- [x] references/services/event-grid/subscriptions.md
+- [x] references/services/foundry/README.md
+- [x] references/services/foundry/region-availability.md
+- [x] references/services/functions/aspire-containerapps.md
+- [x] references/services/functions/bicep.md
+- [x] references/services/functions/durable.md
+- [x] references/services/functions/README.md
+- [x] references/services/functions/templates/base/eval/python.md
+- [x] references/services/functions/templates/base/eval/summary.md
+- [x] references/services/functions/templates/base/eval/typescript.md
+- [x] references/services/functions/templates/README.md
+- [x] references/services/functions/templates/recipes/blob-eventgrid/eval/python.md
+- [x] references/services/functions/templates/recipes/blob-eventgrid/eval/summary.md
+- [x] references/services/functions/templates/recipes/blob-eventgrid/README.md
+- [x] references/services/functions/templates/recipes/common/dotnet-entry-point.md
+- [x] references/services/functions/templates/recipes/common/error-handling.md
+- [x] references/services/functions/templates/recipes/common/health-check.md
+- [x] references/services/functions/templates/recipes/common/nodejs-entry-point.md
+- [x] references/services/functions/templates/recipes/composition.md
+- [x] references/services/functions/templates/recipes/cosmosdb/eval/python.md
+- [x] references/services/functions/templates/recipes/cosmosdb/eval/summary.md
+- [x] references/services/functions/templates/recipes/cosmosdb/eval/typescript.md
+- [x] references/services/functions/templates/recipes/cosmosdb/README.md
+- [x] references/services/functions/templates/recipes/durable/eval/python.md
+- [x] references/services/functions/templates/recipes/durable/eval/summary.md
+- [x] references/services/functions/templates/recipes/durable/README.md
+- [x] references/services/functions/templates/recipes/eventhubs/eval/python.md
+- [x] references/services/functions/templates/recipes/eventhubs/eval/summary.md
+- [x] references/services/functions/templates/recipes/eventhubs/README.md
+- [x] references/services/functions/templates/recipes/mcp/eval/python.md
+- [x] references/services/functions/templates/recipes/mcp/eval/summary.md
+- [x] references/services/functions/templates/recipes/mcp/README.md
+- [x] references/services/functions/templates/recipes/README.md
+- [x] references/services/functions/templates/recipes/servicebus/eval/python.md
+- [x] references/services/functions/templates/recipes/servicebus/eval/summary.md
+- [x] references/services/functions/templates/recipes/servicebus/eval/typescript.md
+- [x] references/services/functions/templates/recipes/servicebus/README.md
+- [x] references/services/functions/templates/recipes/sql/eval/python.md
+- [x] references/services/functions/templates/recipes/sql/eval/summary.md
+- [x] references/services/functions/templates/recipes/sql/README.md
+- [x] references/services/functions/templates/recipes/timer/eval/python.md
+- [x] references/services/functions/templates/recipes/timer/eval/summary.md
+- [x] references/services/functions/templates/recipes/timer/README.md
+- [x] references/services/functions/templates/selection.md
+- [x] references/services/functions/terraform.md
+- [x] references/services/key-vault/bicep.md
+- [x] references/services/key-vault/README.md
+- [x] references/services/key-vault/sdk.md
+- [x] references/services/logic-apps/bicep.md
+- [x] references/services/logic-apps/README.md
+- [x] references/services/logic-apps/triggers.md
+- [x] references/services/service-bus/bicep.md
+- [x] references/services/service-bus/patterns.md
+- [x] references/services/service-bus/README.md
+- [x] references/services/sql-database/auth.md
+- [x] references/services/sql-database/bicep.md
+- [x] references/services/sql-database/README.md
+- [x] references/services/sql-database/sdk.md
+- [x] references/services/static-web-apps/bicep.md
+- [x] references/services/static-web-apps/deployment.md
+- [x] references/services/static-web-apps/README.md
+- [x] references/services/static-web-apps/region-availability.md
+- [x] references/services/static-web-apps/routing.md
+- [x] references/services/static-web-apps/terraform.md
+- [x] references/services/storage/access.md
+- [x] references/services/storage/bicep.md
+- [x] references/services/storage/README.md
 - [x] references/specialized-routing.md
 
