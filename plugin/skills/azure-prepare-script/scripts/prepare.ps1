@@ -1053,10 +1053,41 @@ Set `input.securityDone` to true when hardening is complete.
     },
     @{
         id = 'functional-verify'; phase = 2; title = 'Functional verification'
-        refs = @('references/functional-verification.md')
+        refs = @()
         guidance = @'
-Verify the app works (UI + backend), locally where possible.
-Set `input.functionalVerifyDone` to true when verification passes (or is N/A).
+Verify the app works — both UI and backend — BEFORE marking the plan Ready for
+Validation. This catches broken functionality before it reaches Azure.
+
+Use `ask_user` to offer testing:
+  "Before we deploy, would you like to verify the app works as expected? We can test
+   both the UI and backend to catch issues before they reach Azure."
+If the user declines, set the keys below and move on.
+
+Backend checks: app starts without errors; core API endpoints respond (curl health/
+list/create); data/CRUD operations work against storage/db; auth flows work (tokens,
+managed-identity fallback, login/logout); errors return meaningful responses.
+
+UI checks (if any): page loads in a browser; interactive elements (buttons, forms,
+file inputs, nav) work; data renders from the backend; the core user journey completes
+end-to-end (e.g. upload → view → delete).
+
+Run locally where possible, by detected runtime:
+  - Node.js: `npm install && npm start` (set PORT=3000 if unconfigured)
+  - Python:  `pip install -r requirements.txt && python app.py` (use a venv)
+  - .NET:    `dotnet run` (check launchSettings.json for the port)
+  - Java:    `mvn spring-boot:run` or `gradle bootRun`
+API-only/no UI → test endpoints with curl. Static site → open in a browser.
+WARNING: apps using Azure services (Blob, Cosmos, etc.) need `az login` with adequate
+RBAC, or local emulators (e.g. Azurite). If issues are found, fix and re-test.
+
+Record the outcome in `.azure/deployment-plan.md`:
+  ## Functional Verification
+  - Status: Verified / Skipped
+  - Backend: Tested / Not applicable
+  - UI: Tested / Not applicable
+  - Notes: <any issues found and resolved>
+
+Set `input.functionalVerifyDone` to true when verification passes, is skipped, or N/A.
 '@
         needs = @(
             @{ Path = 'input.functionalVerifyDone'; Prompt = 'true when functional verification is done' }
