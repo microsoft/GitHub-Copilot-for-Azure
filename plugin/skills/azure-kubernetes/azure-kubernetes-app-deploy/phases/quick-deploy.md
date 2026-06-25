@@ -12,7 +12,7 @@ Follow the framework detection table in `references/detection.md`. Scan for sign
 
 ### Port and Health Endpoint Detection
 
-Follow the port and health endpoint detection tables in `references/detection.md` (first match wins). If no health endpoint found, use `/health` as default in probes.
+Follow the port and health endpoint detection tables in `references/detection.md` (first match wins). If none found, use `/health` as default in probes.
 
 ### Existing Artifact Detection
 
@@ -55,21 +55,21 @@ az aks check-acr --resource-group <rg> --name <cluster> --acr <acr-name>.azurecr
 
 If the check fails, attach the ACR (requires confirmation): `az aks update -g <rg> -n <cluster> --attach-acr <acr-name>`
 
-If Azure RBAC is enabled, verify namespace create permission: `kubectl auth can-i create namespaces` — if `no`, stop and offer to use an existing namespace.
+If Azure RBAC is enabled, verify namespace create permission: `kubectl auth can-i create namespaces` — if `no`, stop and offer alternatives: have an admin create it, or deploy to an existing namespace.
 
 If any detection command fails, suggest: `az login`, `az account set -s <subscription-id>`, `az aks get-credentials -g <rg> -n <cluster>`.
 
 ### Knowledge Pack
 
-After framework detection, load the matching pack from `knowledge-packs/frameworks/` if available (see the list in `SKILL.md`).
+After framework detection, load the matching pack from `knowledge-packs/frameworks/` if available (see `SKILL.md`).
 
-Knowledge packs influence Dockerfile optimization, probe configuration, and writable path requirements.
+Knowledge packs influence Dockerfile optimization, probe configuration, and writable paths.
 
 ---
 
 ## Section 2: File Generation
 
-Write all files in a single response turn (batch file writes).
+Write all files in a single response turn.
 
 ### Dockerfile
 
@@ -97,7 +97,7 @@ Generate `.dockerignore` if missing — use the matching template from `template
 
 ### Kubernetes Manifests
 
-**If existing manifests found** (in `k8s/`, `manifests/`, or `deploy/`): Validate against AKS Deployment Safeguards (Section 3) and apply targeted fixes. Do not regenerate existing files — improve them in place.
+**If existing manifests found** (in `k8s/`, `manifests/`, or `deploy/`): Validate against AKS Deployment Safeguards (Section 3) and apply targeted fixes. Do not regenerate — improve in place.
 
 **If no manifests found:** Generate from `templates/k8s/` templates. Replace `<angle-bracket>` placeholders with detected values.
 
@@ -105,7 +105,7 @@ Generate `.dockerignore` if missing — use the matching template from `template
 |----------|----------|-------|
 | `k8s/namespace.yaml` | `templates/k8s/namespace.yaml` | |
 | `k8s/serviceaccount.yaml` | `templates/k8s/serviceaccount.yaml` | Workload Identity |
-| `k8s/deployment.yaml` | `templates/k8s/deployment.yaml` | |
+| `k8s/deployment.yaml` | `templates/k8s/deployment.yaml` | image tag set after `az acr build`, not at generation time |
 | `k8s/service.yaml` | `templates/k8s/service.yaml` | |
 | `k8s/gateway.yaml` | `templates/k8s/gateway.yaml` | Istio only |
 | `k8s/httproute.yaml` | `templates/k8s/httproute.yaml` | Istio only |
@@ -125,7 +125,7 @@ Use the framework-specific defaults from the knowledge pack's "Resource Sizing" 
 
 ### Startup Probe
 
-For slow-start frameworks (Java/Spring Boot, .NET with heavy DI), uncomment the `startupProbe` in the deployment template to prevent liveness restarts during init.
+For slow-start frameworks (Java/Spring Boot, .NET with heavy DI), uncomment `startupProbe` in the deployment template to prevent liveness restarts during init.
 
 ---
 
@@ -171,7 +171,7 @@ IMAGE_TAG=$(git rev-parse --short HEAD)   # fallback: date +%Y%m%d%H%M%S
 az acr build --registry <acr_name> --image <app-name>:$IMAGE_TAG --file Dockerfile .
 ```
 
-**Monorepo:** Adjust `--file` and build context to the app subdirectory (e.g., `--file apps/myapp/Dockerfile apps/myapp/`).
+**Monorepo:** Adjust `--file` and context to the app subdirectory (e.g., `--file apps/myapp/Dockerfile apps/myapp/`).
 
 ### Deploy to cluster
 
