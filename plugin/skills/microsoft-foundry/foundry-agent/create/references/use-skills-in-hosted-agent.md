@@ -11,29 +11,23 @@ How to consume Foundry **skills** (reusable behavioral guidelines) from hosted a
 
 ## How progressive disclosure works
 
-The Agent Framework SDK provides **progressive disclosure** so the model only loads skill content when needed:
-
-1. **Advertise** — At agent startup, skill names and descriptions (~100 tokens each) are injected into the system prompt. The model sees *what skills exist* and *when to use them*.
-2. **Load on demand** — The SDK synthesizes a `load_skill` tool. When the model determines a skill is relevant, it calls `load_skill(skill_name)` to retrieve the full `SKILL.md` body.
-3. **Follow** — The model incorporates the loaded skill instructions into its behavior for the remainder of the conversation turn.
-
-This keeps context usage low — only skills relevant to the current query consume tokens.
+The Agent Framework SDK injects skill names/descriptions into the system prompt (~100 tokens each) and synthesizes a `load_skill` tool. When the model determines a skill is relevant, it calls `load_skill(name)` to retrieve the full body on demand — keeping context usage low.
 
 ## Choosing an approach
 
 | | Direct Download | Via Toolbox MCP |
 |--|---|---|
-| How it works | Agent downloads skill ZIPs at startup, extracts to disk, builds provider from local files | Agent connects to toolbox MCP endpoint; SDK reads `resources/list` and wraps into `load_skill` |
-| Provider | `SkillsProvider.from_paths()` (Python) / `AgentSkillsProvider(dir)` (C#) | `MCPStreamableHTTPTool` (Python) / `AgentSkillsProviderBuilder().UseMcpSkills(mcpClient).Build()` (C#) |
-| When skills update | Redeploy agent to pick up new versions | Consumer endpoint picks up new default version automatically (no redeploy) |
-| Feature header | `Foundry-Features: Skills=V1Preview` | `Foundry-Features: Toolboxes=V1Preview` |
-| When to use | Need explicit version control at startup, no toolbox in the project | Agents already consuming a toolbox; want dynamic skill updates without redeployment |
+| How | Downloads ZIPs at startup, builds provider from local files | Connects to toolbox MCP; SDK reads `resources/list` → `load_skill` |
+| Provider | `SkillsProvider.from_paths()` / `AgentSkillsProvider(dir)` | `MCPStreamableHTTPTool` / `AgentSkillsProviderBuilder.UseMcpSkills()` |
+| Skill updates | Redeploy agent | Consumer endpoint picks up new version automatically |
+| Header | `Foundry-Features: Skills=V1Preview` | `Foundry-Features: Toolboxes=V1Preview` |
+| When to use | No toolbox; need explicit version control | Already have a toolbox; want dynamic updates |
 
 ---
 
 ## Approach 1: Direct Download
 
-The agent downloads skill ZIPs at startup via the Skills API, extracts them to disk, and builds a `SkillsProvider` / `AgentSkillsProvider` over the extracted files. The SDK then synthesizes `load_skill` for the model.
+Downloads skill ZIPs at startup, extracts to disk, builds provider. The SDK synthesizes `load_skill` for the model.
 
 ### Env vars
 
@@ -63,9 +57,7 @@ Full working sample: [agent-skills (C#)](https://github.com/microsoft-foundry/fo
 
 ## Approach 2: Via Toolbox MCP
 
-Skills attached to a toolbox are discovered dynamically at runtime through the MCP endpoint. The agent connects to the toolbox, and the SDK reads `resources/list` to discover skills, then wraps them into the `load_skill` progressive disclosure pattern.
-
-**Under the hood:** The toolbox MCP endpoint exposes skills via `resources/list` and `resources/read` with `skill://` URIs (standard MCP resources protocol). See [skill-toolbox.md § How skills appear at runtime](skill-toolbox.md) for raw MCP protocol details.
+Skills attached to a toolbox are discovered dynamically via `resources/list` and wrapped into `load_skill`. See [skill-toolbox.md](skill-toolbox.md) for MCP protocol details.
 
 ### Env vars
 
@@ -74,13 +66,13 @@ Skills attached to a toolbox are discovered dynamically at runtime through the M
 | `FOUNDRY_PROJECT_ENDPOINT` | Project endpoint for SDK calls |
 | `AZURE_AI_MODEL_DEPLOYMENT_NAME` | Model deployment for the agent |
 | `TOOLBOX_ENDPOINT` | Full toolbox MCP endpoint URL (Python preferred) |
-| `TOOLBOX_NAME` | Toolbox name — SDK constructs endpoint from project endpoint (C# preferred) |
+| `TOOLBOX_NAME` | Toolbox name — SDK constructs endpoint (C# preferred) |
 
 ### C#
 
-The sample creates an `McpClient` using `HttpClientTransport` with `StreamableHttp` mode, then builds a skills provider via `AgentSkillsProviderBuilder().UseMcpSkills(mcpClient).Build()`. The framework handles the advertise → load → read lifecycle automatically.
+The sample creates an `McpClient` pointing at the toolbox endpoint, then builds a skills provider via `AgentSkillsProviderBuilder().UseMcpSkills(mcpClient).Build()`. The framework handles the advertise → load → read lifecycle automatically.
 
-**Key classes:** `AgentSkillsProviderBuilder`, `McpClient`, `BearerTokenHandler` (custom `HttpClientHandler` for token injection).
+**Key classes:** `AgentSkillsProviderBuilder`, `McpClient`, `BearerTokenHandler`.
 
 Full working sample: [foundry-toolbox-mcp-skills (C#)](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents/agent-framework/foundry-toolbox-mcp-skills)
 
@@ -88,7 +80,7 @@ Full working sample: [foundry-toolbox-mcp-skills (C#)](https://github.com/micros
 
 ## Deployment
 
-### Provision skills before deploy
+### Provision skills
 
 Skills must exist in the **same project** the deployed agent connects to:
 
@@ -97,22 +89,46 @@ azd ai skill create support-style --file ./skills/support-style/ --force
 azd ai skill create escalation-policy --file ./skills/escalation-policy/ --force
 ```
 
-### Wire env vars
+### Direct download approach
 
 ```bash
-# Direct download approach
 azd env set SKILL_NAMES "support-style,escalation-policy"
-
-# OR toolbox approach (skills already attached to toolbox)
-azd env set TOOLBOX_NAME "agent-tools"
 ```
 
-Add to `<service-dir>/agent.yaml`:
+`agent.yaml`:
 
 ```yaml
 environment_variables:
   - name: SKILL_NAMES
     value: ${SKILL_NAMES}
+```
+
+### Toolbox approach
+
+```bash
+# Create toolbox with skills attached
+cat > tools.yaml <<'EOF'
+description: Agent toolbox with skills and tools
+skills:
+  - name: support-style
+  - name: escalation-policy
+tools:
+  - type: web_search
+    name: web
+EOF
+azd ai toolbox create agent-tools --from-file tools.yaml
+
+# Wire endpoint env var
+ENDPOINT=$(azd ai toolbox show agent-tools -o json | jq -r .endpoint)
+azd env set TOOLBOX_ENDPOINT "$ENDPOINT"
+```
+
+`agent.yaml`:
+
+```yaml
+environment_variables:
+  - name: TOOLBOX_ENDPOINT
+    value: ${TOOLBOX_ENDPOINT}
 ```
 
 Then `azd deploy`.
@@ -148,14 +164,14 @@ azd ai agent invoke --local "Hi, can I return my tent within 30 days?"
 
 | Symptom | Likely cause | Fix |
 |---------|------------|-----|
-| `SKILL.md not found` after download | ZIP doesn't contain `SKILL.md` at root | Ensure skill was created from directory with `SKILL.md` at root |
-| `403` on `beta.skills.download` | Identity missing RBAC | Grant **Foundry User** on the project scope |
-| Agent ignores skills | Skill descriptions don't match user queries | Improve `description` in SKILL.md front matter |
-| Skills load but agent doesn't follow them | Instructions vague or conflicting with system prompt | Refine skill body; test with canary tokens |
-| `asyncio.TimeoutError` (Python) | Slow network or large skill packages | Increase timeout (default 60s) |
+| `SKILL.md not found` after download | ZIP doesn't contain `SKILL.md` at root | Create skill from directory with `SKILL.md` at root |
+| `403` on skill download | Identity missing RBAC | Grant **Foundry User** on project scope |
+| Agent ignores skills | Descriptions don't match user queries | Improve `description` in SKILL.md front matter |
+| Skills load but agent doesn't follow | Instructions vague or conflicting | Refine skill body; add canary token to verify loading |
+| `asyncio.TimeoutError` (Python) | Slow network or large packages | Increase bootstrap timeout (default 60s) |
 | `allow_preview` error (Python) | SDK client missing preview flag | `AIProjectClient(allow_preview=True)` |
-| HTTP 500 on skill download (C#) | Missing `Foundry-Features: Skills=V1Preview` header | Register `FoundryFeaturesPolicy` on the client |
-| `SKILL_NAMES` not set in deployed agent | Env var missing from `agent.yaml` | Add to `environment_variables[]`, then `azd deploy` |
-| MCP client timeout (Toolbox) | Auth token expired or wrong scope | Use `https://ai.azure.com/.default` scope |
-| Skills not discovered from toolbox | Toolbox version without skills is the default | Run `azd ai toolbox publish <toolbox> <version>` |
-| `Invalid skill name 'xxx:download'` (Python) | SDK `v2.1.0` uses `:download` action syntax not supported by all server versions | Use `agent-framework-foundry` package (wraps the download correctly), or pin `azure-ai-projects>=2.1.0-beta.2` which matches the sample |
+| HTTP 500 on skill download (C#) | Missing feature header | Add `FoundryFeaturesPolicy` for `Skills=V1Preview` |
+| `SKILL_NAMES` not in deployed agent | Env var missing from `agent.yaml` | Add to `environment_variables[]`, redeploy |
+| MCP timeout (Toolbox) | Auth token expired or wrong scope | Use `https://ai.azure.com/.default`; refresh per request |
+| Skills not discovered from toolbox | New version not published | `azd ai toolbox publish <toolbox> <version>` |
+| `Invalid skill name 'xxx:download'` | SDK bug in beta.2 | Use CLI or `agent-framework-foundry` wrapper |
