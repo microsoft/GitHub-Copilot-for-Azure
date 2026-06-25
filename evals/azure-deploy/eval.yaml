@@ -110,3 +110,85 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|exception occurred|crashed"
+
+  # ═══════════════════════════════════════════
+  # Skill routing prompts migrated from Jest skill-invocation tests
+  # Source: tests/azure-deploy/integration.test.ts
+  # Stimuli with earlyTerminate tags do not use the completed grader.
+  # ═══════════════════════════════════════════
+
+  # Jest: "invokes azure-deploy skill for deployment prompt"
+  - name: "Deployment"
+    prompt: "Run azd up to deploy my already-prepared app to Azure"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-deploy skill for publish to Azure prompt"
+  - name: "Publish To Azure"
+    prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-deploy skill for Azure Functions deployment prompt"
+  - name: "Azure Functions Deployment"
+    prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-deploy skill for post-deployment role assignment check prompt"
+  - name: "Post-Deployment Role Assignment Check"
+    prompt: "Deploy my already-prepared Azure app and confirm the managed identity roles are properly assigned"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

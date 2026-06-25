@@ -592,3 +592,579 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)SharedAccessKey="
+
+  # ═══════════════════════════════════════════
+  # Skill routing prompts migrated from Jest skill-invocation tests
+  # Source: tests/azure-prepare/integration.test.ts
+  # Stimuli with earlyTerminate tags do not use the completed grader.
+  # ═══════════════════════════════════════════
+
+  # Jest: "invokes azure-prepare skill for new Azure application preparation prompt"
+  - name: "New Azure Application Preparation"
+    prompt: "Prepare my application for Azure deployment and set up the infrastructure"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for modernizing application for Azure prompt"
+  - name: "Modernizing Application For Azure"
+    prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for functional verification before deployment prompt"
+  - name: "Functional Verification Before Deployment"
+    prompt: "Prepare my web app for Azure and verify it works locally before deploying"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for subscription policy compliance prompt"
+  - name: "Subscription Policy Compliance"
+    prompt: "Prepare my application for Azure deployment and check subscription policies for compliance"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Key Vault secrets integration prompt"
+  - name: "Key Vault Secrets Integration"
+    prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Azure Identity authentication prompt"
+  - name: "Azure Identity Authentication"
+    prompt: "Set up my Azure application with managed identity authentication for accessing Azure services"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Azure deployment with Terraform prompt"
+  - name: "Azure Deployment With Terraform"
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure code"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for create serverless HTTP API and deploy prompt"
+  - name: "Create Serverless HTTP API And Deploy"
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for create event-driven function app and deploy prompt"
+  - name: "Create Event-Driven Function App And Deploy"
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for create Azure Functions app with timer trigger prompt"
+  - name: "Create Azure Functions App With Timer Trigger"
+    prompt: "Create an Azure Functions app with a timer trigger"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static whiteboard web app deploy prompt"
+  - name: "Static Whiteboard Web App Deploy"
+    prompt: "Create a static whiteboard web app and deploy to Azure using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static portfolio website deploy prompt"
+  - name: "Static Portfolio Website Deploy"
+    prompt: "Create a static portfolio website and deploy to Azure using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for discussion board App Service deploy prompt"
+  - name: "Discussion Board App Service Deploy"
+    prompt: "Create a discussion board application and deploy to Azure App Service using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for todo list App Service deploy prompt"
+  - name: "Todo List App Service Deploy"
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for serverless HTTP API Functions deploy prompt"
+  - name: "Serverless HTTP API Functions Deploy"
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for event-driven function app deploy prompt"
+  - name: "Event-Driven Function App Deploy"
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Python function app Service Bus trigger deploy prompt"
+  - name: "Python Function App Service Bus Trigger Deploy"
+    prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy to Azure using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for containerized web app Container Apps deploy prompt"
+  - name: "Containerized Web App Container Apps Deploy"
+    prompt: "Create a containerized web application and deploy to Azure Container Apps using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Node.js Container Apps deploy prompt"
+  - name: "Node.Js Container Apps Deploy"
+    prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static whiteboard Terraform deploy prompt"
+  - name: "Static Whiteboard Terraform Deploy"
+    prompt: "Create a static whiteboard web app and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static portfolio Terraform deploy prompt"
+  - name: "Static Portfolio Terraform Deploy"
+    prompt: "Create a static portfolio website and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for discussion board Terraform App Service deploy prompt"
+  - name: "Discussion Board Terraform App Service Deploy"
+    prompt: "Create a discussion board application and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for todo list Terraform App Service deploy prompt"
+  - name: "Todo List Terraform App Service Deploy"
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for serverless HTTP API Terraform Functions deploy prompt"
+  - name: "Serverless HTTP API Terraform Functions Deploy"
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for event-driven function app Terraform deploy prompt"
+  - name: "Event-Driven Function App Terraform Deploy"
+    prompt: "Create an event-driven function app to process messages and deploy to Azure Functions using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for URL shortener Terraform Functions deploy prompt"
+  - name: "URL Shortener Terraform Functions Deploy"
+    prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for containerized web app Terraform Container Apps deploy prompt"
+  - name: "Containerized Web App Terraform Container Apps Deploy"
+    prompt: "Create a containerized web application and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Node.js Terraform Container Apps deploy prompt"
+  - name: "Node.Js Terraform Container Apps Deploy"
+    prompt: "Create a simple containerized Node.js hello world app and deploy to Azure Container Apps using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for social media app Terraform deploy prompt"
+  - name: "Social Media App Terraform Deploy"
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in eastus2 region."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for APIM deployment prompt"
+  - name: "APIM Deployment"
+    prompt: "Deploy a new Azure API Management instance for my application"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
