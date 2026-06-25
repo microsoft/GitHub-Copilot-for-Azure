@@ -1014,10 +1014,38 @@ Set `input.generateDone` to true when artifacts are written.
     },
     @{
         id = 'security'; phase = 2; title = 'Harden security'
-        refs = @('references/security.md')
+        refs = @('scripts/references/security.md')
         guidance = @'
-Apply security best practices (managed identity, Key Vault, Entra-only SQL auth, no
-secrets in code). Set `input.securityDone` to true when complete.
+Harden the generated artifacts following Zero Trust: never trust/always verify,
+least privilege, defense in depth, encryption everywhere.
+
+Identity & access:
+  - Managed identities everywhere — no credentials in code.
+  - Least-privilege RBAC (e.g. "Key Vault Secrets User", "Storage Blob Data Reader")
+    scoped to the resource, not subscription. Assigning roles needs
+    Microsoft.Authorization/roleAssignments/write (User Access Administrator).
+  - Microsoft Entra ID for auth; MFA for users.
+  - SQL Server → Entra-only auth: NEVER emit administratorLogin /
+    administratorLoginPassword anywhere in Bicep (incl. conditional branches).
+
+Network: private endpoints for PaaS in production; NSGs on subnets (default deny);
+  disable public endpoints where possible; DDoS protection; Azure Firewall for egress.
+
+Data protection: encryption at rest (default) + TLS 1.2+ in transit; secrets in
+  Key Vault with soft-delete + purge protection + RBAC authorization; customer-managed
+  keys for sensitive data.
+
+Monitoring: enable Microsoft Defender for Cloud on production workloads; diagnostic +
+  audit logging to Log Analytics; security alerts.
+
+SDK auth: use the language Azure Identity package; `DefaultAzureCredential` for LOCAL
+  dev only — in production use `ManagedIdentityCredential` (Rust: `DeveloperToolsCredential`).
+  See `references/auth-best-practices.md`.
+
+See `scripts/references/security.md` for the full checklists, MCP/CLI commands, RBAC
+tables, and SDK package matrix.
+
+Set `input.securityDone` to true when hardening is complete.
 '@
         needs = @(
             @{ Path = 'input.securityDone'; Prompt = 'true when security hardening is complete' }

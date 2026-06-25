@@ -40,7 +40,7 @@ Markdown files under `azure-prepare-script/references` to fold into `scripts/pre
 - [ ] references/sdk/azure-identity-java.md
 - [ ] references/sdk/azure-identity-py.md
 - [ ] references/sdk/azure-identity-ts.md
-- [ ] references/security.md
+- [x] references/security.md
 - [ ] references/services/aks/addons.md
 - [ ] references/services/aks/bicep.md
 - [ ] references/services/aks/manifests.md
