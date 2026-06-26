@@ -99,13 +99,21 @@ Content-Type: application/json
 
 Token audience (scope): `https://monitor.azure.com/.default`
 
+**Preferred: Azure CLI (interactive or Workload Identity Federation)**
+
 ```powershell
-$scope = [System.Web.HttpUtility]::UrlEncode("https://monitor.azure.com//.default")
-$body = "client_id=$appId&scope=$scope&client_secret=$appSecret&grant_type=client_credentials"
-$headers = @{ "Content-Type" = "application/x-www-form-urlencoded" }
-$uri = "https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token"
-$bearerToken = (Invoke-RestMethod -Uri $uri -Method Post -Body $body -Headers $headers).access_token
+# Using Azure CLI — no secrets needed. Works with az login, managed identity, or workload identity federation.
+$token = (az account get-access-token --resource "https://monitor.azure.com" --output json | ConvertFrom-Json).accessToken
 ```
+
+```bash
+# Bash equivalent
+TOKEN=$(az account get-access-token --resource "https://monitor.azure.com" --query accessToken -o tsv)
+```
+
+**Legacy (client credentials — testing only, avoid in production):**
+
+For automated pipelines that cannot use Azure CLI or Workload Identity Federation, client credentials flow is available but discouraged. Use Federated Identity Credentials (workload identity federation) instead of client secrets when possible. See [Workload Identity Federation](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation).
 
 ### Client Libraries
 
@@ -117,14 +125,17 @@ $bearerToken = (Invoke-RestMethod -Uri $uri -Method Post -Body $body -Headers $h
 | JavaScript | `@azure/monitor-ingestion` |
 | Go | `azlogs` |
 
+All client libraries support `DefaultAzureCredential` which chains managed identity, workload identity, and Azure CLI credentials automatically.
+
 ## Setup Procedure
 
-1. **Create Entra app registration** with a client secret
-2. **Create custom table** in LA workspace (if not using an existing table)
-3. **Create DCR** with `kind: "Direct"`, stream declarations matching incoming data, and `transformKql` mapping to destination table
-4. **Assign RBAC**: grant the app **Monitoring Metrics Publisher** role on the DCR
-5. **Retrieve endpoint**: get `logsIngestion` URI and `immutableId` from the DCR
-6. **Send data**: POST JSON array to the endpoint
+1. **Create custom table** in LA workspace (if not using an existing table)
+2. **Create DCR** with `kind: "Direct"`, stream declarations matching incoming data, and `transformKql` mapping to destination table
+3. **Assign RBAC**: grant the identity **Monitoring Metrics Publisher** role on the DCR
+4. **Retrieve endpoint**: get `logsIngestion` URI and `immutableId` from the DCR
+5. **Send data**: POST JSON array to the endpoint
+
+> **Note:** For service-to-service scenarios, prefer managed identity or workload identity federation over app registrations with secrets.
 
 ## Key Differences from Agent-Based DCRs
 

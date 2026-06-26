@@ -9,16 +9,24 @@
     Log Analytics workspace name.
 .PARAMETER TableName
     Table name (e.g., "Syslog", "MyCustom_CL").
+.NOTES
+    Requires Az.Accounts module (Invoke-AzRestMethod). Run Connect-AzAccount before use.
 .EXAMPLE
     .\get-table-schema.ps1 -SubscriptionId "xxx" -ResourceGroupName "my-rg" -WorkspaceName "my-ws" -TableName "Syslog"
 #>
 param(
-    [Parameter(Mandatory)][string]$SubscriptionId,
-    [Parameter(Mandatory)][string]$ResourceGroupName,
-    [Parameter(Mandatory)][string]$WorkspaceName,
-    [Parameter(Mandatory)][string]$TableName,
+    [string]$SubscriptionId,
+    [string]$ResourceGroupName,
+    [string]$WorkspaceName,
+    [string]$TableName,
     [string]$ApiVersion = "2022-10-01"
 )
+
+# Parameter validation (explicit checks to avoid interactive prompts in agent runtime)
+if (-not $SubscriptionId) { Write-Error "SubscriptionId is required."; exit 1 }
+if (-not $ResourceGroupName) { Write-Error "ResourceGroupName is required."; exit 1 }
+if (-not $WorkspaceName) { Write-Error "WorkspaceName is required."; exit 1 }
+if (-not $TableName) { Write-Error "TableName is required."; exit 1 }
 
 $path = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/tables/$TableName`?api-version=$ApiVersion"
 $response = Invoke-AzRestMethod -Path $path -Method GET

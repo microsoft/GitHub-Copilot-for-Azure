@@ -1,0 +1,144 @@
+---
+tags:
+  skill: azure-data-collection-rules
+---
+
+tags:
+  skill: azure-data-collection-rules
+
+stimuli:
+  # ─── Routing Tests (skill invocation) ─────────────────────────────────────────
+  - name: "trigger-syslog-filter"
+    prompt: "Create a DCR to collect syslog and filter out info-level messages"
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-data-collection-rules"}]'
+
+  - name: "trigger-direct-ingestion"
+    prompt: "Create a direct ingestion DCR for my custom application logs with a KQL transform"
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-data-collection-rules"}]'
+
+  - name: "trigger-windows-events"
+    prompt: "Author a data collection rule that collects Windows Security events and drops EventID 4688"
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-data-collection-rules"}]'
+
+  - name: "trigger-multi-stage"
+    prompt: "Help me create a multi-stage transformation DCR with processors for parsing JSON logs"
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-data-collection-rules"}]'
+
+  - name: "trigger-negative-deploy"
+    prompt: "Deploy my Node.js web app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: regex
+        config:
+          pattern: "(?!.*azure-data-collection-rules)"
+          target: skills_loaded
+
+  - name: "trigger-negative-general"
+    prompt: "What is the weather in Seattle today?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: low
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: regex
+        config:
+          pattern: "(?!.*azure-data-collection-rules)"
+          target: skills_loaded
+
+  # ─── Integration Tests (output correctness) ───────────────────────────────────
+  - name: "output-dcr-json-structure"
+    prompt: "Create a DCR that collects custom JSON logs from an application. The logs have fields: Time (datetime), Computer (string), Level (string), Message (string). Send them to a custom table called AppLogs_CL in my Log Analytics workspace."
+    tags:
+      type: integration
+      tier: regression
+      cost: medium
+      area: correctness
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+    graders:
+      - type: regex
+        config:
+          pattern: "streamDeclarations"
+          target: output
+      - type: regex
+        config:
+          pattern: "dataFlows"
+          target: output
+      - type: regex
+        config:
+          pattern: "destinations"
+          target: output
+      - type: regex
+        config:
+          pattern: "logAnalytics"
+          target: output
+
+  - name: "output-kql-transform"
+    prompt: "Author a DCR for direct ingestion that accepts logs with fields Timestamp, Host, App, Severity, Msg and transforms them with KQL to rename Timestamp to TimeGenerated and filter out Severity == 'Debug'"
+    tags:
+      type: integration
+      tier: regression
+      cost: medium
+      area: correctness
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+    graders:
+      - type: regex
+        config:
+          pattern: "transformKql"
+          target: output
+      - type: regex
+        config:
+          pattern: "TimeGenerated"
+          target: output
+      - type: regex
+        config:
+          pattern: "where.*Severity|where.*Debug"
+          target: output
+
+  - name: "output-direct-ingestion-kind"
+    prompt: "Create a direct ingestion DCR. My app sends JSON with fields RequestId, Duration, StatusCode, Endpoint. Route to CustomApiLogs_CL table."
+    tags:
+      type: integration
+      tier: regression
+      cost: medium
+      area: correctness
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+    graders:
+      - type: regex
+        config:
+          pattern: '"kind"\\s*:\\s*"Direct"'
+          target: output
+      - type: regex
+        config:
+          pattern: "Custom-"
+          target: output
+      - type: regex
+        config:
+          pattern: "CustomApiLogs_CL|Custom.*ApiLogs"
+          target: output

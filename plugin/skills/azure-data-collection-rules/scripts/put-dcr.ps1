@@ -11,16 +11,24 @@
     Path to the DCR JSON file.
 .PARAMETER ApiVersion
     API version. Defaults to 2025-05-11 (multi-stage support).
+.NOTES
+    Requires Az.Accounts module (Invoke-AzRestMethod). Run Connect-AzAccount before use.
 .EXAMPLE
     .\put-dcr.ps1 -SubscriptionId "xxx" -ResourceGroupName "my-rg" -DcrName "my-dcr" -DcrFilePath "dcr.json"
 #>
 param(
-    [Parameter(Mandatory)][string]$SubscriptionId,
-    [Parameter(Mandatory)][string]$ResourceGroupName,
-    [Parameter(Mandatory)][string]$DcrName,
-    [Parameter(Mandatory)][string]$DcrFilePath,
+    [string]$SubscriptionId,
+    [string]$ResourceGroupName,
+    [string]$DcrName,
+    [string]$DcrFilePath,
     [string]$ApiVersion = "2025-05-11"
 )
+
+# Parameter validation (explicit checks to avoid interactive prompts in agent runtime)
+if (-not $SubscriptionId) { Write-Error "SubscriptionId is required."; exit 1 }
+if (-not $ResourceGroupName) { Write-Error "ResourceGroupName is required."; exit 1 }
+if (-not $DcrName) { Write-Error "DcrName is required."; exit 1 }
+if (-not $DcrFilePath) { Write-Error "DcrFilePath is required."; exit 1 }
 
 if (-not (Test-Path $DcrFilePath)) {
     Write-Error "DCR file not found: $DcrFilePath"

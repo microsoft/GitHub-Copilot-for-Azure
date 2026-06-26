@@ -228,7 +228,6 @@ source
 | project TimeGenerated, HostName = Computer, AppName, StatusCode = Status, StatusBucket, DurationMs = Duration
 ```
 
-
 ## Supported Features Reference
 
 Full list of supported operators, functions, and statements: [Supported KQL features in Azure Monitor transformations](https://learn.microsoft.com/en-us/azure/azure-monitor/data-collection/data-collection-transformations-kql)

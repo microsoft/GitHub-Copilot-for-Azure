@@ -70,4 +70,3 @@ Source: [Add or delete tables and columns](https://learn.microsoft.com/en-us/azu
 - Multiple dataFlow entries allowed for same stream if targeting different tables in the same workspace
 - To send one stream to multiple workspaces, create separate DCRs
 
-

@@ -2,14 +2,9 @@
 .SYNOPSIS
     Sends sample data to Azure Monitor via the Log Ingestion API.
 .DESCRIPTION
-    Authenticates using an Entra app registration (client credentials flow)
-    and POSTs a JSON array to the DCR logs ingestion endpoint.
-.PARAMETER TenantId
-    Entra tenant ID.
-.PARAMETER AppId
-    Application (client) ID of the registered app.
-.PARAMETER AppSecret
-    Client secret value.
+    Authenticates using Azure CLI (az account get-access-token) and POSTs
+    a JSON array to the DCR logs ingestion endpoint.
+    Requires: Azure CLI logged in with appropriate permissions.
 .PARAMETER EndpointUri
     DCR logs ingestion endpoint URI (e.g., https://my-dcr-xyz.eastus-1.ingest.monitor.azure.com).
 .PARAMETER DcrImmutableId
@@ -18,21 +13,26 @@
     Stream name in the DCR (e.g., Custom-MyAppLogs).
 .PARAMETER DataFilePath
     Path to a JSON file containing an array of log records.
+.NOTES
+    Authentication uses the current Azure CLI session. Run 'az login' before use.
+    The caller must have the 'Monitoring Metrics Publisher' role on the DCR.
 .EXAMPLE
-    .\send-logs.ps1 -TenantId "xxx" -AppId "yyy" -AppSecret "zzz" `
-        -EndpointUri "https://my-dcr.eastus-1.ingest.monitor.azure.com" `
+    .\send-logs.ps1 -EndpointUri "https://my-dcr.eastus-1.ingest.monitor.azure.com" `
         -DcrImmutableId "dcr-abc123" -StreamName "Custom-MyAppLogs" `
         -DataFilePath "sample-data.json"
 #>
 param(
-    [Parameter(Mandatory)][string]$TenantId,
-    [Parameter(Mandatory)][string]$AppId,
-    [Parameter(Mandatory)][string]$AppSecret,
-    [Parameter(Mandatory)][string]$EndpointUri,
-    [Parameter(Mandatory)][string]$DcrImmutableId,
-    [Parameter(Mandatory)][string]$StreamName,
-    [Parameter(Mandatory)][string]$DataFilePath
+    [string]$EndpointUri,
+    [string]$DcrImmutableId,
+    [string]$StreamName,
+    [string]$DataFilePath
 )
+
+# Parameter validation (explicit checks instead of [Parameter(Mandatory)] to avoid interactive prompts)
+if (-not $EndpointUri) { Write-Error "EndpointUri is required."; exit 1 }
+if (-not $DcrImmutableId) { Write-Error "DcrImmutableId is required."; exit 1 }
+if (-not $StreamName) { Write-Error "StreamName is required."; exit 1 }
+if (-not $DataFilePath) { Write-Error "DataFilePath is required."; exit 1 }
 
 if (-not (Test-Path $DataFilePath)) {
     Write-Error "Data file not found: $DataFilePath"
@@ -41,11 +41,12 @@ if (-not (Test-Path $DataFilePath)) {
 
 $data = Get-Content -Path $DataFilePath -Raw
 
-# Validate JSON array
+# Validate JSON array (wrap in @() to handle PS 5.1 single-element unrolling)
 try {
     $parsed = $data | ConvertFrom-Json -ErrorAction Stop
-    if ($parsed -isnot [System.Array]) {
-        Write-Error "Data must be a JSON array (wrap in [ ])"
+    $parsed = @($parsed)
+    if ($parsed.Count -eq 0) {
+        Write-Error "Data file contains no records"
         exit 1
     }
 } catch {
@@ -53,18 +54,17 @@ try {
     exit 1
 }
 
-# Step 1: Get bearer token
-Add-Type -AssemblyName System.Web
-$scope = [System.Web.HttpUtility]::UrlEncode("https://monitor.azure.com//.default")
-$tokenBody = "client_id=$AppId&scope=$scope&client_secret=$AppSecret&grant_type=client_credentials"
-$tokenHeaders = @{ "Content-Type" = "application/x-www-form-urlencoded" }
-$tokenUri = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
-
+# Step 1: Get bearer token via Azure CLI
 try {
-    $tokenResponse = Invoke-RestMethod -Uri $tokenUri -Method Post -Body $tokenBody -Headers $tokenHeaders
-    $bearerToken = $tokenResponse.access_token
+    $tokenJson = az account get-access-token --resource "https://monitor.azure.com" --output json 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to get token via Azure CLI. Run 'az login' first. Error: $tokenJson"
+        exit 1
+    }
+    $tokenObj = $tokenJson | ConvertFrom-Json
+    $bearerToken = $tokenObj.accessToken
 } catch {
-    Write-Error "Failed to acquire token: $_"
+    Write-Error "Failed to acquire token via Azure CLI: $_"
     exit 1
 }
 
@@ -79,7 +79,7 @@ try {
     $response = Invoke-RestMethod -Uri $sendUri -Method Post -Body $data -Headers $sendHeaders
     Write-Host "Data sent successfully. Records: $($parsed.Count)"
 } catch {
-    $statusCode = $_.Exception.Response.StatusCode.value__
+    $statusCode = if ($_.Exception.Response) { $_.Exception.Response.StatusCode.value__ } else { 'N/A' }
     Write-Error "Failed to send data. Status: $statusCode. Error: $_"
     exit 1
 }

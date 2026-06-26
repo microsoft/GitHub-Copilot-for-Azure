@@ -3,12 +3,17 @@
     Validates a DCR JSON file for common structural issues before deployment.
 .PARAMETER DcrFilePath
     Path to the DCR JSON file.
+.NOTES
+    Offline validation only. Does not require Azure authentication.
 .EXAMPLE
     .\validate-dcr.ps1 -DcrFilePath "dcr.json"
 #>
 param(
-    [Parameter(Mandatory)][string]$DcrFilePath
+    [string]$DcrFilePath
 )
+
+# Parameter validation (explicit check to avoid interactive prompts in agent runtime)
+if (-not $DcrFilePath) { Write-Error "DcrFilePath is required."; exit 1 }
 
 if (-not (Test-Path $DcrFilePath)) {
     Write-Error "File not found: $DcrFilePath"
@@ -93,36 +98,14 @@ if ($props.dataSources) {
 }
 
 # Validate data flows
-# Standard tables that accept custom streams (from Log Ingestion API supported tables list)
-$supportedStandardTables = @(
-    'ABAPAuditLog','ABAPAuthorizationDetails','ABAPChangeDocsLog','ABAPUserDetails',
-    'ADAssessmentRecommendation','ADSecurityAssessmentRecommendation','Anomalies',
-    'ASimAuditEventLogs','ASimAuthenticationEventLogs','ASimDhcpEventLogs','ASimDnsActivityLogs',
-    'ASimFileEventLogs','ASimNetworkSessionLogs','ASimProcessEventLogs','ASimRegistryEventLogs',
-    'ASimUserManagementActivityLogs','ASimWebSessionLogs',
-    'AWSALBAccessLogs','AWSCloudTrail','AWSCloudWatch','AWSEKS','AWSELBFlowLogs','AWSGuardDuty',
-    'AWSNetworkFirewallAlert','AWSNetworkFirewallFlow','AWSNetworkFirewallTls','AWSNLBAccessLogs',
-    'AWSRoute53Resolver','AWSS3ServerAccess','AWSSecurityHubFindings','AWSVPCFlow','AWSWAF',
-    'AzureAssessmentRecommendation','AzureMetricsV2','CommonSecurityLog',
-    'CrowdStrikeAlerts','CrowdStrikeCases','CrowdStrikeDetections','CrowdStrikeHosts',
-    'CrowdStrikeIncidents','CrowdStrikeVulnerabilities',
-    'DeviceTvmSecureConfigurationAssessmentKB','DeviceTvmSoftwareVulnerabilitiesKB',
-    'DnsAuditEvents','Event',
-    'ExchangeAssessmentRecommendation','ExchangeOnlineAssessmentRecommendation',
-    'GCPApigee','GCPAuditLogs','GCPCDN','GCPCloudRun','GCPCloudSQL','GCPComputeEngine',
-    'GCPDNS','GCPFirewallLogs','GCPIAM','GCPIDS','GCPMonitoring','GCPNAT','GCPNATAudit',
-    'GCPResourceManager','GCPVPCFlow','GKEAPIServer','GKEApplication','GKEAudit',
-    'GKEControllerManager','GKEHPADecision','GKEScheduler','GoogleCloudSCC','GoogleWorkspaceReports',
-    'IlumioInsights','OTelLogs','QualysKnowledgeBase',
-    'Rapid7InsightVMCloudAssets','Rapid7InsightVMCloudVulnerabilities',
-    'SCCMAssessmentRecommendation','SCOMAssessmentRecommendation','SecurityEvent',
-    'SfBAssessmentRecommendation','SfBOnlineAssessmentRecommendation',
-    'SharePointOnlineAssessmentRecommendation','SPAssessmentRecommendation','SQLAssessmentRecommendation',
-    'Syslog','ThreatIntelIndicators','ThreatIntelligenceIndicator','ThreatIntelObjects',
-    'UCClient','UCClientReadinessStatus','UCClientUpdateStatus','UCDeviceAlert',
-    'UCDOAggregatedStatus','UCDOStatus','UCServiceUpdateStatus','UCUpdateAlert',
-    'WindowsClientAssessmentRecommendation','WindowsEvent','WindowsServerAssessmentRecommendation'
-)
+# Standard tables that accept custom streams (loaded from centralized JSON)
+$supportedTablesPath = Join-Path $PSScriptRoot '..\references\supported-tables.json'
+if (Test-Path $supportedTablesPath) {
+    $supportedStandardTables = Get-Content -Path $supportedTablesPath -Raw | ConvertFrom-Json
+} else {
+    $warnings += "Could not find supported-tables.json at '$supportedTablesPath'. Custom-stream-to-standard-table routing validation skipped."
+    $supportedStandardTables = @()
+}
 
 if ($props.dataFlows) {
     foreach ($df in $props.dataFlows) {
@@ -165,10 +148,10 @@ if ($props.dataFlows) {
             $outputIsStandard = $df.outputStream.StartsWith("Microsoft-")
             $outputIsCustom = $df.outputStream.StartsWith("Custom-")
 
-            # Rule: standard stream cannot route to custom table (unless transformKql is present)
+            # Rule: standard stream cannot route to custom table (unless transformKql or transform is present)
             $inputIsStandard = $df.streams | Where-Object { $_.StartsWith("Microsoft-") }
-            if ($inputIsStandard -and $outputIsCustom -and -not $df.transformKql) {
-                $errors += "DataFlow routes standard stream to custom table '$($df.outputStream)'. Standard streams cannot route to custom tables without transformKql. Add transformKql (even 'source' for pass-through) or use a custom stream."
+            if ($inputIsStandard -and $outputIsCustom -and -not $df.transformKql -and -not $df.transform) {
+                $errors += "DataFlow routes standard stream to custom table '$($df.outputStream)'. Standard streams cannot route to custom tables without transformKql or transform. Add transformKql (even 'source' for pass-through), a named transform reference, or use a custom stream."
             }
 
             # Rule: custom stream to standard table must be on supported list
@@ -193,7 +176,6 @@ if ($props.transformations) {
 # ── Limits validation (from references/limits.md) ──
 
 # DCR Structure Limits
-$dataSourceTypes = @('syslog','windowsEventLogs','performanceCounters','logFiles','iisLogs','extensions')
 $dsCount = 0
 if ($props.dataSources) {
     foreach ($dsType in $props.dataSources.PSObject.Properties) {
@@ -302,8 +284,10 @@ if ($props.streamDeclarations) {
             }
         }
         # Custom stream naming
-        if (-not $streamName.StartsWith('Custom-') -and -not $streamName.StartsWith('Microsoft-')) {
-            $errors += "Stream '$streamName' must start with 'Custom-' or 'Microsoft-'"
+        if ($streamName.StartsWith('Microsoft-')) {
+            $errors += "Stream '$streamName' in streamDeclarations must not start with 'Microsoft-'. Standard streams have implicit schemas and should not be declared."
+        } elseif (-not $streamName.StartsWith('Custom-')) {
+            $errors += "Stream '$streamName' must start with 'Custom-' (standard streams use 'Microsoft-' prefix and should not appear in streamDeclarations)"
         }
     }
 }

@@ -17,6 +17,8 @@
     Total retention including archive. Default: 90.
 .PARAMETER Plan
     Table plan: Analytics, Basic, or Auxiliary. Default: Analytics.
+.NOTES
+    Requires Az.Accounts module (Invoke-AzRestMethod). Run Connect-AzAccount before use.
 .EXAMPLE
     .\create-custom-table.ps1 -SubscriptionId "xxx" -ResourceGroupName "my-rg" -WorkspaceName "my-ws" -TableName "MyLogs_CL" -SchemaFilePath "table-schema.json"
 
@@ -30,16 +32,23 @@
     }
 #>
 param(
-    [Parameter(Mandatory)][string]$SubscriptionId,
-    [Parameter(Mandatory)][string]$ResourceGroupName,
-    [Parameter(Mandatory)][string]$WorkspaceName,
-    [Parameter(Mandatory)][string]$TableName,
-    [Parameter(Mandatory)][string]$SchemaFilePath,
+    [string]$SubscriptionId,
+    [string]$ResourceGroupName,
+    [string]$WorkspaceName,
+    [string]$TableName,
+    [string]$SchemaFilePath,
     [int]$RetentionInDays = 30,
     [int]$TotalRetentionInDays = 90,
     [ValidateSet("Analytics", "Basic", "Auxiliary")][string]$Plan = "Analytics",
     [string]$ApiVersion = "2022-10-01"
 )
+
+# Parameter validation (explicit checks to avoid interactive prompts in agent runtime)
+if (-not $SubscriptionId) { Write-Error "SubscriptionId is required."; exit 1 }
+if (-not $ResourceGroupName) { Write-Error "ResourceGroupName is required."; exit 1 }
+if (-not $WorkspaceName) { Write-Error "WorkspaceName is required."; exit 1 }
+if (-not $TableName) { Write-Error "TableName is required."; exit 1 }
+if (-not $SchemaFilePath) { Write-Error "SchemaFilePath is required."; exit 1 }
 
 if (-not $TableName.EndsWith("_CL")) {
     Write-Error "Custom table name must end with '_CL'"
