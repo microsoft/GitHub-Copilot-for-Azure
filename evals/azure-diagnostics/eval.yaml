@@ -9,7 +9,7 @@ name: azure-diagnostics-integration-eval
 description: |
   Integration evaluation for azure-diagnostics skill — migrated from Jest integration tests.
   Tests skill routing for Container Apps troubleshooting, image pull failures,
-  and AKS cluster diagnostics prompts
+  AKS cluster diagnostics, and Azure VM connectivity troubleshooting prompts
   using invocation rate measurement (5 runs, 80% threshold).
 
 tags:
@@ -84,6 +84,50 @@ stimuli:
         config:
           required:
             - azure-diagnostics
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── vm-rdp-troubleshooting-prompt ──
+  # Migrated from azure-compute ownership: VM connectivity incidents now route to azure-diagnostics.
+  - name: "VM RDP timeout troubleshooting"
+    prompt: "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - azure-compute
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── vm-ssh-troubleshooting-prompt ──
+  # Migrated from azure-compute ownership: VM connectivity incidents now route to azure-diagnostics.
+  - name: "VM SSH refused troubleshooting"
+    prompt: "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - azure-compute
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
