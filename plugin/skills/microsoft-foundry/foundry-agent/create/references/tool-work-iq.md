@@ -2,6 +2,8 @@
 
 Connect an agent to the user's Microsoft 365 work context — email, meetings, files, chats — through **Work IQ**. Work IQ runs as an A2A peer; every request runs in the context of the signed-in user and honors all Microsoft 365 permissions and sensitivity labels.
 
+> 🚦 **Creating the toolbox/connection:** write the agent-side code as usual — only the **toolbox/connection itself** is created outside the code. By default, have the user create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/): leave its config as a placeholder and ask them to create it and write the real value back. Create it yourself only when the user explicitly asks you to (or supplies the real values).
+
 ## Toolbox shape
 
 ```json

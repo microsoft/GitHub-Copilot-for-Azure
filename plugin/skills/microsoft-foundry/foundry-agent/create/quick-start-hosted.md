@@ -171,6 +171,8 @@ If recovery still fails → escape to [create-hosted.md](create-hosted.md).
 
 ### Step 9 — Provision Azure resources
 
+> 🚦 **Project-selection gate (align with Step 2).** Only `azd provision` a new project when the user asked to create one. If the user gave an existing project, skip provision and use it. If the user didn't mention a project at all, stop and ask first — don't silently provision a new one.
+
 ```bash
 azd provision --no-prompt
 ```

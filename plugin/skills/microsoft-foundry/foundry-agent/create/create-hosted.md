@@ -218,7 +218,7 @@ Read and follow [local-run](references/local-run.md). Complete one representativ
 
 Tools attach through **toolboxes** -- bundled MCP-compatible endpoints.
 
-> 🚦 **Boundary:** the toolbox/connection is the user's to create — guide them to create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/), generate the agent code with the toolbox/connection configs as placeholders, then stop and ask them to write the real values back. See [use-toolbox-in-hosted-agent.md](references/use-toolbox-in-hosted-agent.md).
+> 🚦 **Creating the toolbox/connection:** write the agent-side code as usual — only the **toolbox/connection itself** is created outside the code. By default, have the user create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/): leave its config as a placeholder and ask them to create it and write the real value back. Create it yourself only when the user explicitly asks you to (or supplies the real values).
 
 Flow (only when the user asks you to create the toolbox):
 

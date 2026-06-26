@@ -2,6 +2,8 @@
 
 Hosted agents access Foundry-managed tools through a **Toolbox MCP endpoint**. Unlike prompt agents that wire tools directly, hosted agents connect to a single MCP-compatible endpoint that exposes all configured tools. The platform handles credential injection, token refresh, and policy enforcement.
 
+> 🚦 **Creating the toolbox/connection:** write the agent-side code as usual — only the **toolbox/connection itself** is created outside the code. By default, have the user create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/): leave its config as a placeholder and ask them to create it and write the real value back. Create it yourself only when the user explicitly asks you to (or supplies the real values).
+
 > 📘 For endpoint format, MCP protocol details, auth, OAuth consent handling, testing, citation pattern, and troubleshooting, see [toolbox-reference.md](toolbox-reference.md).
 >
 > 📘 For wiring a remote tool (catalog tile or generic MCP server) into a project connection that a toolbox can attach to, see [foundry-tool-catalog.md](foundry-tool-catalog.md).

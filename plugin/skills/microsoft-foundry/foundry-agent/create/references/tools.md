@@ -4,6 +4,8 @@ How to attach tools (web search, Azure AI Search, MCP, A2A) to a hosted agent us
 
 A **toolbox** is a curated bundle of connection-backed tools that Foundry exposes as a single MCP-compatible endpoint. The agent connects to one URL and discovers every tool inside. `azd deploy` does NOT auto-create toolboxes -- you drive the lifecycle explicitly.
 
+> 🚦 **Creating the toolbox/connection:** write the agent-side code as usual — only the **toolbox/connection itself** is created outside the code. By default, have the user create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/): leave its config as a placeholder and ask them to create it and write the real value back. Create it yourself only when the user explicitly asks you to (or supplies the real values).
+
 ## Install the extension once
 
 ```bash

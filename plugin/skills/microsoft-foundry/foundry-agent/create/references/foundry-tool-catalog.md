@@ -2,6 +2,8 @@
 
 Reference for wiring a **remote tool** (catalog tile or generic MCP server) into a Foundry project as a `RemoteTool` project connection, so a toolbox can attach to it.
 
+> 🚦 **Creating the toolbox/connection:** write the agent-side code as usual — only the **toolbox/connection itself** is created outside the code. By default, have the user create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/): leave its config as a placeholder and ask them to create it and write the real value back. Create it yourself only when the user explicitly asks you to (or supplies the real values).
+
 Three catalog backends cooperate: the **asset-gallery** index discovers connectors, the Logic Apps **managedApis** GET supplies OAuth metadata, and the Logic Apps **apiOperations** GET supplies the operation list and input schemas. Skip these calls only for fully BYO `generic_mcp` servers — every catalog-MCP or connector-namespace flow needs all three.
 
 > 📘 For the toolbox MCP endpoint, protocol, and testing, see [toolbox-reference.md](toolbox-reference.md).
