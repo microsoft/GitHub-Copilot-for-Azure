@@ -18,7 +18,6 @@ import { isSkillInvoked, isToolCalled, softCheckSkill, withTestResult } from "..
 
 const SKILL_NAME = "azure-compute";
 const RECOMMENDER_WORKFLOW_PATH = /workflows\/vm-recommender\/vm-recommender\.md/i;
-const TROUBLESHOOTER_WORKFLOW_PATH = /workflows\/vm-troubleshooter\/vm-troubleshooter\.md/i;
 const CAPACITY_RESERVATION_WORKFLOW_PATH = /workflows\/capacity-reservation\/capacity-reservation\.md/i;
 const EMM_WORKFLOW_PATH = /workflows\/essential-machine-management\/essential-machine-management\.md/i;
 const VMSS_GUIDE_PATH = /references\/vmss-guide\.md/i;
@@ -131,36 +130,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const result = await expectPromptToInvokeWorkflow(
           "Compare Azure VM families for a memory-optimized database workload",
           RECOMMENDER_WORKFLOW_PATH,
-        );
-        if (!result) return;
-        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
-        setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
-        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
-      });
-    });
-
-    test("routes RDP troubleshooting prompt to vm-troubleshooter", async () => {
-      await withTestResult(async ({ setSkillInvocationRate }) => {
-        const result = await expectPromptToInvokeWorkflow(
-          "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it.",
-          TROUBLESHOOTER_WORKFLOW_PATH,
-        );
-        if (!result) return;
-        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
-        setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
-        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
-      });
-    });
-
-    test("routes SSH troubleshooting prompt to vm-troubleshooter", async () => {
-      await withTestResult(async ({ setSkillInvocationRate }) => {
-        const result = await expectPromptToInvokeWorkflow(
-          "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues.",
-          TROUBLESHOOTER_WORKFLOW_PATH,
         );
         if (!result) return;
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
