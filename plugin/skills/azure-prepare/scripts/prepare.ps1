@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-    State-machine driver for the azure-prepare-script skill.
+    State-machine driver for the azure-prepare skill.
 
 .DESCRIPTION
     Drives the "prepare an app for Azure deployment" workflow as a deterministic
@@ -1325,7 +1325,7 @@ function Write-NextAction {
 
     $phaseLabel = if ($Step.phase -eq 1) { 'Phase 1 — Planning' } else { 'Phase 2 — Execution' }
 
-    Write-Output '=== AZURE-PREPARE-SCRIPT :: NEXT ACTION ==='
+    Write-Output '=== AZURE-PREPARE :: NEXT ACTION ==='
     Write-Output ''
     Write-Output "Step:  $($Step.id)  ($phaseLabel)"
     Write-Output "Title: $($Step.title)"
@@ -1364,7 +1364,7 @@ function Write-Complete {
     param([hashtable]$State)
     Save-State $State
     $plan = Join-Path $RepoPath '.azure/deployment-plan.md'
-    Write-Output '=== AZURE-PREPARE-SCRIPT :: COMPLETE ==='
+    Write-Output '=== AZURE-PREPARE :: COMPLETE ==='
     Write-Output ''
     Write-Output 'All preparation steps are done.'
     Write-Output "Plan: $plan  (Status: Ready for Validation)"

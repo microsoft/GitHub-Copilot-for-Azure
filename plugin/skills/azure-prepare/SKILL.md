@@ -1,5 +1,5 @@
 ---
-name: azure-prepare-script
+name: azure-prepare
 description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). DO NOT USE FOR: copilot-sdk apps (use azure-hosted-copilot-sdk), or Python code-only App Service deploys (use python-appservice-deploy). WHEN: \"create app\", \"build web app\", \"create API\", \"modernize application\", \"host on Azure\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"managed identity\"."
 license: MIT
 metadata:
@@ -98,5 +98,5 @@ for provisioning-limit checks.
 
 > **⛔ MANDATORY NEXT STEP — DO NOT SKIP**
 >
-> The workflow is `azure-prepare-script` → `azure-validate` → `azure-deploy`. After the
+> The workflow is `azure-prepare` → `azure-validate` → `azure-deploy`. After the
 > script prints `COMPLETE`, invoke **azure-validate** before any deployment attempt.
