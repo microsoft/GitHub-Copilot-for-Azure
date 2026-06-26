@@ -6,13 +6,13 @@ Router for Azure VM connectivity issues. Determine OS first: Windows usually mea
 
 | Signal | Category | Reference |
 | --- | --- | --- |
-| can't RDP, timeout, black screen, internal error | RDP | [RDP](troubleshooting/compute/references/rdp-connectivity.md) |
-| can't SSH, refused, permission denied, publickey | SSH | [SSH](troubleshooting/compute/references/ssh-connectivity.md) |
-| NSG, public IP, NIC, routes, effective rules | Network | [Network](troubleshooting/compute/references/network-connectivity.md) |
-| Windows Firewall, iptables, firewalld, UFW | Guest firewall | [Guest firewall](troubleshooting/compute/references/firewall-blocking.md) |
-| VM agent, Run Command timeout, Serial Console, boot diagnostics | VM agent/tools | [VM agent/tools](troubleshooting/compute/references/vm-agent-not-responding.md) |
-| password, credentials, access denied, CredSSP, account expired | Credential/auth | [Credential/auth](troubleshooting/compute/references/credential-auth-errors.md) |
-| TermService, RDP disabled, changed port, TLS cert, NLA, licensing | RDP service/config | [RDP service/config](troubleshooting/compute/references/rdp-service-config.md) |
+| can't RDP, timeout, black screen, internal error | RDP | [rdp-connectivity.md](rdp-connectivity.md) |
+| can't SSH, refused, permission denied, publickey | SSH | [ssh-connectivity.md](ssh-connectivity.md) |
+| NSG, public IP, NIC, routes, effective rules | Network | [network-connectivity.md](network-connectivity.md) |
+| Windows Firewall, iptables, firewalld, UFW | Guest firewall | [firewall-blocking.md](firewall-blocking.md) |
+| VM agent, Run Command timeout, Serial Console, boot diagnostics | VM agent/tools | [vm-agent-not-responding.md](vm-agent-not-responding.md) |
+| password, credentials, access denied, CredSSP, account expired | Credential/auth | [credential-auth-errors.md](credential-auth-errors.md) |
+| TermService, RDP disabled, changed port, TLS cert, NLA, licensing | RDP service/config | [rdp-service-config.md](rdp-service-config.md) |
 
 ## Workflow
 

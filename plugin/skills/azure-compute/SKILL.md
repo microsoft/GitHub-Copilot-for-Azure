@@ -26,7 +26,7 @@ Routes Azure VM and Virtual Machine Scale Set (VMSS) requests to the right workf
 
 | Workflow | File | Use when |
 |---|---|---|
-| **VM Recommender** | [vm-recommender.md](workflows/vm-recommender/vm-recommender.md) | User asks which VM/VMSS to choose, whether to use VMSS/autoscaling, wants pricing, or wants to compare options |
-| **VM Creator** | [vm-creator.md](workflows/vm-creator/vm-creator.md) | User wants to create, provision, or deploy a bare VM or VMSS (not an app deployment) |
+| **VM Recommender** | [vm-recommender.md](workflows/vm-recommender/vm-recommender.md) | User asks which VM/VMSS to choose, wants pricing, or wants to compare options |
+| **VM Creator** | [vm-creator.md](workflows/vm-creator/vm-creator.md) | User wants to provision a bare VM or VMSS (not an app deployment) |
 | **Capacity Reservation** | [capacity-reservation.md](workflows/capacity-reservation/capacity-reservation.md) | User needs to reserve / guarantee VM capacity (CRG create / associate / disassociate) |
 | **Essential Machine Management** | [essential-machine-management.md](workflows/essential-machine-management/essential-machine-management.md) | User asks about EMM / machine enrollment / monitor |

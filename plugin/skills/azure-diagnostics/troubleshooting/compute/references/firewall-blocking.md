@@ -16,7 +16,7 @@ Use when NSG/platform rules allow traffic but the guest OS firewall blocks RDP/S
 
 ## Quick Commands
 
-> Commands use VM agent/extensions. Run [Pre-Flight Safety Checks](troubleshooting/compute/references/cannot-connect-to-vm.md#pre-flight-safety-checks) first.
+> Commands use VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) first.
 
 ```bash
 # Windows
