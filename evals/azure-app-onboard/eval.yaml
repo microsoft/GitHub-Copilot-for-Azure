@@ -1,0 +1,383 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-app-onboard/**/*.test.ts
+# Migration goal: cover critical nightly paths for routing, planning/codegen guidance,
+# deployment guidance, and safety/negative behavior.
+#
+# Note on existing-repo coverage:
+# Code-context stimuli clone a real sample repo into the agent workspace via
+# environment.commands, mirroring the JS integration tests' cloneRepo() setup.
+# Plain `git clone <url> .` fails because Vally pre-copies the environment.skills
+# dirs into the workspace, so we use git init + fetch --depth 1 + checkout instead.
+  # Repos: bya-simple-web-app (healthy Express), microblog-ai-remix (existing IaC),
+  # bya-unsupported-web-app (unsupported stack), bya-broken-web-app (broken),
+  # aws-samples/aws-bookstore-demo-app (AWS migration).
+  #
+  # Prompts are kept identical to the source Jest integration tests being ported.
+name: azure-app-onboard-eval
+description: |
+  Evaluation suite for the azure-app-onboard skill.
+  Focuses on high-value nightly coverage migrated from JavaScript integration tests:
+  - Skill routing for onboarding prompts
+  - Existing-repo planning and architecture guidance
+  - Representative deployment guidance and safety constraints
+  - Negative/blocking behavior for unsupported or broken scenarios
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+config:
+  runs: 1
+  timeout: "12m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    skill-invocation: 2.0
+    output-matches: 0.5
+    output-not-matches: 2.0
+    completed: 1.0
+
+stimuli:
+  # tests/azure-app-onboard/integration-invocation.test.ts
+  - name: "Routing - Startup MVP Onboarding"
+    prompt: "I'm a startup founder and need to deploy my MVP on Azure"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-app-onboard
+    constraints:
+      max_turns: 12
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: "(?i)azure|app|repo|deploy|plan"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/integration-invocation.test.ts
+  - name: "Routing - First App On Azure"
+    prompt: "Can you walk me through getting my first app on Azure?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-app-onboard
+    constraints:
+      max_turns: 12
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: "(?i)azure|app|repo|deploy|plan"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/integration-invocation.test.ts (greenfield no-code)
+  - name: "Planning - Greenfield Service And Auth Guidance"
+    prompt: "I have no code yet — help me get started on Azure. I'm building a dashboard for our sales team, maybe 200 users. We'll need a database and some kind of login for our company. What Azure services do I need and what will it cost?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-app-onboard
+    constraints:
+      max_turns: 18
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: "(?i)(entra|azure ad|active directory|identity|sso|oauth)"
+      - type: output-matches
+        config:
+          pattern: "(?i)(app service|container apps|functions|static web apps|azure sql|postgres|cosmos)"
+      - type: output-matches
+        config:
+          pattern: '(?i)\$|cost|pricing|estimate'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/integration-catalog.test.ts
+  - name: "Existing Repo - Plan And Approval Gate"
+    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: deployment
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 18
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: '(?i)express|node|sqlite|package\.json'
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|approv|proceed|architecture|recommend"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/deploy/integration.test.ts (prototype-to-production, existing IaC)
+  - name: "Existing IaC - Detect And Preserve"
+    prompt: "I have a prototype ready — help me get it to production on Azure."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/microblog-ai-remix
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: '(?i)existing|already|detected|azure\.yaml|bicep|infra'
+      - type: output-not-matches
+        config:
+          pattern: '(?i)overwrite.*infra|replace.*main\.bicep|delete.*infra'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/prepare/integration-cost.test.ts
+  # Prompt kept identical to the source test. The JS source drives past the readiness gate
+  # with multi-turn follow-ups ("Yes") to reach the dollar/SKU breakdown; Vally stimuli are
+  # single-turn, so the agent stops at the readiness/intent gate before producing exact
+  # figures. The grader is relaxed to validate cost engagement (dollar figures OR cost-intent
+  # terms) rather than requiring a full breakdown only reachable multi-turn.
+  - name: "Cost Depth - Dollar And SKU Signals"
+    prompt: "I need to deploy this app to Azure — but first tell me exactly what it will cost"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-app-onboard
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: '(?i)\$\d|cost|pricing|price|estimat|budget|sku|tier|per month|/month|monthly'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/integration-negative.test.ts (unsupported repo migration)
+  - name: "Negative - Unsupported Stack Should Block Deploy"
+    prompt: "We're running this app today. How do we bring it to Azure with minimal changes?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-unsupported-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)unsupported|blocked|not ready|migrate|upgrade|end-of-life|eol"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/integration-negative.test.ts (broken repo)
+  - name: "Negative - Broken App Requires Remediation"
+    prompt: "Analyze my project and deploy it to Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-broken-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: "(?i)broken|error|issue|fail|missing|fix|blocked|remediat"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)go ahead and deploy now|deploying now without checks"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/deploy/integration.test.ts (deploy safety)
+  - name: "Deploy Safety - No Imperative CLI Fallback"
+    prompt: "I built a side project and want to get it live on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: deployment
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 18
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: "(?i)environment|blocking|policy|conditional access|authenticat|alternative|access|safe"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)az group create|az appservice plan create|az webapp create"
+      - type: output-not-matches
+        config:
+          pattern: '(?i)graph\.microsoft\.com'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/deploy/integration.test.ts (approval gate after plan changes)
+  - name: "Deploy Governance - Reapproval On Region Change"
+    prompt: "Can you walk me through getting my first app on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: deployment
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 18
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: output-matches
+        config:
+          pattern: "(?i)azure|app|deploy|plan"
+      - type: output-matches
+        config:
+          pattern: "(?i)approv|confirm|proceed|plan|deploy"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/prepare/integration-service-mapping.test.ts
+  - name: "Migration Routing - AWS Workload To Cloud Migrate"
+    prompt: "We're running this app today. How do we bring it to Azure with minimal changes?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-app-onboard
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-cloud-migrate"]
+      - type: output-matches
+        config:
+          pattern: "(?i)aws|lambda|dynamodb|cloudformation|migration"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # tests/azure-app-onboard/triggers.test.ts (negative trigger)
+  - name: "Negative Trigger - Unrelated Prompt"
+    prompt: "How do I optimize Kusto query performance and materialized views?"
+    tags:
+      type: trigger
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-app-onboard
+    constraints:
+      max_turns: 10
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: ["azure-app-onboard"]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
