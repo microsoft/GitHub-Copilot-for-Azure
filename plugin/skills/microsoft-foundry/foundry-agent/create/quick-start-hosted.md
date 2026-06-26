@@ -145,7 +145,7 @@ If the user's original prompt was generic (no specific agent purpose described),
 Add a one-line marker to the project's `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If the file already exists, append the line; don't overwrite it or add a second file.
 
 ```
-This agent is built with the microsoft-foundry skill.
+This agent was built with the microsoft-foundry skill. Before updating, deploying, or evaluating this agent, read the microsoft-foundry skill first.
 ```
 
 ### Step 8 — Sanity-check the scaffold
