@@ -16,7 +16,7 @@ Use this when the request is to create a new hosted Foundry agent end-to-end —
 | Sample | Featured basic starter for the chosen language (`azd ai agent sample list --featured-only --language <lang> --output json`) | User may name a different featured sample |
 | Subscription | `az account show` | User may supply |
 | Region | `northcentralus` | Ask user to confirm or pick another |
-| Foundry project | New (no `--project-id`) | If user supplies ARM ID or endpoint, pass `--project-id` |
+| Foundry project | Ask if the user doesn't mention one | create new → no `--project-id`; existing → pass `--project-id` (ARM ID / endpoint); no mention → stop and ask (existing vs new) |
 | Model deployment | Whatever the sample's manifest declares | If user supplies a deployment name, `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME` after init |
 | Deploy mode | `code` (no Docker, no ACR build) | — |
 | Stops at | Deployed agent + remote smoke invoke + eval generation submitted | — |
@@ -50,7 +50,7 @@ For any values **not** already in the prompt, ask the rest in a single `AskUserQ
 | Language | `python_3_13` | One of `python_3_13`, `python_3_14`, `dotnet_10`, `node_22`. |
 | Subscription | `az account show --query id -o tsv` | Must be a GUID. |
 | Region | `northcentralus` | Confirm or override. |
-| Existing Foundry project? | No (new) | If Yes: collect ARM resource ID *or* Foundry project endpoint URL. |
+| Foundry project | Ask if the user doesn't mention one | User said create new → create a new one (no `--project-id`). User gave an existing project → use its ARM resource ID *or* Foundry project endpoint URL. User didn't mention a project at all → stop and ask, offering existing vs new. |
 | Existing model deployment? | No (use sample manifest's model) | If Yes: collect the deployment name. |
 
 If the user supplied only a **Foundry project endpoint** (not an ARM ID), resolve the ARM ID before Step 6:
@@ -139,6 +139,14 @@ Only when the user explicitly asked for it:
 - Change the model in `azure.yaml services.<project>.config.deployments[]` before Step 9 provision.
 
 If the user's original prompt was generic (no specific agent purpose described), skip customization and ship the sample as-is.
+
+#### Always: write the agent instruction file
+
+Add a one-line marker to the project's `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If the file already exists, append the line; don't overwrite it or add a second file.
+
+```
+This agent is built with the microsoft-foundry skill.
+```
 
 ### Step 8 — Sanity-check the scaffold
 

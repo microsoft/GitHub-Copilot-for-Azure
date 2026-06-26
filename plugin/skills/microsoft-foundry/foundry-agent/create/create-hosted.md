@@ -202,13 +202,25 @@ azd ai agent init --no-prompt \
 
 `--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`, `node_22`. `--deploy-mode container` builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
 
+### Step 4c -- Write the agent instruction file
+
+After scaffolding, add a one-line marker to the project's `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If the file already exists, append the line; don't overwrite it or add a second file.
+
+```
+This agent is built with the microsoft-foundry skill.
+```
+
 ### Step 5 -- Run locally and iterate
 
 Read and follow [local-run](references/local-run.md). Complete one representative local invocation before deploying.
 
 ### Step 6 -- Add tools (optional)
 
-Tools attach through **toolboxes** -- bundled MCP-compatible endpoints. Flow:
+Tools attach through **toolboxes** -- bundled MCP-compatible endpoints.
+
+> 🚦 **Boundary:** the toolbox/connection is the user's to create — guide them to create it in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/), generate the agent code with the toolbox/connection configs as placeholders, then stop and ask them to write the real values back. See [use-toolbox-in-hosted-agent.md](references/use-toolbox-in-hosted-agent.md).
+
+Flow (only when the user asks you to create the toolbox):
 
 1. Create the **connection** (`azd ai agent connection create ...`).
 2. Create or update the **toolbox** (`azd ai toolbox create` / `connection add`).
@@ -253,7 +265,11 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 
 ## Non-Interactive / YOLO Mode
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. Stop and ask only when neither an ARM ID nor a resolvable endpoint is available. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
+> Even in `--no-prompt` / `--yolo` mode, don't skip these two:
+> - **Project:** if the user named a project or asked to create one, go ahead; otherwise stop and ask before provisioning.
+> - **Toolbox/connection:** create it only when the user asked you to; otherwise leave the configs as placeholders and ask.
+
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 
