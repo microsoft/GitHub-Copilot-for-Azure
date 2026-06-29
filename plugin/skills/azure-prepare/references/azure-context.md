@@ -6,16 +6,14 @@ Detect and confirm Azure subscription and location before generating artifacts. 
 
 ## Step 1: Check for Existing AZD Environment
 
-If the project already uses AZD, check for an existing environment with values already set:
+Use the context helper to detect any selected AZD environment, existing values, azd defaults, and Azure CLI fallback subscription. It emits `key=value` lines plus a summary, so do not re-parse raw azd output:
 
 ```bash
-azd env list
+./scripts/set-azd-context.sh --detect-only [environment-name]
 ```
 
-**If an environment is selected** (marked with `*`), check its values:
-
-```bash
-azd env get-values
+```powershell
+.\scripts\set-azd-context.ps1 -DetectOnly [-EnvironmentName <environment-name>]
 ```
 
 If `AZURE_SUBSCRIPTION_ID` and `AZURE_LOCATION` are already set, use `ask_user` to confirm reuse:
@@ -39,13 +37,7 @@ If user confirms → skip to **Record in Plan**. Otherwise → continue to Step 
 
 ## Step 2: Detect Defaults
 
-Check for user-configured defaults:
-
-```bash
-azd config get defaults
-```
-
-Returns JSON with any configured defaults:
+The [context helper](scripts/set-azd-context.sh) / [PowerShell helper](scripts/set-azd-context.ps1) already checks `azd config get defaults` and falls back to `az account show --query "{name:name, id:id}" -o json`. Defaults appear as:
 ```json
 {
   "subscription": "25fd0362-aa79-488b-b37b-d6e892009fdf",
@@ -54,11 +46,6 @@ Returns JSON with any configured defaults:
 ```
 
 Use these as **recommended** values if present.
-
-If no defaults, fall back to az CLI:
-```bash
-az account show --query "{name:name, id:id}" -o json
-```
 
 ## Step 3: Confirm Subscription with User
 
@@ -152,14 +139,8 @@ After confirmation, record in `.azure/deployment-plan.md`:
 # 1. Run azd init
 azd init --from-code -e <environment-name> --no-prompt
 
-# 2. IMMEDIATELY set the user-confirmed subscription
-azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
-
-# 3. Set the location
-azd env set AZURE_LOCATION <location>
-
-# 4. Verify
-azd env get-values
+# 2. IMMEDIATELY detect, set subscription first, set location, and verify
+./scripts/set-azd-context.sh <subscription-id> <location> <environment-name>
 ```
 
 **For non-Aspire projects using `azd env new`:**
@@ -168,15 +149,11 @@ azd env get-values
 # 1. Create environment
 azd env new <environment-name> --no-prompt
 
-# 2. IMMEDIATELY set the user-confirmed subscription
-azd env set AZURE_SUBSCRIPTION_ID <subscription-id>
-
-# 3. Set the location
-azd env set AZURE_LOCATION <location>
-
-# 4. Verify
-azd env get-values
+# 2. IMMEDIATELY detect, set subscription first, set location, and verify
+./scripts/set-azd-context.sh <subscription-id> <location> <environment-name>
 ```
+
+PowerShell: `.\scripts\set-azd-context.ps1 -SubscriptionId <subscription-id> -Location <location> -EnvironmentName <environment-name>`.
 
 **Why this is critical:**
 - `az account show` returns the Azure CLI's default subscription
