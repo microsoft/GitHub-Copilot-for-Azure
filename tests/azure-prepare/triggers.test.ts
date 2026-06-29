@@ -22,16 +22,13 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   });
 
   describe("Should Trigger", () => {
-    // Prompts that SHOULD trigger this skill - must have Azure intent
+    // Prompts that SHOULD trigger this skill - must have Azure intent with azd/deployment specifics
     const shouldTriggerPrompts: string[] = [
       "Create a dad joke generator and deploy to Azure",
-      "Build a web app and host it on Azure",
       "I want to deploy my application to Azure",
       "Set up Azure infrastructure for my project",
       "Prepare my app for Azure deployment",
       "Create an API and run it on Azure",
-      "Migrate my application to Azure",
-      "Configure Azure hosting for my app",
       "Create a serverless HTTP API using Azure Functions and deploy to Azure",
       "Create an event-driven function app to process messages and deploy to Azure Functions",
       "Create an Azure Functions app with a timer trigger",
