@@ -538,6 +538,24 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): A
   return calls;
 }
 
+/**
+ * Get all tool calls made during the session
+ */
+export function getToolResults(agentMetadata: AgentMetadata): Array<{
+  id: string;
+  timestamp: string;
+  parentId: string | null;
+  ephemeral?: boolean;
+  type: "tool.execution_complete";
+  data: {
+    toolCallId: string;
+    parentToolCallId?: string;
+  };
+}> {
+  let calls = agentMetadata.events.filter(event => event.type === "tool.execution_complete");
+  return calls;
+}
+
 /** Get combined text of all tool args and results for scanning */
 export function getAllToolText(metadata: AgentMetadata): string {
   const parts: string[] = [];

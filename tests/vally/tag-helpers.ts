@@ -3,7 +3,7 @@
  */
 import type { SystemMessageConfig } from "@github/copilot-sdk";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
-import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
+import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString, getToolResults } from "../utils/evaluate.ts";
 
 /**
  * When any of the early termination condition is satisfied,
@@ -30,7 +30,24 @@ export type EarlyTerminateCondition = {
    */
   contentPattern: string;
 } | {
+  /**
+   * Terminate the run when a matching tool call is made.
+   * The tool call won't be executed.
+   */
   type: "tool-call-match";
+  /**
+   * A regex pattern matching the tool name.
+   */
+  toolPattern: string;
+  /**
+   * A regex pattern matching the serialized tool argument.
+   */
+  argsPattern: string;
+} | {
+  /**
+   * Terminate the run when a matching tool call has gotten its result.
+   */
+  type: "tool-call-result";
   /**
    * A regex pattern matching the tool name.
    */
@@ -110,6 +127,20 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
             );
             if (matched) {
               agentMetadata.testComments.push(`Early terminate due to tool call matching pattern: tool ${condition.toolPattern}, args ${condition.argsPattern}`);
+              return true;
+            }
+          } else if (condition.type === "tool-call-result") {
+            const toolPattern = new RegExp(condition.toolPattern);
+            const argsPattern = new RegExp(condition.argsPattern);
+            const toolCalls = getToolCalls(agentMetadata);
+            const matchedToolCalls = toolCalls.filter((event) => {
+              toolPattern.test(event.data.toolName)
+                && argsPattern.test(argsString(event))
+            });
+            const toolResults = getToolResults(agentMetadata);
+            const hasResult = toolResults.some((completeEvent) => matchedToolCalls.some((startEvent) => startEvent.data.toolCallId === completeEvent.data.toolCallId));
+            if (hasResult) {
+              agentMetadata.testComments.push(`Early terminate due to getting result of tool call matching pattern: tool ${condition.toolPattern}, args ${condition.argsPattern}`);
               return true;
             }
           }
