@@ -220,7 +220,7 @@ Tools attach through **toolboxes** -- bundled MCP-compatible endpoints.
 
 ### Toolbox creation boundary
 
-> 🚦 **Creating the toolbox/connection:** write the **full agent-side code** that consumes the toolbox (not just an env var). The **only** thing you leave out is the toolbox endpoint/connection **value**: put a placeholder there, and have the user create the toolbox/connection in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/) and write the real value back. Create the toolbox/connection yourself only when the user explicitly asks you to (or supplies the real values).
+> 🚦 **Creating the toolbox/connection:** write the **full agent-side code** that consumes the toolbox (not just an env var). The **only** thing you leave out is the toolbox configs (for example name/endpoint/connection): put placeholders there, and explicitly tell the user to create the toolbox/connection in [Foundry Toolkit (VS Code)](https://code.visualstudio.com/docs/intelligentapps/tool-catalog) or the [Foundry Portal](https://ai.azure.com/) and write the real values back. Create the toolbox/connection yourself only when the user explicitly asks you to (or supplies the real values).
 
 Flow (only when the user asks you to create the toolbox):
 
