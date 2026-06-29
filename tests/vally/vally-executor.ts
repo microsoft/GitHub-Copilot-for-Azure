@@ -44,6 +44,7 @@ export class IntegrationTestAgentRunner implements Executor {
       followUpTimeout: timeout,
       takeScreenshot: takeScreenshot,
       requiredSkills: requiredSkills,
+      maxTurns: stimulus.constraints?.max_turns,
       // Always make our agent runner preserve workspace.
       // vally will delete the test workspace by default.
       preserveWorkspace: true
