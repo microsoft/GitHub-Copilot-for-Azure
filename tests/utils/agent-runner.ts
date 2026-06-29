@@ -812,6 +812,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
+    let maxTurnsExceeded = false;
 
     const entry: RunnerCleanup = { config: runConfig };
     currentCleanups.push(entry);
@@ -920,6 +921,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               agentMetadata.testComments.push(
                 `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
               );
+              maxTurnsExceeded = true;
               isComplete = true;
               resolve();
               void session.abort();
@@ -941,7 +943,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      for (const followUpPrompt of runConfig.followUp ?? []) {
+      // Skip follow-ups when the run was aborted due to maxTurns being exceeded.
+      for (const followUpPrompt of (maxTurnsExceeded ? [] : runConfig.followUp ?? [])) {
         isComplete = false;
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
