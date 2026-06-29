@@ -201,19 +201,7 @@ appSettings: {
 
 ## Deployment Strategy
 
-**Option A: Single command** (fast, may fail on first deploy due to RBAC propagation)
-
-```bash
-azd up --no-prompt
-```
-
-**Option B: Two-phase** (recommended for reliability)
-
-```bash
-azd provision --no-prompt     # Create resources + RBAC assignments
-sleep 60                       # Wait for RBAC propagation (Azure AD needs 30-60s)
-azd deploy --no-prompt        # Deploy code (RBAC now active)
-```
+[sh](../../../../scripts/azd-provision-deploy.sh)/[ps1](../../../../scripts/azd-provision-deploy.ps1): `./azd-provision-deploy.sh <template> eastus2 [env-name] [--up]`; no `--up` = provision→60s→deploy.
 
 ## Terraform-Specific Requirements
 

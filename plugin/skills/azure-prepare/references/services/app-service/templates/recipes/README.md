@@ -33,10 +33,7 @@ Base Template (per language/scenario, from AZD gallery)
 
 ### Step 1: Fetch Base Template
 
-```bash
-# Pick template by language + scenario (see selection.md)
-azd init -t <template> -e "$ENV_NAME" --no-prompt
-```
+Init: [sh](../../../../scripts/azd-provision-deploy.sh)/[ps1](../../../../scripts/azd-provision-deploy.ps1), `--init-only`.
 
 ### Step 2: Apply Recipe
 
@@ -54,12 +51,7 @@ The skill reads the recipe's README.md for:
 
 ### Step 4: Deploy
 
-```bash
-azd env set AZURE_LOCATION eastus2
-azd provision --no-prompt
-sleep 60
-azd deploy --no-prompt
-```
+Example: `./azd-provision-deploy.sh <template> eastus2 [env-name] [--up]`.
 
 ## Design Principles
 
