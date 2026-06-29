@@ -72,6 +72,7 @@ The full set is documented in [agent-tools.md](agent-tools.md) and — authorita
 **Adjacent (not a `type` in a toolbox version):**
 
 - **Agent Memory** — use the `MemorySearchTool` SDK class on prompt agents; for hosted agents, configure the memory store via the project (separate from the toolbox). See [tool-memory.md](tool-memory.md).
+- **Skills** — reusable behavioral guidelines (`SKILL.md`) attached via the `skills[]` array, exposed as MCP resources (`skill://` URIs); the Agent Framework SDK wraps these into a `load_skill` tool for progressive disclosure. See [skill-toolbox.md](skill-toolbox.md).
 - **Routines (preview)** — not a tool; an agent **trigger** (`schedule` / `timer` / `github_issue` / `custom`) that invokes an existing agent. See the [public Routines docs](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
 
 ## Information to Gather Before Building a Toolbox Payload
