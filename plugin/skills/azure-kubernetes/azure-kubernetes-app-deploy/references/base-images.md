@@ -30,6 +30,13 @@ generated, so templates never go stale.
 | Go | build `golang:<ver>-alpine`, runtime `gcr.io/distroless/static-debian12` | floating major.minor | `mcr.microsoft.com/oss/go/microsoft/golang:<ver>-azurelinux3.0` |
 | Rust | build `rust:<ver>-slim`, runtime `gcr.io/distroless/cc-debian12` | floating major.minor | `mcr.microsoft.com/azurelinux/base/rust:<maj.min>` |
 
+> The Go and Rust **runtime** stages keep the literal
+> `gcr.io/distroless/*-debian12` names and do **not** use a `<LATEST_STABLE_*>`
+> placeholder: distroless images are identified by base-OS variant (the Debian
+> release), not by language version, and they float their patch level within
+> that Debian release. This asymmetry with the build stages is intentional —
+> don't "fix" it by adding a placeholder.
+
 > Adopting the Microsoft Azure Linux images for Python/Node/Go/Rust changes the
 > in-image package manager (`tdnf`, not `apk`/`apt`) and the non-root-user
 > setup. That migration is intentionally **out of scope** here — this file
