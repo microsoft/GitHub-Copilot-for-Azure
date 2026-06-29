@@ -4,6 +4,8 @@ When .NET Aspire deploys Azure Functions via `azd`, Functions run as containeriz
 
 > ⚠️ **Critical:** When Azure Functions use identity-based storage (e.g., `AzureWebJobsStorage__blobServiceUri`), you **must** set `AzureWebJobsSecretStorageType=Files`.
 
+> 📋 **Confirm with `gather-aspire-info`:** Run [gather-aspire-info.sh](../../scripts/gather-aspire-info.sh) / [gather-aspire-info.ps1](../../scripts/gather-aspire-info.ps1). If it reports `hasFunctions=true` and `secretStorageConfigured=false`, apply the configuration below before `azd up`. See [aspire.md](../../aspire.md) Step 4b for the complete procedure.
+
 ## Proactive Configuration in AppHost
 
 **Best Practice:** Add this setting in your AppHost BEFORE running `azd up`:

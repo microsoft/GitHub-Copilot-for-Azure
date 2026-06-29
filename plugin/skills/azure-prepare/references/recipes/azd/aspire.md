@@ -4,11 +4,7 @@
 
 ## Detection
 
-| Indicator | How to Detect |
-|-----------|---------------|
-| `*.AppHost.csproj` | `find . -name "*.AppHost.csproj"` |
-| `Aspire.Hosting` package | `grep -r "Aspire\.Hosting" . --include="*.csproj"` |
-| `Aspire.AppHost.Sdk` | `grep -r "Aspire\.AppHost\.Sdk" . --include="*.csproj"` |
+Run [detect-aspire.sh](../../scripts/detect-aspire.sh)/[detect-aspire.ps1](../../scripts/detect-aspire.ps1) to definitively determine if this is an Aspire app. If it is, run [gather-aspire-info.sh](../../scripts/gather-aspire-info.sh)/[gather-aspire-info.ps1](../../scripts/gather-aspire-info.ps1) to gather further information that will be needed in this workflow.
 
 ## Workflow
 
