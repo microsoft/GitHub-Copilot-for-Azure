@@ -810,7 +810,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       await withTestResult(async ({ expectScreenshot }) => {
         expectScreenshot();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
+        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/9.0-completed";
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {

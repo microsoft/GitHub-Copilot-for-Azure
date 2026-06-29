@@ -4,7 +4,7 @@ import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { listSkills } from "../utils/skill-loader.ts";
-import { getEarlyTerminateCondition, getFollowUp, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
+import { getEarlyTerminateCondition, getFollowUp, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
 
 export class IntegrationTestAgentRunner implements Executor {
@@ -31,6 +31,7 @@ export class IntegrationTestAgentRunner implements Executor {
     const followUp = getFollowUp(tags);
     const systemPrompt = getSystemPrompt(tags);
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
+    const requiredSkills = getRequiredSkillsCondition(tags);
     const timeout = options.timeout;
 
     const runConfig: AgentRunConfig = {
@@ -46,6 +47,7 @@ export class IntegrationTestAgentRunner implements Executor {
       systemPrompt: systemPrompt,
       followUpTimeout: timeout,
       takeScreenshot: takeScreenshot,
+      requiredSkills: requiredSkills,
       // Always make our agent runner preserve workspace.
       // vally will delete the test workspace by default.
       preserveWorkspace: true
@@ -66,6 +68,7 @@ export class IntegrationTestAgentRunner implements Executor {
       .at(0)?.id;
 
     await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
+    await agentRunner.cleanup();
 
     // Vally will run the graders and produce results.jsonl.
     // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 

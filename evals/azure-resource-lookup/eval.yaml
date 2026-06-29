@@ -24,10 +24,6 @@ tags:
   type: integration
   skill: azure-resource-lookup
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-resource-lookup
-
 config:
   runs: 5
   timeout: "10m"

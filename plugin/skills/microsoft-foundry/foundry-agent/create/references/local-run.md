@@ -9,7 +9,7 @@ Use this when iterating on a hosted agent before deploying.
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
 >
-> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
+> 🚦 **If no project endpoint is configured (not in the message, `azd env`, or `.env`) and the user hasn't asked to create one, stop and ask them to pick an existing project or confirm creating a new one — don't silently select or `azd provision` one.** Once they choose, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
 >
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
@@ -47,11 +47,11 @@ What this does:
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 
-> First startup takes 30-60 seconds. Wait before sending the first invocation.
+> Wait for the ready log line before sending the first invocation. Poll the log at short intervals; do not pre-sleep on a fixed duration.
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
+For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the ready log line, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
 
 Do **not** start `azd ai agent run` as a detached process that you cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
 

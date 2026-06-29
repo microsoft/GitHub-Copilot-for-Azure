@@ -21,6 +21,9 @@ param msbenchReportsContainerName string = 'msbench-reports'
 @description('Name of the Azure Table that stores integration-test token usage history.')
 param tokenUsageTableName string = 'integrationtokenusage'
 
+@description('Name of the Azure Table that stores integration-test per-run tool usage history.')
+param toolUsageTableName string = 'integrationtoolusage'
+
 @description('Principal (object) ID of the user-assigned managed identity used by the integration test pipeline to write token usage rows (skillcitestidentity).')
 param ciTestIdentityPrincipalId string = '531282f7-49cb-4149-af74-6c84a5270e87'
 
@@ -76,6 +79,7 @@ module storage './modules/storage.bicep' = {
     environmentName: environmentName
     principalId: identity.outputs.identityPrincipalId
     tokenUsageTableName: tokenUsageTableName
+    toolUsageTableName: toolUsageTableName
     ciTestIdentityPrincipalId: ciTestIdentityPrincipalId
   }
 }
@@ -99,6 +103,7 @@ module functionApp './modules/function-app.bicep' = {
     userAssignedIdentityClientId: identity.outputs.identityClientId
     storageAccountName: storage.outputs.storageAccountName
     tokenUsageTableName: storage.outputs.tokenUsageTableName
+    toolUsageTableName: storage.outputs.toolUsageTableName
     msbenchStorageAccountName: msbenchStorageAccountName
     msbenchEvalTableName: msbenchEvalTableName
     msbenchReportsContainerName: msbenchReportsContainerName

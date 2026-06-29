@@ -67,7 +67,7 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Resolve inputs based on trigger type
         id: resolve
@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Skills that should be tested using vally in a JSON array
-      VALLY_SKILLS: '["azure-ai","azure-aigateway","azure-compliance","azure-diagnostics","azure-kusto","azure-storage","entra-app-registration","azure-messaging","airunway-aks-setup","azure-rbac","appinsights-instrumentation","azure-cost","azure-quotas","azure-kubernetes","azure-enterprise-infra-planner","azure-resource-lookup","azure-resource-visualizer","azure-reliability","entra-agent-id","python-appservice-deploy"]'
+      VALLY_SKILLS: '["azure-ai","azure-aigateway","azure-compliance","azure-diagnostics","azure-kusto","azure-storage","entra-app-registration","azure-messaging","airunway-aks-setup","azure-rbac","appinsights-instrumentation","azure-cost","azure-quotas","azure-kubernetes","azure-enterprise-infra-planner","azure-resource-lookup","azure-resource-visualizer","azure-reliability","entra-agent-id","python-appservice-deploy","azure-upgrade"]'
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -194,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
@@ -243,7 +243,7 @@ jobs:
 
       - name: Setup .NET
         if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
-        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
           dotnet-version: "10.0.x"
 
@@ -297,6 +297,7 @@ jobs:
           fi
         continue-on-error: false
 
+      # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
       - name: Run integration tests (vally) - ${{ matrix.skill }}
         if: ${{ contains(fromJson(env.VALLY_SKILLS), matrix.skill) }}
         env:
@@ -306,7 +307,7 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           echo test with $MODEL_OVERRIDE
-          npm run test:vally -- --skill $SKILL
+          npm run test:vally -- --skill $SKILL --workers 2
 
       - name: Generate skill report
         if: always()
@@ -397,3 +398,16 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           RUN_ID: ${{ github.run_id }}
         run: npm run upload:token-usage
+
+      # Upload per-run tool usage (one row per tool call) to the Azure Table that
+      # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
+      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
+      - name: Upload tool usage to table
+        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        env:
+          TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
+          SKILL: ${{ matrix.skill }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: npm run upload:tool-usage

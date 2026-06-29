@@ -16,10 +16,6 @@ tags:
   type: integration
   skill: azure-resource-visualizer
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-resource-visualizer
-
 config:
   runs: 5
   timeout: "10m"

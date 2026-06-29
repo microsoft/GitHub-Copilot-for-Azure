@@ -29,7 +29,7 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 | **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, set up CI/CD monitoring, and enable continuous production evaluation | [observe](foundry-agent/observe/observe.md) |
 | **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create (quick start)** | Create a new hosted Foundry agent from scratch end-to-end — scaffold, provision a new Foundry project, deploy, and smoke-test. Opinionated happy-path that accepts common overrides (language, region, sample, topic, existing project, existing model). For anything not covered by the quickstart, use **create**. | [create/quick-start-hosted.md](foundry-agent/create/quick-start-hosted.md) |
+| **create (quick start)** | Create a new hosted Foundry agent from scratch end-to-end — scaffold, provision or use an existing Foundry project, deploy, and smoke-test. Opinionated happy-path that accepts common overrides (language, region, sample, topic, existing project, existing model). For anything not covered by the quickstart, use **create**. | [create/quick-start-hosted.md](foundry-agent/create/quick-start-hosted.md) |
 | **create** | Use when the standard end-to-end happy path doesn't fit — lifting existing agent code into the project, deploying outside the default code path, wiring connections at scaffold time, advanced setup, or recovering from a failed quickstart run. | [create](foundry-agent/create/create-hosted.md) |
 | **agent-optimizer** | Make existing Python hosted-agent code optimization-ready, configure eval.yaml, run Agent Optimizer jobs, apply candidates locally, and deploy through azd after review. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
@@ -164,10 +164,12 @@ If the selected environment exposes older `testSuites[]` metadata but not `evalu
 If `eval.yaml` exists in the selected agent root, parse it before generating new suites:
 
 - `agent.name` -> target agent candidate; verify it matches the selected azd/metadata agent before using it.
-- `dataset_file` -> local seed dataset candidate.
+- `dataset.local_uri` -> local seed dataset candidate; legacy `dataset_file` may be normalized in memory.
+- `dataset.name` / `dataset.version` -> registered dataset candidate.
+- `validation_dataset` -> optional validation dataset candidate.
 - `evaluators[]` -> candidate Foundry evaluator names; verify with `evaluator_catalog_get` before treating them as remote evaluators.
 - `name` -> local eval/suite candidate; verify remotely before persisting as `suiteName`.
-- `options.eval_model`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction` -> setup defaults.
+- `options.eval_model`, `options.optimization_model`, `options.max_candidates`, `options.optimization_config.model_search_space`, `options.pass_threshold`, `max_samples`, `trace_days`, and `generation_instruction` -> setup defaults.
 
 Treat `eval.yaml` as local evaluation intent, not proof that a Foundry suite exists. Persist synced suite/dataset/evaluator references to `.foundry` only after remote lookup or registration succeeds.
 
@@ -238,3 +240,23 @@ Use `agent_get` MCP tool to determine an agent's type when needed.
 ## SDK Quick Reference
 
 - [Python](references/sdk/foundry-sdk-py.md)
+
+## Network Isolation Errors
+
+Applies to **any** call against a Foundry project or its parent Foundry account — Foundry MCP tools, `azd`, `az` CLI, `curl`, REST, or SDK.
+
+If an error matches `Public access is disabled` / `PublicNetworkAccessDisabled` / `403 Forbidden` from a private endpoint / connection timeout / the project endpoint FQDN resolves to a public IP, this typically means the parent Foundry account has `publicNetworkAccess=Disabled` or `Enabled from selected IP addresses`, and the current shell is outside its VNet.
+
+Only if the error is ambiguous, confirm against the Foundry account using a management-plane call (works from anywhere with reader access):
+
+```bash
+az cognitiveservices account show \
+  --name <account> --resource-group <rg> \
+  --query "properties.{publicNetworkAccess:publicNetworkAccess, networkAcls:networkAcls, privateEndpointConnections:privateEndpointConnections[].properties.privateLinkServiceConnectionState.status}"
+```
+
+`publicNetworkAccess: "Disabled"` — or `"Enabled"` together with non-empty `networkAcls.ipRules` / `virtualNetworkRules` — confirms isolation. If `publicNetworkAccess: "Enabled"` and `networkAcls` is empty, the failure is a caller-side network issue (e.g. Private DNS resolving the FQDN to a public IP from inside a VNet with a private endpoint), not an account-config issue.
+
+If it's indeed a network isolation issue, supported connection options are documented in [Choose a secure connection method to Foundry](https://learn.microsoft.com/azure/foundry/how-to/configure-private-link#choose-a-secure-connection-method-to-foundry).
+
+> ℹ️ Foundry MCP tools cannot reach a VNet-isolated project even from inside the VNet.

@@ -9,11 +9,7 @@ description: |
 tags:
   skill: microsoft-foundry
 
-environment:
-  skills:
-    - ../../plugin/skills/microsoft-foundry
-
-defaults:
+config:
   runs: 5
   timeout: "30m"
   executor: integration-test-agent-runner
@@ -261,6 +257,229 @@ stimuli:
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── agent-optimizer-prompt ──
+  - name: "Generate evals for Agent Optimizer"
+    prompt: |
+      I have an azd Python hosted agent that is already wired for Foundry Agent Optimizer.
+      Help me create the optimizer eval.yaml from eval/travel_approval_golden.jsonl,
+      generate adaptive evaluators with azd, and run optimization with an allowed
+      optimizer model. Show the current eval.yaml fields I should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Scaffold Python agent for Agent Optimizer"
+    prompt: |
+      Make my existing azd Python hosted Foundry agent optimizer-ready. Explain the
+      files and code changes you would make, including SDK wiring, baseline config,
+      safe optimization targets, and when to stop for review before deployment.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Apply Agent Optimizer candidate locally"
+    prompt: |
+      Agent Optimizer finished and gave me candidate cand-123. How should I apply
+      that candidate to my azd hosted agent project so the source changes are
+      reviewable before deployment?
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ── agent-observe-prompts ──
+  - name: "Evaluate deployed Foundry agent"
+    prompt: |
+      Evaluate my deployed Foundry agent using the evaluation suite in its
+      .foundry metadata. Explain the setup checks and the batch evaluation call
+      you should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Analyze eval failures and optimize prompt"
+    prompt: |
+      My latest Foundry agent evaluation failed several rows. Help me download the
+      detailed eval results, cluster root causes, optimize the agent prompt, and
+      compare the new version against the baseline.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Enable continuous evaluation monitoring"
+    prompt: |
+      Set up continuous evaluation monitoring for my Foundry agent in production.
+      Include how to check existing config, choose evaluators, and enable or update
+      monitoring safely.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Create
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Create Python hosted Foundry agent"
+    prompt: "Create a new hosted agent for Foundry using Python."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Create LangGraph hosted Foundry agent"
+    prompt: "Create a LangGraph hosted agent for Foundry in Python."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Deploy Foundry agent routing"
+    prompt: "Deploy my agent to Azure AI Foundry"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Containerize Foundry agent routing"
+    prompt: "Containerize my agent project for Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Invoke
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Invoke Foundry agent routing"
+    prompt: "Send a test message to my Foundry agent"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Troubleshoot
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Troubleshoot Foundry agent routing"
+    prompt: "Troubleshoot my Foundry agent that is returning errors"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"

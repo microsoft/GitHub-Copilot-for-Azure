@@ -30,14 +30,14 @@
     "@types/micromatch": "^4.0.10",
     "@types/node": "^25.9.0",
     "@vitest/coverage-v8": "^4.1.2",
-    "eslint": "^10.4.0",
-    "fast-xml-parser": "^5.8.0",
+    "eslint": "^10.5.0",
+    "fast-xml-parser": "^5.9.0",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
     "sirv-cli": "^3.0.1",
     "tsx": "^4.22.1",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.59.0",
+    "typescript-eslint": "^8.61.0",
     "vitest": "^4.0.18"
   },
   "engines": {

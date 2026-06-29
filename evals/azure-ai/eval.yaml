@@ -15,10 +15,6 @@ tags:
   type: integration
   skill: azure-ai
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-ai
-
 config:
   runs: 5
   timeout: "10m"
@@ -39,6 +35,8 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
+      requiredSkills:
+        - azure-ai
       earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
@@ -60,6 +58,8 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      requiredSkills:
+        - azure-ai
       earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
