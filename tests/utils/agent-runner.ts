@@ -883,7 +883,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               tools: ["*"]
             }
           }
-        },
+        }),
         systemMessage: runConfig.systemPrompt,
         // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
         enableSessionTelemetry: false
