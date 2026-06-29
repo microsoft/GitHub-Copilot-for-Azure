@@ -63,8 +63,9 @@ function Test-AzdAuthLoggedIn {
     } catch {
         $raw = $_ | Out-String
     }
+    $authExit = $LASTEXITCODE
 
-    if ($raw -match "(?i)(not\s+logged\s+in|not\s+authenticated|no\s+account|login\s+required|please\s+run.*azd\s+auth\s+login|run.*azd\s+auth\s+login|expired|failed|error)") {
+    if ($raw -match "(?i)(not\s+logged\s+in|not\s+authenticated|no\s+account|login\s+required|please\s+run.*azd\s+auth\s+login|run.*azd\s+auth\s+login|expired)") {
         return $false
     }
 
@@ -72,7 +73,8 @@ function Test-AzdAuthLoggedIn {
         return $true
     }
 
-    return $false
+    # Unrecognized output -- fall back to exit code
+    return ($authExit -eq 0)
 }
 
 # 1. Required CLIs

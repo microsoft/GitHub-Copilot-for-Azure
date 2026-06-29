@@ -62,10 +62,13 @@ for ext in azure.ai.agents azure.ai.projects; do
 done
 
 # 3. Auth status
-AZD_AUTH_OUTPUT="$(azd auth login --check-status 2>&1 || true)"
-if printf '%s' "$AZD_AUTH_OUTPUT" | grep -Eiq '(not[[:space:]]+logged[[:space:]]+in|not[[:space:]]+authenticated|no[[:space:]]+account|login[[:space:]]+required|please[[:space:]]+run.*azd[[:space:]]+auth[[:space:]]+login|run.*azd[[:space:]]+auth[[:space:]]+login|expired|failed|error)'; then
+AZD_AUTH_OUTPUT="$(azd auth login --check-status 2>&1)"; AZD_AUTH_EXIT=$?
+if printf '%s' "$AZD_AUTH_OUTPUT" | grep -Eiq '(not[[:space:]]+logged[[:space:]]+in|not[[:space:]]+authenticated|no[[:space:]]+account|login[[:space:]]+required|please[[:space:]]+run.*azd[[:space:]]+auth[[:space:]]+login|run.*azd[[:space:]]+auth[[:space:]]+login|expired)'; then
   note_action "Not logged in to azd. Ask the user to run 'azd auth login' (it opens a browser; never run it for them)."
 elif printf '%s' "$AZD_AUTH_OUTPUT" | grep -Eiq '(logged[[:space:]]+in|authenticated|already[[:space:]]+logged[[:space:]]+in)'; then
+  note_ok "Logged in to azd."
+elif [ "$AZD_AUTH_EXIT" -eq 0 ]; then
+  # Unrecognized output -- fall back to exit code
   note_ok "Logged in to azd."
 else
   note_action "Unable to verify azd auth status. Ask the user to run 'azd auth login' and re-run this script."
