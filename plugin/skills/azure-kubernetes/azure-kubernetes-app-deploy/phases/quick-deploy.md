@@ -162,7 +162,7 @@ az aks get-credentials -g <resource_group> -n <aks_cluster_name> --overwrite-exi
 kubectl get crd gateways.gateway.networking.k8s.io httproutes.gateway.networking.k8s.io 2>/dev/null
 ```
 
-If missing: `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0/standard-install.yaml`
+If missing: `kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/latest/download/standard-install.yaml`
 
 ### Build and push
 
