@@ -1,0 +1,177 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-validate/integration.test.ts
+# Migration: Jest skill-invocation tests → Vally routing stimuli
+#
+# Stimuli with earlyTerminate tags do not use the completed grader.
+
+name: azure-validate-routing-eval
+description: |
+  Integration evaluation for azure-validate skill — migrated from Jest skill-invocation tests.
+  Tests routing for Azure Validate prompts using invocation rate measurement.
+
+tags:
+  type: integration
+  skill: azure-validate
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Skill routing prompts
+  # ═══════════════════════════════════════════
+# Jest: "invokes azure-validate skill for deployment readiness check"
+  - name: "Deployment Readiness Check"
+    prompt: "Check if my azd app is ready to deploy to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-validate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for azure.yaml validation prompt"
+  - name: "Azure.Yaml Validation"
+    prompt: "Validate my azure.yaml configuration before deploying"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for Bicep validation prompt"
+  - name: "Bicep Validation"
+    prompt: "Validate my Bicep template for my azd project before deploying to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for what-if analysis prompt"
+  - name: "What-If Analysis"
+    prompt: "Run a what-if analysis to preview changes before deploying my azd infrastructure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for RBAC role verification prompt"
+  - name: "RBAC Role Verification"
+    prompt: "Verify the RBAC role assignments in my Bicep templates for my azd project before deploying to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/functions-quickstart-dotnet-azd
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for managed identity permissions check prompt"
+  - name: "Managed Identity Permissions Check"
+    prompt: "Validate the managed identity RBAC role assignments in my Bicep templates for my azd project before deploying to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/functions-quickstart-dotnet-azd
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
