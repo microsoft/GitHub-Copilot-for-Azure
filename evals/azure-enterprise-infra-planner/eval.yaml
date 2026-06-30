@@ -52,7 +52,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: files
+      area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
