@@ -50,6 +50,10 @@ for provisioning-limit checks.
 
 > **Run the script in a loop. The script tells you what to do next.**
 
+> **Execute the driver — do not read its source.** `prepare.sh` / `prepare.ps1` are
+> thin entry points that source helper modules from `scripts/lib/`. You never need to
+> open the script or its `lib/` files; just run it and act on the `NEXT ACTION` block.
+
 1. **Run the driver** with the repo path. Both scripts are functionally identical —
    use whichever fits the environment:
 

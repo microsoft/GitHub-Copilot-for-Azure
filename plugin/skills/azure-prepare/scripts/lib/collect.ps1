@@ -1,0 +1,229 @@
+# =============================================================================
+# collect.ps1 -- Programmatic auto-collection of repo/azd/az context.
+# Dot-sourced by prepare.ps1; shares script scope ($RepoPath, $StateFile, $Steps).
+# Not a standalone script.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Programmatic collectors (idempotent; run every invocation)
+# ---------------------------------------------------------------------------
+function Get-RepoFiles {
+    # Top-level + shallow scan, excluding noise directories.
+    $exclude = @('.git', '.azure-prepare', 'node_modules', 'bin', 'obj', '.venv', 'dist', '.terraform')
+    Get-ChildItem -LiteralPath $RepoPath -Recurse -File -Depth 3 -ErrorAction SilentlyContinue |
+        Where-Object {
+            $rel = $_.FullName.Substring($RepoPath.Length).TrimStart('\', '/')
+            $seg = $rel -split '[\\/]'
+            -not ($seg | Where-Object { $exclude -contains $_ })
+        }
+}
+
+function Invoke-AutoCollect {
+    # Scans the repo and refreshes the state's `auto.*` block (languages, frameworks, existing infra, markers, git, Azure context).
+    param([hashtable]$State)
+
+    $files = @(Get-RepoFiles)
+    $names = @($files | ForEach-Object { $_.Name })
+    function HasFile([string]$pattern) { return [bool]($files | Where-Object { $_.Name -like $pattern }) }
+
+    # --- languages ---
+    $langs = [System.Collections.Generic.List[string]]::new()
+    if (HasFile 'package.json')      { $langs.Add('nodejs') }
+    if ((HasFile '*.csproj') -or (HasFile '*.sln')) { $langs.Add('dotnet') }
+    if ((HasFile 'requirements.txt') -or (HasFile 'pyproject.toml') -or (HasFile 'setup.py')) { $langs.Add('python') }
+    if ((HasFile 'pom.xml') -or (HasFile 'build.gradle')) { $langs.Add('java') }
+    if (HasFile 'go.mod')            { $langs.Add('go') }
+    if (HasFile 'Cargo.toml')        { $langs.Add('rust') }
+
+    # --- frameworks (best-effort from package.json / python files) ---
+    $frameworks = [System.Collections.Generic.List[string]]::new()
+    $copilotSdk = $false
+    $pkg = $files | Where-Object { $_.Name -eq 'package.json' } | Select-Object -First 1
+    if ($pkg) {
+        try {
+            $json = Get-Content -LiteralPath $pkg.FullName -Raw | ConvertFrom-Json -AsHashtable
+            $deps = @{}
+            foreach ($k in @('dependencies', 'devDependencies')) {
+                if ($json.ContainsKey($k) -and $json[$k]) { $json[$k].Keys | ForEach-Object { $deps[$_] = $true } }
+            }
+            foreach ($fw in @('react', 'next', 'express', 'fastify', '@angular/core', 'vue', 'svelte', 'nestjs', '@nestjs/core')) {
+                if ($deps.ContainsKey($fw)) { $frameworks.Add($fw) }
+            }
+            if ($deps.ContainsKey('@github/copilot-sdk')) { $copilotSdk = $true }
+        }
+        catch { }
+    }
+    $reqFiles = @($files | Where-Object { $_.Name -in @('requirements.txt', 'pyproject.toml') })
+    foreach ($rf in $reqFiles) {
+        try {
+            $txt = (Get-Content -LiteralPath $rf.FullName -Raw)
+            foreach ($fw in @('flask', 'django', 'fastapi', 'uvicorn', 'gunicorn')) {
+                if ($txt -match "(?im)^\s*$fw\b") { if (-not $frameworks.Contains($fw)) { $frameworks.Add($fw) } }
+            }
+        }
+        catch { }
+    }
+
+    # --- existing infrastructure ---
+    $existingInfra = @{
+        azureYaml  = [bool]($files | Where-Object { $_.Name -in @('azure.yaml', 'azure.yml') })
+        bicep      = [bool]($files | Where-Object { $_.Extension -eq '.bicep' })
+        terraform  = [bool]($files | Where-Object { $_.Extension -eq '.tf' })
+        dockerfile = [bool]($files | Where-Object { $_.Name -like 'Dockerfile*' })
+        githubActions = [bool]($files | Where-Object { $_.FullName -like '*\.github\workflows\*' -or $_.FullName -like '*/.github/workflows/*' })
+        azurePipelines = [bool]($files | Where-Object { $_.Name -eq 'azure-pipelines.yml' })
+        azureYamlProvider = $null
+    }
+
+    # --- azure.yaml IaC provider (terraform vs bicep/default) ---
+    $azureYamlFile = $files | Where-Object { $_.Name -in @('azure.yaml', 'azure.yml') } | Select-Object -First 1
+    if ($azureYamlFile) {
+        try {
+            if ((Get-Content -LiteralPath $azureYamlFile.FullName -Raw) -match '(?im)provider\s*:\s*terraform') {
+                $existingInfra.azureYamlProvider = 'terraform'
+            }
+            else { $existingInfra.azureYamlProvider = 'bicep' }
+        }
+        catch { }
+    }
+
+    # --- .NET Aspire detection (AppHost project or Aspire.Hosting reference) ---
+    $aspire = [bool]($files | Where-Object { $_.Name -like '*.AppHost.csproj' })
+    if (-not $aspire) {
+        foreach ($csproj in @($files | Where-Object { $_.Extension -eq '.csproj' })) {
+            try {
+                if ((Get-Content -LiteralPath $csproj.FullName -Raw) -match 'Aspire\.Hosting') { $aspire = $true; break }
+            }
+            catch { }
+        }
+    }
+
+    # --- Azure Functions detection (host.json, SDK dependency, or WebJobs reference) ---
+    $azureFunctions = [bool]($files | Where-Object { $_.Name -eq 'host.json' })
+    if (-not $azureFunctions -and $pkg) {
+        try {
+            if ((Get-Content -LiteralPath $pkg.FullName -Raw) -match '@azure/functions|azure-functions') { $azureFunctions = $true }
+        }
+        catch { }
+    }
+    if (-not $azureFunctions) {
+        foreach ($csproj in @($files | Where-Object { $_.Extension -eq '.csproj' })) {
+            try {
+                if ((Get-Content -LiteralPath $csproj.FullName -Raw) -match 'Microsoft\.Azure\.(Functions|WebJobs)') { $azureFunctions = $true; break }
+            }
+            catch { }
+        }
+    }
+
+    # --- pure static site detection (HTML/assets only, no build tooling or framework) ---
+    $hasHtml = [bool]($files | Where-Object { $_.Extension -in @('.html', '.htm') })
+    $pureStaticSite = ($hasHtml -and $langs.Count -eq 0 -and $frameworks.Count -eq 0)
+
+    # --- workspace emptiness ---
+    $workspaceEmpty = ($files.Count -eq 0)
+
+    # --- existing plan ---
+    $planPath = Join-Path $RepoPath '.azure/deployment-plan.md'
+
+    # --- git ---
+    $gitRoot = $null
+    if (Test-Path -LiteralPath (Join-Path $RepoPath '.git')) { $gitRoot = $RepoPath }
+
+    $State['auto'] = @{
+        scannedAtUtc     = (Get-Date).ToUniversalTime().ToString('o')
+        fileCount        = $files.Count
+        workspaceEmpty   = $workspaceEmpty
+        detectedLanguages  = @($langs | Select-Object -Unique)
+        detectedFrameworks = @($frameworks | Select-Object -Unique)
+        existingInfra    = $existingInfra
+        componentSignals = @{ aspire = $aspire; azureFunctions = $azureFunctions; pureStaticSite = $pureStaticSite }
+        codebaseMarkers  = @{ copilotSdk = $copilotSdk }
+        gitRoot          = $gitRoot
+        existingPlan     = (Test-Path -LiteralPath $planPath)
+        azContext        = (Get-AzContext)
+        azdContext       = (Get-AzdContext)
+    }
+}
+
+function Get-AzdContext {
+    # Best-effort read of azd's configured defaults and current environment values (subscription/location) from the repo, or an "unavailable" result if azd is missing.
+    $result = @{ available = $false; defaults = @{ subscription = $null; location = $null }; env = @{ name = $null; subscriptionId = $null; location = $null } }
+    $azd = Get-Command azd -ErrorAction SilentlyContinue
+    if (-not $azd) { return $result }
+    Push-Location -LiteralPath $RepoPath
+    try {
+        $result.available = $true
+        try {
+            $def = & azd config get defaults -o json 2>$null
+            if ($LASTEXITCODE -eq 0 -and $def) {
+                $d = ($def | ConvertFrom-Json)
+                $result.defaults.subscription = $d.subscription
+                $result.defaults.location     = $d.location
+            }
+        }
+        catch { }
+        try {
+            # azd env values only exist for azd projects; skip the call when there is no azure.yaml.
+            $hasAzureYaml = (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yaml')) -or (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yml'))
+            if ($hasAzureYaml) {
+                $vals = & azd env get-values -o json 2>$null
+                if ($LASTEXITCODE -eq 0 -and $vals) {
+                    $v = ($vals | ConvertFrom-Json)
+                    $result.env.subscriptionId = $v.AZURE_SUBSCRIPTION_ID
+                    $result.env.location       = $v.AZURE_LOCATION
+                    $result.env.name           = $v.AZURE_ENV_NAME
+                }
+            }
+        }
+        catch { }
+    }
+    finally { Pop-Location }
+    return $result
+}
+
+function Get-AzContext {
+    # Returns the signed-in Azure subscription/tenant from `az account show`, or an "unavailable" result if the CLI is missing or not logged in.
+    $result = @{ available = $false; subscriptionId = $null; subscriptionName = $null; tenantId = $null }
+    $az = Get-Command az -ErrorAction SilentlyContinue
+    if (-not $az) { return $result }
+    try {
+        $out = & az account show -o json 2>$null
+        if ($LASTEXITCODE -eq 0 -and $out) {
+            $acct = ($out | ConvertFrom-Json)
+            $result.available        = $true
+            $result.subscriptionId   = $acct.id
+            $result.subscriptionName = $acct.name
+            $result.tenantId         = $acct.tenantId
+        }
+    }
+    catch { }
+    return $result
+}
+
+# ---------------------------------------------------------------------------
+# Proposed mode from programmatic signals (LM confirms)
+# ---------------------------------------------------------------------------
+function Get-ProposedMode {
+    # Proposes a workspace mode (NEW / MODIFY / MODERNIZE) from the auto-detected signals; the LM confirms it later.
+    param([hashtable]$State)
+    $a = $State['auto']
+    if ($a['workspaceEmpty']) { return 'NEW' }
+    if ($a['existingInfra']['azureYaml'] -or $a['existingInfra']['bicep'] -or $a['existingInfra']['terraform']) { return 'MODIFY' }
+    return 'MODERNIZE'
+}
+
+function Get-ProposedRecipe {
+    # Proposes an IaC recipe from the auto-detected signals (Aspire, azure.yaml provider, *.tf, *.bicep); the LM confirms it later.
+    param([hashtable]$State)
+    $a = $State['auto']
+    $infra = $a['existingInfra']
+    if ($a['componentSignals'] -and $a['componentSignals']['aspire']) { return 'AZD (Aspire, via azd init --from-code)' }
+    if ($infra['azureYaml']) {
+        if ($infra['azureYamlProvider'] -eq 'terraform') { return 'AZD (Terraform)' }
+        return 'AZD (Bicep)'
+    }
+    if ($infra['terraform']) { return 'AZD (Terraform)' }
+    if ($infra['bicep']) { return 'Bicep' }
+    return 'AZD (Bicep)'
+}
+

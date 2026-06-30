@@ -1,0 +1,211 @@
+# =============================================================================
+# collect.sh — Programmatic auto-collection of repo/azd/az context.
+# Sourced by prepare.sh; shares globals (STATE, RepoPath, StateFile, FILES, STEP_IDS).
+# Not a standalone script.
+# =============================================================================
+
+# Scans the repo and refreshes the state's `auto.*` block (languages, frameworks, existing infra, markers, git, Azure context).
+invoke_auto_collect() {
+    get_repo_files
+
+    local file_count
+    file_count="$(printf '%s\n' "$FILES" | grep -c . )"
+
+    # --- languages ---
+    local langs=()
+    has_file_glob 'package.json' && langs+=(nodejs)
+    { has_file_glob '*.csproj' || has_file_glob '*.sln'; } && langs+=(dotnet)
+    { has_file_glob 'requirements.txt' || has_file_glob 'pyproject.toml' || has_file_glob 'setup.py'; } && langs+=(python)
+    { has_file_glob 'pom.xml' || has_file_glob 'build.gradle'; } && langs+=(java)
+    has_file_glob 'go.mod' && langs+=(go)
+    has_file_glob 'Cargo.toml' && langs+=(rust)
+
+    # --- frameworks (best-effort from package.json / python files) ---
+    local frameworks=() copilot_sdk=false
+    local pkg deps fw
+    pkg="$(first_file_matching '/package\.json$')"
+    if [[ -n "$pkg" && -f "$pkg" ]]; then
+        deps="$(jq -r '((.dependencies // {}) + (.devDependencies // {})) | keys[]?' "$pkg" 2>/dev/null)"
+        for fw in react next express fastify '@angular/core' vue svelte nestjs '@nestjs/core'; do
+            grep -qxF "$fw" <<<"$deps" && frameworks+=("$fw")
+        done
+        grep -qxF '@github/copilot-sdk' <<<"$deps" && copilot_sdk=true
+    fi
+    local rf f
+    for rf in 'requirements.txt' 'pyproject.toml'; do
+        f="$(first_file_matching "/$rf\$")"
+        [[ -n "$f" && -f "$f" ]] || continue
+        for fw in flask django fastapi uvicorn gunicorn; do
+            if grep -qiE "^[[:space:]]*$fw\b" "$f" && ! in_list "$fw" "${frameworks[@]:-}"; then
+                frameworks+=("$fw")
+            fi
+        done
+    done
+
+    # --- existing infrastructure ---
+    local azure_yaml=false bicep=false terraform=false dockerfile=false gha=false azpipe=false provider=null
+    { has_file_glob 'azure.yaml' || has_file_glob 'azure.yml'; } && azure_yaml=true
+    has_file_glob '*.bicep' && bicep=true
+    has_file_glob '*.tf' && terraform=true
+    has_file_glob 'Dockerfile*' && dockerfile=true
+    grep -qE '/\.github/workflows/' <<<"$FILES" && gha=true
+    has_file_glob 'azure-pipelines.yml' && azpipe=true
+
+    # --- azure.yaml IaC provider (terraform vs bicep/default) ---
+    local ayfile
+    ayfile="$(first_file_matching '/azure\.ya?ml$')"
+    if [[ -n "$ayfile" && -f "$ayfile" ]]; then
+        if grep -qiE 'provider[[:space:]]*:[[:space:]]*terraform' "$ayfile"; then provider='"terraform"'; else provider='"bicep"'; fi
+    fi
+
+    # --- .NET Aspire detection (AppHost project or Aspire.Hosting reference) ---
+    local aspire=false csproj
+    has_file_glob '*.AppHost.csproj' && aspire=true
+    if [[ "$aspire" == false ]]; then
+        while IFS= read -r csproj; do
+            [[ -n "$csproj" && -f "$csproj" ]] || continue
+            if grep -q 'Aspire\.Hosting' "$csproj"; then aspire=true; break; fi
+        done < <(printf '%s\n' "$FILES" | grep -iE '\.csproj$')
+    fi
+
+    # --- Azure Functions detection (host.json, SDK dependency, or WebJobs reference) ---
+    local azure_functions=false
+    has_file_glob 'host.json' && azure_functions=true
+    if [[ "$azure_functions" == false && -n "$pkg" && -f "$pkg" ]]; then
+        grep -qE '@azure/functions|azure-functions' "$pkg" && azure_functions=true
+    fi
+    if [[ "$azure_functions" == false ]]; then
+        while IFS= read -r csproj; do
+            [[ -n "$csproj" && -f "$csproj" ]] || continue
+            if grep -qE 'Microsoft\.Azure\.(Functions|WebJobs)' "$csproj"; then azure_functions=true; break; fi
+        done < <(printf '%s\n' "$FILES" | grep -iE '\.csproj$')
+    fi
+
+    # --- pure static site detection (HTML/assets only, no build tooling or framework) ---
+    local has_html=false pure_static=false
+    { has_file_glob '*.html' || has_file_glob '*.htm'; } && has_html=true
+    if [[ "$has_html" == true && ${#langs[@]} -eq 0 && ${#frameworks[@]} -eq 0 ]]; then pure_static=true; fi
+
+    # --- workspace emptiness ---
+    local workspace_empty=false
+    [[ "$file_count" -eq 0 ]] && workspace_empty=true
+
+    # --- existing plan ---
+    local existing_plan=false
+    [[ -f "$RepoPath/.azure/deployment-plan.md" ]] && existing_plan=true
+
+    # --- git ---
+    local git_root=null
+    [[ -d "$RepoPath/.git" ]] && git_root="$(jq -n --arg p "$RepoPath" '$p')"
+
+    # --- assemble JSON fragments ---
+    local langs_json fw_json
+    langs_json="$(json_string_array "${langs[@]:-}")"
+    fw_json="$(json_string_array "${frameworks[@]:-}")"
+
+    local existing_infra
+    existing_infra="$(jq -n \
+        --argjson azureYaml "$azure_yaml" --argjson bicep "$bicep" --argjson terraform "$terraform" \
+        --argjson dockerfile "$dockerfile" --argjson githubActions "$gha" --argjson azurePipelines "$azpipe" \
+        --argjson azureYamlProvider "$provider" \
+        '{azureYaml:$azureYaml, bicep:$bicep, terraform:$terraform, dockerfile:$dockerfile, githubActions:$githubActions, azurePipelines:$azurePipelines, azureYamlProvider:$azureYamlProvider}')"
+
+    local comp_signals markers az_ctx azd_ctx auto
+    comp_signals="$(jq -n --argjson aspire "$aspire" --argjson azureFunctions "$azure_functions" --argjson pureStaticSite "$pure_static" \
+        '{aspire:$aspire, azureFunctions:$azureFunctions, pureStaticSite:$pureStaticSite}')"
+    markers="$(jq -n --argjson copilotSdk "$copilot_sdk" '{copilotSdk:$copilotSdk}')"
+    az_ctx="$(get_az_context)"
+    azd_ctx="$(get_azd_context)"
+
+    auto="$(jq -n \
+        --arg scannedAtUtc "$(now_iso)" \
+        --argjson fileCount "$file_count" \
+        --argjson workspaceEmpty "$workspace_empty" \
+        --argjson detectedLanguages "$langs_json" \
+        --argjson detectedFrameworks "$fw_json" \
+        --argjson existingInfra "$existing_infra" \
+        --argjson componentSignals "$comp_signals" \
+        --argjson codebaseMarkers "$markers" \
+        --argjson gitRoot "$git_root" \
+        --argjson existingPlan "$existing_plan" \
+        --argjson azContext "$az_ctx" \
+        --argjson azdContext "$azd_ctx" \
+        '{scannedAtUtc:$scannedAtUtc, fileCount:$fileCount, workspaceEmpty:$workspaceEmpty, detectedLanguages:$detectedLanguages, detectedFrameworks:$detectedFrameworks, existingInfra:$existingInfra, componentSignals:$componentSignals, codebaseMarkers:$codebaseMarkers, gitRoot:$gitRoot, existingPlan:$existingPlan, azContext:$azContext, azdContext:$azdContext}')"
+
+    STATE="$(printf '%s' "$STATE" | jq --argjson a "$auto" '.auto = $a')"
+}
+
+# Builds a compact JSON array of (deduped) strings from the given shell arguments.
+json_string_array() {
+    if [[ $# -eq 0 || ( $# -eq 1 && -z "$1" ) ]]; then printf '[]'; return; fi
+    printf '%s\n' "$@" | jq -R . | jq -s -c 'map(select(length > 0)) | unique_by(.) as $u | reduce .[] as $x ([]; if any(.[]; . == $x) then . else . + [$x] end)'
+}
+
+# Best-effort read of azd's configured defaults and current environment values (subscription/location), or an "unavailable" result if azd is missing.
+get_azd_context() {
+    local res sub=null loc=null envname=null envsub=null envloc=null def vals
+    res='{"available":false,"defaults":{"subscription":null,"location":null},"env":{"name":null,"subscriptionId":null,"location":null}}'
+    command -v azd >/dev/null 2>&1 || { printf '%s' "$res"; return; }
+    def="$(cd "$RepoPath" && azd config get defaults -o json 2>/dev/null)"
+    if [[ -n "$def" ]] && jq -e . >/dev/null 2>&1 <<<"$def"; then
+        sub="$(jq -c '.subscription // null' <<<"$def")"
+        loc="$(jq -c '.location // null' <<<"$def")"
+    fi
+    if [[ -f "$RepoPath/azure.yaml" || -f "$RepoPath/azure.yml" ]]; then
+        vals="$(cd "$RepoPath" && azd env get-values -o json 2>/dev/null)"
+        if [[ -n "$vals" ]] && jq -e . >/dev/null 2>&1 <<<"$vals"; then
+            envsub="$(jq -c '.AZURE_SUBSCRIPTION_ID // null' <<<"$vals")"
+            envloc="$(jq -c '.AZURE_LOCATION // null' <<<"$vals")"
+            envname="$(jq -c '.AZURE_ENV_NAME // null' <<<"$vals")"
+        fi
+    fi
+    jq -n --argjson sub "$sub" --argjson loc "$loc" --argjson en "$envname" --argjson es "$envsub" --argjson el "$envloc" \
+        '{available:true, defaults:{subscription:$sub, location:$loc}, env:{name:$en, subscriptionId:$es, location:$el}}'
+}
+
+# Returns the signed-in Azure subscription/tenant from `az account show`, or an "unavailable" result if the CLI is missing or not logged in.
+get_az_context() {
+    local res out
+    res='{"available":false,"subscriptionId":null,"subscriptionName":null,"tenantId":null}'
+    command -v az >/dev/null 2>&1 || { printf '%s' "$res"; return; }
+    out="$(az account show -o json 2>/dev/null)"
+    if [[ -n "$out" ]] && jq -e . >/dev/null 2>&1 <<<"$out"; then
+        jq -c '{available:true, subscriptionId:.id, subscriptionName:.name, tenantId:.tenantId}' <<<"$out"
+    else
+        printf '%s' "$res"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# Proposed mode/recipe from programmatic signals (LM confirms)
+# ---------------------------------------------------------------------------
+
+# Proposes a workspace mode (NEW / MODIFY / MODERNIZE) from the auto-detected signals; the LM confirms it later.
+get_proposed_mode() {
+    local empty ay bi tf
+    empty="$(printf '%s' "$STATE" | jq -r '.auto.workspaceEmpty // false')"
+    [[ "$empty" == true ]] && { printf 'NEW'; return; }
+    ay="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.azureYaml // false')"
+    bi="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.bicep // false')"
+    tf="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.terraform // false')"
+    if [[ "$ay" == true || "$bi" == true || "$tf" == true ]]; then printf 'MODIFY'; return; fi
+    printf 'MODERNIZE'
+}
+
+# Proposes an IaC recipe from the auto-detected signals (Aspire, azure.yaml provider, *.tf, *.bicep); the LM confirms it later.
+get_proposed_recipe() {
+    local aspire ay prov tf bi
+    aspire="$(printf '%s' "$STATE" | jq -r '.auto.componentSignals.aspire // false')"
+    [[ "$aspire" == true ]] && { printf 'AZD (Aspire, via azd init --from-code)'; return; }
+    ay="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.azureYaml // false')"
+    prov="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.azureYamlProvider // empty')"
+    tf="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.terraform // false')"
+    bi="$(printf '%s' "$STATE" | jq -r '.auto.existingInfra.bicep // false')"
+    if [[ "$ay" == true ]]; then
+        if [[ "$prov" == terraform ]]; then printf 'AZD (Terraform)'; else printf 'AZD (Bicep)'; fi
+        return
+    fi
+    [[ "$tf" == true ]] && { printf 'AZD (Terraform)'; return; }
+    [[ "$bi" == true ]] && { printf 'Bicep'; return; }
+    printf 'AZD (Bicep)'
+}
