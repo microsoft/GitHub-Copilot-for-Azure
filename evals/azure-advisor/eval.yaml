@@ -187,6 +187,40 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── boundary-keyvault ──
+  - name: "Key Vault query does not route to advisor"
+    prompt: "Store a new secret in my Azure Key Vault"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── boundary-appservice ──
+  - name: "App Service deploy does not route to advisor"
+    prompt: "Deploy my web app to Azure App Service"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ═══════════════════════════════════════════
   # Response quality tests
   # ═══════════════════════════════════════════
