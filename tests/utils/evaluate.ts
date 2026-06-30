@@ -538,6 +538,36 @@ export function getToolCalls(agentMetadata: AgentMetadata, toolName?: string): A
   return calls;
 }
 
+/**
+ * Get the result content strings from tool execution completions.
+ * Optionally filter by tool name pattern by correlating with start events.
+ */
+export function getToolCallResults(agentMetadata: AgentMetadata, toolPattern?: RegExp): string[] {
+  // Build a map from toolCallId to toolName using start events
+  const toolNameById = new Map<string, string>();
+  for (const event of agentMetadata.events) {
+    if (event.type === "tool.execution_start") {
+      const data = event.data as { toolCallId?: string; toolName?: string };
+      if (data.toolCallId && data.toolName) {
+        toolNameById.set(data.toolCallId, data.toolName);
+      }
+    }
+  }
+
+  const results: string[] = [];
+  for (const event of agentMetadata.events) {
+    if (event.type !== "tool.execution_complete") continue;
+    const data = event.data as { toolCallId?: string; result?: { content?: string }; error?: { message?: string } };
+    if (toolPattern) {
+      const toolName = data.toolCallId ? toolNameById.get(data.toolCallId) : undefined;
+      if (!toolName || !toolPattern.test(toolName)) continue;
+    }
+    if (data.result?.content) results.push(data.result.content);
+    if (data.error?.message) results.push(data.error.message);
+  }
+  return results;
+}
+
 /** Get combined text of all tool args and results for scanning */
 export function getAllToolText(metadata: AgentMetadata): string {
   const parts: string[] = [];

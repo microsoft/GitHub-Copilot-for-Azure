@@ -3,7 +3,7 @@
  */
 import type { SystemMessageConfig } from "@github/copilot-sdk";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
-import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
+import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString, getToolCallResults } from "../utils/evaluate.ts";
 
 /**
  * When any of the early termination condition is satisfied,
@@ -39,6 +39,17 @@ export type EarlyTerminateCondition = {
    * A regex pattern matching the serialized tool argument.
    */
   argsPattern: string;
+} | {
+  type: "tool-call-result";
+  /**
+   * An optional regex pattern matching the tool name.
+   * When omitted, all tool results are considered.
+   */
+  toolPattern?: string;
+  /**
+   * A regex pattern matching the tool result content.
+   */
+  resultPattern: string;
 };
 
 export type TakeScreenshotCondition = {
@@ -110,6 +121,17 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
             );
             if (matched) {
               agentMetadata.testComments.push(`Early terminate due to tool call matching pattern: tool ${condition.toolPattern}, args ${condition.argsPattern}`);
+              return true;
+            }
+          } else if (condition.type === "tool-call-result") {
+            const toolPattern = condition.toolPattern ? new RegExp(condition.toolPattern) : undefined;
+            const resultPattern = new RegExp(condition.resultPattern);
+            const matched = getToolCallResults(agentMetadata, toolPattern).some((result) =>
+              resultPattern.test(result)
+            );
+            if (matched) {
+              const toolDesc = condition.toolPattern ? ` (tool: ${condition.toolPattern})` : "";
+              agentMetadata.testComments.push(`Early terminate due to tool call result matching pattern: ${condition.resultPattern}${toolDesc}`);
               return true;
             }
           }
