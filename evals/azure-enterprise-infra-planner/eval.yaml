@@ -517,6 +517,28 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── skill-ml-scoring-endpoint-isolation ──
+  # Net-new: the removed app-centric ML Inference workload (Azure ML scoring endpoint),
+  # rephrased to be infra-led so it routes to infra-planner instead of azure-prepare.
+  # Asserts infra-planner still triggers for the ML infra/networking slice.
+  - name: "Skill - Network-Isolated ML Scoring Endpoint"
+    prompt: "Design a network-isolated ML model scoring endpoint on Azure — an Azure ML online endpoint that loads its model from the registry, deployed inside a VNet with private endpoints, dedicated subnets, and NSGs blocking all public internet access, with prediction logs sent to Azure Monitor."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ── response-jumpbox-nsgs-internal-lb ──
   # Jest: integration.test.ts → response-quality "generates infrastructure-plan.json with expected resources"
   # Assertions: skill-invocation + file-exists(.azure/insights.json, infrastructure-plan.json) + JSON schema markers
