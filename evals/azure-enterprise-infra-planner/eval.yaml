@@ -94,12 +94,41 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
     graders:
-      # Task grader: skill_invoked (skill_invocation → completed; implicit)
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "aks"
+      - type: output-contains
+        config:
+          substring: "database"
+      - type: output-contains
+        config:
+          substring: "monitor"
+      # Task grader: identifies_compute_resources
+      - type: output-matches
+        config:
+          pattern: "(?i)aks|kubernetes|managed.?cluster"
+      # Task grader: identifies_networking
+      - type: output-matches
+        config:
+          pattern: "(?i)vnet|subnet|network|load.?balancer|ingress"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)managedcluster|kubernetes|containerservice"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -263,7 +292,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
@@ -275,6 +304,15 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)private.?endpoint|private.?link|application.?gateway|app.?gateway"
+      # Plan artifact generated (prompt proceeds to plan generation)
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      # Network isolation reflected in the generated plan
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)privateendpoint|privatelink|applicationgateway"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
