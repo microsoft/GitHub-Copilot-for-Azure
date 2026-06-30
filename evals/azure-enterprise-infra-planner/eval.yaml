@@ -308,6 +308,8 @@ stimuli:
       area: output-files
       skill: azure-enterprise-infra-planner
       followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Approve the plan as-is."
         - "Yes, generate the Terraform IaC for the approved plan."
     constraints:
       max_turns: 80
