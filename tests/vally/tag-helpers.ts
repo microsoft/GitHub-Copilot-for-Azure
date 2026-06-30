@@ -133,9 +133,9 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
             const argsPattern = condition.argsPattern ? new RegExp(condition.argsPattern) : undefined;
             const completedIds = new Set(
               agentMetadata.events
-                .filter((event) => { return event.type === "tool.execution_complete"; })
-                .map((event) => { return (event.data as { toolCallId?: string }).toolCallId; })
-                .filter((id): id is string => { return id !== undefined; })
+                .filter((event) => event.type === "tool.execution_complete")
+                .map((event) => event.data.toolCallId)
+                .filter((id) => id !== undefined)
             );
             const matched = getToolCalls(agentMetadata).some((event) => {
               return toolPattern.test(event.data.toolName)
