@@ -969,7 +969,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Generate the Bicep templates, RBAC assignments, and azure.yaml. " +
             "Use the eastus2 region and my current subscription.",
           nonInteractive: true,
-          followUp: FOLLOW_UP_PROMPT,
+          followUp: [
+            "Continue with recommended options until complete.",
+            "Continue with recommended options until complete.",
+          ],
           shouldEarlyTerminate: (metadata) =>
             hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate"),
         });
