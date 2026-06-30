@@ -944,7 +944,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      // Skip follow-ups when the run was aborted due to maxTurns being exceeded.
+      // Skip follow-ups when the run was aborted.
       for (const followUpPrompt of (runConfig.followUp ?? [])) {
         if (isAborted) break;
         isComplete = false;
