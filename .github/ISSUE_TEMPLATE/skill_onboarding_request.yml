@@ -1,6 +1,6 @@
-name: Request Skill Onboarding
-description: Partner teams - request onboarding a new skill to the Azure Skills Plugin.
-title: "[Onboard]: "
+name: Request New Skill Onboarding
+description: Partner teams - request onboarding a brand new skill to the Azure Skills Plugin.
+title: "[New Skill]: "
 labels:
   - "onboarding"
   - "skills"
@@ -9,19 +9,19 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for your interest in onboarding a skill to the **Azure Skills Plugin**!
+        Thanks for your interest in onboarding a **new skill** to the **Azure Skills Plugin**!
 
-        This repo packages [agent skills](https://agentskills.io/specification) (markdown-based knowledge packages) that teach Copilot how to help customers with Azure services. Use this template to request a new skill or to extend an existing one.
+        This repo packages [agent skills](https://agentskills.io/specification) (markdown-based knowledge packages) that teach Copilot how to help customers with Azure services. Use this template to request a **brand new skill**.
 
-        > ⚠️ The char-count budget for skill descriptions is close to the Copilot CLI limit. **Adding new skills risks truncation — consider extending an existing skill first.**
+        > ⚠️ The char-count budget for skill descriptions is close to the Copilot CLI limit. **Adding new skills risks truncation — if your capability fits an existing skill, please use the [Add Capability to an Existing Skill](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/new?template=skill_extension_request.yml) template instead.**
         >
-        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skill onboarding guide](https://eng.ms/docs/cloud-ai-platform/devdiv/developer-ai-lukehoban/developer-ai-kvenkatrajan/azure-github-copilot-extension-for-vs-code-backend/github-copilot-for-azure/partnerhub/vscodeext).
+        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skill onboarding guide](https://aka.ms/azure-skills/onboarding).
 
   - type: input
     id: skill-name
     attributes:
       label: Skill Name
-      description: Name of the capability you want to onboard as a skill.
+      description: Proposed name for the new skill (lowercase, hyphens only).
       placeholder: ex. azure-prepare
     validations:
       required: true
@@ -34,25 +34,6 @@ body:
       placeholder: ex. Bob Dylan (bdylan)
     validations:
       required: true
-
-  - type: dropdown
-    id: request-type
-    attributes:
-      label: Request Type
-      description: Are you adding a brand new skill or extending an existing one?
-      options:
-        - New skill
-        - Extend an existing skill
-        - Not sure
-    validations:
-      required: true
-
-  - type: input
-    id: existing-skill
-    attributes:
-      label: Existing Skill to Extend
-      description: If extending an existing skill, which one? (See `plugin/skills/`.)
-      placeholder: ex. azure-prepare
 
   - type: textarea
     id: scenarios
