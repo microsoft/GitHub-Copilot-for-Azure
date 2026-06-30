@@ -1,0 +1,81 @@
+name: Request Skill Onboarding
+description: Partner teams - request onboarding a new skill to the **Azure Skills Plugin**.
+title: "[Onboard]: "
+labels:
+  - "onboarding"
+  - "skills"
+  - "needs-triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in onboarding a skill to the **Azure Skills Plugin**!
+
+        This repo packages [agent skills](https://agentskills.io/specification) (markdown-based knowledge packages) that teach Copilot how to help customers with Azure services. Use this template to request a new skill or to extend an existing one.
+
+        > ⚠️ The char-count budget for skill descriptions is close to the Copilot CLI limit. **Adding new skills risks truncation — consider extending an existing skill first.**
+        >
+        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skills onboarding guide](https://eng.ms/docs/cloud-ai-platform/devdiv/developer-ai-lukehoban/developer-ai-kvenkatrajan/azure-github-copilot-extension-for-vs-code-backend/github-copilot-for-azure/partnerhub/vscodeext).
+
+  - type: input
+    id: skill-name
+    attributes:
+      label: Skill Name
+      description: Name of the capability you want to onboard as a skill.
+      placeholder: ex. azure-prepare, azure-deploy
+    validations:
+      required: true
+
+  - type: input
+    id: contacts
+    attributes:
+      label: Contacts
+      description: List of contacts who own the skill being onboarded.
+      placeholder: ex. Alice Cooper (alcoop), Bob Dylan (bdylan)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: request-type
+    attributes:
+      label: Request Type
+      description: Are you adding a brand new skill or extending an existing one?
+      options:
+        - New skill
+        - Extend an existing skill
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: existing-skill
+    attributes:
+      label: Existing Skill to Extend
+      description: If extending an existing skill, which one? (See `plugin/skills/`.)
+      placeholder: ex. azure-prepare
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Intended Agent Scenarios
+      description: What customer scenarios should this skill solve? Describe the tasks a user would ask Copilot to do and the value delivered.
+      placeholder: |
+        ex. "Deploy my containerized app to Azure Container Apps"
+        ex. "Diagnose why my container app revision is failing"
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      description: Your desired onboarding timeline (e.g., November 2025, Q1 2026, TBD).
+      placeholder: TBD
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Anything else that helps us understand the request - related skills, dependencies, regional considerations, etc.
