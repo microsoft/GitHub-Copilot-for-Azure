@@ -1,5 +1,5 @@
 name: Request Skill Onboarding
-description: Partner teams - request onboarding a new skill to the **Azure Skills Plugin**.
+description: Partner teams - request onboarding a new skill to the Azure Skills Plugin.
 title: "[Onboard]: "
 labels:
   - "onboarding"
@@ -60,8 +60,9 @@ body:
       label: Intended Agent Scenarios
       description: What customer scenarios should this skill solve? Describe the tasks a user would ask Copilot to do and the value delivered.
       placeholder: |
-        ex. "Deploy my containerized app to Azure Container Apps"
-        ex. "Diagnose why my container app revision is failing"
+        ex. "Create a web app and deploy it to Azure"
+        ex. "Generate Bicep/Terraform infrastructure for my app and host it on Azure App Service or Container Apps"
+        ex. "Modernize my existing application and add Key Vault and managed identity"
     validations:
       required: true
 
