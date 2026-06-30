@@ -5,8 +5,9 @@
 #
 # Global graders (evaluate#125 workaround): has_output, no_runtime_failure,
 # and security_posture are duplicated into every Waza-migrated stimulus block.
-# Jest-migrated stimuli omit these — the original Jest tests did not assert
-# on runtime failure or security posture.
+# Jest-migrated routing stimuli additionally carry no_runtime_failure to match the
+# repo-wide routing convention; the remaining Jest-migrated stimuli omit the global
+# graders — the original Jest tests did not assert on runtime failure or security posture.
 #
 # Global efficiency constraint (max_tool_calls: 50) → constraints.max_turns: 50.
 
@@ -379,6 +380,10 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── trigger-vmware-asr-runbooks ──
   # Jest: triggers.test.ts → "Should Trigger" (VMware ASR runbooks prompt)
@@ -396,6 +401,10 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── skill-3tier-hardened-os ──
   # Jest: integration.test.ts → "invokes skill for hardened 3-tier VM infrastructure prompt"
@@ -418,6 +427,10 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── skill-vmss-appgw-waf ──
   # Jest: integration.test.ts → "invokes skill for VMSS with WAF and encryption prompt"
@@ -440,6 +453,10 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── skill-azure-backup-ltr ──
   # Jest: integration.test.ts → "invokes skill for backup and compliance prompt"
@@ -462,6 +479,10 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── skill-secure-multi-region-3tier-windows ──
   # Jest: integration.test.ts → "invokes skill for secure multi-region 3-tier prompt"
@@ -484,6 +505,10 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── response-jumpbox-nsgs-internal-lb ──
   # Jest: integration.test.ts → response-quality "generates infrastructure-plan.json with expected resources"
