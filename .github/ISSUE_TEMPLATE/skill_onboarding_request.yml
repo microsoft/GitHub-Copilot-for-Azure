@@ -15,14 +15,14 @@ body:
 
         > ⚠️ The char-count budget for skill descriptions is close to the Copilot CLI limit. **Adding new skills risks truncation — consider extending an existing skill first.**
         >
-        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skills onboarding guide](https://eng.ms/docs/cloud-ai-platform/devdiv/developer-ai-lukehoban/developer-ai-kvenkatrajan/azure-github-copilot-extension-for-vs-code-backend/github-copilot-for-azure/partnerhub/vscodeext).
+        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skill onboarding guide](https://eng.ms/docs/cloud-ai-platform/devdiv/developer-ai-lukehoban/developer-ai-kvenkatrajan/azure-github-copilot-extension-for-vs-code-backend/github-copilot-for-azure/partnerhub/vscodeext).
 
   - type: input
     id: skill-name
     attributes:
       label: Skill Name
       description: Name of the capability you want to onboard as a skill.
-      placeholder: ex. azure-prepare, azure-deploy
+      placeholder: ex. azure-prepare
     validations:
       required: true
 
@@ -31,7 +31,7 @@ body:
     attributes:
       label: Contacts
       description: List of contacts who own the skill being onboarded.
-      placeholder: ex. Alice Cooper (alcoop), Bob Dylan (bdylan)
+      placeholder: ex. Bob Dylan (bdylan)
     validations:
       required: true
 
