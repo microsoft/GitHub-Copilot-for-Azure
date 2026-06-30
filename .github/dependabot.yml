@@ -8,6 +8,7 @@ updates:
   - dependency-name: "*"
     update-types:
     - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 10
   package-ecosystem: npm
   schedule:
@@ -22,6 +23,7 @@ updates:
   - dependency-name: "*"
     update-types:
     - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 5
   package-ecosystem: npm
   schedule:
@@ -36,6 +38,7 @@ updates:
   - dependency-name: "*"
     update-types:
     - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 5
   package-ecosystem: npm
   schedule:
