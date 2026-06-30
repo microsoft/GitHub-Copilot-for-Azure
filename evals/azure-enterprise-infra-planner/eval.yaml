@@ -296,7 +296,8 @@ stimuli:
 
   # ── plan-three-tier-terraform-001 ──
   # Waza source: tasks/plan-three-tier-terraform.yaml
-  # Segmented VNet with Linux VMs + Terraform IaC
+  # Segmented VNet with Linux VMs + Terraform IaC (followUp drives Phase 6 Terraform
+  # generation; file-exists infra/main.tf asserts the Terraform output named in the test).
   - name: "Segmented VNet - Linux VMs + Terraform"
     prompt: |
       Spin up Linux VMs across a segmented VNet — separate web, app, and data subnets with NSGs between them and an internal load balancer — automate patch management via Azure Automation, and log inter-subnet traffic for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
@@ -306,8 +307,10 @@ stimuli:
       cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
+      followUp:
+        - "Yes, generate the Terraform IaC for the approved plan."
     constraints:
-      max_turns: 50
+      max_turns: 80
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -343,6 +346,10 @@ stimuli:
         config:
           path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)virtual.?machine|vm"
+      # Terraform IaC generated (validates the "Terraform" in the test name)
+      - type: file-exists
+        config:
+          path: "**/infra/main.tf"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
