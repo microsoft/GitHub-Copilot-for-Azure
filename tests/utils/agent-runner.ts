@@ -82,6 +82,12 @@ export interface AgentMetadata {
   tokenUsage?: TokenUsage;
 
   /**
+   * Number of assistant turns that started during the run,
+   * counted from `assistant.turn_start` events.
+   */
+  turnCount: number;
+
+  /**
    * Map from tool name to the number of times that tool was invoked during the run.
    * Excludes the `skill` pseudo-tool; all other tools (including MCP tools) are included,
    * keyed by the raw `event.data.toolName`.
@@ -184,6 +190,13 @@ export interface AgentRunConfig {
    * If specified, only the skills in this array will be included. This option overrides the required skills specified in the {@link requiredSkills}.
    */
   includeSkills?: string[];
+
+  /**
+   * Maximum number of assistant turns allowed before the run is aborted.
+   * Each `assistant.turn_start` event counts as one turn.
+   * If undefined, there is no turn limit.
+   */
+  maxTurns?: number;
 
   /**
    * Number of milliseconds as timeout for follow ups.
@@ -799,13 +812,14 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
+    let isAborted = false;
 
     const entry: RunnerCleanup = { config: runConfig };
     currentCleanups.push(entry);
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = runConfig.preserveWorkspace;
 
-    const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], turnCount: 0, toolCounts: {}, skillFiles: {} };
     entry.agentMetadata = agentMetadata;
 
     try {
@@ -901,8 +915,23 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
           agentMetadata.events.push(event);
 
+          if (event.type === "assistant.turn_start") {
+            agentMetadata.turnCount++;
+            if (runConfig.maxTurns !== undefined && agentMetadata.turnCount > runConfig.maxTurns) {
+              agentMetadata.testComments.push(
+                `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
+              );
+              isComplete = true;
+              isAborted = true;
+              resolve();
+              void session.abort();
+              return;
+            }
+          }
+
           if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
+            isAborted = true;
             resolve();
             void session.abort();
             return;
@@ -915,7 +944,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      for (const followUpPrompt of runConfig.followUp ?? []) {
+      // Skip follow-ups when the run was aborted.
+      for (const followUpPrompt of (runConfig.followUp ?? [])) {
+        if (isAborted) break;
         isComplete = false;
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
