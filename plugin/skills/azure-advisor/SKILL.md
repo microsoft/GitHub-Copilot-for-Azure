@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Azure Advisor reviews resources and provides recommendations using the Azure MCP server's advisor_* tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only sweeps with catalog, recommendations, and IaC fixes. DO NOT USE FOR: changing resources, billing analysis (use azure-cost), or non-Advisor troubleshooting (use azure-diagnostics)."
+description: "Azure Advisor reviews resources and provides recommendations using Azure MCP advisor_* tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only catalog, recommendations, and IaC fixes. DO NOT USE FOR: changing resources, billing (use azure-cost), or non-Advisor issues (use azure-diagnostics)."
 license: MIT
 metadata:
   author: Microsoft
