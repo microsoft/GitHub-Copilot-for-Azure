@@ -222,6 +222,10 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)blob|storage|upload|persist"
+      # Task grader: identifies_network_isolation (PR reword: VNet + private endpoints)
+      - type: output-matches
+        config:
+          pattern: "(?i)private.?endpoint|private.?link|vnet|virtual.?network"
       - type: output-matches
         config:
           pattern: "(?i)plan|infrastructure|resource"
@@ -266,6 +270,10 @@ stimuli:
       # Task grader: skill_invoked (skill_invocation → completed; implicit)
       # Global: has_output
       - type: completed
+      # Network isolation check (PR reword: private endpoint + App Gateway)
+      - type: output-matches
+        config:
+          pattern: "(?i)private.?endpoint|private.?link|application.?gateway|app.?gateway"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
