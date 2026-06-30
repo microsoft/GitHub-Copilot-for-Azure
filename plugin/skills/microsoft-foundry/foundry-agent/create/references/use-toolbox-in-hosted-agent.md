@@ -186,7 +186,7 @@ See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-d
 
 ## Operational helpers via `azd ai` CLI
 
-> The `azd ai` CLI also exposes `agent connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
+> The `azd ai` CLI also exposes `connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
 
 > All commands require `--project-endpoint <PROJECT_ENDPOINT>` (the value of `PROJECT_ENDPOINT`, e.g. `https://<account>.services.ai.azure.com/api/projects/<project>`). To avoid repeating it, export it once:
 >

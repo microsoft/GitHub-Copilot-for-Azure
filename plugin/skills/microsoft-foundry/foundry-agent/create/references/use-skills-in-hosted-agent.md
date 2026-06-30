@@ -95,10 +95,10 @@ azd ai skill create escalation-policy --file ./skills/escalation-policy/ --force
 azd env set SKILL_NAMES "support-style,escalation-policy"
 ```
 
-`agent.yaml`:
+Agent service `environmentVariables` in `azure.yaml`:
 
 ```yaml
-environment_variables:
+environmentVariables:
   - name: SKILL_NAMES
     value: ${SKILL_NAMES}
 ```
@@ -123,10 +123,10 @@ ENDPOINT=$(azd ai toolbox show agent-tools -o json | jq -r .endpoint)
 azd env set TOOLBOX_ENDPOINT "$ENDPOINT"
 ```
 
-`agent.yaml`:
+Agent service `environmentVariables` in `azure.yaml`:
 
 ```yaml
-environment_variables:
+environmentVariables:
   - name: TOOLBOX_ENDPOINT
     value: ${TOOLBOX_ENDPOINT}
 ```
@@ -171,7 +171,7 @@ azd ai agent invoke --local "Hi, can I return my tent within 30 days?"
 | `asyncio.TimeoutError` (Python) | Slow network or large packages | Increase bootstrap timeout (default 60s) |
 | `allow_preview` error (Python) | SDK client missing preview flag | `AIProjectClient(allow_preview=True)` |
 | HTTP 500 on skill download (C#) | Missing feature header | Add `FoundryFeaturesPolicy` for `Skills=V1Preview` |
-| `SKILL_NAMES` not in deployed agent | Env var missing from `agent.yaml` | Add to `environment_variables[]`, redeploy |
+| `SKILL_NAMES` not in deployed agent | Env var missing from `azure.yaml` | Add to the agent service's `environmentVariables`, redeploy |
 | MCP timeout (Toolbox) | Auth token expired or wrong scope | Use `https://ai.azure.com/.default`; refresh per request |
 | Skills not discovered from toolbox | New version not published | `azd ai toolbox publish <toolbox> <version>` |
 | `Invalid skill name 'xxx:download'` | SDK bug in beta.2 | Use CLI or `agent-framework-foundry` wrapper |
