@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Azure Advisor reviews resources and provides recommendations using advisor_* MCP tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only sweeps with catalog, recommendations, and IaC fixes. DO NOT USE FOR: changing resources, billing analysis (use azure-cost), or non-Advisor troubleshooting (use azure-diagnostics)."
+description: "Azure Advisor reviews resources and provides recommendations using the Azure MCP server's advisor_* tools. WHEN: \"run an advisor review\", \"check my Azure advisor recommendations\", \"summarize advisor findings\", \"what does Advisor say about my subscription\", \"give me an advisor health check\", \"audit my Azure resources with Advisor\". USE FOR: read-only sweeps with catalog, recommendations, and IaC fixes. DO NOT USE FOR: changing resources, billing analysis (use azure-cost), or non-Advisor troubleshooting (use azure-diagnostics)."
 license: MIT
 metadata:
   author: Microsoft
@@ -14,9 +14,6 @@ user's intent to the right capability and runs it using whichever `advisor_*` MC
 the connected Azure MCP server exposes. Routing is by *capability* (catalog,
 recommendations, summary, IaC fix), not by hard-coded tool names, so the skill stays
 useful as new advisor tools land.
-
-> 🛠️ **Contributing a new capability?** See [README.md](README.md) for the folder map
-> and a step-by-step recipe.
 
 ## Pre-Execution Requirements
 

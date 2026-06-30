@@ -99,7 +99,7 @@ Reply in chat with this structure (no files written).
 
 **Single subscription:**
 
-```
+```text
 ## Azure Advisor Review
 
 **Subscription:** <id> (from <source>)
@@ -123,7 +123,7 @@ Reply in chat with this structure (no files written).
 **All subscriptions** — group the report by environment bucket (prod first, then staging,
 test, dev, other), with a roll-up at the top:
 
-```
+```text
 ## Azure Advisor Review — All Subscriptions
 
 **Scope:** S subscriptions across E environments
