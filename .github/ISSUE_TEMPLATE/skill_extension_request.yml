@@ -59,7 +59,7 @@ body:
     id: timeline
     attributes:
       label: Timeline
-      description: Your desired delivery timeline (e.g., November 2025, Q1 2026, TBD).
+      description: Your desired delivery timeline (e.g., Q3 2026, Q4 2026, TBD).
       placeholder: TBD
     validations:
       required: true
