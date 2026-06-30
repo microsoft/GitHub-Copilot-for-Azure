@@ -1,6 +1,6 @@
 ---
 name: azure-validate
-description: "Pre-deployment validation for Azure readiness. Run deep checks on configuration, infrastructure (Bicep or Terraform), RBAC role assignments, managed identity permissions, and prerequisites before deploying. WHEN: validate my app, check deployment readiness, run preflight checks, verify configuration, check if ready to deploy, validate azure.yaml, validate Bicep, test before deploying, troubleshoot deployment errors, validate Azure Functions, validate function app, validate serverless deployment, verify RBAC roles, check role assignments, review managed identity permissions, what-if analysis, validate Container Apps deployment."
+description: "Pre-deployment validation for azd-based Azure projects. USE ONLY when the project uses Azure Developer CLI (azd) or already has an azure.yaml file. Validates azure.yaml, Bicep/Terraform infrastructure, RBAC role assignments, and managed identity permissions before running azd deploy. DO NOT USE for non-azd projects. WHEN: validate azure.yaml, check deployment readiness, preflight checks for azd project, verify azd configuration, validate Bicep, validate Terraform, check RBAC roles, check managed identity permissions, what-if analysis, troubleshoot deployment errors, validate Azure Functions, validate Container Apps."
 license: MIT
 metadata:
   author: Microsoft

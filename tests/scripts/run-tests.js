@@ -46,7 +46,7 @@ const testConfigs = {
     description: "integration tests",
     jestArgs: [
       "--testMatch=**/*integration*.ts",
-      "--testPathIgnorePatterns=\"node_modules|_template\""
+      "--testPathIgnorePatterns=\"node_modules|_template|fixtures\""
     ],
     optionalPattern: true
   },
@@ -60,7 +60,7 @@ const testConfigs = {
       "--ci",
       "--reporters=default",
       "--reporters=jest-junit",
-      "--testPathIgnorePatterns=\"node_modules|_template|integration\""
+      "--testPathIgnorePatterns=\"node_modules|_template|integration|fixtures\""
     ]
   },
   watch: {

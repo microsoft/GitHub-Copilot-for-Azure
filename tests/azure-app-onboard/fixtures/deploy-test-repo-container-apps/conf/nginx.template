@@ -1,0 +1,88 @@
+server {
+  listen ${NGINX_PORT};
+  listen [::]:${NGINX_PORT};
+
+  server_name ${NGINX_DOMAIN};
+  root /var/www/${NGINX_DOMAIN}/public;
+
+  # $uri, index.html
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  # headers
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-XSS-Protection "1; mode=block" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-UA-Compatible "IE=Edge" always;
+  add_header Cache-Control "no-transform" always;
+
+  # . files
+  location ~ /\. {
+    deny all;
+  }
+
+  # assets, media
+  location ~* \.(?:css(\.map)?|js(\.map)?|jpe?g|png|gif|ico|cur|heic|webp|tiff?|mp3|m4a|aac|ogg|midi?|wav|mp4|mov|webm|mpe?g|avi|ogv|flv|wmv)$ {
+    expires 7d;
+    access_log off;
+  }
+
+  # svg, fonts
+  location ~* \.(?:svgz?|ttf|ttc|otf|eot|woff|woff2)$ {
+    add_header Access-Control-Allow-Origin "*";
+    expires 7d;
+    access_log off;
+  }
+
+  location ^~ /wetty {
+    proxy_pass http://${WETTY_HOST}:${WETTY_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 43200000;
+
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header Host $http_host;
+    proxy_set_header X-NginX-Proxy true;
+
+    # Authenticate user via other services (e.g., oauth2 end-points)
+    #
+    # Configuration : 
+    #    - Configure a 'auth_request' directive for this server block
+    #    - Capture the authenticated username using 'auth_request_set'
+    #    - Set the 'remote-user' request header accordingly
+    #
+    # Example (using lasso as authentication middleware):
+    #
+    #    Add to server block:
+    #      auth_request /lasso-validate
+    #      auth_request_set $auth_user $upstream_http_x_lasso_user;
+    #
+    #    Add to /wetty location block
+    #      proxy_set_header remote-user $auth_user;
+    #
+    #    And configure a '/lasso-validate' location. See this blog for further 
+    #    guidance: https://developer.okta.com/blog/2018/08/28/nginx-auth-request
+  }
+
+  # gzip
+  gzip on;
+  gzip_vary on;
+  gzip_proxied any;
+  gzip_comp_level 6;
+  gzip_types text/plain text/css text/xml application/json application/javascript application/xml+rss application/atom+xml image/svg+xml;
+}
+
+# subdomains redirect
+server {
+  listen ${NGINX_PORT};
+  listen [::]:${NGINX_PORT};
+
+  server_name *.${NGINX_DOMAIN};
+
+  return 301 https://${NGINX_DOMAIN}$request_uri;
+}
+
+# set ft=conf
