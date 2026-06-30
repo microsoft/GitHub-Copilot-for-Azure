@@ -176,6 +176,62 @@ get_az_context() {
     fi
 }
 
+# Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".
+get_azd_env_name() {
+    local existing base name
+    existing="$(printf '%s' "$STATE" | jq -r '.auto.azdContext.env.name // empty')"
+    if [[ -n "$existing" ]]; then printf '%s' "$existing"; return; fi
+    base="${RepoPath##*/}"
+    name="$(printf '%s' "$base" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g; s/-+/-/g; s/^-+//; s/-+$//')"
+    [[ -z "$name" ]] && name='dev'
+    printf '%s' "$name"
+}
+
+# Creates/selects the azd environment and applies subscription/location for AZD recipes.
+# Guarded by the existence of azure.yaml so `azd env new` never runs before the project
+# exists; records the outcome under auto.azdEnv. No-op (with a reason) for non-AZD recipes,
+# a missing azure.yaml, or an unavailable azd CLI.
+apply_azd_environment() {
+    local recipe envname subid loc existing applied vsub vloc vals
+    recipe="$(get_by_path 'input.recipe' 2>/dev/null || true)"
+    if [[ "$recipe" != *AZD* && "$recipe" != *Aspire* ]]; then
+        set_by_path 'auto.azdEnv' "$(jq -n '{applied:false, name:"n/a", reason:"non-azd recipe"}')"
+        return
+    fi
+    if [[ ! -f "$RepoPath/azure.yaml" && ! -f "$RepoPath/azure.yml" ]]; then
+        set_by_path 'auto.azdEnv' "$(jq -n '{applied:false, name:null, reason:"azure.yaml not found; project not initialized"}')"
+        return
+    fi
+    if ! command -v azd >/dev/null 2>&1; then
+        set_by_path 'auto.azdEnv' "$(jq -n '{applied:false, name:null, reason:"azd not available"}')"
+        return
+    fi
+    envname="$(get_azd_env_name)"
+    subid="$(printf '%s' "$STATE" | jq -r '.auto.azContext.subscriptionId // empty')"
+    [[ -z "$subid" ]] && subid="$(get_by_path 'input.subscription' 2>/dev/null || true)"
+    loc="$(get_by_path 'input.location' 2>/dev/null || true)"
+
+    # Create the env only when it does not already exist; azd env new errors on a duplicate.
+    existing="$(cd "$RepoPath" && azd env list -o json 2>/dev/null | jq -r --arg n "$envname" 'try ([.[] | select(.Name == $n)] | length) catch 0' 2>/dev/null)"
+    if [[ -z "$existing" || "$existing" == "0" ]]; then
+        ( cd "$RepoPath" && azd env new "$envname" --no-prompt >/dev/null 2>&1 ) || true
+    else
+        ( cd "$RepoPath" && azd env select "$envname" >/dev/null 2>&1 ) || true
+    fi
+    [[ -n "$subid" ]] && { ( cd "$RepoPath" && azd env set AZURE_SUBSCRIPTION_ID "$subid" >/dev/null 2>&1 ) || true; }
+    [[ -n "$loc" ]] && { ( cd "$RepoPath" && azd env set AZURE_LOCATION "$loc" >/dev/null 2>&1 ) || true; }
+
+    applied=false; vsub=null; vloc=null
+    vals="$(cd "$RepoPath" && azd env get-values -o json 2>/dev/null)"
+    if [[ -n "$vals" ]] && jq -e . >/dev/null 2>&1 <<<"$vals"; then
+        applied=true
+        vsub="$(jq -c '.AZURE_SUBSCRIPTION_ID // null' <<<"$vals")"
+        vloc="$(jq -c '.AZURE_LOCATION // null' <<<"$vals")"
+    fi
+    set_by_path 'auto.azdEnv' "$(jq -n --arg n "$envname" --argjson applied "$applied" --argjson sub "$vsub" --argjson loc "$vloc" \
+        '{applied:$applied, name:$n, subscriptionId:$sub, location:$loc}')"
+}
+
 # ---------------------------------------------------------------------------
 # Proposed mode/recipe from programmatic signals (LM confirms)
 # ---------------------------------------------------------------------------

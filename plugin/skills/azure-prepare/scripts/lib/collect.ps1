@@ -200,6 +200,81 @@ function Get-AzContext {
     return $result
 }
 
+function Get-AzdEnvName {
+    # Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".
+    param([hashtable]$State)
+    $existing = Get-ByPath $State 'auto.azdContext.env.name'
+    if ($existing) { return $existing }
+    $base = Split-Path -Leaf $RepoPath
+    $name = ($base.ToLowerInvariant() -replace '[^a-z0-9-]+', '-') -replace '-+', '-'
+    $name = $name.Trim('-')
+    if (-not $name) { $name = 'dev' }
+    return $name
+}
+
+function Apply-AzdEnvironment {
+    # Creates/selects the azd environment and applies subscription/location for AZD recipes.
+    # Guarded by the existence of azure.yaml so `azd env new` never runs before the project
+    # exists; records the outcome under auto.azdEnv. No-op (with a reason) for non-AZD recipes,
+    # a missing azure.yaml, or an unavailable azd CLI.
+    param([hashtable]$State)
+    $recipe = Get-ByPath $State 'input.recipe'
+    if ($recipe -notmatch 'AZD' -and $recipe -notmatch 'Aspire') {
+        Set-ByPath $State 'auto.azdEnv' @{ applied = $false; name = 'n/a'; reason = 'non-azd recipe' }
+        return
+    }
+    $hasAzureYaml = (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yaml')) -or (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yml'))
+    if (-not $hasAzureYaml) {
+        Set-ByPath $State 'auto.azdEnv' @{ applied = $false; name = $null; reason = 'azure.yaml not found; project not initialized' }
+        return
+    }
+    if (-not (Get-Command azd -ErrorAction SilentlyContinue)) {
+        Set-ByPath $State 'auto.azdEnv' @{ applied = $false; name = $null; reason = 'azd not available' }
+        return
+    }
+    $envname = Get-AzdEnvName $State
+    $subid = $null
+    $ctx = Get-ByPath $State 'auto.azContext'
+    if ($ctx -and $ctx['subscriptionId']) { $subid = $ctx['subscriptionId'] }
+    if (-not $subid) { $subid = Get-ByPath $State 'input.subscription' }
+    $loc = Get-ByPath $State 'input.location'
+
+    Push-Location -LiteralPath $RepoPath
+    try {
+        # Create the env only when it does not already exist; azd env new errors on a duplicate.
+        $exists = $false
+        try {
+            $listed = & azd env list -o json 2>$null
+            if ($LASTEXITCODE -eq 0 -and $listed) {
+                $envs = $listed | ConvertFrom-Json
+                if ($envs | Where-Object { $_.Name -eq $envname }) { $exists = $true }
+            }
+        }
+        catch { }
+        try {
+            if ($exists) { & azd env select $envname 2>$null | Out-Null }
+            else { & azd env new $envname --no-prompt 2>$null | Out-Null }
+        }
+        catch { }
+        if ($subid) { try { & azd env set AZURE_SUBSCRIPTION_ID $subid 2>$null | Out-Null } catch { } }
+        if ($loc) { try { & azd env set AZURE_LOCATION $loc 2>$null | Out-Null } catch { } }
+
+        $applied = $false; $vsub = $null; $vloc = $null
+        try {
+            $vals = & azd env get-values -o json 2>$null
+            if ($LASTEXITCODE -eq 0 -and $vals) {
+                $v = $vals | ConvertFrom-Json
+                $applied = $true
+                $vsub = $v.AZURE_SUBSCRIPTION_ID
+                $vloc = $v.AZURE_LOCATION
+            }
+        }
+        catch { }
+        Set-ByPath $State 'auto.azdEnv' @{ applied = $applied; name = $envname; subscriptionId = $vsub; location = $vloc }
+    }
+    finally { Pop-Location }
+}
+
 # ---------------------------------------------------------------------------
 # Proposed mode from programmatic signals (LM confirms)
 # ---------------------------------------------------------------------------

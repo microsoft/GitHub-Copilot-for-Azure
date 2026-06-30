@@ -111,7 +111,6 @@ step_needs() {
         azure-context)
             printf 'input.subscription\t%s\n' 'Confirmed subscription name or id (auto.azContext has the detected one)'
             printf 'input.location\t%s\n' 'Confirmed Azure region'
-            printf 'input.azdEnvName\t%s\n' 'azd environment name applied with subscription/location ("n/a" for non-azd recipes)'
             printf 'input.policyConstraints\t%s\n' 'Array of policy constraint strings (empty array if none found)' ;;
         quota)
             printf 'input.quotaChecklistMarkdown\t%s\n' 'Completed provisioning-limit checklist as markdown (no _TBD_ entries)' ;;
@@ -172,6 +171,10 @@ step_ondone() {
             set_str 'auto.planFile' "$path" ;;
         approval)
             set_plan_status 'Approved' ;;
+        generate)
+            # azure.yaml now exists; create/configure the azd environment programmatically
+            # (order-safe — runs after generation, never during planning).
+            apply_azd_environment ;;
         handoff)
             set_plan_status 'Ready for Validation' ;;
     esac

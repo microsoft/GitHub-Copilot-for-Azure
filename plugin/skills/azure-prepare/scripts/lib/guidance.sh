@@ -244,14 +244,10 @@ already collected:
 5. Provisioning limits for the chosen region are validated in the next (quota)
    step via the azure-quotas skill; if capacity is insufficient, return here and
    pick another region.
-6. Apply to the azd environment — REQUIRED for AZD/Aspire recipes, immediately
-   after `azd init`/`azd env new` (do NOT defer to deploy; az and azd keep
-   separate config contexts):
-     azd env new <env> --no-prompt      # or: azd init --from-code -e <env> --no-prompt
-     azd env set AZURE_SUBSCRIPTION_ID <id>
-     azd env set AZURE_LOCATION <location>
-     azd env get-values                 # verify
-   Record the environment name in `input.azdEnvName` ("n/a" for non-azd recipes).
+6. The azd environment is applied AUTOMATICALLY by the script after artifacts are
+   generated — it runs `azd env new`/`azd env set <sub>/<location>` once `azure.yaml`
+   exists, and records the result in `auto.azdEnv`. Do NOT run `azd env new` yourself
+   during planning: there is no azd project yet, so it fails with "no project exists".
 
 Set `input.subscription` to the confirmed subscription name or id.
 Set `input.location` to the confirmed Azure region (e.g., "eastus2").

@@ -312,14 +312,10 @@ already collected:
 5. Provisioning limits for the chosen region are validated in the next (quota)
    step via the azure-quotas skill; if capacity is insufficient, return here and
    pick another region.
-6. Apply to the azd environment — REQUIRED for AZD/Aspire recipes, immediately
-   after `azd init`/`azd env new` (do NOT defer to deploy; az and azd keep
-   separate config contexts):
-     azd env new <env> --no-prompt      # or: azd init --from-code -e <env> --no-prompt
-     azd env set AZURE_SUBSCRIPTION_ID <id>
-     azd env set AZURE_LOCATION <location>
-     azd env get-values                 # verify
-   Record the environment name in `input.azdEnvName` ("n/a" for non-azd recipes).
+6. The azd environment is applied AUTOMATICALLY by the script after artifacts are
+   generated -- it runs `azd env new`/`azd env set <sub>/<location>` once `azure.yaml`
+   exists, and records the result in `auto.azdEnv`. Do NOT run `azd env new` yourself
+   during planning: there is no azd project yet, so it fails with "no project exists".
 
 Set `input.subscription` to the confirmed subscription name or id.
 Set `input.location` to the confirmed Azure region (e.g., "eastus2").
@@ -342,7 +338,6 @@ Set `input.policyConstraints` to an array of short strings (empty array if none)
         needs = @(
             @{ Path = 'input.subscription'; Prompt = 'Confirmed subscription name or id (auto.azContext has the detected one)' },
             @{ Path = 'input.location'; Prompt = 'Confirmed Azure region' },
-            @{ Path = 'input.azdEnvName'; Prompt = 'azd environment name applied with subscription/location ("n/a" for non-azd recipes)' },
             @{ Path = 'input.policyConstraints'; Prompt = 'Array of policy constraint strings (empty array if none found)' }
         )
         auto = {
@@ -575,6 +570,12 @@ Set `input.generateDone` to true when artifacts are written.
             # templates rather than re-creating boilerplate; records what it made in auto.scaffold.
             $made = New-RecipeScaffold $State
             Set-ByPath $State 'auto.scaffold' $made
+        }
+        onDone = {
+            param($State)
+            # azure.yaml now exists; create/configure the azd environment programmatically
+            # (order-safe -- runs after generation, never during planning).
+            Apply-AzdEnvironment $State
         }
         needs = @(
             @{ Path = 'input.generateDone'; Prompt = 'true when infrastructure/config artifacts are generated' }
