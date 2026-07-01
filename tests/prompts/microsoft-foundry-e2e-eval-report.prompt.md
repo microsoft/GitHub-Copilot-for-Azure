@@ -202,10 +202,10 @@ Guidance:
 - Include every Golden Path trial from every `results.jsonl` file found under `tests/results/`.
 - Group trials by model. If a model has multiple Golden Path trials across files or repeated `--runs`, average all of that model's Golden Path trials.
 - Runtime for each trial is measured from the first `user_message` event to the last `assistant_message` event, using the same timing rule as `## Golden Path Time Cost`.
-- Average token usage directly from `trajectory.metrics.tokenUsage`.
+- Use token usage from `trajectory.metrics.tokenUsage` to calculate `Avg total tokens` and `Avg AIC`; do not include input/cache/output token detail columns in this table.
 - `Avg total tokens` is average `inputTokens` plus average `outputTokens`.
 - Calculate `Avg AIC` using the Pricing Table and the same cost formula as `## Golden Path Token Cost`.
-- Round token counts to integers and format them with thousands separators.
+- Round `Avg total tokens` to an integer and format it with thousands separators.
 - Format average runtime in `x min Y s` format.
 - Order rows by the `VALLY_MODELS` environment variable if it is available. Otherwise, order rows by the first chronological appearance of each model in the result files.
 - Use `N/A` for unavailable metrics or missing pricing rows. Format `Avg AIC` with two decimal places when it is available.
@@ -217,11 +217,11 @@ Schema example:
 
 N models analyzed.
 
-| Model | Golden Path trials | Passed | Failed | Avg total runtime | Avg input tokens | Avg cacheReadTokens | Avg cacheWriteTokens | Avg output tokens | Avg total tokens | Avg AIC |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| claude-opus-4.8 | 1 | 1 | 0 | 18 min 22 s | 130,000 | 40,000 | 6,000 | 9,000 | 139,000 | 70.25 |
-| claude-sonnet-4.6 | 1 | 1 | 0 | 15 min 43 s | 120,000 | 30,000 | 5,000 | 8,000 | 128,000 | 40.28 |
-| gpt-5.3-codex | 1 | 1 | 0 | 17 min 9 s | 118,000 | 32,000 | 5,500 | 7,500 | 125,500 | 26.11 |
+| Model | Avg total tokens | Avg time cost | Avg AIC |
+|---|---:|---:|---:|
+| claude-opus-4.8 | 139,000 | 18 min 22 s | 70.25 |
+| claude-sonnet-4.6 | 128,000 | 15 min 43 s | 40.28 |
+| gpt-5.3-codex | 125,500 | 17 min 9 s | 26.11 |
 ```
 
 ## Section: Download
