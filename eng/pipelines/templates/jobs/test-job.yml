@@ -22,4 +22,6 @@ jobs:
         inputs:
           azureSubscription: GithubCopilotForAzure-Testing
           scriptType: bash
-          inlineScript: az account show
+          inlineScript: |
+            az account show
+            az group list
