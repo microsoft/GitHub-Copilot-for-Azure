@@ -1,0 +1,42 @@
+For each Azure service in `input.architecture`, gather best practices BEFORE
+generating artifacts, then record findings.
+
+Process:
+  1. List all services from the architecture plan.
+  2. Load each service's `scripts/references/services/<service>/README.md` first, then
+     specific files (bicep.md / terraform.md / scaling.md / auth.md / sdk.md / etc.)
+     only as needed (progressive loading).
+  3. Check resource naming rules (valid chars, length, uniqueness scope) per
+     learn.microsoft.com resource-name-rules.
+  4. Load the selected recipe's guide + its IaC rules / MCP best practices / schema
+     tools (see the recipe README chosen earlier).
+  5. Verify every service is available in the target region
+     (`scripts/references/region-availability.md`).
+  6. Provisioning limits/quota were validated in the quota step — re-check if the
+     architecture changed.
+  7. For containerized apps, load runtime production settings (e.g.
+     `scripts/references/runtimes/nodejs.md`).
+  8. Invoke related skills for deeper guidance (see routing below).
+  9. Document findings in `.azure/deployment-plan.md` under `## Research Summary`.
+
+Service → reference / related skill (load README under scripts/references/services/<svc>/):
+  - Container Apps / App Service → +azure-diagnostics, azure-observability, azure-nodejs-production
+  - AKS → +azure-networking
+  - Functions → (stay here; see composition mandate below)
+  - Storage → +azure-storage
+  - API Management → scripts/references/apim.md, +azure-aigateway (AI Gateway policies)
+  - Durable Functions → scripts/references/services/functions/durable.md + scripts/references/services/durable-task-scheduler/
+  - Key Vault → +azure-keyvault-expiration-audit;  Managed Identity → +entra-app-registration
+  - Application Insights → +appinsights-instrumentation;  Log Analytics → +azure-observability, azure-kusto
+  - Azure OpenAI → scripts/references/services/foundry/ + microsoft-foundry;  AI Search → +azure-ai
+
+Skill routing for special scenarios:
+  - GitHub Copilot SDK → invoke **azure-hosted-copilot-sdk** (scaffold+config), then resume.
+  - Azure Functions → STAY here: load scripts/references/services/functions/templates/selection.md (decision
+    tree) → follow scripts/references/services/functions/templates/recipes/composition.md (algorithm). Never
+    synthesize IaC by hand.
+  - PostgreSQL passwordless / security hardening → handle directly with service refs.
+  - App Insights instrumentation → appinsights-instrumentation; AI apps → microsoft-foundry;
+    cost-sensitive → azure-cost.
+
+Set `input.researchDone` to true when finished.

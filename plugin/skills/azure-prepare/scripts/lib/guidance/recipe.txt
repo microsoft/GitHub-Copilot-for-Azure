@@ -1,0 +1,27 @@
+Choose the IaC recipe. The script computed a suggestion in `auto.suggestedRecipe`
+from existing tooling (`auto.existingInfra`, including `azureYamlProvider`) and
+`auto.componentSignals.aspire`. Confirm or override it.
+
+Special case — .NET Aspire (`auto.componentSignals.aspire` true):
+  Always use AZD with auto-generated config (`azd init --from-code`). Do NOT
+  manually select a recipe or hand-author artifacts. See `scripts/references/aspire.md`.
+
+Default is AZD unless requirements indicate otherwise. azd supports both Bicep and
+Terraform as IaC providers; when Terraform is wanted for an Azure deployment,
+prefer AZD (Terraform) for the best DX.
+
+Decision criteria:
+  - AZD (Bicep)     → new/multi-service apps, simplest deploy (`azd up`)
+  - AZD (Terraform) → DEFAULT when Terraform is wanted + azd simplicity
+  - AZCLI           → existing az scripts, imperative control, custom pipelines, AKS
+  - Bicep           → IaC-first, no CLI wrapper, direct ARM deployment
+  - Terraform       → multi-cloud (non-Azure-first) or TF workflows incompatible with azd
+
+Auto-detection mapping (already applied to `auto.suggestedRecipe`):
+  azure.yaml provider=terraform → AZD (Terraform); azure.yaml else → AZD (Bicep);
+  *.tf no azure.yaml → AZD (Terraform); *.bicep no azure.yaml → Bicep/AZCLI;
+  nothing → AZD (Bicep).
+
+Set `input.recipe` to one of: "AZD (Bicep)" | "AZD (Terraform)" | "AZCLI" | "Bicep" | "Terraform".
+Set `input.recipeRationale` to a short reason. Then load the matching recipe
+README above for the generate step.

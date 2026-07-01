@@ -1,0 +1,24 @@
+Choose exactly one workspace mode. The script proposed one in `auto.proposedMode` from
+file signals (`auto.workspaceEmpty`, `auto.existingInfra`). Confirm or correct it.
+
+Modes:
+- NEW       — empty workspace, or the user wants to create a new app from scratch.
+- MODIFY    — existing Azure app (has azure.yaml/infra); user adds features/components.
+- MODERNIZE — existing non-Azure app being moved to Azure (add Azure support first).
+
+Decision tree:
+- Create a new application                      -> NEW
+- Add/change features to an existing app
+    - has azure.yaml or infra (see auto.existingInfra) -> MODIFY
+    - no Azure config                                  -> MODERNIZE
+- Migrate/modernize for Azure
+    - cross-cloud (AWS/GCP/Lambda) -> stop; this should have routed to azure-cloud-migrate
+    - on-prem or generic           -> MODERNIZE
+
+Detection signals (already gathered in `auto`):
+  azureYaml=AZD project (MODIFY likely) · bicep/terraform=existing IaC ·
+  dockerfile=containerized · workspaceEmpty=NEW or MODERNIZE.
+Note: having azure.yaml does NOT mean skip to validate — the user may want to extend it.
+
+Set `input.mode` to "NEW", "MODIFY", or "MODERNIZE".
+Also set `input.goal` to a one-line statement of what the user wants.

@@ -30,7 +30,7 @@ function Write-NextAction {
         Write-Output ''
     }
     Write-Output 'What to do:'
-    foreach ($line in ($Step.guidance -split "`n")) { Write-Output ("  " + $line.TrimEnd()) }
+    foreach ($line in ((Get-StepGuidance $Step.id) -split "`n")) { Write-Output ("  " + $line.TrimEnd()) }
     Write-Output ''
     $allRefs = @($Step.refs)
     if ($Step.ContainsKey('dynamicRefs') -and $Step.dynamicRefs) {

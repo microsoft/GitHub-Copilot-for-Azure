@@ -1,0 +1,47 @@
+Detect, confirm, and apply the Azure subscription and target region. The script
+already collected:
+  - `auto.azContext`  — `az account show` (subscriptionName/Id, tenantId)
+  - `auto.azdContext` — azd defaults + current env (AZURE_SUBSCRIPTION_ID/LOCATION)
+
+1. Existing AZD env (when `auto.existingInfra.azureYaml` is true): if
+   `auto.azdContext.env` already has subscription/location, `ask_user` to confirm
+   reuse; if accepted, skip re-detection.
+2. Defaults: offer `auto.azdContext.defaults` then `auto.azContext` as the
+   RECOMMENDED values (`auto.suggestedSubscription` holds the best guess).
+3. Confirm subscription via `ask_user` showing the ACTUAL name AND id
+   (e.g. "Use current: <name> (<id>)"). Never offer a vague "use default" choice.
+   If the user wants a different one, list via `az account list -o table`.
+4. Confirm region via `ask_user`. Present ONLY regions that support ALL selected
+   services — a region missing a service will fail deployment. Most services
+   (Container Apps, Functions, App Service, SQL, Cosmos, Key Vault, Storage, Service
+   Bus, Event Grid, App Insights/Log Analytics) are broadly available. LIMITED ones
+   need a region check: Static Web Apps (~5 regions), Azure AI Foundry (very limited,
+   by model), AKS and Azure Database for PostgreSQL (limited in some regions) — use
+   the Azure quota MCP tool (`quota_region_availability_list`) and the service-specific
+   region-availability references to verify. See `scripts/references/region-availability.md`.
+   Honor any data-residency constraint in `input.requirements.compliance`.
+5. Provisioning limits for the chosen region are validated in the next (quota)
+   step via the azure-quotas skill; if capacity is insufficient, return here and
+   pick another region.
+6. The azd environment is applied AUTOMATICALLY by the script after artifacts are
+   generated — it runs `azd env new`/`azd env set <sub>/<location>` once `azure.yaml`
+   exists, and records the result in `auto.azdEnv`. Do NOT run `azd env new` yourself
+   during planning: there is no azd project yet, so it fails with "no project exists".
+
+Set `input.subscription` to the confirmed subscription name or id.
+Set `input.location` to the confirmed Azure region (e.g., "eastus2").
+
+After the subscription is confirmed, query Azure Policy assignments to discover
+enforcement constraints BEFORE finalizing architecture (skipping this causes
+deployment failures when policy denies resource creation):
+  mcp_azure_mcp_policy(command: "policy_assignment_list", subscription: "<subscriptionId>")
+
+Record discovered constraints so they feed architecture + generation. Watch for:
+  - Blocked resource types / SKUs  → exclude from architecture
+  - Required tags                  → add to all Bicep/Terraform resources
+  - Allowed regions                → restrict location choices
+  - Network restrictions (no public endpoints) → adjust networking/access
+  - Storage policies (deny shared key) → use policy-compliant auth
+  - Naming conventions             → apply to resource naming
+
+Set `input.policyConstraints` to an array of short strings (empty array if none).
