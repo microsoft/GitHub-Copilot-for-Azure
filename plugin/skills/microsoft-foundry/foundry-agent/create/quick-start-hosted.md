@@ -136,7 +136,7 @@ Typical changes:
 Only when the user explicitly asked for it:
 
 - Add or modify tool / function-calling code in `<entry-point>`.
-- Add dependencies to `pyproject.toml` / `requirements.txt` (Python), `*.csproj` (.NET), or `package.json` (Node).
+- Add dependencies to `pyproject.toml` / `requirements.txt` (Python) or `*.csproj` (.NET).
 - Change the model in `azure.yaml services.ai-project.deployments[]` before Step 10 provision.
 
 If the user's original prompt was generic (no specific agent purpose described), skip customization and ship the sample as-is.
@@ -219,7 +219,7 @@ python -m pip install uv
 cd -                                             # back to project root for the azd commands below
 ```
 
-**.NET / Node:** no pre-install step — `azd ai agent run` runs `dotnet restore` / `npm install` itself on first start.
+**.NET:** no pre-install step — `azd ai agent run` runs `dotnet restore` itself on first start.
 
 Run the agent locally. For Python, do this **with the service-dir venv still activated** — activation is what lets `azd ai agent run` find `uv` for the fast dependency install. `azd ai agent run` **is** the local server — a foreground process holding port 8088 that must stay alive from start, through every `invoke --local`, until you explicitly stop it.
 

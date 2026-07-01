@@ -21,7 +21,7 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 ## When to Use This Skill
 
 - Create a new hosted agent from a curated Foundry sample.
-- Lift an existing agent project (Python, .NET, Node.js) into a hosted Foundry agent.
+- Lift an existing agent project (Python, .NET) into a hosted Foundry agent.
 - Add tools (web search, AI Search, MCP, A2A) to a hosted agent.
 - Run and iterate on a hosted agent locally before deploying.
 
@@ -31,7 +31,7 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 
 | | Hosted | Prompt |
 |--|--------|--------|
-| Custom Python / .NET / Node code? | Yes -> this skill | No -> [create-prompt.md](create-prompt.md) |
+| Custom Python / .NET code? | Yes -> this skill | No -> [create-prompt.md](create-prompt.md) |
 | Tools / RAG / MCP / A2A | Toolbox + connections | Built-in tool configs |
 | Local debugging | `azd ai agent run` | Limited |
 | Output | New immutable agent version per `azd deploy` | `agent_update` via MCP / SDK |

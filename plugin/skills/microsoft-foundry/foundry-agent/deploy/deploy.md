@@ -19,7 +19,7 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 ## Hosted vs Prompt
 
-- Shipping Python / .NET / Node code -> **Hosted** (azd workflow below).
+- Shipping Python / .NET code -> **Hosted** (azd workflow below).
 - Updating only model / instructions / tools -> **Prompt** (MCP workflow below).
 
 ## Deployment Method Selection -- Hosted agents

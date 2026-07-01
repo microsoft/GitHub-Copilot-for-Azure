@@ -107,7 +107,7 @@ services:
 |----------|---------|--------------|
 | `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` or `azd ai project show` |
 | `AZURE_AI_PROJECT_ID` | `azd ai agent show` (playground URL) | `azd env set` |
-| `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION` | `azd provision` | `azd config get defaults` |
+| `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION` | `azd provision` | `azd init --subscription/-l` (or `azd config set defaults.subscription/location`) |
 | `AGENT_<SVC>_NAME` / `_VERSION` / `_<PROTO>_ENDPOINT` | Auto-written by deploy | Auto |
 | `PARAM_<CONN>_<KEY>` | Connection credentials in `azure.yaml` | `azd env set` |
 

@@ -42,7 +42,7 @@ azd ai agent run
 What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
-2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
+2. Detects the project type (Python, .NET) from files in the service source dir.
 3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
