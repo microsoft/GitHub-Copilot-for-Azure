@@ -214,7 +214,9 @@ This project was built with the microsoft-foundry skill. Before working on or an
 
 Read and follow [local-run](references/local-run.md). Complete one representative local invocation before deploying.
 
-### Step 7 -- Add tools (optional)
+### Step 7 -- Add capabilities (optional)
+
+### Step 7a -- Add tools (optional)
 
 Tools attach through **toolboxes** -- bundled MCP-compatible endpoints.
 
@@ -231,6 +233,10 @@ Flow (only when the user asks you to create the toolbox):
 5. `azd deploy`.
 
 Full recipes (GitHub MCP, Azure AI Search, A2A, Bing Custom) in [tools](references/tools.md).
+
+### Step 7b -- Add guardrails (optional)
+
+Attach a content-safety guardrail to the agent or its toolbox. See [guardrail-manage](references/guardrails/guardrail-manage.md) for creating policies and [guardrail-attach](references/guardrails/guardrail-attach.md) for wiring them to agents, model deployments, or toolboxes.
 
 ### Step 8 -- Hand off to deploy
 
