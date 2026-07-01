@@ -152,6 +152,7 @@ Use this GitHub Copilot pricing table. Prices are USD per 1M tokens. The `Model`
 |---|---:|---:|---:|---:|
 | claude-opus-4.8 | $5.00 | $0.50 | $6.25 | $25.00 |
 | claude-sonnet-4.6 | $3.00 | $0.30 | $3.75 | $15.00 |
+| claude-sonnet-5 | $2.00 | $0.20 | $2.50 | $10.00 |
 | gpt-5.3-codex | $1.75 | $0.175 | N/A | $14.00 |
 | gpt-5-mini | $0.25 | $0.025 | N/A | $2.00 |
 | mai-code-1-flash | $0.75 | $0.075 | N/A | $4.50 |
