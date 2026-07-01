@@ -1,0 +1,25 @@
+parameters:
+  - name: Environment
+    type: string
+  - name: WhatIf
+    type: boolean
+    default: true
+
+jobs:
+  - job:
+    variables:
+      - template: /eng/pipelines/templates/variables/globals.yml
+    ${{ if eq(parameters.WhatIf, true) }}:
+      displayName: 'Validate Provision'
+    ${{ else }}:
+      displayName: 'Provision'
+    pool:
+      name: azsdk-pool
+      demands: ImageOverride -equals ubuntu-24.04
+    steps:
+      - task: AzureCLI@2
+        displayName: Azure CLI
+        inputs:
+          azureSubscription: GithubCopilotForAzure-Testing
+          scriptType: bash
+          inlineScript: az account show
