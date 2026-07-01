@@ -56,9 +56,3 @@ reusing the shared references above. Add a row to the table above when one ships
 - **governance** — Advisor operational-excellence / governance reviews
 - **security** — Advisor security-category reviews
 - **performance** — Advisor performance-category reviews
-
-## Constraints
-
-- ❌ **Never** hardcode a subscription id, tenant id, or resource group.
-- ❌ **Never** modify Azure state — Advisor workflows in this skill are read + suggest only.
-- ❌ **Never** call a tool whose name does not contain `advisor_` as a substitute; if no capability matches, report it and skip.

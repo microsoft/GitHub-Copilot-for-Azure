@@ -228,6 +228,59 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ═══════════════════════════════════════════
+  # Tool-call trajectory — validate behavior up to the point the agent
+  # invokes an Advisor MCP tool. Early-terminates as soon as an `advisor_`
+  # tool is called (or after a small tool-call cap as a safety net), then the
+  # `tool-calls` grader asserts an `advisor_` tool was actually executed.
+  # ═══════════════════════════════════════════
+
+  # ── review-calls-advisor-tool ──
+  - name: "Advisor review reaches an advisor tool call"
+    prompt: "Run an Azure Advisor review of my subscription"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: smoke
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"advisor_","argsPattern":".*"},{"type":"tool-call-count","count":8}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: tool-calls
+        config:
+          required:
+            - name: "advisor_"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── check-recommendations-calls-advisor-tool ──
+  - name: "Recommendation check reaches an advisor tool call"
+    prompt: "Check my Azure Advisor recommendations"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"advisor_","argsPattern":".*"},{"type":"tool-call-count","count":8}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: tool-calls
+        config:
+          required:
+            - name: "advisor_"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
   # Response quality tests
   # ═══════════════════════════════════════════
 
