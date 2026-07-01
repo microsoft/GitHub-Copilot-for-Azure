@@ -22,10 +22,6 @@ tags:
   type: integration
   skill: azure-advisor
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-advisor
-
 config:
   runs: 5
   timeout: "10m"
@@ -45,6 +41,7 @@ stimuli:
     prompt: "Run an Azure Advisor review of my subscription"
     tags:
       type: integration
+      skill: azure-advisor
       tier: smoke
       cost: llm
       area: routing
@@ -63,6 +60,7 @@ stimuli:
     prompt: "Check my Azure Advisor recommendations"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -81,6 +79,7 @@ stimuli:
     prompt: "What does Advisor say about my Azure subscription?"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -99,6 +98,7 @@ stimuli:
     prompt: "Give me an Azure Advisor health check"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -117,6 +117,7 @@ stimuli:
     prompt: "Audit my Azure resources with Advisor"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -141,6 +142,7 @@ stimuli:
     prompt: "Analyze my Azure subscription costs and spending trends"
     tags:
       type: integration
+      skill: azure-advisor
       tier: smoke
       cost: llm
       area: routing
@@ -158,6 +160,7 @@ stimuli:
     prompt: "My App Service keeps returning 500 errors, help me troubleshoot it"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -175,6 +178,7 @@ stimuli:
     prompt: "Grant my team Reader access to the production resource group"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -192,6 +196,7 @@ stimuli:
     prompt: "Store a new secret in my Azure Key Vault"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -209,6 +214,7 @@ stimuli:
     prompt: "Deploy my web app to Azure App Service"
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: routing
@@ -232,6 +238,7 @@ stimuli:
       runs: 1
     tags:
       type: integration
+      skill: azure-advisor
       tier: full
       cost: llm
       area: response-quality
