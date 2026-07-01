@@ -216,6 +216,8 @@ Read and follow [local-run](references/local-run.md). Complete one representativ
 
 ### Step 7 -- Add capabilities (optional)
 
+Optionally add toolboxes (tools) and guardrails (content safety) before deploying.
+
 ### Step 7a -- Add tools (optional)
 
 Tools attach through **toolboxes** -- bundled MCP-compatible endpoints.

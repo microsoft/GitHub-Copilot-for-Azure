@@ -23,6 +23,9 @@ Add a `policies` block to `agent.yaml` with the guardrail's full ARM resource ID
 ### Assign via REST API
 
 ```bash
+SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+RESOURCE_GROUP="<your-resource-group>"
+ACCOUNT_NAME="<your-ai-services-account>"
 DEPLOYMENT_NAME="<your-model-deployment>"
 
 az rest --method PATCH \
@@ -37,6 +40,10 @@ az rest --method PATCH \
 Override the deployment-level guardrail per request using the `x-policy-id` header:
 
 ```bash
+ENDPOINT="https://<your-resource-name>.openai.azure.com"
+DEPLOYMENT_NAME="<your-model-deployment>"
+API_KEY="<your-api-key>"
+
 curl --request POST \
   --url "${ENDPOINT}/openai/deployments/${DEPLOYMENT_NAME}/chat/completions?api-version=2024-10-21" \
   --header "Content-Type: application/json" \
