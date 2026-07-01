@@ -7,7 +7,7 @@
  * DetectedService, AppOnboardContext) are defined in:
  *   session-schemas.ts (local copy in this skill's references/)
  *
- * Context schema (AppOnboardContext, AppOnboardIntent, QuickProbeResult) is defined in:
+ * Context schema (AppOnboardContext, AppOnboardIntent) is defined in:
  *   session-schemas.ts (local copy in this skill's references/)
  */
 
@@ -32,38 +32,49 @@ export interface BuildRequirements {
   f1BlockReason?: string;
 }
 
-export interface CloudSdkSwap {
-  /** The non-Azure SDK package or import (e.g., "google-cloud-pubsub", "@aws-sdk/client-dynamodb") */
-  sourcePackage: string;
-  /** The cloud provider: "aws" | "gcp" | "firebase" */
-  sourceCloud: "aws" | "gcp" | "firebase";
-  /** The Azure equivalent service (e.g., "Azure Service Bus", "Cosmos DB") */
-  azureService: string;
-  /** The Azure SDK package to install (e.g., "@azure/service-bus", "@azure/cosmos") */
-  azurePackage: string;
-  /** Which component uses this dependency */
+/** Structured warning from prereq evaluation */
+export interface PrereqWarning {
+  id: string;
   component: string;
+  axis: "build" | "completeness" | "deployability";
+  summary: string;
+  detail: string;
+  /** What to do about this warning — actionable fix instruction.
+   *  Examples: "Set PGSSLMODE=require env var in IaC", "Add trust proxy setting to Express app" */
+  fix: string;
+  /** When the fix should be applied in the pipeline.
+   *  "prereq" = prereq can fix this NOW with user approval (code/config changes that prevent deploy failures).
+   *  "scaffold" = handled in generated IaC only (env var override, probe config). NEVER modifies user code.
+   *  "deploy-gate" = surface at deploy approval gate for user awareness. No code changes.
+   *  "post-deploy" = informational — add to postDeployRecommendations[], no action during pipeline. */
+  fixPhase: "prereq" | "scaffold" | "deploy-gate" | "post-deploy";
 }
 
 export interface PrereqOutput {
   // AppOnboardComponent[] — see session-schemas.ts
   components: any[];
-  warnings: string[];
+  /** Structured warnings — see prereq-artifacts.md for write rules */
+  warnings: PrereqWarning[];
   detectedStack: string;
-  isMonorepo: boolean;
-  scaffoldedFromScratch: boolean;
   /** Prereq-only: auto-approves readiness gate + simplifies prepare alt analysis.
    *  Does NOT skip any phase, gate, reference read, or validation. */
   fastTrackEligible: boolean;
   overallHealth?: "ready" | "readyWithCaveats" | "blocked";
   /** Build-time requirements detected from manifests and lockfiles */
   buildRequirements?: BuildRequirements;
+  /** Detected health endpoint path (e.g., "/health", "/api/v1/health/").
+   *  Used by scaffold for Azure health probe config and deploy for curl health check.
+   *  null if no health endpoint found (triggers W-HEALTH warning). */
+  healthEndpoint?: string | null;
+  /** Application entry point detected from manifest (e.g., "index.js", "main.py", "cmd/main.go").
+   *  Used by prepare/deploy-strategy.md for startupCommand generation. */
+  entryPoint?: string;
   /** Structured recommendations derived from WARN findings.
    *  Merged into prepare-plan.json.postDeployRecommendations[] by the prepare phase.
    *  PostDeployRecommendation type — see session-schemas.ts */
   postDeployRecommendations?: any[];
-  /** Non-Azure cloud SDK dependencies mapped to Azure equivalents.
-   *  Populated by prereq when CLOUD_SDK_DEPENDENCY findings are detected.
-   *  Consumed by scaffold to perform inline SDK code swaps. */
-  cloudSdkSwaps?: CloudSdkSwap[];
+  /** First-run init commands (DB migrations, seed data) detected from
+   *  framework signals + migrations/ dir. Prepare prepends required entries
+   *  to deployStrategy.startupCommand. See dependency-compatibility.md § First-Run. */
+  initCommands?: { type: string; framework: string; command: string; required: boolean }[];
 }

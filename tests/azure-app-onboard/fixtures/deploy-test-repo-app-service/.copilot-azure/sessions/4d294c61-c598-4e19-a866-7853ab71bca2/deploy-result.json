@@ -1,0 +1,26 @@
+{
+  "sessionId": "4d294c61-c598-4e19-a866-7853ab71bca2",
+  "deploymentNames": [],
+  "resourceGroupName": "rg-bya-notes-dev-4d29",
+  "status": "in-progress",
+  "resourceIds": [],
+  "endpoints": [
+    {
+      "name": "app-bya-notes-dev-4d29",
+      "url": "https://app-bya-notes-dev-4d29.azurewebsites.net",
+      "healthStatus": "unknown"
+    }
+  ],
+  "healthStatus": "unknown",
+  "duration": {
+    "startedUtc": "2026-05-20T08:37:51.5072067Z",
+    "completedUtc": ""
+  },
+  "warnings": [
+    "SQLite local file is ephemeral on Azure App Service.",
+    "express-session uses MemoryStore and sessions will reset on restart until a shared session store is added."
+  ],
+  "partial": false,
+  "resourceResults": [],
+  "orphanedResourceGroups": []
+}

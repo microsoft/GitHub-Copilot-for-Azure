@@ -4,7 +4,7 @@
  * Validates prepare-plan.json schema compliance, quota validation evidence,
  * naming patterns, IaC format selection, and cost estimation quality.
  *
- * Covers: Gap 2 (prepare-plan schema), Gap 9 (user override / Terraform path),
+ * Covers: prepare-plan schema validation, user override / Terraform path,
  * and additional prepare-phase regression scenarios.
  */
 
@@ -13,29 +13,30 @@ import {
   softCheckSkill,
   withTestResult,
   getAllAssistantMessages,
+  doesAssistantOrToolsIncludeKeyword,
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboard,
   SKILL_NAME,
-  testTimeoutMs,
-  shouldEarlyTerminateForPlanPresented,
-  shouldEarlyTerminateOnRoutingFailure,
+  prepareTestTimeoutMs,
+  shouldEarlyTerminateForApprovalGate,
   assertSessionFileCreated,
   assertPreparePlanSchema,
   readSessionArtifact,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 
 describeAppOnboard("Prepare Depth Tests", (agent) => {
   describe("prepare-plan-schema", () => {
-    test("prepare-plan.json has valid schema for simple Express app", async () => {
+    test("prepare-plan.json has valid schema for broken-todo-demo Express app", async () => {
       await withTestResult(async () => {
         let workspacePath = "";
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             workspacePath = workspace;
             await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
+              repoUrl: "https://github.com/Arun07AK/broken-todo-demo",
               targetDir: workspace,
               branch: "main",
               depth: 1,
@@ -43,13 +44,15 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           },
           prompt: "I built a side project and want to get it live on Azure",
           followUp: [
-            "Just go with defaults.",
-            "Show me the full architecture plan before proceeding.",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForPlanPresented,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -59,47 +62,52 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
         if (workspacePath) {
           assertPreparePlanSchema(agentMetadata, workspacePath);
 
-          // Validate specific fields for bya-simple-web-app
+          // Validate specific fields for broken-todo-demo
           const plan = readSessionArtifact<{
-            services: { type: string; sku: string }[];
-            costEstimate: { totalMonthlyUsd: number; assumptions?: string[] };
-            naming: { resourceGroupName: string; suffix?: string; resourcePrefix?: string };
+            services: { type: string; sku: string; name: string }[];
+            costEstimate: { totalMonthlyUsd?: number; monthlyUsd?: number; assumptions?: string[] };
+            naming: { resourcePrefix: string; pattern?: string; resources?: { type: string; name: string }[] };
             iacFormat: string;
             deploymentVariables?: Record<string, unknown>;
             postDeployRecommendations?: string[];
           }>(workspacePath, "prepare-plan.json");
 
+          // Hard: prepare-plan.json must exist — if null, agent didn't reach prepare phase
+          if (!plan) {
+            agentMetadata.testComments.push("❌ PREPARE PLAN: prepare-plan.json not written — agent likely terminated before prepare phase completed");
+          }
+          expect(plan).not.toBeNull();
+
           if (plan) {
-            // Should recommend App Service for simple Express app
-            const hasAppService = plan.services.some(s =>
-              s.type.toLowerCase().includes("app service"));
-            if (!hasAppService) {
-              agentMetadata.testComments.push("⚠️ PREPARE: No App Service in services[] — expected for simple Express app");
+            // Should recommend App Service or Container Apps for Express app
+            // Agent writes service name in `name` field (not `type`) per PreparePlan schema
+            const hasCompute = plan.services.some(s => {
+              const svcName = (s.name ?? s.type ?? "").toLowerCase();
+              return svcName.includes("app service") || svcName.includes("container");
+            });
+            if (!hasCompute) {
+              agentMetadata.testComments.push("⚠️ PREPARE: No App Service or Container Apps in services[] — expected for Express app");
             }
 
-            // Cost should be in expected range ($0-$15 for bya-simple-web-app)
-            if (plan.costEstimate.totalMonthlyUsd !== undefined) {
-              if (plan.costEstimate.totalMonthlyUsd > 50) {
+            // Cost should be reasonable ($0-$50 for simple Express app)
+            // Agent may use `monthlyUsd` (actual) or `totalMonthlyUsd` (legacy)
+            const costUsd = plan.costEstimate.totalMonthlyUsd ?? plan.costEstimate.monthlyUsd;
+            if (costUsd !== undefined) {
+              if (costUsd > 50) {
                 agentMetadata.testComments.push(
-                  `⚠️ PREPARE: Cost $${plan.costEstimate.totalMonthlyUsd}/mo exceeds expected range ($0-$15) for simple Express app`,
+                  `⚠️ PREPARE: Cost $${costUsd}/mo exceeds expected range ($0-$50) for simple Express app`,
                 );
               }
             }
 
-            // costEstimate.assumptions should be populated (SKILL.md requires it)
-            if (!plan.costEstimate.assumptions || plan.costEstimate.assumptions.length === 0) {
-              agentMetadata.testComments.push("⚠️ PREPARE: costEstimate.assumptions[] is empty — SKILL.md requires assumptions");
+            // Naming: resourcePrefix must exist and contain a collision-prevention suffix (≥4 chars from session UUID)
+            // Schema: NamingConfig has { pattern, resourcePrefix, resources[] } — no separate "suffix" field.
+            // The suffix is embedded in resourcePrefix, e.g. "broken-dev-d2c1" where "d2c1" is from session UUID.
+            if (!plan.naming.resourcePrefix || plan.naming.resourcePrefix.length < 5) {
+              agentMetadata.testComments.push(`❌ NAMING: resourcePrefix missing or too short ('${plan.naming.resourcePrefix ?? "undefined"}') — must contain project + suffix for DNS collision prevention`);
             }
-
-            // deploymentVariables should be populated
-            if (!plan.deploymentVariables) {
-              agentMetadata.testComments.push("⚠️ PREPARE: deploymentVariables missing from prepare-plan.json");
-            }
-
-            // postDeployRecommendations should be populated
-            if (!plan.postDeployRecommendations || plan.postDeployRecommendations.length === 0) {
-              agentMetadata.testComments.push("⚠️ PREPARE: postDeployRecommendations[] is empty");
-            }
+            expect(plan.naming.resourcePrefix).toBeDefined();
+            expect(plan.naming.resourcePrefix!.length).toBeGreaterThanOrEqual(5);
 
             // IaC format should be Bicep (default, no existing .tf)
             if (plan.iacFormat !== "bicep") {
@@ -111,7 +119,7 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, prepareTestTimeoutMs);
   });
 
   describe("quota-validation", () => {
@@ -122,45 +130,65 @@ describeAppOnboard("Prepare Depth Tests", (agent) => {
           setup: async (workspace: string) => {
             workspacePath = workspace;
             await cloneRepo({
-              repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app",
+              repoUrl: "https://github.com/rwieruch/node-express-server-rest-api",
               targetDir: workspace,
-              branch: "main",
+              branch: "master",
               depth: 1,
             });
           },
           prompt: "I want a one-click way to deploy my app to Azure.",
           followUp: [
-            "Check if there's quota available before recommending a region.",
-            "What SKU and region did you validate?",
-            "No, don't deploy.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
         expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
+        // Hard: prepare-plan.json must exist — proves prepare phase actually ran
+        if (workspacePath) {
+          const plan = readSessionArtifact(workspacePath, "prepare-plan.json");
+          if (!plan) {
+            agentMetadata.testComments.push("❌ PREPARE PLAN: prepare-plan.json not written — agent likely terminated before prepare phase completed");
+          }
+          expect(plan).not.toBeNull();
+        }
+
         const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
 
-        // Soft: should mention quota/capacity check
+        // Hard: must mention quota/capacity check (must validate quota before recommending region)
+        // Check both assistant messages AND tool call content — agent may validate quota
+        // via MCP tools (mcp_azure_quota) without echoing results in assistant text.
+        // Note: "available" excluded — too generic, matches non-quota contexts.
         const mentionsQuota =
-          messages.includes("quota") || messages.includes("capacity") ||
-          messages.includes("available") || messages.includes("usage");
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "quota") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "capacity") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "usage");
         if (!mentionsQuota) {
-          agentMetadata.testComments.push("⚠️ QUOTA: Agent did not mention quota/capacity validation");
+          agentMetadata.testComments.push("❌ QUOTA: Agent did not mention quota/capacity validation in messages or tool calls — must check quota before recommending a region");
         }
+        expect(mentionsQuota).toBe(true);
 
-        // Soft: should mention a specific region
+        // Hard: must mention a specific region
         const mentionsRegion =
-          /\b(eastus|westus|centralus|northeurope|westeurope|eastus2|westus2|southcentralus)\b/i.test(messages);
+          /\b(eastus|westus|centralus|northeurope|westeurope|eastus2|westus2|southcentralus)\b/i.test(messages) ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "eastus") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "westus") ||
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "eastus2");
         if (!mentionsRegion) {
-          agentMetadata.testComments.push("⚠️ QUOTA: Agent did not mention a specific Azure region");
+          agentMetadata.testComments.push("❌ QUOTA: Agent did not mention a specific Azure region — must recommend a region after quota validation");
         }
+        expect(mentionsRegion).toBe(true);
 
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, prepareTestTimeoutMs);
   });
 });

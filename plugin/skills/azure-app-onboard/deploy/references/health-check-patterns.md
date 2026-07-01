@@ -4,64 +4,59 @@ Post-deployment health verification for AppOnboard-deployed resources.
 
 ## HTTP Endpoints
 
-For each endpoint in deployment outputs:
+For each endpoint: HTTPS GET, 30s timeout, 3 retries (10s/20s/40s backoff).
 
-```
-HTTP GET {url} with:
-  - Timeout: 30 seconds
-  - Retries: 3 attempts
-  - Backoff: 10s / 20s / 40s (exponential)
-  - Scheme: HTTPS only (never HTTP)
-```
+| Status | Health | Note |
+|--------|--------|------|
+| 2xx | `healthy` | **Verify not a placeholder page (see below)** |
+| 401/403 | `healthy` | Auth working, app running |
+| 5xx ×3 | `degraded` | |
+| Timeout/DNS ×3 | `unreachable` | |
 
-| Status | Interpretation |
-|--------|---------------|
-| 200–299 | `healthy` — **but verify not a placeholder page (see below)** |
-| 401/403 | `healthy` (auth working, app running) |
-| 5xx after 3 retries | `degraded` |
-| Timeout after 3 retries | `unreachable` |
-| DNS resolution failure | `unreachable` |
+### HTTP Redirect Handling (Container Apps)
+
+> ⛔ **ACA health probes do NOT follow HTTP redirects.** A 301/302 response from the probe path causes `ActivationFailed` — the probe treats it as a failure, not a redirect.
+
+If the first health check returns **301 or 302**:
+1. Read the `Location` header: `curl -sI "https://{fqdn}{probePath}" | Select-String "^location:" -CaseSensitive:$false`
+2. Update `probePath` in Bicep to the redirect target (e.g., `/wetty/` → `/wetty`)
+3. Redeploy: `az deployment sub create` with updated Bicep
+4. Re-check health after new revision activates
+
+Common redirect patterns: Express trailing-slash normalization (`/app/` → `/app`), framework-level path canonicalization, HTTPS redirects on mixed-content paths.
 
 ### App Service Default Page Detection
 
-> ⛔ **HTTP 200 does NOT guarantee the app started.** When an App Service app fails to start (runtime error, missing dependency, framework crash), Azure serves its own default landing page with HTTP 200. This is a **false positive** for health checks.
+> ⛔ **HTTP 200 ≠ app started.** Azure serves its own default page with 200 when the app fails to start — false positive.
 
-After receiving HTTP 200 from an App Service endpoint, check the response body for Azure placeholder page indicators:
+After HTTP 200 from App Service, check first 2KB of body:
 
-| Body contains | Meaning | Health status |
-|---------------|---------|---------------|
-| `"Your app service is up and running"` | Azure default page — app did NOT start | `degraded` |
-| `"Time to take the next step and deploy your code"` | Azure default page — no code deployed or app failed to start | `degraded` |
-| `"Hey, Python developers!"` or `"Hey, Node.js developers!"` | Azure runtime-specific default page — app didn't start | `degraded` |
-| `"Error 503"` or `"Application Error"` in body | App crashed on startup | `degraded` |
+| Body contains | Meaning |
+|---------------|--------|
+| `"Your app service is up and running"` | Default page — app didn't start |
+| `"Time to take the next step and deploy your code"` | Default page — no code or app failed |
+| `"Hey, Python developers!"` / `"Hey, Node.js developers!"` | Runtime default — app didn't start |
+| `"Error 503"` / `"Application Error"` | App crashed on startup |
 
-**Detection procedure:** After HTTP 200, read the first 2KB of the response body. If any of the strings above are found, set `healthStatus: "degraded"` and add a warning: `"App Service default page detected — application did not start. Check logs: az webapp log tail -g {rg} -n {app}"`.
-
-> **Why this matters:** Some frameworks return HTTP 200 with the Azure default page (e.g., "Hey, Python developers!") while the actual app silently fails to start. The health check accepts 200 as healthy, masking the failure.
+If detected → `healthStatus: "degraded"` + warning: `"App Service default page detected — check logs: az webapp log tail -g {rg} -n {app}"`.
 
 ## Non-HTTP Resources
 
-Verify provisioning state via ARM:
-
 ```bash
-az resource show \
-  --ids {resourceId} \
-  --query "properties.provisioningState" -o tsv
+az resource show --ids {resourceId} --query "properties.provisioningState" -o tsv
 ```
 
 `Succeeded` → `healthy`. `Failed` → `degraded`. Other → `unknown`.
 
-### Per-Service Checks
-
 | Service | Health Signal |
 |---------|---------------|
-| Container Apps | `latestReadyRevisionName` not empty + HTTP check on ingress FQDN |
-| App Service | HTTP GET on `https://{name}.azurewebsites.net/` + `/health` if exists |
-| Azure SQL | `provisioningState: Succeeded` + connectivity test via `az sql db show` |
-| Cosmos DB | `provisioningState: Succeeded` (no HTTP endpoint to check) |
-| Storage | `provisioningState: Succeeded` + `az storage account show --query statusOfPrimary` |
-| Key Vault | `provisioningState: Succeeded` (access validated by app at runtime) |
-| Functions | HTTP trigger URL from deployment outputs + HTTP check |
+| Container Apps | `latestReadyRevisionName` not empty + HTTP on ingress FQDN |
+| App Service | HTTP GET `https://{name}.azurewebsites.net/` + `/health` |
+| Azure SQL | `provisioningState` + `az sql db show` |
+| Cosmos DB | `provisioningState` |
+| Storage | `provisioningState` + `statusOfPrimary` |
+| Key Vault | `provisioningState` |
+| Functions | HTTP trigger URL + HTTP check |
 
 ## Output
 

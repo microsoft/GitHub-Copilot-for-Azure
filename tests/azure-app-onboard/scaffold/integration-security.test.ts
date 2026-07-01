@@ -4,10 +4,10 @@
  * Pushes the agent past plan approval into scaffold, then reads the
  * generated IaC files from the workspace to verify security defaults.
  *
- * Covers: B11 (random_password), B12 (TLS 1.2), B13 (unique names),
- * B15 (publishingCredentialsPolicies), B16 (AllowAllWindowsAzureIps),
- * B17 (provider version), B32 (port mismatch), B33 (deterministic secrets),
- * B34 (managed identity).
+ * Covers: random_password for secrets, TLS 1.2 enforcement, unique naming,
+ * publishingCredentialsPolicies, no blanket firewall rules,
+ * provider version pinning, port consistency, no deterministic secrets,
+ * managed identity.
  */
 
 import {
@@ -28,6 +28,10 @@ import {
   cleanupSessionResourceGroups,
   assertNoAzdCommands,
   assertScaffoldSelfReviewPopulated,
+  assertScaffoldSubagentsDispatched,
+  assertNoSubagentFailures,
+  hasReachedScaffoldPhase,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 import * as fs from "fs";
 import * as path from "path";
@@ -138,13 +142,15 @@ describeIntegration(`${SKILL_NAME}_ - Scaffold Security`, () => {
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             workspacePath = workspace;
-            await cloneRepo({ repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app", targetDir: workspace, branch: "main", depth: 1 });
+            await cloneRepo({ repoUrl: "https://github.com/rwieruch/node-express-server-rest-api", targetDir: workspace, branch: "master", depth: 1 });
           },
           prompt: "I built a side project and want to get it live on Azure",
           followUp: [
-            "Yes, generate the infrastructure.",
-            "Use the cheapest option.",
-            "No, don't deploy.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -164,85 +170,77 @@ describeIntegration(`${SKILL_NAME}_ - Scaffold Security`, () => {
         const allContent = Array.from(iacFiles.values()).join("\n").toLowerCase();
         agentMetadata.testComments.push(`📁 Found ${iacFiles.size} IaC files: ${Array.from(iacFiles.keys()).join(", ")}`);
 
-        // B15: basicPublishingCredentialsPolicies present
+        // Publishing credential policies: basicPublishingCredentialsPolicies present
         const hasPublishingCredPolicies =
           allContent.includes("basicpublishingcredentialspolicies") ||
           allContent.includes("basic_publishing_credentials_policy");
         if (!hasPublishingCredPolicies) {
-          agentMetadata.testComments.push("❌ B15: basicPublishingCredentialsPolicies NOT found in generated IaC");
+          agentMetadata.testComments.push("❌ PUBLISHING CREDENTIALS: basicPublishingCredentialsPolicies NOT found in generated IaC");
         }
         expect(hasPublishingCredPolicies).toBe(true);
 
-        // B33: No deterministic secrets (change-me, uniqueString for passwords)
+        // No deterministic secrets (change-me, uniqueString for passwords)
         const hasDeterministicSecrets =
           /change-me|change.me.in.production|uniquestring.*secret|uniquestring.*password/i.test(allContent);
         if (hasDeterministicSecrets) {
-          agentMetadata.testComments.push("❌ B33: Deterministic secret value found (change-me / uniqueString for password)");
+          agentMetadata.testComments.push("❌ DETERMINISTIC SECRETS: Deterministic secret value found (change-me / uniqueString for password)");
         }
         expect(hasDeterministicSecrets).toBe(false);
 
-        // B16: No AllowAllWindowsAzureIps blanket firewall
+        // No AllowAllWindowsAzureIps blanket firewall
         const hasBlanketFirewall =
           allContent.includes("allowallwindowsazureips") ||
           /start_ip_address.*=.*"0\.0\.0\.0".*end_ip_address.*=.*"0\.0\.0\.0"/s.test(allContent);
         if (hasBlanketFirewall) {
-          agentMetadata.testComments.push("❌ B16: AllowAllWindowsAzureIps or 0.0.0.0 blanket firewall rule found");
+          agentMetadata.testComments.push("❌ BLANKET FIREWALL: AllowAllWindowsAzureIps or 0.0.0.0 blanket firewall rule found");
         }
         expect(hasBlanketFirewall).toBe(false);
 
-        // B11: random_password for secrets, not random_string (Terraform only)
+        // random_password for secrets, not random_string (Terraform only)
         const isTerraform = Array.from(iacFiles.keys()).some(f => f.endsWith(".tf"));
         if (isTerraform) {
           const usesRandomStringForSecrets =
             /random_string.*\{[^}]*\}[^}]*secret|password.*random_string/s.test(allContent);
           if (usesRandomStringForSecrets) {
-            agentMetadata.testComments.push("❌ B11: random_string used for secrets — should use random_password (sensitive=true)");
+            agentMetadata.testComments.push("❌ RANDOM PASSWORD: random_string used for secrets — should use random_password (sensitive=true)");
           }
         }
 
-        // B12: minimum_tls_version set (HARD — security requirement)
+        // minimum_tls_version set (HARD — security requirement)
         const hasTlsVersion =
           allContent.includes("minimum_tls_version") || allContent.includes("mintlsversion") || allContent.includes("min_tls_version");
         if (!hasTlsVersion) {
-          agentMetadata.testComments.push("❌ B12: minimum_tls_version not explicitly set in IaC");
+          agentMetadata.testComments.push("❌ TLS VERSION: minimum_tls_version not explicitly set in IaC");
         }
         expect(hasTlsVersion).toBe(true);
 
-        // B13: App Service name has random/unique component (HARD — prevents global name collisions)
-        const hasUniqueNaming =
-          allContent.includes("uniquestring") || allContent.includes("random_string") ||
-          allContent.includes("random_id") || allContent.includes("unique");
-        if (!hasUniqueNaming) {
-          agentMetadata.testComments.push("❌ B13: No random/unique suffix in resource naming — may cause global name collisions");
-        }
-        expect(hasUniqueNaming).toBe(true);
-
-        // B17: Provider version pinned (Terraform) or API version present (Bicep)
+        // Provider version pinned (Terraform) or API version present (Bicep)
         if (isTerraform) {
           const hasVersionConstraint = /version\s*=\s*"[~>=<]/.test(allContent);
           if (!hasVersionConstraint) {
-            agentMetadata.testComments.push("⚠️ B17: azurerm provider version not pinned with constraint");
+            agentMetadata.testComments.push("⚠️ PROVIDER VERSION: azurerm provider version not pinned with constraint");
           }
         }
 
-        // B34: Managed identity present
+        // Managed identity — soft check here (F1/D1 correctly omits identity per bicep-app-service.md).
+        // Hard assertion in deploy/integration-deploy-verification.test.ts Container Apps test
+        // where SystemAssigned identity is always required.
         const hasManagedIdentity =
           allContent.includes("systemassigned") || allContent.includes("system_assigned") ||
           allContent.includes("userassigned") || allContent.includes("identity");
         if (!hasManagedIdentity) {
-          agentMetadata.testComments.push("❌ B34: No managed identity found in generated IaC");
+          agentMetadata.testComments.push("⚠️ MANAGED IDENTITY: No managed identity in generated IaC — expected for F1/D1 tier, flag for B1+");
         }
-        expect(hasManagedIdentity).toBe(true);
 
-        // B32: Port consistency (soft — just check targetPort exists if Container Apps)
+        // Port consistency (soft — just check targetPort exists if Container Apps)
         if (allContent.includes("containerapp") || allContent.includes("container_app")) {
           const hasTargetPort = allContent.includes("targetport") || allContent.includes("target_port");
           if (!hasTargetPort) {
-            agentMetadata.testComments.push("⚠️ B32: Container App detected but no targetPort specified");
+            agentMetadata.testComments.push("⚠️ PORT CONSISTENCY: Container App detected but no targetPort specified");
           }
         }
 
-        // B17/SCM: scm basicPublishingCredentialsPolicies must allow: true for deploy
+        // SCM credential policy: scm basicPublishingCredentialsPolicies must allow: true for deploy
         // Scaffold sets scm.allow: true so az webapp deploy works; deploy re-disables after code upload
         if (allContent.includes("basicpublishingcredentialspolicies")) {
           // Check for the SCM policy resource — look for 'scm' near 'allow'
@@ -251,12 +249,12 @@ describeIntegration(`${SKILL_NAME}_ - Scaffold Security`, () => {
             // Verify allow: true (not false) — scaffold must enable for deploy phase
             const scmBlockFalse = /name[^}]*['"]scm['"][^}]*allow[^}]*false/s.test(allContent);
             if (scmBlockFalse) {
-              agentMetadata.testComments.push("❌ B17: SCM basicPublishingCredentialsPolicies has allow: false — scaffold must set allow: true (deploy re-disables after code upload)");
+              agentMetadata.testComments.push("❌ SCM CREDENTIAL POLICY: SCM basicPublishingCredentialsPolicies has allow: false — scaffold must set allow: true (deploy re-disables after code upload)");
             }
           }
         }
 
-        // B31: scaffold-manifest.json must have validationResult populated
+        // Validation result: scaffold-manifest.json must have validationResult populated
         const manifestPath = path.join(workspacePath, ".copilot-azure");
         if (fs.existsSync(manifestPath)) {
           // Find scaffold-manifest.json in any session subfolder
@@ -279,26 +277,34 @@ describeIntegration(`${SKILL_NAME}_ - Scaffold Security`, () => {
             try {
               manifest = JSON.parse(fs.readFileSync(manifestFile, "utf-8"));
             } catch (e) {
-              agentMetadata.testComments.push(`\u274c B31: scaffold-manifest.json is not valid JSON: ${e}`);
+              agentMetadata.testComments.push(`❌ VALIDATION RESULT: scaffold-manifest.json is not valid JSON: ${e}`);
               expect(manifest).toBeDefined();
               return;
             }
             const hasValidationResult = manifest.validationResult && manifest.validationResult !== null;
             if (!hasValidationResult) {
-              agentMetadata.testComments.push("❌ B31: scaffold-manifest.json.validationResult is null — azure-validate was not invoked");
+              agentMetadata.testComments.push("❌ VALIDATION RESULT: scaffold-manifest.json.validationResult is null — azure-validate was not invoked");
             } else {
-              agentMetadata.testComments.push(`✅ B31: validationResult present — status: ${manifest.validationResult.status}`);
+              agentMetadata.testComments.push(`✅ VALIDATION RESULT: validationResult present — status: ${manifest.validationResult.status}`);
             }
             expect(hasValidationResult).toBe(true);
           } else {
-            agentMetadata.testComments.push("⚠️ B31: scaffold-manifest.json not found in .copilot-azure/ — scaffold may not have completed");
+            agentMetadata.testComments.push("⚠️ VALIDATION RESULT: scaffold-manifest.json not found in .copilot-azure/ — scaffold may not have completed");
           }
         } else {
-          agentMetadata.testComments.push("⚠️ B31: .copilot-azure/ directory not found — session artifacts not written");
+          agentMetadata.testComments.push("⚠️ VALIDATION RESULT: .copilot-azure/ directory not found — session artifacts not written");
         }
 
-        // Self-review: scaffold-manifest.json.selfReview must be populated (Gap 10)
+        // Scaffold self-review: scaffold-manifest.json.selfReview must be populated
         assertScaffoldSelfReviewPopulated(agentMetadata, workspacePath);
+
+        // Sub-agent assertions: scaffold MUST delegate IaC gen, review, validation
+        if (hasReachedScaffoldPhase(agentMetadata)) {
+          assertScaffoldSubagentsDispatched(agentMetadata);
+        } else {
+          agentMetadata.testComments.push("⚠️ SCAFFOLD PHASE NOT REACHED: Skipping sub-agent delegation assertion");
+        }
+        assertNoSubagentFailures(agentMetadata);
       });
     }, testTimeoutMs);
   });

@@ -4,6 +4,7 @@
  * Tests scaffold-phase behaviors for repos with existing infrastructure:
  * - get-started-ai-agents: Existing azd + Foundry — must detect and not overwrite
  * - todo-nodejs-mongo: Canonical azd template — Key Vault + Cosmos + multi-component
+ * - microblog-ai-remix: Existing azd + Bicep — must detect and not overwrite (moved from scaffold/integration.test.ts)
  *
  * Extracted from integration-catalog-extended.test.ts — these focus on
  * existing IaC detection and non-overwrite (scaffold domain).
@@ -20,12 +21,13 @@ import { cloneRepo } from "../../utils/git-clone";
 import {
   describeAppOnboardWithCleanup,
   SKILL_NAME,
-  testTimeoutMs,
+  scaffoldTestTimeoutMs,
   shouldEarlyTerminateOnAzdDecisionGate,
   assertAzdDecisionGatePresented,
   assertSessionFileCreated,
   assertDatabaseDetected,
   isIaCFileWrite,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 
 describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
@@ -45,9 +47,10 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
           },
           prompt: "I have an existing app — what's the best way to migrate it to Azure?",
           followUp: [
-            "What did you find in my project?",
-            "Should I use the existing infrastructure or start fresh?",
-            "No, don't deploy. That's all I needed.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -82,7 +85,7 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, scaffoldTestTimeoutMs);
 
     test("e2e — todo-nodejs-mongo (canonical azd template with Key Vault + Cosmos)", async () => {
       await withTestResult(async () => {
@@ -99,9 +102,10 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
           },
           prompt: "I just signed up for Azure. What's the fastest way to bring my app over?",
           followUp: [
-            "What infrastructure does my project already have?",
-            "Should I use azd or deploy from scratch?",
-            "No, don't deploy.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
@@ -127,14 +131,15 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
           agentMetadata.testComments.push("⚠️ AZD: Did not detect existing Key Vault in infra (agent terminated at decision gate before enumerating services)");
         }
 
-        // Must detect multi-component (web + api)
+        // Multi-component detection (web + api) — non-blocking because
+        // shouldEarlyTerminateOnAzdDecisionGate fires at the scope triage gate
+        // before the agent analyzes azure.yaml services in detail.
         const detectsComponents =
           (messages.includes("web") || messages.includes("frontend")) &&
           (messages.includes("api") || messages.includes("backend"));
         if (!detectsComponents) {
-          agentMetadata.testComments.push("⚠️ AZD: Did not identify web + api components");
+          agentMetadata.testComments.push("⚠️ AZD: Did not identify web + api components (agent terminated at decision gate before enumerating services)");
         }
-        expect(detectsComponents).toBe(true);
 
         // Must NOT silently overwrite existing IaC
         const toolCalls = getToolCalls(agentMetadata);
@@ -144,6 +149,63 @@ describeAppOnboardWithCleanup("Scaffold Catalog Tests", (agent) => {
         // Session integrity
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
       });
-    }, testTimeoutMs);
+    }, scaffoldTestTimeoutMs);
+  });
+
+  describe("existing-azd-remix", () => {
+    test("e2e — microblog-ai-remix (existing azd + Bicep — must not overwrite)", async () => {
+      await withTestResult(async () => {
+        let workspacePath = "";
+        const agentMetadata = await agent.run({
+          setup: async (workspace: string) => {
+            workspacePath = workspace;
+            await cloneRepo({
+              repoUrl: "https://github.com/Azure-Samples/microblog-ai-remix",
+              targetDir: workspace,
+              branch: "main",
+              depth: 1,
+            });
+          },
+          prompt: "I have a prototype ready — help me get it to production on Azure",
+          followUp: [
+            SUBSCRIPTION_PRIMER,
+            "Go with recommended options.",
+          ],
+          nonInteractive: true,
+          preserveWorkspace: true,
+          shouldEarlyTerminate: (metadata) => {
+            if (getToolCalls(metadata).length < 5) return false;
+            return shouldEarlyTerminateOnAzdDecisionGate(metadata);
+          },
+        });
+
+        softCheckSkill(agentMetadata, SKILL_NAME);
+        expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
+
+        const messages = getAllAssistantMessages(agentMetadata).toLowerCase();
+
+        // Must acknowledge existing IaC (hard assertion)
+        const detectsExisting =
+          messages.includes("existing") || messages.includes("already") ||
+          messages.includes("found") || messages.includes("detected") ||
+          messages.includes("main.bicep") || messages.includes("azure.yaml") ||
+          messages.includes("bicep") || messages.includes("infra/");
+        if (!detectsExisting) {
+          agentMetadata.testComments.push("❌ SCAFFOLD: Did not detect existing IaC files in infra/");
+        }
+        expect(detectsExisting).toBe(true);
+
+        // Must NOT silently overwrite existing IaC
+        const toolCalls = getToolCalls(agentMetadata);
+        const overwroteIaC = toolCalls.some(isIaCFileWrite);
+        if (overwroteIaC) {
+          agentMetadata.testComments.push("❌ SCAFFOLD VIOLATION: Agent overwrote existing IaC in infra/ without user confirmation");
+        }
+        expect(overwroteIaC).toBe(false);
+
+        // Session integrity
+        if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
+      });
+    }, scaffoldTestTimeoutMs);
   });
 });

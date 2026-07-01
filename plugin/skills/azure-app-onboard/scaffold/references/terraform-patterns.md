@@ -102,7 +102,7 @@ Cross-reference naming with [prepare/references/naming-patterns.md](../../prepar
 
 ## Resource Tags — Mandatory
 
-> ⛔ **You MUST read [iac-generation-rules.md § Session Tags](iac-generation-rules.md)** for the 5 AppOnboard tag names and their value sources. Apply them as `local.tags` in Terraform:
+Apply all 5 AppOnboard tags via `local.tags` — see [iac-generation-rules.md § Session Tags](iac-generation-rules.md) for tag names and values.
 
 ```hcl
 locals {
@@ -116,9 +116,7 @@ locals {
 }
 ```
 
-> ⚠️ `timestamp()` changes on every plan, causing tag diffs on every re-run. Always add `lifecycle { ignore_changes = [tags["created-at"]] }` on every resource that carries `local.tags`.
-
-Apply `tags = local.tags` **and** the `ignore_changes` lifecycle on every resource.
+> ⚠️ `timestamp()` changes on every plan. Add `lifecycle { ignore_changes = [tags["created-at"]] }` on every resource.
 
 ## Secrets — random_password, Not random_string
 
@@ -126,13 +124,9 @@ Apply `tags = local.tags` **and** the `ignore_changes` lifecycle on every resour
 resource "random_password" "db_password" {
   length  = 32
   special = true
-
-  lifecycle {
-    ignore_changes = [result]
-  }
+  lifecycle { ignore_changes = [result] }
 }
 
-# Store in Key Vault — never in app settings or tfvars
 resource "azurerm_key_vault_secret" "db_password" {
   name         = "db-password"
   value        = random_password.db_password.result
@@ -144,10 +138,7 @@ resource "azurerm_key_vault_secret" "db_password" {
 
 ## Container Apps — Two-Phase Wiring
 
-Container Apps + ACR requires two-phase deployment (circular dependency: CA needs ACR image, ACR needs CA identity for AcrPull):
-
-1. **Phase 1:** Deploy Container App with placeholder image
-2. **Phase 2:** Build + push app image to ACR, assign AcrPull role, update CA with real image
+Same circular dependency as Bicep — see [bicep-container-apps.md](bicep-container-apps.md). Phase 1: placeholder image, no ACR/KV refs. Phase 2: build + push, assign AcrPull, update via `az containerapp update --image` outside Terraform.
 
 ```hcl
 # Phase 1: Placeholder image
@@ -160,24 +151,11 @@ resource "azurerm_container_app" "app" {
       memory = "0.5Gi"
     }
   }
-
   identity {
     type = "SystemAssigned"
   }
 }
-
-# AcrPull role assignment
-resource "azurerm_role_assignment" "acr_pull" {
-  scope                = azurerm_container_registry.acr.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_container_app.app.identity[0].principal_id
-  principal_type       = "ServicePrincipal"
-}
 ```
-
-## Publishing Credentials
-
-⛔ **MANDATORY for ALL App Service:** FTP basic auth always disabled (`ftps_state = "Disabled"`). SCM basic auth temporarily enabled during scaffold (`scm.allow: true`) — deploy re-disables after code upload. Use `azapi_resource` for `basicPublishingCredentialsPolicies` if `azurerm` doesn't expose it directly.
 
 ## outputs.tf
 
@@ -185,20 +163,16 @@ Export: `resource_group_name`, `app_url` (https://${hostname}), `resource_ids` (
 
 ## Security Defaults
 
-Apply the same security rules as Bicep — see [bicep-patterns-security.md](bicep-patterns-security.md) for full patterns. Terraform-specific syntax below.
-
-> ⛔ Apply during scaffold — never defer to deploy.
-
-### Terraform-Specific Syntax
+Apply same security rules as Bicep — see [bicep-patterns-security.md](bicep-patterns-security.md). Terraform-specific syntax:
 
 | Rule | Terraform HCL |
 |------|---------------|
-| Managed identity (all compute) | `identity { type = "SystemAssigned" }` |
-| ⛔ No SQL admin password | `azuread_authentication_only = true` in `azuread_administrator` block. Never generate `administrator_login` or `administrator_login_password` |
+| Managed identity | `identity { type = "SystemAssigned" }` |
+| ⛔ No SQL admin password | `azuread_authentication_only = true`. Never generate `administrator_login_password` |
 | Key Vault RBAC | `enable_rbac_authorization = true` on `azurerm_key_vault` |
 | KV secret reference | `app_settings = { KEY = "@Microsoft.KeyVault(VaultName=..;SecretName=..)" }` |
 | HTTPS only | `https_only = true`, `minimum_tls_version = "1.2"` |
 | Storage | `https_traffic_only_enabled = true`, `allow_nested_items_to_be_public = false`, `min_tls_version = "TLS1_2"` |
-| ⛔ Cosmos DB data-plane RBAC | Use `azurerm_cosmosdb_sql_role_assignment`, NOT `azurerm_role_assignment` — see [rbac-roles.md](rbac-roles.md) |
-| RBAC role assignments | `principal_type = "ServicePrincipal"` REQUIRED on every `azurerm_role_assignment` — see [rbac-roles.md](rbac-roles.md) for GUID table |
-| SCM/FTP auth | `scm.allow: true` (scaffold), `ftp.allow: false` (always) — use `azapi_resource` for `basicPublishingCredentialsPolicies` |
+| ⛔ Cosmos DB RBAC | `azurerm_cosmosdb_sql_role_assignment`, NOT `azurerm_role_assignment` — see [rbac-roles.md](rbac-roles.md) |
+| RBAC assignments | `principal_type = "ServicePrincipal"` REQUIRED — see [rbac-roles.md](rbac-roles.md) |
+| SCM/FTP auth | `scm.allow: true` (scaffold), `ftp.allow: false` (always) — use `azapi_resource` |

@@ -78,10 +78,9 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       "prepare-plan.json",
       "context.json",
       "scaffold-manifest.json",
-      "deployment-summary.md",
       "self-review",
       "self-healing",
-      "approval gate",
+      "approve",
     ])("workflow covers: %s", (concept) => {
       expect(skill.content.toLowerCase()).toContain(concept.toLowerCase());
     });
@@ -97,45 +96,67 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Reference Files ──────────────────────────────────────────
 
   describe("Reference Files", () => {
-    const allRefs = [
-      "bicep-patterns.md",
-      "terraform-patterns.md",
-      "bicep-app-service.md",
-      "bicep-container-apps.md",
-      "bicep-patterns-data.md",
-      "iac-generation-rules.md",
-      "self-review-procedure.md",
-      "self-review-checklist.md",
-      "waf-checklist.md",
-      "validation-and-manifest.md",
+    // Files directly referenced in SKILL.md body
+    const directRefs = [
       "scaffold-healing-rules.md",
-      "self-healing.md",
-      "error-handling.md",
+      "subagent-iac-gen.md",
+      "subagent-review.md",
+      "subagent-validate.md",
     ];
 
-    test.each(allRefs)("reference file exists and is linked: %s", (filename) => {
+    // Files delegated to sub-agent templates (not in SKILL.md body)
+    const delegatedRefs: Array<{ file: string; template: string }> = [
+      { file: "bicep-patterns.md", template: "subagent-iac-gen.md" },
+      { file: "terraform-patterns.md", template: "subagent-iac-gen.md" },
+      { file: "bicep-app-service.md", template: "subagent-iac-gen.md" },
+      { file: "bicep-container-apps.md", template: "subagent-iac-gen.md" },
+      { file: "iac-generation-rules.md", template: "subagent-iac-gen.md" },
+      { file: "env-var-secrets.md", template: "subagent-iac-gen.md" },
+      { file: "dockerfile-generation.md", template: "subagent-iac-gen.md" },
+      { file: "self-review-checklist.md", template: "subagent-review.md" },
+      { file: "bicep-patterns-security.md", template: "subagent-review.md" },
+      { file: "rbac-roles.md", template: "subagent-review.md" },
+      { file: "validation-and-manifest.md", template: "subagent-validate.md" },
+      { file: "scaffold-healing-rules.md", template: "subagent-validate.md" },
+    ];
+
+    test.each(directRefs)("reference file exists and is linked in SKILL.md: %s", (filename) => {
       expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);
       expect(skill.content).toContain(filename);
+    });
+
+    test.each(delegatedRefs)("reference file exists and is linked in sub-agent template: $file", ({ file, template }) => {
+      expect(existsSync(path.join(SKILL_DIR, "references", file))).toBe(true);
+      const templateContent = readFileSync(path.join(SKILL_DIR, "references", template), "utf-8");
+      expect(templateContent).toContain(file);
+    });
+
+    test("SKILL.md references all three sub-agent templates", () => {
+      expect(skill.content).toContain("subagent-iac-gen.md");
+      expect(skill.content).toContain("subagent-review.md");
+      expect(skill.content).toContain("subagent-validate.md");
     });
   });
 
   // ── Critical Safety Rules (⛔) ──────────────────────────────
 
   describe("Critical Safety Rules", () => {
-    test("do NOT auto-force Terraform — prepare phase owns IaC format", () => {
-      expect(skill.content).toMatch(/Do NOT auto-force Terraform/i);
+    test("IaC format: Bicep default, Terraform when existing .tf detected or user override", () => {
+      expect(skill.content).toMatch(/Bicep.*default/i);
+      expect(skill.content).toMatch(/Terraform.*when.*\.tf.*detected/i);
     });
 
-    test("must read iac-generation-rules.md before generating IaC", () => {
-      expect(skill.content).toMatch(/MUST read.*iac-generation-rules\.md/i);
+    test("iac-generation-rules.md is delegated to IaC sub-agent", () => {
+      const template = readFileSync(path.join(SKILL_DIR, "references", "subagent-iac-gen.md"), "utf-8");
+      expect(template).toMatch(/read.*iac-generation-rules\.md/i);
     });
 
     test("file boundary rule: never modify files outside infra/", () => {
       expect(skill.content).toMatch(/NEVER modify files outside.*infra/i);
     });
 
-    test("do not rewrite app source or run package installs", () => {
-      expect(skill.content).toMatch(/Do NOT rewrite app source/i);
+    test("scaffold only writes files — no install or build commands", () => {
+      expect(skill.content).toMatch(/no install.*build commands/i);
     });
 
     test("return to orchestrator — do not directly invoke deploy", () => {
@@ -146,8 +167,8 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Session Schema Links ─────────────────────────────────────
 
   describe("Session Schema Links", () => {
-    test("session-schemas-deploy.ts exports ScaffoldManifest interface", () => {
-      const schemas = readFileSync(path.join(PARENT_REFS, "session-schemas-deploy.ts"), "utf-8");
+    test("scaffold-schemas.ts exports ScaffoldManifest interface", () => {
+      const schemas = readFileSync(path.join(SKILL_DIR, "references", "scaffold-schemas.ts"), "utf-8");
       expect(schemas).toContain("ScaffoldManifest");
     });
   });
@@ -159,7 +180,7 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       "mcp_azure_mcp_bicepschema",
       "mcp_azure_mcp_azureterraformbestpractices",
       "deploy_iac_rules_get",
-      "mcp_bicep_get_bicep_file_diagnostics",
+      "mcp_bicep_build_bicep",
       "mcp_bicep_list_avm_metadata",
       "deploy_pipeline_guidance_get",
     ])("references tool: %s", (tool) => {

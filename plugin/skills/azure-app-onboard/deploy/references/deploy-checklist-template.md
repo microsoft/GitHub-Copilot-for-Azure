@@ -13,6 +13,16 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 # Deploy Checklist for {appName}
 # RG: {rgName} | Sub: {subscriptionId} | Session: {sessionId}
 
+## ⛔ Secret generation (BEFORE first az deployment)
+- Auto-generate ALL `@secure()` params before first `az deployment sub create` — NEVER `ask_user`
+- On retry: reuse password from `deploy-audit.log` or Key Vault — do NOT regenerate
+
+## ⛔ Read deploy/SKILL.md
+- You MUST `view` deploy/SKILL.md BEFORE running any `az deployment` command
+- Path: `plugin/skills/azure-app-onboard/deploy/SKILL.md`
+- If you have not read it in this conversation (or since the last compaction), read it NOW
+- It covers preflight checks, portal links, what-if, SCM lifecycle, deploy-result.json schema, audit logging, and health checks — skip it and none of these happen
+
 ## After every `az` command
 - Append 2 lines to `deploy-audit.log`: `{timestamp} | {command} | started` then `{timestamp} | {command} | succeeded/failed`
 
@@ -31,7 +41,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - Windows zip paths: normalize with `.Replace('\', '/')` before creating zip entries
 - ⛔ Verify ORYX_DISABLE_COMPRESSION=true is set (prevents output.tar.zst extraction failures at startup — applies to ALL tiers, not just F1)
 - Set WEBSITES_CONTAINER_START_TIME_LIMIT=1800 for safety
-- TypeScript apps: move `typescript` to `dependencies` (not devDependencies) before creating deploy zip
+- TypeScript apps: verify `typescript` and `@types/*` are in `dependencies` (not devDependencies) — Oryx with NODE_ENV=production skips devDeps. Alternative: set app setting NPM_CONFIG_PRODUCTION=false
 - Enable SCM before zip deploy, re-disable after: `az rest --method put` → allow:false → verify
 - After deploy: check response body for Azure default page ("Your app service is up and running" = app didn't start)
 
@@ -45,24 +55,40 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - Windows: append `--no-logs` to `az acr build` to avoid UnicodeEncodeError
 
 ## Code deploy — Static Web Apps (delete if not using SWA)
+- ⛔ **Build before deploy (SPA only):** If the SWA component has a manifest (`package.json`) with a `build` script: detect the package manager from the lockfile, run install + build, then deploy the build output directory (not raw source). Plain HTML repos (no manifest): skip build, deploy source directly.
+- ⛔ **Build-time env vars:** Before `npm run build`, set `VITE_API_BASE_URL` / `NEXT_PUBLIC_API_URL` / `REACT_APP_API_URL` to the deployed backend URL from `deploy-result.json.endpoints[]`. These are baked into the JS bundle at build time — runtime SWA env vars have no effect on client-side code.
+- If frontend config references cloud SDK endpoints (AWS API Gateway, GCP), update with deployed Azure backend URLs from `deploy-result.json.endpoints[]` before `swa deploy`
 - Use `swa deploy` (NOT `az staticwebapp deploy` — doesn't exist)
 - `--app-name {swaName}` is mandatory
 - Store token in $env:SWA_CLI_DEPLOYMENT_TOKEN — never as CLI arg
 
 ## During healing / retries
+- ⛔ REGION LOCK: Deploy region MUST match plan region ({region}). Any region change → RE-PRESENT deploy approval gate with old and new region. Do NOT silently switch. After approval: update `prepare-plan.json.services[].region`, `deploymentVariables.location`, AND append attempt number to `naming.suffix` (e.g., `edd6` → `edd602`). Recompute ALL resource names from the new suffix before redeploying — globally unique names (App Service, Key Vault) from the old region may be soft-deleted and unavailable.
+- ⛔ IaC-only: NEVER use `az containerapp update --image`, `az webapp update`, `az appservice plan delete`, or `az group create` — fix the Bicep and redeploy via `az deployment sub create`
+- ⛔ **On error: read [`error-classification.md`](error-classification.md)** to classify the failure and follow the prescribed remediation. Do NOT ad-hoc heal without reading the classification.
 - Count ALL attempts in deploy-result.json.healingAttempts[]
   After 3: STOP and ask user ("Yes / I have a suggestion / Stop")
 - NEVER run `az group delete` — track in orphanedResourceGroups[]
+- ⛔ **RG deletion timeout:** If you ran `az group delete --no-wait`, wait max 2 minutes then `ask_user`: "Resource group deletion is slow. Wait longer / Proceed without cleanup / Cancel." Do NOT poll indefinitely.
 - Region/SKU/service changes require re-approval gate
 
 ## Before handoff (Step 8)
-- deploy-result.json MUST exist — read back to verify, rewrite if missing
-  Finalize: overwrite skeleton with real values — status (succeeded/failed), deploymentNames (all used),
-  healthStatus (worst across endpoints), duration.completedUtc, resourceResults from `az deployment operation list`
-- ⛔ You MUST read `session-schemas-deploy.ts` for exact DeployResult field names
-- deployment-summary.md — update Status, Health, Links
+- ⛔ Read [`deploy-schemas.ts`](deploy-schemas.ts) for exact DeployResult field names
+- Finalize `deploy-result.json` — overwrite skeleton with real values: status (succeeded/failed), deploymentNames (all used), healthStatus (worst across endpoints), duration.completedUtc, resourceResults from `az deployment operation list`. Read back to verify.
+- ⛔ `deployment-summary.md` — generate from `deploy-result.json` fields (Status, Health, Portal Links, Cleanup). NOT a separate data source.
+- ⛔ `context.json` — add "deploy" to completedPhases, set currentPhase to null, update lastModifiedUtc. VERIFY by reading back.
 - SCM re-disabled (App Service) or image param set (Container Apps)
 - If prereq found migration frameworks: run migrations before declaring healthy
-- DB password: `{pass}` MUST match `pgAdminPassword` from `az deployment sub create` — mismatched passwords cause silent auth failures
-- ⛔ context.json — add "deploy" to completedPhases, set currentPhase to null, update lastModifiedUtc. VERIFY by reading back
+
+## Artifact verification (Step 8 — MANDATORY)
+⛔ Before returning to orchestrator, verify ALL artifacts exist by reading each one back:
+1. `deploy-result.json` — MUST contain: `status`, `deploymentNames[]`, `healthStatus`, `duration.completedUtc`, `resourceResults[]`, `endpoints[]`. Missing fields → rewrite with real values NOW
+2. `deploy-audit.log` — MUST exist with ≥2 entries (started + result for at least 1 command). Missing → reconstruct from memory
+3. `deployment-summary.md` — MUST contain Status, Health, Portal Links sections. Missing → generate from deploy-result.json
+4. `context.json` — MUST have `"deploy"` in `completedPhases`, `currentPhase: null`, updated `lastModifiedUtc`
+5. ⛔ **Endpoint completeness** — EVERY service in `prepare-plan.json.services[]` that hosts application code MUST have a corresponding entry in `deploy-result.json.endpoints[]` with code deployed and a valid `healthStatus` (`healthy`, `degraded`, `unreachable`, `unknown`). If ANY compute endpoint is missing or has code not deployed, set `partial: true` and `status: "failed"`. A deployment with undeployed user components is NOT `"succeeded"`.
+
+If ANY artifact is missing or incomplete, write it NOW — do NOT return to orchestrator without all 5 checks passing.
+
+⛔ **Then STOP — return to orchestrator. No further CLI commands or skill invocations.**
 ```

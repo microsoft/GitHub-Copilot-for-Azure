@@ -18,6 +18,9 @@ Select SKU based on `context.json.intent.budget`. Cross-reference with `intent.s
 | Service Bus | Basic | Standard | Premium |
 | Redis Cache | Basic C0 | Standard C1 | Premium P1 |
 | Functions | Consumption | Flex Consumption | Premium EP1 |
+| Log Analytics | PerGB2018 | PerGB2018 | PerGB2018 (dedicated cluster) |
+
+> ⚠️ **Log Analytics `Free` SKU is deprecated.** ARM rejects it with some API versions and retention settings. Always use `PerGB2018` — first 5 GB/month is free anyway.
 
 ## Modifier Rules
 

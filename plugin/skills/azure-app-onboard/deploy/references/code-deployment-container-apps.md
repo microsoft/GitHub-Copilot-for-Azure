@@ -16,48 +16,17 @@ After IaC deployment creates the Container App with a placeholder image (`mcr.mi
 
 ## Step 0 — Add ACR to IaC (if not already present)
 
-```bicep
-// Add to modules/ — e.g., infra/modules/container-registry.bicep
-param acrName string
-param location string
-param tags object
+Add `container-registry.bicep` module (ACR Basic, `adminUserEnabled: false`) + AcrPull role assignment for CA's managed identity (role GUID: `7f951dda-4ed3-4680-a7ca-43fe172d538d`). Redeploy IaC, wait ~60s for AcrPull role propagation. Log as healing attempt.
 
-resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
-  name: acrName
-  location: location
-  tags: tags
-  sku: { name: 'Basic' }
-  properties: { adminUserEnabled: false }
-}
-
-output acrLoginServer string = acr.properties.loginServer
-output acrId string = acr.id
-```
-
-Also add AcrPull role assignment for the Container App's managed identity:
-```bicep
-resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(acr.id, containerApp.id, '7f951dda-4ed3-4680-a7ca-43fe172d538d')
-  scope: acr
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d') // AcrPull
-    principalId: containerApp.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
-```
-
-Redeploy IaC with ACR included. Wait for AcrPull role to propagate (~60s). Log as a healing attempt.
-
-⛔ **Update `prepare-plan.json`** — add the ACR service to `services[]` with correct naming. Update `scaffold-manifest.json.files[]` with the new module path. Update `costEstimate` if ACR changes the total.
+⛔ Update `prepare-plan.json` (add ACR to `services[]`), `scaffold-manifest.json.files[]`, and `costEstimate`.
 
 ## Steps 1–4 — ACR Build + Image Update (IaC-compliant)
 
 | Step | Command | Notes |
 |------|---------|-------|
-| 1. Build image | `az acr build --subscription {subscriptionId} -r {acrName} -t {appName}:latest .` | Builds from workspace root. If `buildRequirements.hasBuildKitSyntax`, use `-f Dockerfile.azure` (see BuildKit handling below). Log in `deploy-audit.log` |
+| 1. Build image | `az acr build --subscription {subscriptionId} -r {acrName} -t {appName}:latest . --no-logs` | Builds from workspace root. If `buildRequirements.hasBuildKitSyntax`, use `-f Dockerfile.azure` (see BuildKit handling below). ⛔ **Build-time env vars:** If Dockerfile has `ARG NEXT_PUBLIC_*` or `ARG VITE_*`, pass `--build-arg NEXT_PUBLIC_API_URL=https://{api-fqdn}` to inject the deployed API URL. These vars are baked into the JS bundle at build time — runtime env vars have no effect on client-side code. Get the API FQDN from Phase 1 output: `az containerapp show -g {rg} -n {apiApp} --query properties.configuration.ingress.fqdn -o tsv`. |
 | 2. Update Bicep image | Edit `infra/modules/{containerapp}.bicep`: replace placeholder with `image: '{acrLoginServer}/{appName}:latest'`. Add ACR registry config: `registries: [{ server: acrLoginServer, identity: 'system' }]` | IaC-only — no imperative `az containerapp update` |
-| 3. Redeploy | `az deployment sub create --subscription {subscriptionId} --location {location} --template-file infra/main.bicep --parameters @infra/main.parameters.json --name app-onboard-code-deploy-{timestamp}` | Log in `deploy-audit.log`. Emit new portal link |
+| 3. Redeploy | `az deployment sub create --subscription {subscriptionId} --location {location} --template-file infra/main.bicep --parameters @infra/main.parameters.json --name app-onboard-code-deploy-{timestamp} --query properties.provisioningState -o tsv` | Emit new portal link |
 | 4. Verify revision | `az containerapp show --subscription {subscriptionId} -g {rg} -n {ca} --query "{revision:properties.latestReadyRevisionName, image:properties.template.containers[0].image}" -o json` | Confirm image is not the placeholder |
 
 > ⛔ **`az acr build` failures count toward the `deploy-result.json.healingAttempts[]` counter.** After 3 failed builds (even with different root causes), pause and present a diagnosis to the user: "Web image build failed 3 times: [root causes]. Continue healing? (Yes / Cancel)." Each build fix attempt = 1 healing entry. Cross-reference deploy SKILL.md healing loop rule.
@@ -72,6 +41,16 @@ az containerapp update --subscription {subscriptionId} -g {rg} -n {ca} --source 
 
 > ⛔ **`az containerapp update --source` is allowed for code deploy ONLY.** This is different from `az containerapp up --source` (which is ⛔ BLOCKED because it creates resources imperatively). `update --source` updates an EXISTING Container App — no state drift.
 
+## Seed KV Secrets (between Phase 1 and Phase 2)
+
+After Phase 1, seed real secret values into KV before Phase 2 activates `secretRef`:
+
+```powershell
+az keyvault secret set --subscription {subscriptionId} --vault-name {kvName} --name {secret-name} --value $generatedValue
+```
+
+> ⛔ Use the SAME generated password passed to `az deployment sub create`. Shell variables don't persist between tool calls — read back from `deploy-audit.log` or pass to BOTH commands in the same block.
+
 ## After Code Deploy (all paths)
 
 - Wait 30–60s for the new revision to become ready
@@ -84,57 +63,24 @@ az containerapp update --subscription {subscriptionId} -g {rg} -n {ca} --source 
 
 ## Config-File Apps (Go/Viper, Spring Boot, etc.)
 
-Creating an Azure-specific config file (e.g., `config-azure.yml`) is fine for non-secret values (hostnames, ports, feature flags).
+Creating Azure-specific config (e.g., `config-azure.yml`) is fine for non-secret values.
 
-> ⛔ **NEVER bake secrets into config files COPY'd into Docker images.** Images are stored in ACR — secrets in the image are secrets in the registry.
+> ⛔ **NEVER bake secrets into config files COPY'd into Docker images.**
 
-**Secret injection pattern:**
-1. Config file uses **placeholders** for secrets (`password: "REPLACE_AT_RUNTIME"`)
-2. `az containerapp secret set -n {app} -g {rg} --secrets pg-password={value} redis-key={value}`
-3. `az containerapp update -n {app} -g {rg} --set-env-vars POSTGRES_PASSWORD=secretref:pg-password REDIS_PASSWORD=secretref:redis-key`
-4. Framework env var override maps these over config file values at runtime
+**Secret injection:** Config uses placeholders → `az containerapp secret set` → `az containerapp update --set-env-vars KEY=secretref:name` → framework env var override.
 
-> **Go/Viper:** `AutomaticEnv()` maps `POSTGRES_PASSWORD` → key `postgres_password` (underscores), NOT `postgres.password` (dots). Without `viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))` in the app code, env vars can't override nested keys. In that case, put non-secret values in the config file and inject secrets via separate env vars — do NOT bake secrets into the file.
+> **Go/Viper:** `AutomaticEnv()` maps `POSTGRES_PASSWORD` → `postgres_password` (underscores), NOT `postgres.password`. Without `SetEnvKeyReplacer(strings.NewReplacer(".", "_"))`, env vars can't override nested keys.
 
 ## BuildKit Dockerfile Handling
 
-When `buildRequirements.hasBuildKitSyntax == true`, `az acr build` will fail because ACR's server-side builder does not support BuildKit extensions. Generate `Dockerfile.azure`:
-
-1. Copy the original `Dockerfile` to `Dockerfile.azure`
-2. Remove all `--mount=type=cache`, `--mount=type=bind`, `--mount=type=secret` directives from `RUN` lines
-3. Remove `# syntax=docker/dockerfile:1` directives
-4. Preserve everything else — especially multi-stage `FROM` ... `AS` and `COPY --from=` lines
-
-**Examples:**
-
-```dockerfile
-# Original (BuildKit):
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
-# Dockerfile.azure:
-RUN pip install -r requirements.txt
-```
-
-**Multi-line continuation (critical):** When `--mount` is on a line ending with `\`, strip the flag AND continuation, keep the command:
-
-```dockerfile
-# Original (multiple flags on continuation lines):
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    pip install -r requirements.txt
-# Dockerfile.azure:
-RUN pip install -r requirements.txt
-```
-
-⛔ **Do NOT strip `--mount` and leave a bare `RUN` instruction** — the command after ALL mount flags MUST be preserved as the `RUN` argument.
-
-Use `az acr build -f Dockerfile.azure .` for the ACR build step.
+ACR's `az acr build` uses the classic Docker builder — it does NOT support BuildKit. When `buildRequirements.hasBuildKitSyntax == true`: build using the ACR-compatible copy instead: `az acr build -f Dockerfile.azure .`. The user's original Dockerfile stays untouched. If `Dockerfile.azure` doesn't exist yet, create it by stripping BuildKit syntax from the original Dockerfile per [`dockerfile-generation.md § ACR Build Compatibility`](../../scaffold/references/dockerfile-generation.md).
 
 ## Image Parameter Pass-Through (Bicep Redeploy Safety)
 
 When Bicep uses `param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'` as a placeholder, re-deploying IaC (e.g., to fix a firewall rule) resets the image. Pass the real image on every Bicep redeploy:
 
 ```powershell
-az deployment sub create ... --parameters containerImage='{acrLoginServer}/{appName}:latest'
+az deployment sub create ... --parameters containerImage='{acrLoginServer}/{appName}:latest' --query properties.provisioningState -o tsv
 ```
 
 ## Database Post-Deploy Verification

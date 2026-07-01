@@ -13,16 +13,21 @@ import {
 import {
   isSkillInvoked,
   softCheckSkill,
+  doesAssistantOrToolsIncludeKeyword,
   withTestResult,
   getAllAssistantMessages,
 } from "../../utils/evaluate";
 import { cloneRepo } from "../../utils/git-clone";
 import {
   SKILL_NAME,
-  testTimeoutMs,
+  prepareTestTimeoutMs,
   assertSessionFileCreated,
   cleanupSessionResourceGroups,
-  shouldEarlyTerminateOnRoutingFailure,
+  shouldEarlyTerminateForApprovalGate,
+  assertNoSubagentFailures,
+  assertQuotaSubagentDispatched,
+  assertPricingHandled,
+  SUBSCRIPTION_PRIMER,
 } from "../app-onboard-test-helpers";
 
 const skipTests = shouldSkipIntegrationTests();
@@ -47,17 +52,19 @@ describeIntegration(`${SKILL_NAME}_ - Cost Depth Tests`, () => {
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
             workspacePath = workspace;
-            await cloneRepo({ repoUrl: "https://github.com/samcdonald-ms/bya-simple-web-app", targetDir: workspace, branch: "main", depth: 1 });
+            await cloneRepo({ repoUrl: "https://github.com/dev-arv13/demo-app", targetDir: workspace, branch: "main", depth: 1 });
           },
           prompt: "I need to deploy this app to Azure — but first tell me exactly what it will cost",
           followUp: [
-            "Break down the cost per service. I need dollar amounts.",
-            "What's the cheapest option that still works for production?",
-            "No, don't deploy.",
+            SUBSCRIPTION_PRIMER,
+            "Yes.",
+            "Yes.",
+            "Yes.",
+            "Yes.",
           ],
           nonInteractive: true,
           preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateOnRoutingFailure,
+          shouldEarlyTerminate: shouldEarlyTerminateForApprovalGate,
         });
 
         softCheckSkill(agentMetadata, SKILL_NAME);
@@ -72,27 +79,28 @@ describeIntegration(`${SKILL_NAME}_ - Cost Depth Tests`, () => {
         }
         expect(hasDollarAmounts).toBe(true);
 
-        // Hard: must mention a specific service or SKU (mentions_service_or_sku grader)
+        // Hard: must mention a specific service or SKU
         const mentionsServiceOrSku = /container apps|app service|static web apps|azure functions|F1|B1|S1|Free|Basic|Standard|tier|sku/i.test(messages);
         if (!mentionsServiceOrSku) {
           agentMetadata.testComments.push("❌ SERVICE/SKU: Did not mention a specific Azure service or SKU code");
         }
         expect(mentionsServiceOrSku).toBe(true);
 
-        // Soft: SKU codes in SKILL.md format (e.g., "App Service F1 (Free)", "B1 Linux (Basic)")
+        // Soft: SKU codes (e.g., "App Service F1 (Free)", "B1 Linux (Basic)")
         const hasSkuCodes = /\b(f1|b1|b2|s1|p1v2|d1)\b/i.test(messages);
         const hasTierNames = /free tier|basic tier|standard tier|\(free\)|\(basic\)|\(standard\)/i.test(messages);
         if (!hasSkuCodes && !hasTierNames) {
-          agentMetadata.testComments.push("⚠️ No SKU codes (F1/B1/S1) or tier names found — SKILL.md requires 'App Service F1 (Free)' format");
+          agentMetadata.testComments.push("⚠️ No SKU codes (F1/B1/S1) or tier names found — cost output should include SKU codes and tier names");
         }
 
-        // Soft: per-service breakdown (≥2 dollar amounts + monthly qualifier)
+        // Hard: per-service breakdown (≥2 dollar amounts + monthly qualifier)
         const dollarMatches = messages.match(/\$\d/g);
         const dollarCount = dollarMatches ? dollarMatches.length : 0;
         const hasMonthlyQualifier = /per month|\/month|monthly/i.test(messages);
         if (dollarCount < 2 || !hasMonthlyQualifier) {
-          agentMetadata.testComments.push(`⚠️ Per-service breakdown weak: ${dollarCount} dollar amounts found (need ≥2), monthly qualifier: ${hasMonthlyQualifier}`);
+          agentMetadata.testComments.push(`❌ PER-SERVICE BREAKDOWN: ${dollarCount} dollar amounts found (need ≥2), monthly qualifier: ${hasMonthlyQualifier}`);
         }
+        expect(dollarCount >= 2 && hasMonthlyQualifier).toBe(true);
 
         // Soft: total estimate
         const hasTotalEstimate = /total.*\$|estimated.*\$|overall.*\$|\$.*total|\$.*month|per.?month/i.test(messages);
@@ -100,23 +108,36 @@ describeIntegration(`${SKILL_NAME}_ - Cost Depth Tests`, () => {
           agentMetadata.testComments.push("⚠️ No total cost estimate found (expected 'total $X/month' or similar)");
         }
 
-        // Soft: cost assumptions (SKILL.md requires costEstimate.assumptions[])
-        const hasAssumptions = messages.includes("assum");
+        // Hard: cost assumptions (cost estimate must include assumptions per prepare-phase spec)
+        // Accept "assumes", "within ... limits", "free grant", "within free" as cost assumption phrasing
+        // Check both assistant messages and tool calls (prepare-plan.json may contain assumptions)
+        const hasAssumptions =
+          doesAssistantOrToolsIncludeKeyword(agentMetadata, "assum") ||
+          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "within") &&
+            (doesAssistantOrToolsIncludeKeyword(agentMetadata, "limit") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "grant"))) ||
+          (doesAssistantOrToolsIncludeKeyword(agentMetadata, "free tier") &&
+            (doesAssistantOrToolsIncludeKeyword(agentMetadata, "$0") || doesAssistantOrToolsIncludeKeyword(agentMetadata, "no cost")));
         if (!hasAssumptions) {
-          agentMetadata.testComments.push("⚠️ No cost assumptions stated — SKILL.md requires costEstimate.assumptions[] (e.g., 'Assumes ~1 GB/month ingestion')");
+          agentMetadata.testComments.push("❌ COST ASSUMPTIONS: No cost assumptions stated — cost estimate must include assumptions (e.g., 'Assumes ~1 GB/month ingestion' or 'within free grant limits')");
         }
+        expect(hasAssumptions).toBe(true);
 
         // Outcome-based behavioral checks
         if (workspacePath) assertSessionFileCreated(agentMetadata, workspacePath);
 
-        // Instrumentation mentioned (prepare-B4)
+        // Sub-agent assertions: quota and pricing must be delegated or handled via MCP
+        assertNoSubagentFailures(agentMetadata);
+        assertQuotaSubagentDispatched(agentMetadata);
+        assertPricingHandled(agentMetadata);
+
+        // Instrumentation/monitoring should be included in cost breakdown
         const hasInstrumentation =
           messages.includes("instrumentation") || messages.includes("app insights") ||
           messages.includes("application insights") || messages.includes("monitoring");
         if (!hasInstrumentation) {
-          agentMetadata.testComments.push("⚠️ prepare-B4: No instrumentation/monitoring mentioned in cost breakdown");
+          agentMetadata.testComments.push("⚠️ INSTRUMENTATION: No instrumentation/monitoring mentioned in cost breakdown");
         }
       });
-    }, testTimeoutMs);
+    }, prepareTestTimeoutMs);
   });
 });

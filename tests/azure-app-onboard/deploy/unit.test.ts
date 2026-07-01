@@ -16,7 +16,6 @@ const SKILL_PATH = `azure-app-onboard/${SUBSKILL_NAME}`;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = path.resolve(__dirname, "../../../plugin/skills/azure-app-onboard/deploy");
-const PARENT_REFS = path.resolve(__dirname, "../../../plugin/skills/azure-app-onboard/references");
 
 describe(`${SKILL_PATH} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -62,10 +61,10 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       expect(skill.content).toContain("azure-deploy");
     });
 
-    test("has Workflow with all 9 steps in table format", () => {
+    test("has Workflow with steps 0 through 9 in table format", () => {
       expect(skill.content).toMatch(/## Workflow/);
-      for (let i = 1; i <= 9; i++) {
-        expect(skill.content).toMatch(new RegExp(`\\|\\s*${i}\\s*\\|\\s*\\*\\*`));
+      for (const step of ["0", "1", "3", "4", "5b", "6", "6b", "7", "8", "9"]) {
+        expect(skill.content).toMatch(new RegExp(`\\|\\s*${step}\\s*\\|\\s*\\*\\*`));
       }
     });
 
@@ -75,15 +74,14 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
 
   describe("Workflow Steps", () => {
     test.each([
+      "Dispatch preflight sub-agent",
       "Read upstream artifacts",
-      "Check validation state",
-      "Run preflight checks",
+      "Preflight checks",
       "Deploy approval gate",
-      "Resolve deployment variables",
       "deploy-result.json skeleton",
       "Execute deployment",
       "Deploy application code",
-      "Health-check endpoints",
+      "Health-check",
       "Finalize artifacts",
       "Error handling + healing",
     ])("workflow covers: %s", (step) => {
@@ -94,21 +92,30 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Reference Files ──────────────────────────────────────────
 
   describe("Reference Files", () => {
-    const allRefs = [
+    const directRefs = [
+      "deploy-checklist-template.md",
+      "deploy-schemas.ts",
+      "error-classification.md",
+      "subagent-preflight.md",
+    ];
+
+    const delegatedRefs = [
       "approval-gate-template.md",
       "code-deployment-appservice.md",
       "code-deployment-container-apps.md",
       "code-deployment-swa.md",
       "deploy-safety.md",
-      "error-classification.md",
       "health-check-patterns.md",
-      "portal-links.md",
       "preflight-checks.md",
     ];
 
-    test.each(allRefs)("reference file exists and is linked: %s", (filename) => {
+    test.each(directRefs)("reference file exists and is linked in SKILL.md: %s", (filename) => {
       expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);
       expect(skill.content).toContain(filename);
+    });
+
+    test.each(delegatedRefs)("reference file exists on disk (delegated to sub-agent): %s", (filename) => {
+      expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);
     });
 
     test("error-classification.md contains all three error categories", () => {
@@ -122,39 +129,28 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Critical Safety Rules (⛔) ──────────────────────────────
 
   describe("Critical Safety Rules", () => {
-    test("deploy gate must be inline markdown, not ask_user", () => {
-      expect(skill.content).toMatch(/do NOT use.*ask_user/i);
+    test("NEVER ask_user for passwords — auto-generate secure params", () => {
+      expect(skill.content).toMatch(/NEVER.*ask_user.*password/i);
     });
 
-    test("deploy-result.json must ALWAYS be written regardless of outcome", () => {
-      expect(skill.content).toMatch(/ALWAYS write.*deploy-result\.json/i);
-    });
-
-    test("audit log must be incremental, not batched", () => {
-      expect(skill.content).toMatch(/Audit log.*INCREMENTAL/i);
-      expect(skill.content).toMatch(/Do NOT defer to phase exit/i);
+    test("deploy-result.json must exist before first az command and on failure", () => {
+      expect(skill.content).toMatch(/Must exist BEFORE first.*az.*command/i);
+      expect(skill.content).toMatch(/write.*deploy-result\.json.*with.*status.*failed/i);
     });
 
     test("healing loop: ask after 3 attempts, then every 5", () => {
       expect(skill.content).toMatch(/after 3 attempts/i);
     });
 
-    test("artifact writes must be distributed, not batched", () => {
-      expect(skill.content).toMatch(/DISTRIBUTED.*not batched/i);
-    });
-
-    test("references deploy-safety.md for shell and secret rules", () => {
-      expect(skill.content).toMatch(/Read.*deploy-safety\.md/i);
-      expect(skill.content).toMatch(/shell execution rules.*sync vs async/i);
-      expect(skill.content).toMatch(/secret generation patterns/i);
+    test("deploy-safety.md exists with shell and secret rules", () => {
       const safety = readFileSync(path.join(SKILL_DIR, "references", "deploy-safety.md"), "utf-8");
-      expect(safety).toMatch(/NEVER use async\/background shells/i);
-      expect(safety).toMatch(/Generate secrets ONCE/i);
-      expect(safety).toMatch(/az webapp deploy.*does NOT support.*--track-status/i);
+      expect(safety).toMatch(/Use sync shells/i);
+      expect(safety).toMatch(/generate each secret ONCE/i);
     });
 
-    test("post-compaction re-read rule exists", () => {
-      expect(skill.content).toMatch(/Post-compaction.*re-read.*deploy-checklist\.md/i);
+    test("compaction re-read rule for deploy-checklist.md", () => {
+      expect(skill.content).toMatch(/compaction/i);
+      expect(skill.content).toMatch(/re-read.*deploy-checklist\.md/i);
     });
 
     test("return to orchestrator — do not start new phases", () => {
@@ -165,9 +161,9 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Session Schema Links ─────────────────────────────────────
 
   describe("Session Schema Links", () => {
-    test("links to session-schemas-deploy.ts and exports required interfaces", () => {
-      expect(skill.content).toContain("session-schemas-deploy.ts");
-      const schemas = readFileSync(path.join(PARENT_REFS, "session-schemas-deploy.ts"), "utf-8");
+    test("links to deploy-schemas.ts and exports required interfaces", () => {
+      expect(skill.content).toContain("deploy-schemas.ts");
+      const schemas = readFileSync(path.join(SKILL_DIR, "references", "deploy-schemas.ts"), "utf-8");
       expect(schemas).toContain("export interface DeployResult");
       expect(schemas).toContain("export interface DeployHealingAttempt");
     });

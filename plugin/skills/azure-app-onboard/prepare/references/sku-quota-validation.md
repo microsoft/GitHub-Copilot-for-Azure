@@ -18,46 +18,35 @@ Build the scan list dynamically — do NOT hardcode a fixed set of regions:
 
 1. **User's preferred region** — read `context.json.azure.region` or `context.json.overrides[]` for a region preference. If stated, scan that region first.
 2. **Nearest alternates** — add 3–4 regions geographically close to the user's preferred region from the global pool below.
-3. **If no user preference** — default to `eastus2` and scan 4 alternates from the user's likely geography (infer from subscription tenant location or ask).
+3. **If no user preference** — default to a well-supported region (e.g., `eastus2`) and scan 4 alternates from the user's likely geography (infer from subscription tenant location or ask).
 
 **Global region pool:** `eastus2`, `eastus`, `westus2`, `centralus`, `westeurope`, `northeurope`, `australiaeast`, `japaneast`, `southeastasia`, `brazilsouth`
 
 > **Agent: adapt shell syntax to detected environment.** PowerShell shown below; use equivalent syntax on bash/zsh (e.g., `for region in eastus eastus2 ...; do ... done`).
 
+> ⛔ **PowerShell `?` in URLs:** When building `az rest` URLs with variable interpolation, PowerShell may strip `?` from `?api-version=`. Always use the URL **inline in double quotes** (as shown below), NOT via a `$url` variable. If you must use a variable, wrap the `?` with a backtick: `` `?api-version= ``.
+
 ### Per-Provider Scripts
 
-Each provider uses a different API. AppOnboard primarily checks **App Service** and **Container Apps**.
+Use `az rest` for all quota checks. Query BOTH limit AND usage (limit alone is insufficient).
 
-**App Service** — query BOTH the quota endpoint (limit) AND the usages endpoint (current consumption). Checking limit alone is insufficient — `limit=1` with `usage=1` means FULL, not AVAILABLE.
+**App Service:** Query quota + usages endpoints per region:
 ```powershell
 $sub = '{subscriptionId}'; $sku = '{sku}'
-$regions = @('{userRegion}','{alternate1}','{alternate2}','{alternate3}','{alternate4}')
-$regions | ForEach-Object {
-  $qUrl = "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Web/locations/$_/providers/Microsoft.Quota/quotas/$sku" + "?api-version=2023-02-01"
-  $uUrl = "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Web/locations/$_/providers/Microsoft.Quota/usages/$sku" + "?api-version=2023-02-01"
-  $limit = az rest --method get --url $qUrl --query "properties.limit.value" -o tsv 2>$null
-  $used  = az rest --method get --url $uUrl --query "properties.usages.value" -o tsv 2>$null
-  if ($LASTEXITCODE -ne 0 -or -not $limit) {
-    Write-Host "$_ : $sku=no-per-sku-entry (fallback candidate)"
-  } elseif ([int]$limit -le 0) {
-    Write-Host "$_ : $sku=limit=0 BLOCKED"
-  } else {
-    $u = if ($used -and [int]$used -ge 0) { [int]$used } else { 0 }
-    $avail = [int]$limit - $u
-    Write-Host "$_ : $sku=limit=$limit used=$u available=$avail $(if($avail -gt 0){'AVAILABLE'}else{'FULL'})"
-  }
+@('{userRegion}','{alt1}','{alt2}','{alt3}') | ForEach-Object {
+  $limit = az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Web/locations/$_/providers/Microsoft.Quota/quotas/$sku?api-version=2023-02-01" --query "properties.limit.value" -o tsv 2>$null
+  $used  = az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Web/locations/$_/providers/Microsoft.Quota/usages/$sku?api-version=2023-02-01" --query "properties.usages.value" -o tsv 2>$null
+  $avail = if ($limit -and $used) { [int]$limit - [int]$used } elseif ($limit) { [int]$limit } else { 'unknown' }
+  Write-Host "$_ : $sku available=$avail"
 }
 ```
 
-**Container Apps** — uses the provider `/usages` endpoint (gives usage+limit in one call):
+**Container Apps:** `/usages` gives usage+limit in one call:
 ```powershell
-$sub = '{subscriptionId}'
-$regions | ForEach-Object {
-  $url = "https://management.azure.com/subscriptions/$sub/providers/Microsoft.App/locations/$_/usages?api-version=2024-03-01"
-  $result = az rest --method get --url $url --query "value[?name.value=='ManagedEnvironmentCount'].{used:currentValue, limit:limit}" -o json 2>$null | ConvertFrom-Json
-  if ($result) {
-    $avail = $result.limit - $result.used
-    Write-Host "$_ : ManagedEnv used=$($result.used) limit=$($result.limit) available=$avail $(if($avail -gt 0){'AVAILABLE'}else{'FULL'})"
+az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.App/locations/{region}/usages?api-version=2024-03-01" --query "value[?name.value=='ManagedEnvironmentCount'].{used:currentValue, limit:limit}" -o json
+```
+
+**Storage / Key Vault:** Default limits rarely exhausted — skip unless plan requires multiple accounts.
   } else { Write-Host "$_ : no-data" }
 }
 ```
@@ -68,99 +57,44 @@ $regions | ForEach-Object {
 
 ### Interpret Results
 
-- **App Service:** `available > 0` (limit minus used) → AVAILABLE. `available = 0` → ⛔ FULL (`SubscriptionIsOverQuotaForSku` at deploy). `limit = 0` → ⛔ BLOCKED. `no-per-sku-entry` (404/empty — only `*` wildcard) → per-SKU tracking not configured; prefer regions with explicit limits, use as fallback if none available.
-- **Container Apps:** `limit - used > 0` → AVAILABLE. `available = 0` → pick different region or request increase via Azure Portal.
-- **Storage:** `limit - used > 0` → AVAILABLE. Default limit 250 is rarely exhausted.
-- **Key Vault:** No programmatic check. If deploy fails with quota error, request increase via Azure Portal.
-- **`az rest` fails** (auth/network) → Write `quotaValidation: { verified: false, method: "unverifiable", reason: "az rest failed" }`.
+- `available > 0` → AVAILABLE. `available = 0` / `limit = 0` → BLOCKED. 404/empty → fallback candidate.
+- `az rest` fails → `quotaValidation: { verified: false, method: "unverifiable" }`.
 
 ### After Checking
 
-1. **Only present regions with confirmed capacity.** Show: "Available regions for {sku}: eastus2 (limit={N}), centralus (limit={N})."
-2. If the user's preferred region has zero quota: "⚠️ {region} has no {sku} capacity. Available alternatives: {list}."
-3. If ALL regions have zero quota, escalate: try next SKU tier (F1→B1, B1→S1), re-check. If ALL tiers exhausted → **HALT**: "⛔ No quota in any checked region. Options: (1) Specify a region with quota, (2) Switch to Container Apps (~$X/mo), (3) Request increase at https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas, (4) Cancel."
-4. Write to `prepare-plan.json.quotaValidation`: `{ verified: true, method: "cli", verifiedRegion: "{region}", verifiedSku: "{sku}", checkedRegions: [...], failedResources: [...] }`.
-5. Write a `QuotaCheck` entry per SKU/region to `prepare-plan.json.quotas[]` with all schema fields.
+1. Only present regions with confirmed capacity.
+2. ALL regions zero → try next SKU tier. ALL tiers exhausted → **HALT** with options: specify region, switch compute type, request increase at portal, cancel.
+3. Write `prepare-plan.json.quotaValidation`: `{ verified: true, method: "cli", verifiedRegion, verifiedSku, checkedRegions[], failedResources[] }`.
 
 ### Offer Restriction Check (Database Services)
 
-> ⛔ **`what-if` and `validate` do NOT catch `LocationIsOfferRestricted`.** The capabilities API below is the ONLY pre-deploy detection.
+> ⛔ `what-if`/`validate` do NOT catch `LocationIsOfferRestricted`. Use capabilities API.
 
-Use `az rest` to check capabilities per region: `GET /subscriptions/{sub}/providers/{namespace}/locations/{region}/capabilities?api-version={ver}`.
+| Provider | API Version |
+|----------|-------------|
+| PostgreSQL | `2022-12-01` |
+| MySQL | `2023-12-30` |
 
-| Provider | Namespace | API Version | Blocked signal |
-|----------|-----------|-------------|----------------|
-| PostgreSQL | `Microsoft.DBforPostgreSQL` | `2022-12-01` | `value[0].reason` non-null or editions empty |
-| MySQL | `Microsoft.DBforMySQL` | `2023-12-30` | `value` is `[]` |
-
-**Full example — PostgreSQL capabilities check:**
 ```powershell
-az rest --method get --url "https://management.azure.com/subscriptions/{sub}/providers/Microsoft.DBforPostgreSQL/locations/{region}/capabilities?api-version=2022-12-01" --query "value[0].supportedFlexibleServerEditions[0].name" -o tsv
-```
-> ⛔ **JMESPath MUST start with `value[0].`** — the capabilities response wraps editions inside a `value` array. Omitting `value[0].` returns null even when editions exist.
-
-> ⛔ **URL MUST include `/locations/{region}/`** — omitting it returns `InvalidResourceType`.
-
-**Interpretation:**
-
-| Response | Meaning | Action |
-|----------|---------|--------|
-| `value[0].supportedFlexibleServerEditions` non-empty | Available | Proceed |
-| `value` is `[]` or editions empty | BLOCKED | Try next candidate region |
-| HTTP error or `InvalidResourceType` | Wrong URL or API version | Fix URL, retry |
-| `reason` field non-null | Restricted in this region | Try next candidate region |
-
-> ⛔ **Empty response from capabilities API = BLOCKED.** The absence of data means the service is restricted in this region. NEVER assume availability from empty/null results — check the next candidate region.
-
-Write to `prepare-plan.json.quotaValidation.offerRestrictions[]`. All blocked → **HALT**.
-
-> ⛔ **Do NOT use `az provider show --namespace`** — global locations, not subscription-specific.
-
-### Anti-Patterns — NEVER Use These
-
-> ⛔ `az quota list` — CLI extension, fails with permission errors. Use `az rest`.
-> ⛔ `az vm list-usage` — wrong layer (VM vCPUs ≠ App Service instances).
-> ⛔ `az appservice list-locations` — returns every region even when quota is 0.
-> ⛔ `mcp_azure_mcp_quota` — misleading "No Limit" for unsupported types.
-> ⛔ `what-if` / `validate` — returns `Succeeded` for quota=0 and `LocationIsOfferRestricted`.
-
-## Deploy Gate Re-Validation
-
-When the scaffold deploy gate (Step 12.5 in [validation-and-manifest.md](../../scaffold/references/validation-and-manifest.md)) reads `prepare-plan.json.quotaValidation` and finds `verified == false`, `method == "unverifiable"`, or `method` is not `"cli"` for quota-constrained services (App Service, Functions, Container Apps, VMs, Cosmos DB, PostgreSQL, Redis, ACR):
-
-1. **Do NOT present the deploy gate yet.** Deploying without quota verification causes 30–80 min healing cascades.
-2. **Re-run the [Per-Provider Scripts](#per-provider-scripts) above** for the subscription ID, SKU list from `prepare-plan.json.services[]`, and the planned region.
-3. **Pass** → update `prepare-plan.json.quotaValidation` with `{ verified: true, method: "cli", verifiedRegion: "{region}" }` and proceed to the gate.
-4. **Fail** → present the user with the blocked SKU and alternatives. If user picks an alternate SKU/region, update `prepare-plan.json` and re-scaffold.
-5. **`az rest` itself fails** (auth/network) → display: "⚠️ Quota could not be verified — deploy may fail if quota is insufficient. Request increases at https://portal.azure.com/#blade/Microsoft_Azure_Capacity/QuotaMenuBlade/myQuotas." and proceed.
-
-## Sub-Agent Delegation Protocol
-
-When delegating quota validation to a sub-agent from prepare/SKILL.md Step 5:
-
-**Provide to the sub-agent:**
-- `context.json.azure.subscriptionId`
-- SKU list from Step 4 (`prepare-plan.json.services[].sku`)
-- User's preferred region (or default `eastus2`)
-- Fallback regions: `eastus`, `westus2`, `centralus`, `westeurope`
-- List of managed database/restricted-offer services in the plan
-- Full content of this file (sku-quota-validation.md) verbatim
-
-**Sub-agent prompt template:**
-
-> "Follow the procedures in sku-quota-validation.md to validate quota for every compute SKU in the plan across the region list. For each managed database or restricted-offer service (PostgreSQL, MySQL), also run the offer restriction check. Return: per-SKU per-region availability (limit AND usage), the first viable region where ALL SKUs have capacity (verifiedRegion), offerRestrictions[] for any blocked services, and overall status (success/blocked/degraded). If all regions are blocked for any SKU, return status: BLOCKED with the SKU name and available alternatives. ≤500 tokens."
-
-**Expected output schema:**
-```jsonc
-{
-  "status": "success" | "blocked" | "degraded",
-  "verifiedRegion": "eastus2",
-  "quotas": [{ "resource": "...", "region": "...", "required": 1, "available": 3, "sufficient": true }],
-  "offerRestrictions": [{ "provider": "...", "region": "...", "restricted": false, "reason": "..." }]
+$sub = '{subscriptionId}'; $provider = 'Microsoft.DBforPostgreSQL'; $apiVer = '2022-12-01'
+@('{userRegion}','{alt1}','{alt2}','{alt3}') | ForEach-Object {
+  $result = az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/$provider/locations/$_/capabilities?api-version=$apiVer" --query "value[0].supportedFlexibleServerEditions[0].name" -o tsv 2>$null
+  if ($result) { Write-Host "$_ : $provider AVAILABLE ($result)" } else { Write-Host "$_ : $provider BLOCKED (offer restricted)" }
 }
 ```
 
-**How parent consumes results:**
-- `success` → use `verifiedRegion` for all downstream steps. Write `quotas[]` and `quotaValidation` to `prepare-plan.json`
-- `blocked` → present blocked SKU and alternatives to user. Re-invoke sub-agent with updated inputs if user picks alternate
-- `degraded` (some checks failed but viable region found) → proceed with warnings in `assumptions[]`
+> For MySQL: change `$provider = 'Microsoft.DBforMySQL'` and `$apiVer = '2023-12-30'`.
+
+⛔ JMESPath MUST start with `value[0].`. URL MUST include `/locations/{region}/`. Empty/null response = BLOCKED. Write results to `quotaValidation.offerRestrictions[]`.
+
+### Anti-Patterns
+
+⛔ `az quota list` (extension failures), `az vm list-usage` (wrong layer), `az appservice list-locations` (ignores quota), `mcp_azure_mcp_quota` (misleading), `what-if`/`validate` (false positives).
+
+## Deploy Gate Re-Validation
+
+If `quotaValidation.verified == false` at deploy gate: re-run Per-Provider Scripts above. Pass → update quotaValidation. Fail → present alternatives. `az rest` fails → warn and proceed.
+
+## Sub-Agent Delegation
+
+When delegating from prepare Step 5, provide: `subscriptionId`, SKU list from `prepare-plan.json.services[].sku`, preferred region + fallbacks, list of managed database services, and this file's content. See [subagent-quota.md](subagent-quota.md) for the template.

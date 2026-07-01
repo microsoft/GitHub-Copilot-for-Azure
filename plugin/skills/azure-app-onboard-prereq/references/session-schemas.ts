@@ -3,7 +3,7 @@
  * context.json, active-session.json, and shared types used across all phases.
  *
  * Per-phase schemas (load only when entering that phase):
- * - prereq-schemas.ts (in azure-app-onboard-prereq) — prereq-output.json (PrereqOutput, BuildRequirements, CloudSdkSwap)
+ * - prereq-schemas.ts (in azure-app-onboard-prereq) — prereq-output.json (PrereqOutput, BuildRequirements, CloudSdkFinding)
  * - session-schemas-prepare.ts — prepare-plan.json (PreparePlan, PlannedService, etc.)
  * - session-schemas-deploy.ts — scaffold-manifest.json, deploy-result.json
  *
@@ -60,8 +60,6 @@ export interface AppOnboardAzureTarget {
 
 export interface AppOnboardRepoInfo {
   remote: string | null;
-  defaultBranch: string;
-  currentBranch: string;
 }
 
 export interface AppOnboardOverride {
@@ -87,90 +85,6 @@ export interface DetectedService {
   source: "compose" | "config" | "code";
 }
 
-// ─── quick-probe (Pass 1 of two-pass intent) ─────────────────────────────────
-
-export interface QuickProbeFile {
-  path: string;
-  /** What was extracted: "dependencies", "scripts", "name", "compose services", etc. */
-  extracted: string;
-}
-
-/** Per-manifest structured snapshot so prereq can skip re-reading manifests. */
-export interface ManifestSnapshot {
-  /** Relative path to the manifest (e.g., "package.json", "server/package.json") */
-  path: string;
-  /** Language/framework detected from this manifest */
-  stack: string;
-  /** Dependency names (keys only — no versions needed) */
-  dependencies: string[];
-  /** Dev dependency names (keys only) */
-  devDependencies?: string[];
-  /** Entry point declared in manifest (e.g., package.json "main" or "start" script target) */
-  entryPoint?: string;
-  /** Engine/runtime version constraints (e.g., { "node": ">=20" }) */
-  engines?: Record<string, string>;
-  /** Build script name if present (e.g., "build", "tsc") */
-  buildScript?: string;
-  /** Lock file detected alongside this manifest */
-  lockFile?: string;
-}
-
-/** Dockerfile metadata extracted during probe. */
-export interface DockerfileSnapshot {
-  path: string;
-  /** Base image(s) detected (e.g., ["node:20-alpine", "nginx:alpine"]) */
-  baseImages: string[];
-  /** EXPOSE port(s) */
-  exposePorts: number[];
-  /** true if multi-stage build detected */
-  multiStage: boolean;
-}
-
-/** Compose service extracted during probe. */
-export interface ComposeServiceSnapshot {
-  name: string;
-  image?: string;
-  /** Ports mapped (host:container) */
-  ports?: string[];
-}
-
-/** Import sample from a source file — used by prereq for cross-check without re-reading. */
-export interface ImportSample {
-  /** Source file path */
-  file: string;
-  /** Package/module names imported (external only, not relative) */
-  packages: string[];
-}
-
-export interface QuickProbeResult {
-  /** Total files in workspace */
-  totalFileCount: number;
-  /** Files actually read during probe */
-  filesRead: QuickProbeFile[];
-  /** Top-level project manifests found (package.json, requirements.txt, etc.) */
-  manifestsFound: string[];
-  /** Structured per-manifest snapshots — prereq reuses these instead of re-reading */
-  manifests: ManifestSnapshot[];
-  /** Dockerfile metadata if Dockerfile found */
-  dockerfiles?: DockerfileSnapshot[];
-  /** Compose services if docker-compose.yml found */
-  composeServices?: ComposeServiceSnapshot[];
-  /** Import samples from entry points + 2-3 source files per component */
-  importSamples?: ImportSample[];
-  /** Preliminary stack detection from manifests (e.g., "Node.js/Express", "Python/Django") */
-  detectedStack: string | null;
-  /** Preliminary Azure service suggestions based on probe alone */
-  preliminaryServices: string[];
-  /** Open questions the probe could NOT answer — forwarded to user */
-  unansweredQuestions: string[];
-  /** Early halt signal — set if probe detects obvious blockers (vulnerable app dirs, no code at all) */
-  earlyHaltSignal?: string;
-  /** Missing files referenced but not found on disk (e.g., entry point declared but file missing) */
-  missingFiles?: string[];
-  /** Health endpoint detected (e.g., "/health", "/healthz") */
-  healthEndpoint?: string | null;
-}
-
 // ─── context.json ─────────────────────────────────────────────────────────────
 
 export interface AppOnboardIntent {
@@ -178,12 +92,11 @@ export interface AppOnboardIntent {
   description: string;
   users?: string;
   auth?: string;
-  dataModel?: string;
   scale?: string;
   budget?: string;
-  /** Set to true by Step 4 (Pass 2) after prereq scan refines intent */
+  /** Set to true after prereq scan refines intent */
   refinedFromScan?: boolean;
-  /** Facts discovered by the prereq scan that the quick probe missed */
+  /** Facts discovered by the prereq scan */
   scanDiscoveredFacts?: string[];
 }
 
@@ -199,8 +112,6 @@ export interface AppOnboardContext {
    *  Displayed in the session picker when the user resumes or switches sessions. */
   statusSummary?: string;
   intent: AppOnboardIntent;
-  /** Pass 1 quick probe results — consumed by prereq (Step 3) and refine intent (Step 4) */
-  quickProbe?: QuickProbeResult;
   components: AppOnboardComponent[];
   azure: AppOnboardAzureTarget;
   repo: AppOnboardRepoInfo;
@@ -215,6 +126,13 @@ export interface AppOnboardContext {
   /** Service dependencies parsed from docker-compose, config files, or code imports */
   detectedServices: readonly DetectedService[];
   overrides: AppOnboardOverride[];
+  /** The skill to invoke next. Set by Step 2 (cloud SDK gate), Step 5 (specialized skill detection),
+   *  or Step 8 (normal routing based on health + infra). Examples: "azure-cloud-migrate",
+   *  "azure-hosted-copilot-sdk", "microsoft-foundry", "azure-app-onboard", "azure-prepare". */
+  routeToSkill?: string;
+  /** Why this route was chosen. Examples: "cloud-sdk-migration", "copilot-sdk-detected",
+   *  "foundry-agents-detected", "ready-no-infra", "ready-existing-infra". */
+  routeReason?: string;
 }
 
 // ─── active-session.json ─────────────────────────────────────────────────────
@@ -226,4 +144,4 @@ export interface ActiveSessionPointer {
   activeSessionId: string;
 }
 
-// PrereqOutput, BuildRequirements, CloudSdkSwap → see azure-app-onboard-prereq/references/prereq-schemas.ts
+// PrereqOutput, BuildRequirements → see azure-app-onboard-prereq/references/prereq-schemas.ts

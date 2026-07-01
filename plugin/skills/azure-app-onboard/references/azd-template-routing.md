@@ -4,7 +4,7 @@ When prereq detects an existing azd template, AppOnboard routes to `azure-prepar
 
 ## Detection
 
-Before the scope triage question (Pass 1, Step 2), do a quick file-system check. Route if ALL of these are true:
+Before the scope triage question (Step 2), do a quick file-system check. Route if ALL of these are true:
 
 | Condition | Where to check |
 |-----------|----------------|
@@ -64,8 +64,9 @@ This is a complete azd template — it already defines how to build and deploy y
 **Option 2 — Start fresh:**
 
 1. Write override to `context.json.overrides[]`: `{ "key": "ignoreExistingInfra", "value": "true", "reason": "User chose greenfield over existing azd template" }`
-2. Continue AppOnboard pipeline from Step 5 (plan architecture). Scaffold (Step 7) will generate new IaC alongside the existing files.
-3. The scaffold guard ("Found existing Azure infrastructure files") is bypassed when `ignoreExistingInfra` override exists.
+2. If `infra/` directory exists, rename it to `infra.bak/` (single folder rename). This preserves the user's existing IaC as a backup before scaffold writes new files.
+3. Continue AppOnboard pipeline from Step 5 (plan architecture).
+4. Scaffold Step 3 is skipped (override exists) — the backup was already done here.
 
 **Option 3 — Just scan:**
 

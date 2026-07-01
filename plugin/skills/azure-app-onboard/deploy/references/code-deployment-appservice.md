@@ -2,82 +2,39 @@
 
 After IaC deployment creates the Azure resources, deploy application code.
 
-> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command** (from `context.json.azure.subscriptionId`). Without it, the CLI uses whatever subscription is currently active — which may have changed since the prepare phase. This applies to ALL commands below.
+> ⛔ **`--subscription {subscriptionId}` on EVERY `az` command.**
 
-> ⛔ **Verify `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is active BEFORE deploying code.** When the app needs server-side dependency installation (Python pip, Node.js native modules, TypeScript build), Oryx must run during deploy. The Bicep template sets this app setting, but ARM deployment timing can delay propagation — the setting may not be active when code deploy starts.
->
-> ```powershell
-> # Verify the build setting is active (not just deployed)
-> $val = az webapp config appsettings list -g {rg} -n {app} --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT'].value" -o tsv
-> if ($val -ne 'true') {
->   az webapp config appsettings set -g {rg} -n {app} --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENABLE_ORYX_BUILD=true
->   Start-Sleep -Seconds 10  # Wait for setting to propagate
-> }
-> ```
->
-> If `az webapp deploy` reports "Build successful. Time: 0(s)", the app needs Oryx but OneDeploy skipped it. See **Step 6b** for the runtime decision rule — Python, Node.js, Ruby, and PHP apps must use Kudu zipdeploy as the primary method.
->
-> ⛔ **Oryx compression causes startup failures on ALL tiers.** Oryx compresses installed dependencies into `output.tar.zst` by default. At container startup, the runtime must extract this tarball before the app can start. Extraction can fail silently (files stuck in staging path), time out (F1 shared CPU), or leave `wwwroot` empty (app crashes with `ModuleNotFoundError`). **Always set `ORYX_DISABLE_COMPRESSION=true`** in Bicep app settings — this writes dependencies directly to `wwwroot` during deploy, eliminating the runtime extraction step. Also set `WEBSITES_CONTAINER_START_TIME_LIMIT=1800` for safety. Both settings should be in `prepare-plan.json.deployStrategy.requiredAppSettings` and encoded in Bicep at scaffold time.
+> ⛔ **Verify `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is active BEFORE deploying.** ARM timing can delay propagation. Check: `az webapp config appsettings list -g {rg} -n {app} --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT'].value" -o tsv`. If not `true`: `az webapp config appsettings set -g {rg} -n {app} --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENABLE_ORYX_BUILD=true`. Wait 10s. If `az webapp deploy` reports "Build successful. Time: 0(s)", Oryx was skipped — use Kudu zipdeploy instead.
 
-## App Service — Pre-Deploy Verification (Step 6a)
+> ⛔ **`ORYX_DISABLE_COMPRESSION=true`** and **`WEBSITES_CONTAINER_START_TIME_LIMIT=1800`** must be in Bicep app settings (from `prepare-plan.json.deployStrategy.requiredAppSettings`).
 
-After IaC deployment succeeds but BEFORE running `az webapp deploy`:
+## Pre-Deploy Verification (Step 6a)
 
-> ⛔ **Wait for App Service to stabilize before deploying code.** F1 App Service Plans take 30-120 seconds to cold-start after IaC creation. Deploying code immediately after `az deployment group create` returns causes 504 Gateway Timeout (Kudu sidecar not ready). Run this check first:
->
-> ```powershell
-> # Poll until App Service responds (max 2 min, 10s intervals)
-> $maxAttempts = 12; $attempt = 0
-> do {
->   $attempt++; Start-Sleep -Seconds 10
->   $state = az webapp show -g {rg} -n {app} --query state -o tsv 2>$null
-> } while ($state -ne 'Running' -and $attempt -lt $maxAttempts)
-> ```
->
-> If the app doesn't reach `Running` after 2 min, check `az webapp log tail` before proceeding. Do NOT retry `az webapp deploy` blindly — failed retries provide no diagnostic value and waste time.
+> ⛔ **TypeScript projects:** Oryx with `NODE_ENV=production` skips devDependencies. If `typescript`, `@types/*`, or build tools are in `devDependencies`, move them to `dependencies` before zipdeploy. Alternative: set `NPM_CONFIG_PRODUCTION=false` as app setting so Oryx installs devDeps during build.
 
-> ⛔ **TypeScript apps fail Oryx build** because `tsc` is a devDependency. Oryx sequence: `PRE_BUILD_COMMAND` → `npm install` (production — removes devDeps) → `npm run build` (`tsc` not found). Fix: move `typescript` to `dependencies` in `package.json` before creating the deploy zip. `PRE_BUILD_COMMAND=npm install --include=dev` does NOT work — the subsequent production install removes devDeps before the build step runs.
+> ⛔ **Wait for App Service to stabilize** (F1: 30-120s cold start). Poll `az webapp show -g {rg} -n {app} --query state` every 10s, max 2 min. If not `Running`, check logs.
 
-When `deployStrategy.codeDeployPattern == "startup-install"`, also surface at the deploy gate:
+When `deployStrategy.codeDeployPattern == "startup-install"`, surface: "⚠️ First cold start: 2-5 min (native module compilation)."
 
-```
-⚠️ First cold start will take 2-5 minutes (native module compilation).
-   Subsequent starts are fast (node_modules persists on /home).
-```
+## Zip Deploy (Step 6b)
 
-## App Service — Zip Deploy (Step 6b)
+SCM lifecycle: enable → deploy → re-disable.
 
-Deploy application code via zip deploy. Scaffold generates `scm.allow: true` for deploy convenience. After code upload, the deploy phase re-disables SCM via REST API.
-
-**Pre-deploy: Verify SCM basic auth is enabled:**
-
+**Enable SCM:**
 ```powershell
-# Enable SCM for zip deploy
 az rest --method put --url "/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.Web/sites/{app}/basicPublishingCredentialsPolicies/scm?api-version=2023-12-01" --headers "Content-Type=application/json" --body '{"properties":{"allow":true}}'
 ```
 
-Log this command in `deploy-audit.log`.
+**Choose deploy method:**
 
-⛔ **OneDeploy (`az webapp deploy`) NEVER triggers Oryx — for ANY runtime.** It calls `/api/publish?type=zip`, a file-copy mechanism: unzip → overwrite `wwwroot` → restart. No `pip install`, `npm install`, `bundle install`, or any Oryx build step runs, regardless of `SCM_DO_BUILD_DURING_DEPLOYMENT`. This is by-design Azure behavior.
-
-**Choose deploy method by runtime:**
-
-| Runtime | Needs Oryx? | Deploy method |
+| Runtime | Needs Oryx? | Method |
 |---|---|---|
-| Python | Yes (`pip install`, venv) | **Kudu zipdeploy** (`/api/zipdeploy`) |
-| Node.js (server-side) | Yes (`npm install`, `npm run build`) | **Kudu zipdeploy** |
-| Ruby | Yes (`bundle install`) | **Kudu zipdeploy** |
-| PHP | Yes (`composer install`) | **Kudu zipdeploy** |
-| .NET / Java | No (ships compiled artifacts) | `az webapp deploy` (OneDeploy) |
-| Static front-end (pre-built `/dist`) | No (CI already built it) | `az webapp deploy` (OneDeploy) |
+| Python, Node.js, Ruby, PHP | Yes | **Kudu zipdeploy** (`/api/zipdeploy`) |
+| .NET, Java, static front-end | No | `az webapp deploy --type zip` |
 
-**OneDeploy command** (.NET/Java/static only): `az webapp deploy --subscription {subscriptionId} --resource-group {rg} --name {app} --src-path app.zip --type zip`
-
-**GitHub Actions:** `azure/webapps-deploy@v3` with managed identity — for CI/CD pipelines.
-
-⛔ **NEVER use `az webapp deployment source config-zip`** — deprecated, fragile, and requires manual credential management.
-
-⛔ **`az webapp deploy` does NOT support `--track-status`** — this flag does not exist. Omit it.
+⛔ **OneDeploy NEVER triggers Oryx** — use Kudu zipdeploy for runtimes needing server-side install.
+⛔ **NEVER use `az webapp deployment source config-zip`** — deprecated.
+⛔ **`az webapp deploy` does NOT support `--track-status`.**
 
 ### Kudu Zipdeploy (Oryx-Dependent Runtimes)
 
@@ -108,12 +65,11 @@ Prerequisites:
   - Ruby: `Gemfile`
   - PHP: `composer.json`
 - Do NOT pre-install packages locally — let Oryx run the install remotely
-- Log the Kudu deploy command in `deploy-audit.log`
 
 > **SCM auth lifecycle (REST API toggle — no Bicep edits):**
 >
 > IaC has `scm.allow: true` (deploy convenience). Deploy phase:
-> Deploy code → health check → re-disable via REST API → verify `false` → log all in `deploy-audit.log`.
+> Deploy code → health check → re-disable via REST API → verify `false`.
 > If re-disable fails, log but don't block — add postDeployRecommendation.
 
 **Zip creation:** Use `System.IO.Compression.ZipFile` with relative paths from workspace root. **On Windows, normalize entry paths: `$entryName = $relativePath.Replace('\', '/')` — ZipFile preserves backslashes which Linux App Service cannot resolve.** Never use `Compress-Archive -Path $files.FullName` — absolute paths flatten the directory structure, causing app crashes (`./src/app` not found).

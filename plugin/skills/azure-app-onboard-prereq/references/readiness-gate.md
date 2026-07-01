@@ -2,71 +2,96 @@
 
 ## Write Artifacts
 
-⛔ **You MUST read [`prereq-artifacts.md`](prereq-artifacts.md)** for the complete artifact write procedures (prereq-output.json, context.json, readiness-report.md) and phase exit checklist.
+⛔ **You MUST read [`prereq-artifacts.md`](prereq-artifacts.md)** for complete artifact write procedures and phase exit checklist.
+
+---
+
+## Severity Tiers
+
+| Verdict | Icon | Meaning |
+|---------|------|---------|
+| Hard Halt | 🛑 | App is intentionally vulnerable — pipeline stops, no fix possible |
+| Major Migration | 🔶 | Large-scope change (EOL runtime, cloud SDK migration, >5 files) — redirect or warn |
+| Critical | ❌ FAIL | Deployment will fail — agent can fix (≤5 files, config-level) |
+| Recommended Fix | 🔧 | App deploys but has quality/security issues — agent offers fix |
+| Warning | ⚠️ WARN | Informational, non-blocking — can proceed with caveats |
+| Pass | ✅ PASS | No issues |
 
 ---
 
 ## Overall Health Gate
 
-**Overall health gate:** Compute `overallHealth` from component verdicts:
-- ALL components ✅ PASS → `"ready"`
-- Any ⚠️ WARN but no ❌ FAIL → `"readyWithCaveats"`
-- ANY component has ❌ FAIL verdict → `"blocked"`
+**Compute `overallHealth`:** ALL ✅ PASS → `"ready"` | Any ⚠️ WARN no ❌ FAIL → `"readyWithCaveats"` | ANY ❌ FAIL → `"blocked"`
 
-Set the value in `prereq-output.json`. The gate presented depends on the **severity tier** of the finding:
+**Component `readiness.status` alignment:**
+- `"ready"` → `readiness.status: "ready"`
+- `"readyWithCaveats"` → `readiness.status: "ready"` (WARNs aren't "needs fixes")
+- `"blocked"` → `readiness.status: "needsFixes"`
+- After remediation → `readiness.status: "fixesApplied"`
 
-> **Severity tiers:**
->
-> | Tier | Icon | When |
-> |------|------|------|
-> | **Hard Halt** | 🛑 | App is designed to be exploited (security training tool). Nothing to fix. |
-> | **Major Migration** | 🔶 | EOL runtime/framework upgrade, archived+EOL repo, or >5-file scope. Agent attempts but warns about scope. |
-> | **Critical** | ❌ | Deployment will fail. Agent can fix (≤5 files, config-level). |
-> | **Recommended Fix** | 🔧 | App deploys but has quality/security issues. |
-> | **Warning** | ⚠️ | Informational. No deployment impact. |
->
-> User choices per tier are defined in [Batch-Then-Approve Flow](#batch-then-approve-flow) step 4.
+⛔ `readiness.status: "needsFixes"` requires at least one ❌ FAIL. If all ⚠️/✅, use `"ready"`.
 
 ---
 
 ## Critical Readiness Gate
 
-⛔ **Classify findings using the verdict tables and detection rules from the reference files you already read in Step 3.** Do NOT rely on the tier table above — it defines the gate flow only, not what produces each verdict. If a file has been evicted from context, re-read it.
+⛔ **Verdict propagation cross-check** before computing `overallHealth`:
+1. Any finding with `verdict: "FAIL"` → axis verdict MUST be `"FAIL"`.
+2. Any finding with `verdict: "WARN"` + `fixPhase: "prereq"` → escalate to `"FAIL"` (prevents wasting a deploy cycle).
 
-| Tiers | Reference file | Sections |
-|-------|---------------|----------|
-| 🛑 🔶 🔧 ⚠️ | [`dependency-compatibility.md`](dependency-compatibility.md) | Intentionally Vulnerable (🛑), EOL Runtimes/Frameworks (🔶/❌), Archived Repos (🔶), Cloud SDK swaps (🔧), Platform/DB/Dockerfile (⚠️) |
-| ❌ 🔧 | [`completeness-check.md`](completeness-check.md) | Entry Point, Dependency Manifest, Configuration (hardcoded secrets) |
-| ❌ | [`build-check.md`](build-check.md) | Import → Manifest Cross-Check |
+| Tiers | Reference file |
+|-------|---------------|
+| 🛑 🔶 🔧 ⚠️ | [`dependency-compatibility.md`](dependency-compatibility.md) |
+| ❌ 🔧 | [`completeness-check.md`](completeness-check.md) |
+| ❌ | [`build-check.md`](build-check.md) |
+
+**Post-evaluation HALT cross-check:** Verify intentionally vulnerable apps (≥2 code signals from dependency-compatibility.md) have `overallHealth: "blocked"`.
+
 ---
 
 ## Batch-Then-Approve Flow
 
-> ⛔ **Sequence: scan → present → ask → fix → revalidate.** ALWAYS, even for a single blocker.
->
-> 1. **Detect ALL issues first** — full 3-axis scan, all components. Don't stop at the first blocker.
-> 2. **Present ALL findings at once** — lead with a summary line (e.g., "🔍 Readiness: 2 critical, 1 recommended fix, 3 warnings"), then list grouped: 🛑 → 🔶 → ❌ → 🔧 → ⚠️.
-> 3. **Fix plan** — for ❌, 🔧, and 🔶 items: describe WHAT you'd change and WHY. For 🔶, include scope estimate. Never include ⚠️ or 🛑 in the fix plan. Blocker count must match fixes count exactly.
-> 4. **User choice** — based on highest-severity finding. ⛔ **"Fix issues" is ALWAYS the first option when blockers exist.**
->    - **🛑 present:** Pipeline stops. Present the findings, suggest local alternatives (e.g., `docker compose up`), and hand off — let the user decide what to do next. No formal gate prompt needed.
->    - **🔶 present (no 🛑):** "Attempt migration" / "Cancel" / "Continue as-is (not recommended)".
->    - **❌ or 🔧 only:** "Fix issues" / "Continue with known risks" / "Cancel".
-> 5. **After approval** → apply fixes per [remediation-protocol.md](remediation-protocol.md). ⛔ Static verification = reading files and grepping — NOT `npm install` or `npm test`.
->
-> ⛔ **Two-gate rule:** Step 2 (intent) approval ≠ Step 3 (readiness) gate. If the user agreed to fix issues during intent gathering, that is a *strategy* approval — NOT a *fix execution* approval. You MUST still present the fix prompt here.
+1. **Detect ALL issues first** — full 3-axis scan, all components.
+2. **Present ALL findings at once** — summary: "🔍 Readiness: 2 critical, 1 recommended fix, 3 warnings". Group: 🛑 → 🔶 → ❌ → 🔧 → ⚠️.
+3. **Fix plan** — for ❌, 🔧, 🔶, ⚠️ with `fixPhase: "prereq"`: describe WHAT and WHY. ⛔ Exclude 🔶 with `routeToSkill` set. Never include 🛑.
+4. **User choice** (based on highest severity):
+   - **🛑:** Pipeline stops. No formal gate.
+   - **🔶 + others:** "Fix {N} issues including {M} migration(s) — scope warning" / "Fix blockers only" / "Continue with risks" / "Cancel"
+   - **🔶 only:** "Attempt migration" / "Continue as-is" / "Cancel"
+   - **❌/🔧/⚠️ with fixPhase prereq:** "Fix {N} deployment issues" / "Continue with risks" / "Cancel"
+5. **After approval** → apply fixes per [remediation-protocol.md](remediation-protocol.md).
+
+> ⛔ **Two-gate rule:** Intent approval ≠ fix execution approval. Present the fix prompt here even if user agreed earlier.
 
 ---
 
 ## Fast-Track
 
-> 💡 **Fast-track:** Single-component + no DB + no auth + **no Dockerfile** → set `fastTrackEligible: true` in `prereq-output.json`. A Dockerfile means the prepare phase must evaluate the Dockerfile routing decision tree (SWA vs Container Apps vs App Service B1+) — that is NOT fast-track.
+Single-component + no DB + no auth + **no Dockerfile** → `fastTrackEligible: true`.
 
 ---
 
 ## Present Findings (Step 5)
 
-⛔ Do NOT skip this step — the user must see scan results before the pipeline continues. Show verdicts per component grouped by severity: ❌ FAIL first (with fix suggestions), then ⚠️ WARN, then ✅ PASS. Writing artifacts without presenting findings to the user is a violation. Answer FAQ-style questions as informational responses during presentation.
+⛔ Do NOT skip — user must see scan results before pipeline continues.
 
-**Severity tiers:** ⚠️ WARN findings with data-loss risk (e.g., SQLite on App Service with no persistent disk, in-memory sessions, local file storage) require explicit user acknowledgment before proceeding. Other ⚠️ WARN findings are informational and non-blocking.
+**Part 1 — Summary:** "🔍 Readiness: {N} critical, {M} fixes, {K} warnings" (or "✅ Ready").
+**Part 2 — Per-axis reasoning:** Verdict icon + 1–2 sentence summary per axis.
+**Part 3 — Findings table:** Grouped by severity. Include warning ID and actionable detail.
 
-> ⛔ **ARTIFACT CHECKPOINT.** After presenting findings to the user, VERIFY all 3 artifacts exist on disk: (1) `context.json`, (2) `prereq-output.json`, (3) `readiness-report.md`. If ANY are missing, write them NOW before proceeding to Step 6 or Step 8. Do NOT exit the prereq phase without all 3 artifacts confirmed.
+**Data-loss warnings** (SQLite, in-memory sessions, local file storage) require explicit acknowledgment. Other ⚠️ are informational.
+
+End with: "📄 Full evaluation saved to `readiness-report.md`."
+
+### Remediation Decision Gate
+
+⛔ **STOP after presenting findings.** Options:
+1. **"Fix deployment issues"** — fix all actionable items (❌, 🔧, ⚠️ with `fixPhase: "prereq"`). Re-evaluate after.
+2. **"I have context — let me guide the fixes"**
+3. **"Continue without fixing — I accept the risks"**
+
+Wait for explicit choice. Generic "Yes"/"Go ahead" ≠ remediation consent — clarify if ambiguous.
+
+> ⛔ **Remediation budget:** Max 3 cycles. See [remediation-protocol.md](remediation-protocol.md) step 7.
+
+> ⛔ **ARTIFACT CHECKPOINT.** After presenting findings, verify all 3 artifacts exist: `context.json`, `prereq-output.json`, `readiness-report.md`. Write any missing ones NOW.

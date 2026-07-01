@@ -62,9 +62,8 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
       }
     });
 
-    test("has Error Handling and Sub-Skills sections", () => {
+    test("has Error Handling section", () => {
       expect(skill.content).toMatch(/## Error Handling/);
-      expect(skill.content).toMatch(/## Sub-Skills/);
     });
   });
 
@@ -72,10 +71,10 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
 
   describe("Workflow Steps", () => {
     test.each([
-      "Session check",
-      "Gather intent",
+      "Session check + Azure login",
+      "Scope triage",
       "Prereq scan",
-      "Refine intent",
+      "Gather intent",
       "Plan architecture",
       "Scaffold approval gate",
       "Scaffold",
@@ -113,20 +112,29 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
   // ── Session Schema Files ─────────────────────────────────────
 
   describe("Session Schema Files", () => {
-    test.each([
-      "session-schemas.ts",
-      "session-schemas-prepare.ts",
-      "session-schemas-deploy.ts",
-    ])("schema file exists: %s", (filename) => {
-      expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);
+    test("orchestrator schema file exists", () => {
+      expect(existsSync(path.join(SKILL_DIR, "references", "session-schemas.ts"))).toBe(true);
+    });
+    test("prepare schema in sub-skill folder", () => {
+      expect(existsSync(path.join(SKILL_DIR, "prepare", "references", "prepare-schemas.ts"))).toBe(true);
+    });
+    test("scaffold schema in sub-skill folder", () => {
+      expect(existsSync(path.join(SKILL_DIR, "scaffold", "references", "scaffold-schemas.ts"))).toBe(true);
+    });
+    test("deploy schema in sub-skill folder", () => {
+      expect(existsSync(path.join(SKILL_DIR, "deploy", "references", "deploy-schemas.ts"))).toBe(true);
     });
   });
 
   // ── Sub-Skill Delegation ─────────────────────────────────────
 
   describe("Sub-Skill Delegation", () => {
-    test("mandatory read rule before sub-skill execution", () => {
-      expect(skill.content).toMatch(/MUST read the corresponding sub-skill document/i);
+    test.each([
+      ["prepare", "prepare/SKILL.md"],
+      ["scaffold", "scaffold/SKILL.md"],
+      ["deploy", "deploy/SKILL.md"],
+    ])("mandatory MUST-read before %s execution", (name, ref) => {
+      expect(skill.content).toMatch(new RegExp(`MUST read.*${ref.replace(/\//g, "\\/")}`));
     });
 
     test.each([
@@ -160,7 +168,6 @@ describe(`${SKILL_NAME} - Unit Tests`, () => {
     test("approval gates are separate for scaffold and deploy", () => {
       expect(skill.content).toContain("Scaffold approval gate");
       expect(skill.content).toContain("Deploy approval gate");
-      expect(skill.content).toMatch(/SEPARATE gate/i);
     });
 
     test("When NOT to Use routes to correct alternative skills", () => {

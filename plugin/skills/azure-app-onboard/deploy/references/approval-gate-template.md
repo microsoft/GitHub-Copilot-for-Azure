@@ -43,7 +43,7 @@ Display template for the deploy approval gate. Present after preflight validatio
 | Response | Action |
 |----------|--------|
 | **Yes** | Execute deployment (Step 6 of deploy workflow). Do NOT re-confirm. |
-| **Run manually** | Show exact CLI commands based on `iacFormat`:<br>**Bicep (subscription-scope, default):** `az deployment sub create --subscription {subscriptionId} --location {location} --template-file infra/main.bicep --parameters @infra/main.parameters.json`<br>**Bicep (resource-group scope, after 403 fallback):** `az deployment group create --resource-group {rg} --template-file infra/main.bicep --parameters @infra/main.parameters.json`<br>**Terraform (alternative):** `cd infra && terraform init && terraform plan -out=tfplan && terraform apply tfplan`. Stop. |
+| **Run manually** | Show exact CLI commands based on `iacFormat`:<br>**Bicep (subscription-scope, default):** `az deployment sub create --subscription {subscriptionId} --location {location} --template-file infra/main.bicep --parameters @infra/main.parameters.json --query properties.provisioningState -o tsv`<br>**Bicep (resource-group scope, after 403 fallback):** `az deployment group create --resource-group {rg} --template-file infra/main.bicep --parameters @infra/main.parameters.json --query properties.provisioningState -o tsv`<br>**Terraform (alternative):** `cd infra && terraform init && terraform plan -out=tfplan && terraform apply tfplan`. Stop. |
 | **Edit plan** | Ask what to change → write to `context.json.overrides[]` → re-run prepare (Step 4) → re-scaffold → return to approval gate |
 | **Cancel** | Preserve all session artifacts. Say "💾 Session preserved — resume anytime." Stop. |
 

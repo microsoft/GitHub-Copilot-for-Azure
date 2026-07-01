@@ -16,7 +16,6 @@ const SKILL_PATH = `azure-app-onboard/${SUBSKILL_NAME}`;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = path.resolve(__dirname, "../../../plugin/skills/azure-app-onboard/prepare");
-const PARENT_REFS = path.resolve(__dirname, "../../../plugin/skills/azure-app-onboard/references");
 
 describe(`${SKILL_PATH} - Unit Tests`, () => {
   let skill: LoadedSkill;
@@ -72,9 +71,7 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       expect(skill.content).toMatch(/### Step 5/);
     });
 
-    test("has Blocking Rules, Conflict Resolution, and Error Handling sections", () => {
-      expect(skill.content).toMatch(/## Blocking Rules/);
-      expect(skill.content).toMatch(/## Conflict Resolution/);
+    test("has Error Handling section", () => {
       expect(skill.content).toMatch(/## Error Handling/);
     });
   });
@@ -102,19 +99,25 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Reference Files ──────────────────────────────────────────
 
   describe("Reference Files", () => {
-    const allRefs = [
+    const directRefs = [
       "service-mapping.md",
       "deploy-strategy.md",
       "sku-matrix.md",
-      "sku-quota-validation.md",
       "pricing-guide.md",
       "naming-patterns.md",
-      "validation-rubric.md",
     ];
 
-    test.each(allRefs)("reference file exists and is linked: %s", (filename) => {
+    const delegatedRefs = [
+      "sku-quota-validation.md",
+    ];
+
+    test.each(directRefs)("reference file exists and is linked: %s", (filename) => {
       expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);
       expect(skill.content).toContain(filename);
+    });
+
+    test.each(delegatedRefs)("reference file exists on disk (delegated to sub-agent): %s", (filename) => {
+      expect(existsSync(path.join(SKILL_DIR, "references", filename))).toBe(true);
     });
   });
 
@@ -126,8 +129,9 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
     });
 
     test("quota anti-patterns: never use az appservice list-locations or mcp_azure_mcp_quota", () => {
-      expect(skill.content).toMatch(/NEVER use.*az appservice list-locations/i);
-      expect(skill.content).toContain("mcp_azure_mcp_quota");
+      const quotaRef = readFileSync(path.join(SKILL_DIR, "references", "sku-quota-validation.md"), "utf-8");
+      expect(quotaRef).toMatch(/az appservice list-locations/i);
+      expect(quotaRef).toContain("mcp_azure_mcp_quota");
     });
 
     test("never present region without checking quota first", () => {
@@ -150,9 +154,9 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
   // ── Session Schema Links ─────────────────────────────────────
 
   describe("Session Schema Links", () => {
-    test("links to session-schemas and exports PreparePlan interface", () => {
-      expect(skill.content).toContain("session-schemas");
-      const schemas = readFileSync(path.join(PARENT_REFS, "session-schemas-prepare.ts"), "utf-8");
+    test("links to prepare-schemas.ts and exports PreparePlan interface", () => {
+      expect(skill.content).toContain("prepare-schemas");
+      const schemas = readFileSync(path.join(SKILL_DIR, "references", "prepare-schemas.ts"), "utf-8");
       expect(schemas).toContain("export interface PreparePlan");
     });
   });
