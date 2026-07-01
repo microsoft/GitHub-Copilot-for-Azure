@@ -61,7 +61,8 @@ function Write-DeploymentPlan {
     [void]$sb.AppendLine("| **Subscription** | $sub |")
     [void]$sb.AppendLine("| **Location** | $loc |")
     [void]$sb.AppendLine('')
-    $policy = (Get-ByPath $State 'input.policyConstraints')
+    $policy = (Get-ByPath $State 'auto.policyConstraints')
+    if (-not $policy) { $policy = (Get-ByPath $State 'input.policyConstraints') }
     if ($policy -and @($policy).Count -gt 0) {
         [void]$sb.AppendLine('### Policy Constraints')
         [void]$sb.AppendLine('')

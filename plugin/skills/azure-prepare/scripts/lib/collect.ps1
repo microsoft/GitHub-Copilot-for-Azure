@@ -129,7 +129,7 @@ function Invoke-AutoCollect {
     $gitRoot = $null
     if (Test-Path -LiteralPath (Join-Path $RepoPath '.git')) { $gitRoot = $RepoPath }
 
-    $State['auto'] = @{
+    $fresh = @{
         scannedAtUtc     = (Get-Date).ToUniversalTime().ToString('o')
         fileCount        = $files.Count
         workspaceEmpty   = $workspaceEmpty
@@ -142,6 +142,15 @@ function Invoke-AutoCollect {
         existingPlan     = (Test-Path -LiteralPath $planPath)
         azContext        = (Get-AzContext)
         azdContext       = (Get-AzdContext)
+    }
+    # Merge collector output over any existing auto.* keys so that values recorded by
+    # step onDone hooks in earlier invocations (e.g. auto.policyConstraints) survive.
+    $existingAuto = $State['auto']
+    if ($existingAuto -is [hashtable]) {
+        foreach ($k in $fresh.Keys) { $existingAuto[$k] = $fresh[$k] }
+    }
+    else {
+        $State['auto'] = $fresh
     }
 }
 
@@ -198,6 +207,57 @@ function Get-AzContext {
     }
     catch { }
     return $result
+}
+
+function Get-PolicyConstraints {
+    # Fetches enforced Azure Policy assignments for the confirmed subscription and distills
+    # them into a short array of constraint strings. Best-effort: returns an empty array when
+    # az is unavailable, unauthenticated, or the subscription cannot be resolved. Called from
+    # the azure-context onDone hook (after input.subscription is set) so it adds no extra invocation.
+    param([hashtable]$State)
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) { return @() }
+    $raw = Get-ByPath $State 'input.subscription'
+    $subid = $null
+    if ($raw -and $raw -match '^[0-9a-fA-F-]{36}$') {
+        $subid = $raw
+    }
+    else {
+        $ctx = Get-ByPath $State 'auto.azContext'
+        if ($ctx -and $ctx['subscriptionId']) { $subid = $ctx['subscriptionId'] }
+        if (-not $subid -and $raw) {
+            try { $subid = (& az account show --subscription "$raw" --query id -o tsv 2>$null) } catch { }
+        }
+    }
+    if (-not $subid) { return @() }
+    try {
+        $out = & az policy assignment list --scope "/subscriptions/$subid" -o json 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $out) { return @() }
+        $assignments = ($out | ConvertFrom-Json)
+    }
+    catch { return @() }
+    $result = [System.Collections.Generic.List[string]]::new()
+    foreach ($a in @($assignments)) {
+        try {
+            if (($a.PSObject.Properties['enforcementMode']) -and ($a.enforcementMode -eq 'DoNotEnforce')) { continue }
+            $name = $null
+            if ($a.PSObject.Properties['displayName']) { $name = $a.displayName }
+            if (-not $name -and $a.PSObject.Properties['name']) { $name = $a.name }
+            if (-not $name) { $name = 'policy' }
+            $effect = $null
+            $p = $a.PSObject.Properties['parameters']
+            if ($p -and $p.Value) {
+                $e = $p.Value.PSObject.Properties['effect']
+                if ($e -and $e.Value) {
+                    $v = $e.Value.PSObject.Properties['value']
+                    if ($v -and $v.Value) { $effect = $v.Value }
+                }
+            }
+            $s = if ($effect) { "$name [$effect]" } else { "$name" }
+            if ($s -and -not $result.Contains($s)) { [void]$result.Add($s) }
+        }
+        catch { }
+    }
+    return $result.ToArray()
 }
 
 function Get-AzdEnvName {

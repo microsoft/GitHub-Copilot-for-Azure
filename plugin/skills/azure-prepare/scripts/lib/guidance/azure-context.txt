@@ -31,17 +31,7 @@ already collected:
 Set `input.subscription` to the confirmed subscription name or id.
 Set `input.location` to the confirmed Azure region (e.g., "eastus2").
 
-After the subscription is confirmed, query Azure Policy assignments to discover
-enforcement constraints BEFORE finalizing architecture (skipping this causes
-deployment failures when policy denies resource creation):
-  mcp_azure_mcp_policy(command: "policy_assignment_list", subscription: "<subscriptionId>")
-
-Record discovered constraints so they feed architecture + generation. Watch for:
-  - Blocked resource types / SKUs  → exclude from architecture
-  - Required tags                  → add to all Bicep/Terraform resources
-  - Allowed regions                → restrict location choices
-  - Network restrictions (no public endpoints) → adjust networking/access
-  - Storage policies (deny shared key) → use policy-compliant auth
-  - Naming conventions             → apply to resource naming
-
-Set `input.policyConstraints` to an array of short strings (empty array if none).
+Azure Policy enforcement constraints are discovered AUTOMATICALLY by the script
+once the subscription is confirmed (it runs `az policy assignment list` and records
+the result in `auto.policyConstraints`, which feeds the deployment plan). You do NOT
+need to query Azure Policy yourself.

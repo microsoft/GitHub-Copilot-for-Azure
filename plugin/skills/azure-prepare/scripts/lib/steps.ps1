@@ -96,8 +96,7 @@ $Steps = @(
         refs = @('scripts/references/region-availability.md')
         needs = @(
             @{ Path = 'input.subscription'; Prompt = 'Confirmed subscription name or id (auto.azContext has the detected one)' },
-            @{ Path = 'input.location'; Prompt = 'Confirmed Azure region' },
-            @{ Path = 'input.policyConstraints'; Prompt = 'Array of policy constraint strings (empty array if none found)' }
+            @{ Path = 'input.location'; Prompt = 'Confirmed Azure region' }
         )
         auto = {
             param($State)
@@ -116,6 +115,12 @@ $Steps = @(
                 # Do NOT auto-confirm location — region is a deliberate user choice.
                 if ($suggest) { Set-ByPath $State 'auto.suggestedSubscription' $suggest }
             }
+        }
+        onDone = {
+            param($State)
+            # Subscription is now confirmed; discover Azure Policy constraints programmatically
+            # so the LM no longer queries policy itself (records auto.policyConstraints).
+            Set-ByPath $State 'auto.policyConstraints' (Get-PolicyConstraints $State)
         }
     },
     @{

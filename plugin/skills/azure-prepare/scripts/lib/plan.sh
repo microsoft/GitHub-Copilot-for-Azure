@@ -65,10 +65,10 @@ write_deployment_plan() {
         echo "| **Subscription** | $sub |"
         echo "| **Location** | $loc |"
         echo ''
-        if [[ "$(printf '%s' "$STATE" | jq '(.input.policyConstraints // []) | length')" -gt 0 ]]; then
+        if [[ "$(printf '%s' "$STATE" | jq '((.auto.policyConstraints // .input.policyConstraints) // []) | length')" -gt 0 ]]; then
             echo '### Policy Constraints'
             echo ''
-            printf '%s' "$STATE" | jq -r '.input.policyConstraints[] | "- \(.)"'
+            printf '%s' "$STATE" | jq -r '((.auto.policyConstraints // .input.policyConstraints) // [])[] | "- \(.)"'
             echo ''
         fi
         echo '---'

@@ -132,7 +132,9 @@ invoke_auto_collect() {
         --argjson azdContext "$azd_ctx" \
         '{scannedAtUtc:$scannedAtUtc, fileCount:$fileCount, workspaceEmpty:$workspaceEmpty, detectedLanguages:$detectedLanguages, detectedFrameworks:$detectedFrameworks, existingInfra:$existingInfra, componentSignals:$componentSignals, codebaseMarkers:$codebaseMarkers, gitRoot:$gitRoot, existingPlan:$existingPlan, azContext:$azContext, azdContext:$azdContext}')"
 
-    STATE="$(printf '%s' "$STATE" | jq --argjson a "$auto" '.auto = $a')"
+    # Merge collector output over any existing auto.* keys so that values recorded by
+    # step onDone hooks in earlier invocations (e.g. auto.policyConstraints) survive.
+    STATE="$(printf '%s' "$STATE" | jq --argjson a "$auto" '.auto = ((.auto // {}) + $a)')"
 }
 
 # Builds a compact JSON array of (deduped) strings from the given shell arguments.
@@ -174,6 +176,34 @@ get_az_context() {
     else
         printf '%s' "$res"
     fi
+}
+
+# Fetches enforced Azure Policy assignments for the confirmed subscription and distills
+# them into a short array of constraint strings. Best-effort: yields an empty array when
+# az is unavailable, unauthenticated, or the subscription cannot be resolved. Invoked from
+# the azure-context ondone hook (after input.subscription is set) so it adds no extra
+# script invocation.
+get_policy_constraints() {
+    local raw subid out arr
+    command -v az >/dev/null 2>&1 || { printf '[]'; return; }
+    raw="$(get_by_path 'input.subscription' 2>/dev/null || true)"
+    if [[ "$raw" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+        subid="$raw"
+    else
+        subid="$(printf '%s' "$STATE" | jq -r '.auto.azContext.subscriptionId // empty')"
+        [[ -z "$subid" && -n "$raw" ]] && subid="$(az account show --subscription "$raw" --query id -o tsv 2>/dev/null)"
+    fi
+    [[ -z "$subid" ]] && { printf '[]'; return; }
+    out="$(az policy assignment list --scope "/subscriptions/$subid" -o json 2>/dev/null)"
+    if [[ -z "$out" ]] || ! jq -e . >/dev/null 2>&1 <<<"$out"; then printf '[]'; return; fi
+    arr="$(jq -c '
+        [ .[]
+          | select((.enforcementMode // "Default") != "DoNotEnforce")
+          | ((.displayName // .name // "policy")
+             + (if (.parameters.effect.value // "") != "" then " [" + (.parameters.effect.value) + "]" else "" end)) ]
+        | map(select(. != null and . != "")) | unique' <<<"$out" 2>/dev/null)"
+    [[ -z "$arr" ]] && arr='[]'
+    printf '%s' "$arr"
 }
 
 # Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".

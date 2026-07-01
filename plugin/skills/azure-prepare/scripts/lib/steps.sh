@@ -110,8 +110,7 @@ step_needs() {
             printf 'input.architecture\t%s\n' 'Array of mappings: { component, azureService, sku, rationale }' ;;
         azure-context)
             printf 'input.subscription\t%s\n' 'Confirmed subscription name or id (auto.azContext has the detected one)'
-            printf 'input.location\t%s\n' 'Confirmed Azure region'
-            printf 'input.policyConstraints\t%s\n' 'Array of policy constraint strings (empty array if none found)' ;;
+            printf 'input.location\t%s\n' 'Confirmed Azure region' ;;
         quota)
             printf 'input.quotaChecklistMarkdown\t%s\n' 'Completed provisioning-limit checklist as markdown (no _TBD_ entries)' ;;
         approval)
@@ -169,6 +168,10 @@ step_ondone() {
         finalize-plan)
             path="$(write_deployment_plan)"
             set_str 'auto.planFile' "$path" ;;
+        azure-context)
+            # Subscription is now confirmed; discover Azure Policy constraints programmatically
+            # so the LM no longer queries policy itself (records auto.policyConstraints).
+            set_by_path 'auto.policyConstraints' "$(get_policy_constraints)" ;;
         approval)
             set_plan_status 'Approved' ;;
         generate)
