@@ -40,83 +40,8 @@ scoring:
   threshold: 0.8
 
 stimuli:
-  # tests/azure-app-onboard-prereq/integration.test.ts (invocation)
-  - name: "Routing - Repo Readiness Invocation"
-    prompt: "Scan my repo and tell me if my project can be deployed to Azure"
-    tags:
-      type: integration
-      tier: smoke
-      area: routing
-      skill: azure-app-onboard-prereq
-    # Routing test: confirm skill invocation only, terminate early for efficiency.
-    constraints:
-      max_turns: 1
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - azure-app-onboard-prereq
-
-  # tests/azure-app-onboard-prereq/integration-functional.test.ts (happy path)
-  - name: "Readiness - Healthy Express App"
-    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
-    tags:
-      type: integration
-      tier: full
-      area: output
-      skill: azure-app-onboard-prereq
-    environment:
-      commands:
-        - git init -q
-        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
-        - git fetch -q --depth 1 origin main
-        - git checkout -q FETCH_HEAD -- .
-    constraints:
-      max_turns: 16
-    graders:
-      - type: skill-invocation
-        config:
-          required: ["azure-app-onboard-prereq"]
-      - type: output-matches
-        config:
-          pattern: "(?i)express|node|sqlite"
-      - type: output-matches
-        config:
-          pattern: "(?i)feasib|viable|readiness|ready|app service|container|hosting"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-      - type: completed
-
-  # tests/azure-app-onboard-prereq/integration-functional.test.ts (dockerfile + static)
-  - name: "Readiness - Dockerfile Static Site"
-    prompt: "Is my app ready to deploy to Azure? Scan for any issues."
-    tags:
-      type: integration
-      tier: full
-      area: output
-      skill: azure-app-onboard-prereq
-    environment:
-      commands:
-        - git init -q
-        - git remote add origin https://github.com/nishanttotla/DockerStaticSite
-        - git fetch -q --depth 1 origin master
-        - git checkout -q FETCH_HEAD -- .
-    constraints:
-      max_turns: 16
-    graders:
-      - type: skill-invocation
-        config:
-          required: ["azure-app-onboard-prereq"]
-      - type: output-matches
-        config:
-          pattern: "(?i)docker|dockerfile|static|container"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-      - type: completed
-
-  # tests/azure-app-onboard-prereq/integration-diversity.test.ts (Java/Spring + Kafka)
+  # ── integration-diversity.test.ts ──────────────────────────────────
+  # test: e2e — postgresql-event-sourcing (Java/Spring Boot + Kafka)
   - name: "Dependency Compat - Java Spring Boot"
     prompt: "Can you check if my dependencies are compatible with Azure?"
     tags:
@@ -147,24 +72,211 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
       - type: completed
 
-  # tests/azure-app-onboard-prereq/integration-routing.test.ts (Go/Gin structure check)
-  - name: "Routing - Go Gin Structure Check"
-    prompt: "I want to make sure my project structure is right before deploying"
+  # test: e2e — yamtrack-django (Python/Django + PostgreSQL + Redis)
+  - name: "Dependency Compat - Django Local Database"
+    prompt: "My app uses a local database — check what I need to change before moving to Azure"
     tags:
       type: integration
       tier: full
-      area: routing
+      area: output
       skill: azure-app-onboard-prereq
-    # Routing test: prompt-driven routing, no repo context needed; terminate early.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/FuzzyGrim/Yamtrack
+        - git fetch -q --depth 1 origin dev
+        - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 2
+      max_turns: 16
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard-prereq
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)django|python|postgres"
+      - type: output-matches
+        config:
+          pattern: "(?i)local|database|managed|migrate|change|redis"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
 
-  # tests/azure-app-onboard-prereq/integration-negative.test.ts (unsupported migration)
+  # test: e2e — fullstack-starter (4-component monorepo + GCP migration)
+  - name: "Diversity - Monorepo Multi-Component Blockers"
+    prompt: "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/first-fluke/fullstack-starter
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)component|monorepo|frontend|backend|gcp|blocker|service"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # ── integration-functional.test.ts ─────────────────────────────────
+  # test: e2e — bya-simple-web-app (happy path)
+  - name: "Readiness - Healthy Express App"
+    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)express|node|sqlite"
+      - type: output-matches
+        config:
+          pattern: "(?i)feasib|viable|readiness|ready|app service|container|hosting"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: e2e — docker-static-site (Dockerfile + static)
+  - name: "Readiness - Dockerfile Static Site"
+    prompt: "Is my app ready to deploy to Azure? Scan for any issues."
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/nishanttotla/DockerStaticSite
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)docker|dockerfile|static|container"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: e2e — wetty (completeness check: entry points, deps, config)
+  - name: "Readiness - Wetty Completeness Check"
+    prompt: "What do I need before I can deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/butlerx/wetty
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)docker|dependenc|entry|config|node|typescript"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: e2e — full-stack-fastapi-template (multi-component: React frontend + FastAPI backend)
+  - name: "Readiness - FastAPI Multi-Component"
+    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/fastapi/full-stack-fastapi-template
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)react|fastapi|frontend|backend|component"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: e2e — flasky-first-edition (Python 2 EOL + archived repo)
+  - name: "Readiness - Python 2 EOL Unsupported"
+    prompt: "Check what happens if my app uses something Azure doesn't support?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/miguelgrinberg/flasky-first-edition
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)python 2|python2|eol|end-of-life|archived|unsupported|upgrade"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # ── integration-negative.test.ts ───────────────────────────────────
+  # test: negative — bya-unsupported-web-app (migration)
   - name: "Negative - Unsupported Stack Migration"
     prompt: "What do I need to do before I can deploy to Azure?"
     tags:
@@ -192,7 +304,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
       - type: completed
 
-  # tests/azure-app-onboard-prereq/integration-negative.test.ts (broken repo)
+  # test: negative — bya-broken-web-app (detect + fix + re-evaluate)
   - name: "Negative - Broken App Blockers"
     prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
     tags:
@@ -219,3 +331,328 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
       - type: completed
+
+  # test: negative — dvwa (security-vulnerable)
+  - name: "Negative - DVWA Security Vulnerable"
+    prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/digininja/DVWA
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)vulnerab|security|insecure|risk|unsafe|dvwa|caution"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: negative — demo-app-broken-deps (unfixable)
+  - name: "Negative - Unfixable Broken Dependencies"
+    prompt: "Can you check if my app is ready to deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dev-arv13/demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)depend|broken|unfixable|incompat|fail|missing|blocker|issue"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: negative — broken-todo-demo (fixable blocker)
+  - name: "Negative - Fixable Blocker Todo Demo"
+    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Arun07AK/broken-todo-demo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)blocker|fix|fixable|missing|error|issue"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # ── integration-routing.test.ts ────────────────────────────────────
+  # test: routing — direct + ready + no infra → offers deploy (Go/Gin)
+  - name: "Routing - Go Gin Ready Offers Deploy"
+    prompt: "I want to make sure my project structure is right before deploying"
+    tags:
+      type: integration
+      tier: full
+      area: routing
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/naeemaei/golang-clean-web-api
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)go|gin|golang|ready|deploy|structure"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: routing — direct + ready + existing infra → start fresh vs use existing
+  - name: "Routing - Existing Infra Fresh Or Reuse"
+    prompt: "What prerequisites does my project need to meet for Azure deployment?"
+    tags:
+      type: integration
+      tier: full
+      area: routing
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/todo-nodejs-mongo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)existing|infra|azd|bicep|fresh|reuse|use existing|prerequisite"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: routing — cloud SDK gate → offers redirect to migrate (AWS bookstore)
+  - name: "Routing - AWS Cloud SDK Redirect To Migrate"
+    prompt: "Can you check if my dependencies are compatible with Azure?"
+    tags:
+      type: integration
+      tier: full
+      area: routing
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)aws|dynamo|lambda|migrate|cloud|redirect"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: routing — direct + blocked → reports blockers (Python 2 EOL)
+  - name: "Routing - Python 2 EOL Reports Blockers"
+    prompt: "Is my app ready to deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      area: routing
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/miguelgrinberg/flasky-first-edition
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)python 2|python2|eol|end-of-life|blocked|not ready|upgrade|blocker"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # ── integration-session.test.ts ────────────────────────────────────
+  # test: session creation — full artifact structure validation
+  - name: "Session - Creation Artifact Structure"
+    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: '(?i)session|readiness|feasib|report|analysis|\.copilot-azure'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: session resume — agent recognizes existing session
+  - name: "Session - Resume Existing Session"
+    prompt: "Is my app ready to deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)session|resume|existing|continue|previous|recogniz|readiness"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # test: zero-code-path — empty workspace triggers scaffold or app type question
+  - name: "Session - Zero-Code Empty Workspace"
+    prompt: "I want to deploy an app to Azure but I haven't started coding yet. Can you help me get started?"
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 16
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)scaffold|app type|what.*build|get started|create|starter|kind of app"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
+
+  # ── integration.test.ts ────────────────────────────────────────────
+  # test: invokes azure-app-onboard-prereq skill for repo-readiness prompt
+  - name: "Routing - Repo Readiness Invocation"
+    prompt: "Scan my repo and tell me if my project can be deployed to Azure"
+    tags:
+      type: integration
+      tier: smoke
+      area: routing
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard-prereq
+
+  # test: invocation rate — dockerfile prerequisite prompt
+  - name: "Routing - Dockerfile Prerequisite"
+    prompt: "Do I need a Dockerfile before deploying to Azure?"
+    tags:
+      type: integration
+      tier: smoke
+      area: routing
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard-prereq
+
+  # test: invocation rate — pre-deploy readiness check prompt
+  - name: "Routing - Pre-Deploy Readiness Check"
+    prompt: "What do I need to do before I can deploy to Azure?"
+    tags:
+      type: integration
+      tier: smoke
+      area: routing
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard-prereq
