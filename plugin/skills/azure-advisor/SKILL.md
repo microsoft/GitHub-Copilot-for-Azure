@@ -42,17 +42,3 @@ skill when they match the task:**
 | Capability | When to Use | Reference |
 |-----------|-------------|-----------|
 | **review** | Run a holistic, read-only Advisor sweep across one subscription — or **all** subscriptions classified by environment (dev/staging/prod) — probing the catalog, pulling active recommendations, aggregating by category/impact, spotlighting high-impact items, and proposing IaC fix snippets. | [review](review/review.md) |
-
-### Roadmap (not yet implemented)
-
-Planned capabilities will each be added as a sibling folder under `azure-advisor/`,
-reusing the shared references above. Add a row to the table above when one ships:
-
-- **summarize** — focused recommendation summarization / aggregation views
-- **resource-analysis** — per-resource Advisor analysis and drill-down
-- **greenfield** — Advisor-informed guidance for new/empty subscriptions
-- **cost** — Advisor cost-category optimization (coordinates with `azure-cost`)
-- **reliability** — Advisor reliability-category reviews
-- **governance** — Advisor operational-excellence / governance reviews
-- **security** — Advisor security-category reviews
-- **performance** — Advisor performance-category reviews
