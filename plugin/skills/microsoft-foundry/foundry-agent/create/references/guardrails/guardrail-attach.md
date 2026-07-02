@@ -12,7 +12,15 @@ After creating a guardrail (via [portal](guardrail-manage.md) or [REST API](guar
 
 A guardrail assigned to an agent **fully overrides** the underlying model deployment's guardrail. If no guardrail is assigned, the agent inherits the model deployment's guardrail.
 
-Add a `policies` block to `agent.yaml` with the guardrail's full ARM resource ID. See the [`16-content-safety-guardrail` sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/16-content-safety-guardrail) for the complete `agent.yaml` example.
+Add a `policies` block to `agent.yaml` with the guardrail's full ARM resource ID:
+
+```yaml
+policies:
+  - type: rai_policy
+    rai_policy_name: /subscriptions/<sub-id>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<account>/raiPolicies/<policy-name>
+```
+
+See the [`16-content-safety-guardrail` sample](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/16-content-safety-guardrail) for a complete working example.
 
 > `rai_policy_name` must be the **full ARM resource ID**, not just the policy name. This differs from the toolbox and model deployment paths which use just the name.
 

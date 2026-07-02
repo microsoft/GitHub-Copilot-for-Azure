@@ -27,6 +27,24 @@ az rest --method GET \
 
 ## Step 3: Create a Guardrail
 
+Minimal example — `guardrail-policy.json`:
+
+```json
+{
+  "properties": {
+    "basePolicyName": "Microsoft.DefaultV2",
+    "mode": "Asynchronous_filter",
+    "contentFilters": [
+      { "name": "Hate", "enabled": true, "blocking": true, "severityThreshold": "Medium", "source": "Prompt" },
+      { "name": "Hate", "enabled": true, "blocking": true, "severityThreshold": "Medium", "source": "Completion" },
+      { "name": "Violence", "enabled": true, "blocking": true, "severityThreshold": "Low", "source": "Prompt" },
+      { "name": "Violence", "enabled": true, "blocking": true, "severityThreshold": "Low", "source": "Completion" },
+      { "name": "Jailbreak", "enabled": true, "blocking": true, "source": "Prompt" }
+    ]
+  }
+}
+```
+
 ```bash
 az rest --method PUT \
   --url "https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.CognitiveServices/accounts/${ACCOUNT_NAME}/raiPolicies/${POLICY_NAME}?api-version=2024-10-01" \
@@ -36,7 +54,7 @@ az rest --method PUT \
 - `200 OK` — policy updated
 - `201 Created` — policy created for the first time
 
-For the request body schema (`contentFilters[]`, `basePolicyName`, `mode`, `customBlocklists`), see the [RAI Policies - Create Or Update API reference](https://learn.microsoft.com/rest/api/aiservices/accountmanagement/rai-policies/create-or-update).
+For the full request body schema (`contentFilters[]`, `basePolicyName`, `mode`, `customBlocklists`), see the [RAI Policies - Create Or Update API reference](https://learn.microsoft.com/rest/api/aiservices/accountmanagement/rai-policies/create-or-update).
 
 ## Step 4: Verify via CLI
 
