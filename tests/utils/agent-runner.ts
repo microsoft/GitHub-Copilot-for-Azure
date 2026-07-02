@@ -912,6 +912,12 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       const noSkills = process.env.NO_SKILLS === "true";
       const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
+      // When set, disable the `ask_user` tool so the agent runs autonomously and
+      // never pauses for clarifying questions. The runner has no handler for
+      // `user_input.requested`, so an un-answered ask_user would otherwise stall
+      // the session until timeout.
+      // const disableAskUser = process.env.VALLY_RUNNER_DISABLE_ASK_USER === "true";
+      const disableAskUser = true;
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
@@ -933,6 +939,13 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         enableSessionTelemetry: false
       });
       entry.session = session;
+
+      if (disableAskUser) {
+        // Disable the `ask_user` tool so the agent won't stop to ask questions.
+        // This is an experimental SDK RPC and must be applied after the session
+        // is created (it is not part of createSession's config).
+        await session.rpc.options.update({ askUserDisabled: true });
+      }
 
       const done = new Promise<void>((resolve) => {
         session.on(async (event: SessionEvent) => {
