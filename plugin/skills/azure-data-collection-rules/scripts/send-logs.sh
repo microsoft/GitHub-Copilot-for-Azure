@@ -52,7 +52,10 @@ fi
 # Send data
 SEND_URI="${ENDPOINT_URI}/dataCollectionRules/${DCR_IMMUTABLE_ID}/streams/${STREAM_NAME}?api-version=2023-01-01"
 
-HTTP_CODE=$(curl -s -o /tmp/send-logs-response.txt -w "%{http_code}" \
+TMPFILE=$(mktemp /tmp/send-logs-XXXXXX)
+trap 'rm -f "$TMPFILE"' EXIT
+
+HTTP_CODE=$(curl -s -o "$TMPFILE" -w "%{http_code}" \
     -X POST "$SEND_URI" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
@@ -62,6 +65,6 @@ if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
     echo "Data sent successfully. Records: $RECORD_COUNT"
 else
     echo "ERROR: Failed to send data. HTTP status: $HTTP_CODE" >&2
-    cat /tmp/send-logs-response.txt >&2
+    cat "$TMPFILE" >&2
     exit 1
 fi

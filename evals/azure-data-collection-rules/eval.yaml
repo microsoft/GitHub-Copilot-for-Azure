@@ -1,10 +1,19 @@
----
-tags:
-  skill: azure-data-collection-rules
----
+# Vally eval config for azure-data-collection-rules skill
+# Tests skill routing (positive + negative) and output correctness
+
+name: azure-data-collection-rules-eval
+description: |
+  Integration evaluation for azure-data-collection-rules skill.
+  Tests skill routing for DCR authoring prompts and validates
+  output correctness (JSON structure, KQL transforms, Direct kind).
 
 tags:
+  type: integration
   skill: azure-data-collection-rules
+
+environment:
+  skills:
+    - ../../plugin/skills/azure-data-collection-rules
 
 stimuli:
   # ─── Routing Tests (skill invocation) ─────────────────────────────────────────
