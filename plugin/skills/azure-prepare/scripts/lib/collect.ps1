@@ -209,6 +209,18 @@ function Get-AzContext {
     return $result
 }
 
+function Get-Subscriptions {
+    # Lists the caller's Azure subscriptions as objects with name/id/isDefault/state.
+    # Best-effort: returns an empty array when az is missing, not logged in, or the query fails.
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) { return @() }
+    try {
+        $out = & az account list --all --query '[].{name:name, id:id, isDefault:isDefault, state:state}' -o json 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $out) { return @() }
+        return @($out | ConvertFrom-Json)
+    }
+    catch { return @() }
+}
+
 function Get-PolicyConstraints {
     # Fetches enforced Azure Policy assignments for the confirmed subscription and distills
     # them into a short array of constraint strings. Best-effort: returns an empty array when

@@ -178,6 +178,19 @@ get_az_context() {
     fi
 }
 
+# Lists the caller's Azure subscriptions as a JSON array of {name,id,isDefault,state}.
+# Best-effort: prints an empty array when az is missing, not logged in, or the query fails.
+get_subscriptions() {
+    local out
+    command -v az >/dev/null 2>&1 || { printf '[]'; return; }
+    out="$(az account list --all --query '[].{name:name, id:id, isDefault:isDefault, state:state}' -o json 2>/dev/null)"
+    if [[ -n "$out" ]] && jq -e . >/dev/null 2>&1 <<<"$out"; then
+        jq -c '.' <<<"$out"
+    else
+        printf '[]'
+    fi
+}
+
 # Fetches enforced Azure Policy assignments for the confirmed subscription and distills
 # them into a short array of constraint strings. Best-effort: yields an empty array when
 # az is unavailable, unauthenticated, or the subscription cannot be resolved. Invoked from

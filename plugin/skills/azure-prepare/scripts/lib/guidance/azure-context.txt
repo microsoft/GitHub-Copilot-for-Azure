@@ -10,7 +10,10 @@ already collected:
    RECOMMENDED values (`auto.suggestedSubscription` holds the best guess).
 3. Confirm subscription via `ask_user` showing the ACTUAL name AND id
    (e.g. "Use current: <name> (<id>)"). Never offer a vague "use default" choice.
-   If the user wants a different one, list via `az account list -o table`.
+   The script has already enumerated subscriptions: if exactly one exists it is
+   auto-confirmed into `input.subscription` (skip this prompt). When several exist,
+   `auto.subscriptionsFile` points to a JSON file (array of {name,id,isDefault,state})
+   — read that file to offer alternatives. Do NOT run `az account list` yourself.
 4. Confirm region via `ask_user`. Present ONLY regions that support ALL selected
    services — a region missing a service will fail deployment. Most services
    (Container Apps, Functions, App Service, SQL, Cosmos, Key Vault, Storage, Service

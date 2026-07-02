@@ -100,6 +100,22 @@ $Steps = @(
         )
         auto = {
             param($State)
+            # Enumerate subscriptions once: auto-confirm when exactly one exists,
+            # otherwise cache the list to a separate file the LM can read on demand.
+            if (-not (Test-Provided $State 'input.subscription')) {
+                $subFile = Join-Path $StateDir 'subscriptions.json'
+                if (-not (Test-Path -LiteralPath $subFile)) {
+                    $subs = @(Get-Subscriptions)
+                    if ($subs.Count -eq 1) {
+                        Set-ByPath $State 'input.subscription' $subs[0].id
+                    }
+                    elseif ($subs.Count -gt 1) {
+                        ($subs | ConvertTo-Json -Compress -Depth 5) | Set-Content -LiteralPath $subFile -Encoding utf8
+                        Set-ByPath $State 'auto.subscriptionsFile' $subFile
+                        Set-ByPath $State 'auto.subscriptionCount' $subs.Count
+                    }
+                }
+            }
             # Prefill the suggested subscription from azd env, then azd defaults, then az account, when the LM has not chosen one.
             if (-not (Test-Provided $State 'input.subscription')) {
                 $suggest = $null

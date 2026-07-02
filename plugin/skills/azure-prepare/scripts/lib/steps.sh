@@ -138,7 +138,23 @@ step_auto() {
         azure-context)
             # Prefill the suggested subscription from azd env, then azd defaults, then az account, when the LM has not chosen one.
             if ! test_provided 'input.subscription'; then
-                local suggest avail
+                local suggest avail subs sub_count sub_file
+                # Enumerate subscriptions once: auto-confirm when exactly one exists,
+                # otherwise cache the list to a separate file the LM can read on demand.
+                sub_file="$StateDir/subscriptions.json"
+                if [[ ! -f "$sub_file" ]]; then
+                    subs="$(get_subscriptions)"
+                    sub_count="$(jq 'length' <<<"$subs" 2>/dev/null || printf 0)"
+                    if [[ "$sub_count" -eq 1 ]]; then
+                        set_str 'input.subscription' "$(jq -r '.[0].id' <<<"$subs")"
+                    elif [[ "$sub_count" -gt 1 ]]; then
+                        printf '%s' "$subs" > "$sub_file"
+                        set_str 'auto.subscriptionsFile' "$sub_file"
+                        set_by_path 'auto.subscriptionCount' "$sub_count"
+                    fi
+                fi
+            fi
+            if ! test_provided 'input.subscription'; then
                 suggest=''
                 avail="$(printf '%s' "$STATE" | jq -r '.auto.azdContext.available // false')"
                 if [[ "$avail" == true ]]; then
