@@ -6,7 +6,7 @@ You are generating the final Markdown report for a Microsoft Foundry E2E Vally e
 
 Create the report as a Markdown file at the path specified by the `REPORT_MD` environment variable. Create parent directories if needed. Do not print the report to stdout; write the complete report to `REPORT_MD`. After writing and verifying the file, the final chat response should only say `Report written to ` followed by the report path.
 
-In CI, Vally writes `eval-results.md` and `results.jsonl` under timestamped subdirectories of `tests/results/`; the CI runner uses the same repository-relative path. Find all `results.jsonl` files under `tests/results/`, then use the `eval-results.md` in the same directory as the Sonnet 4.6 baseline for Raw Results. Analyze `results.jsonl` directly. Do not invent numbers.
+In CI, Vally writes `eval-results.md` and `results.jsonl` under timestamped subdirectories of `tests/results/`; the CI runner uses the same repository-relative path. Find all `results.jsonl` files under `tests/results/`, and merge every `eval-results.md` found under `tests/results/` into the combined Raw Results table. Analyze `results.jsonl` directly. Do not invent numbers.
 
 Only read existing result files in the current working directory and write the final Markdown file to `REPORT_MD`. Do not scan sibling repositories or user directories. Do not run Vally, tests, package install commands, deployment commands, `azd`, `git`, or any command that creates a new evaluation run. Do not create or modify any file except `REPORT_MD` and its parent directory.
 
@@ -249,17 +249,20 @@ Purpose: keep the original Vally summary available, but put it last so Golden Pa
 
 Guidance:
 
-- Include the full `eval-results.md` content.
-- Keep its table content intact.
-- Use the `eval-results.md` in the same directory as the latest `claude-sonnet-4.6` Golden Path result. If no Sonnet 4.6 result exists, use the latest `eval-results.md` under `tests/results/`.
-- If the source content starts with `## Eval Results`, omit that source heading so `## Raw Results` remains the final top-level report section.
+- Include the results table from every `eval-results.md` under `tests/results/`, and merge them into one combined table so all models appear together.
+- Keep each table's content intact.
+- Make sure every row shows its model by keeping (or adding) a `Model` column.
+- If a source file starts with a `## Eval Results` heading, omit that heading so `## Raw Results` remains the final top-level report section.
 
 Schema example:
 
 ```markdown
 ## Raw Results
 
-The original eval-results.md content goes here, without its leading "## Eval Results" heading.
+| Stimulus | Skills | Model | Graders | Pass Rate | Duration | Tokens | Verdict |
+|---|---|---|---|---|---|---|---|
+| Golden Path - create and deploy Foundry agent | `microsoft-foundry` | claude-sonnet-4.6 | ✅ skill-invocation 1/1<br>✅ completed 1/1 | 1/1 | 15m 43s | 128,000 | ✅ |
+| Golden Path - create and deploy Foundry agent | `microsoft-foundry` | claude-opus-4.8 | ✅ skill-invocation 1/1<br>✅ completed 1/1 | 1/1 | 18m 22s | 139,000 | ✅ |
 ```
 
 Before finishing, verify that `REPORT_MD` exists and contains all required report sections.
