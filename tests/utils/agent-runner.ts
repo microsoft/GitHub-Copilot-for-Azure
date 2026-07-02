@@ -958,8 +958,13 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               );
               isComplete = true;
               isAborted = true;
-              resolve();
-              void session.abort();
+              try {
+                await session.abort();
+              } catch (error) {
+                console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+              } finally {
+                resolve();
+              }
               return;
             }
           }
@@ -967,8 +972,13 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
             isAborted = true;
-            resolve();
-            void session.abort();
+            try {
+              await session.abort();
+            } catch (error) {
+              console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+              resolve();
+            }
             return;
           }
         });
