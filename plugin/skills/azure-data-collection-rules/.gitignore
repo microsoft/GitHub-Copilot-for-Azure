@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated presentation files (rebuild from source)
+presentation/*.pdf
+presentation/*.pptx
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini

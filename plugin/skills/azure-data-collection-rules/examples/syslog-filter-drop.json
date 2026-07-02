@@ -1,0 +1,54 @@
+{
+    "location": "eastus",
+    "properties": {
+        "dataSources": {
+            "syslog": [
+                {
+                    "name": "syslogAuth",
+                    "facilityNames": ["auth", "authpriv"],
+                    "logLevels": ["Warning", "Error", "Critical", "Alert", "Emergency"],
+                    "streams": ["Microsoft-Syslog"],
+                    "transform": "drop_auth_columns"
+                },
+                {
+                    "name": "syslogOther",
+                    "facilityNames": ["daemon", "kern"],
+                    "logLevels": ["Error", "Critical", "Alert", "Emergency"],
+                    "streams": ["Microsoft-Syslog"]
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "name": "myWorkspace",
+                    "workspaceResourceId": "/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{ws}",
+                    "workspaceId": "{workspace-guid}"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": ["Microsoft-Syslog"],
+                "destinations": ["myWorkspace"],
+                "outputStream": "Microsoft-Syslog"
+            }
+        ],
+        "transformations": [
+            {
+                "name": "drop_auth_columns",
+                "headerProcessor": {
+                    "processor": "header.Syslog"
+                },
+                "processors": [
+                    {
+                        "processor": "map.Drop",
+                        "configuration": {
+                            "columnNames": ["ProcessId", "HostIP"]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

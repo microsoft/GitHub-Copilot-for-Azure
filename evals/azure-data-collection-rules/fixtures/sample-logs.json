@@ -1,0 +1,29 @@
+[
+  {
+    "Time": "2026-06-25T10:00:00Z",
+    "Computer": "web-server-01",
+    "Application": "OrderService",
+    "Level": "Error",
+    "Message": "Connection timeout to database after 30s",
+    "RequestId": "req-abc-123",
+    "DurationMs": 30012.5
+  },
+  {
+    "Time": "2026-06-25T10:00:05Z",
+    "Computer": "web-server-02",
+    "Application": "OrderService",
+    "Level": "Warning",
+    "Message": "Retry attempt 2 for payment processing",
+    "RequestId": "req-def-456",
+    "DurationMs": 5023.1
+  },
+  {
+    "Time": "2026-06-25T10:00:10Z",
+    "Computer": "web-server-01",
+    "Application": "AuthService",
+    "Level": "Info",
+    "Message": "User login successful",
+    "RequestId": "req-ghi-789",
+    "DurationMs": 142.3
+  }
+]
