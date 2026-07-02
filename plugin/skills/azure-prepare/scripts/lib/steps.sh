@@ -179,15 +179,19 @@ step_auto() {
 
 # Runs the given step's one-time completion hook (e.g. generate the plan, update its status).
 step_ondone() {
-    local path
+    local path principal
     case "$1" in
         finalize-plan)
             path="$(write_deployment_plan)"
             set_str 'auto.planFile' "$path" ;;
         azure-context)
-            # Subscription is now confirmed; discover Azure Policy constraints programmatically
-            # so the LM no longer queries policy itself (records auto.policyConstraints).
-            set_by_path 'auto.policyConstraints' "$(get_policy_constraints)" ;;
+            # Subscription is now confirmed; discover Azure Policy constraints and the
+            # signed-in principal programmatically so the LM no longer queries them itself
+            # (records auto.policyConstraints, auto.principalId, auto.principalName).
+            set_by_path 'auto.policyConstraints' "$(get_policy_constraints)"
+            principal="$(get_principal)"
+            set_by_path 'auto.principalId' "$(jq -c '.id // null' <<<"$principal")"
+            set_by_path 'auto.principalName' "$(jq -c '.name // null' <<<"$principal")" ;;
         approval)
             set_plan_status 'Approved' ;;
         generate)

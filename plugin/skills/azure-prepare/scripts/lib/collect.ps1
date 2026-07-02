@@ -221,6 +221,22 @@ function Get-Subscriptions {
     catch { return @() }
 }
 
+function Get-Principal {
+    # Fetches the signed-in user's object id and display name as a hashtable @{id;name}.
+    # Best-effort: returns empty values when az is missing, not logged in, or the caller is a
+    # service principal (az ad signed-in-user fails for SPs; azd auto-populates the id at provision).
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) { return @{ id = $null; name = $null } }
+    try {
+        $out = & az ad signed-in-user show --query '{id:id, name:displayName}' -o json 2>$null
+        if ($LASTEXITCODE -ne 0 -or -not $out) { return @{ id = $null; name = $null } }
+        $obj = $out | ConvertFrom-Json
+        $id   = if ($obj.PSObject.Properties['id'])   { $obj.id }   else { $null }
+        $name = if ($obj.PSObject.Properties['name']) { $obj.name } else { $null }
+        return @{ id = $id; name = $name }
+    }
+    catch { return @{ id = $null; name = $null } }
+}
+
 function Get-PolicyConstraints {
     # Fetches enforced Azure Policy assignments for the confirmed subscription and distills
     # them into a short array of constraint strings. Best-effort: returns an empty array when
@@ -310,6 +326,8 @@ function Apply-AzdEnvironment {
     if ($ctx -and $ctx['subscriptionId']) { $subid = $ctx['subscriptionId'] }
     if (-not $subid) { $subid = Get-ByPath $State 'input.subscription' }
     $loc = Get-ByPath $State 'input.location'
+    $principalId = Get-ByPath $State 'auto.principalId'
+    $principalName = Get-ByPath $State 'auto.principalName'
 
     Push-Location -LiteralPath $RepoPath
     try {
@@ -330,8 +348,10 @@ function Apply-AzdEnvironment {
         catch { }
         if ($subid) { try { & azd env set AZURE_SUBSCRIPTION_ID $subid 2>$null | Out-Null } catch { } }
         if ($loc) { try { & azd env set AZURE_LOCATION $loc 2>$null | Out-Null } catch { } }
+        if ($principalId) { try { & azd env set AZURE_PRINCIPAL_ID $principalId 2>$null | Out-Null } catch { } }
+        if ($principalName) { try { & azd env set AZURE_PRINCIPAL_NAME $principalName 2>$null | Out-Null } catch { } }
 
-        $applied = $false; $vsub = $null; $vloc = $null
+        $applied = $false; $vsub = $null; $vloc = $null; $vpid = $null
         try {
             $vals = & azd env get-values -o json 2>$null
             if ($LASTEXITCODE -eq 0 -and $vals) {
@@ -339,10 +359,11 @@ function Apply-AzdEnvironment {
                 $applied = $true
                 $vsub = $v.AZURE_SUBSCRIPTION_ID
                 $vloc = $v.AZURE_LOCATION
+                if ($v.PSObject.Properties['AZURE_PRINCIPAL_ID']) { $vpid = $v.AZURE_PRINCIPAL_ID }
             }
         }
         catch { }
-        Set-ByPath $State 'auto.azdEnv' @{ applied = $applied; name = $envname; subscriptionId = $vsub; location = $vloc }
+        Set-ByPath $State 'auto.azdEnv' @{ applied = $applied; name = $envname; subscriptionId = $vsub; location = $vloc; principalId = $vpid }
     }
     finally { Pop-Location }
 }

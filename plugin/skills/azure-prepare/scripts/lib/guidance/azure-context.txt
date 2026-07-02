@@ -38,3 +38,8 @@ Azure Policy enforcement constraints are discovered AUTOMATICALLY by the script
 once the subscription is confirmed (it runs `az policy assignment list` and records
 the result in `auto.policyConstraints`, which feeds the deployment plan). You do NOT
 need to query Azure Policy yourself.
+
+The signed-in principal is also captured AUTOMATICALLY once the subscription is
+confirmed: the script runs `az ad signed-in-user show` and records the object id and
+display name in `auto.principalId` / `auto.principalName`. Do NOT run
+`az ad signed-in-user show` yourself.

@@ -66,6 +66,10 @@ Security requirements (MANDATORY):
     not appear in any .bicep. See `scripts/references/services/sql-database/bicep.md`.
   - SQL + Managed Identity → MUST generate scripts/grant-sql-access.sh + .ps1 and a
     `postprovision` hook in azure.yaml (ARM role assignments only grant control-plane).
+    The script already sets `AZURE_PRINCIPAL_ID`/`AZURE_PRINCIPAL_NAME` in the azd env
+    (from `auto.principalId`/`auto.principalName`) — do NOT run `az ad signed-in-user show`
+    or `azd env set AZURE_PRINCIPAL_ID` yourself. grant-sql-access scripts should resolve
+    the principal at RUNTIME (not hardcode an id) so they work for whoever runs them.
   - App Service Bicep → every Microsoft.Web/sites MUST carry
     tags: union(tags, { 'azd-service-name': serviceName }) or `azd deploy` can't find it.
   - Containerized apps → apply runtime production settings (e.g. `scripts/references/runtimes/nodejs.md`).

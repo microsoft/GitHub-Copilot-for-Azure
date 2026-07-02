@@ -191,6 +191,21 @@ get_subscriptions() {
     fi
 }
 
+# Fetches the signed-in user's object id and display name as a JSON object {id,name}.
+# Best-effort: yields an empty object when az is missing, not logged in, or the caller is a
+# service principal (az ad signed-in-user fails for SPs; azd auto-populates the id at provision).
+# Invoked from the azure-context ondone hook so it adds no extra script invocation.
+get_principal() {
+    local out
+    command -v az >/dev/null 2>&1 || { printf '{}'; return; }
+    out="$(az ad signed-in-user show --query '{id:id, name:displayName}' -o json 2>/dev/null)"
+    if [[ -n "$out" ]] && jq -e '.id != null' >/dev/null 2>&1 <<<"$out"; then
+        jq -c '{id: (.id // null), name: (.name // null)}' <<<"$out"
+    else
+        printf '{}'
+    fi
+}
+
 # Fetches enforced Azure Policy assignments for the confirmed subscription and distills
 # them into a short array of constraint strings. Best-effort: yields an empty array when
 # az is unavailable, unauthenticated, or the subscription cannot be resolved. Invoked from
@@ -235,7 +250,7 @@ get_azd_env_name() {
 # exists; records the outcome under auto.azdEnv. No-op (with a reason) for non-AZD recipes,
 # a missing azure.yaml, or an unavailable azd CLI.
 apply_azd_environment() {
-    local recipe envname subid loc existing applied vsub vloc vals
+    local recipe envname subid loc existing applied vsub vloc vals pid pname vpid
     recipe="$(get_by_path 'input.recipe' 2>/dev/null || true)"
     if [[ "$recipe" != *AZD* && "$recipe" != *Aspire* ]]; then
         set_by_path 'auto.azdEnv' "$(jq -n '{applied:false, name:"n/a", reason:"non-azd recipe"}')"
@@ -253,6 +268,8 @@ apply_azd_environment() {
     subid="$(printf '%s' "$STATE" | jq -r '.auto.azContext.subscriptionId // empty')"
     [[ -z "$subid" ]] && subid="$(get_by_path 'input.subscription' 2>/dev/null || true)"
     loc="$(get_by_path 'input.location' 2>/dev/null || true)"
+    pid="$(printf '%s' "$STATE" | jq -r '.auto.principalId // empty')"
+    pname="$(printf '%s' "$STATE" | jq -r '.auto.principalName // empty')"
 
     # Create the env only when it does not already exist; azd env new errors on a duplicate.
     existing="$(cd "$RepoPath" && azd env list -o json 2>/dev/null | jq -r --arg n "$envname" 'try ([.[] | select(.Name == $n)] | length) catch 0' 2>/dev/null)"
@@ -263,16 +280,19 @@ apply_azd_environment() {
     fi
     [[ -n "$subid" ]] && { ( cd "$RepoPath" && azd env set AZURE_SUBSCRIPTION_ID "$subid" >/dev/null 2>&1 ) || true; }
     [[ -n "$loc" ]] && { ( cd "$RepoPath" && azd env set AZURE_LOCATION "$loc" >/dev/null 2>&1 ) || true; }
+    [[ -n "$pid" ]] && { ( cd "$RepoPath" && azd env set AZURE_PRINCIPAL_ID "$pid" >/dev/null 2>&1 ) || true; }
+    [[ -n "$pname" ]] && { ( cd "$RepoPath" && azd env set AZURE_PRINCIPAL_NAME "$pname" >/dev/null 2>&1 ) || true; }
 
-    applied=false; vsub=null; vloc=null
+    applied=false; vsub=null; vloc=null; vpid=null
     vals="$(cd "$RepoPath" && azd env get-values -o json 2>/dev/null)"
     if [[ -n "$vals" ]] && jq -e . >/dev/null 2>&1 <<<"$vals"; then
         applied=true
         vsub="$(jq -c '.AZURE_SUBSCRIPTION_ID // null' <<<"$vals")"
         vloc="$(jq -c '.AZURE_LOCATION // null' <<<"$vals")"
+        vpid="$(jq -c '.AZURE_PRINCIPAL_ID // null' <<<"$vals")"
     fi
-    set_by_path 'auto.azdEnv' "$(jq -n --arg n "$envname" --argjson applied "$applied" --argjson sub "$vsub" --argjson loc "$vloc" \
-        '{applied:$applied, name:$n, subscriptionId:$sub, location:$loc}')"
+    set_by_path 'auto.azdEnv' "$(jq -n --arg n "$envname" --argjson applied "$applied" --argjson sub "$vsub" --argjson loc "$vloc" --argjson pid "$vpid" \
+        '{applied:$applied, name:$n, subscriptionId:$sub, location:$loc, principalId:$pid}')"
 }
 
 # ---------------------------------------------------------------------------

@@ -134,9 +134,13 @@ $Steps = @(
         }
         onDone = {
             param($State)
-            # Subscription is now confirmed; discover Azure Policy constraints programmatically
-            # so the LM no longer queries policy itself (records auto.policyConstraints).
+            # Subscription is now confirmed; discover Azure Policy constraints and the
+            # signed-in principal programmatically so the LM no longer queries them itself
+            # (records auto.policyConstraints, auto.principalId, auto.principalName).
             Set-ByPath $State 'auto.policyConstraints' (Get-PolicyConstraints $State)
+            $principal = Get-Principal
+            Set-ByPath $State 'auto.principalId' $principal['id']
+            Set-ByPath $State 'auto.principalName' $principal['name']
         }
     },
     @{
