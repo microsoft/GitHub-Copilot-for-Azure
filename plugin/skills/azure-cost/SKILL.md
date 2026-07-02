@@ -1,6 +1,6 @@
 ---
 name: azure-cost
-description: "Azure cost management: query costs, forecast spending, optimize to reduce waste. WHEN: \"Azure costs\", \"Azure bill\", \"cost breakdown\", \"how much am I spending\", \"forecast spending\", \"optimize costs\", \"reduce spending\", \"orphaned resources\", \"rightsize VMs\", \"cost spike\", \"reduce storage costs\", \"AKS cost\". DO NOT USE FOR: deploying resources, provisioning, diagnostics, or security audits."
+description: "Azure cost management: query costs, forecast spending, optimize to reduce waste. WHEN: \"Azure costs\", \"Azure bill\", \"cost breakdown\", \"how much am I spending\", \"forecast spending\", \"optimize costs\", \"reduce spending\", \"orphaned resources\", \"rightsize VMs\", \"cost spike\", \"reduce storage costs\", \"App Service cost\", \"web app spending\", \"App Service plan savings\", \"deployment slots\", \"AKS cost\". DO NOT USE FOR: deploying resources, provisioning, diagnostics, or security audits."
 license: MIT
 metadata:
   author: Microsoft
@@ -34,12 +34,12 @@ Query historical costs, forecast future spending, optimize to reduce waste.
 - Management Group: `/providers/Microsoft.Management/managementGroups/<id>`
 - Billing Account: `/providers/Microsoft.Billing/billingAccounts/<id>`
 
-## Service-Specific Optimization
+## Service Optimization Guides
 
 - [Redis](cost-optimization/services/redis/azure-cache-for-redis.md)
 - [Storage](cost-optimization/services/storage/azure-storage.md)
+- [App Service](cost-optimization/services/appservice/azure-app-service.md)
 
 ## References
 
 - [MCP Tools, Best Practices, Safety](references/tools-and-best-practices.md)
-- [SDK: Redis .NET](cost-optimization/sdk/azure-resource-manager-redis-dotnet.md)
