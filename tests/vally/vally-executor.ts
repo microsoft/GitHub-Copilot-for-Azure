@@ -1,5 +1,6 @@
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { computeMetrics } from "@microsoft/vally";
+import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { listSkills } from "../utils/skill-loader.ts";
@@ -35,6 +36,9 @@ export class IntegrationTestAgentRunner implements Executor {
 
     const runConfig: AgentRunConfig = {
       workspace: workDir,
+      env: {
+        UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
+      },
       model: model,
       prompt: stimulus.prompt,
       shouldEarlyTerminate: shouldEarlyTerminate,

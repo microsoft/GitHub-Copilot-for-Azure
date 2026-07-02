@@ -170,6 +170,7 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  env?: Record<string, string>;
   model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
@@ -854,7 +855,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         }),
         env: {
           ...process.env,
-          ...envVar
+          ...envVar,
+          ...runConfig.env
         }
       }) as CopilotClient;
       entry.client = client;
@@ -879,20 +881,23 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
+      const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
-        mcpServers: {
-          azure: {
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "@azure/mcp", "server", "start"],
-            tools: ["*"]
+        ...(disableAzureMcp ? {} : {
+          mcpServers: {
+            azure: {
+              type: "stdio",
+              command: "npx",
+              args: ["-y", "@azure/mcp", "server", "start"],
+              tools: ["*"]
+            }
           }
-        },
+        }),
         systemMessage: runConfig.systemPrompt,
         // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
         enableSessionTelemetry: false
@@ -1044,7 +1049,10 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
-      if (!isTest()) {
+      // Jest integration tests clean up in afterEach so reports can be written first.
+      // Non-Jest test runners such as Vally must clean up here; otherwise Copilot CLI
+      // child processes keep the Node process alive after results are written.
+      if (!isTest() || !useJest()) {
         await cleanup();
       }
     }
