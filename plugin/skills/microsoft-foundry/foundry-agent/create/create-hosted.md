@@ -242,7 +242,7 @@ Attach a content-safety guardrail to the agent or its toolbox. See [guardrail-ma
 
 ### Step 7c -- Add skills (optional)
 
-Attach reusable behavioral guidelines (skills) to the agent via the toolbox. See [skill-manage](references/skills/skill-manage.md) for creating and versioning skills, and [skill-attach](references/skills/skill-attach.md) for consuming skills in agent code.
+Attach reusable behavioral guidelines (skills) to the agent via the toolbox. See [skill-manage](references/skills/skill-manage.md) for creating and versioning skills, [skill-toolbox-attach](references/skills/skill-toolbox-attach.md) for attaching skills to a toolbox, and [skill-attach](references/skills/skill-attach.md) for consuming skills in agent code.
 
 ### Step 8 -- Hand off to deploy
 
