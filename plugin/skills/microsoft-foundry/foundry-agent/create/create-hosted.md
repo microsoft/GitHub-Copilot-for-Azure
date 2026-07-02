@@ -216,7 +216,7 @@ Read and follow [local-run](references/local-run.md). Complete one representativ
 
 ### Step 7 -- Add capabilities (optional)
 
-Optionally add toolboxes (tools) and guardrails (content safety) before deploying.
+Optionally add toolboxes (tools), guardrails (content safety), and skills (behavioral guidelines) before deploying.
 
 ### Step 7a -- Add tools (optional)
 
@@ -239,6 +239,10 @@ Full recipes (GitHub MCP, Azure AI Search, A2A, Bing Custom) in [tools](referenc
 ### Step 7b -- Add guardrails (optional)
 
 Attach a content-safety guardrail to the agent or its toolbox. See [guardrail-manage](references/guardrails/guardrail-manage.md) for creating policies and [guardrail-attach](references/guardrails/guardrail-attach.md) for wiring them to agents, model deployments, or toolboxes.
+
+### Step 7c -- Add skills (optional)
+
+Attach reusable behavioral guidelines (skills) to the agent via the toolbox. See [skill-manage](references/skills/skill-manage.md) for creating and versioning skills, [skill-toolbox-attach](references/skills/skill-toolbox-attach.md) for attaching skills to a toolbox, and [skill-attach](references/skills/skill-attach.md) for consuming skills in agent code.
 
 ### Step 8 -- Hand off to deploy
 
