@@ -1,0 +1,305 @@
+# Vally eval config for the azure-advisor skill.
+#
+# Replaces the legacy Jest trigger tests (tests/azure-advisor/triggers.test.ts),
+# which are deprecated per tests/README.md. This suite expresses the skill's
+# scenarios as Vally stimuli graded against a real LLM agent run.
+#
+# Coverage (per tests/AGENTS.md):
+# - Routing stimuli measure skill-invocation rate across the documented WHEN
+#   trigger phrases (5 runs each, 80% threshold), with early termination once the
+#   skill is invoked to keep runs cheap.
+# - Response-quality stimuli (runs: 1) check the assistant output mentions Advisor
+#   recommendations and does not surface fatal errors.
+
+name: azure-advisor-integration-eval
+description: |
+  Integration evaluation for the azure-advisor skill. Verifies routing for Advisor
+  review, recommendation-check, health-check, and audit prompts via skill-invocation
+  rate (5 runs, 80% threshold), plus response-quality checks for Advisor recommendation
+  output.
+
+tags:
+  type: integration
+  skill: azure-advisor
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Skill routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── run-advisor-review (smoke) ──
+  - name: "Run an Advisor review"
+    prompt: "Run an Azure Advisor review of my subscription"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-advisor"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── check-recommendations ──
+  - name: "Check Advisor recommendations"
+    prompt: "Check my Azure Advisor recommendations"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-advisor"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── what-does-advisor-say ──
+  - name: "What does Advisor say about my subscription"
+    prompt: "What does Advisor say about my Azure subscription?"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-advisor"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── advisor-health-check ──
+  - name: "Azure Advisor health check"
+    prompt: "Give me an Azure Advisor health check"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-advisor"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── audit-with-advisor ──
+  - name: "Audit resources with Advisor"
+    prompt: "Audit my Azure resources with Advisor"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-advisor"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Boundary (negative) routing — adjacent services from
+  # the skill's DO NOT USE FOR section must NOT route to azure-advisor.
+  # `disallowed` asserts the skill stays out of these requests.
+  # ═══════════════════════════════════════════
+
+  # ── boundary-cost ──
+  - name: "Cost query does not route to advisor"
+    prompt: "Analyze my Azure subscription costs and spending trends"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: smoke
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── boundary-diagnostics ──
+  - name: "Diagnostics query does not route to advisor"
+    prompt: "My App Service keeps returning 500 errors, help me troubleshoot it"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── boundary-rbac ──
+  - name: "RBAC query does not route to advisor"
+    prompt: "Grant my team Reader access to the production resource group"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── boundary-keyvault ──
+  - name: "Key Vault query does not route to advisor"
+    prompt: "Store a new secret in my Azure Key Vault"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── boundary-appservice ──
+  - name: "App Service deploy does not route to advisor"
+    prompt: "Deploy my web app to Azure App Service"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Tool-call trajectory — validate behavior up to the point the agent
+  # invokes an Advisor MCP tool. Early-terminates as soon as an `advisor_`
+  # tool is called (or after a small tool-call cap as a safety net), then the
+  # `tool-calls` grader asserts an `advisor_` tool was actually executed.
+  # ═══════════════════════════════════════════
+
+  # ── review-calls-advisor-tool ──
+  - name: "Advisor review reaches an advisor tool call"
+    prompt: "Run an Azure Advisor review of my subscription"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: smoke
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"advisor_","argsPattern":".*"},{"type":"tool-call-count","count":8}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: tool-calls
+        config:
+          required:
+            - name: "advisor_"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── check-recommendations-calls-advisor-tool ──
+  - name: "Recommendation check reaches an advisor tool call"
+    prompt: "Check my Azure Advisor recommendations"
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: behavior
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"advisor_","argsPattern":".*"},{"type":"tool-call-count","count":8}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+      - type: tool-calls
+        config:
+          required:
+            - name: "advisor_"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Response quality tests
+  # ═══════════════════════════════════════════
+
+  # ── review-mentions-recommendations ──
+  - name: "Advisor review mentions recommendations"
+    prompt: "Run an Azure Advisor review of my subscription"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      skill: azure-advisor
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)recommendation|advisor"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
