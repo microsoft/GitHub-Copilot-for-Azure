@@ -32,7 +32,7 @@ Minimal example — `guardrail-policy.json`:
 ```json
 {
   "properties": {
-    "basePolicyName": "Microsoft.DefaultV2",
+    "basePolicyName": "Microsoft.Default",
     "mode": "Asynchronous_filter",
     "contentFilters": [
       { "name": "Hate", "enabled": true, "blocking": true, "severityThreshold": "Medium", "source": "Prompt" },
