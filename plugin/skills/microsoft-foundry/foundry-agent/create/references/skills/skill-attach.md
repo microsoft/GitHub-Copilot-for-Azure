@@ -15,7 +15,7 @@ The Agent Framework SDK injects skill names/descriptions into the system prompt 
 |--|---|---|
 | How | Downloads ZIPs at startup, builds provider from local files | Connects to toolbox MCP; SDK reads `resources/list` → `load_skill` |
 | Skill updates | Redeploy agent | Consumer endpoint picks up new version automatically |
-| Header | `Foundry-Features: Skills=V1Preview` | `Foundry-Features: Toolboxes=V1Preview` |
+| Header | `Foundry-Features: Skills=V1Preview` | Not required |
 | When to use | No toolbox; need explicit version control | Already have a toolbox; want dynamic updates |
 
 ---
