@@ -958,8 +958,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               );
               isComplete = true;
               isAborted = true;
+              await session.abort();
               resolve();
-              void session.abort();
               return;
             }
           }
@@ -967,8 +967,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
             isAborted = true;
+            await session.abort();
             resolve();
-            void session.abort();
             return;
           }
         });
