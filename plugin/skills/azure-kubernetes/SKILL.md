@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "0.0.0-placeholder"
-description: "Plan, create, and configure production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis). WHEN: create AKS environment, provision AKS, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, AKS spot nodes, AKS cluster-autoscaler, rightsize AKS pod, pod rightsizing, over-provisioned AKS pod, pod resource requests and limits, Vertical Pod Autoscaler, VPA recommendations."
+description: "Plan, create, configure, and review production-ready Azure Kubernetes Service (AKS) clusters. Covers Day-0 checklist, SKU selection (Automatic vs Standard), networking options (private API server, Azure CNI Overlay, egress configuration), security, and operations (autoscaling, upgrade strategy, cost analysis) and Day-2 review and audit. WHEN: create AKS environment, provision AKS environment, enable AKS observability, design AKS networking, choose AKS SKU, secure AKS, optimize AKS, rightsize AKS pod, AKS spot nodes, AKS cluster-autoscaler, review AKS, audit AKS, AKS practice review, AKS checklist, AKS remediation."
 ---
 
 # Azure Kubernetes Service
@@ -16,9 +16,9 @@ description: "Plan, create, and configure production-ready Azure Kubernetes Serv
 ## Quick Reference
 | Property | Value |
 |----------|-------|
-| Best for | AKS cluster planning and Day-0 decisions |
+| Best for | AKS cluster planning (Day-0) and posture review / compliance audit (Day-2) |
 | MCP Tools | `mcp_azure_mcp_aks` |
-| CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
+| CLI | `az aks create`, `az aks show`, `az aks nodepool list`, `kubectl get`, `kubectl describe` |
 | Related skills | azure-diagnostics (troubleshooting AKS), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic) |
 
 ## When to Use This Skill
@@ -32,6 +32,7 @@ Activate this skill when user wants to:
 - Define AKS upgrade and patching strategy
 - Understand AKS Automatic vs Standard SKU differences
 - Get a Day-0 checklist for AKS cluster setup and configuration
+- Review or audit an existing AKS cluster against Microsoft Learn practices, Well-Architected pillars, the AKS Checklist, live diagnostics detectors, and container best practices (Day-2). See [azure-aks-review.md](./references/azure-aks-review.md).
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.
@@ -130,8 +131,13 @@ If the user is unsure, use safe defaults.
 | VPA Setup | vertical pod autoscaler, VPA recommendations, VPA enable | [azure-aks-vpa.md](./references/azure-aks-vpa.md) |
 | Cluster Autoscaler | idle nodes, CAS off, enable autoscaler, scale-down profile, node utilization | [azure-aks-autoscaler.md](./references/azure-aks-autoscaler.md) |
 | Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
+| Cluster Review / Audit | review AKS, audit AKS cluster, AKS practices review, validate AKS posture, AKS compliance checklist, AKS remediation report | [azure-aks-review.md](./references/azure-aks-review.md) |
 
 > **Disambiguation:** If a prompt matches multiple rows (e.g., "cheaper nodes" could suggest both Spot and autoscaler), prefer the most specific match. If ambiguous, ask the user to clarify their intent before loading a reference file.
+
+## Cluster Review / Audit (Day-2)
+
+When the user asks to **review**, **audit**, or **assess the compliance posture** of an existing AKS cluster, load [azure-aks-review.md](./references/azure-aks-review.md) for the full workflow: required inputs, 9-step review workflow, decision logic, output format, guardrails, and links to the checklist matrix, diagnostics detectors, container best practices, and audit report template.
 
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
