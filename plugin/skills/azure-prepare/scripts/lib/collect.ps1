@@ -288,6 +288,117 @@ function Get-PolicyConstraints {
     return $result.ToArray()
 }
 
+function Get-ServiceProvider {
+    # Maps an Azure service name (from input.architecture) to its ARM resource provider
+    # namespace, or $null when unknown. Used to decide which providers to query for quota.
+    param([string]$Service)
+    $s = ($Service ?? '').ToLowerInvariant()
+    switch -Wildcard ($s) {
+        '*container app*'   { return 'Microsoft.App' }
+        '*aks*'             { return 'Microsoft.ContainerService' }
+        '*kubernetes*'      { return 'Microsoft.ContainerService' }
+        '*virtual machine*' { return 'Microsoft.Compute' }
+        '*vm scale*'        { return 'Microsoft.Compute' }
+        '*machine learning*' { return 'Microsoft.MachineLearningServices' }
+        '*ai foundry*'      { return 'Microsoft.MachineLearningServices' }
+        '*azure ml*'        { return 'Microsoft.MachineLearningServices' }
+        '*storage*'         { return 'Microsoft.Storage' }
+        '*blob*'            { return 'Microsoft.Storage' }
+        '*public ip*'       { return 'Microsoft.Network' }
+        '*load balancer*'   { return 'Microsoft.Network' }
+        '*virtual network*' { return 'Microsoft.Network' }
+        '*vnet*'            { return 'Microsoft.Network' }
+        '*application gateway*' { return 'Microsoft.Network' }
+        '*app service*'     { return 'Microsoft.Web' }
+        '*web app*'         { return 'Microsoft.Web' }
+        '*function*'        { return 'Microsoft.Web' }
+        '*cosmos*'          { return 'microsoft.documentdb' }
+        default             { return $null }
+    }
+}
+
+function Test-QuotaSupportedProvider {
+    # Returns $true when a provider namespace is queryable via the az quota API. Providers with no
+    # quota API (App Service/Functions, Cosmos DB) return $false so the LM uses the docs fallback.
+    param([string]$Provider)
+    if (-not $Provider) { return $false }
+    if ($Provider -in @('Microsoft.Web', 'microsoft.documentdb')) { return $false }
+    return $true
+}
+
+function Get-QuotaData {
+    # Fetches quota limit/usage/available for every provider implied by the chosen architecture,
+    # in the confirmed region, and returns a hashtable {region, subscriptionId, providers, unsupported}.
+    # Best-effort: installs the quota extension if needed; providers that error or map to unsupported
+    # namespaces are listed under `unsupported` for the LM to resolve via docs.
+    param([hashtable]$State)
+    if (-not (Get-Command az -ErrorAction SilentlyContinue)) { return @{} }
+    $region = Get-ByPath $State 'input.location'
+    if (-not $region) { return @{} }
+
+    # Resolve the subscription to an id (GUID preferred; fall back to azContext or az lookup).
+    $raw = Get-ByPath $State 'input.subscription'
+    $subid = $null
+    if ($raw -and $raw -match '^[0-9a-fA-F-]{36}$') { $subid = $raw }
+    else {
+        $ctx = Get-ByPath $State 'auto.azContext'
+        if ($ctx -and $ctx['subscriptionId']) { $subid = $ctx['subscriptionId'] }
+        if (-not $subid -and $raw) { try { $subid = (& az account show --subscription "$raw" --query id -o tsv 2>$null) } catch { } }
+    }
+    if (-not $subid) { try { $subid = (& az account show --query id -o tsv 2>$null) } catch { } }
+    if (-not $subid) { return @{} }
+
+    # Distinct provider namespaces implied by the architecture's azureService values.
+    $supported = [System.Collections.Generic.List[string]]::new()
+    $unsupported = [System.Collections.Generic.List[string]]::new()
+    $arch = Get-ByPath $State 'input.architecture'
+    foreach ($item in @($arch)) {
+        $svc = $null
+        if ($item -is [hashtable] -and $item.ContainsKey('azureService')) { $svc = $item['azureService'] }
+        if (-not $svc) { continue }
+        $provider = Get-ServiceProvider $svc
+        if (Test-QuotaSupportedProvider $provider) {
+            if (-not $supported.Contains($provider)) { $supported.Add($provider) }
+        }
+        elseif ($provider) {
+            if (-not $unsupported.Contains($provider)) { $unsupported.Add($provider) }
+        }
+    }
+
+    # Ensure the quota CLI extension is present (idempotent; first run only).
+    if ($supported.Count -gt 0) {
+        $ext = az extension list --query "[?name=='quota'].name" -o tsv 2>$null
+        if (-not $ext) { az extension add --name quota --yes 2>$null | Out-Null }
+    }
+
+    $providers = @{}
+    foreach ($provider in $supported) {
+        $scope = "/subscriptions/$subid/providers/$provider/locations/$region"
+        $quotas = $null; $usages = $null
+        try { $q = & az quota list --scope $scope -o json 2>$null; if ($LASTEXITCODE -eq 0 -and $q) { $quotas = $q | ConvertFrom-Json } } catch { }
+        if ($null -eq $quotas) { $unsupported.Add($provider); continue }
+        try { $u = & az quota usage list --scope $scope -o json 2>$null; if ($LASTEXITCODE -eq 0 -and $u) { $usages = $u | ConvertFrom-Json } } catch { }
+        $usageLookup = @{}
+        foreach ($x in @($usages)) {
+            try { $usageLookup[$x.name] = $x.properties.usages.value } catch { }
+        }
+        $rows = foreach ($qq in @($quotas)) {
+            $name = $qq.name
+            $limit = 0; try { $limit = [double]$qq.properties.limit.value } catch { }
+            $used = 0; if ($usageLookup.ContainsKey($name)) { try { $used = [double]$usageLookup[$name] } catch { } }
+            @{ name = $name; limit = $limit; usage = $used; available = ($limit - $used) }
+        }
+        $providers[$provider] = @($rows)
+    }
+
+    return @{
+        region         = $region
+        subscriptionId = $subid
+        providers      = $providers
+        unsupported    = @($unsupported | Select-Object -Unique)
+    }
+}
+
 function Get-AzdEnvName {
     # Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".
     param([hashtable]$State)

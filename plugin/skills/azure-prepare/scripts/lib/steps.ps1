@@ -149,6 +149,32 @@ $Steps = @(
         needs = @(
             @{ Path = 'input.quotaChecklistMarkdown'; Prompt = 'Completed provisioning-limit checklist as markdown (no _TBD_ entries)' }
         )
+        auto = {
+            param($State)
+            # Fetch quota limit/usage/available for the architecture's providers once per region
+            # and cache to a separate file, so the LM formats the checklist instead of running
+            # az quota itself. Re-fetch only when the region changes or the cache is missing.
+            $region = Get-ByPath $State 'input.location'
+            $quotaFile = Join-Path $StateDir 'quota-data.json'
+            $fetchedRegion = $null
+            $qd = Get-ByPath $State 'auto.quotaData'
+            if ($qd -is [hashtable] -and $qd.ContainsKey('region')) { $fetchedRegion = $qd['region'] }
+            if ($region -and (-not (Test-Path -LiteralPath $quotaFile) -or $fetchedRegion -ne $region)) {
+                $data = Get-QuotaData $State
+                if ($data -is [hashtable] -and $data.ContainsKey('region') -and $data['region']) {
+                    ($data | ConvertTo-Json -Depth 8 -Compress) | Set-Content -LiteralPath $quotaFile -Encoding utf8
+                    Set-ByPath $State 'auto.quotaFile' $quotaFile
+                    $counts = @{}
+                    foreach ($p in $data['providers'].Keys) { $counts[$p] = @($data['providers'][$p]).Count }
+                    Set-ByPath $State 'auto.quotaData' @{
+                        region      = $data['region']
+                        providers   = @($data['providers'].Keys)
+                        quotaCounts = $counts
+                        unsupported = $data['unsupported']
+                    }
+                }
+            }
+        }
     },
     @{
         id = 'finalize-plan'; phase = 1; title = 'Generate deployment plan (automatic)'

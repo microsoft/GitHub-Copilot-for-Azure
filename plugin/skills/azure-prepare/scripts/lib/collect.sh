@@ -234,6 +234,98 @@ get_policy_constraints() {
     printf '%s' "$arr"
 }
 
+# Maps an Azure service name (from input.architecture) to its ARM resource provider
+# namespace, or empty when unknown. Used to decide which providers to query for quota.
+map_service_to_provider() {
+    local s; s="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+    case "$s" in
+        *"container app"*) printf 'Microsoft.App' ;;
+        *aks*|*kubernetes*) printf 'Microsoft.ContainerService' ;;
+        *"virtual machine"*|*"vm scale"*|*"virtual-machine"*) printf 'Microsoft.Compute' ;;
+        *"machine learning"*|*"ai foundry"*|*"azure ml"*|*" ml "*) printf 'Microsoft.MachineLearningServices' ;;
+        *storage*|*blob*) printf 'Microsoft.Storage' ;;
+        *"public ip"*|*"load balancer"*|*"virtual network"*|*vnet*|*"application gateway"*) printf 'Microsoft.Network' ;;
+        *"app service"*|*"web app"*|*function*) printf 'Microsoft.Web' ;;
+        *cosmos*) printf 'microsoft.documentdb' ;;
+        *) printf '' ;;
+    esac
+}
+
+# Returns 0 when a provider namespace is queryable via the az quota API. Providers with no
+# quota API (App Service/Functions, Cosmos DB) return non-zero so the LM uses the docs fallback.
+is_quota_supported_provider() {
+    case "$1" in
+        ''|Microsoft.Web|microsoft.documentdb) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+# Fetches quota limit/usage/available for every provider implied by the chosen architecture,
+# in the confirmed region, and returns one JSON object {region, subscriptionId, providers, unsupported}.
+# Best-effort: installs the quota extension if needed; providers that error (BadRequest) or map to
+# unsupported namespaces are listed under `unsupported` for the LM to resolve via docs.
+get_quota_data() {
+    local region subid raw services provider supported unsupported providers_obj quotas usages joined
+    command -v az >/dev/null 2>&1 || { printf '{}'; return; }
+    region="$(get_by_path 'input.location' 2>/dev/null || true)"
+    [[ -z "$region" ]] && { printf '{}'; return; }
+
+    # Resolve the subscription to an id (GUID preferred; fall back to azContext or az lookup).
+    raw="$(get_by_path 'input.subscription' 2>/dev/null || true)"
+    if [[ "$raw" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+        subid="$raw"
+    else
+        subid="$(printf '%s' "$STATE" | jq -r '.auto.azContext.subscriptionId // empty')"
+        [[ -z "$subid" && -n "$raw" ]] && subid="$(az account show --subscription "$raw" --query id -o tsv 2>/dev/null)"
+    fi
+    [[ -z "$subid" ]] && subid="$(az account show --query id -o tsv 2>/dev/null)"
+    [[ -z "$subid" ]] && { printf '{}'; return; }
+
+    # Distinct provider namespaces implied by the architecture's azureService values.
+    services="$(printf '%s' "$STATE" | jq -r '[.input.architecture[]?.azureService // empty] | .[]' 2>/dev/null)"
+    supported=(); unsupported=()
+    while IFS= read -r svc; do
+        [[ -z "$svc" ]] && continue
+        provider="$(map_service_to_provider "$svc")"
+        if is_quota_supported_provider "$provider"; then
+            [[ " ${supported[*]} " == *" $provider "* ]] || supported+=("$provider")
+        elif [[ -n "$provider" ]]; then
+            [[ " ${unsupported[*]} " == *" $provider "* ]] || unsupported+=("$provider")
+        fi
+    done <<<"$services"
+
+    # Ensure the quota CLI extension is present (idempotent; first run only).
+    if [[ ${#supported[@]} -gt 0 ]] && ! az extension list --query "[?name=='quota'].name" -o tsv 2>/dev/null | grep -q quota; then
+        az extension add --name quota --yes >/dev/null 2>&1 || true
+    fi
+
+    providers_obj='{}'
+    for provider in "${supported[@]}"; do
+        local scope; scope="/subscriptions/$subid/providers/$provider/locations/$region"
+        quotas="$(MSYS_NO_PATHCONV=1 az quota list --scope "$scope" -o json 2>/dev/null)"
+        if [[ -z "$quotas" ]] || ! jq -e 'type == "array"' >/dev/null 2>&1 <<<"$quotas"; then
+            unsupported+=("$provider"); continue
+        fi
+        usages="$(MSYS_NO_PATHCONV=1 az quota usage list --scope "$scope" -o json 2>/dev/null)"
+        jq -e 'type == "array"' >/dev/null 2>&1 <<<"$usages" || usages='[]'
+        # Join limits with usages by quota name and compute available capacity.
+        joined="$(jq -c -n --argjson q "$quotas" --argjson u "$usages" '
+            ($u | map({key: .name, value: (.properties.usages.value // 0)}) | from_entries) as $um
+            | $q | map({
+                name: .name,
+                limit: (.properties.limit.value // 0),
+                usage: ($um[.name] // 0),
+                available: ((.properties.limit.value // 0) - ($um[.name] // 0))
+              })' 2>/dev/null)"
+        [[ -z "$joined" ]] && joined='[]'
+        providers_obj="$(jq -c --arg p "$provider" --argjson rows "$joined" '. + {($p): $rows}' <<<"$providers_obj")"
+    done
+
+    local unsup_json; unsup_json="$(printf '%s\n' "${unsupported[@]}" | jq -R . | jq -s -c 'map(select(length > 0)) | unique')"
+    jq -c -n --arg r "$region" --arg s "$subid" --argjson p "$providers_obj" --argjson un "$unsup_json" \
+        '{region: $r, subscriptionId: $s, providers: $p, unsupported: $un}'
+}
+
 # Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".
 get_azd_env_name() {
     local existing base name

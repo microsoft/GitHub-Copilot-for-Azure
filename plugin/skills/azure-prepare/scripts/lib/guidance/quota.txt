@@ -1,11 +1,17 @@
 Build the provisioning-limit checklist for all resources to be deployed, then
 validate capacity in the confirmed subscription + region.
 
-Invoke the **azure-quotas** skill to fetch real quota/usage via the Azure quota
-CLI. Process ONE resource type at a time: `az quota list` first; if the provider
-returns BadRequest (e.g. Microsoft.DocumentDB), fall back to Azure Resource Graph
-+ official limits docs. Compute Available = Limit − Current Usage. If insufficient,
-request an increase or return to the azure-context step for another region.
+The script has ALREADY fetched real quota/usage/available capacity for the providers
+implied by your architecture: read the JSON file at `auto.quotaFile` (shape:
+`{region, subscriptionId, providers: {<provider>: [{name, limit, usage, available}]},
+unsupported: [<provider>]}`). Do NOT run `az quota` yourself. For each selected SKU,
+pick the matching row (match by the quota `name`'s human-readable meaning) and confirm
+`available` covers your need plus a ~20% buffer. Providers listed under `unsupported`
+(and `auto.quotaData.unsupported`) have no quota API (e.g. App Service, Cosmos DB) —
+for those, fall back to Azure Resource Graph + official limits docs. If a needed
+provider is missing from the file, fall back the same way. If capacity is insufficient,
+request an increase or return to the azure-context step for another region (the script
+re-fetches quota automatically when the region changes).
 
 NO "_TBD_" entries may remain. Render the completed Section 6 table(s) as markdown.
 See `scripts/references/resources-limits-quotas.md` for the full limits catalog,

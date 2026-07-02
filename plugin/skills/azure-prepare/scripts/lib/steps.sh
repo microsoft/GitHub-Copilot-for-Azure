@@ -128,7 +128,7 @@ step_needs() {
 
 # Runs the given step's programmatic auto-collector (may satisfy needs without LM input).
 step_auto() {
-    local made scaffold_json
+    local made scaffold_json region quota_file fetched_region qdata
     case "$1" in
         analyze)
             set_str 'auto.proposedMode' "$(get_proposed_mode)" ;;
@@ -165,6 +165,27 @@ step_auto() {
                     [[ "$avail" == true ]] && suggest="$(printf '%s' "$STATE" | jq -r '.auto.azContext.subscriptionName // .auto.azContext.subscriptionId // empty')"
                 fi
                 [[ -n "$suggest" ]] && set_str 'auto.suggestedSubscription' "$suggest"
+            fi
+            ;;
+        quota)
+            # Fetch quota limit/usage/available for the architecture's providers once per region
+            # and cache to a separate file, so the LM formats the checklist instead of running
+            # az quota itself. Re-fetch only when the region changes or the cache is missing.
+            region="$(get_by_path 'input.location' 2>/dev/null || true)"
+            quota_file="$StateDir/quota-data.json"
+            fetched_region="$(printf '%s' "$STATE" | jq -r '.auto.quotaData.region // empty')"
+            if [[ -n "$region" ]] && { [[ ! -f "$quota_file" ]] || [[ "$fetched_region" != "$region" ]]; }; then
+                qdata="$(get_quota_data)"
+                if [[ -n "$qdata" ]] && jq -e '.region // empty' >/dev/null 2>&1 <<<"$qdata"; then
+                    printf '%s' "$qdata" > "$quota_file"
+                    set_str 'auto.quotaFile' "$quota_file"
+                    set_by_path 'auto.quotaData' "$(jq -c '{
+                        region: .region,
+                        providers: (.providers | keys),
+                        quotaCounts: (.providers | map_values(length)),
+                        unsupported: .unsupported
+                    }' <<<"$qdata")"
+                fi
             fi
             ;;
         generate)
