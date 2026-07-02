@@ -34,9 +34,39 @@ const __dirname = path.dirname(__filename);
  * is not available inside Jest's ESM VM context (even with
  * `--experimental-vm-modules`). We replicate the same path arithmetic here
  * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ *
+ * Rather than hard-coding the entry filename, we read the package's `bin`
+ * field so we stay resilient to upstream renames (e.g. `index.js` →
+ * `npm-loader.js` in @github/copilot@1.0.67). We fall back to the known
+ * filenames if the manifest cannot be read.
  */
 function getBundledCliPath(): string {
-  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+  const pkgDir = path.resolve(__dirname, "../node_modules/@github/copilot");
+
+  const candidates: string[] = [];
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(pkgDir, "package.json"), "utf8")
+    ) as { bin?: string | Record<string, string> };
+    const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.copilot;
+    if (bin) {
+      candidates.push(bin);
+    }
+  } catch {
+    // Fall through to the well-known filenames below.
+  }
+  candidates.push("npm-loader.js", "index.js");
+
+  for (const candidate of candidates) {
+    const candidatePath = path.resolve(pkgDir, candidate);
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  // Last resort: return the conventional path so the caller surfaces a clear
+  // spawn error instead of a silent undefined.
+  return path.resolve(pkgDir, "npm-loader.js");
 }
 
 interface TokenUsage {
