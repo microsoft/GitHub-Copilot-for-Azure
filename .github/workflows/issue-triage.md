@@ -11,6 +11,7 @@ on:
   roles: all
 
 permissions:
+  copilot-requests: write
   issues: read
   contents: read
 
