@@ -250,7 +250,6 @@ Purpose: keep the original Vally summary available, but put it last so Golden Pa
 Guidance:
 
 - Include the results table from every `eval-results.md` under `tests/results/`, and merge them into one combined table so all models appear together.
-- Keep each table's content intact.
 - Make sure every row shows its model by keeping (or adding) a `Model` column.
 - If a source file starts with a `## Eval Results` heading, omit that heading so `## Raw Results` remains the final top-level report section.
 
