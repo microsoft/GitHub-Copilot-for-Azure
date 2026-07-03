@@ -912,7 +912,6 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       const noSkills = process.env.NO_SKILLS === "true";
       const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
-
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
