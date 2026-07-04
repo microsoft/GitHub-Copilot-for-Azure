@@ -96,7 +96,7 @@ properties:
         name: my-api
         resources:
           cpu: 1.0
-          memory: 512Mi
+          memory: 0.5Gi
         env:
           - name: NODE_ENV
             value: production
@@ -201,7 +201,7 @@ properties:
 | `roles/pubsub.subscriber` | `Service Bus Data Receiver` |
 | `roles/secretmanager.secretAccessor` | `Key Vault Secrets User` |
 | `roles/cloudsql.client` | Database-specific RBAC |
-| `roles/logging.logWriter` | `Monitoring Metrics Publisher` |
+| `roles/logging.logWriter` | Auto-collected in Log Analytics (no RBAC role needed) |
 
 ## Artifact Registry → ACR
 
@@ -241,9 +241,3 @@ az role assignment create \
 | WebSockets | Supported | Supported with sticky sessions |
 | GPU | Supported (limited) | Dedicated workload profiles |
 | Jobs | Cloud Run Jobs | Container Apps Jobs |
-
-## Reference Links
-
-- [Container Apps overview](https://learn.microsoft.com/en-us/azure/container-apps/overview) · [Jobs](https://learn.microsoft.com/en-us/azure/container-apps/jobs)
-- [Ingress](https://learn.microsoft.com/en-us/azure/container-apps/ingress-overview) · [VNet](https://learn.microsoft.com/en-us/azure/container-apps/vnet-custom) · [Scale rules](https://learn.microsoft.com/en-us/azure/container-apps/scale-app)
-- [Secrets / Key Vault](https://learn.microsoft.com/en-us/azure/container-apps/manage-secrets) · [Custom domains](https://learn.microsoft.com/en-us/azure/container-apps/custom-domains-managed-certificates)

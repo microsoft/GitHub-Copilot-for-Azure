@@ -24,7 +24,7 @@ Always use `ask_user` before:
 
 - Always use `mcp_azure_mcp_get_bestpractices` tool before generating Azure code
 - Prefer managed identity over connection strings or API keys
-- **Always use the latest stable base images** — check official images for newest GA tags
+- **Choose the latest stable base image and pin it to an explicit version tag or digest (avoid floating tags like `latest`)** — check official images for newest GA tags
 - Follow Azure naming conventions (`ca-`, `cae-`, `acr-` prefixes)
 - Use Consumption plan unless workload requires dedicated resources
 - Enable Dapr only when service-to-service communication patterns require it

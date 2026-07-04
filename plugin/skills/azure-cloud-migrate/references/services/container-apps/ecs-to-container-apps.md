@@ -189,7 +189,7 @@ az role assignment create \
 | SQS access | `Service Bus Data Receiver` on Service Bus |
 | Secrets Manager access | `Key Vault Secrets User` on Key Vault |
 | DynamoDB access | Cosmos DB RBAC data role |
-| CloudWatch Logs | `Monitoring Metrics Publisher` on App Insights |
+| CloudWatch Logs | Auto-collected in Log Analytics (no RBAC role needed) |
 
 ## Monitoring Mapping
 

@@ -37,14 +37,15 @@ Migrate container workloads to Azure Container Apps configuration and code.
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci
 COPY . .
 RUN npm run build
 
 FROM node:20-alpine
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
 EXPOSE 8080
 CMD ["node", "dist/server.js"]
 ```
@@ -156,7 +157,7 @@ az acr import --name <acr-name> \
 # Import from ECR (with credentials)
 az acr import --name <acr-name> \
   --source <account>.dkr.ecr.<region>.amazonaws.com/<image>:<tag> \
-  --username AWS --password $(aws ecr get-login-password)
+  --username AWS --password $(aws ecr get-login-password --region <region>)
 
 # Import from GCP Artifact Registry
 az acr import --name <acr-name> \

@@ -15,7 +15,7 @@ Generate a migration assessment report before any code or configuration changes.
 4. **Map Networking** — Map load balancers, service discovery, and ingress to Container Apps ingress
 5. **Check Dependencies** — List external services (databases, caches, queues) and verify Azure equivalents
 6. **Map Secrets** — Identify secrets/env vars and plan Key Vault migration
-7. **Map Volumes** — Identify persistent storage needs and map to Azure Files or managed disks
+7. **Map Volumes** — Identify persistent storage needs and map to Azure Files or ephemeral storage
 8. **Analyze Multi-Container** — Identify sidecar patterns, init containers, and service mesh usage
 9. **Map IAM** — Map task/service roles to Managed Identity + RBAC
 10. **Map Monitoring** — Map logging/metrics to Application Insights + Log Analytics
