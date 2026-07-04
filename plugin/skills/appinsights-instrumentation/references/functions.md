@@ -1,10 +1,6 @@
 ## Azure Functions Observability
 
-Observability guide for Azure Functions with Application Insights.
-
-## Built-in Monitoring Integration
-
-Azure Functions connects to Application Insights automatically when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. No SDK installation is needed for basic telemetry—invocations, durations, and errors are captured by the host runtime.
+Application Insights captures Azure Functions host and invocation telemetry when `APPLICATIONINSIGHTS_CONNECTION_STRING` is set. Basic requests, durations, failures, and host traces do not require adding an SDK.
 
 ```bash
 az functionapp config appsettings set \
@@ -13,66 +9,36 @@ az functionapp config appsettings set \
   --settings "APPLICATIONINSIGHTS_CONNECTION_STRING=<conn-string>"
 ```
 
-> 💡 **Tip:** New Function Apps created via the Azure Portal have App Insights enabled by default. For IaC deployments, always include this app setting in your Bicep/Terraform.
+> 💡 **Tip:** Portal-created Function Apps usually enable App Insights by default. IaC deployments must set the connection string explicitly.
 
-## Host-Level vs Function-Level Telemetry
+## Telemetry Layers and Correlation
 
-| Telemetry Layer | What It Captures | Table |
-|----------------|-----------------|-------|
-| **Host-level** | Startup, scaling, worker health, binding execution | `traces`, `FunctionAppLogs` |
-| **Function-level** | Invocation result, duration, trigger metadata | `requests`, `FunctionAppLogs` |
-| **Custom SDK** | Dependencies, custom events, manual spans | `dependencies`, `customEvents` |
+| Layer | Captures | Tables |
+|---|---|---|
+| Host | Startup, scale, worker health, bindings | `traces`, `FunctionAppLogs` |
+| Invocation | Result, duration, trigger metadata | `requests`, `FunctionAppLogs` |
+| Custom SDK | Dependencies, events, spans | `dependencies`, `customEvents` |
 
-Host telemetry is always collected by the runtime. Function-level detail enriches each invocation with correlation IDs.
+`FunctionAppLogs` is available when diagnostic logs route to Log Analytics; App Insights-only setups may only have `requests`, `traces`, and `exceptions`. Each invocation gets a `FunctionInvocationId`; correlate with `OperationId` in `FunctionAppLogs` or `operation_Id` in App Insights tables.
 
-## FunctionAppLogs Table
+> ⚠️ **Warning:** Outbound HTTP or database calls need instrumented clients (Application Insights SDK or OpenTelemetry) to preserve distributed trace correlation.
 
-The `FunctionAppLogs` table consolidates host and function logs in one place. It is available only when diagnostic logs are routed to a Log Analytics workspace; classic App Insights-only setups may not have this table.
+## Durable Functions
 
-| Column | Description |
-|--------|-------------|
-| `FunctionName` | Name of the executed function |
-| `FunctionInvocationId` | Unique ID per invocation |
-| `Level` | Log level (Information, Warning, Error) |
-| `Message` | Log message text |
-| `HostInstanceId` | Host process instance |
-| `OperationId` | Correlation ID linking distributed traces |
-
-## Invocation-Level Tracing
-
-Each function invocation gets a unique ID. Column names differ by table: `FunctionAppLogs` uses `FunctionInvocationId` and `OperationId`; `requests`, `traces`, and `exceptions` use `operation_Id`.
-
-1. Trigger fires → host assigns `FunctionInvocationId` + `OperationId`
-2. Function code executes → SDK-instrumented HTTP/DB calls inherit the operation ID
-3. Telemetry correlates via `OperationId` in `FunctionAppLogs` or `operation_Id` in App Insights tables
-
-> ⚠️ **Warning:** If you make outbound HTTP calls without an instrumented client, correlation breaks. Use OpenTelemetry-instrumented libraries or the Application Insights SDK.
-
-## Durable Functions Monitoring
-
-Durable Functions generate orchestration telemetry automatically:
-
-| Event | Table | Key Fields |
-|-------|-------|------------|
-| Orchestration started/completed/failed | `requests` | `name`, `duration`, `success` |
-| Activity execution | `requests` | `name`, `duration`, linked via `operation_Id` |
-| Replay events | `traces` | Filtered by `sdkVersion` containing `durable` |
+Durable Functions emit orchestration and activity telemetry automatically. Names often appear as `Orchestrator:*` or `Activity:*`, but prefixes vary by Durable Task version; fall back to Durable properties in `customDimensions` if needed.
 
 ```kql
-// Orchestration status summary
 requests
 | where name startswith "Orchestrator:" or name startswith "Activity:"
 | summarize count(), avg(duration), percentile(duration, 95) by name, success
 | order by count_ desc
 ```
 
-> ⚠️ **Warning:** `Orchestrator:` and `Activity:` name prefixes vary by Durable Task version and configuration. If results look incomplete, filter `customDimensions` for Durable-specific properties instead.
-
-> 💡 **Tip:** Use the Durable Functions Monitor extension or the built-in `/runtime/webhooks/durableTask` HTTP API to inspect orchestration history without KQL.
+Use Durable Functions Monitor or `/runtime/webhooks/durableTask` for orchestration history when KQL is not enough.
 
 ## KQL Query Library
 
-### Error count by function name
+### Error count by function
 
 ```kql
 FunctionAppLogs
@@ -81,43 +47,39 @@ FunctionAppLogs
 | order by errorCount desc
 ```
 
-### Duration P50 / P95 / P99 by function
+### Duration percentiles
 
 ```kql
 requests
 | where cloud_RoleName == "<function-app-name>"
-| summarize
-    p50 = percentile(duration, 50),
-    p95 = percentile(duration, 95),
-    p99 = percentile(duration, 99)
-  by name, bin(timestamp, 1h)
+| summarize p50=percentile(duration,50), p95=percentile(duration,95), p99=percentile(duration,99) by name, bin(timestamp, 1h)
 | order by timestamp desc
 ```
 
-### Cold start frequency per hosting plan
+### Cold starts
 
 ```kql
 traces
 | where message contains "Host started" or message contains "Host initialized"
-| summarize coldStarts = count() by cloud_RoleName, bin(timestamp, 1h)
+| summarize coldStarts=count() by cloud_RoleName, bin(timestamp, 1h)
 | order by timestamp desc
 ```
 
-> 💡 **Tip:** Cold starts are most frequent on the Consumption plan. Premium and Dedicated plans with pre-warmed instances show significantly fewer.
+Cold starts are most common on Consumption. Premium and Dedicated plans with pre-warmed instances should show fewer.
 
-### Failed invocations with exception messages
+### Failed invocations with exceptions
 
 ```kql
 FunctionAppLogs
 | where Level == "Error" and isnotempty(ExceptionMessage)
-| project TimeGenerated, FunctionName, FunctionInvocationId, ExceptionMessage
+| project TimeGenerated, FunctionName, FunctionInvocationId, ExceptionMessage, OperationId
 | order by TimeGenerated desc
 | take 50
 ```
 
-For full stack traces, join `exceptions` on `OperationId == operation_Id`.
+Join `exceptions` on `OperationId == operation_Id` for stack traces.
 
-### Scaling events correlation
+### Scale events
 
 ```kql
 traces
@@ -127,26 +89,24 @@ traces
 | take 100
 ```
 
-## Hosting Plan Impact on Telemetry
+## Hosting Plan Impact
 
-| Plan | Default Sampling | Telemetry Fidelity | Notes |
-|------|-----------------|-------------------|-------|
-| **Consumption** | Adaptive sampling ON | Reduced at high volume | Cost-effective; may miss low-frequency events |
-| **Premium** | Adaptive sampling ON (configurable) | High | Disable sampling in `host.json` for full fidelity |
-| **Dedicated** | Adaptive sampling ON (configurable) | High | Same as App Service behavior |
+| Plan | Sampling | Notes |
+|---|---|---|
+| Consumption | Adaptive on | Cost-effective; may miss rare events at high volume |
+| Premium | Adaptive on, configurable | Use pre-warmed instances; can reduce sampling for fidelity |
+| Dedicated | Adaptive on, configurable | Same App Service behavior |
 
-Disable adaptive sampling in `host.json` for full-fidelity telemetry:
+For full-fidelity investigations, temporarily disable or tune sampling in `host.json`:
 
 ```json
 {
   "logging": {
     "applicationInsights": {
-      "samplingSettings": {
-        "isEnabled": false
-      }
+      "samplingSettings": { "isEnabled": false }
     }
   }
 }
 ```
 
-> ⚠️ **Warning:** Disabling sampling on high-throughput Consumption plans can increase Application Insights costs significantly. Use `maxTelemetryItemsPerSecond` to cap volume instead of fully disabling.
+> ⚠️ **Warning:** Disabling sampling on high-throughput apps can increase costs. Prefer `maxTelemetryItemsPerSecond` when possible.

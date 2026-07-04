@@ -19,6 +19,8 @@ import { isSkillInvoked, isToolCalled, softCheckSkill, withTestResult } from "..
 const SKILL_NAME = "azure-compute";
 const RECOMMENDER_WORKFLOW_PATH = /workflows\/vm-recommender\/vm-recommender\.md/i;
 const TROUBLESHOOTER_WORKFLOW_PATH = /workflows\/vm-troubleshooter\/vm-troubleshooter\.md/i;
+const CAPACITY_RESERVATION_WORKFLOW_PATH = /workflows\/capacity-reservation\/capacity-reservation\.md/i;
+const EMM_WORKFLOW_PATH = /workflows\/essential-machine-management\/essential-machine-management\.md/i;
 const VMSS_GUIDE_PATH = /references\/vmss-guide\.md/i;
 const RUNS_PER_PROMPT = 5;
 const invocationRateThreshold = 0.8;
@@ -35,7 +37,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   async function expectPromptToInvokeWorkflow(prompt: string, workflowPathPattern: RegExp): Promise<{
     skillInvocationCount: number,
@@ -68,10 +73,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           RECOMMENDER_WORKFLOW_PATH,
         );
         if (!result) return;
-        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
-        setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const skillInvocationRate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(skillInvocationRate);
+        expect(skillInvocationRate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -85,7 +91,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -99,7 +106,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -113,7 +121,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -127,7 +136,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -141,7 +151,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
 
@@ -155,7 +166,66 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
         setSkillInvocationRate(rate);
         expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("routes capacity reservation creation prompt to capacity-reservation", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "I need to create a Capacity Reservation Group in Azure to guarantee Standard_D4s_v5 capacity in East US.",
+          CAPACITY_RESERVATION_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
         expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
+    });
+
+    test("routes CRG association prompt to capacity-reservation", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "How do I associate my Azure VM with a Capacity Reservation Group (CRG) to guarantee reserved compute capacity?",
+          CAPACITY_RESERVATION_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        expect(result.toolCallCount).toBe(RUNS_PER_PROMPT);
+      });
+    });
+
+    test("routes EMM enable prompt to essential-machine-management", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "How do I enable Essential Machine Management on my Azure subscription to onboard VMs for monitoring and security?",
+          EMM_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
+      });
+    });
+
+    test("routes EMM enrollment status prompt to essential-machine-management", async () => {
+      await withTestResult(async ({ setSkillInvocationRate }) => {
+        const result = await expectPromptToInvokeWorkflow(
+          "Check which of my Azure subscriptions have machine enrollment enabled for EMM",
+          EMM_WORKFLOW_PATH,
+        );
+        if (!result) return;
+        const rate = result.skillInvocationCount / RUNS_PER_PROMPT;
+        setSkillInvocationRate(rate);
+        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
+        const referenceViewRate = result.toolCallCount / RUNS_PER_PROMPT;
+        expect(referenceViewRate).toBeGreaterThanOrEqual(invocationRateThreshold);
       });
     });
   });

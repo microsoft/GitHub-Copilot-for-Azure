@@ -1,10 +1,10 @@
 ---
 name: azure-enterprise-infra-planner
-description: "Architect and provision enterprise Azure infrastructure from workload descriptions. For cloud architects and platform engineers planning networking, identity, security, compliance, and multi-resource topologies with WAF alignment. Generates Bicep or Terraform directly (no azd). WHEN: 'plan Azure infrastructure', 'architect Azure landing zone', 'design hub-spoke network', 'plan multi-region DR topology', 'set up VNets firewalls and private endpoints', 'subscription-scope Bicep deployment'. PREFER azure-prepare FOR app-centric workflows."
+description: "Architect and provision enterprise Azure infrastructure from workload descriptions. For cloud architects and platform engineers planning networking, identity, security, compliance, and multi-resource topologies with WAF alignment. Generates Bicep or Terraform directly (no azd). WHEN: 'plan Azure infrastructure', 'architect Azure landing zone', 'design hub-spoke network', 'plan multi-region DR topology', 'set up VNets firewalls and private endpoints', 'subscription-scope Bicep deployment', 'Azure Backup for VM workloads'. PREFER azure-prepare FOR app-centric workflows."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.1"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Enterprise Infra Planner
@@ -23,28 +23,20 @@ Activate this skill when user wants to:
 
 | Property | Details |
 |---|---|
-| MCP tools | `get_azure_bestpractices_get`, `wellarchitectedframework_serviceguide_get`, `microsoft_docs_fetch`, `microsoft_docs_search`, `bicepschema_get` |
+| MCP tools | `insights_get`, `get_azure_bestpractices_get`, `wellarchitectedframework_serviceguide_get`, `microsoft_docs_fetch`, `microsoft_docs_search`, `bicepschema_get` |
 | CLI commands | `az deployment group create`, `az bicep build`, `az resource list`, `terraform init`, `terraform plan`, `terraform validate`, `terraform apply` |
-| Output schema | [plan-schema.md](references/plan-schema.md) |
-| Key references | [research.md](references/research.md), [resources/](references/resources/README.md), [waf-checklist.md](references/waf-checklist.md), [constraints/](references/constraints/README.md) |
+| Output schema | [schema.md](references/schema.md) |
+| Key references | [workflow.md](references/workflow.md), [waf-checklist.md](references/waf-checklist.md), [resources/](references/resources/README.md), [constraints/](references/constraints/README.md) |
 
-## Workflow
+## Workflow (Start Here)
 
-Read [workflow.md](references/workflow.md) for detailed step-by-step instructions, including MCP tool usage, CLI commands, and decision points. Follow the phases in order, ensuring all key gates are passed before proceeding to the next phase.
-
-| Phase | Action | Key Gate |
-|-------|--------|----------|
-| 1 | Research — WAF Tools | All MCP tool calls complete |
-| 2 | Research — Refine & Lookup | Resource list approved by user |
-| 3 | Plan Generation | Plan JSON written to disk |
-| 4 | Verification | All checks pass, user approves |
-| 5 | IaC Generation | `meta.status` = `approved` |
-| 6 | Deployment | User confirms destructive actions |
+Follow the step-by-step instructions in [workflow.md](references/workflow.md) to execute the 7 phases of infrastructure planning and provisioning.
 
 ## MCP Tools
 
 | Tool | Purpose |
 |------|---------|
+| `insights_get` | Retrieve insights about the user's existing Azure environment to guide planning decisions |
 | `get_azure_bestpractices_get` | Azure best practices for code generation, operations, and deployment |
 | `wellarchitectedframework_serviceguide_get` | WAF service guide for a specific Azure service |
 | `microsoft_docs_search` | Search Microsoft Learn for relevant documentation chunks |

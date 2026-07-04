@@ -4,7 +4,7 @@ description: "Guidance for Azure Application Insights instrumentation, telemetry
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.2"
+  version: "0.0.0-placeholder"
 ---
 
 # AppInsights Instrumentation Guide
@@ -51,3 +51,7 @@ Create an AppInsights resource, then update code:
 - **Functions observability**: [Functions](references/functions.md)
 - **OpenTelemetry Distro**: [Python](references/sdk/azure-monitor-opentelemetry-py.md) | [TypeScript](references/sdk/azure-monitor-opentelemetry-ts.md)
 - **OpenTelemetry Exporter**: [Python](references/sdk/azure-monitor-opentelemetry-exporter-py.md) | [Java](references/sdk/azure-monitor-opentelemetry-exporter-java.md)
+
+## Platform-Specific Guides
+
+- **Container Apps**: [Observability Guide](references/container-apps.md)

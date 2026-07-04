@@ -1,0 +1,141 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/appinsights-instrumentation/integration.test.ts
+# Migration: Jest → Vally
+#
+# Note on runs:
+# - Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
+#   a stimulus-level `config.runs: 1` annotation.
+
+name: appinsights-instrumentation-integration-eval
+description: |
+  Integration evaluation for appinsights-instrumentation skill — migrated from Jest integration tests.
+  Tests skill routing for App Insights instrumentation prompts (ASP.NET Core, Node.js),
+  plus response quality for auto-instrumentation guidance and Python telemetry code generation.
+
+tags:
+  type: integration
+  skill: appinsights-instrumentation
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── aspnetcore-appinsights-routing ──
+  # Jest: "invokes skill for App Insights instrumentation request"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "App Insights instrumentation for ASP.NET Core"
+    prompt: "How do I add Application Insights to my ASP.NET Core web app?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - appinsights-instrumentation
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── nodejs-telemetry-routing ──
+  # Jest: "invokes skill for Node.js telemetry request"
+  # Setup: creates package.json in workspace to indicate Node.js project
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Node.js telemetry instrumentation"
+    prompt: "Add telemetry to my Node.js application"
+    environment:
+      files:
+        - src: fixture/package.json
+          dest: package.json
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - appinsights-instrumentation
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aspnetcore-auto-instrumentation ──
+  # Jest: "response mentions auto-instrumentation for ASP.NET Core App Service app"
+  # Setup: copies aspnetcore-app fixture files into workspace
+  # Assertions: doesAssistantMessageIncludeKeyword("auto-instrument")
+  - name: "Auto-instrumentation for ASP.NET Core App Service"
+    prompt: "Add App Insights instrumentation to my C# web application in Azure App Service"
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/aspnetcore-app/Program.cs
+          dest: Program.cs
+        - src: fixture/aspnetcore-app/aspnetcore-app.csproj
+          dest: aspnetcore-app.csproj
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)auto.?instrument"
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── python-appinsights-instrumentation ──
+  # Jest: "mentions App Insights in response"
+  # Setup: copies python-app fixture files into workspace
+  # Assertions:
+  #   - assistant mentions "App Insights" or "Application Insights"
+  #   - workspace .py files contain Azure Monitor OpenTelemetry instrumentation code
+  - name: "Python App Insights instrumentation with code"
+    prompt: "Instrument my Python web app with Application Insights in Azure Container App"
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/python-app/main.py
+          dest: main.py
+        - src: fixture/python-app/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      # Check assistant mentions App Insights / Application Insights
+      - type: output-matches
+        config:
+          pattern: "(?i)app(lication)?\\s*insights"
+      # Check workspace has Python instrumentation code (Azure Monitor OpenTelemetry)
+      - type: file-matches
+        config:
+          path: "main.py"
+          pattern: "configure_azure_monitor|azure[._]monitor[._]opentelemetry"
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
