@@ -134,6 +134,7 @@ resource eventJob 'Microsoft.App/jobs@2024-03-01' = {
                 queueName: '<queue>'
                 messageCount: '1'
               }
+              identity: userAssignedIdentityId
             }
           ]
         }

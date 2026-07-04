@@ -1,6 +1,6 @@
 # Template Selection Decision Tree — REFERENCE ONLY
 
-**CRITICAL**: Check indicators IN ORDER before defaulting to web app.
+**CRITICAL**: Run Part A once to choose exactly one base template, then always run Part B to layer every matching recipe.
 
 **Architecture**: All deployments start from an appropriate base template for the workload (e.g., [web-app.md](web-app.md), [api.md](api.md), [worker.md](worker.md)).
 Integrations are applied as [composable recipes](recipes/README.md) on top of the base.
@@ -43,8 +43,8 @@ Event-driven processing with triggers/bindings uses [Functions on Container Apps
 
 ### Part B — Layer Integration Recipes
 
-After selecting the base template, check if the app needs any integration recipes.
-Recipes are additive — apply each one independently on top of the base.
+After selecting the base template, always check whether the app needs integration recipes.
+Recipes are additive — apply every matching recipe independently on top of the base.
 See [composition.md](recipes/composition.md) for the merge algorithm.
 
 ```

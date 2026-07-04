@@ -112,7 +112,7 @@ azd up --no-prompt
 | Rule | Trigger | Default |
 |------|---------|---------|
 | HTTP | Concurrent requests | 100 per instance |
-| Min replicas | Scale to zero | 0 |
+| Min replicas | Baseline instance count | 1 |
 | Max replicas | Burst limit | 10 |
 
 ## Language-Specific `targetPort`

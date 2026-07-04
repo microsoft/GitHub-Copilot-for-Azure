@@ -19,7 +19,7 @@ param principalId string
 param principalName string
 param databaseName string = 'appdb'
 
-resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-12-01-preview' = {
+resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2024-08-01' = {
   name: name
   location: location
   tags: tags
@@ -38,14 +38,14 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2023-12-01-preview'
   }
 }
 
-resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2023-12-01-preview' = {
+resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2024-08-01' = {
   parent: postgres
   name: databaseName
   properties: { charset: 'UTF8', collation: 'en_US.utf8' }
 }
 
 // Entra ID administrator
-resource admin 'Microsoft.DBforPostgreSQL/flexibleServers/administrators@2023-12-01-preview' = {
+resource admin 'Microsoft.DBforPostgreSQL/flexibleServers/administrators@2024-08-01' = {
   parent: postgres
   name: principalId
   properties: {
@@ -125,7 +125,7 @@ For Container Apps with VNet integration, use private endpoints or service endpo
 Without VNet, allow Azure services:
 
 ```bicep
-resource firewallRule 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2023-12-01-preview' = {
+resource firewallRule 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2024-08-01' = {
   parent: postgres
   name: 'AllowAzureServices'
   properties: {

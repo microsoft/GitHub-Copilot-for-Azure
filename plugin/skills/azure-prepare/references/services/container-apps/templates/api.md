@@ -47,6 +47,7 @@ param containerRegistryName string
 param imageName string
 param userAssignedIdentityId string
 param isGrpc bool = false
+param allowedOrigins array = ['https://example.com']
 
 resource api 'Microsoft.App/containerApps@2024-03-01' = {
   name: name
@@ -64,11 +65,11 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: isGrpc ? 'http2' : 'auto'
         corsPolicy: {
-          allowedOrigins: ['*']
+          allowedOrigins: allowedOrigins
           allowedMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
           allowedHeaders: ['*']
         }
-        // ⚠️ Replace '*' with specific origins for production
+        // Use ['*'] only for local/dev smoke tests; set explicit origins for production.
       }
       registries: [
         {

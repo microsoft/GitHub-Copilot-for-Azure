@@ -18,7 +18,7 @@ param tags object = {}
 param principalId string
 param queueName string = 'tasks'
 
-resource sb 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
+resource sb 'Microsoft.ServiceBus/namespaces@2024-01-01' = {
   name: name
   location: location
   tags: tags
@@ -28,7 +28,7 @@ resource sb 'Microsoft.ServiceBus/namespaces@2022-10-01-preview' = {
   }
 }
 
-resource queue 'Microsoft.ServiceBus/namespaces/queues@2022-10-01-preview' = {
+resource queue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
   parent: sb
   name: queueName
   properties: {

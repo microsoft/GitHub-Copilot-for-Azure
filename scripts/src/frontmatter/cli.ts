@@ -208,6 +208,7 @@ export function validateDescriptionLength(description: string | null): Validatio
 }
 
 const SEMVER_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+const PLUGIN_VERSION_PLACEHOLDER = "0.0.0-placeholder";
 
 /**
  * Check 6: Validate that `license` field is present and is a string.
@@ -271,7 +272,7 @@ export function validateMetadata(metadata: unknown): ValidationIssue[] {
 /**
  * Check 8: Validate `metadata.version` is present and follows semver (X.Y.Z).
  */
-export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
+export function validateMetadataVersion(metadata: unknown, allowPluginPlaceholder = false): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
 
   if (metadata === undefined || metadata === null || typeof metadata !== "object") {
@@ -296,6 +297,9 @@ export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
   }
 
   const versionStr = String(version);
+  if (allowPluginPlaceholder && versionStr === PLUGIN_VERSION_PLACEHOLDER) {
+    return issues;
+  }
   if (!SEMVER_RE.test(versionStr)) {
     issues.push({
       check: "metadata-version",
@@ -589,6 +593,7 @@ export function validateSkillFile(filePath: string): ValidationResult {
   const content = readFileSync(filePath, "utf-8");
   const parsed = parseSkillContent(content);
   const issues: ValidationIssue[] = [];
+  const isPluginSkill = relative(PLUGIN_SKILLS_DIR, filePath).split(/[\\/]/)[0] !== "..";
 
   if (parsed === null) {
     issues.push({ check: "frontmatter", message: "Missing YAML frontmatter (file must start with ---)" });
@@ -625,7 +630,7 @@ export function validateSkillFile(filePath: string): ValidationResult {
   issues.push(...validateMetadata(parsed.data.metadata));
 
   // Check 8: metadata.version (semver)
-  issues.push(...validateMetadataVersion(parsed.data.metadata));
+  issues.push(...validateMetadataVersion(parsed.data.metadata, isPluginSkill));
 
   // Check 9: Compatibility field
   issues.push(...validateCompatibility(parsed.data.compatibility));
