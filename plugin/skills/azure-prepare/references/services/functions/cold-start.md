@@ -22,10 +22,9 @@ No built-in always-ready mechanism. Available workarounds:
 |----------|-----|-----------|
 | Timer trigger warm-up | Timer function every 5 min pings HTTP endpoints | Extra invocations; not guaranteed |
 | Reduce package size | Trim unused dependencies; use tree-shaking | Development effort |
-| Use Windows over Linux | Windows Consumption generally has faster cold starts | Platform constraint |
 | Optimize startup code | Lazy-load heavy modules; defer DB connections | Code changes required |
 
-```json
+```jsonc
 // host.json — reduce extension bundle load time
 {
   "extensionBundle": {
@@ -85,44 +84,23 @@ az functionapp plan update -n $PLAN -g $RG --min-elastic-worker-count 2
 az functionapp plan update -n $PLAN -g $RG --max-burst 20
 ```
 
-#### Bicep — Premium Plan with Pre-warmed Instances
-
-```bicep
-resource premiumPlan 'Microsoft.Web/serverfarms@2022-09-01' = {
-  name: planName
-  location: location
-  sku: { name: 'EP1', tier: 'ElasticPremium' }
-  kind: 'elastic'
-  properties: {
-    maximumElasticWorkerCount: 20
-  }
-}
-
-resource functionApp 'Microsoft.Web/sites@2022-09-01' = {
-  name: appName
-  location: location
-  kind: 'functionapp'
-  properties: {
-    serverFarmId: premiumPlan.id
-    siteConfig: {
-      appSettings: [
-        { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'node' }
-        { name: 'WEBSITE_MAX_DYNAMIC_APPLICATION_SCALE_OUT', value: '20' }
-      ]
-      preWarmedInstanceCount: 2
-    }
-  }
-}
-```
-
 ### Container Apps Hosting
 
 Set `minReplicas` ≥ 1 to avoid cold starts:
 
 ```bicep
-scale: {
-  minReplicas: 1
-  maxReplicas: 10
+resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
+  name: appName
+  location: location
+  properties: {
+    managedEnvironmentId: environment.id
+    template: {
+      scale: {
+        minReplicas: 1
+        maxReplicas: 10
+      }
+    }
+  }
 }
 ```
 
@@ -133,7 +111,7 @@ scale: {
 | .NET | Use ReadyToRun compilation; avoid heavy DI in startup |
 | Node.js | Minimize `node_modules`; use ESM and tree-shaking |
 | Python | Reduce package count; precompile `.pyc` files |
-| Java | Use GraalVM native image or SnapStart (where supported) |
+| Java | Prefer Java 17 on Functions v4; minimize static initialization and classpath size |
 | PowerShell | Minimize modules loaded in `requirements.psd1` |
 
 ## Recommendation Summary
