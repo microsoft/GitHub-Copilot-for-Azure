@@ -44,3 +44,12 @@ Azure compute intent?
 | **VM Troubleshooter** | [vm-troubleshooter.md](workflows/vm-troubleshooter/vm-troubleshooter.md) | User can't connect, RDP/SSH refused, black screen, needs password reset |
 | **Capacity Reservation** | [capacity-reservation.md](workflows/capacity-reservation/capacity-reservation.md) | User needs to reserve / guarantee VM capacity (CRG create / associate / disassociate) |
 | **Essential Machine Management** | [essential-machine-management.md](workflows/essential-machine-management/essential-machine-management.md) | User asks about EMM / machine enrollment / monitor |
+
+## Reference Guides
+
+Looked up on demand by the workflows above (primarily VM Recommender):
+
+- [vm-families.md](references/vm-families.md) — VM family-to-workload mapping
+- [vmss-guide.md](references/vmss-guide.md) — when to use VMSS, orchestration, autoscale
+- [vm-quotas.md](references/vm-quotas.md) — vCPU quota checks and CLI commands
+- [retail-prices-api.md](references/retail-prices-api.md) — Retail Prices API query patterns
