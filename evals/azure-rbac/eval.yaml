@@ -1,0 +1,172 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-rbac/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+
+name: azure-rbac-integration-eval
+description: |
+  Integration evaluation for azure-rbac skill — migrated from Jest integration tests.
+  Covers routing/skill invocation and output quality for least-privilege role guidance,
+  including role recommendation, Azure CLI role assignment commands, and Bicep snippets.
+
+tags:
+  type: integration
+  skill: azure-rbac
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── routing-acr-role-prompt ──
+  # Jest: "invokes azure-rbac skill for role recommendation prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Routing: managed identity pull from ACR"
+    prompt: "What role should I assign to my managed identity to read images in an Azure Container Registry?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-rbac"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-rbac
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-blob-reader-prompt ──
+  # Jest: "invokes azure-rbac skill for least privilege role prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Routing: least privilege for blob read"
+    prompt: "What is the least privilege role for reading blob storage?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-rbac"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-rbac
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── acr-pull-output-prompt ──
+  # Jest: "invokes azure-rbac skill for AcrPull prompt"
+  # Expects skill invocation + AcrPull + az role assignment + Bicep roleAssignments resource
+  - name: "Output: recommend AcrPull with CLI and Bicep"
+    prompt: "What role should I assign to my managed identity to read images in an Azure Container Registry?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-rbac
+      - type: output-contains
+        config:
+          substring: "AcrPull"
+      - type: output-contains
+        config:
+          substring: "az role assignment"
+      - type: output-contains
+        config:
+          substring: "Microsoft.Authorization/roleAssignments"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── blob-reader-output-prompt ──
+  # Jest: "recommends Storage Blob Data Reader for blob read access"
+  - name: "Output: Storage Blob Data Reader with CLI and Bicep"
+    prompt: "What Azure role should I use to give my app read-only access to blob storage?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-rbac
+      - type: output-contains
+        config:
+          substring: "Storage Blob Data Reader"
+      - type: output-contains
+        config:
+          substring: "az role assignment"
+      - type: output-contains
+        config:
+          substring: "Microsoft.Authorization/roleAssignments"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── keyvault-secrets-user-output-prompt ──
+  # Jest: "recommends Key Vault Secrets User for secret access"
+  - name: "Output: Key Vault Secrets User with CLI and Bicep"
+    prompt: "What role do I need to read secrets from Azure Key Vault?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-rbac
+      - type: output-contains
+        config:
+          substring: "Key Vault Secrets User"
+      - type: output-contains
+        config:
+          substring: "az role assignment"
+      - type: output-contains
+        config:
+          substring: "Microsoft.Authorization/roleAssignments"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── bicep-contributor-output-prompt ──
+  # Jest: "provides Bicep code for role assignment"
+  - name: "Output: Contributor assignment Bicep snippet"
+    prompt: "Show me Bicep code to assign Contributor role to a managed identity on a storage account"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-rbac
+      - type: output-contains
+        config:
+          substring: "Contributor"
+      - type: output-contains
+        config:
+          substring: "Microsoft.Authorization/roleAssignments"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

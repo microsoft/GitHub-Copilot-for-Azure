@@ -1,0 +1,851 @@
+# Vally eval config — azure-compute skill
+#
+# Coverage strategy (per PR feat/azure-compute-skill):
+#   - Smoke tier (5 stimuli): router accuracy + the agent-pool generalization probe.
+#     Runs on every PR; if these regress the whole skill is broken.
+#   - Full VM surface (4 stimuli): exercises each depth-probe branch the
+#     vm-creator workflow advertises (beginner / spec-deep / security / cost-deep).
+#   - Full VMSS surface (3 stimuli): canonical VMSS shapes (web tier autoscale,
+#     networking-deep, mixed-SKU which forces Flexible orchestration).
+#   - Full agent-pool surface (3 stimuli): GitHub Actions runners, Azure DevOps
+#     agents, ephemeral CI runners. The skill never names "agent pool" — these
+#     probe whether the VMSS branch generalizes to CI/runner use cases.
+#   - Full workflow compliance (1 stimulus): mirrors azure-prepare's
+#     plan-first-001 — user says "skip planning, just give me bicep"; the
+#     Plan Card MUST still render first.
+#
+# Common graders are inlined into every stimulus (evaluate#125 workaround):
+#   - has_output                  (type: completed)
+#   - workflow_progress_signal    (output-matches: workflow engagement vocabulary —
+#                                   intentionally broad because models legitimately
+#                                   vary the surface wording: "questions" / "details"
+#                                   / "defaults" / "design" / "configure" / etc.)
+#   - no_fatal_errors             (output-not-matches: crash strings)
+#   - no_credential_leak          (output-not-matches: SharedAccessKey, account keys)
+#   - no_open_rdp_or_ssh          (output-not-matches: 0.0.0.0/0 on 22/3389)
+#   - no_plaintext_admin_password (output-not-matches: adminPassword: "<literal>")
+#
+# Routing validation:
+#   The four `route-*` smoke stimuli use the `skill-invocation` grader to
+#   assert routing (required/disallowed skills activated). Output-text
+#   regex graders on those stimuli check response *content* (Ubuntu, VMSS,
+#   SKU, pricing, no-VM-artifact), not routing.
+#
+# WORKFLOW_PROGRESS pattern (DRY — used by every stimulus's common-grader block):
+#   (?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose
+
+name: azure-compute-eval
+description: |
+  Evaluation suite for the azure-compute skill (VM, VMSS, and agent-pool surfaces).
+  Tests across dimensions:
+  - Router accuracy (vm-creator vs vm-recommender vs azure-prepare handoff)
+  - Depth-probe branch selection (beginner / spec / cost / networking / security)
+  - VMSS recognition without the user saying "VMSS" (agent pools, runner fleets)
+  - Plan Card gate (no artifact emitted before approval, even under user pressure)
+  - Output adapter coverage (az CLI / Bicep / Terraform / MCP apply)
+  - Security posture (no open SSH/RDP, no plaintext passwords, managed identity preferred)
+
+tags:
+  type: integration
+  skill: azure-compute
+
+config:
+  runs: 3
+  timeout: "10m"
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    output-contains: 0.5
+    output-matches: 0.5
+    output-not-matches: 2.0
+    completed: 1.0
+    # Routing validation (router smoke stimuli only) — heavy weight because
+    # a routing miss is a categorical failure: the wrong skill ran.
+    skill-invocation: 1.5
+
+stimuli:
+  # ════════════════════════════════════════════════════════════════════
+  # SMOKE TIER — PR gate. Router + agent-pool generalization probe.
+  # ════════════════════════════════════════════════════════════════════
+
+  # ── route-vm-creator-001 ──
+  # Most common entry point. Confirms vm-creator wins over vm-recommender
+  # when the user uses provision verbs ("spin up").
+  - name: "Route: spin up Ubuntu dev VM → vm-creator"
+    prompt: |
+      Spin up a small Ubuntu dev VM in Azure.
+    tags:
+      type: integration
+      tier: smoke
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # ROUTING (skill-invocation grader) — must engage azure-compute and
+      # must NOT route to azure-prepare (that's for apps, not bare VMs).
+      # This replaces the previous output-text regex pair, which was a
+      # fragile proxy for routing (matched workflow names like "vm-creator"
+      # and forbidden strings like "deployment-plan.md").
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+          disallowed:
+            - azure-prepare
+      # CONTENT — should land on Ubuntu without re-asking (signal already given)
+      - type: output-matches
+        config:
+          pattern: "(?i)ubuntu"
+      # Common graders (inlined)
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389|Source.*\\*.*Destination.*(22|3389)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"
+
+  # ── route-vmss-001 ──
+  # Direct VMSS signal. Confirms VM-vs-VMSS step picks VMSS branch.
+  - name: "Route: scale set for web tier → vm-creator VMSS branch"
+    prompt: |
+      I need a scale set for my web tier in Azure.
+    tags:
+      type: integration
+      tier: smoke
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # ROUTING (skill-invocation grader) — must engage azure-compute.
+      # VMSS sits inside vm-creator; skill-invocation can only assert the
+      # skill, so the "did it pick the VMSS branch?" question is handled by
+      # the content checks below (output-contains "VMSS", scale.?set|VMSS).
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: output-contains
+        config:
+          substring: "VMSS"
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?set|VMSS"
+      # Note: orchestration mode (Flexible vs Uniform) is intentionally
+      # deferred to the Plan Card step in vm-creator.md — do NOT assert
+      # it appears in the first gather response.
+      # Should NOT silently produce a single-VM artifact
+      - type: output-not-matches
+        config:
+          pattern: "(?i)single.?vm only|just.*one.*virtual machine"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── route-vm-recommender-001 ──
+  # Question form (no provision verb) → vm-recommender, not vm-creator.
+  - name: "Route: what VM size for 4-core 16GB → vm-recommender"
+    prompt: |
+      What VM size should I pick for a 4-core, 16 GB memory workload?
+    tags:
+      type: integration
+      tier: smoke
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # ROUTING (skill-invocation grader) — must engage azure-compute.
+      # vm-recommender vs vm-creator is a workflow-level distinction inside
+      # the skill; routing only asserts the skill activated. The "is this
+      # the recommender branch?" question is handled by the SKU + pricing
+      # content checks below.
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      # Should recommend a SKU (D-series typical for 4c/16g general purpose)
+      - type: output-matches
+        config:
+          pattern: "(?i)D[0-9]+s?_v[3-5]|D[0-9]+as_v[4-5]|Standard_[DEF]"
+      # Should NOT jump to a Plan Card (that's vm-creator territory)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)plan card.*approve|approve as.?is"
+      # Should reference pricing / comparison (vm-recommender Step 4)
+      - type: output-matches
+        config:
+          pattern: "(?i)price|pricing|cost|recommend|compar"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|recommend|question|detail|default|design|configure|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── route-away-azure-prepare-001 ──
+  # App deployment, not bare VM. Must hand off to azure-prepare, not
+  # silently provision a VM and `apt install docker` on it.
+  - name: "Route: deploy docker container → hand off to azure-prepare"
+    prompt: |
+      Deploy my docker container to Azure.
+    tags:
+      type: integration
+      tier: smoke
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # ROUTING (skill-invocation grader) — must NOT silently route to
+      # azure-compute and emit a VM artifact. We use `disallowed` rather
+      # than `required: [azure-prepare]` because both azure-prepare (fresh
+      # app scaffolding) and azure-deploy (already-prepared app) are
+      # legitimate landings for "Deploy my docker container" — the original
+      # anti-pattern is "azure-compute spins up a VM and apt-installs
+      # docker", which `disallowed` catches directly.
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-compute
+      # Must NOT silently emit a VM artifact
+      - type: output-not-matches
+        config:
+          pattern: "(?i)az vm create|Microsoft\\.Compute/virtualMachines.*=.*\\{|resource.*vm.*virtualMachines"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|route|hand.?off|question|detail|default|design|configure|recommend|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── route-agent-pool-001 ──
+  # The interesting probe: user says "pool of self-hosted runners" — never
+  # the word "VMSS" or "scale set". Does the skill recognize this as the
+  # canonical VMSS shape (identical instances, autoscaling, stateless)?
+  - name: "Route: self-hosted GitHub Actions runner pool → VMSS"
+    prompt: |
+      Set up a pool of self-hosted GitHub Actions runners on Azure.
+    tags:
+      type: integration
+      tier: smoke
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # The point of this test: does the skill propose VMSS unprompted?
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?set|VMSS"
+      # Must NOT emit 10 separate single-VM bicep blocks
+      - type: output-not-matches
+        config:
+          pattern: "(?i)10 virtual machines|ten virtual machines|create.*10.*vm"
+      # Should at minimum confirm a pool/fleet model
+      - type: output-matches
+        config:
+          pattern: "(?i)pool|fleet|instances|autoscal"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22"
+
+  # ════════════════════════════════════════════════════════════════════
+  # FULL TIER — VM SURFACE (depth-probe branch coverage)
+  # ════════════════════════════════════════════════════════════════════
+
+  # ── vm-beginner-001 ──
+  # Beginner branch: minimal questions, propose sensible defaults.
+  - name: "VM beginner: Ubuntu dev VM, fast path"
+    prompt: |
+      I'm new to Azure VMs. I just want to play with a quick Ubuntu sandbox.
+    tags:
+      type: integration
+      tier: full
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)ubuntu|22\\.04|24\\.04"
+      # Beginner branch should propose a cheap SKU (B-series or small D)
+      - type: output-matches
+        config:
+          pattern: "(?i)Standard_B[12]s|B2ms|D2s_v[3-5]|burstable"
+      # Should NOT pepper a beginner with NSG / accelerated networking questions
+      - type: output-not-matches
+        config:
+          pattern: "(?i)accelerated networking\\?|service tag\\?|UDR\\?|IPv6\\?"
+      # Plan Card should still appear
+      - type: output-matches
+        config:
+          pattern: "(?i)plan card|approve|edit"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"
+
+  # ── vm-spec-deep-001 ──
+  # Spec-deep branch: user already knows the SKU and security toggles.
+  # Skill must NOT re-ask spec questions, but MUST honor every toggle.
+  - name: "VM spec-deep: D8s_v5 + trusted launch + ephemeral OS + accelerated net"
+    prompt: |
+      Create a Standard_D8s_v5 VM with trusted launch, ephemeral OS disk,
+      and accelerated networking enabled. Ubuntu 22.04.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-contains
+        config:
+          substring: "D8s_v5"
+      - type: output-matches
+        config:
+          pattern: "(?i)trusted.?launch|securityType.*TrustedLaunch"
+      - type: output-matches
+        config:
+          pattern: "(?i)ephemeral|diffDiskSettings"
+      - type: output-matches
+        config:
+          pattern: "(?i)accelerated|enableAcceleratedNetworking"
+      # Should NOT re-ask the user about SKU / generation / SR-IOV
+      - type: output-not-matches
+        config:
+          pattern: "(?i)what.*size\\?|which.*sku\\?|generation\\?"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"
+
+  # ── vm-security-001 ──
+  # Windows + RDP. Anti-patterns: RDP open to *, plaintext password.
+  # Skill should propose managed identity + JIT / Bastion / source IP restriction.
+  - name: "VM Windows: RDP closed, managed identity, no plaintext password"
+    prompt: |
+      Create a Windows Server 2022 VM with RDP access for admin tasks.
+      I want managed identity so it can read from Key Vault.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Windows.?Server|2022-datacenter|MicrosoftWindowsServer"
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|SystemAssigned|UserAssigned"
+      # Must propose source restriction (Bastion / JIT / source IP)
+      - type: output-matches
+        config:
+          pattern: "(?i)bastion|just.?in.?time|JIT|source.*IP|my IP|source.?address.?prefix"
+      # Anti-pattern: RDP wide open
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*3389|sourceAddressPrefix[\"']?\\s*[:=]\\s*[\"']\\*[\"'].*3389|Internet.*3389"
+      # Anti-pattern: plaintext admin password in artifact
+      - type: output-not-matches
+        config:
+          pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── vm-cost-deep-001 ──
+  # Cost-deep branch: user wants cheapest. Should surface B-series and/or spot.
+  - name: "VM cost-deep: cheapest dev VM (B-series or spot)"
+    prompt: |
+      I need the absolute cheapest Linux VM for a non-critical dev workload.
+      Budget is tight — surprise me with the most cost-optimized option.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # Must surface burstable / spot / cheap SKUs
+      - type: output-matches
+        config:
+          pattern: "(?i)burstable|B1s|B1ms|B2s|spot|Standard_B"
+      # Cost discussion expected (cost-deep branch)
+      - type: output-matches
+        config:
+          pattern: "(?i)\\$[0-9]+|per month|/month|cost|hybrid benefit|savings"
+      # Should NOT propose enterprise-grade SKUs ($$$)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Standard_M[0-9]|HBv[0-9]|ND[0-9]+rs"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22"
+
+  # ════════════════════════════════════════════════════════════════════
+  # FULL TIER — VMSS SURFACE
+  # ════════════════════════════════════════════════════════════════════
+
+  # ── vmss-web-tier-001 ──
+  # Classic stateless web tier. Should propose autoscale + LB.
+  - name: "VMSS: stateless web tier with autoscale on CPU + LB"
+    prompt: |
+      Build a VMSS for my stateless web tier. Autoscale on CPU, behind a load balancer.
+      Start with 2 instances, scale up to 10.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?set|VMSS|Microsoft\\.Compute/virtualMachineScaleSets"
+      - type: output-matches
+        config:
+          pattern: "(?i)autoscale|autoscaleSettings|scaling profile"
+      - type: output-matches
+        config:
+          pattern: "(?i)cpu|Percentage CPU|metricTrigger"
+      - type: output-matches
+        config:
+          pattern: "(?i)load.?balancer|Standard.?LB|Microsoft\\.Network/loadBalancers"
+      # Honor the count range
+      - type: output-matches
+        config:
+          pattern: "(?i)capacity.*2|min.*2|minimum.*2"
+      - type: output-matches
+        config:
+          pattern: "(?i)max.*10|maximum.*10|capacity.*10"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"
+
+  # ── vmss-networking-deep-001 ──
+  # Networking-deep branch + VMSS. Private only, no public IP.
+  - name: "VMSS networking-deep: App Gateway + private endpoints, no public IP"
+    prompt: |
+      Deploy a VMSS behind Application Gateway. Internal only — no public IPs
+      on the instances. Subnets need service endpoints for Storage and Key Vault.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)application gateway|app.?gateway|Microsoft\\.Network/applicationGateways"
+      # No public IP on the VMSS instances
+      - type: output-matches
+        config:
+          pattern: "(?i)publicIPAddressConfiguration[\"']?\\s*[:=]?\\s*(null|none|\\[\\])|no public IP|private only|internal only"
+      # Service endpoints honored
+      - type: output-matches
+        config:
+          pattern: "(?i)serviceEndpoints?|Microsoft\\.Storage|Microsoft\\.KeyVault"
+      # Should propose Bastion as the management path (workflow note)
+      - type: output-matches
+        config:
+          pattern: "(?i)bastion|jumpbox|jump.?host"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389"
+
+  # ── vmss-flexible-mixed-001 ──
+  # Mixed SKUs across the same VMSS — Flexible orchestration is REQUIRED.
+  # Uniform mode cannot do this. Skill must pick Flexible, not Uniform.
+  - name: "VMSS mixed SKUs → Flexible orchestration only"
+    prompt: |
+      I want a single VMSS that runs a mix of D4s_v5 and D8s_v5 instances
+      for cost / performance balance.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Flexible|orchestrationMode[\"']?\\s*[:=]?\\s*[\"']?Flexible"
+      # Anti-pattern: Uniform mode for mixed SKUs (won't work)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)orchestrationMode[\"']?\\s*[:=]?\\s*[\"']?Uniform|use.*Uniform.*mixed"
+      # Both SKUs honored
+      - type: output-contains
+        config:
+          substring: "D4s_v5"
+      - type: output-contains
+        config:
+          substring: "D8s_v5"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22"
+
+  # ════════════════════════════════════════════════════════════════════
+  # FULL TIER — AGENT-POOL SURFACE
+  #   These three are the "does the VMSS branch generalize?" probes.
+  #   The skill currently has zero mentions of agent pools / CI runners —
+  #   if these fail, that's a signal to add explicit agent-pool guidance
+  #   to references/vmss-guide.md rather than just tuning regex.
+  # ════════════════════════════════════════════════════════════════════
+
+  # ── agentpool-github-actions-001 ──
+  # GitHub Actions runners. Bursty workload — scale-to-zero overnight,
+  # spot pricing fits well, Flexible orchestration recommended.
+  - name: "Agent pool: GitHub Actions runners with scale-to-zero + spot"
+    prompt: |
+      Set up self-hosted GitHub Actions runners on Azure. Expect about 10
+      concurrent jobs during work hours, scale to zero overnight. Cost matters.
+    tags:
+      type: integration
+      tier: full
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # Recognize the VMSS shape unprompted
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?set|VMSS"
+      # Should propose Flexible (mixed scale + scale-to-zero ergonomics)
+      - type: output-matches
+        config:
+          pattern: "(?i)Flexible|orchestration"
+      # Scale-to-zero (floor = 0) must be honored
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?to.?zero|minimum.*0|capacity.*0|floor.*0|min.*instances.*0"
+      # Spot should be surfaced for cost-sensitive bursty workload
+      - type: output-matches
+        config:
+          pattern: "(?i)spot|priority[\"']?\\s*[:=]?\\s*[\"']?Spot|evict"
+      # Should NOT propose 10 separate single VMs
+      - type: output-not-matches
+        config:
+          pattern: "(?i)10 separate|ten separate.*vm|individually.*virtual machines"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22"
+
+  # ── agentpool-azdo-001 ──
+  # Azure DevOps agent pool. Steady fleet, not bursty. VMSS still preferred
+  # over 5 single VMs for image consistency + lifecycle management.
+  - name: "Agent pool: Azure DevOps 5x Ubuntu LTS build agents"
+    prompt: |
+      I need an Azure DevOps agent pool of 5 Ubuntu LTS build machines.
+      They build dotnet and node projects so size them appropriately.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # VMSS preferred over 5 single VMs (even for fixed-size fleets)
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?set|VMSS"
+      # Ubuntu LTS honored
+      - type: output-matches
+        config:
+          pattern: "(?i)ubuntu.*(22\\.04|24\\.04|LTS)|UbuntuServer.*LTS"
+      # Sized at least D4s for build workload (4-core is sane minimum for
+      # parallel npm/dotnet build). Should not pick a B1s.
+      - type: output-matches
+        config:
+          pattern: "(?i)D[48]s?_v[3-5]|D[48]as_v[4-5]|Standard_D[4-9]"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Standard_B1s|Standard_B1ms"
+      # Capacity = 5 honored
+      - type: output-matches
+        config:
+          pattern: "(?i)capacity.*5|instances.*5|count.*5"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22"
+
+  # ── agentpool-ephemeral-ci-001 ──
+  # Ephemeral runners — clean image per job. Two valid approaches:
+  # (a) VMSS with ephemeral OS disk + cloud-init that bootstraps the runner,
+  # (b) image gallery + VMSS Flexible that recreates instances per job.
+  - name: "Agent pool: ephemeral CI runners (fresh image per job)"
+    prompt: |
+      I want ephemeral CI runners — every CI job should get a fresh VM
+      from a baseline image, then destroy the VM when the job completes.
+    tags:
+      type: integration
+      tier: full
+      area: output
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # Must address the ephemeral requirement — either ephemeral OS disk
+      # or explicit instance lifecycle (delete on job completion)
+      - type: output-matches
+        config:
+          pattern: "(?i)ephemeral.?OS|diffDiskSettings|recreate|destroy.*job|instance.*per.?job|short.?lived"
+      # Should mention image source (Shared Image Gallery, custom image, or
+      # cloud-init bootstrap)
+      - type: output-matches
+        config:
+          pattern: "(?i)shared.?image.?gallery|custom.?image|cloud-?init|baseline image|golden image"
+      # VMSS still the right primitive
+      - type: output-matches
+        config:
+          pattern: "(?i)scale.?set|VMSS|Flexible"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22"
+
+  # ════════════════════════════════════════════════════════════════════
+  # FULL TIER — WORKFLOW COMPLIANCE
+  # ════════════════════════════════════════════════════════════════════
+
+  # ── plan-card-override-001 ──
+  # Explicit-override fast path: when the user combines an explicit
+  # deliverable ("give me the Bicep") with an explicit refusal of dialog
+  # ("no questions"), vm-creator Step 5 says the agent MUST honor it —
+  # emit a one-line preview and the Bicep directly, no Plan Card markdown
+  # table, no "Approve as-is / edit a row" AskUserQuestion popup.
+  # Step 4 validation gates (SKU / quota / region) still run.
+  # (Earlier draft of this test enforced the opposite — Plan Card forced
+  # even under explicit user override. Softened per PR 2297 review.)
+  - name: "Plan Card override: explicit 'no questions' emits Bicep directly, no popup"
+    prompt: |
+      Skip the planning, just give me the Bicep for a Standard_D2s_v5 Linux VM
+      right now. No questions.
+    tags:
+      type: integration
+      tier: full
+      area: behavior
+      skill: azure-compute
+      cost: llm
+    constraints:
+      max_turns: 40
+    graders:
+      # Bicep artifact must be emitted directly
+      - type: output-matches
+        config:
+          pattern: "(?i)Microsoft\\.Compute/virtualMachines|targetScope|resource\\s+\\w+\\s+'Microsoft"
+      # High-signal preview must name the SKU the user asked for
+      - type: output-matches
+        config:
+          pattern: "(?i)Standard_D2s_v5|D2s.?v5"
+      # The full Plan Card markdown table (Setting | Value | Source schema)
+      # must NOT be rendered on the fast path
+      - type: output-not-matches
+        config:
+          pattern: "(?i)\\|\\s*Setting\\s*\\|\\s*Value\\s*\\|\\s*Source"
+      # The "Approve as-is / edit a row" AskUserQuestion popup must NOT block
+      - type: output-not-matches
+        config:
+          pattern: "(?i)approve as.?is|edit a row"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)0\\.0\\.0\\.0/0.*22|0\\.0\\.0\\.0/0.*3389"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"

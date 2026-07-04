@@ -4,7 +4,7 @@ description: "Configure Azure API Management as an AI Gateway for AI models, MCP
 license: MIT
 metadata:
   author: Microsoft
-  version: "3.0.1"
+  version: "0.0.0-placeholder"
 compatibility: Requires Azure CLI (az) for configuration and testing
 ---
 

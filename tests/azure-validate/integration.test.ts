@@ -16,6 +16,7 @@ import {
 } from "../utils/agent-runner";
 import {
   hasValidationCommand,
+  hasDeploymentCommand,
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
@@ -38,7 +39,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("skill-invocation", () => {
     test("invokes azure-validate skill for deployment readiness check", () => withTestResult(async ({ setSkillInvocationRate }) => {
@@ -160,11 +164,15 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
+
+      // A deployment command (azd up/deploy) means the agent skipped validation entirely.
+      const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
+      expect(deploymentCommandRan).toBe(false);
 
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
@@ -177,11 +185,15 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
+
+      // A deployment command (azd up/deploy) means the agent skipped validation entirely.
+      const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
+      expect(deploymentCommandRan).toBe(false);
 
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);
@@ -194,11 +206,15 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
-          hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
+          hasValidationCommand(metadata) || hasDeploymentCommand(metadata) || isSkillInvoked(metadata, "azure-deploy"),
       });
 
       const deployInvoked = isSkillInvoked(agentMetadata, "azure-deploy");
       expect(deployInvoked).toBe(false);
+
+      // A deployment command (azd up/deploy) means the agent skipped validation entirely.
+      const deploymentCommandRan = hasDeploymentCommand(agentMetadata);
+      expect(deploymentCommandRan).toBe(false);
 
       const validateInvoked = isSkillInvoked(agentMetadata, SKILL_NAME);
       const validationCommandRan = hasValidationCommand(agentMetadata);

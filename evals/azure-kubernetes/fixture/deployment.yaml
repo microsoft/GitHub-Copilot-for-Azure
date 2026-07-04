@@ -1,0 +1,46 @@
+# Kubernetes manifest with intentional AKS Automatic constraint violations
+# Used by: "Validate my Kubernetes manifests against AKS Automatic constraints"
+#
+# Violations included:
+# 1. Missing resource requests/limits (Deployment Safeguards deny)
+# 2. NET_ADMIN capability (Pod Security Baseline violation)
+# 3. hostNetwork: true (Pod Security Baseline violation)
+# 4. Missing readiness/liveness probes (Deployment Safeguards warn)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      hostNetwork: true
+      containers:
+        - name: web
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: default
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: LoadBalancer

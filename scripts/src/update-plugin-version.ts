@@ -19,6 +19,7 @@ export function updatePluginVersion(
   version: string, 
   pluginFiles: string[] = [
     "../../plugin/.claude-plugin/plugin.json",
+    "../../plugin/.cursor-plugin/plugin.json",
     "../../plugin/.plugin/plugin.json"
   ]
 ): boolean {

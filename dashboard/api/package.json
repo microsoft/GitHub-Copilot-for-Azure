@@ -9,15 +9,17 @@
         "watch": "tsc -w",
         "prestart": "npm run build",
         "start": "func start",
+        "dev": "npm run build && func start --port 7071",
         "test": "echo \"No tests yet\""
     },
     "dependencies": {
+        "@azure/data-tables": "^13.3.2",
         "@azure/functions": "^4.6.0",
-        "@azure/identity": "^4.13.0",
+        "@azure/identity": "^4.13.1",
         "@azure/storage-blob": "^12.31.0"
     },
     "devDependencies": {
         "@types/node": "^22.0.0",
-        "typescript": "^5.9.3"
+        "typescript": "6.0.2"
     }
 }

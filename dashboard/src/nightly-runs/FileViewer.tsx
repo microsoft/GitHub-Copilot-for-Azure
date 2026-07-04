@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { apiUrl } from "../shared/apiUrl";
 
 interface FileViewerProps {
     blobPath: string;
@@ -15,11 +16,15 @@ function FileViewer({ blobPath }: FileViewerProps) {
     const extension = fileName.split(".").pop()?.toLowerCase() ?? "";
 
     useEffect(() => {
+        document.title = fileName;
+    }, [fileName]);
+
+    useEffect(() => {
         setLoading(true);
         setError(null);
         setContent("");
 
-        fetch(`/api/download?path=${encodeURIComponent(blobPath)}`)
+        fetch(apiUrl(`/api/download?path=${encodeURIComponent(blobPath)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
                 return res.text();
@@ -30,7 +35,7 @@ function FileViewer({ blobPath }: FileViewerProps) {
     }, [blobPath]);
 
     const handleDownload = () => {
-        window.open(`/api/download?path=${encodeURIComponent(blobPath)}`, "_blank");
+        window.open(apiUrl(`/api/download?path=${encodeURIComponent(blobPath)}`), "_blank");
     };
 
     const handleBack = () => {

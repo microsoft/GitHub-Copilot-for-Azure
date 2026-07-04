@@ -106,7 +106,7 @@ bug, integration-test
 
 - **Runner OS:** ubuntu-latest
 - **Node.js:** (from workflow)
-- **Model:** claude-sonnet-4.5 (or as overridden)
+- **Model:** claude-sonnet-4.6 (or as overridden)
 - **Run URL:** {run-url}
 - **Commit:** {commit-sha}
 ````
