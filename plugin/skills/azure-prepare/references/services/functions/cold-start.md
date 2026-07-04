@@ -43,8 +43,8 @@ Configure always-ready instances per function group to keep instances warm:
 ```bash
 # Set always-ready instances
 az functionapp update -n $APP -g $RG \
-  --set functionAppConfig.runtime.scale.alwaysReady[0].name=http \
-  --set functionAppConfig.runtime.scale.alwaysReady[0].instanceCount=1
+  --set functionAppConfig.scaleAndConcurrency.alwaysReady[0].name=http \
+  --set functionAppConfig.scaleAndConcurrency.alwaysReady[0].instanceCount=1
 ```
 
 #### Bicep — Always-Ready Configuration
