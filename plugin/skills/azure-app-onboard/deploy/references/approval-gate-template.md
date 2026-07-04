@@ -32,7 +32,7 @@ Display template for the deploy approval gate. Present after preflight validatio
 {for each file in scaffold-manifest.json.files[]}
 
 **📦 Deployment Summary:**
-{Read deployment-summary.md from the session folder and display the "What's Being Deployed" table here. This shows the user exactly which components map to which Azure services, SKUs, and estimated costs — the same data from prepare-plan.json.services[] but in the user-facing deployment-summary format. If deployment-summary.md doesn't exist, reconstruct the table from prepare-plan.json.services[].}
+{Display the "What's Being Deployed" table here, built from prepare-plan.json.services[] — showing which components map to which Azure services, SKUs, and estimated costs. (deployment-summary.md is not written until the deploy/handoff phase)}
 
 ---
 **🚀 Ready to deploy? (Yes / Run manually / Edit plan / Cancel)**
