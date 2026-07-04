@@ -23,11 +23,11 @@ az functionapp config appsettings set \
 | **Function-level** | Invocation result, duration, trigger metadata | `requests`, `FunctionAppLogs` |
 | **Custom SDK** | Dependencies, custom events, manual spans | `dependencies`, `customEvents` |
 
-Host telemetry is always collected by the runtime. Function-level detail enriches each invocation with `InvocationId` and `OperationId` for correlation.
+Host telemetry is always collected by the runtime. Function-level detail enriches each invocation with correlation IDs.
 
 ## FunctionAppLogs Table
 
-The `FunctionAppLogs` table consolidates host and function logs in one place:
+The `FunctionAppLogs` table consolidates host and function logs in one place. It is available only when diagnostic logs are routed to a Log Analytics workspace; classic App Insights-only setups may not have this table.
 
 | Column | Description |
 |--------|-------------|
@@ -40,11 +40,11 @@ The `FunctionAppLogs` table consolidates host and function logs in one place:
 
 ## Invocation-Level Tracing
 
-Each function invocation gets a unique `InvocationId`. The runtime also assigns an `OperationId` that propagates to downstream calls:
+Each function invocation gets a unique ID. Column names differ by table: `FunctionAppLogs` uses `FunctionInvocationId` and `OperationId`; `requests`, `traces`, and `exceptions` use `operation_Id`.
 
-1. Trigger fires → host assigns `InvocationId` + `OperationId`
-2. Function code executes → SDK-instrumented HTTP/DB calls inherit `OperationId`
-3. All telemetry (requests, dependencies, traces) correlates via `OperationId`
+1. Trigger fires → host assigns `FunctionInvocationId` + `OperationId`
+2. Function code executes → SDK-instrumented HTTP/DB calls inherit the operation ID
+3. Telemetry correlates via `OperationId` in `FunctionAppLogs` or `operation_Id` in App Insights tables
 
 > ⚠️ **Warning:** If you make outbound HTTP calls without an instrumented client, correlation breaks. Use OpenTelemetry-instrumented libraries or the Application Insights SDK.
 
@@ -66,11 +66,13 @@ requests
 | order by count_ desc
 ```
 
+> ⚠️ **Warning:** `Orchestrator:` and `Activity:` name prefixes vary by Durable Task version and configuration. If results look incomplete, filter `customDimensions` for Durable-specific properties instead.
+
 > 💡 **Tip:** Use the Durable Functions Monitor extension or the built-in `/runtime/webhooks/durableTask` HTTP API to inspect orchestration history without KQL.
 
 ## KQL Query Library
 
-### Error rate by function name
+### Error count by function name
 
 ```kql
 FunctionAppLogs
@@ -103,15 +105,17 @@ traces
 
 > 💡 **Tip:** Cold starts are most frequent on the Consumption plan. Premium and Dedicated plans with pre-warmed instances show significantly fewer.
 
-### Failed invocations with stack traces
+### Failed invocations with exception messages
 
 ```kql
 FunctionAppLogs
 | where Level == "Error" and isnotempty(ExceptionMessage)
-| project TimeGenerated, FunctionName, FunctionInvocationId, ExceptionMessage, ExceptionDetails
+| project TimeGenerated, FunctionName, FunctionInvocationId, ExceptionMessage
 | order by TimeGenerated desc
 | take 50
 ```
+
+For full stack traces, join `exceptions` on `OperationId == operation_Id`.
 
 ### Scaling events correlation
 
