@@ -129,6 +129,7 @@ rules: [
         queueName: '<queue>'
         messageCount: '5'  // scale up when > 5 messages
       }
+      identity: userAssignedIdentityId
     }
   }
 ]
