@@ -23,6 +23,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Add AppInsights instrumentation to my web application",
       "Add App Insights instrumentation to my Node.js app",
       "Configure Application Insights for my Python webapp",
+      "How do I monitor my Azure Functions with App Insights?",
       "Set up telemetry monitoring in Azure",
       "Instrument my application to send data to App Insights",
       "Add observability to my Azure web application",

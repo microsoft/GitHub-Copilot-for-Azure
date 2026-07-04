@@ -386,6 +386,10 @@ describe("Frontmatter Spec Validator", () => {
       expect(validateMetadataVersion({ version: "3.2.1" })).toEqual([]);
     });
 
+    it("passes for plugin source placeholder version", () => {
+      expect(validateMetadataVersion({ author: "Microsoft", version: "0.0.0-placeholder" })).toEqual([]);
+    });
+
     it("warns for missing metadata", () => {
       const issues = validateMetadataVersion(undefined);
       expect(issues).toHaveLength(1);
