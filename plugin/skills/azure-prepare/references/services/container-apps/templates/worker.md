@@ -144,9 +144,11 @@ rules: [
     custom: {
       type: 'azure-eventhub'
       metadata: {
-        namespace: '<namespace>'
+        eventHubNamespace: '<namespace>'
         eventHubName: '<eventhub>'
         consumerGroup: '$Default'
+        storageAccountName: '<checkpoint-storage-account>'
+        blobContainer: '<checkpoint-container>'
         unprocessedEventThreshold: '64'
       }
       identity: userAssignedIdentityId
