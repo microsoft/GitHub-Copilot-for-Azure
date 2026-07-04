@@ -23,6 +23,11 @@ function getEvalTableClient(): TableClient {
     );
 }
 
+/** Escape a value for use inside an OData string literal (single quotes are doubled). */
+function odataLiteral(value: string): string {
+    return value.replace(/'/g, "''");
+}
+
 /**
  * Returns eval metrics from the table.
  * GET /api/msbench-eval-metrics
@@ -39,8 +44,8 @@ async function getMsbenchEvalMetrics(request: HttpRequest, context: InvocationCo
         const tableClient = getEvalTableClient();
 
         const filters: string[] = [];
-        if (filterBenchmark) filters.push(`benchmark eq '${filterBenchmark}'`);
-        if (filterModel) filters.push(`model eq '${filterModel}'`);
+        if (filterBenchmark) filters.push(`benchmark eq '${odataLiteral(filterBenchmark)}'`);
+        if (filterModel) filters.push(`model eq '${odataLiteral(filterModel)}'`);
         if (filterResolved === "1" || filterResolved === "0") filters.push(`resolved eq ${Number(filterResolved)}`);
         const filter = filters.length > 0 ? filters.join(" and ") : undefined;
 
@@ -64,11 +69,11 @@ async function getMsbenchEvalMetrics(request: HttpRequest, context: InvocationCo
             body: JSON.stringify(entities),
         };
     } catch (err: any) {
-        context.log("Error querying eval metrics:", err.message);
+        context.error("Error querying eval metrics:", err?.message ?? err);
         return {
             status: 500,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ error: err.message }),
+            body: JSON.stringify({ error: "Failed to query eval metrics" }),
         };
     }
 }
@@ -101,11 +106,11 @@ async function getMsbenchEvalFilters(request: HttpRequest, context: InvocationCo
             }),
         };
     } catch (err: any) {
-        context.log("Error querying eval filters:", err.message);
+        context.error("Error querying eval filters:", err?.message ?? err);
         return {
             status: 500,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ error: err.message }),
+            body: JSON.stringify({ error: "Failed to query eval filters" }),
         };
     }
 }
