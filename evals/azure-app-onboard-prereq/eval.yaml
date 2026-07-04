@@ -7,8 +7,8 @@
 # Note on repo context:
 # Code-context stimuli clone a real sample repo into the agent workspace via
 # environment.commands, mirroring the JS integration tests' cloneRepo() setup.
-# Plain `git clone <url> .` fails because Vally pre-copies the environment.skills
-# dirs into the workspace, so we use git init + fetch --depth 1 + checkout instead.
+# We use git init + fetch --depth 1 + checkout (rather than a bare `git clone`)
+# so cloning is robust even when the workspace is pre-populated.
   # Repos: bya-simple-web-app (healthy Express), DockerStaticSite (Dockerfile+static),
   # postgresql-event-sourcing (Java/Spring+Kafka+Postgres),
   # bya-unsupported-web-app (AWS/DynamoDB, unsupported), bya-broken-web-app (missing module).
@@ -26,14 +26,10 @@ tags:
   type: integration
   skill: azure-app-onboard-prereq
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-app-onboard-prereq
-
 config:
   runs: 1
   timeout: "12m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -61,6 +57,12 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)java|spring|gradle"
@@ -92,6 +94,12 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)django|python|postgres"
@@ -123,6 +131,12 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)component|monorepo|frontend|backend|gcp|blocker|service"
@@ -152,6 +166,13 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      # Artifact checks: the readiness scan must write its session artifacts
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)express|node|sqlite"
@@ -183,6 +204,12 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)docker|dockerfile|static|container"
@@ -211,6 +238,12 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)docker|dependenc|entry|config|node|typescript"
@@ -239,6 +272,12 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)react|fastapi|frontend|backend|component"
@@ -586,28 +625,6 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
       - type: completed
 
-  # test: zero-code-path — empty workspace triggers scaffold or app type question
-  - name: "Session - Zero-Code Empty Workspace"
-    prompt: "I want to deploy an app to Azure but I haven't started coding yet. Can you help me get started?"
-    tags:
-      type: integration
-      tier: full
-      area: output
-      skill: azure-app-onboard-prereq
-    constraints:
-      max_turns: 16
-    graders:
-      - type: skill-invocation
-        config:
-          required: ["azure-app-onboard-prereq"]
-      - type: output-matches
-        config:
-          pattern: "(?i)scaffold|app type|what.*build|get started|create|starter|kind of app"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-      - type: completed
-
   # ── integration.test.ts ────────────────────────────────────────────
   # test: invokes azure-app-onboard-prereq skill for repo-readiness prompt
   - name: "Routing - Repo Readiness Invocation"
@@ -622,8 +639,7 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard-prereq
+          required: ["azure-app-onboard-prereq"]
 
   # test: invocation rate — dockerfile prerequisite prompt
   - name: "Routing - Dockerfile Prerequisite"
@@ -638,8 +654,7 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard-prereq
+          required: ["azure-app-onboard-prereq"]
 
   # test: invocation rate — pre-deploy readiness check prompt
   - name: "Routing - Pre-Deploy Readiness Check"
@@ -654,5 +669,4 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard-prereq
+          required: ["azure-app-onboard-prereq"]

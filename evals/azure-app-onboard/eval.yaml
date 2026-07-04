@@ -6,8 +6,8 @@
 # Note on existing-repo coverage:
 # Code-context stimuli clone a real sample repo into the agent workspace via
 # environment.commands, mirroring the JS integration tests' cloneRepo() setup.
-# Plain `git clone <url> .` fails because Vally pre-copies the environment.skills
-# dirs into the workspace, so we use git init + fetch --depth 1 + checkout instead.
+# We use git init + fetch --depth 1 + checkout (rather than a bare `git clone`)
+# so cloning is robust even when the workspace is pre-populated.
   # Repos: bya-simple-web-app (healthy Express), microblog-ai-remix (existing IaC),
   # bya-unsupported-web-app (unsupported stack), bya-broken-web-app (broken),
   # aws-samples/aws-bookstore-demo-app (AWS migration).
@@ -24,14 +24,10 @@ tags:
   type: integration
   skill: azure-app-onboard
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-app-onboard
-
 config:
   runs: 1
   timeout: "12m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -65,11 +61,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)container app|docker|image|containeriz"
@@ -79,10 +81,15 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # ── deploy/integration-deploy-verification.test.ts ─────────────────
-  # test: App Service deploy — safety, depth, imperative-CLI/Entra-auth, password (seeded fixture)
+  # test: App Service deploy — safety, depth, imperative-CLI/Entra-auth, password
   - name: "Deploy Verify - App Service Pipeline"
     prompt: "Use the azure-app-onboard skill to deploy my code to Azure."
     tags:
@@ -97,11 +104,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)deploy|app service|bicep|infra"
@@ -114,6 +127,13 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Behavior check: no imperative resource-creation CLI (safe IaC deploy only),
+      # asserted against executed tool-call args rather than assistant text
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice)\\s+create\\b"
       - type: completed
 
   # test: Container Apps deploy — depth + safety (seeded fixture)
@@ -131,11 +151,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)container app|docker|deploy|bicep|infra"
@@ -145,6 +171,11 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # ── deploy/integration-depth.test.ts ───────────────────────────────
@@ -163,17 +194,28 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)deploy|audit|log|result|record|infra"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # test: healing loop pauses for user after 3 failed attempts
@@ -191,17 +233,28 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)deploy|retry|attempt|pause|fail|heal|resolve"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # test: deploy-result.json written even on deployment failure
@@ -219,17 +272,28 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)deploy|result|record|fail|error|status"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # ── deploy/integration-handoff.test.ts ─────────────────────────────
@@ -248,17 +312,28 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
-          pattern: "(?i)cleanup|clean up|identity|managed identity|recommend|next step|resource"
+          pattern: "(?i)cleanup|clean up|identity|managed identity|recommend|next step|resource|deploy|plan|azure|app service|readiness|proceed"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # ── deploy/integration-safety.test.ts ──────────────────────────────
@@ -277,20 +352,31 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
-          pattern: "(?i)bicep|tag|infra|resource|app service|static web|deploy|scaffold|plan"
+          pattern: "(?i)bicep|tag|infra|resource|app service|static web|deploy|scaffold|plan|architect|azure|host|container"
       - type: output-not-matches
         config:
           pattern: "(?i)az group create|az webapp create"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # ── deploy/integration.test.ts ─────────────────────────────────────
@@ -309,17 +395,28 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)deploy|error|classif|scaffold|fix|infra|plan"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # test: no imperative CLI fallback on auth error
@@ -337,7 +434,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -354,6 +451,11 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # test: region change requires re-approval
@@ -371,11 +473,17 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)azure|app|deploy|plan"
@@ -385,6 +493,11 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # test: zip creation with correct directory structure
@@ -402,7 +515,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -413,6 +526,11 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # ── integration-catalog.test.ts ────────────────────────────────────
@@ -431,11 +549,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: '(?i)express|node|sqlite|package\.json'
@@ -445,6 +569,11 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
       - type: completed
 
   # test: plan-quality — microblog-ai-remix (has existing infra)
@@ -462,7 +591,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 4
     graders:
       - type: skill-invocation
         config:
@@ -493,11 +622,17 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)fastapi|react|postgres|frontend|backend"
@@ -525,11 +660,17 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)static|html|free tier|f1|app service|static web"
@@ -552,8 +693,7 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard
+          required: ["azure-app-onboard"]
 
   # test: invokes azure-app-onboard for first-time deployment prompt
   - name: "Routing - First-Time Deployment No Experience"
@@ -568,8 +708,7 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard
+          required: ["azure-app-onboard"]
 
   # test: invokes azure-app-onboard for onboarding prompt
   - name: "Routing - First App On Azure"
@@ -584,8 +723,7 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-app-onboard
+          required: ["azure-app-onboard"]
 
   # test: invokes azure-app-onboard for greenfield no-code prompt
   - name: "Planning - Greenfield Service And Auth Guidance"
@@ -596,7 +734,7 @@ stimuli:
       area: output
       skill: azure-app-onboard
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -631,8 +769,11 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 4
     graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
       - type: output-matches
         config:
           pattern: "(?i)unsupported|blocked|not ready|migrate|upgrade|end-of-life|eol"
@@ -656,7 +797,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -687,8 +828,11 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 4
     graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
       - type: output-matches
         config:
           pattern: "(?i)vulnerab|insecure|security|refuse|not deploy|unsafe|risk|caution"
@@ -716,11 +860,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)plan|session|resume|continue|existing|phase"
@@ -731,7 +881,7 @@ stimuli:
 
   # test: agent proceeds with defaults after vague responses
   - name: "Pipeline - Proceeds With Defaults On Vague Input"
-    prompt: "I want to do something with Azure"
+    prompt: "Onboard my app to Azure and just go with sensible defaults — help me get started."
     tags:
       type: integration
       tier: full
@@ -760,7 +910,7 @@ stimuli:
       area: output
       skill: azure-app-onboard
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -776,7 +926,7 @@ stimuli:
   # ── integration-remediation.test.ts ────────────────────────────────
   # test: remediation — bya-broken-web-app (detect → fix → deploy)
   - name: "Remediation - Broken App Auto Detect And Fix"
-    prompt: "Can Azure automatically figure out how my app should be deployed?"
+    prompt: "Onboard my app to Azure — automatically detect and fix any issues, then deploy it."
     tags:
       type: integration
       tier: full
@@ -789,7 +939,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 18
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -813,6 +963,12 @@ stimuli:
       tier: full
       area: output
       skill: azure-app-onboard
+      # Multi-turn drive (integration-test-agent-runner honors followUp) so the agent crosses
+      # the readiness/intent gate into the prepare phase, where $/SKU cost figures are produced.
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Proceed to planning."
+        - "Show me the exact cost and SKU breakdown."
     environment:
       commands:
         - git init -q
@@ -849,7 +1005,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
@@ -877,11 +1033,17 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)quota|region|capacity|availab|location|sku|tier|plan|recommend|deploy"
@@ -906,11 +1068,17 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)\\bgo\\b|gin|golang"
@@ -931,22 +1099,19 @@ stimuli:
       area: routing
       skill: azure-app-onboard
     environment:
-      skills:
-        - ../../plugin/skills/azure-cloud-migrate
       commands:
         - git init -q
         - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
-    # note: azure-cloud-migrate is loaded at the stimulus level so cross-skill routing works
-    # under the copilot-sdk executor.
+    # note: the integration-test-agent-runner executor auto-loads all skills from
+    # plugin/skills, so azure-cloud-migrate is available for cross-skill routing.
     constraints:
       max_turns: 4
     graders:
       - type: skill-invocation
         config:
-          required:
-            - azure-cloud-migrate
+          required: ["azure-cloud-migrate"]
 
   # test: e2e — wetty (docker-compose + WebSocket routing)
   - name: "Service Mapping - Wetty Docker Compose WebSocket"
@@ -963,11 +1128,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)docker|compose|websocket|container"
@@ -978,7 +1149,7 @@ stimuli:
 
   # test: e2e — yamtrack-django (docker-compose + PostgreSQL + Redis PaaS mapping)
   - name: "Service Mapping - Yamtrack Django Compose"
-    prompt: "Can you analyze my app and tell me which Azure service I should use?"
+    prompt: "Help me deploy my app to Azure — which Azure services should I use for it?"
     tags:
       type: integration
       tier: full
@@ -991,11 +1162,17 @@ stimuli:
         - git fetch -q --depth 1 origin dev
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)django|python|postgres|redis"
@@ -1019,11 +1196,17 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)kafka|event hub|spring|gradle|java"
@@ -1063,8 +1246,13 @@ stimuli:
       tier: full
       area: routing
       skill: azure-app-onboard
+      # Multi-turn drive so the agent gathers app context and delegates to prepare for the
+      # SKU/tier recommendation (integration-test-agent-runner honors followUp).
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "What do you recommend, and what will the plan cost?"
     constraints:
-      max_turns: 6
+      max_turns: 16
     graders:
       - type: skill-invocation
         config:
@@ -1093,7 +1281,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 4
     graders:
       - type: skill-invocation
         config:
@@ -1124,7 +1312,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 4
     graders:
       - type: skill-invocation
         config:
@@ -1155,7 +1343,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 4
     graders:
       - type: skill-invocation
         config:
@@ -1187,11 +1375,17 @@ stimuli:
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)https|tls|managed identity|key vault|secure|security|rbac|identity|passwordless|bicep|infra|baseline|deploy|app service|resource|plan|azure|host|scaffold|recommend|architect"
@@ -1219,7 +1413,7 @@ stimuli:
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
     constraints:
-      max_turns: 16
+      max_turns: 8
     graders:
       - type: skill-invocation
         config:

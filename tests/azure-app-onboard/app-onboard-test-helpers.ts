@@ -20,6 +20,7 @@ import {
 import type { AgentMetadata } from "../utils/agent-runner";
 import * as fs from "fs";
 import * as path from "path";
+import * as os from "os";
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 
@@ -279,41 +280,82 @@ export const FULL_PIPELINE_FOLLOW_UPS = [
 ];
 
 /**
- * Copy the deploy-test-repo-app-service fixture into the test workspace.
- * Provides a scaffold-completed workspace (app code + infra/ + session artifacts)
- * so deploy-phase tests start at deploy instead of burning 20+ min in scaffold.
+ * Fixture branches are orphan branches in this repo whose root IS the deploy-ready
+ * workspace snapshot (app code + infra/ + .copilot-azure/ session artifacts, captured
+ * at "scaffold-complete, deploy-initiated"). Keeping the snapshots on dedicated
+ * branches keeps large project copies out of `main`'s working tree while staying
+ * entirely in-repo — no external forks.
  *
- * The fixture is populated from a real manual run of bya-simple-web-app.
+ * Regenerate a branch after updating a fixture's source tree:
+ *   $t = git rev-parse "HEAD:<fixture path>"
+ *   git branch -f <branch> (git commit-tree $t -m "update fixture")
+ *   git push -f origin <branch>
+ */
+const FIXTURE_BRANCHES = {
+  appService: "fixtures/deploy-app-service",
+  containerApps: "fixtures/deploy-container-apps",
+} as const;
+
+/** Repo root of this checkout (the repo that has `origin` configured). */
+function getRepoRoot(): string {
+  return execSync("git rev-parse --show-toplevel", {
+    cwd: __dirname,
+    encoding: "utf-8",
+  }).trim();
+}
+
+/**
+ * Hydrate `workspace` from a fixture branch on origin, without leaving a .git dir.
+ *
+ * Fetches the branch into a per-branch local ref (parallel-worker safe — avoids the
+ * shared FETCH_HEAD race) and extracts its tree via `git archive` → `tar`.
+ */
+function hydrateFromFixtureBranch(workspace: string, branch: string): void {
+  const repoRoot = getRepoRoot();
+  const name = path.basename(branch);
+  const localRef = `refs/fixtures/${name}`;
+  const tarFile = path.join(os.tmpdir(), `fixture-${name}-${process.pid}-${Date.now()}.tar`);
+  try {
+    execSync(`git fetch --depth 1 origin +${branch}:${localRef}`, {
+      cwd: repoRoot,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    execSync(`git archive --format=tar -o "${tarFile}" ${localRef}`, {
+      cwd: repoRoot,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    execSync(`tar -xf "${tarFile}" -C "${workspace}"`, {
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+  } catch (err) {
+    throw new Error(
+      `Failed to hydrate deploy fixture from branch "${branch}". Ensure the branch ` +
+      `exists on origin (git push origin ${branch}) and that git and tar are available.`,
+      { cause: err },
+    );
+  } finally {
+    fs.rmSync(tarFile, { force: true });
+  }
+}
+
+/**
+ * Seed a scaffold-completed App Service workspace (app code + infra/ + session
+ * artifacts) so deploy-phase tests start at deploy instead of burning 20+ min in
+ * scaffold. Hydrated from the `fixtures/deploy-app-service` branch.
  */
 export function seedDeployReadyWorkspace(workspace: string): void {
-  const fixtureDir = path.join(__dirname, "fixtures", "deploy-test-repo-app-service");
-  if (!fs.existsSync(fixtureDir) || fs.readdirSync(fixtureDir).length === 0) {
-    throw new Error(
-      `Deploy test fixture not found or empty at ${fixtureDir}. ` +
-      `Run a manual bya-simple-web-app pipeline through scaffold and copy artifacts.`,
-    );
-  }
-  fs.cpSync(fixtureDir, workspace, { recursive: true });
+  hydrateFromFixtureBranch(workspace, FIXTURE_BRANCHES.appService);
   overlayAzureCredentials(workspace);
   freshenTimestamps(workspace);
 }
 
 /**
- * Copy the deploy-test-repo-container-apps fixture into the test workspace.
- * Provides a scaffold-completed workspace (app code + Dockerfile + infra/ + session artifacts)
- * so Container Apps deploy-phase tests start at deploy instead of burning 30+ min.
- *
- * The fixture is populated from a real wetty pipeline run through scaffold.
+ * Seed a scaffold-completed Container Apps workspace (app code + Dockerfile + infra/
+ * + session artifacts) so Container Apps deploy-phase tests start at deploy instead
+ * of burning 30+ min. Hydrated from the `fixtures/deploy-container-apps` branch.
  */
 export function seedContainerAppsDeployReadyWorkspace(workspace: string): void {
-  const fixtureDir = path.join(__dirname, "fixtures", "deploy-test-repo-container-apps");
-  if (!fs.existsSync(fixtureDir) || fs.readdirSync(fixtureDir).length === 0) {
-    throw new Error(
-      `Container Apps deploy test fixture not found or empty at ${fixtureDir}. ` +
-      `Run a manual wetty pipeline through scaffold and copy artifacts.`,
-    );
-  }
-  fs.cpSync(fixtureDir, workspace, { recursive: true });
+  hydrateFromFixtureBranch(workspace, FIXTURE_BRANCHES.containerApps);
   overlayAzureCredentials(workspace);
   freshenTimestamps(workspace);
 }
@@ -2578,6 +2620,49 @@ export function assertScaffoldSubagentsDispatched(agentMetadata: AgentMetadata):
  *
  * Returns true if checklist exists, false otherwise. Adds diagnostic comment.
  */
+/**
+ * SOFT CHECK — Report on the incremental deploy-audit.log the deploy phase writes.
+ *
+ * deploy/SKILL.md and deploy-checklist-template.md require appending audit lines
+ * around each deploy command, in the form:
+ *   {timestamp} | {command} | started
+ *   {timestamp} | {command} | succeeded|failed
+ * (On retry the generated password is reused from this log rather than regenerated.)
+ *
+ * Informational only (pushes testComments, never fails) — restored from the
+ * implementation removed in an earlier refactor while integration-depth.test.ts
+ * still imported/called it.
+ */
+export function assertDeployAuditLog(agentMetadata: AgentMetadata, workspacePath: string): void {
+  const sessionDir = path.join(workspacePath, ".copilot-azure", "sessions");
+  if (!fs.existsSync(sessionDir)) {
+    agentMetadata.testComments.push("⚠️ AUDIT LOG: .copilot-azure/sessions/ not found");
+    return;
+  }
+  const folders = fs.readdirSync(sessionDir).filter(f =>
+    fs.statSync(path.join(sessionDir, f)).isDirectory());
+  for (const folder of folders) {
+    const auditPath = path.join(sessionDir, folder, "deploy-audit.log");
+    if (!fs.existsSync(auditPath)) continue;
+    const content = fs.readFileSync(auditPath, "utf-8");
+    const lines = content.split(/\r?\n/).filter(Boolean);
+    if (lines.length === 0) {
+      agentMetadata.testComments.push("⚠️ AUDIT LOG: deploy-audit.log exists but is empty");
+      return;
+    }
+    const validFormat = /^\d{4}-\d{2}-\d{2}T[\d:]+.*\|.*\|(started|succeeded|failed)/i;
+    let validCount = 0;
+    for (const line of lines) {
+      if (validFormat.test(line.trim())) validCount++;
+    }
+    agentMetadata.testComments.push(
+      `${validCount === lines.length ? "✅" : "⚠️"} AUDIT LOG: ${validCount}/${lines.length} entries have valid format`,
+    );
+    return;
+  }
+  agentMetadata.testComments.push("⚠️ AUDIT LOG: deploy-audit.log not found in any session folder");
+}
+
 export function assertDeployChecklistExists(agentMetadata: AgentMetadata, workspacePath: string): boolean {
   const sessionDir = path.join(workspacePath, ".copilot-azure", "sessions");
   if (!fs.existsSync(sessionDir)) {
