@@ -263,7 +263,7 @@ jobs:
             if [[ -z "$file" ]]; then
               continue
             fi
-            if [[ "$file" == plugin/skills/*/SKILL.md ]]; then
+            if [[ "$file" == plugin/skills/* ]]; then
               mapped="output/skills/${file#plugin/skills/}"
               SKILL_FILES+=("../$mapped")
             else
