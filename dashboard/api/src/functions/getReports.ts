@@ -1,7 +1,8 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { enumerateBlobs, getBlobContent, BlobTree, BlobTreeNode } from "../blobEnumerator";
+import { enumerateBlobs, getBlobContent, } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
+import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 
 /**
  * Recursively collect all blob paths matching the SKILL-REPORT pattern from a tree node.
@@ -31,7 +32,8 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
         return { status: 400, body: "Missing date parameter" };
     }
 
-    const tree: BlobTree = await enumerateBlobs(`${date}/`);
+    const container = request.query.get("container") || undefined;
+    const tree: BlobTree = await enumerateBlobs(`${date}/`, container);
     const dateNode = tree[date];
     if (!dateNode) {
         return { status: 404, body: `No reports found for date: ${date}` };
@@ -46,7 +48,7 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
 
     const sections: string[] = [];
     for (const path of reportPaths) {
-        const content = await getBlobContent(path);
+        const content = await getBlobContent(path, container);
         sections.push(content);
     }
 

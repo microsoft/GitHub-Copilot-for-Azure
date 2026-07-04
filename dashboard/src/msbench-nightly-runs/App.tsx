@@ -2,18 +2,8 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
-
-interface BlobEntry {
-    name: string;
-    blobName: string;
-}
-
-interface BlobTreeNode {
-    files: BlobEntry[];
-    children: Record<string, BlobTreeNode>;
-}
-
-type BlobTree = Record<string, BlobTreeNode>;
+import type { BlobEntry, BlobTree, BlobTreeNode } from "../shared/blobTree";
+import { apiUrl } from "../shared/apiUrl";
 
 /**
  * Recursively collect all .md files from a blob tree node.
@@ -62,7 +52,7 @@ function Dashboard() {
 
     // Fetch available dates on mount
     useEffect(() => {
-        fetch("/api/msbench-dates")
+        fetch(apiUrl("/api/msbench-dates"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -89,7 +79,7 @@ function Dashboard() {
         setSelectedReport(null);
         setReportMarkdown("");
 
-        fetch(`/api/msbench-data/${encodeURIComponent(selectedDate)}`)
+        fetch(apiUrl(`/api/msbench-data/${encodeURIComponent(selectedDate)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -116,7 +106,7 @@ function Dashboard() {
         }
 
         setLoadingReport(true);
-        fetch(`/api/msbench-download?path=${encodeURIComponent(selectedReport.blobName)}`)
+        fetch(apiUrl(`/api/msbench-download?path=${encodeURIComponent(selectedReport.blobName)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load report: ${res.status}`);
                 return res.text();

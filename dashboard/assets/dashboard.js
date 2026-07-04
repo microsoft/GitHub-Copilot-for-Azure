@@ -439,25 +439,6 @@ function setupCollapsible(section, category, name) {
   chevron.textContent = defaultCollapsed ? "\u25BC" : "\u25B2";
   mainRow.appendChild(chevron);
 
-  // Panel-specific action links (GitHub Actions)
-  var panelLinks = {
-    tests: {
-      text: "View All Workflows",
-      href: "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions",
-    },
-  };
-  var linkInfo = panelLinks[name];
-  if (linkInfo) {
-    var link = el("a", "panel-header-link", linkInfo.text);
-    link.setAttribute("href", linkInfo.href);
-    link.setAttribute("target", "_blank");
-    link.setAttribute("rel", "noopener noreferrer");
-    link.addEventListener("click", function (e) {
-      e.stopPropagation();
-    });
-    mainRow.insertBefore(link, chevron);
-  }
-
   header.appendChild(mainRow);
 
   // Summary stats line — panels can set data-summary-text for custom labels
@@ -604,150 +585,7 @@ function showError(message) {
 
 // ── Panel Renderers ─────────────────────────────────────────────────────────
 
-// 1. Tests panel: pass/fail grid + counts
-registerPanel("tests", (section, category) => {
-  const summaryEl = section.querySelector(".panel-summary");
-  const itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  if (category.summary) {
-    renderFilterableSummaryStats(summaryEl, category.summary, itemsEl);
-  }
-
-  const items = category.items || [];
-  if (items.length === 0) {
-    itemsEl.appendChild(el("p", "no-data-message", "No test results."));
-    return;
-  }
-
-  // Status grid — each test suite as a small colored cell
-  const grid = el("div", "status-grid");
-  for (const item of items) {
-    const cell = el("div", "status-cell");
-    cell.setAttribute("data-status", item.status);
-    cell.setAttribute("data-item-status", item.status);
-    cell.setAttribute("title", shortName(item.name) + " — " + item.status);
-    cell.setAttribute("aria-label", shortName(item.name) + ": " + item.status);
-    grid.appendChild(cell);
-  }
-  itemsEl.appendChild(grid);
-
-  // Expandable list of failing tests
-  const failures = items.filter((i) => i.status === "fail");
-  if (failures.length > 0) {
-    const heading = el("p", undefined, "Failing suites:");
-    heading.style.marginTop = "12px";
-    heading.style.fontWeight = "600";
-    heading.style.fontSize = "0.8125rem";
-    itemsEl.appendChild(heading);
-    renderItemList(itemsEl, failures);
-  }
-});
-
-// 2. Lint panel: error/warning counts + expandable file list
-registerPanel("lint", (section, category) => {
-  const summaryEl = section.querySelector(".panel-summary");
-  const itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  if (category.summary) {
-    renderFilterableSummaryStats(summaryEl, category.summary, itemsEl);
-  }
-
-  const items = category.items || [];
-  if (items.length === 0) {
-    itemsEl.appendChild(el("p", "no-data-message", "No lint results."));
-    return;
-  }
-
-  for (const item of items) {
-    const meta = item.metadata || {};
-    const id = "lint-detail-" + item.name.replace(/[^a-zA-Z0-9]/g, "-");
-
-    const toggle = el("button", "expandable-toggle");
-    toggle.setAttribute("data-item-status", item.status);
-    toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-controls", id);
-
-    const icon = el("span", "expand-icon");
-    toggle.appendChild(icon);
-    toggle.appendChild(statusBadge(item.status));
-    toggle.appendChild(el("span", "item-name", shortName(item.name)));
-
-    // Show lint message (rule descriptions) on the toggle for visibility
-    if (item.message) {
-      toggle.appendChild(el("span", "item-message", item.message));
-    } else if (meta.errors !== undefined || meta.warnings !== undefined) {
-      const info =
-        (meta.errors || 0) + " errors, " + (meta.warnings || 0) + " warnings";
-      toggle.appendChild(el("span", "item-message", info));
-    }
-
-    const content = el("div", "expandable-content");
-    content.id = id;
-    content.hidden = true;
-
-    if (meta.errors !== undefined || meta.warnings !== undefined) {
-      const detail =
-        (meta.errors || 0) + " errors, " + (meta.warnings || 0) + " warnings";
-      content.appendChild(el("p", undefined, detail));
-    }
-    if (meta.fixable) {
-      content.appendChild(el("p", undefined, meta.fixable + " auto-fixable"));
-    }
-
-    toggle.addEventListener("click", () => {
-      const expanded = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", String(!expanded));
-      content.hidden = expanded;
-    });
-
-    itemsEl.appendChild(toggle);
-    itemsEl.appendChild(content);
-  }
-});
-
-// 4. TypeCheck panel: pass/fail with error count
-registerPanel("typecheck", (section, category) => {
-  const summaryEl = section.querySelector(".panel-summary");
-  const itemsEl = section.querySelector(".panel-items");
-  if (!summaryEl || !itemsEl) return;
-
-  summaryEl.textContent = "";
-  itemsEl.textContent = "";
-
-  const items = category.items || [];
-
-  // Clean typecheck: show a clear success message, not zero stats
-  if (items.length === 0 && category.status === "pass") {
-    summaryEl.appendChild(
-      el("p", "no-data-message", "\u2714 All clear \u2014 no type errors")
-    );
-    // Set custom summary text so the collapsed header shows
-    // "All clear" instead of "0 passed / 0 failed"
-    section.setAttribute(
-      "data-summary-text",
-      "\u2714 All clear \u2014 no type errors"
-    );
-    return;
-  }
-
-  if (category.summary) {
-    renderFilterableSummaryStats(summaryEl, category.summary, itemsEl);
-  }
-
-  if (items.length > 0) {
-    renderItemList(itemsEl, items);
-  }
-});
-
-// 5. Tokens panel: per-skill usage bars, sorted by severity
+// Tokens panel: per-skill usage bars, sorted by severity
 registerPanel("tokens", (section, category) => {
   const summaryEl = section.querySelector(".panel-summary");
   const itemsEl = section.querySelector(".panel-items");
@@ -1775,6 +1613,152 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
   createItemFilter(section);
 }
 
+// ── Integration Test Token Usage Panel ─────────────────────────────────────
+
+/**
+ * Format a token count as a short string: 12.3K, 1.2M, or plain number.
+ * @param {number} n
+ * @returns {string}
+ */
+function formatTokenCount(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return String(n);
+}
+
+/**
+ * Fetch the latest integration test results and render a table of token
+ * usage per non-skill-invocation test, sorted by total tokens descending.
+ */
+async function loadIntegrationTestTokenUsage() {
+  const section = document.getElementById("panel-integration-token-usage");
+  if (!section) return;
+
+  try {
+    const { latestDate, skillResults } = await fetchLatestTestResults();
+
+    if (!latestDate) {
+      renderIntegrationTokenUsagePanel(section, [], null);
+      return;
+    }
+
+    // Flatten tokenUsageByTest across all skills, computing per-run averages
+    const rows = [];
+    for (const [skillName, stats] of Object.entries(skillResults)) {
+      const byTest = stats.tokenUsageByTest;
+      if (!byTest) continue;
+      for (const [testName, usage] of Object.entries(byTest)) {
+        const runCount = usage.runCount || 1;
+        rows.push({
+          skillName,
+          testName,
+          inputTokens: Math.round((usage.inputTokens || 0) / runCount),
+          outputTokens: Math.round((usage.outputTokens || 0) / runCount),
+          cacheReadTokens: Math.round((usage.cacheReadTokens || 0) / runCount),
+          cacheWriteTokens: Math.round((usage.cacheWriteTokens || 0) / runCount),
+          totalTokens: Math.round((usage.totalTokens || 0) / runCount),
+        });
+      }
+    }
+
+    // Sort by total tokens descending
+    rows.sort(function (a, b) { return b.totalTokens - a.totalTokens; });
+
+    renderIntegrationTokenUsagePanel(section, rows, latestDate);
+  } catch {
+    renderIntegrationTokenUsagePanel(section, [], null);
+  }
+}
+
+/**
+ * Populate and finalise the integration test token usage panel.
+ * @param {HTMLElement} section
+ * @param {Array<{skillName:string, testName:string, inputTokens:number, outputTokens:number, cacheReadTokens:number, cacheWriteTokens:number, totalTokens:number}>} rows
+ * @param {string|null} dateLabel
+ */
+function renderIntegrationTokenUsagePanel(section, rows, dateLabel) {
+  const summaryEl = section.querySelector(".panel-summary");
+  const itemsEl = section.querySelector(".panel-items");
+  if (!summaryEl || !itemsEl) return;
+
+  summaryEl.textContent = "";
+  itemsEl.textContent = "";
+
+  if (rows.length === 0) {
+    itemsEl.appendChild(el("p", "no-data-message", "No token usage data available."));
+  } else {
+    // Table
+    const table = el("table", "itoken-table");
+    table.setAttribute("aria-label", "Integration test average token usage");
+
+    const thead = el("thead");
+    const headerRow = el("tr");
+    const thTest = el("th", undefined, "Test");
+    thTest.setAttribute("scope", "col");
+    const thTokens = el("th", "itoken-num-col", "In / Out / Cache Read / Cache Write / Total");
+    thTokens.setAttribute("scope", "col");
+    headerRow.appendChild(thTest);
+    headerRow.appendChild(thTokens);
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = el("tbody");
+    for (const row of rows) {
+      const tr = el("tr");
+      tr.setAttribute("data-item-status", "pass");
+
+      const tdTest = el("td", "itoken-name-col");
+      tdTest.textContent = row.testName;
+      tdTest.setAttribute("title", row.testName);
+
+      const tdTokens = el("td", "itoken-num-col");
+      const spanIn = el("span", "itoken-in", formatTokenCount(row.inputTokens));
+      spanIn.setAttribute("title", row.inputTokens.toLocaleString());
+      const spanOut = el("span", "itoken-out", formatTokenCount(row.outputTokens));
+      spanOut.setAttribute("title", row.outputTokens.toLocaleString());
+      const spanCacheRead = el("span", "itoken-cache-read", formatTokenCount(row.cacheReadTokens));
+      spanCacheRead.setAttribute("title", row.cacheReadTokens.toLocaleString());
+      const spanCacheWrite = el("span", "itoken-cache-write", formatTokenCount(row.cacheWriteTokens));
+      spanCacheWrite.setAttribute("title", row.cacheWriteTokens.toLocaleString());
+      const spanTotal = el("span", "itoken-total", formatTokenCount(row.totalTokens));
+      spanTotal.setAttribute("title", row.totalTokens.toLocaleString());
+      tdTokens.appendChild(spanIn);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanOut);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanCacheRead);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanCacheWrite);
+      tdTokens.appendChild(document.createTextNode(" / "));
+      tdTokens.appendChild(spanTotal);
+
+      tr.appendChild(tdTest);
+      tr.appendChild(tdTokens);
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    itemsEl.appendChild(table);
+  }
+
+  section.classList.add("loaded");
+  section.setAttribute("data-category-status", rows.length === 0 ? "skip" : "pass");
+
+  const summaryText = rows.length === 0
+    ? "No data"
+    : rows.length + " tests";
+  const fullSummaryText = dateLabel ? summaryText + " \u2014 " + dateLabel : summaryText;
+  section.setAttribute("data-summary-text", fullSummaryText);
+
+  const fakeCategory = {
+    status: rows.length === 0 ? "skip" : "pass",
+    summary: { total: rows.length, passed: rows.length, failed: 0, warnings: 0, skipped: 0 },
+    items: rows.map(function (r) { return { name: r.testName, status: "pass" }; }),
+  };
+
+  setupCollapsible(section, fakeCategory, "integration-token-usage");
+}
+
 // ── Initialization ──────────────────────────────────────────────────────────
 
 async function init() {
@@ -1822,4 +1806,5 @@ document.addEventListener("DOMContentLoaded", function () {
   loadE2EPassRates();
   loadConfidenceLevelPerSkill();
   loadDeployScenarioRetries();
+  loadIntegrationTestTokenUsage();
 });

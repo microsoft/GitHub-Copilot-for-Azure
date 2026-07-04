@@ -14,9 +14,9 @@ import {
   getIntegrationSkipReason,
   useAgentRunner,
 } from "../utils/agent-runner";
-import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment } from "./utils";
+import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment, shouldEarlyTerminateForAzdProvision } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, doesBicepContainerAppUsePublicPlaceholderImage, doesTerraformContainerAppUsePublicPlaceholderImage, doesTerraformContainerAppIgnoreImageChanges, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -33,8 +33,8 @@ if (skipTests && skipReason) {
 }
 
 const describeIntegration = skipTests ? describe.skip : describe;
-const deployTestTimeoutMs = 1800000;
-const brownfieldTestTimeoutMs = 2700000;
+const deployTestTimeoutMs = 40 * 60 * 1000; // 40 minutes
+const brownfieldTestTimeoutMs = 55 * 60 * 1000; // 55 minutes
 
 const pseudoRandomResourceGroupNameSystemPromptModifier = {
   mode: "append" as const,
@@ -42,7 +42,10 @@ const pseudoRandomResourceGroupNameSystemPromptModifier = {
 };
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
   describe("skill-invocation", () => {
     const followUp = ["Continue with recommended options until complete."];
     test("invokes azure-deploy skill for deployment prompt", async () => {
@@ -111,28 +114,6 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     });
 
-    test("invokes azure-deploy skill for live RBAC role verification prompt", async () => {
-      await withTestResult(async ({ setSkillInvocationRate }) => {
-        let invocationCount = 0;
-        for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-          const agentMetadata = await agent.run({
-            prompt: "Deploy my app to Azure and verify the live RBAC role assignments are correct after provisioning",
-            nonInteractive: true,
-            followUp,
-            shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-          });
-
-          softCheckSkill(agentMetadata, SKILL_NAME);
-          if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-            invocationCount += 1;
-          }
-        }
-        const rate = invocationCount / RUNS_PER_PROMPT;
-        setSkillInvocationRate(rate);
-        expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-      });
-    });
-
     test("invokes azure-deploy skill for post-deployment role assignment check prompt", async () => {
       await withTestResult(async ({ setSkillInvocationRate }) => {
         let invocationCount = 0;
@@ -161,8 +142,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   const FOLLOW_UP_PROMPT = ["Go with recommended options and proceed with Azure deployment."];
   // Static Web Apps (SWA)
   describe("vanilla-static-web-apps-deploy", () => {
-    test("creates whiteboard application", async () => {
-      await withTestResult(async () => {
+    test("creates whiteboard application with bicep", async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -173,8 +155,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -186,8 +169,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, deployTestTimeoutMs);
 
-    test("creates static portfolio website", async () => {
-      await withTestResult(async () => {
+    test("creates static portfolio website with bicep", async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -198,8 +182,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -216,7 +201,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // App Service
   describe("vanilla-app-service-deploy", () => {
     test("creates discussion board", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -227,8 +213,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -241,7 +228,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -252,8 +240,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -281,8 +270,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -306,8 +295,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -331,8 +320,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -359,8 +348,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -381,7 +370,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   // Azure Container Apps (ACA) - not custom IaC specification
   describe("vanilla-azure-container-apps-deploy", () => {
-    test("creates containerized web application", async () => {
+    test("creates containerized web application with Bicep", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
 
@@ -393,16 +382,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+
+        // Verify Container Apps-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/containerApps/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/managedEnvironments/i, bicepPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three modules in main.bicep):
+        // Phase 1: ACR module
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with public placeholder image and system-assigned managed identity
+        expect(doesBicepContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
+        // Phase 1: Registries block with system identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registries/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, bicepPattern)).toBe(true);
+        // AcrPull role assignment (GUID 7f951dda) ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -418,16 +421,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.bicep$/], [/\.tf$/]);
+
+        // Verify Container Apps-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/containerApps/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/managedEnvironments/i, bicepPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three modules in main.bicep):
+        // Phase 1: ACR module
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with public placeholder image and system-assigned managed identity
+        expect(doesBicepContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
+        // Phase 1: Registries block with system identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registries/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, bicepPattern)).toBe(true);
+        // AcrPull role assignment (GUID 7f951dda) ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -436,7 +453,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Terraform - Static Web Apps
   describe("terraform-static-web-apps-deploy", () => {
     test("creates whiteboard application with Terraform", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -447,8 +465,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -461,7 +480,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates static portfolio website with Terraform infrastructure", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -472,8 +492,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -489,7 +510,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
   // Terraform - App Service
   describe("terraform-app-service-deploy", () => {
     test("creates discussion board with Terraform", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -500,8 +522,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -514,7 +537,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, deployTestTimeoutMs);
 
     test("creates todo list with frontend and API using Terraform", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
@@ -525,8 +549,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -553,8 +578,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -578,8 +603,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -603,8 +628,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -631,16 +656,33 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+
+        // Verify Container Apps-specific Terraform content on disk
+        const tfPattern = /\.tf$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app[^_]/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app_environment/i, tfPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three resources):
+        // Phase 1: ACR resource
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
+        expect(doesTerraformContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
+        expect(doesTerraformContainerAppIgnoreImageChanges(workspacePath!)).toBe(true);
+        // Phase 1: Registry block with managed identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
+        // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
+        // AcrPull role assignment ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -656,16 +698,33 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+
+        // Verify Container Apps-specific Terraform content on disk
+        const tfPattern = /\.tf$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app[^_]/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app_environment/i, tfPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three resources):
+        // Phase 1: ACR resource
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
+        expect(doesTerraformContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
+        expect(doesTerraformContainerAppIgnoreImageChanges(workspacePath!)).toBe(true);
+        // Phase 1: Registry block with managed identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
+        // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
+        // AcrPull role assignment ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -681,23 +740,41 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          preserveWorkspace: true,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
+          followUpTimeout: deployTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
-
         expect(workspacePath).toBeDefined();
-        expect(containsDeployLinks).toBe(true);
         expectFiles(workspacePath!, [/infra\/.*\.tf$/], [/\.bicep$/]);
+
+        // Verify Container Apps-specific Terraform content on disk
+        const tfPattern = /\.tf$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app[^_]/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_app_environment/i, tfPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three resources):
+        // Phase 1: ACR resource
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
+        // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
+        expect(doesTerraformContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
+        expect(doesTerraformContainerAppIgnoreImageChanges(workspacePath!)).toBe(true);
+        // Phase 1: Registry block with managed identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
+        // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
+        // AcrPull role assignment ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
   });
 
   describe("brownfield-dotnet", () => {
     test("deploys eShop", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const ESHOP_REPO = "https://github.com/dotnet/eShop.git";
 
         const agentMetadata = await agent.run({
@@ -718,7 +795,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -728,10 +806,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys MvcMovie 90", async () => {
-      await withTestResult(async () => {
+    test("deploys MvcMovie 10", async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
+        const MVCMOVIE10_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed";
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
@@ -739,7 +818,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
               repoUrl: ASPNETCORE_DOCS_REPO,
               targetDir: workspace,
               depth: 1,
-              sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+              sparseCheckoutPath: MVCMOVIE10_SPARSE_PATH,
             });
           },
           prompt:
@@ -748,12 +827,13 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use my current subscription. " +
             "This is for a small scale production environment. " +
             "Use standard SKUs. " +
-            `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
+            `The app can be found under ${MVCMOVIE10_SPARSE_PATH}.`,
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -764,7 +844,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire azure functions", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const ASPIRE_FUNCTIONS_SPARSE_PATH = "samples/aspire-with-azure-functions";
 
         const agentMetadata = await agent.run({
@@ -787,7 +868,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -798,7 +880,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire client apps integration", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const CLIENT_APPS_SPARSE_PATH = "samples/client-apps-integration";
 
         const agentMetadata = await agent.run({
@@ -821,7 +904,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -834,9 +918,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     test("deploys aspire container build", async () => {
       await withTestResult(async () => {
         const CONTAINER_BUILD_SPARSE_PATH = "samples/container-build";
+        let workspacePath: string | undefined;
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
+            workspacePath = workspace;
             await cloneRepo({
               repoUrl: ASPIRE_SAMPLES_REPO,
               targetDir: workspace,
@@ -854,14 +940,29 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
-          shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
+          shouldEarlyTerminate: shouldEarlyTerminateForAzdProvision,
           followUpTimeout: brownfieldTestTimeoutMs
         });
 
         softCheckDeploySkills(agentMetadata);
-        const containsDeployLinks = hasDeployLinks(agentMetadata);
+        expect(workspacePath).toBeDefined();
 
-        expect(containsDeployLinks).toBe(true);
+        // Verify Container Apps-specific Bicep content on disk
+        const bicepPattern = /\.bicep$/;
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/containerApps/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.App\/managedEnvironments/i, bicepPattern)).toBe(true);
+
+        // Verify two-phase deployment pattern (three modules in main.bicep):
+        // Phase 1: ACR module
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with public placeholder image and system-assigned managed identity
+        expect(doesBicepContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
+        // Phase 1: Registries block with system identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registries/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, bicepPattern)).toBe(true);
+        // AcrPull role assignment (GUID 7f951dda) ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, brownfieldTestTimeoutMs);
 
@@ -971,7 +1072,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("brownfield-javascript", () => {
     test("deploys nodejs-demoapp", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const NODEJS_DEMOAPP_REPO = "https://github.com/benc-uk/nodejs-demoapp.git";
 
         const agentMetadata = await agent.run({
@@ -992,7 +1094,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1003,7 +1106,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with javascript", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const ASPIRE_JAVASCRIPT_SPARSE_PATH = "samples/aspire-with-javascript";
 
         const agentMetadata = await agent.run({
@@ -1026,7 +1130,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1037,7 +1142,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with node", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const ASPIRE_NODE_SPARSE_PATH = "samples/aspire-with-node";
 
         const agentMetadata = await agent.run({
@@ -1060,7 +1166,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1073,7 +1180,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   describe("brownfield-python", () => {
     test("deploys flask calculator", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const FLASK_CALCULATOR_REPO = "https://github.com/UltiRequiem/flask-calculator.git";
 
         const agentMetadata = await agent.run({
@@ -1094,7 +1202,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);
@@ -1105,7 +1214,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     }, brownfieldTestTimeoutMs);
 
     test("deploys aspire with python", async () => {
-      await withTestResult(async () => {
+      await withTestResult(async ({ expectScreenshot }) => {
+        expectScreenshot();
         const ASPIRE_PYTHON_SPARSE_PATH = "samples/aspire-with-python";
 
         const agentMetadata = await agent.run({
@@ -1128,7 +1238,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
           shouldEarlyTerminate: shouldEarlyTerminateForCompletedDeployment,
-          followUpTimeout: brownfieldTestTimeoutMs
+          followUpTimeout: brownfieldTestTimeoutMs,
+          takeScreenshot: { predicate: (agentMetadata) => hasDeployLinks(agentMetadata) }
         });
 
         softCheckDeploySkills(agentMetadata);

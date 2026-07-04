@@ -59,7 +59,10 @@ function expectKeywordsPresent(
 }
 
 describeIntegration(`${SKILL_NAME}_avm-flow - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
 
   describe("avm-module-priority", () => {
     test("prefers AVM+AZD pattern modules for Bicep deploy guidance", () => withTestResult(async () => {

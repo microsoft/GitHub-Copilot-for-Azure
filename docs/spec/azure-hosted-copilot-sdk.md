@@ -43,7 +43,6 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | Test File | Tests | Status |
 |-----------|-------|--------|
 | `triggers.test.ts` | 5 test blocks (10 trigger, 8 negative, 5 edge cases) | ✅ Complete |
-| `unit.test.ts` | 17 tests (metadata, content, BYOM, frontmatter) | ✅ Complete |
 | `integration.test.ts` | 8 tests (invocation rate + content quality) | ✅ Complete |
 | `__snapshots__/triggers.test.ts.snap` | Keyword snapshots | ✅ Regenerated |
 
@@ -54,7 +53,6 @@ The `azure-hosted-copilot-sdk` skill enables users to build, deploy, and configu
 | `tests/utils/agent-runner.ts` | Enhanced with `runConversation()` for multi-turn scenarios | ✅ |
 | `tests/utils/evaluate.ts` | Shared evaluation helpers (`matchesCommand`, `getAllAssistantMessages`, etc.) | ✅ |
 | `tests/utils/regression-detectors.ts` | Regression detectors (secrets, ACR spirals, port confusion, etc.) | ✅ |
-| `tests/_template/unit.test.ts` | Unit test template for new skills | ✅ |
 
 ### Local Dev Tooling — 🔄 Replaced
 
@@ -69,7 +67,7 @@ The local development scripts (`scripts/src/local/`) have been replaced by the G
 - Test suite: triggers, unit, and integration tests
 - Test infrastructure: `evaluate.ts` shared helpers, `regression-detectors.ts`
 - Local dev tooling: `setup`, `verify`, `test` commands
-- MCP server entry for Context7
+- Optional context7 MCP server usage (not pre-configured; users must install `@upstash/context7-mcp` separately)
 - Specialized routing in `azure-prepare` to delegate to `azure-hosted-copilot-sdk`
 
 **Not included:**
@@ -167,7 +165,6 @@ docs/spec/
 tests/azure-hosted-copilot-sdk/
 ├── integration.test.ts                         # 8 integration tests
 ├── triggers.test.ts                            # 5 test blocks (23 parameterized cases)
-├── unit.test.ts                                # 17 unit tests
 └── __snapshots__/triggers.test.ts.snap         # Trigger keyword snapshots
 
 tests/utils/

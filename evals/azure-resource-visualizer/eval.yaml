@@ -1,0 +1,129 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-resource-visualizer/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+
+name: azure-resource-visualizer-integration-eval
+description: |
+  Integration evaluation for azure-resource-visualizer skill — migrated from Jest integration tests.
+  Tests skill routing for architecture diagram and resource relationship visualization prompts
+  using invocation rate measurement (5 runs, 80% threshold), and end-to-end behavior tests
+  that verify Mermaid diagram file generation with follow-up prompts.
+
+tags:
+  type: integration
+  skill: azure-resource-visualizer
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── architecture-diagram-routing ──
+  # Jest: "invokes azure-resource-visualizer skill for architecture diagram prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Architecture diagram routing"
+    prompt: "Generate a Mermaid diagram showing my Azure resource group architecture"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-visualizer"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-relationships-routing ──
+  # Jest: "invokes azure-resource-visualizer skill for resource relationships prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Resource relationships routing"
+    prompt: "Visualize how my Azure resources are connected and show their relationships"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-visualizer"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-group-architecture-diagram ──
+  # Jest: "generates architecture diagram for a resource group"
+  # Assertions: isSkillInvoked + doesWorkspaceFileIncludePattern(graph TB|LR, architecture*.md)
+  # Uses nonInteractive + followUp for multi-turn execution
+  - name: "Generate resource group architecture diagram"
+    prompt: "Generate a Mermaid diagram showing my Azure resource group architecture. Save the diagram to an architecture.md file in the current working directory."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+    config:
+      runs: 1
+      timeout: "30m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      - type: file-matches
+        config:
+          path: "**/architecture*.md"
+          pattern: "(?i)graph\\s+(TB|LR)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-connections-visualization ──
+  # Jest: "visualizes resource connections and relationships"
+  # Assertions: isSkillInvoked + doesWorkspaceFileIncludePattern(graph TB|LR, architecture*.md)
+  # Uses nonInteractive + followUp for multi-turn execution
+  - name: "Visualize resource connections and relationships"
+    prompt: "Visualize how my Azure resources are connected and show their relationships. Save the diagram to an architecture.md file in the current working directory."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+    config:
+      runs: 1
+      timeout: "30m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-visualizer
+      - type: file-matches
+        config:
+          path: "**/architecture*.md"
+          pattern: "(?i)graph\\s+(TB|LR)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

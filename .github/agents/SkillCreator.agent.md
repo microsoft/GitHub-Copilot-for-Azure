@@ -51,16 +51,12 @@ REQUIREMENTS.md should _always_ include the following:
 
 When creating a new skill, tests must be created following the patterns documented in `/tests/AGENTS.md`. The test suite should include:
 
-1. **Unit Tests** (`tests/{skill-name}/unit.test.js`):
-   - Validate SKILL.md metadata
-   - Test any validation or processing logic
-
-2. **Trigger Tests** (`tests/{skill-name}/triggers.test.js`):
+1. **Trigger Tests** (`tests/{skill-name}/triggers.test.js`):
    - At least 5 prompts that SHOULD trigger the skill
    - At least 5 prompts that should NOT trigger the skill
    - Snapshot tests for keyword changes
 
-3. **Integration Tests** (`tests/{skill-name}/integration.test.js`) - if applicable:
+2. **Integration Tests** (`tests/{skill-name}/integration.test.js`) - if applicable:
    - Mock MCP tool interactions
    - Test error handling
 

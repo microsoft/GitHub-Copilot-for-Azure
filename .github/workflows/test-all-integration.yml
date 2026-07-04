@@ -13,11 +13,11 @@ on:
   schedule:
     # Nightly job to run all the integration tests, except weekends in PST.
     # 9:00 PM PST Mon-Fri (5:00 AM UTC Tue-Sat)
-    - cron: '0 5 * * 2-6'
+    - cron: "0 5 * * 2-6"
     # 12:00 AM PST Tue-Sat (8:00 AM UTC Tue-Sat)
-    - cron: '0 8 * * 2-6'
+    - cron: "0 8 * * 2-6"
     # 4:00 AM PST Tue-Sat (12:00 PM UTC Tue-Sat)
-    - cron: '0 12 * * 2-6'
+    - cron: "0 12 * * 2-6"
   workflow_dispatch:
     inputs:
       skills:
@@ -25,24 +25,24 @@ on:
         required: true
         type: string
       model-override:
-        description: 'Model to use for testing'
+        description: "Model to use for testing"
         required: false
         type: choice
         options:
-          - claude-sonnet-4.5
-          - claude-opus-4.5
+          - claude-sonnet-4.6
+          - claude-opus-4.6
       skill-test-pattern:
-        description: 'Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests'
+        description: "Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests"
         required: false
         type: string
-        default: ''
+        default: ""
       deploy-test-pattern:
-        description: 'Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests.'
+        description: "Optional: Comma separated patterns by name or describe block for filtering azure-deploy tests."
         required: false
         type: string
-        default: ''
+        default: ""
       debug:
-        description: 'Whether to set DEBUG=1 for jest tests'
+        description: "Whether to set DEBUG=1 for jest tests"
         required: false
         type: boolean
         default: false
@@ -51,9 +51,9 @@ on:
 # Customize the inputs for each scheduled run by modifying these env vars.
 # Skills for each schedule are defined in tests/skills.json under integrationTestSchedule.
 env:
-  SCHEDULED_DEBUG_21: 'false'        # debug flag for 9:00 PM PST run
-  SCHEDULED_DEBUG_00: 'false'        # debug flag for 12:00 AM PST run
-  SCHEDULED_DEBUG_04: 'false'         # debug flag for 4:00 AM PST run
+  SCHEDULED_DEBUG_21: "false" # debug flag for 9:00 PM PST run
+  SCHEDULED_DEBUG_00: "false" # debug flag for 12:00 AM PST run
+  SCHEDULED_DEBUG_04: "false" # debug flag for 4:00 AM PST run
 
 jobs:
   resolve-inputs:
@@ -67,7 +67,7 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Resolve inputs based on trigger type
         id: resolve
@@ -119,7 +119,7 @@ jobs:
                 ;;
             esac
           fi
-          
+
           echo "Resolved inputs:"
           echo "skills=$(grep '^skills=' "$GITHUB_OUTPUT" | tail -1)"
           echo "debug=$(grep '^debug=' "$GITHUB_OUTPUT" | tail -1)"
@@ -140,14 +140,14 @@ jobs:
           # Convert comma separated list of skills to a JSON array
           # Filter out azure-deploy (it runs via a separate reusable workflow)
           SKILLS="$SKILLS_INPUT"
-          
+
           # Check if azure-deploy is in the list
           if echo "$SKILLS" | grep -q 'azure-deploy'; then
             echo "has_azure_deploy=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_azure_deploy=false" >> "$GITHUB_OUTPUT"
           fi
-          
+
           # Build matrix excluding azure-deploy
           JSON=$(echo "$SKILLS" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | grep -v '^azure-deploy$' | jq -R . | jq -sc .)
           # Handle empty array case
@@ -167,7 +167,6 @@ jobs:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
-      publish-reports: ${{ github.event_name == 'schedule' }}
     secrets:
       COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
 
@@ -178,12 +177,14 @@ jobs:
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
+      # Skills that should be tested using vally in a JSON array
+      VALLY_SKILLS: '["azure-ai","azure-aigateway","azure-compliance","azure-diagnostics","azure-kusto","azure-storage","entra-app-registration","azure-messaging","airunway-aks-setup","azure-rbac","appinsights-instrumentation","azure-cost","azure-quotas","azure-kubernetes","azure-enterprise-infra-planner","azure-resource-lookup","azure-resource-visualizer","azure-reliability","entra-agent-id","python-appservice-deploy","azure-upgrade"]'
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     strategy:
-      fail-fast: false            # don't cancel siblings on failure
-      max-parallel: 5             # limit number of concurrent jobs
+      fail-fast: false # don't cancel siblings on failure
+      max-parallel: 5 # limit number of concurrent jobs
       matrix:
         skill: ${{ fromJson(needs.setup.outputs.matrix) }}
 
@@ -193,7 +194,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
@@ -219,7 +220,9 @@ jobs:
       # If a test starts after the token expires, it will fail with authentication errors.
       # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
       # Learn more at https://github.com/Azure/login/issues/372
-      - name: Fetch OIDC token every 300 seconds
+      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
+      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
+      - name: Fetch OIDC token every 240 seconds
         shell: bash
         env:
           AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
@@ -228,27 +231,27 @@ jobs:
           while true; do
             token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
             az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
-            sleep 300
+            sleep 240
           done &
 
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: tests/package-lock.json
 
       - name: Setup .NET
         if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
-        uses: actions/setup-dotnet@c2fa09f4bde5ebb9d1777cf28262a3eb3db3ced7 # v5.2.0
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
-          dotnet-version: '10.0.x'
-      
+          dotnet-version: "10.0.x"
+
       - name: Setup Python
         if: contains(needs.resolve-inputs.outputs.skills, 'azure-deploy')
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Install dependencies
         run: npm ci
@@ -258,7 +261,7 @@ jobs:
           cd ..
           npm ci --ignore-scripts
           npm run build
-      
+
       # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
       # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
       # As a known issue, when the permission of the token doesn't grant sufficient access,
@@ -276,6 +279,7 @@ jobs:
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
       - name: Run integration tests – ${{ matrix.skill }}
+        if: ${{ !contains(fromJson(env.VALLY_SKILLS), matrix.skill) }}
         env:
           DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
           TEST_RUN_ID: all-integration
@@ -284,6 +288,7 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           echo test with $MODEL_OVERRIDE
+
           # Handle azure-ai vs azure-aigateway prefix collision
           if [ "$SKILL" = "azure-ai" ]; then
             npm run test:integration azure-ai/ "$SKILL_TEST_PATTERN"
@@ -291,7 +296,19 @@ jobs:
             npm run test:integration "$SKILL" "$SKILL_TEST_PATTERN"
           fi
         continue-on-error: false
-      
+
+      # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
+      - name: Run integration tests (vally) - ${{ matrix.skill }}
+        if: ${{ contains(fromJson(env.VALLY_SKILLS), matrix.skill) }}
+        env:
+          DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
+          TEST_RUN_ID: all-integration
+          MODEL_OVERRIDE: ${{ inputs.model-override }}
+          SKILL: ${{ matrix.skill }}
+        run: |
+          echo test with $MODEL_OVERRIDE
+          npm run test:vally -- --skill $SKILL --workers 2
+
       - name: Generate skill report
         if: always()
         id: generate-skill-report
@@ -345,3 +362,52 @@ jobs:
             --source reports/test-run-all-integration/ \
             --auth-mode login \
             --overwrite
+
+      # Publish reports to the same storage account but a separate container for manual runs.
+      # Note: The managed identity must have write permission to the target storage account.
+      - name: Publish report to Azure Storage (manual run)
+        if: always() && github.event_name == 'workflow_dispatch' && vars.REPORT_STORAGE_ACCOUNT != ''
+        id: publish-report-manual
+        env:
+          RUN_ID: ${{ github.run_id }}
+          JOB_ID: ${{ github.job }}
+          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.MANUAL_REPORT_STORAGE_CONTAINER || 'manual-integration-reports' }}
+          SKILL: ${{ matrix.skill }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --destination "$STORAGE_CONTAINER" \
+            --destination-path "$PREFIX" \
+            --source reports/test-run-all-integration/ \
+            --auth-mode login \
+            --overwrite
+
+      # Upload per-test token usage to the Azure Table that powers the dashboard's
+      # "token usage over time" page. Runs for both scheduled and manual runs.
+      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
+      - name: Upload token usage to table
+        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        env:
+          TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
+          SKILL: ${{ matrix.skill }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: npm run upload:token-usage
+
+      # Upload per-run tool usage (one row per tool call) to the Azure Table that
+      # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
+      # Note: The managed identity must have Storage Table Data Contributor on the storage account.
+      - name: Upload tool usage to table
+        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        env:
+          TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
+          SKILL: ${{ matrix.skill }}
+          BRANCH: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+        run: npm run upload:tool-usage

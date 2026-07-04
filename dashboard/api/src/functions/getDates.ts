@@ -9,7 +9,8 @@ import { logRequestIdentity } from "../requestIdentity";
 async function getDates(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     logRequestIdentity(request, context, "getDates");
 
-    const dates = await listDates();
+    const container = request.query.get("container") || undefined;
+    const dates = await listDates(container);
 
     return {
         status: 200,

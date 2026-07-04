@@ -1,0 +1,455 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-cost/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+#
+# Note on runs:
+# - Routing stimuli preserve the original Jest invocation-rate behavior (3 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
+#   a stimulus-level `config.runs: 1` annotation.
+# - Stimuli with earlyTerminate tags must NOT use the `completed` grader.
+
+name: azure-cost-integration-eval
+description: |
+  Integration evaluation for azure-cost skill — migrated from Jest integration tests.
+  Tests skill routing for cost query, cost forecast, cost optimization, and AKS cost prompts
+  using invocation rate measurement (3 runs, 80% threshold), plus response quality checks
+  for forecast keywords, AKS cost analysis add-on, and monitoring commands.
+
+tags:
+  type: integration
+  skill: azure-cost
+
+config:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Cost Query routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── monthly-cost-prompt ──
+  # Jest: "invokes skill for monthly cost prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Monthly Azure cost query"
+    prompt: "What are my Azure costs this month?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── cost-breakdown-prompt ──
+  # Jest: "invokes skill for cost breakdown prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Cost breakdown by service"
+    prompt: "Show me cost breakdown by service for my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-group-cost-query ──
+  # Jest: "invokes skill for resource group cost query"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Cost breakdown by resource group"
+    prompt: "Break down costs by resource group for the last 30 days"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Cost Forecast routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── future-cost-prompt ──
+  # Jest: "invokes skill for future cost prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Future cost forecast"
+    prompt: "What will my Azure costs be next month?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── quarterly-forecast-prompt ──
+  # Jest: "invokes skill for quarterly forecast prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Quarterly spending forecast"
+    prompt: "Forecast my Azure spending for the rest of the quarter"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── subscription-cost-prediction-prompt ──
+  # Jest: "invokes skill for subscription cost prediction prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Subscription cost prediction for 90 days"
+    prompt: "Predict my subscription costs for the next 90 days"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Cost Optimization routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── cost-savings-prompt ──
+  # Jest: "invokes skill for cost savings prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Cost savings and spending reduction"
+    prompt: "How can I reduce my Azure spending and find cost savings in my subscription?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── orphaned-resources-prompt ──
+  # Jest: "invokes skill for orphaned resources prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Find orphaned and unused resources"
+    prompt: "Find orphaned and unused resources in my Azure subscription that are wasting money"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── vm-rightsizing-prompt ──
+  # Jest: "invokes skill for VM rightsizing prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "VM rightsizing to reduce costs"
+    prompt: "Rightsize my Azure VMs to reduce costs"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-cost-optimization-prompt ──
+  # Jest: "invokes skill for Redis cost optimization prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Redis cost optimization"
+    prompt: "How can I optimize my Azure Redis costs?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-cost-optimization-prompt ──
+  # Jest: "invokes skill for storage cost optimization prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Find unused storage accounts"
+    prompt: "Find unused storage accounts to reduce my Azure costs"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aks-cost-analysis-addon-prompt ──
+  # Jest: "invokes skill for AKS cost analysis add-on prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Note: original Jest test used shouldEarlyTerminateForSkillInvocation
+  - name: "AKS namespace cost breakdown"
+    prompt: "Show me cost breakdown by Kubernetes namespace in my AKS cluster"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aks-cost-anomaly-investigation-prompt ──
+  # Jest: "invokes skill for AKS cost anomaly investigation prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Note: original Jest test used shouldEarlyTerminateForSkillInvocation
+  - name: "AKS cost spike investigation"
+    prompt: "My AKS cluster costs spiked unexpectedly last Sunday from 2am to 4pm EST, help me investigate"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Storage Cost Optimization routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── storage-lifecycle-policy-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Storage lifecycle policy optimization"
+    prompt: "Help me reduce storage costs by setting up lifecycle policies to move old data to cheaper tiers"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-redundancy-downgrade-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Storage redundancy downgrade for dev"
+    prompt: "I have GRS storage accounts in my dev environment, can I save money by downgrading to LRS?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-blob-tiering-prompt ──
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Blob access tier optimization"
+    prompt: "Analyze my blob storage costs and recommend which containers should move to cheaper tiers to save money"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cost"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Response quality tests
+  # ═══════════════════════════════════════════
+
+  # ── forecast-keywords-quality ──
+  # Jest: "response contains forecast-related keywords"
+  # Assertions: assistant output mentions "forecast", "projected", or "estimate"
+  - name: "Forecast response contains relevant keywords"
+    prompt: "What will my Azure costs be next month?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)forecast|projected|estimate"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aks-cost-analysis-addon-quality ──
+  # Jest: "response mentions cost analysis add-on for AKS namespace cost prompt"
+  # Assertions: assistant output mentions "--enable-cost-analysis", "costAnalysis", or "Cost Analysis"
+  - name: "AKS namespace cost mentions cost analysis add-on"
+    prompt: "How do I enable namespace-level cost visibility for my AKS cluster?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)--enable-cost-analysis|costAnalysis|cost\\s*analysis"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aks-monitoring-commands-quality ──
+  # Jest: "response mentions monitoring commands for AKS cost anomaly prompt"
+  # Assertions: assistant output mentions "kubectl top", "az monitor metrics", or "az consumption budget"
+  - name: "AKS cost anomaly mentions monitoring commands"
+    prompt: "What monitoring commands should I run to investigate a cost spike on an AKS cluster?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)kubectl top|az monitor metrics|az consumption budget"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── storage-lifecycle-policy-quality ──
+  # Assertions: assistant output mentions lifecycle policy concepts
+  - name: "Storage optimization mentions lifecycle policies and tiers"
+    prompt: "How can I optimize costs on my Azure storage accounts that have data sitting in hot tier for months?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)lifecycle|cool|archive|tiering|access tier"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

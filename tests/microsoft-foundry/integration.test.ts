@@ -32,7 +32,10 @@ if (skipTests && skipReason) {
 const describeIntegration = skipTests ? describe.skip : describe;
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
   describe("skill-invocation", () => {
     test("invokes microsoft-foundry skill for AI model deployment prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
       let invocationCount = 0;
@@ -74,7 +77,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          prompt: "Grant a user the Azure AI User role on my Foundry project",
+          prompt: "Grant a user the Foundry User role on my Foundry project",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
 

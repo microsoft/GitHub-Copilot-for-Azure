@@ -1,0 +1,204 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-messaging/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+
+name: azure-messaging-integration-eval
+description: |
+  Integration evaluation for azure-messaging skill — migrated from Jest integration tests.
+  Covers routing for customer-reported Azure Event Hubs/Service Bus issues and
+  response-content quality for session lock diagnosis and retry configuration guidance.
+
+tags:
+  type: integration
+  skill: azure-messaging
+
+config:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── customer-reported-issues (routing/invocation) ──
+  # Jest helper: defineInvocationTest(...), invocation rate threshold 0.8 over 3 runs.
+
+  - name: "Routing: Event Hub connection inactive timeout"
+    prompt: "My Python Event Hub producer client logs 'Connection closed with error: amqp:connection:forced, The connection was inactive for more than the allowed 240000 milliseconds'. I didn't set idle_timeout. Why is the connection being closed?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Service Bus K8s pods idle after AMQP reset"
+    prompt: "My Kubernetes pods running azure-servicebus Python SDK stop processing messages after logging 'Connection keep-alive for SendClientAsync failed: AMQPConnectionError, Connection reset by peer'. The pods never reconnect and stay idle until restarted."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Service Bus link detach forced slow send"
+    prompt: "Using azure-servicebus Python SDK, my sender.send_messages takes 7 seconds every 10 minutes. The error shows 'amqp:link:detach-forced, IdleTimerExpired: Idle timeout: 00:10:00'. How do I prevent this delay?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Service Bus lock renewal batch timeout"
+    prompt: "I'm receiving a batch of 400 messages from a Service Bus queue with a 4-minute lock duration. The lock renewal starts only 10 seconds before expiry and there's a 0.5s sleep between each renewal, so most message locks expire before they can be renewed."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Service Bus receive_messages limited in loop"
+    prompt: "When I call receiver.receive_messages(max_message_count=100) in a loop with the azure-servicebus Python SDK, after the first call returns 100 messages, subsequent calls only return 1 message even though there are 100+ messages in the queue."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Service Bus slow sender reconnect"
+    prompt: "Using azure-servicebus Python SDK, creating a sender takes 1-2 seconds initially, but after the connection is closed due to idle timeout (660 seconds), recreating the sender takes 8-10 seconds. Why is reconnection so slow?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Service Bus session receiver detach"
+    prompt: "My ServiceBusReceiver with session_id=NEXT_AVAILABLE_SESSION connects and authenticates successfully, but the link immediately detaches with a 'Session error'. I've tried increasing timeouts and changing TransportType but the session receiver keeps failing."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Routing: Event Hub duplicate events with in-memory checkpoint"
+    prompt: "My EventHubConsumerClient using in-memory checkpoint starts consuming duplicate old events after running for 2-3 hours. The offsets reset to old values without any exception. Using azure-eventhub Python SDK 5.7.0 with receive_batch and update_checkpoint."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  # ── response-content-validation ──
+
+  - name: "Output: session lock diagnosis and guidance"
+    prompt: "I'm using azure-servicebus Python SDK with session-enabled queues. After processing a few messages, I get 'SessionLockLostError: The session lock has expired on the session'. My processing takes about 2 minutes but the session lock duration is 30 seconds. How do I fix this?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-contains
+        config:
+          substring: "session"
+      - type: output-contains
+        config:
+          substring: "lock"
+      - type: output-matches
+        config:
+          pattern: "[Rr]enew|[Dd]uration|[Aa]uto_lock_renewer"
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"
+
+  - name: "Output: Event Hubs retry policy configuration guidance"
+    prompt: "How do I configure retry policy for the azure-eventhub Python SDK? My consumer client keeps timing out when the Event Hub is under heavy load."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-messaging"]
+      - type: output-contains
+        config:
+          substring: "retry"
+      - type: output-matches
+        config:
+          pattern: "EventHubConsumerClient|[Rr]etry_total|[Rr]etry_backoff"
+      - type: output-not-matches
+        config:
+          pattern: "[Ff]atal error|[Uu]nhandled exception|[Ss]tack trace"

@@ -2,6 +2,8 @@
 
 Generate a seed evaluation dataset for a Foundry agent by producing realistic, diverse test queries grounded in the agent's instructions and tool capabilities.
 
+> **Preferred setup:** For deployed agents, use the observe workflow's [Evaluation Suite Generation](../../observe/references/evaluation-suite-generation.md) first. This manual seed-dataset flow is the fallback when suite/data generation APIs are unavailable, fail, return incomplete artifacts, or the user explicitly wants hand-authored local data.
+
 ## ⛔ Do NOT
 
 - Do NOT omit the `expected_behavior` field. It is **required** on every row, even during Phase 1 (built-in evaluators only). It pre-positions the dataset for Phase 2 custom evaluators.
@@ -10,8 +12,8 @@ Generate a seed evaluation dataset for a Foundry agent by producing realistic, d
 
 ## Prerequisites
 
-- Agent deployed and running (or local `agent.yaml` available with instructions and tool definitions)
-- `.foundry/agent-metadata.yaml` resolved with `projectEndpoint` and `agentName`
+- Agent deployed and running (or the local agent source / `azure.yaml` service block available with instructions and tool definitions)
+- Selected `.foundry/agent-metadata*.yaml` file resolved with `projectEndpoint` and `agentName`
 
 ## Dataset Row Schema
 
@@ -32,13 +34,13 @@ Example row:
 
 ## Step 1 — Gather Agent Context
 
-Collect the agent's full context from `agent_get` or local `agent.yaml`:
+Collect the agent's full context from `agent_get` or the local `azure.yaml` service block in the selected agent root:
 
-- **Agent name** — from `agent-metadata.yaml`
+- **Agent name** — from the selected metadata file
 - **Instructions** — the system prompt / instructions field
 - **Tools** — list of tools with names, descriptions, and parameter schemas
-- **Protocols** — supported protocols (responses, a2a, mcp)
-- **Example messages** — from `agent.yaml` metadata if available
+- **Protocols** — supported protocols (e.g. `responses`, `invocations`, `invocations_ws`, `a2a`, `mcp`)
+- **Example messages** — from the `azure.yaml` service metadata if available
 
 ## Step 2 — Generate Test Queries
 
@@ -80,7 +82,7 @@ Save the generated JSONL to:
 .foundry/datasets/<agent-name>-eval-seed-v1.jsonl
 ```
 
-The filename must start with `agentName` from `agent-metadata.yaml`, followed by `-eval-seed-v1`.
+The filename must start with `agentName` from the selected metadata file, followed by `-eval-seed-v1`.
 
 ## Step 3 — Register in Foundry
 
@@ -129,16 +131,22 @@ evaluation_dataset_create(
    - `agent`: `<agent-name>`
    - `stage`: `seed`
    - `version`: `v1`
-6. Save the returned `datasetUri` in both `agent-metadata.yaml` (under the active test case) and `.foundry/datasets/manifest.json`.
+6. Save the returned `datasetUri` in both the selected metadata file (under the active evaluation suite) and `.foundry/datasets/manifest.json`.
 
 ## Step 4 — Update Metadata
 
-Update `agent-metadata.yaml` for the selected environment's `testCases[]`:
+Update the selected metadata file for the selected environment's `evaluationSuites[]`:
+
+If the selected environment still uses older `testSuites[]` or legacy `testCases[]`, rewrite that environment to `evaluationSuites[]` as part of this update. Preserve dataset/evaluator fields and map legacy `priority` to `tags.tier` only when `tags.tier` is missing.
 
 ```yaml
-testCases:
+evaluationSuites:
   - id: smoke-core
-    priority: P0
+    tags:
+      tier: smoke
+      purpose: baseline
+      stage: seed
+    generationSource: manual-fallback
     dataset: <agent-name>-eval-seed
     datasetVersion: v1
     datasetFile: .foundry/datasets/<agent-name>-eval-seed-v1.jsonl

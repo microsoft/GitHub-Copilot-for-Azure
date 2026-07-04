@@ -15,11 +15,13 @@ import { logRequestIdentity } from "../requestIdentity";
  * 5. ${DATE}/${RUN_ID}/{skill-name}/{arbitrary-test-case-name}/agent-metadata-{datetime}{optional-dedupe-suffix}.md
  * 6. ${DATE}/${RUN_ID}/{skill-name}/{arbitrary-test-case-name}/agent-metadata.json
  * 7. ${DATE}/${RUN_ID}/{skill-name}/{arbitrary-test-case-name}/token-usage.json
+ * 8. ${DATE}/${RUN_ID}/{skill-name}/{arbitrary-test-case-name}/tool-usage-{datetime}{optional-dedupe-suffix}.json
  * 
  * The test-run-{datetime}-{skill-name}-SKILL-REPORT.md is unique per skill. It is a summarized version of the result of all test runs in its job.
  * The test-consolidated-report.md is unique per test case. It is a summarized version of the result of all agent runs for its test case.
  * The agent-metadata-{datetime}{optional-dedupe-suffix}.md captures the details of each agent run for its test case.
- * token-usage.json and agent-metadata.json should not be exposed for now.
+ * The tool-usage-{datetime}{optional-dedupe-suffix}.json captures the ordered tool calls of each agent run, named to match its agent-metadata-*.md report.
+ * token-usage.json, agent-metadata.json, and tool-usage-*.json should not be exposed for now.
  * 
  * For azure-deploy skill:
  * 1. ${DATE}/${RUN_ID}/{skill-name}/{test-group}/test-run-{datetime}-{skill-name}-SKILL-REPORT.md
@@ -29,6 +31,7 @@ import { logRequestIdentity } from "../requestIdentity";
  * 5. ${DATE}/${RUN_ID}/{skill-name}/{test-group}/{arbitrary-test-case-name}/agent-metadata-{datetime}{optional-dedupe-suffix}.md
  * 6. ${DATE}/${RUN_ID}/{skill-name}/{test-group}/{arbitrary-test-case-name}/agent-metadata.json
  * 7. ${DATE}/${RUN_ID}/{skill-name}/{test-group}/{arbitrary-test-case-name}/token-usage.json
+ * 8. ${DATE}/${RUN_ID}/{skill-name}/{test-group}/{arbitrary-test-case-name}/tool-usage-{datetime}{optional-dedupe-suffix}.json
  * 
  * All ${DATE} are in the format of yyyy-mm-dd.
  */
@@ -40,7 +43,8 @@ async function getData(request: HttpRequest, context: InvocationContext): Promis
         return { status: 400, body: "Missing date parameter" };
     }
 
-    const root = await enumerateBlobs(`${date}/`);
+    const container = request.query.get("container") || undefined;
+    const root = await enumerateBlobs(`${date}/`, container);
 
     return {
         status: 200,

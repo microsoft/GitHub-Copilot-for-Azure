@@ -1,397 +1,320 @@
-# Foundry Agent Deploy
+# Deploy a Foundry Agent
 
-Create and manage agent deployments in Azure AI Foundry. For hosted agents, this includes the full workflow from containerizing the project to verifying the deployed agent.
+Provision Azure resources when needed, deploy the agent, and smoke-test it.
+
+For **hosted agents** (custom container or code), use `azd deploy`. Prefer **direct code deployment through azd** (no Docker/ACR required): the agent's `azure.yaml` service block must contain `codeConfiguration:`, so `azd deploy` will use direct code deployment and zip the source and let Foundry build it. Use container/ACR deployment only when the agent truly needs a Dockerfile, custom system packages, or a pre-built image.
+
+For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP `agent_update` tool.
 
 ## Quick Reference
 
 | Property | Value |
 |----------|-------|
-| Agent types | Prompt (LLM-based), Hosted |
-| MCP server | `azure` |
-| Key Foundry MCP tools | `agent_definition_schema_get`, `agent_update`, `agent_get` |
-| CLI tools | `docker`, `az acr` (hosted agents only) |
-| Container protocols | `a2a`, `responses`, `invocations`, `mcp` |
-| Supported languages | .NET, Node.js, Python, Go, Java |
+| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), `azd ai agent invoke` |
+| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker/Podman + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
+| Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
+| Versioning | Each successful `azd deploy` creates an immutable agent version |
+| Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
+| Local dev | [create-hosted](../create/create-hosted.md), [local-run](../create/references/local-run.md) |
 
-## When to Use This Skill
+## Hosted vs Prompt
 
-USE FOR: deploy agent to foundry, push agent to foundry, ship my agent, build and deploy container agent, deploy hosted agent, create hosted agent, deploy prompt agent, ACR build, container image for agent, docker build for foundry, redeploy agent, update agent deployment, clone agent, delete agent, azd deploy hosted agent, azd ai agent, azd up for agent, deploy agent with azd.
+- Shipping Python / .NET code -> **Hosted** (azd workflow below).
+- Updating only model / instructions / tools -> **Prompt** (MCP workflow below).
 
-> ⚠️ **DO NOT manually run** `azd up`, `azd deploy`, `az acr build`, `docker build`, or `agent_update` **without reading this skill first.** This skill orchestrates the full deployment pipeline: project scan → env var collection → Dockerfile generation → image build → agent creation → verification. Running CLI commands or calling MCP tools individually skips critical steps (env var confirmation, schema validation, RBAC setup, invocation verification).
+## Deployment Method Selection -- Hosted agents
 
-## MCP Tools
+Before running `azd deploy`, inspect the agent's service block in `azure.yaml`.
 
-| Tool | Description | Parameters |
-|------|-------------|------------|
-| `agent_definition_schema_get` | Get JSON schema for agent definitions | `projectEndpoint` (required), `schemaType` (`prompt`, `hosted`, `tools`, `all`) |
-| `agent_update` | Create, update, or clone an agent | `projectEndpoint`, `agentName` (required); `agentDefinition` (JSON), `isCloneRequest`, `cloneTargetAgentName`, `modelName` |
-| `agent_get` | List all agents or get a specific agent | `projectEndpoint` (required), `agentName` (optional) |
-| `agent_delete` | Delete an agent and clean up hosted-agent runtime resources | `projectEndpoint`, `agentName` (required) |
+| Service block state | Deployment path |
+|------------------|-----------------|
+| `codeConfiguration:` present | **Direct code deploy** through `azd deploy`; no Docker/ACR build. |
+| No `codeConfiguration:` | **Container/ACR deploy** through `azd deploy`; builds/pushes an image or uses a pre-built `image:`. |
 
-## Workflow: Hosted Agent Deployment
+`codeConfiguration:` example in the `azure.yaml` service block:
 
+```yaml
+services:
+  <agent-name>:
+    host: azure.ai.agent
+    codeConfiguration:
+      runtime: python_3_13
+      entryPoint: main.py
+      dependencyResolution: remote_build
+```
 
-### Step 1: Detect and Scan Project
+Default to direct code for standard hosted-agent code. If `azd deploy` prints `Packaging container` for an agent that does not need container-specific behavior, add or fix `codeConfiguration` and retry. Use the container path when the agent depends on Dockerfile behavior, system packages, or a pre-built image.
 
-Get the project path from the project context (see Common: Project Context Resolution). Detect the project type by checking for these files:
+## Workflow -- Hosted agent (azd)
 
-| Project Type | Detection Files |
-|--------------|-----------------|
-| .NET | `*.csproj`, `*.fsproj` |
-| Node.js | `package.json` |
-| Python | `requirements.txt`, `pyproject.toml`, `setup.py` |
-| Go | `go.mod` |
-| Java (Maven) | `pom.xml` |
-| Java (Gradle) | `build.gradle` |
+> Prerequisite: project scaffolded with `azd ai agent init`. If not, start at [create-hosted](../create/create-hosted.md).
 
-Delegate an environment variable scan to a sub-agent. Provide the project path and project type. Search source files for these patterns:
+### Step 1 -- Resolve azd environment
 
-| Project Type | Patterns to Search |
-|--------------|--------------------|
-| .NET (`*.cs`) | `Environment.GetEnvironmentVariable("...")`, `configuration["..."]`, `configuration.GetValue<T>("...")` |
-| Node.js (`*.js`, `*.ts`, `*.mjs`) | `process.env.VAR_NAME`, `process.env["..."]` |
-| Python (`*.py`) | `os.environ["..."]`, `os.environ.get("...")`, `os.getenv("...")` |
-| Go (`*.go`) | `os.Getenv("...")`, `os.LookupEnv("...")` |
-| Java (`*.java`) | `System.getenv("...")`, `@Value("${...}")` |
+If the user provided an existing project endpoint, project ARM ID, or model deployment, set those values before deploy. Then verify the azd environment with `azd env get-values`.
 
-Classification: if followed by a throw/error → required; if followed by a fallback value → optional with default; otherwise → assume required, ask user.
-
-### Step 2: Collect and Confirm Environment Variables
-
-> ⚠️ **Warning:** Environment variables are included in the agent payload and are difficult to change after deployment.
-
-Use azd environment values from the project context to pre-fill discovered variables. Merge with any user-provided values. Present all variables to the user for confirmation with variable name, value, and source (`azd`, `project default`, or `user`). Mask sensitive values.
-
-Loop until the user confirms or cancels:
-- `yes` → Proceed
-- `VAR_NAME=new_value` → Update the value, show updated table, ask again
-- `cancel` → Abort deployment
-
-### Step 3: Generate Dockerfile and Build Image
-
-Delegate Dockerfile creation to a sub-agent. Guidelines:
-- Use official base image for the detected language and runtime version
-- Use multi-stage builds for compiled languages
-- Use Alpine or slim variants for smaller images
-- Always target `linux/amd64` platform
-- Expose the correct port (usually 8088)
-
-> 💡 **Tip:** Reference [Hosted Agents Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents) for containerized agent examples.
-
-Also generate `docker-compose.yml` and `.env` files for local development.
-
-**IMPORTANT**: You MUST always generate image tag as current timestamp (e.g., `myagent:202401011230`) to ensure uniqueness and avoid conflicts with existing images in ACR. DO NOT use static tags like `latest` or `v1`.
-
-Collect ACR details from project context.
-
-- If an ACR already exists, use it, then verify that the Foundry project managed identity has pull permissions (for example, `Container Registry Repository Reader` or equivalent) on the target repository/registry. If the role assignment is missing, add it.
-- If no ACR exists, create a new one with ABAC repository permissions mode, and assign `Container Registry Repository Reader` to the Foundry project managed identity. Foundry hosted agents use ABAC mode that requires repository-scoped roles, not the registry-level `AcrPull` role.
-
-Let the user choose the build method:
-
-**Cloud Build (ACR Tasks) (Recommended)** — no local Docker required:
 ```bash
-az acr build --registry <acr-name> --image <repository>:<tag> --platform linux/amd64 --source-acr-auth-id "[caller]" --file Dockerfile .
+azd env set AZURE_AI_PROJECT_ENDPOINT "<project-endpoint>"
+azd env set AZURE_AI_PROJECT_ID "<project-arm-id>"
+azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<model-deployment-name>"
+azd env get-values
 ```
 
-> ⚠️ **Mandatory:** The `--source-acr-auth-id "[caller]"` parameter is required. Do NOT omit it — without this flag the build will fail due to missing authentication context.
+Run:
 
-**Local Docker Build:**
 ```bash
-docker build --platform linux/amd64 -t <image>:<tag> -f Dockerfile .
-az acr login --name <acr-name>
-docker tag <image>:<tag> <acr-name>.azurecr.io/<repository>:<tag>
-docker push <acr-name>.azurecr.io/<repository>:<tag>
+azd ai project show --output json
+azd ai agent show --output json
 ```
 
-> 💡 **Tip:** Prefer Cloud Build if Docker is not available locally. On Windows with WSL, prefix Docker commands with `wsl -e` if `docker info` fails but `wsl -e docker info` succeeds.
+Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (skip Step 2, go to Step 3). If `azd ai project show` fails with `missing_project_endpoint`, do Step 2 first -- `azd provision` will create the project.
 
-### Step 4: Collect Agent Configuration
+> **Important:** Before deploy, also make sure the agent's `azure.yaml` service block and the azd environment are aligned with the user's provided configuration values.
 
-Use the project endpoint and ACR name from the project context. Ask the user only for values not already resolved:
-- **Agent name** — Unique name for the agent
-- **Model deployment** — Model deployment name (e.g., `gpt-4o`)
+### Step 2 -- Provision Azure resources (one-time per env)
 
-### Step 5: Get Agent Definition Schema
+> 🚦 **Project-selection gate.** If no foundry project endpoint is configured (not in the message, `azd env`, or `.env`) and the user hasn't asked to create one, stop and ask them to pick an existing foundry project or confirm creating a new one — don't silently select.
 
-Use `agent_definition_schema_get` with `schemaType: hosted` to retrieve the current schema and validate required fields.
+Skip `azd provision` when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` or `FOUNDRY_PROJECT_ENDPOINT` and the workflow only needs to deploy the agent into that project.
 
-### Step 6: Create the Agent
+Run provision only for new projects or real infrastructure changes:
 
-Use `agent_update` with the agent definition:
-
-> ⚠️ **Protocol version source of truth:** Do NOT copy the protocol version from `agent_definition_schema_get` examples. Use the protocol version declared by the agent source itself (for example, `agent.yaml` or `agent.manifest.yaml`).
-
-```json
-{
-  "command": "agent_update",
-  "intent": "Update a hosted agent with a new docker image",
-  "parameters": {
-    "projectEndpoint": "<project-endpoint>",
-    "agentName": "<agent-name>",
-    "agentDefinition": {
-      "kind": "hosted",
-      "image": "<acr-name>.azurecr.io/<repository>:<tag>",
-      "cpu": "<cpu-cores>",
-      "memory": "<memory>",
-      "container_protocol_versions": [
-        { "protocol": "<protocol>", "version": "<version>" }
-      ],
-      "environment_variables": { "<var>": "<value>" }
-    }
-  }
-}
+```bash
+azd provision --no-prompt
 ```
 
-Capture the instance identity `principal_id` from the agent creation response. You will need it to assign the minimum RBAC required for invocation before running invoke tests.
+> Optional: run `azd provision --preview --no-prompt` first to preview the resource changes (a what-if) before applying them.
+>
+> Optional: add `--no-state` on a fresh azd environment to skip the existing-deployment check and provision faster; omit it when re-provisioning an existing one.
 
-### Step 7: Test the Agent
+What this does:
 
-For a newly deployed hosted agent, before invocation testing, first check whether the agent's instance identity already has the minimum RBAC required for invocation:
-- Required role: `Cognitive Services User`
-- Identity: the agent's instance identity (managed identity `principal_id` from the agent creation response)
-- Scope: the Azure AI Services resource (formerly Cognitive Services account)
-- Only the instance identity needs this role assignment. The blueprint identity does not need any role.
+- Creates the Foundry project (if not present) and supporting resources under `infra/`.
+- Creates any connections/toolboxes declared as top-level `azure.ai.connection` / `azure.ai.toolbox` services (linked from the agent via `uses:`). Most agents instead reference an existing toolbox through a `TOOLBOX_<NAME>_MCP_ENDPOINT` environment variable created with `azd ai connection` / `azd ai toolbox`. `${PARAM_*}` placeholders resolve from the active azd env.
+- Wires model deployments, AI Search, ACR, etc. `infra/layers/` provision in parallel when present.
 
-If this role assignment is missing, add it before invocation testing.
+This is a core `azd` command. Skip provision when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` via `azd env set` -- the extension uses the existing project as-is.
 
-If the current user account does not have permission to create this role assignment when it is needed, stop the deployment workflow here. Explain to the user that agent invocation requires the `Cognitive Services User` role on the instance identity at the Azure AI Services resource scope, and the deployment cannot be treated as complete until someone with RBAC assignment permission grants that role.
+After provision completes for a new project, run `azd env get-values` and set missing required azd env values, especially `AZURE_AI_PROJECT_ID` and `AZURE_TENANT_ID`, before local run or the first `azd deploy`.
 
-After this RBAC check is complete, read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly. DO NOT SKIP reading the invoke skill — it contains important information about required hosted-agent session handling.
+### Step 3 -- Deploy the agent
 
-If invocation testing still fails after this RBAC check, immediately read and follow the [troubleshoot skill](../troubleshoot/troubleshoot.md). Do not treat the deployment as fully successful until invocation succeeds.
-
-> ⚠️ **DO NOT stop here.** Continue to Step 8 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
-
-### Step 8: Auto-Create Evaluators & Dataset
-
-Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
-
-## Workflow: Prompt Agent Deployment
-
-### Step 1: Collect Agent Configuration
-
-Use the project endpoint from the project context (see Common: Project Context Resolution). Ask the user only for values not already resolved:
-- **Agent name** — Unique name for the agent
-- **Model deployment** — Model deployment name (e.g., `gpt-4o`)
-- **Instructions** — System prompt (optional)
-- **Temperature** — Response randomness 0-2 (optional, default varies by model)
-- **Tools** — Tool configurations (optional)
-
-### Step 2: Get Agent Definition Schema
-
-Use `agent_definition_schema_get` with `schemaType: prompt` to retrieve the current schema.
-
-### Step 3: Create the Agent
-
-Use `agent_update` with the agent definition:
-
-```json
-{
-  "kind": "prompt",
-  "model": "<model-deployment>",
-  "instructions": "<system-prompt>",
-  "temperature": 0.7
-}
+```bash
+azd deploy --no-prompt
+# Multi-service:
+azd deploy <service-name> --no-prompt
 ```
 
-### Step 4: Test the Agent
+What deploy does:
 
-Read and follow the [invoke skill](../invoke/invoke.md) to send a test message and verify the agent responds correctly.
+- Reads the agent's `azure.yaml` service block, packages the agent, uploads it, and registers a new immutable version.
+- **Direct code deploy** (`codeConfiguration` present): zips source, excludes `.agentignore`, and lets Foundry build the runtime image.
+- **Container deploy** (no code configuration): builds the `Dockerfile`, pushes to the project's ACR, registers the version. When the service block has `image:` set, `azd` reuses the pre-built image.
 
-> ⚠️ **DO NOT stop here.** Continue to Step 5 (Auto-Create Evaluators & Dataset). This step is mandatory after every successful deployment.
+After deploy, azd writes `AGENT_<SVC>_NAME`, `AGENT_<SVC>_VERSION`, and `AGENT_<SVC>_<PROTO>_ENDPOINT` (one per protocol) into the active env.
 
-### Step 5: Auto-Create Evaluators & Dataset
+Re-deploying an identical build still creates a new version; `azd` prints `Agent version <n> is already active.` and skips the poll.
 
-Follow [After Deployment — Auto-Create Evaluators & Dataset](#after-deployment--auto-create-evaluators--dataset) below.
+If deploy reports `Done` for the service and then fails only in `postdeploy` with `Agent <service-name> with version <n> not found`, the `azure.yaml` service key and the service's `name:` were mismatched. Rename the `azure.yaml services` key to the deployed agent name and rerun `azd deploy --no-prompt`; do not switch deployment method.
 
-## Display Agent Information
-Once deployment is done for either hosted or prompt agent, display the agent's details in a nicely formatted table.
+### Step 4 -- Verify and invoke
 
-Below the table you MUST also display a Playground link for direct access to the agent in Azure AI Foundry:
+```bash
+azd ai agent show --output json
+```
 
-[Open in Playground](https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion})
+Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Smoke-test:
 
-To calculate the encodedSubId, you need to take subscription id and convert it into its 16-byte GUID, then encode it as URL-safe base64 without padding (= characters trimmed). You can use the following Python code to do this conversion:
+```bash
+azd ai agent invoke "hello, are you up?"
+```
+
+> `azd ai agent invoke` is billed, so it prints a confirmation envelope on `--no-prompt`. Summarize `changes[]`, then run `confirmCommand` once consented.
+
+Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
+
+### Step 5: Auto-Generate Evaluation Suite (MANDATORY — RUNS AUTOMATICALLY)
+
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+
+This step runs automatically after deploy. Ask the user which source to use and start it right after deploy succeeds — with `--no-wait`, `generate` returns in seconds and generation runs server-side, so it overlaps with invoke/test steps and finishes faster overall.
+
+> *"Your agent is deployed. Want me to set up an evaluation suite now? (a) Yes — current agent instructions (synthetic Q&A), (b) Yes — historical traces (last 3 days), (c) Yes — use existing `eval.yaml`, (d) No / later."*
+
+| Choice | Command | What's next |
+|---|---|---|
+| (a) Agent instructions | `azd ai agent eval generate --gen-instruction "<agent purpose>" --no-wait --no-prompt` — `--gen-instruction` is required (hosted agents don't auto-derive it); use the service's `description:` in `azure.yaml`. | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
+| (b) Historical traces | `azd ai agent eval generate --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
+| (c) Existing `eval.yaml` | Skip `generate`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
+| (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval generate` (and then `eval run`) anytime."* |
+
+Other useful flags on `generate`: `--dataset <path-or-name>` to reuse an existing dataset instead of generating one, `--evaluator <name>` (repeatable) to pin built-in or custom evaluators, `--eval-model <name>` to choose the model used for generation and evaluation, `--reset-defaults` to overwrite an existing eval config, `--name <suite-name>` and `--out-file <path>` (default `eval.yaml`).
+
+Then proceed to Step 6. See [After Deployment — Auto-Generate Evaluation Suite](#after-deployment--auto-generate-evaluation-suite) for run/refresh details.
+
+### Step 6 -- Hand off
+
+- Send more messages -> [invoke](../invoke/invoke.md)
+- Evaluate / optimize -> [observe](../observe/observe.md)
+- Diagnose failures -> [troubleshoot](../troubleshoot/troubleshoot.md)
+- Search traces / latency -> [trace](../trace/trace.md)
+
+## `.agentignore`
+
+`azd ai agent init` writes a default `<service-dir>/.agentignore` for code-deploy projects (gitignore syntax) that excludes tooling files, secrets, language artifacts, and Docker files from the deploy ZIP. Only the root file is read; use `!path` to force-include.
+
+## Endpoint or card edits -- no new version
+
+When only `agentEndpoint:` or `agentCard:` changed in the `azure.yaml` service block:
+
+```bash
+azd ai agent endpoint update          # patch in place
+azd ai agent endpoint update --force  # skip confirmation for breaking changes
+```
+
+Idempotent.
+
+## Multi-environment deploys
+
+```bash
+azd env list
+azd env select prod
+azd deploy --no-prompt
+```
+
+Each env has its own `AGENT_<SVC>_*` vars.
+
+## Common failure modes -- Hosted
+
+| Error | Fix |
+|-------|-----|
+| `missing_project_endpoint` | Run `azd env set AZURE_AI_PROJECT_ENDPOINT <url>`, or run `azd provision` for a new project. |
+| `invalid_agent_manifest` | `azd ai agent doctor`; fix the named field. |
+| `invalid_connection` | Inspect with `azd ai connection show <name>`. |
+| Docker daemon not running | You are on the container path. Add/fix `codeConfiguration` and retry direct code deploy. Only install Docker or try remote image build if you specifically need container deploy. |
+| ACR push 403 | Foundry project RBAC is missing `AcrPush` for your identity. Consider switching to direct code deployment to avoid ACR entirely. |
+| `container registry endpoint not found` | ACR is not configured. Use `azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <url>`, or switch to direct code deployment. |
+| Agent version poll times out | Build still running; retry `azd ai agent show` after a minute. |
+| `session_not_ready` (424) | Cold start or readiness delay. Wait 15-30 seconds and retry. If persistent, use `1` CPU / `2Gi` memory minimum, verify the model deployment name, capability host, and agent identity role. |
+| `invalid value "json" for --output` from `azd ai agent invoke` | Invoke supports only `default` and `raw` currently. Retry without `--output json`. |
+| `could not resolve agent service in azd project: no azure.ai.agent service named '<agentName>' found in azure.yaml` from `azd ai agent invoke` | Name mismatch. Use the service name, update the `azure.yaml` service block, or invoke through the Foundry MCP `agent_invoke` tool. |
+| `subscription quota exceeded` | Ask user to request quota; do not auto-retry. |
+| Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
+| `RoleAssignmentUpdateNotPermitted` during provision | A role assignment already exists but conflicts. Check for existing role assignments with `az role assignment list --scope <resource-scope>`. The provision may have succeeded for all resources except RBAC — verify with `azd ai project show` and manually assign the `Cognitive Services User` role to the agent identity if needed. |
+| `eval generate`: `one of --gen-instruction ... is required` | Retry with `--gen-instruction "<agent purpose>"` (Step 5 option (a)). |
+| `unknown command "init" for "azd ai agent eval"` | Command was renamed: use `azd ai agent eval generate` (requires azd CLI with `azure.ai.agents` extension up to date). |
+
+For deeper logs, see [troubleshoot](../troubleshoot/troubleshoot.md).
+
+## Workflow -- Prompt agent (MCP)
+
+Prompt agents are not containerized -- they are a model + instructions + optional tools, created through the Foundry MCP server. Use when the user explicitly wants a prompt agent.
+
+### MCP tools
+
+| Tool | Purpose |
+|------|---------|
+| `agent_definition_schema_get` | Get the schema (`schemaType: "prompt"`). |
+| `agent_update` | Create or update; supports `isCloneRequest` + `cloneTargetAgentName`. |
+| `agent_get` | List or fetch one. |
+| `agent_delete` | Delete an agent. |
+
+### Steps
+
+1. **Collect config** -- resolve endpoint from `azd env get-values` or ask. Then ask for **agent name**, **model deployment** (e.g. `gpt-4o`), and optional **instructions**, **temperature**, **tools**.
+2. **Get schema** -- `agent_definition_schema_get` with `schemaType: "prompt"`.
+3. **Create** -- `agent_update` with `{"kind": "prompt", "model": "<deployment>", "instructions": "...", "temperature": 0.7}`.
+4. **Smoke test** -- follow [invoke](../invoke/invoke.md).
+5. **Auto-generate evaluation suite** -- see [Step 5: Auto-Generate Evaluation Suite (Prompt)](#step-5-auto-generate-evaluation-suite-prompt-mandatory--runs-automatically) below.
+6. **Hand off** -- evaluate via [observe](../observe/observe.md); clone via `agent_update` + `isCloneRequest`; delete via `agent_delete`.
+
+### Step 5: Auto-Generate Evaluation Suite (Prompt) (MANDATORY — RUNS AUTOMATICALLY)
+
+> ⚠️ **Pre-summary gate.** If you are about to write a deployment summary or Playground link and Step 5 has not run, you are violating this skill. Run Step 5 first.
+
+This step runs automatically after deploy. Ask the user which source to use and start it right after deploy succeeds — with `--no-wait`, `generate` returns in seconds and generation runs server-side, so it overlaps with invoke/test steps and finishes faster overall.
+
+> *"Your agent is deployed. Want me to set up an evaluation suite now? (a) Yes — current agent instructions (synthetic Q&A), (b) Yes — historical traces (last 3 days), (c) Yes — use existing `eval.yaml`, (d) No / later."*
+
+| Choice | Command | What's next |
+|---|---|---|
+| (a) Agent instructions | `azd ai agent eval generate --gen-instruction "<agent purpose>" --no-wait --no-prompt` | Generation runs server-side. Tell the user: *"Suite submitted. Run `azd ai agent eval run` whenever you're ready — it'll finalize `eval.yaml` and execute the eval in one step."* |
+| (b) Historical traces | `azd ai agent eval generate --trace-days 3 --max-samples 50 --no-wait --no-prompt` | Same as (a). |
+| (c) Existing `eval.yaml` | Skip `generate`. | Tell the user: *"Using existing `eval.yaml`. Run `azd ai agent eval run` when ready."* |
+| (d) No / later | Skip. | Tell the user: *"You can run `azd ai agent eval generate` (and then `eval run`) anytime."* |
+
+## Common failure modes -- Prompt
+
+| Error | Fix |
+|-------|-----|
+| Schema fetch failed | Verify endpoint format: `https://<resource>.services.ai.azure.com/api/projects/<project>`. |
+| Agent creation failed | Use `agent_definition_schema_get` to verify the definition. |
+| Permission denied | User needs `Foundry User` role on the project. |
+| Model not found | Deploy the model first via [models/deploy-model](../../models/deploy-model/SKILL.md). |
+
+## Display agent details (both flows)
+
+After a successful deploy, show the agent's name, version, status, and endpoints in a table. Include a Playground link:
 
 ```
+https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion}
+```
+
+`encodedSubId` is the subscription GUID as URL-safe base64 (no `=`):
+
+```bash
 python -c "import base64,uuid;print(base64.urlsafe_b64encode(uuid.UUID('<SUBSCRIPTION_ID>').bytes).rstrip(b'=').decode())"
 ```
 
-## Document Deployment Context
+For hosted agents, `playground_url` is in `azd ai agent show --output json`.
 
-After a successful deployment, persist the deployment context to `<agent-root>/.foundry/agent-metadata.yaml` under the selected environment so future conversations (evaluation, trace analysis, monitoring) can reuse it automatically. See [Agent Metadata Contract](../../references/agent-metadata-contract.md) for the canonical schema.
+## After Deployment — Auto-Generate Evaluation Suite
 
-| Metadata Field | Purpose | Example |
-|----------------|---------|---------|
-| `environments.<env>.projectEndpoint` | Foundry project endpoint | `https://<account>.services.ai.azure.com/api/projects/<project>` |
-| `environments.<env>.agentName` | Deployed agent name | `my-support-agent` |
-| `environments.<env>.azureContainerRegistry` | ACR resource (hosted agents) | `myregistry.azurecr.io` |
-| `environments.<env>.testCases[]` | Evaluation bundles for datasets, evaluators, and thresholds | `smoke-core`, `trace-regressions` |
-| `environments.<env>.testCases[].datasetUri` | Remote Foundry dataset URI for shared eval workflows | `azureml://datastores/.../paths/...` |
+> Reference for Step 5 options (a) and (b) — start `generate` right after deploy so its server-side generation overlaps with invoke/test steps and finishes faster. Options (c) and (d) skip `generate` and go straight to section 3 (run) or stop.
 
-If `agent-metadata.yaml` already exists, merge the selected environment instead of overwriting other environments or cached test cases without confirmation.
+### 1. Inspect existing eval.yaml
 
-## After Deployment — Auto-Create Evaluators & Dataset
+Check the selected agent root for `eval.yaml`:
 
-> ⚠️ **This step is automatic.** After a successful deployment, immediately prepare the selected `.foundry` environment for evaluation without waiting for the user to request it. This matches the eval-driven optimization loop.
+- **Exists and matches the selected agent** → skip `generate`; go to step 3 (run).
+- **Missing or stale** → continue to step 2.
 
-### 1. Read Agent Instructions
+### 2. Submit generation (asynchronous, server-side)
 
-Use **`agent_get`** (or local `agent.yaml`) to understand the agent's purpose and capabilities.
+Run `azd ai agent eval generate --no-wait` with the user's chosen flags (see the Step 5 table). The command:
 
-### 2. Reuse or Refresh Local Cache
+- Submits dataset + evaluator generation jobs server-side.
+- Returns in seconds.
+- Writes pending operation IDs to local azd state.
+- Writes a placeholder `eval.yaml` at the agent root (override with `--out-file <path>`).
 
-Inspect the selected agent root before generating anything new:
+No skill-side polling, terminal handle, or later-turn re-check is needed. `azd ai agent eval run` (section 3) automatically resumes a pending generation, downloads artifacts, finalizes `eval.yaml`, then runs the eval.
 
-- Reuse `.foundry/evaluators/` and `.foundry/datasets/` when they already contain the right assets for the selected environment.
-- Ask before refreshing cached files or replacing thresholds.
-- If cache is missing or stale, regenerate the dataset/evaluators and update metadata for the active environment only.
+If the user wants to wait synchronously instead (e.g., to inspect `eval.yaml` before running), drop `--no-wait` — `generate` will then submit the jobs, wait for completion, download review artifacts, and write the finalized `eval.yaml` before returning (typically several minutes).
 
-### 2.5 Discover Existing Evaluators
+### 3. Run the suite
 
-Use **`evaluator_catalog_get`** with the selected environment's project endpoint to list all evaluators already registered in the project. Display them to the user grouped by type (`custom` vs `built-in`) with name, category, and version. During Phase 1, catalog any promising custom evaluators for later reuse, but keep the first run on the built-in baseline. Only propose creating a new evaluator in Phase 2 when no existing evaluator covers the required dimension.
-
-### 3. Select Default Evaluators
-
-Follow the [observe skill's Two-Phase Evaluator Strategy](../observe/observe.md). Phase 1 is built-in only, so do not create a new custom evaluator during the initial setup pass.
-
-Start with <=5 built-in evaluators for the initial eval run so the first pass stays fast:
-
-| Category | Evaluators |
-|----------|-----------|
-| **Quality (built-in)** | relevance, task_adherence, intent_resolution |
-| **Safety (built-in)** | indirect_attack |
-| **Tool use (built-in, conditional)** | tool_call_accuracy (use when the agent calls tools; some catalogs label it as `builtin.tool_call_accuracy`) |
-
-After analyzing initial results, suggest additional evaluators (custom or built-in) targeted at specific failure patterns instead of front-loading a larger default set.
-
-If Phase 2 is needed, call `evaluator_catalog_get` again to reuse an existing custom evaluator first. Only create a new custom evaluator when the catalog still lacks the required signal, and prefer prompt templates that consume `expected_behavior` for per-query behavioral scoring.
-
-### 4. Identify LLM-Judge Deployment
-
-Use **`model_deployment_get`** to list the selected project's actual model deployments, then choose one that supports chat completions for quality evaluators. Do **not** assume `gpt-4o` exists in the project. If no deployment supports chat completions, stop the auto-setup flow and tell the user quality evaluators cannot run until a compatible judge deployment is available.
-
-### 5. Generate Seed Dataset
-
-> ⚠️ **MANDATORY: Read the full generation workflow before proceeding.**
-
-Read and follow [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md). That reference contains:
-- The required JSONL row schema (`query` + `expected_behavior` are both mandatory)
-- Coverage distribution targets and generation rules
-- Generation requirements that keep rows valid by construction (valid JSON, required fields, coverage targets, and minimum row count)
-- Foundry registration steps (blob upload + `evaluation_dataset_create`)
-- Metadata updates for `agent-metadata.yaml` and `manifest.json`
-
-Do NOT skip the `expected_behavior` field. The generation reference handles the complete flow from query generation through Foundry registration.
-
-The local filename must start with the selected environment's Foundry agent name (`agentName` in `agent-metadata.yaml`) before adding stage, environment, or version suffixes.
-
-Use [Generate Seed Evaluation Dataset](../eval-datasets/references/generate-seed-dataset.md) as the single source of truth for seed dataset registration. It covers `project_connection_list` with `AzureStorageAccount`, key-based versus AAD upload, `evaluation_dataset_create` with `connectionName`, and saving the returned `datasetUri`.
-
-### 6. Persist Artifacts and Test Cases
-
-Save evaluator definitions, local datasets, and evaluation outputs under `.foundry/`, then register or update test cases in `agent-metadata.yaml` for the selected environment:
-
-```text
-.foundry/
-  agent-metadata.yaml
-  evaluators/
-    <name>.yaml
-  datasets/
-    <agent-name>-eval-seed-v1.jsonl
-  results/
+```bash
+azd ai agent eval run
 ```
 
-Each test case should bundle one dataset with the evaluator list, thresholds, and a priority tag (`P0`, `P1`, or `P2`). Persist the local `datasetFile` and remote `datasetUri` together, and seed exactly one `P0` smoke test case after deployment.
+Use `azd ai agent eval show -O results.json` to inspect run details, or `azd ai agent eval list` to see history.
 
-### 7. Prompt User
+### 4. Refresh datasets/evaluators (later)
 
-*"Your agent is deployed and running in the selected environment. The `.foundry` cache now contains evaluators, a local seed dataset, the Foundry dataset registration metadata, and test-case metadata. Would you like to run an evaluation to identify optimization opportunities?"*
+When local files under `datasets/<suite>/` or `evaluators/<suite>/` change, run `azd ai agent eval update --dataset-only` or `--evaluator-only` to upload new versions. azd bumps the `version` fields in `eval.yaml`.
 
-- **Yes** → follow the [observe skill](../observe/observe.md) starting at **Step 2 (Evaluate)** — cache and metadata are already prepared.
-- **No** → stop. The user can return later.
-- **Production trace analysis** → follow the [trace skill](../trace/trace.md) to search conversations, diagnose failures, and analyze latency using App Insights.
+### 5. Prompt User
 
-## Agent Definition Schemas
+*"Your agent is deployed and evaluation suite generation is **submitted server-side** (still running, takes several minutes). Would you like to run an evaluation now? `azd ai agent eval run` will wait for generation to finish, then execute the eval."*
 
-### Prompt Agent
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `kind` | string | ✅ | Must be `"prompt"` |
-| `model` | string | ✅ | Model deployment name (e.g., `gpt-4o`) |
-| `instructions` | string | | System message for the model |
-| `temperature` | number | | Response randomness (0-2) |
-| `top_p` | number | | Nucleus sampling (0-1) |
-| `tools` | array | | Tools the model may call |
-| `tool_choice` | string/object | | Tool selection strategy |
-| `rai_config` | object | | Responsible AI configuration |
-
-### Hosted Agent
-
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
-| `kind` | string | ✅ | Must be `"hosted"` |
-| `image` | string | ✅ | Container image URL |
-| `cpu` | string | ✅ | CPU allocation (e.g., `"0.5"`, `"1"`, `"2"`) |
-| `memory` | string | ✅ | Memory allocation (e.g., `"1Gi"`, `"2Gi"`) |
-| `container_protocol_versions` | array | ✅ | Protocol and version pairs |
-| `environment_variables` | object | | Key-value pairs for container env vars |
-| `tools` | array | | Tool configurations |
-| `rai_config` | object | | Responsible AI configuration |
-
-### Container Protocols
-
-| Protocol | Description |
-|----------|-------------|
-| `a2a` | Agent-to-Agent protocol |
-| `responses` | OpenAI Responses API |
-| `invocations` | Invocation payload protocol for arbitrary request bodies and custom SSE behavior |
-| `mcp` | Model Context Protocol |
-
-## Agent Management Operations
-
-### Clone an Agent
-
-Use `agent_update` with `isCloneRequest: true` and `cloneTargetAgentName` to create a copy. For prompt agents, optionally override the model with `modelName`.
-
-### Delete an Agent
-
-Use `agent_delete` — automatically cleans up hosted-agent runtime resources.
-
-### List Agents
-
-Use `agent_get` without `agentName` to list all agents, or with `agentName` to get a specific agent's details.
-
-## Error Handling
-
-| Error | Cause | Resolution |
-|-------|-------|------------|
-| Project type not detected | No known project files found | Ask user to specify project type manually |
-| Docker not running | Docker Desktop not started or not installed | Start Docker Desktop, or use Cloud Build (ACR Tasks) instead |
-| ACR login failed | Not authenticated to Azure | Run `az login` first, then `az acr login --name <acr-name>` |
-| Build/push failed | Dockerfile errors or insufficient ACR permissions | Check Dockerfile syntax, verify Contributor or AcrPush role on registry |
-| ACR build log crash | `UnicodeEncodeError` when `az acr build` streams remote logs | The remote build continues independently — do not assume failure. Get the `<run-id>` from the earlier `az acr build` output and check status with `az acr task show-run -r <acr-name> --run-id <run-id> --query status`. |
-| Agent creation failed | Invalid definition or missing required fields | Use `agent_definition_schema_get` to verify schema, check all required fields |
-| Hosted agent not running after creation | Provisioning failed or the image is not usable | Verify ACR image path, check cpu/memory values, confirm ACR permissions, then inspect hosted-agent logs with the troubleshoot skill |
-| Role assignment failed | The required invocation RBAC was not granted | Stop the deployment workflow and explain that agent invocation requires `Cognitive Services User` on the instance identity at the Azure AI Services resource scope |
-| Invocation test failed after deployment | Missing or incorrect invocation RBAC for the instance identity | Check whether `Cognitive Services User` is already assigned to the instance identity at the Azure AI Services resource scope; if missing, assign it, then retry invocation |
-| Permission denied | Insufficient Foundry project permissions | Verify Azure AI Owner or Contributor role on the project |
-| Schema fetch failed | Invalid project endpoint | Verify project endpoint URL format: `https://<resource>.services.ai.azure.com/api/projects/<project>` |
+- **Yes** → run `azd ai agent eval run` (this resumes the pending generation, then runs the eval — may take several minutes the first time), then follow the [observe skill](../observe/observe.md) to interpret results.
+- **No** → stop. The user can return later via `azd ai agent eval run` — it will pick up wherever the pending generation is.
+- **Production trace analysis** → follow the [trace skill](../trace/trace.md).
 
 ## Non-Interactive / YOLO Mode
 
-When running in non-interactive mode (e.g., `nonInteractive: true` or YOLO mode), the skill skips user confirmation prompts and uses sensible defaults:
+> Even in `--no-prompt` / `--yolo` mode: if the user named a foundry project or asked to create one, go ahead; otherwise stop and ask before provisioning.
 
-- **Environment variables** — Uses values resolved from `azd env get-values` and project defaults without prompting for confirmation
-- **Agent name** — Must be provided in the initial user message or derived sensibly from the project context; if missing, the skill fails with an error instead of prompting
-- **Hosted agent verification** — Automatically continues into RBAC and invocation verification without additional prompts once deployment succeeds
-
-> ⚠️ **Warning:** In non-interactive mode, ensure all required values (project endpoint, agent name, ACR image) are provided upfront in the user message or available via `azd env get-values`. Missing values will cause the deployment to fail rather than prompt.
-
-## Additional Resources
-
-- [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
-- [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
-- [Foundry Samples](https://github.com/microsoft-foundry/foundry-samples/)
+- Hosted: always pass `--no-prompt`. If `azd ai agent invoke` prints a `confirmation_required` envelope, summarize `changes[]` and re-run with `--force` after the user consents -- never auto-append `--force`.
+- Prompt: all required values (project endpoint, agent name, model deployment) must come from the user message or `azd env get-values`; missing values should fail loudly rather than prompt.
