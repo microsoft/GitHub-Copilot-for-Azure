@@ -5,7 +5,7 @@
 | Symptom | Likely Cause | Quick Fix |
 |---------|--------------|-----------|
 | Orchestration stuck in "Running" | Activity function failed or hung | Check task hub history; terminate and purge if needed |
-| Non-deterministic orchestration error | Code uses `DateTime.Now`, `Guid.NewGuid()`, or random | Replace with `IDurableOrchestrationContext` deterministic APIs |
+| Non-deterministic orchestration error | Code uses `DateTime.Now`, `Guid.NewGuid()`, or random | Replace with deterministic context APIs (`IDurableOrchestrationContext` in-process / `TaskOrchestrationContext` isolated) |
 | Task hub conflicts | Multiple apps sharing same hub | Set unique `hubName` per app in host.json |
 | Fan-out never completes | One activity silently failed | Query instance status for sub-orchestrations; check `exceptions` table |
 | Replay causes side effects | I/O in orchestrator function | Move all I/O into activity functions |
@@ -131,7 +131,7 @@ az storage table list --account-name STORAGE \
   --query "[?starts_with(name, 'TASKHUB')]" --output table
 ```
 
-> 💡 **Tip:** Hub names must be alphanumeric only (no hyphens, underscores, or special characters). For the Azure Storage provider, a task hub name is used as a prefix for multiple tables and queues. Common examples include the `<HubName>History` and `<HubName>Instances` tables, as well as control and work-item queues (e.g., `<HubName>-control` and `<HubName>-workitems`). See the [Durable Functions storage provider documentation](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-storage-providers#azure-storage) for the full schema.
+> 💡 **Tip:** For the Azure Storage provider, choose a task hub name that satisfies the full provider constraints—not just “alphanumeric only.” In practice, use letters and numbers only (no hyphens, underscores, or other special characters), keep the name within the documented length limit, and ensure it starts with a letter when required by your Durable Functions runtime/provider combination. The task hub name is reused as a prefix for multiple tables and queues, including `<HubName>History`, `<HubName>Instances`, and related control/work-item queues. See the official [Durable Functions storage provider documentation](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-storage-providers#azure-storage) for the current authoritative naming rules and schema details.
 
 ---
 
@@ -172,10 +172,10 @@ traces
 az storage entity query --table-name TASKHUBHistory --account-name STORAGE \
   --num-results 1 --select PartitionKey --query "items[0]"
 
-# To estimate history size for a specific orchestration instance, query by PartitionKey:
-az storage entity query --table-name TASKHUBHistory --account-name STORAGE \
-  --filter "PartitionKey eq 'INSTANCE_ID'" --select PartitionKey \
-  --query "length(items)"
+# To estimate history size for a specific orchestration instance, avoid relying on
+# a single az storage entity query page. Use Storage Explorer, Azure Data Explorer,
+# or a Storage SDK script that follows continuation tokens and accumulates all
+# entities for PartitionKey eq 'INSTANCE_ID'.
 ```
 
 > ⚠️ **Warning:** An orchestration with 10,000+ history events will experience significant replay latency. Use `ContinueAsNew()` in long-running orchestrations to keep history size manageable.

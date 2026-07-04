@@ -34,7 +34,7 @@ curl -s -w "\n%{http_code}" "https://APP.azurewebsites.net/api/FUNCTION?code=FUN
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Timer never fires | Invalid NCRONTAB expression | Validate with `NCrontab.Advanced` — field order: `{second} {minute} {hour} {day} {month} {day-of-week}` |
+| Timer never fires | Invalid NCRONTAB expression | Verify the 6-field NCRONTAB format: `{second} {minute} {hour} {day} {month} {day-of-week}` |
 | Timer fires twice | Multiple instances running | Configure singleton behavior via `host.json` (singleton settings) or language-specific singleton/lock attributes so only one instance runs the timer |
 | Missed timer execution | App was stopped / scaled to zero | Enable Always On (`az functionapp config set -n APP -g RG --always-on true`) — requires App Service plan |
 | Timer drift after deploy | Missed schedule catch-up | Ensure `"useMonitor": true` in the timer trigger binding in `function.json` (default) — runtime tracks missed executions in storage |
@@ -88,7 +88,7 @@ az functionapp config appsettings list -n APP -g RG --query "[?name=='AzureWebJo
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Trigger delayed (minutes) | Using polling scan (default) | Switch to Event Grid trigger for near-instant processing |
+| Trigger delayed (minutes) | Blob trigger may be polling-based and incur scan latency | Consider an Event Grid-based blob trigger for lower-latency processing, where supported and configured |
 | Container not found | Wrong connection or name | Verify `connection` and `path` in function.json |
 | Blobs processed multiple times | Blob receipt tracking failure | Check `azure-webjobs-hosts/blobreceipts/` in storage |
 | Large blobs timeout | Consumption plan limits | Stream blobs or use Premium plan for larger payloads |
@@ -103,7 +103,7 @@ az functionapp config appsettings list -n APP -g RG \
 az storage container show --name azure-webjobs-hosts --account-name STORAGE
 ```
 
-> 💡 **Tip:** For production workloads, prefer Event Grid-based blob triggers (`BlobTrigger` with `source: "EventGrid"` in host.json) for reliable, low-latency processing.
+> 💡 **Tip:** For production workloads that need low latency, evaluate Event Grid-based blob triggers (`BlobTrigger` with `source: "EventGrid"` in host.json) and confirm your runtime, extension version, and storage account configuration support them.
 
 ---
 
@@ -132,8 +132,7 @@ az servicebus queue show -n QUEUE --namespace-name NS -g RG \
   --query "{dlqCount:countDetails.deadLetterMessageCount, activeCount:countDetails.activeMessageCount}"
 
 # View dead-letter message contents
-# Note: Azure CLI does not currently support peeking DLQ message bodies directly.
-# Use one of the following instead:
+# If your tooling cannot inspect DLQ message bodies directly, use one of the following:
 #   - Service Bus Explorer in the Azure portal (Service Bus namespace -> Queues -> <QUEUE> -> Dead-letter)
 #   - An Azure Service Bus SDK (for example, .NET, Java, Python, or JavaScript) with a receiver scoped to:
 #       "<QUEUE>/$DeadLetterQueue"
