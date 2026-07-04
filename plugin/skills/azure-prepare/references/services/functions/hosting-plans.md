@@ -26,7 +26,7 @@
 | Dedicated (B1) | Per-instance per-hour; always running | ~$55+/mo (1 instance) |
 | Container Apps | Per-vCPU-s + per-GiB-s; scale-to-zero | $0 – varies |
 
-> 💡 **Tip:** Among Azure Functions hosting plans, Consumption and Flex Consumption are the only options that truly scale your function instances to zero and charge nothing while idle. Azure Container Apps can also scale containers to zero, but you may still incur baseline environment costs.
+> 💡 **Tip:** Consumption and Flex Consumption are the Functions plans that scale instances to zero and charge nothing while idle. Container Apps can scale containers to zero, but may have baseline environment costs.
 
 ## Decision Criteria
 
@@ -41,7 +41,8 @@ Need per-function scaling or fast cold starts on Linux?
       ├─ Yes → Premium or Dedicated
       └─ No
          Budget-sensitive with bursty traffic?
-         ├─ Yes → Flex Consumption
+         ├─ Yes + Linux → Flex Consumption
+         ├─ Yes + Windows → Premium (EP1, cheapest always-on with VNet)
          └─ No → Premium (predictable latency)
 ```
 
