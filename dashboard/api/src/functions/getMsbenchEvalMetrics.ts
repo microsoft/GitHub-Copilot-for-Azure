@@ -69,7 +69,7 @@ async function getMsbenchEvalMetrics(request: HttpRequest, context: InvocationCo
             body: JSON.stringify(entities),
         };
     } catch (err: any) {
-        context.error("Error querying eval metrics:", err?.message ?? err);
+        context.error("Error querying eval metrics:", err);
         return {
             status: 500,
             headers: { "Content-Type": "application/json" },
@@ -106,7 +106,7 @@ async function getMsbenchEvalFilters(request: HttpRequest, context: InvocationCo
             }),
         };
     } catch (err: any) {
-        context.error("Error querying eval filters:", err?.message ?? err);
+        context.error("Error querying eval filters:", err);
         return {
             status: 500,
             headers: { "Content-Type": "application/json" },
