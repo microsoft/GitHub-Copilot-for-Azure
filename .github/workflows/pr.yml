@@ -212,8 +212,8 @@ jobs:
         uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
-            plugin/skills/*/SKILL.md
-            .github/skills/*/SKILL.md
+            plugin/skills/**/SKILL.md
+            .github/skills/**/SKILL.md
 
       - name: Check all changed plugin skill files
         id: changed-plugin-skills
@@ -258,18 +258,21 @@ jobs:
 
           # Map changed plugin/skills paths to built output/skills paths so we
           # validate the version-stamped copies. .github/skills are unchanged.
-          SKILL_FILES=""
-          for file in $CHANGED_FILES; do
-            if echo "$file" | grep -q '^plugin/skills/'; then
-              mapped=$(echo "$file" | sed 's|^plugin/skills/|output/skills/|')
-              SKILL_FILES="$SKILL_FILES ../$mapped"
-            else
-              SKILL_FILES="$SKILL_FILES ../$file"
+          SKILL_FILES=()
+          while IFS= read -r file; do
+            if [[ -z "$file" ]]; then
+              continue
             fi
-          done
+            if [[ "$file" == plugin/skills/*/SKILL.md ]]; then
+              mapped="output/skills/${file#plugin/skills/}"
+              SKILL_FILES+=("../$mapped")
+            else
+              SKILL_FILES+=("../$file")
+            fi
+          done <<< "$CHANGED_FILES"
 
           # Run frontmatter spec validation
-          if OUTPUT=$(npm run frontmatter -- $SKILL_FILES 2>&1); then
+          if OUTPUT=$(npm run frontmatter -- "${SKILL_FILES[@]}" 2>&1); then
             echo "$OUTPUT"
             echo "✅ All skill frontmatter is valid" >> $GITHUB_STEP_SUMMARY
           else
