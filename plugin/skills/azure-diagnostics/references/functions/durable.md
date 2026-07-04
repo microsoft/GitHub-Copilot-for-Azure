@@ -131,7 +131,7 @@ az storage table list --account-name STORAGE \
   --query "[?starts_with(name, 'TASKHUB')]" --output table
 ```
 
-> 💡 **Tip:** For the Azure Storage provider, choose a task hub name that satisfies the full provider constraints—not just “alphanumeric only.” In practice, use letters and numbers only (no hyphens, underscores, or other special characters), keep the name within the documented length limit, and ensure it starts with a letter when required by your Durable Functions runtime/provider combination. The task hub name is reused as a prefix for multiple tables and queues, including `<HubName>History`, `<HubName>Instances`, and related control/work-item queues. See the official [Durable Functions storage provider documentation](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-storage-providers#azure-storage) for the current authoritative naming rules and schema details.
+> 💡 **Tip:** For the Azure Storage provider, task hub names must satisfy three constraints: letters and numbers only (no hyphens, underscores, or special characters), the name must start with a letter, and it must stay within the documented length limit for your runtime/provider. The hub name becomes a prefix for multiple tables and queues (`<HubName>History`, `<HubName>Instances`, and related control/work-item queues). See the official [Durable Functions storage provider documentation](https://learn.microsoft.com/azure/azure-functions/durable/durable-functions-storage-providers#azure-storage) for the current authoritative naming rules.
 
 ---
 
