@@ -1,6 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext, Timer } from "@azure/functions";
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
+import { createHash } from "node:crypto";
 import { listMsbenchDates, enumerateMsbenchBlobs, getMsbenchBlobContent } from "../msbenchBlobEnumerator";
 import type { BlobTreeNode } from "../shared/blobTree";
 
@@ -13,8 +14,18 @@ interface EvalReport {
     total_steps: number;
     model: string;
     instance_id: string;
+    benchmark?: string;
     resolved?: boolean;
     [key: string]: unknown;
+}
+
+function toSafeString(value: string | undefined): string {
+    return value?.trim() ? value : "unknown";
+}
+
+function buildMsbenchRowKey(instanceId: string, benchmark: string, model: string): string {
+    const payload = `${instanceId}|${benchmark}|${model}`;
+    return createHash("sha256").update(payload).digest("base64url");
 }
 
 function getEvalTableClient(): TableClient {
@@ -106,12 +117,14 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
 
         for (const report of reports) {
             if (!report) continue;
-            const benchmark = report.instance_id || "unknown";
-            const model = report.model || "unknown";
+            const instanceId = toSafeString(report.instance_id);
+            const benchmark = toSafeString(report.benchmark ?? instanceId);
+            const model = toSafeString(report.model);
 
             await tableClient.upsertEntity({
                 partitionKey: date,
-                rowKey: `${benchmark}_${model}`,
+                rowKey: buildMsbenchRowKey(instanceId, benchmark, model),
+                instance_id: instanceId,
                 benchmark,
                 model,
                 totalConsumedTokens: Number(report.total_consumed_tokens) || 0,
