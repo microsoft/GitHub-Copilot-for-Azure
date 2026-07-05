@@ -19,9 +19,13 @@ interface EvalReport {
     [key: string]: unknown;
 }
 
-function toSafeString(value: string | undefined): string {
+interface EvalReportWithPath extends EvalReport {
+    blobPath: string;
+}
+
+function toSafeString(value: string | undefined): string | undefined {
     const trimmed = value?.trim();
-    return trimmed ? trimmed : "unknown";
+    return trimmed ? trimmed : undefined;
 }
 
 function buildMsbenchRowKey(instanceId: string, benchmark: string, model: string): string {
@@ -119,14 +123,15 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
         const evalPaths = collectEvalReportPaths(dateNode);
 
         // Download reports with bounded concurrency
-        const reports: (EvalReport | null)[] = [];
+        const reports: (EvalReportWithPath | null)[] = [];
         for (let i = 0; i < evalPaths.length; i += CONCURRENCY_LIMIT) {
             const batch = evalPaths.slice(i, i + CONCURRENCY_LIMIT);
             const batchResults = await Promise.all(
                 batch.map(async (path) => {
                     try {
                         const raw = await getMsbenchBlobContent(path);
-                        return JSON.parse(raw) as EvalReport;
+                        const report = JSON.parse(raw) as EvalReport;
+                        return { ...report, blobPath: path };
                     } catch {
                         context.log(`Skipping malformed eval report: ${path}`);
                         return null;
@@ -138,9 +143,10 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
 
         for (const report of reports) {
             if (!report) continue;
-            const instanceId = toSafeString(report.instance_id);
-            const benchmark = toSafeString(report.benchmark ?? instanceId);
-            const model = toSafeString(report.model);
+            const fallbackInstanceId = `path:${report.blobPath}`;
+            const instanceId = toSafeString(report.instance_id) ?? fallbackInstanceId;
+            const benchmark = toSafeString(report.benchmark) ?? instanceId;
+            const model = toSafeString(report.model) ?? "unknown";
 
             await tableClient.upsertEntity({
                 partitionKey: date,
