@@ -20,11 +20,12 @@ interface EvalReport {
 }
 
 function toSafeString(value: string | undefined): string {
-    return value?.trim() ? value : "unknown";
+    const trimmed = value?.trim();
+    return trimmed ? trimmed : "unknown";
 }
 
 function buildMsbenchRowKey(instanceId: string, benchmark: string, model: string): string {
-    const payload = `${instanceId}|${benchmark}|${model}`;
+    const payload = JSON.stringify([instanceId, benchmark, model]);
     return createHash("sha256").update(payload).digest("base64url");
 }
 
@@ -68,6 +69,22 @@ async function getProcessedDates(tableClient: TableClient): Promise<Set<string>>
     return dates;
 }
 
+async function deleteDatePartition(tableClient: TableClient, partitionKey: string, context: InvocationContext): Promise<number> {
+    let deleted = 0;
+    for await (const entity of tableClient.listEntities({
+        queryOptions: {
+            filter: `PartitionKey eq '${partitionKey}'`,
+            select: ["rowKey"],
+        },
+    })) {
+        await tableClient.deleteEntity(partitionKey, entity.rowKey);
+        deleted++;
+    }
+
+    context.log(`Deleted ${deleted} existing rows for date ${partitionKey} before re-sync`);
+    return deleted;
+}
+
 async function runSync(context: InvocationContext, force = false): Promise<{ synced: number; dates?: string[]; message?: string }> {
     const tableClient = getEvalTableClient();
     const blobDates = await listMsbenchDates();
@@ -94,6 +111,10 @@ async function runSync(context: InvocationContext, force = false): Promise<{ syn
         const tree = await enumerateMsbenchBlobs(`${date}/`);
         const dateNode = tree[date];
         if (!dateNode) continue;
+
+        if (force) {
+            await deleteDatePartition(tableClient, date, context);
+        }
 
         const evalPaths = collectEvalReportPaths(dateNode);
 
