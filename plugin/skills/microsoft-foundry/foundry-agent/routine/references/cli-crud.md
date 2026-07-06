@@ -1,10 +1,48 @@
 # CLI CRUD and Operations
 
-Use `azd ai routine` for imperative routine CRUD and operations. All verbs accept `--output json` or `--output table` (default). Add `-p <endpoint>` to override the resolved project endpoint.
+Use `azd ai routine` for imperative routine CRUD and operations. Every verb accepts `--output json` or `--output table` (default), and `-p <endpoint>` to override the resolved project endpoint.
+
+## Vocabulary: CLI aliases vs. manifest values
+
+A routine is a **trigger** (when it fires) plus an **action** (what it does). There are two spellings for each type: the CLI flags accept a short **alias**, while a `--file` manifest (and `azure.yaml`) use the raw **wire `type:` value**. They mean the same thing.
+
+**Triggers**
+
+| Fires on | `--trigger` alias | manifest `type:` | Key fields |
+|----------|-------------------|------------------|------------|
+| A single moment (one-shot) | `timer` | `timer` | `at` (ISO 8601 UTC) |
+| A recurring cron schedule | `recurring` | `schedule` | `cron_expression`, `time_zone` |
+| A GitHub issue event | `github-issue` | `github_issue` | `connection_id`, `owner`, `repository`, `issue_event` |
+| A custom external event | `custom` | `custom` | `provider`, `event_name`, `parameters` |
+
+**Actions** — both invoke the target agent; they differ only in which agent API is called and which field resumes prior context.
+
+| Calls the agent via | `--action` alias | manifest `type:` | Resume field |
+|---------------------|------------------|------------------|--------------|
+| Responses API (prompt in → response out) | `agent-response` (default) | `invoke_agent_responses_api` | `conversation` |
+| Invocations API (hosted-agent session) | `agent-invoke` | `invoke_agent_invocations_api` | `session_id` |
 
 ## Create
 
-Create from flags, or supply a `--file` manifest (`--file` and `--trigger` are mutually exclusive).
+Put the prompt or payload the routine sends to the agent in `action.input`. What it should contain depends on the action type you chose (the `--action` alias / action `type:` from the table above): when the action is `agent-response` (`invoke_agent_responses_api`), `action.input` is the natural-language prompt; when the action is `agent-invoke` (`invoke_agent_invocations_api`), it is the hosted agent's expected request payload. `azd ai routine create` has **no `--input` flag**, so any routine that needs `action.input` must be created from a manifest:
+
+```yaml
+# routine.yaml
+triggers:
+  default:
+    type: schedule          # wire value; --trigger alias is "recurring"
+    cron_expression: "0 * * * *"
+action:
+  type: invoke_agent_responses_api   # wire value; --action alias is "agent-response"
+  agent_name: my-agent
+  input: "Say hi."
+```
+
+```bash
+azd ai routine create hourly-hello --file routine.yaml
+```
+
+Flag-only create works only when the target agent needs no stored input. `--file` and `--trigger` are mutually exclusive.
 
 ```bash
 # One-shot timer -> agent
@@ -25,14 +63,11 @@ azd ai routine create triage-on-open \
   --issue-event opened \
   --action agent-invoke --agent-name triage-agent
 
-# Custom event
+# Custom event -> agent
 azd ai routine create on-custom-event \
   --trigger custom --provider <provider-id> --event-name <event> \
   --parameters '{"key":"value"}' \
   --action agent-response --agent-name my-agent
-
-# Manifest file
-azd ai routine create my-routine --file routine.yaml
 ```
 
 ## Create Flags
@@ -65,7 +100,7 @@ azd ai routine show nightly-report --output json
 
 ## Update
 
-`update` changes only passed fields; everything else is preserved. Supply named flags and/or a `--file` manifest.
+`update` changes only the fields you pass; everything else is preserved. Supply named flags and/or a `--file` manifest.
 
 ```bash
 azd ai routine update daily-digest --cron "30 9 * * *"
@@ -73,7 +108,7 @@ azd ai routine update daily-digest --agent-name another-agent --description "New
 azd ai routine update daily-digest --file routine.yaml
 ```
 
-Trigger and action **types** are immutable. `--trigger` / `--action` are rejected on `update`; delete and recreate to change them.
+The trigger and action **types** are immutable: `--trigger` / `--action` are rejected on `update`. To change a type, delete the routine and recreate it.
 
 ## Delete
 
@@ -82,7 +117,7 @@ azd ai routine delete daily-digest
 azd ai routine delete daily-digest --force
 ```
 
-Use `--force` for non-interactive deletes, including `--no-prompt`.
+Use `--force` for non-interactive deletes, including under `--no-prompt`.
 
 ## Routine Operations
 
@@ -90,7 +125,7 @@ Use `--force` for non-interactive deletes, including `--no-prompt`.
 azd ai routine enable daily-digest
 azd ai routine disable daily-digest
 
-# Manually fire a routine once
+# Fire a routine once, now
 azd ai routine dispatch daily-digest
 azd ai routine dispatch daily-digest --input '{"foo":"bar"}'
 azd ai routine dispatch daily-digest --async
@@ -100,4 +135,4 @@ azd ai routine run list daily-digest
 azd ai routine run list daily-digest --top 20 --filter "<odata-filter>"
 ```
 
-`dispatch` prints a Dispatch ID and Action Correlation ID; use `run list` to see the resulting status and phase.
+`dispatch --input` is a one-time override for that manual run only; it does not change the routine's stored `action.input`. `dispatch` prints a Dispatch ID and Action Correlation ID — use `run list` to see the resulting status and phase.

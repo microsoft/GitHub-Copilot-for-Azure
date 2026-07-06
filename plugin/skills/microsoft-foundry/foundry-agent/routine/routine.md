@@ -13,6 +13,7 @@ Create, read, update, and delete Microsoft Foundry **routines** with the Azure D
 | CRUD verbs | `create`, `list`, `show`, `update`, `delete` |
 | Routine operations | `enable`, `disable`, `dispatch`, `run list` |
 | Declarative form | `azure.yaml` service with `host: azure.ai.routine`, upserted by `azd deploy` / `azd up` |
+| Agent prompt/input | Set `action.input` in a routine manifest or `azure.yaml`; use a string for the agent `responses` protocol and the target payload for the agent `invocations` protocol. `azd ai routine create` flags do not include `--input` |
 | Project endpoint | `--project-endpoint`, then `AZURE_AI_PROJECT_ENDPOINT`, global `azd ai project set`, then `FOUNDRY_PROJECT_ENDPOINT` |
 | Output format | `--output json` or `--output table` (default) |
 
@@ -86,16 +87,27 @@ azd ai project set "https://<account>.services.ai.azure.com/api/projects/<projec
 
 The endpoint host must end with `.services.ai.azure.com` and use `https` with no explicit port.
 
-## Choose the Routine Management Path
+## Two Ways to Create a Routine
 
-| Situation | Use |
-|-----------|-----|
-| Quick one-off, exploration, scripting, CI ad-hoc | `azd ai routine <verb>` |
-| Routine should be versioned with the agent and reproduced per environment | `azure.yaml` service + `azd deploy` |
-| Enable, disable, manually dispatch, or inspect past runs | `azd ai routine enable/disable/dispatch/run list` |
-| Delete | `azd ai routine delete` (declarative removal never deletes) |
+A routine is the same Foundry resource — keyed by its name — no matter how you create it. Both paths go through `azd` and PUT idempotently against the same project, so a routine created one way can later be managed the other way. Pick a path, then read its reference doc for exact examples.
 
-For exact command examples, trigger/action flags, update rules, dispatch, and past-run inspection, read [CLI CRUD and Operations](references/cli-crud.md). For `azure.yaml` service shape and deploy behavior, read [Declarative Routines](references/azure-yaml.md).
+### Way 1 — Imperative: `azd ai routine create`
+
+Create the routine directly against the Foundry project with a single command — flags, or a `--file` manifest when it must carry a stored prompt/payload (`action.input`; there is no `--input` flag). Best for one-off scheduling, quick experiments, ad-hoc CRUD, and working **outside** an azd project — no `azure.yaml` required. → [CLI CRUD and Operations](references/cli-crud.md)
+
+### Way 2 — Declarative: `azure.yaml` + `azd deploy`
+
+Declare the routine as a `host: azure.ai.routine` service in `azure.yaml`, then let `azd deploy` / `azd up` upsert it. Best when the routine should be **versioned with the agent in source control** and **reproduced per azd environment** — GitOps, multi-env, CI/CD. → [Declarative Routines](references/azure-yaml.md)
+
+### Which path?
+
+| Situation | Path |
+|-----------|------|
+| One-off schedule, quick experiment, or no `azure.yaml` in play | Way 1 — imperative |
+| Routine versioned with the agent, reproduced per environment, GitOps / CI-CD | Way 2 — declarative |
+| Unsure and already in an azd project with the agent | Way 2 — declarative keeps the routine and agent in sync |
+
+Read, update, enable/disable, manually dispatch, inspect past runs, and delete are imperative-only operations that work on a routine regardless of how it was created — see [CLI CRUD and Operations](references/cli-crud.md).
 
 ## Error Handling
 
