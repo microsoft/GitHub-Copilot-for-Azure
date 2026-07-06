@@ -236,10 +236,16 @@ $Steps = @(
         }
         auto = {
             param($State)
-            # Pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
-            # templates rather than re-creating boilerplate; records what it made in auto.scaffold.
-            $made = New-RecipeScaffold $State
-            Set-ByPath $State 'auto.scaffold' $made
+            # For .NET Aspire, let azd generate azure.yaml + infra/ from the AppHost; otherwise
+            # pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
+            # templates rather than re-creating boilerplate.
+            if ((Get-ByPath $State 'auto.componentSignals.aspire') -eq $true) {
+                Initialize-AzdProject $State
+            }
+            else {
+                $made = New-RecipeScaffold $State
+                Set-ByPath $State 'auto.scaffold' $made
+            }
         }
         onDone = {
             param($State)

@@ -326,6 +326,52 @@ get_quota_data() {
         '{region: $r, subscriptionId: $s, providers: $p, unsupported: $un}'
 }
 
+# Returns 0 if the given azure.yaml declares a non-empty `services:` block (at least one
+# indented service key under it), else non-zero. Used to detect Aspire AppHosts that only
+# contain local-only resources, whose generated azure.yaml has an empty/missing services map.
+azure_yaml_has_services() {
+    local f="$1"
+    [[ -f "$f" ]] || return 1
+    awk '
+        /^services:[[:space:]]*$/ { in_s=1; next }
+        /^[^[:space:]#]/ { in_s=0 }
+        in_s && /^[[:space:]]+[A-Za-z0-9_-]+:/ { found=1; exit }
+        END { exit(found?0:1) }
+    ' "$f"
+}
+
+# For .NET Aspire projects, runs `azd init --from-code -e <env>` so the driver generates
+# azure.yaml + infra/ from the AppHost instead of the LM. Idempotent (skips when azure.yaml
+# already exists); records the outcome under auto.azdInit. No-op (with a reason) when azd is
+# unavailable. On success, validates that the generated azure.yaml has deployable services.
+init_azd_project() {
+    local envname out rc svc
+    if [[ -f "$RepoPath/azure.yaml" || -f "$RepoPath/azure.yml" ]]; then
+        set_by_path 'auto.azdInit' "$(jq -n '{ran:false, ok:true, reason:"azure.yaml already exists"}')"
+        return
+    fi
+    if ! command -v azd >/dev/null 2>&1; then
+        set_by_path 'auto.azdInit' "$(jq -n '{ran:false, ok:false, reason:"azd not available"}')"
+        return
+    fi
+    envname="$(get_azd_env_name)"
+    out="$( cd "$RepoPath" && azd init --from-code -e "$envname" --no-prompt 2>&1 )"; rc=$?
+    if [[ $rc -ne 0 ]]; then
+        local reason='azd init failed'
+        [[ "$out" == *"unsupported resource type"* ]] && reason='unsupported-resource-type'
+        set_by_path 'auto.azdInit' "$(jq -n --arg n "$envname" --arg r "$reason" \
+            '{ran:true, ok:false, envName:$n, servicesFound:false, reason:$r}')"
+        return
+    fi
+    if azure_yaml_has_services "$RepoPath/azure.yaml" || azure_yaml_has_services "$RepoPath/azure.yml"; then
+        svc=true
+    else
+        svc=false
+    fi
+    set_by_path 'auto.azdInit' "$(jq -n --arg n "$envname" --argjson s "$svc" \
+        '{ran:true, ok:true, envName:$n, servicesFound:$s, reason:null}')"
+}
+
 # Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".
 get_azd_env_name() {
     local existing base name

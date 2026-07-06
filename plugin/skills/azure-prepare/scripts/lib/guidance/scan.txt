@@ -17,9 +17,9 @@ Review the code and classify each component. Map signals to component types:
 Caveats:
   - Pure Static Site (`auto.componentSignals.pureStaticSite` true): do NOT add a
     `language` field to azure.yaml — it triggers unwanted build steps.
-  - .NET Aspire (`auto.componentSignals.aspire` true): prefer
-    `azd init --from-code -e <env>` over manual azure.yaml. If the AppHost calls
-    `AddAzureFunctionsProject`, you MUST add
+  - .NET Aspire (`auto.componentSignals.aspire` true): the driver runs
+    `azd init --from-code -e <env>` for you at the generate step (never hand-author
+    azure.yaml). If the AppHost calls `AddAzureFunctionsProject`, you MUST add
     `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` before deploy.
     See `scripts/references/aspire.md` for the full procedure.
 

@@ -3,8 +3,9 @@ from existing tooling (`auto.existingInfra`, including `azureYamlProvider`) and
 `auto.componentSignals.aspire`. Confirm or override it.
 
 Special case — .NET Aspire (`auto.componentSignals.aspire` true):
-  Always use AZD with auto-generated config (`azd init --from-code`). Do NOT
-  manually select a recipe or hand-author artifacts. See `scripts/references/aspire.md`.
+  Always use AZD with auto-generated config. The driver runs `azd init --from-code`
+  for you at the generate step. Do NOT manually select a recipe or hand-author
+  artifacts. See `scripts/references/aspire.md`.
 
 Default is AZD unless requirements indicate otherwise. azd supports both Bicep and
 Terraform as IaC providers; when Terraform is wanted for an Azure deployment,

@@ -191,11 +191,16 @@ step_auto() {
             fi
             ;;
         generate)
-            # Pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
-            # templates rather than re-creating boilerplate; records what it made in auto.scaffold.
-            made="$(new_recipe_scaffold)"
-            scaffold_json="$(printf '%s\n' "$made" | jq -R . | jq -s -c 'map(select(length > 0))')"
-            set_by_path 'auto.scaffold' "$scaffold_json"
+            # For .NET Aspire, let azd generate azure.yaml + infra/ from the AppHost; otherwise
+            # pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
+            # templates rather than re-creating boilerplate.
+            if [[ "$(printf '%s' "$STATE" | jq -r '.auto.componentSignals.aspire // false')" == true ]]; then
+                init_azd_project
+            else
+                made="$(new_recipe_scaffold)"
+                scaffold_json="$(printf '%s\n' "$made" | jq -R . | jq -s -c 'map(select(length > 0))')"
+                set_by_path 'auto.scaffold' "$scaffold_json"
+            fi
             ;;
     esac
 }

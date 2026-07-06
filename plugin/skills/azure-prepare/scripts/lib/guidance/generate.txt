@@ -1,19 +1,25 @@
 Generate infrastructure and configuration files for the selected recipe. Research
 (prior step) MUST be complete and its findings applied.
 
-⛔ FIRST — .NET Aspire (`auto.componentSignals.aspire` true): do NOT hand-create
-azure.yaml or infra/ files. USE `azd init --from-code -e <env>` (it generates infra
-from the AppHost; both `--from-code` AND `-e <name>` are REQUIRED for non-interactive
-runs). Then IMMEDIATELY `azd env set AZURE_SUBSCRIPTION_ID <id>` and `AZURE_LOCATION`.
-After init, VALIDATE the generated azure.yaml has a non-empty `services:` section — if
-empty/missing, the AppHost has only local-only resources (`.ExcludeFromManifest()`):
-record a blocker and STOP, do NOT hand-author artifacts to work around it. If
-`azd init` fails with "unsupported resource type", that is also a hard stop — do NOT
-patch the source. For Aspire + Azure Functions, add
-`.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the
-`AddAzureFunctionsProject` chain before `azd up`. See `scripts/references/aspire.md` and
-`scripts/references/recipes/azd/aspire.md`. Manually authoring azure.yaml for Aspire is the most
-common deployment failure.
+✅ FIRST — .NET Aspire (`auto.componentSignals.aspire` true): the DRIVER already ran
+`azd init --from-code -e <env>` for you — do NOT run it yourself and do NOT hand-create
+azure.yaml or infra/ files. Read `auto.azdInit` = {ran, ok, envName, servicesFound,
+reason}:
+  - `ok:false` with reason `azd not available` → azd CLI is missing: record a blocker and
+    STOP (do NOT hand-author artifacts).
+  - `ok:false` with reason `unsupported-resource-type` → the AppHost uses a resource azd
+    can't map: hard stop, record a blocker, do NOT patch the source.
+  - `ok:false` with any other reason → `azd init` failed: record a blocker and STOP.
+  - `ok:true` but `servicesFound:false` → the generated azure.yaml has no deployable
+    `services:` (AppHost has only local-only resources via `.ExcludeFromManifest()`):
+    record a blocker and STOP, do NOT hand-author artifacts to work around it.
+  - `ok:true` and `servicesFound:true` → proceed. For Aspire + Azure Functions, add
+    `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the
+    `AddAzureFunctionsProject` chain (an AppHost source edit) before `azd up`.
+Subscription/location/principal env values are applied programmatically after this step —
+do NOT run `azd env set` yourself. See `scripts/references/aspire.md` and
+`scripts/references/recipes/azd/aspire.md`. Manually authoring azure.yaml for Aspire is the
+most common deployment failure.
 
 Other special patterns: complex existing codebase → consider `azd init --from-code`;
 existing azure.yaml (`auto.existingInfra.azureYaml`) → MODIFY the existing config.

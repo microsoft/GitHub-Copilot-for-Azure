@@ -399,6 +399,54 @@ function Get-QuotaData {
     }
 }
 
+function Test-AzureYamlHasServices {
+    # Returns $true if the given azure.yaml declares a non-empty `services:` block (at least one
+    # indented service key under it). Used to detect Aspire AppHosts that only contain local-only
+    # resources, whose generated azure.yaml has an empty/missing services map.
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    $inServices = $false
+    foreach ($line in (Get-Content -LiteralPath $Path)) {
+        if ($line -match '^services:\s*$') { $inServices = $true; continue }
+        if ($line -match '^[^\s#]') { $inServices = $false }
+        if ($inServices -and $line -match '^\s+[A-Za-z0-9_-]+:') { return $true }
+    }
+    return $false
+}
+
+function Initialize-AzdProject {
+    # For .NET Aspire projects, runs `azd init --from-code -e <env>` so the driver generates
+    # azure.yaml + infra/ from the AppHost instead of the LM. Idempotent (skips when azure.yaml
+    # already exists); records the outcome under auto.azdInit. No-op (with a reason) when azd is
+    # unavailable. On success, validates that the generated azure.yaml has deployable services.
+    param([hashtable]$State)
+    $hasAzureYaml = (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yaml')) -or (Test-Path -LiteralPath (Join-Path $RepoPath 'azure.yml'))
+    if ($hasAzureYaml) {
+        Set-ByPath $State 'auto.azdInit' @{ ran = $false; ok = $true; reason = 'azure.yaml already exists' }
+        return
+    }
+    if (-not (Get-Command azd -ErrorAction SilentlyContinue)) {
+        Set-ByPath $State 'auto.azdInit' @{ ran = $false; ok = $false; reason = 'azd not available' }
+        return
+    }
+    $envname = Get-AzdEnvName $State
+    Push-Location -LiteralPath $RepoPath
+    try {
+        $out = & azd init --from-code -e $envname --no-prompt 2>&1 | Out-String
+        $rc = $LASTEXITCODE
+    }
+    catch { $out = "$_"; $rc = 1 }
+    finally { Pop-Location }
+    if ($rc -ne 0) {
+        $reason = 'azd init failed'
+        if ("$out" -match 'unsupported resource type') { $reason = 'unsupported-resource-type' }
+        Set-ByPath $State 'auto.azdInit' @{ ran = $true; ok = $false; envName = $envname; servicesFound = $false; reason = $reason }
+        return
+    }
+    $svc = (Test-AzureYamlHasServices (Join-Path $RepoPath 'azure.yaml')) -or (Test-AzureYamlHasServices (Join-Path $RepoPath 'azure.yml'))
+    Set-ByPath $State 'auto.azdInit' @{ ran = $true; ok = $true; envName = $envname; servicesFound = $svc; reason = $null }
+}
+
 function Get-AzdEnvName {
     # Derives a valid azd environment name: an existing env name, else a sanitized repo basename, else "dev".
     param([hashtable]$State)
