@@ -104,7 +104,7 @@ Declare the routine as a `host: azure.ai.routine` service in `azure.yaml`, then 
 | Situation | Path |
 |-----------|------|
 | One-off schedule, quick experiment, or no `azure.yaml` in play | Way 1 — imperative |
-| Routine versioned with the agent, reproduced per environment, GitOps / CI-CD | Way 2 — declarative |
+| Routine versioned with the agent, reproduced per environment, GitOps / CI/CD | Way 2 — declarative |
 | Unsure and already in an azd project with the agent | Way 2 — declarative keeps the routine and agent in sync |
 
 Read, update, enable/disable, manually dispatch, inspect past runs, and delete are imperative-only operations that work on a routine regardless of how it was created — see [CLI CRUD and Operations](references/cli-crud.md).
@@ -116,7 +116,7 @@ Read, update, enable/disable, manually dispatch, inspect past runs, and delete a
 | `unknown command "routine"` / `unknown command "ai"` | Extension not installed or azd too old | `azd extension install azure.ai.routines`; ensure `azd >= 1.27.0` |
 | Missing project endpoint error | No endpoint resolved | Set `AZURE_AI_PROJECT_ENDPOINT`, run `azd ai project set <url>`, or pass `-p <url>` |
 | `routine "<name>" already exists` on create | Name collision | Re-run with `--force` to upsert, or choose a different name |
-| `--trigger` / `--action cannot be changed on an existing routine` | Trigger/action type is immutable | Delete then create with the new type |
+| `--trigger cannot be changed on an existing routine` (same for `--action`) | Trigger/action type is immutable | Delete then create with the new type |
 | `--force is required when --no-prompt is set` on delete | Non-interactive delete without confirmation | Add `--force` |
 | `routine "<name>" not found` | Wrong name or wrong project | Check the name and resolved endpoint with `show` / `list` |
 | `host "..." is not a recognized Foundry host` | Endpoint host invalid | Use `https://<account>.services.ai.azure.com/api/projects/<project>` (no port) |
