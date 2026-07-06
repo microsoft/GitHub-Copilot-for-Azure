@@ -16,7 +16,16 @@ az deployment group create \
 
 ## Managed VNet — Required Post-Deploy Step
 
-After the deployment succeeds, you **must** create the managed network's outbound private endpoint rules — including a **self-referencing private endpoint** back to the Foundry account, plus private endpoints to its dependent data resources. **Without them, hosted agents fail with `500 (403: Public access is disabled)`** — the agent container in Microsoft's managed VNet can't reach the account privately. Prompt agents are unaffected. Ensure the account's managed identity holds `Azure AI Enterprise Network Connection Approver` so the rules auto-approve. See the Managed VNet doc (Key Documentation) for the current steps, or the template README for its specific script.
+After the deployment succeeds, you **must** create the managed network's outbound private endpoint rules:
+
+- A **self-referencing private endpoint** back to the Foundry account.
+- Private endpoints to its dependent data resources.
+
+> ⚠️ **Without them, hosted agents fail with `500 (403: Public access is disabled)`** — the agent container in Microsoft's managed VNet can't reach the account privately. Prompt agents are unaffected.
+
+The account's managed identity must hold `Azure AI Enterprise Network Connection Approver` so the rules auto-approve.
+
+See the Managed VNet doc (Key Documentation) for current steps, or the template README for its specific script.
 
 ## Monitor Progress
 
