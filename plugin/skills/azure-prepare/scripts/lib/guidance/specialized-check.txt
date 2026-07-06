@@ -21,9 +21,7 @@ Routing table — check TOP TO BOTTOM, first match wins:
      -> STAY here; prefer Azure Functions templates at architecture/generate.
 5. (LOWEST) workflow / orchestration / multi-step / pipeline / fan-out-fan-in / saga /
    long-running process / durable / order processing
-     -> STAY here; select the **durable** recipe. The durable + DTS references are
-        surfaced automatically at the research/generate steps once the architecture
-        includes Durable Functions or the Durable Task Scheduler.
+     -> STAY here; select the **durable** recipe.
 
 Re-entry guard: if this run is a RESUME from a specialized skill that already executed
 (e.g. azure-hosted-copilot-sdk handing back, or python-appservice-deploy needing full
