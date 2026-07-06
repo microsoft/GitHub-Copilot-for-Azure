@@ -64,4 +64,12 @@ updates:
   package-ecosystem: pip
   schedule:
     interval: weekly
+- directories:
+  - "/evals/**"
+  ignore:
+  - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
+  open-pull-requests-limit: 0
+  package-ecosystem: npm
+  schedule:
+    interval: weekly
 version: 2
