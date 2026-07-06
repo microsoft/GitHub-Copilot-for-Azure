@@ -42,6 +42,24 @@ function Test-ArchitectureUsesService {
     return $false
 }
 
+function Get-DurableRefs {
+    # Returns the Durable Functions + Durable Task Scheduler reference paths when the chosen
+    # architecture uses Durable Functions or the Durable Task Scheduler, else nothing. Lets the
+    # research/generate steps surface these refs on demand instead of the specialized-check step.
+    param([hashtable]$State)
+    foreach ($a in @($State.input.architecture)) {
+        $svc = "$($a.azureService)".ToLower()
+        if ($svc -like '*durable*' -or $svc -like '*task scheduler*') {
+            return @(
+                'scripts/references/services/functions/durable.md',
+                'scripts/references/services/durable-task-scheduler/README.md',
+                'scripts/references/services/durable-task-scheduler/bicep.md'
+            )
+        }
+    }
+    return @()
+}
+
 function Get-ServiceReadmeRefs {
     # Maps each Azure service named in the LM-provided architecture to its reference README
     # under scripts/references/services/, so the research step can name the exact files to

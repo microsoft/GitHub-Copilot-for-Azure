@@ -76,10 +76,12 @@ step_dynrefs() {
     case "$1" in
         research)
             get_service_readme_refs
+            get_durable_refs
             ;;
         generate)
             recipe="$(get_by_path 'input.recipe')" || recipe=''
             [[ "$recipe" == *AZD* ]] && echo 'scripts/references/sdk/azd-deployment.md'
+            get_durable_refs
             if test_architecture_uses_service 'App Configuration'; then
                 while IFS= read -r c; do [[ -n "$c" ]] && echo "scripts/references/sdk/azure-appconfiguration-$c.md"; done < <(get_sdk_language_codes appconfig)
             fi

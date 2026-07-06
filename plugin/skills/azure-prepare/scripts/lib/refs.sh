@@ -57,6 +57,23 @@ test_architecture_uses_service() {
     return 1
 }
 
+# Prints the Durable Functions + Durable Task Scheduler reference paths when the chosen
+# architecture uses Durable Functions or the Durable Task Scheduler, else nothing. Lets the
+# research/generate steps surface these refs on demand instead of the specialized-check step.
+get_durable_refs() {
+    local svc
+    while IFS= read -r svc; do
+        svc="${svc,,}"
+        if [[ "$svc" == *durable* || "$svc" == *"task scheduler"* ]]; then
+            printf 'scripts/references/services/functions/durable.md\n'
+            printf 'scripts/references/services/durable-task-scheduler/README.md\n'
+            printf 'scripts/references/services/durable-task-scheduler/bicep.md\n'
+            return 0
+        fi
+    done < <(printf '%s' "$STATE" | jq -r '(.input.architecture // [])[] | .azureService // ""')
+    return 0
+}
+
 # Maps each Azure service named in the LM-provided architecture to its reference README
 # under scripts/references/services/, so the research step can name the exact files to
 # read instead of a <service> placeholder. Prints a deduped list of README paths.

@@ -205,7 +205,9 @@ $Steps = @(
             param($State)
             # Name the exact per-service README for every service in the architecture so the
             # LM reads the right reference rather than resolving a <service> placeholder.
-            Get-ServiceReadmeRefs $State
+            $r = @(Get-ServiceReadmeRefs $State)
+            $r += Get-DurableRefs $State
+            $r
         }
         needs = @(
             @{ Path = 'input.researchDone'; Prompt = 'true when component research is complete' }
@@ -224,6 +226,8 @@ $Steps = @(
             $r = @()
             # azd deployment quick-reference applies to any azd-based recipe.
             if ((Get-ByPath $State 'input.recipe') -match 'AZD') { $r += 'scripts/references/sdk/azd-deployment.md' }
+            # Durable Functions + DTS references when the architecture uses them.
+            $r += Get-DurableRefs $State
             # App Configuration SDK reference, per project language, when it's in the architecture.
             if (Test-ArchitectureUsesService $State 'App Configuration') {
                 foreach ($c in (Get-SdkLanguageCodes $State 'appconfig')) { $r += "scripts/references/sdk/azure-appconfiguration-$c.md" }
