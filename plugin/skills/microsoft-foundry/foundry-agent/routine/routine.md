@@ -11,7 +11,7 @@ Create, read, update, and delete Microsoft Foundry **routines** with the Azure D
 | Primary CLI | `azd ai routine` (from extension `azure.ai.routines`) |
 | Install extension | `azd extension install azure.ai.routines` |
 | CRUD verbs | `create`, `list`, `show`, `update`, `delete` |
-| Lifecycle verbs | `enable`, `disable`, `dispatch`, `run list` |
+| Routine operation verbs | `enable`, `disable`, `dispatch`, `run list` |
 | Declarative form | `azure.yaml` service with `host: azure.ai.routine` (upserted by `azd deploy` / `azd up`) |
 | Project endpoint | Resolved from `-p/--project-endpoint`, then the active azd env (`AZURE_AI_PROJECT_ENDPOINT`), then global config, then `FOUNDRY_PROJECT_ENDPOINT` |
 | Output format | `--output json` or `--output table` (default `table`) on every verb |
@@ -99,7 +99,7 @@ A routine needs a **trigger** and an **action**. Build them from flags, or suppl
 ```bash
 # One-shot timer -> agent (responses API) by project-scoped agent name
 azd ai routine create nightly-report \
-  --trigger timer --at 2026-08-01T09:00:00Z \
+  --trigger timer --at <YYYY-MM-DDTHH:MM:SSZ> \
   --action agent-response --agent-name my-agent
 
 # Recurring cron schedule (min interval 5 minutes) with a time zone
@@ -130,7 +130,7 @@ Key flags:
 | Flag | Applies to | Notes |
 |------|-----------|-------|
 | `--trigger` | all | `timer` \| `recurring` \| `github-issue` \| `custom` (required unless `--file`) |
-| `--at` | timer | ISO 8601 UTC datetime, e.g. `2026-08-01T09:00:00Z` |
+| `--at` | timer | ISO 8601 UTC datetime, e.g. `<YYYY-MM-DDTHH:MM:SSZ>` |
 | `--cron` | recurring | 5-field cron, minimum interval 5 minutes |
 | `--time-zone` | recurring | IANA zone, e.g. `America/New_York` (default `UTC`; not valid for timer) |
 | `--connection-id`, `--owner`, `--repository`, `--issue-event` | github-issue | all four required; `--issue-event` is `opened` or `closed` |
@@ -174,7 +174,7 @@ azd ai routine delete daily-digest            # interactive confirmation
 azd ai routine delete daily-digest --force    # skip prompt (required with --no-prompt)
 ```
 
-## Lifecycle commands
+## Routine operations
 
 ```bash
 azd ai routine enable  daily-digest    # idempotent; enabling an enabled routine is a no-op
