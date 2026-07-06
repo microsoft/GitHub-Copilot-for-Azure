@@ -326,9 +326,11 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
                     shouldTrack=true
                     eventType="reference_file_read"
                     # Resolve the version from the sibling SKILL.md at the root
-                    # of the skill folder this reference lives in.
+                    # of the skill folder this reference lives in. Strip the
+                    # relative suffix by length (literal removal) so glob
+                    # metacharacters in the path can't corrupt the result.
                     skillNameSeg="${filePath%%/*}"
-                    skillRootAbs="${pathNormalized%"$filePath"}"
+                    skillRootAbs="${pathNormalized:0:${#pathNormalized}-${#filePath}}"
                     skillVersion=$(get_skill_version "${skillRootAbs}${skillNameSeg}/SKILL.md")
                 fi
             fi
