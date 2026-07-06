@@ -1,0 +1,148 @@
+# Vally eval config for azure-iac-security
+#
+# Integration evaluation — verifies the skill is invoked for pre-deployment IaC security
+# scanning prompts (ARM/Bicep/Terraform), including AI-workload templates and attack-path
+# requests, AND that it does NOT route for runtime compliance audits (azure-compliance) or
+# deploy-readiness checks (azure-validate). The "When to Use" table in SKILL.md documents
+# the boundary.
+
+name: azure-iac-security-integration-eval
+description: |
+  Integration evaluation for the azure-iac-security skill. Tests skill routing for
+  static, pre-deployment security scanning of ARM, Bicep, and Terraform templates against
+  MCSB v3.0, MITRE ATT&CK, and AI-workload risk, using invocation-rate measurement
+  (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-iac-security
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── bicep-scan-prompt ──
+  - name: "Scan Bicep for security issues"
+    prompt: "Scan this Bicep template for security issues before I deploy it: storage account with supportsHttpsTrafficOnly set to false."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-iac-security"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-iac-security
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── arm-mcsb-prompt ──
+  - name: "Check ARM template against MCSB"
+    prompt: "Review this ARM template for MCSB compliance and list the security misconfigurations with fixes."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-iac-security"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-iac-security
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── terraform-scan-prompt ──
+  - name: "Terraform IaC security scan"
+    prompt: "Check my Terraform azurerm configuration for security vulnerabilities and misconfigurations before deployment."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-iac-security"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-iac-security
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── attack-path-prompt ──
+  - name: "MITRE attack path from IaC findings"
+    prompt: "Generate MITRE ATT&CK attack paths from the security findings in my Bicep infrastructure template."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-iac-security"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-iac-security
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── ai-workload-scan-prompt ──
+  - name: "Scan Azure OpenAI IaC for security"
+    prompt: "Check this Bicep that deploys an Azure OpenAI account for security issues before deployment — publicNetworkAccess is Enabled and disableLocalAuth is false."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-iac-security"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-iac-security
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── negative: runtime compliance (should NOT route here — belongs to azure-compliance) ──
+  - name: "Runtime compliance audit does not route to IaC scanner"
+    prompt: "Audit my already-deployed storage account for compliance against Azure Security Benchmark."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":4}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-iac-security
+
+  # ── negative: deploy-readiness (should NOT route here — belongs to azure-validate) ──
+  - name: "Deploy-readiness check does not route to IaC scanner"
+    prompt: "Will my ARM template deploy successfully? Validate it for deployment errors."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-count","count":4}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-iac-security
