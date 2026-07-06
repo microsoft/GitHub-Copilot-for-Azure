@@ -52,7 +52,7 @@ For Managed VNet, verify the managed network's **outbound** private endpoint rul
 
 ```bash
 az rest --method get \
-  --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<account>/managedNetworks/default/outboundRules?api-version=2025-10-01-preview" \
+  --url "https://management.azure.com/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<ai-account>/managedNetworks/default/outboundRules?api-version=2025-10-01-preview" \
   --query "value[].{name:name,type:properties.type,status:properties.status}" -o table
 ```
 

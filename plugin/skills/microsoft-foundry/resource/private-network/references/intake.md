@@ -118,7 +118,7 @@ Confirm the approach with the user before continuing to Tier 2.
 **BYO resources:** Reuse existing Cosmos DB / Storage / AI Search, or create new?
 
 > If reusing, confirm all in same region as VNet.
-> If reusing AI Search, it must accept Entra ID (AAD) data-plane auth — a key-only service makes agents fail with HTTP 403. Enable with `az search service update --name <n> --resource-group <rg> --auth-options aadOrApiKey --aad-auth-failure-mode http401WithBearerChallenge`.
+> If reusing AI Search, it must accept Entra ID (AAD) data-plane auth — a key-only service makes agents fail with HTTP 403. Enable with `az search service update --name <search-name> --resource-group <search-rg> --auth-options aadOrApiKey --aad-auth-failure-mode http401WithBearerChallenge`.
 
 **Key Vault / App Insights:** If user mentions existing ones, collect resource IDs. Optional.
 
