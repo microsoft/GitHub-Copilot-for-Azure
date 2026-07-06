@@ -254,6 +254,7 @@ Behavior notes:
 | `--force is required when --no-prompt is set` on delete | Non-interactive delete without confirmation | Add `--force` |
 | `routine "<name>" not found` | Wrong name or wrong project | `azd ai routine list` to confirm the name and the resolved endpoint |
 | `host "..." is not a recognized Foundry host` | Endpoint host invalid | Use `https://<account>.services.ai.azure.com/api/projects/<project>` (no port) |
+| `json: cannot unmarshal number into Go struct field Routine.created_at of type string` | `azd ai routine extension` could not decode a routine response after the service call | Do not assume the operation failed. Check with `show <name>` and `list`; if `show` returns the same decode error, the routine likely exists but cannot be decoded. `list` can also be affected, so do not rely on it alone. |
 | Network isolation / `PublicNetworkAccessDisabled` / `403` | Project has public access disabled | See [Network Isolation Errors](../../SKILL.md#network-isolation-errors) |
 
 ## Additional Resources
