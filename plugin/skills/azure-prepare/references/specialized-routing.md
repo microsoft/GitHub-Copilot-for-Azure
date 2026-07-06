@@ -17,7 +17,7 @@
 
 ## Why This Step Exists
 
-azure-prepare is the default entry point for all Azure app work. Some technologies (Copilot SDK) have dedicated skills with:
+azure-prepare is the default entry point for all Azure app work. Some technologies have dedicated skills with:
 - Pre-tested `azd` templates that avoid manual scaffolding errors
 - Specialized configuration (BYOM model config)
 - Optimized infrastructure patterns
@@ -36,14 +36,14 @@ User prompt → azure-prepare activated
   │   │         → Resume azure-prepare at Step 4 (recipe/infra/validate/deploy)
   │   └─ NO  → Continue normal azure-prepare workflow from Step 1
   │
-  └─ Phase 1 Step 3 (Scan Codebase) also detects SDKs in existing files
+  └─ Phase 1 Step 3 (Scan Codebase) also detects tech indicators in existing files
       → See [scan.md](scan.md) for file-based detection
 ```
 
 ## Complementary Checks
 
 This prompt-based check complements — does not replace — existing file-based detection:
-- **[scan.md](scan.md)** — Detects SDKs in dependency files (package.json, requirements.txt)
+- **[scan.md](scan.md)** — Detects tech in dependency files (package.json, requirements.txt)
 - **[analyze.md](analyze.md)** — Delegation table triggered by user mentions during planning
 - **[research.md](research.md)** — Skill invocation during research phase
 
