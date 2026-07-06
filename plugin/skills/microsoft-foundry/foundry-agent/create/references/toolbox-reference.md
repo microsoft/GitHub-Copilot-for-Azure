@@ -63,12 +63,18 @@ When a toolbox includes an OAuth-based MCP connection (e.g., GitHub OAuth), the 
 
 **Agent code must handle this:**
 
-1. On a `-32006` error, parse the outer `message` — it embeds a JSON `{"errors":[{"name":...,"error":{"code":"CONSENT_REQUIRED","message":"<consent-url>"}}]}` payload.
-2. Detect the nested `"code":"CONSENT_REQUIRED"` and read the consent URL from that nested `message`.
+1. On a `-32006` error, extract the embedded JSON from the outer `message`. **The message is not directly JSON-parseable** — it begins with a human-readable prefix (`tools/list failed for N tool source(s), succeeded for M tool source(s) `) followed by a `{"errors":[...]}` payload. Locate the first `{` and parse from there (do **not** call `JSON.parse` on the whole `message`):
+
+   ```python
+   msg = err["message"]
+   payload = json.loads(msg[msg.index("{"):])   # slice off the prefix first
+   ```
+
+2. Detect the nested `"code":"CONSENT_REQUIRED"` in `payload["errors"][i]["error"]` and read the consent URL from that nested `message`.
 3. Log the URL and surface it to the user (e.g., print to stdout or return in the agent response).
 4. After the user completes the OAuth flow in a browser, retry the call — subsequent calls succeed without re-prompting.
 
-Example error shape (as actually returned):
+Example error shape (as actually returned — note the prefix text before the JSON):
 
 ```json
 {
