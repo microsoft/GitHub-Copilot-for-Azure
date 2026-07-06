@@ -15,12 +15,12 @@ A routine is a **trigger** (when it fires) plus an **action** (what it does). Th
 | A GitHub issue event | `github-issue` | `github_issue` | `connection_id`, `owner`, `repository`, `issue_event` |
 | A custom external event | `custom` | `custom` | `provider`, `event_name`, `parameters` |
 
-**Actions** — both invoke the target agent; they differ only in which agent API is called and which field resumes prior context.
+**Actions** — both invoke the target agent; they differ only in which agent protocol is called and which field resumes prior context.
 
-| Calls the agent via | `--action` alias | manifest `type:` | Resume field |
-|---------------------|------------------|------------------|--------------|
-| Responses API (prompt in → response out) | `agent-response` (default) | `invoke_agent_responses_api` | `conversation` |
-| Invocations API (hosted-agent session) | `agent-invoke` | `invoke_agent_invocations_api` | `session_id` |
+| Invokes the agent using | `--action` alias | manifest `type:` | Resume field |
+|-------------------------|------------------|------------------|--------------|
+| the agent `responses` protocol | `agent-response` (default) | `invoke_agent_responses_api` | `conversation` |
+| the agent `invocations` protocol | `agent-invoke` | `invoke_agent_invocations_api` | `session_id` |
 
 ## Create
 

@@ -89,7 +89,7 @@ The endpoint host must end with `.services.ai.azure.com` and use `https` with no
 
 ## Two Ways to Create a Routine
 
-A routine is the same Foundry resource — keyed by its name — no matter how you create it. Both paths go through `azd` and PUT idempotently against the same project, so a routine created one way can later be managed the other way. Pick a path, then read its reference doc for exact examples.
+A routine is the same Foundry resource — keyed by its name — no matter how you create it. Both paths go through `azd` and act on that same named resource, so a routine created one way can later be managed the other way. Declarative `azd deploy` always upserts idempotently; imperative `azd ai routine create` refuses to overwrite an existing routine unless you pass `--force`. Pick a path, then read its reference doc for exact examples.
 
 ### Way 1 — Imperative: `azd ai routine create`
 
