@@ -27,13 +27,13 @@ A routine is a **trigger** (when it fires) plus an **action** (what it does). Th
 Put the prompt or payload the routine sends to the agent in `action.input`. What it should contain depends on the action type you chose (the `--action` alias / action `type:` from the table above): when the action is `agent-response` (`invoke_agent_responses_api`), `action.input` is the natural-language prompt; when the action is `agent-invoke` (`invoke_agent_invocations_api`), it is the hosted agent's expected request payload. `azd ai routine create` has **no `--input` flag**, so any routine that needs `action.input` must be created from a manifest:
 
 ```yaml
-# routine.yaml
+# routine.yaml — the type: fields take the manifest value from the table above
 triggers:
   default:
-    type: schedule          # wire value; --trigger alias is "recurring"
+    type: schedule
     cron_expression: "0 * * * *"
 action:
-  type: invoke_agent_responses_api   # wire value; --action alias is "agent-response"
+  type: invoke_agent_responses_api
   agent_name: my-agent
   input: "Say hi."
 ```
