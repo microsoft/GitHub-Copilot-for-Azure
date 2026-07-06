@@ -58,14 +58,21 @@ invoke_auto_collect() {
         if grep -qiE 'provider[[:space:]]*:[[:space:]]*terraform' "$ayfile"; then provider='"terraform"'; else provider='"bicep"'; fi
     fi
 
-    # --- .NET Aspire detection (AppHost project or Aspire.Hosting reference) ---
-    local aspire=false csproj
+    # --- .NET Aspire detection (AppHost project, Aspire.Hosting reference, or
+    #     file-based AppHost using `#:sdk Aspire.AppHost.Sdk` / `#:package Aspire.Hosting` directives) ---
+    local aspire=false csproj cs
     has_file_glob '*.AppHost.csproj' && aspire=true
     if [[ "$aspire" == false ]]; then
         while IFS= read -r csproj; do
             [[ -n "$csproj" && -f "$csproj" ]] || continue
             if grep -q 'Aspire\.Hosting' "$csproj"; then aspire=true; break; fi
         done < <(printf '%s\n' "$FILES" | grep -iE '\.csproj$')
+    fi
+    if [[ "$aspire" == false ]]; then
+        while IFS= read -r cs; do
+            [[ -n "$cs" && -f "$cs" ]] || continue
+            if grep -qE '^[[:space:]]*#:(sdk|package)[[:space:]]+.*Aspire\.(AppHost|Hosting)' "$cs"; then aspire=true; break; fi
+        done < <(printf '%s\n' "$FILES" | grep -iE '\.cs$')
     fi
 
     # --- Azure Functions detection (host.json, SDK dependency, or WebJobs reference) ---

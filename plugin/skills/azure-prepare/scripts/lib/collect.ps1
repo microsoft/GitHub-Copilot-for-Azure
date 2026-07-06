@@ -87,12 +87,21 @@ function Invoke-AutoCollect {
         catch { }
     }
 
-    # --- .NET Aspire detection (AppHost project or Aspire.Hosting reference) ---
+    # --- .NET Aspire detection (AppHost project, Aspire.Hosting reference, or
+    #     file-based AppHost using `#:sdk Aspire.AppHost.Sdk` / `#:package Aspire.Hosting` directives) ---
     $aspire = [bool]($files | Where-Object { $_.Name -like '*.AppHost.csproj' })
     if (-not $aspire) {
         foreach ($csproj in @($files | Where-Object { $_.Extension -eq '.csproj' })) {
             try {
                 if ((Get-Content -LiteralPath $csproj.FullName -Raw) -match 'Aspire\.Hosting') { $aspire = $true; break }
+            }
+            catch { }
+        }
+    }
+    if (-not $aspire) {
+        foreach ($cs in @($files | Where-Object { $_.Extension -eq '.cs' })) {
+            try {
+                if ((Get-Content -LiteralPath $cs.FullName -Raw) -match '(?m)^\s*#:(sdk|package)\s+.*Aspire\.(AppHost|Hosting)') { $aspire = $true; break }
             }
             catch { }
         }

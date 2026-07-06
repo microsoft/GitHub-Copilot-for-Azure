@@ -12,7 +12,7 @@ Review the code and classify each component. Map signals to component types:
   - Next.js/Nuxt                               → SSR Web App
   - Celery/Bull/Agenda                         → Background Worker
   - azure-functions SDK                        → Azure Function
-  - *.AppHost.csproj / Aspire.Hosting          → .NET Aspire App
+  - *.AppHost.csproj / Aspire.Hosting / #:sdk Aspire.AppHost.Sdk → .NET Aspire App
 
 Caveats:
   - Pure Static Site (`auto.componentSignals.pureStaticSite` true): do NOT add a
