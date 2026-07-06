@@ -1,7 +1,7 @@
 MANDATORY before any planning: decide whether a specialized skill should handle this
 request FIRST. Check the user's PROMPT TEXT, not just existing code — critical for
 greenfield projects with no codebase. Codebase markers already scanned by the script
-are in `auto.codebaseMarkers`.
+are in `auto.codebaseMarkers` in prepare-info.json.
 
 Routing table — check TOP TO BOTTOM, first match wins:
 1. (HIGHEST) Python + Azure App Service AND NOT any of: Terraform, Bicep, IaC, VNet,
@@ -30,6 +30,6 @@ Re-entry guard: if this run is a RESUME from a specialized skill that already ex
 infra like VNet/Key Vault/DB), set matched=false with notes="resumed from <skill>" so
 the workflow proceeds — do NOT re-route.
 
-Set `input.specializedRouting` to an object:
+Set `input.specializedRouting` in prepare-info.json to an object:
   { "matched": true|false, "skill": "<skill-name or null>", "notes": "<why>" }
 If matched (and not a resume), invoke that skill first, then re-run this script.
