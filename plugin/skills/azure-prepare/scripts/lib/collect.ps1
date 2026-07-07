@@ -537,6 +537,159 @@ function Apply-AzdEnvironment {
 }
 
 # ---------------------------------------------------------------------------
+# Azure Functions template fetch (folds the functions_template_get MCP tool
+# into the driver: resolve -> download -> extract, deterministically)
+# ---------------------------------------------------------------------------
+$script:FunctionsManifestUrl = 'https://cdn.functions.azure.com/public/templates-manifest/manifest.json'
+
+function Test-FunctionsIntent {
+    # Returns $true when the project targets Azure Functions, using the detected host.json/SDK signal
+    # or the LM-provided components/architecture (so greenfield NEW projects are covered too).
+    param([hashtable]$State)
+    if ((Get-ByPath $State 'auto.componentSignals.azureFunctions') -eq $true) { return $true }
+    foreach ($c in @(Get-ByPath $State 'input.components')) {
+        if ($c -is [hashtable] -and "$($c['type']) $($c['technology'])".ToLowerInvariant() -match 'function') { return $true }
+    }
+    foreach ($m in @(Get-ByPath $State 'input.architecture')) {
+        if ($m -is [hashtable] -and "$($m['azureService'])".ToLowerInvariant() -match 'function') { return $true }
+    }
+    return $false
+}
+
+function Get-FunctionsLanguage {
+    # Maps the driver's coarse language tags to the manifest's PascalCase language names,
+    # disambiguating Node.js into TypeScript vs JavaScript. Returns $null when undeterminable.
+    param([hashtable]$State)
+    $langs = @(Get-ByPath $State 'auto.detectedLanguages')
+    if ($langs -contains 'dotnet') { return 'CSharp' }
+    if ($langs -contains 'python') { return 'Python' }
+    if ($langs -contains 'java')   { return 'Java' }
+    if ($langs -contains 'nodejs') {
+        if (@(Get-RepoFiles) | Where-Object { $_.Name -eq 'tsconfig.json' -or $_.Extension -eq '.ts' }) { return 'TypeScript' }
+        return 'JavaScript'
+    }
+    return $null
+}
+
+function Get-FunctionsResource {
+    # Scans existing function source for a trigger/binding indicator and returns the matching manifest
+    # resource (durable/cosmos/eventhub/servicebus/blob/sql/mcp/timer/http), or $null. Specific triggers first.
+    param([hashtable]$State)
+    $files = @(Get-RepoFiles) | Where-Object { $_.Extension -in '.cs', '.py', '.js', '.ts', '.java', '.ps1', '.json' }
+    if (-not $files) { return $null }
+    $blob = ($files | ForEach-Object { try { Get-Content -LiteralPath $_.FullName -Raw -ErrorAction SilentlyContinue } catch { } }) -join "`n"
+    if (-not $blob) { return $null }
+    if ($blob -imatch 'DurableOrchestrationTrigger|orchestration_trigger|OrchestrationTrigger|df\.Orchestrator') { return 'durable' }
+    if ($blob -imatch 'CosmosDBTrigger|cosmos_db_trigger') { return 'cosmos' }
+    if ($blob -imatch 'EventHubTrigger|event_hub_message_trigger') { return 'eventhub' }
+    if ($blob -imatch 'ServiceBus(Queue|Topic)?Trigger|service_bus_(queue|topic)_trigger') { return 'servicebus' }
+    if ($blob -imatch 'BlobTrigger|blob_trigger') { return 'blob' }
+    if ($blob -imatch 'SqlTrigger|sql_trigger') { return 'sql' }
+    if ($blob -imatch 'McpToolTrigger|mcp_tool_trigger|mcpToolTrigger') { return 'mcp' }
+    if ($blob -imatch 'TimerTrigger|timer_trigger|schedule') { return 'timer' }
+    if ($blob -imatch 'HttpTrigger|http_trigger|@app\.route') { return 'http' }
+    return $null
+}
+
+function Get-FunctionsRecipeIac {
+    # Maps the chosen recipe to the IaC flavour used to filter templates (Terraform recipes -> terraform,
+    # everything else -> bicep, since only bicep/terraform/none templates exist in the manifest).
+    param([hashtable]$State)
+    if ("$(Get-ByPath $State 'input.recipe')" -match 'Terraform') { return 'terraform' }
+    return 'bicep'
+}
+
+function Get-FunctionsManifest {
+    # Downloads and caches the Functions templates manifest under the state dir and returns the parsed
+    # object, or $null when the download fails or the payload is not a manifest.
+    $mf = Join-Path $StateDir 'functions-manifest.json'
+    if (-not (Test-Path -LiteralPath $mf) -or (Get-Item -LiteralPath $mf).Length -eq 0) {
+        try { Invoke-WebRequest -UseBasicParsing -Uri $script:FunctionsManifestUrl -OutFile $mf -TimeoutSec 30 }
+        catch { if (Test-Path -LiteralPath $mf) { Remove-Item -LiteralPath $mf -Force -ErrorAction SilentlyContinue }; return $null }
+    }
+    try {
+        $obj = Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json
+        if (-not $obj.templates) { return $null }
+        return $obj
+    }
+    catch { return $null }
+}
+
+function Resolve-FunctionsTemplate {
+    # Resolves the best template for a language/resource/IaC from the manifest and returns a hashtable
+    # { id, repositoryUrl, folderPath, gitRef }, or $null when none match. Terraform requires an exact
+    # terraform template; bicep falls back to iac "none"; ties broken by priority.
+    param([hashtable]$State, [string]$Language, [string]$Resource, [string]$Iac)
+    $man = Get-FunctionsManifest
+    if (-not $man) { return $null }
+    $cand = @($man.templates | Where-Object { $_.language.ToLower() -eq $Language.ToLower() -and $_.resource.ToLower() -eq $Resource.ToLower() })
+    if (-not $cand) { return $null }
+    if ($Iac.ToLower() -eq 'terraform') {
+        $f = @($cand | Where-Object { $_.iac.ToLower() -eq 'terraform' })
+    }
+    else {
+        $f = @($cand | Where-Object { $_.iac.ToLower() -eq 'bicep' }) + @($cand | Where-Object { $_.iac.ToLower() -eq 'none' })
+    }
+    if (-not $f) { return $null }
+    $t = $f | Sort-Object priority | Select-Object -First 1
+    return @{ id = $t.id; repositoryUrl = $t.repositoryUrl; folderPath = $t.folderPath; gitRef = $t.gitRef }
+}
+
+function Expand-FunctionsTemplate {
+    # Downloads the template repo archive, extracts the folderPath subtree into $Dest, and returns the
+    # extracted files (relative to $Dest). Returns $null on any network/extraction failure.
+    param([string]$Repo, [string]$GitRef, [string]$Folder, [string]$Dest)
+    $url = ($Repo.TrimEnd('/')) + "/archive/$GitRef.zip"
+    $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
+    New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+    try {
+        $zip = Join-Path $tmp 't.zip'
+        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip -TimeoutSec 60
+        $ex = Join-Path $tmp 'ex'; New-Item -ItemType Directory -Force -Path $ex | Out-Null
+        Expand-Archive -LiteralPath $zip -DestinationPath $ex -Force
+        $root = Get-ChildItem -LiteralPath $ex -Directory | Select-Object -First 1
+        if (-not $root) { return $null }
+        if (-not $Folder -or $Folder -eq '.') { $src = $root.FullName } else { $src = Join-Path $root.FullName $Folder }
+        if (-not (Test-Path -LiteralPath $src)) { return $null }
+        New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+        Copy-Item -Path (Join-Path $src '*') -Destination $Dest -Recurse -Force
+        return @(Get-ChildItem -LiteralPath $src -Recurse -File | ForEach-Object { ($_.FullName.Substring($src.Length).TrimStart('\', '/')) -replace '\\', '/' })
+    }
+    catch { return $null }
+    finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
+}
+
+function Invoke-FunctionsTemplateFetch {
+    # Fetches the template selected in input.functionsTemplate and records the outcome under
+    # auto.functionsTemplate. Greenfield (NEW) templates extract into the repo root; existing projects
+    # extract into a staging dir. Records a reason when no template exists or the fetch fails.
+    param([hashtable]$State)
+    $sel = Get-ByPath $State 'input.functionsTemplate'
+    if (-not ($sel -is [hashtable])) { return }
+    $resource = "$($sel['resource'])"; $language = "$($sel['language'])"
+    if (-not $resource -or -not $language) { return }
+    $iac = Get-FunctionsRecipeIac $State
+    $tpl = Resolve-FunctionsTemplate $State $language $resource $iac
+    if (-not $tpl) {
+        Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $false; id = $null; resource = $resource; language = $language; iac = $iac; placement = $null; files = @(); reason = 'no-template-use-references' }
+        return
+    }
+    if ((Get-ByPath $State 'input.mode') -eq 'NEW' -or (Get-ByPath $State 'auto.workspaceEmpty') -eq $true) {
+        $dest = $RepoPath; $placement = 'repo-root'
+    }
+    else {
+        $dest = Join-Path $StateDir 'functions-template'; $placement = 'staging'
+        if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force -ErrorAction SilentlyContinue }
+    }
+    $files = Expand-FunctionsTemplate $tpl.repositoryUrl $tpl.gitRef $tpl.folderPath $dest
+    if ($null -eq $files) {
+        Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $false; id = $tpl.id; repositoryUrl = $tpl.repositoryUrl; gitRef = $tpl.gitRef; placement = $null; files = @(); reason = 'fetch-failed' }
+        return
+    }
+    Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $true; id = $tpl.id; repositoryUrl = $tpl.repositoryUrl; gitRef = $tpl.gitRef; placement = $placement; path = $dest; files = @($files); reason = $null }
+}
+
+# ---------------------------------------------------------------------------
 # Proposed mode from programmatic signals (LM confirms)
 # ---------------------------------------------------------------------------
 function Get-ProposedMode {

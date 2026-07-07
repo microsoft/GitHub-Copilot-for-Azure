@@ -118,6 +118,9 @@ step_needs() {
         approval)
             printf 'input.userApproved\t%s\n' 'true when the user has approved the plan' ;;
         research)
+            if functions_intent && ! test_provided 'input.functionsTemplate'; then
+                printf 'input.functionsTemplate\t%s\n' 'Azure Functions template selection { "resource": <http|timer|cosmos|eventhub|servicebus|blob|sql|mcp|durable|connector>, "language": <CSharp|Python|TypeScript|JavaScript|Java|PowerShell> } — pick from the trigger/binding the app uses; the driver fetches the template'
+            fi
             printf 'input.researchDone\t%s\n' 'true when component research is complete' ;;
         generate)
             printf 'input.generateDone\t%s\n' 'true when infrastructure/config artifacts are generated' ;;
@@ -137,6 +140,17 @@ step_auto() {
         recipe)
             # Compute a suggested recipe from programmatic signals so the LM can confirm rather than derive it.
             set_str 'auto.suggestedRecipe' "$(get_proposed_recipe)" ;;
+        research)
+            # For existing Functions code, detect the trigger resource + language from the source so the
+            # driver can fetch the template without asking the LM (greenfield still asks via the need).
+            if functions_intent && ! test_provided 'input.functionsTemplate'; then
+                local fres flang
+                fres="$(detect_functions_resource)"
+                flang="$(detect_functions_language)"
+                if [[ -n "$fres" && -n "$flang" ]]; then
+                    set_by_path 'input.functionsTemplate' "$(jq -n --arg r "$fres" --arg l "$flang" '{resource:$r, language:$l}')"
+                fi
+            fi ;;
         azure-context)
             # Prefill the suggested subscription from azd env, then azd defaults, then az account, when the LM has not chosen one.
             if ! test_provided 'input.subscription'; then
@@ -194,8 +208,15 @@ step_auto() {
             # For .NET Aspire, let azd generate azure.yaml + infra/ from the AppHost; otherwise
             # pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
             # templates rather than re-creating boilerplate.
+            # For Azure Functions, first fetch the selected template into the repo (or a staging dir).
+            if functions_intent && test_provided 'input.functionsTemplate' \
+               && [[ "$(printf '%s' "$STATE" | jq -r 'has("auto") and (.auto|has("functionsTemplate"))')" != true ]]; then
+                fetch_functions_template
+            fi
             if [[ "$(printf '%s' "$STATE" | jq -r '.auto.componentSignals.aspire // false')" == true ]]; then
                 init_azd_project
+            elif [[ "$(printf '%s' "$STATE" | jq -r '(.auto.functionsTemplate.fetched // false) and (.auto.functionsTemplate.placement == "repo-root")')" == true ]]; then
+                : # template extracted into the repo root already carries infra/; skip the recipe scaffold
             else
                 made="$(new_recipe_scaffold)"
                 scaffold_json="$(printf '%s\n' "$made" | jq -R . | jq -s -c 'map(select(length > 0))')"

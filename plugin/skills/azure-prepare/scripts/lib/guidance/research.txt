@@ -32,8 +32,10 @@ Service → reference / related skill (load README under scripts/references/serv
 
 Skill routing for special scenarios:
   - GitHub Copilot SDK → invoke **azure-hosted-copilot-sdk** (scaffold+config), then resume.
-  - Azure Functions → STAY here: load scripts/references/services/functions/templates/selection.md (decision
-    tree) → follow scripts/references/services/functions/templates/recipes/composition.md (algorithm). Never
+  - Azure Functions → STAY here. When the driver asks for `input.functionsTemplate`, set
+    `{ resource, language }` using `scripts/references/services/functions/templates/selection.md`
+    (the decision tree maps the intended trigger/binding + language to the template) — the
+    DRIVER then fetches the template for you (no `functions_template_get` call). Never
     synthesize IaC by hand.
   - PostgreSQL passwordless / security hardening → handle directly with service refs.
   - App Insights instrumentation → appinsights-instrumentation; AI apps → microsoft-foundry;

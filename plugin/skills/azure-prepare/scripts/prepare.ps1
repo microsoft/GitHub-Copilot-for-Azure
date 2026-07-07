@@ -62,9 +62,10 @@ foreach ($step in $Steps) {
     # Run the step's auto collector (may satisfy needs programmatically).
     if ($step.ContainsKey('auto') -and $step.auto) { & $step.auto $State }
 
-    # Determine missing needs.
+    # Determine missing needs (needs may be a scriptblock for conditional/dynamic needs).
+    $needs = if ($step.needs -is [scriptblock]) { @(& $step.needs $State) } else { @($step.needs) }
     $missing = @()
-    foreach ($n in @($step.needs)) {
+    foreach ($n in $needs) {
         if (-not (Test-Provided $State $n.Path)) { $missing += $n }
     }
 

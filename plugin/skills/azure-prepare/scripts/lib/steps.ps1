@@ -209,9 +209,27 @@ $Steps = @(
             $r += Get-DurableRefs $State
             $r
         }
-        needs = @(
-            @{ Path = 'input.researchDone'; Prompt = 'true when component research is complete' }
-        )
+        auto = {
+            param($State)
+            # For existing Functions code, detect the trigger resource + language from the source so the
+            # driver can fetch the template without asking the LM (greenfield still asks via the need).
+            if ((Test-FunctionsIntent $State) -and -not (Test-Provided $State 'input.functionsTemplate')) {
+                $fres = Get-FunctionsResource $State
+                $flang = Get-FunctionsLanguage $State
+                if ($fres -and $flang) {
+                    Set-ByPath $State 'input.functionsTemplate' @{ resource = $fres; language = $flang }
+                }
+            }
+        }
+        needs = {
+            param($State)
+            $n = @()
+            if ((Test-FunctionsIntent $State) -and -not (Test-Provided $State 'input.functionsTemplate')) {
+                $n += @{ Path = 'input.functionsTemplate'; Prompt = 'Azure Functions template selection { "resource": <http|timer|cosmos|eventhub|servicebus|blob|sql|mcp|durable|connector>, "language": <CSharp|Python|TypeScript|JavaScript|Java|PowerShell> } — pick from the trigger/binding the app uses; the driver fetches the template' }
+            }
+            $n += @{ Path = 'input.researchDone'; Prompt = 'true when component research is complete' }
+            $n
+        }
     },
     @{
         id = 'generate'; phase = 2; title = 'Generate artifacts'
@@ -239,8 +257,17 @@ $Steps = @(
             # For .NET Aspire, let azd generate azure.yaml + infra/ from the AppHost; otherwise
             # pre-create the deterministic infra/ scaffold + parameter stub so the LM fills
             # templates rather than re-creating boilerplate.
+            # For Azure Functions, first fetch the selected template into the repo (or a staging dir).
+            if ((Test-FunctionsIntent $State) -and (Test-Provided $State 'input.functionsTemplate') `
+                    -and -not ($State['auto'].ContainsKey('functionsTemplate'))) {
+                Invoke-FunctionsTemplateFetch $State
+            }
+            $ft = Get-ByPath $State 'auto.functionsTemplate'
             if ((Get-ByPath $State 'auto.componentSignals.aspire') -eq $true) {
                 Initialize-AzdProject $State
+            }
+            elseif ($ft -is [hashtable] -and $ft['fetched'] -eq $true -and $ft['placement'] -eq 'repo-root') {
+                # template extracted into the repo root already carries infra/; skip the recipe scaffold
             }
             else {
                 $made = New-RecipeScaffold $State

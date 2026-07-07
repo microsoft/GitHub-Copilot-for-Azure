@@ -31,14 +31,22 @@ is for NEW projects only: run it ONLY in an empty/new directory. To re-init an e
 project, scaffold in a separate new dir and migrate changes in with confirmed edits;
 `azd init` WITHOUT a template arg is fine in existing workspaces.
 
-⛔ If the target compute is Azure Functions, load the composition algorithm BEFORE
-generating any infrastructure:
-  1. Load `scripts/references/services/functions/templates/selection.md` (base template + recipe).
-  2. Load `scripts/references/services/functions/templates/recipes/composition.md` (the algorithm).
-  3. Use the `functions_template_get` MCP tool to list/fetch templates and write
-     functionFiles[] + projectFiles[] directly — NEVER hand-write Bicep/Terraform.
-     Fallback to `azd init -t <template>` / `func init` / `func new` only when composing
-     multiple recipes and the required templates are not found.
+⛔ If the target compute is Azure Functions, the DRIVER already fetched the starter template
+for you (from the trigger/language in `input.functionsTemplate`) — do NOT call the
+`functions_template_get` MCP tool and do NOT hand-write Bicep/Terraform. Read
+`auto.functionsTemplate` = {fetched, id, placement, path, files, reason}:
+  - `fetched:true`, `placement:"repo-root"` → the template (functions + `infra/` + azure.yaml)
+    was extracted into the repo root. Review `files[]`, wire in the app logic, and apply any
+    required Functions edits (e.g. secret-storage type, managed identity) — do NOT recreate infra.
+  - `fetched:true`, `placement:"staging"` → template extracted to `path` (a staging dir);
+    selectively MERGE its infra/config into the existing project (never clobber user code).
+  - `fetched:false`, reason `no-template-use-references` → no matching template exists (e.g. a
+    Terraform trigger with no template). Load
+    `scripts/references/services/functions/templates/selection.md` and
+    `scripts/references/services/functions/templates/recipes/composition.md`, then generate from
+    those reference patterns.
+  - `fetched:false`, reason `fetch-failed` → the download failed: fall back to the
+    `functions_template_get` MCP tool, or the reference patterns above.
   The Functions bicep.md/terraform.md files are REFERENCE DOCS, not templates to copy —
   hand-writing from them yields missing RBAC and broken managed identity.
 For other compute (Container Apps, App Service, Static Web Apps) load their
