@@ -50,7 +50,7 @@ For any values **not** already in the prompt, ask the rest in a single `AskUserQ
 | Language | `python_3_13` | One of `python_3_13`, `python_3_14`, `dotnet_10`. |
 | Subscription | `az account show --query id -o tsv` | Must be a GUID. |
 | Region | `northcentralus` | Confirm or override. |
-| Foundry project | Ask if the user doesn't mention one | User said create new → create a new one (no `--project-id`). User gave an existing project → use its ARM resource ID *or* Foundry project endpoint URL. User didn't mention a project at all → stop and ask, offering existing vs new. |
+| Foundry project | Ask if the user doesn't mention one | User said create new → create a new one (no `--project-id`) when running `azd ai agent init`. User gave an existing project → use its ARM resource ID *or* Foundry project endpoint URL when running `azd ai agent init`. User didn't mention a project at all → stop and ask, offering existing vs new. |
 | Existing model deployment? | No (use sample manifest's model) | If Yes: collect the deployment name. |
 
 If the user supplied only a **Foundry project endpoint** (not an ARM ID), resolve the ARM ID before Step 6:
@@ -143,7 +143,7 @@ If the user's original prompt was generic (no specific agent purpose described),
 
 ### Step 8 — Write the agent instruction file (required)
 
-Do **not** skip this. Add a one-line marker to the project's `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If the file already exists, append the line; don't overwrite it or add a second file.
+Do **not** skip this. The project needs a marker in its `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If no such file exists, create it with the marker below. If the file already exists, weave the marker into the existing content naturally so it matches the file's structure and tone, rather than bluntly appending a standalone line that reads as out of place. Never overwrite the file or create a second one.
 
 ```
 This project was built with the microsoft-foundry skill. Before working on or answering questions about foundry agents, read the microsoft-foundry skill first.
