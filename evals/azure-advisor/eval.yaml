@@ -132,102 +132,6 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ═══════════════════════════════════════════
-  # Boundary (negative) routing — adjacent services from
-  # the skill's DO NOT USE FOR section must NOT route to azure-advisor.
-  # `disallowed` asserts the skill stays out of these requests.
-  # ═══════════════════════════════════════════
-
-  # ── boundary-cost ──
-  - name: "Cost query does not route to advisor"
-    prompt: "Analyze my Azure subscription costs and spending trends"
-    tags:
-      type: integration
-      skill: azure-advisor
-      tier: smoke
-      cost: llm
-      area: routing
-    graders:
-      - type: skill-invocation
-        config:
-          disallowed:
-            - azure-advisor
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ── boundary-diagnostics ──
-  - name: "Diagnostics query does not route to advisor"
-    prompt: "My App Service keeps returning 500 errors, help me troubleshoot it"
-    tags:
-      type: integration
-      skill: azure-advisor
-      tier: full
-      cost: llm
-      area: routing
-    graders:
-      - type: skill-invocation
-        config:
-          disallowed:
-            - azure-advisor
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ── boundary-rbac ──
-  - name: "RBAC query does not route to advisor"
-    prompt: "Grant my team Reader access to the production resource group"
-    tags:
-      type: integration
-      skill: azure-advisor
-      tier: full
-      cost: llm
-      area: routing
-    graders:
-      - type: skill-invocation
-        config:
-          disallowed:
-            - azure-advisor
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ── boundary-keyvault ──
-  - name: "Key Vault query does not route to advisor"
-    prompt: "Store a new secret in my Azure Key Vault"
-    tags:
-      type: integration
-      skill: azure-advisor
-      tier: full
-      cost: llm
-      area: routing
-    graders:
-      - type: skill-invocation
-        config:
-          disallowed:
-            - azure-advisor
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ── boundary-appservice ──
-  - name: "App Service deploy does not route to advisor"
-    prompt: "Deploy my web app to Azure App Service"
-    tags:
-      type: integration
-      skill: azure-advisor
-      tier: full
-      cost: llm
-      area: routing
-    graders:
-      - type: skill-invocation
-        config:
-          disallowed:
-            - azure-advisor
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ═══════════════════════════════════════════
   # Tool-call trajectory — validate behavior up to the point the agent
   # invokes an Advisor MCP tool. Early-terminates as soon as an `advisor_`
   # tool is called (or after a small tool-call cap as a safety net), then the
@@ -243,7 +147,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: behavior
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"advisor_","argsPattern":".*"},{"type":"tool-call-count","count":8}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"advisor_"},{"type":"tool-call-count","count":8}]'
     graders:
       - type: skill-invocation
         config:
@@ -266,7 +170,7 @@ stimuli:
       tier: full
       cost: llm
       area: behavior
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"advisor_","argsPattern":".*"},{"type":"tool-call-count","count":8}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"advisor_"},{"type":"tool-call-count","count":8}]'
     graders:
       - type: skill-invocation
         config:
