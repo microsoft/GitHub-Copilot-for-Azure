@@ -88,6 +88,7 @@ if ! command -v sqlcmd >/dev/null 2>&1; then
   exit 1
 fi
 
+# script will exit on error due to "set -e"
 sqlcmd \
   -S "${SQL_SERVER}.database.windows.net" \
   -d "$SQL_DATABASE" \

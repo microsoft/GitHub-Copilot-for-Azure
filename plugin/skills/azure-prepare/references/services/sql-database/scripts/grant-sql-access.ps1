@@ -87,4 +87,8 @@ sqlcmd `
   --authentication-method ActiveDirectoryDefault `
   -Q $SqlQuery
 
+if ($LASTEXITCODE -ne 0) {
+  throw "sqlcmd failed with exit code $LASTEXITCODE. SQL access was not granted."
+}
+
 Write-Host "SQL access granted successfully."
