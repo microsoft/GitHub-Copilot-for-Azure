@@ -24,6 +24,12 @@ tools:
 safe-outputs:
   update-issue:
     max: 1
+  set-issue-type:
+    allowed: [Bug, Feature, Task]
+    max: 1
+  set-issue-field:
+    allowed-fields: [Priority]
+    max: 1
   add-comment:
     max: 1
 
@@ -114,6 +120,6 @@ Do **not** promise a specific fix timeline. Do **not** repeat the entire issue b
    - Optionally `assign-to-copilot`
    - Exactly one Issue Type field value
    - Exactly one Priority field value
-5. Update the issue by adding the selected labels, setting the selected fields, and removing the `untriaged` label if it is present.
+5. Update the issue by adding the selected labels, setting the selected Issue Type and Priority fields, and removing the `untriaged` label if it is present.
 6. Do not add the `bug`, `enhancement`, `question`, or `documentation` labels. If any of those labels are already present, remove them when setting the Issue Type field.
 7. Post a helpful acknowledgement comment on the issue.
