@@ -50,6 +50,8 @@ interface TokenSummaryRecord {
     outputTokens?: number;
     cacheReadTokens?: number;
     cacheWriteTokens?: number;
+    totalApiDurationMs?: number;
+    apiCallCount?: number;
 }
 
 /** One aggregated, table-ready row for a single test within a run. */
@@ -61,6 +63,10 @@ interface AggregatedUsage {
     outputTokens: number;
     cacheReadTokens: number;
     cacheWriteTokens: number;
+    /** Total LLM API duration in ms, summed across the test's records. */
+    durationMs: number;
+    /** Number of LLM round-trips ("turns"), summed across the test's records. */
+    turns: number;
 }
 
 /**
@@ -189,11 +195,15 @@ function aggregateByTest(records: TokenSummaryRecord[]): AggregatedUsage[] {
     const output = Number(r.outputTokens) || 0;
     const cacheRead = Number(r.cacheReadTokens) || 0;
     const cacheWrite = Number(r.cacheWriteTokens) || 0;
+    const durationMs = Number(r.totalApiDurationMs) || 0;
+    const turns = Number(r.apiCallCount) || 0;
     if (existing) {
       existing.inputTokens += input;
       existing.outputTokens += output;
       existing.cacheReadTokens += cacheRead;
       existing.cacheWriteTokens += cacheWrite;
+      existing.durationMs += durationMs;
+      existing.turns += turns;
       if (r.timestamp && r.timestamp > existing.timestamp) {
         existing.timestamp = r.timestamp;
         if (r.model) existing.model = r.model;
@@ -207,6 +217,8 @@ function aggregateByTest(records: TokenSummaryRecord[]): AggregatedUsage[] {
         outputTokens: output,
         cacheReadTokens: cacheRead,
         cacheWriteTokens: cacheWrite,
+        durationMs,
+        turns,
       });
     }
   }
@@ -291,6 +303,8 @@ async function main(): Promise<void> {
           cacheReadTokens: usage.cacheReadTokens,
           cacheWriteTokens: usage.cacheWriteTokens,
           totalTokens,
+          durationMs: usage.durationMs,
+          turns: usage.turns,
         },
         "Replace",
       );

@@ -6,8 +6,8 @@
  * Example: page URL is /?container=abc, path is /api/dates
  * → returns /api/dates?container=abc
  *
- * Example: page URL is /?container=abc, path is /api/token-usage?skill=foo
- * → returns /api/token-usage?container=abc&skill=foo
+ * Example: page URL is /?container=abc, path is /api/test-run-metrics?skill=foo
+ * → returns /api/test-run-metrics?container=abc&skill=foo
  */
 export function apiUrl(path: string): string {
     const qIdx = path.indexOf("?");

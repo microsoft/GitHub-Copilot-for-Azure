@@ -27,6 +27,8 @@ interface FrontmatterSkillResult {
   errors: string[];
   warnings: string[];
   checks: Record<string, boolean>;
+  description?: string;
+  descriptionLength?: number;
 }
 
 interface FrontmatterJsonResult {
@@ -54,17 +56,27 @@ function buildItems(skills: FrontmatterSkillResult[]): CategoryItem[] {
 
     const totalChecks = Object.keys(skill.checks).length;
 
+    const metadata: Record<string, string | number | boolean> = {
+      errors: skill.errors.length,
+      warnings: skill.warnings.length,
+      checks: totalChecks,
+      path: skill.path,
+    };
+    if (typeof skill.description === "string") {
+      metadata.description = sanitize(skill.description);
+      metadata.descriptionLength =
+        typeof skill.descriptionLength === "number"
+          ? skill.descriptionLength
+          : skill.description.length;
+    }
+
     return {
       name: skill.name,
       status: mapStatus(skill.status),
       message: messages.length > 0
         ? sanitize(messages.join("; "))
         : undefined,
-      metadata: {
-        errors: skill.errors.length,
-        warnings: skill.warnings.length,
-        checks: totalChecks,
-      },
+      metadata,
     };
   });
 }

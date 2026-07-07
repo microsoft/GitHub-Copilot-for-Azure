@@ -47,6 +47,8 @@ export interface ValidationResult {
   skill: string;
   file: string;
   issues: ValidationIssue[];
+  /** Raw description text, or null when missing/unparseable. */
+  description?: string | null;
 }
 
 export interface SkillRoutingContext {
@@ -592,7 +594,7 @@ export function validateSkillFile(filePath: string): ValidationResult {
 
   if (parsed === null) {
     issues.push({ check: "frontmatter", message: "Missing YAML frontmatter (file must start with ---)" });
-    return { skill: parentDir, file: filePath, issues };
+    return { skill: parentDir, file: filePath, issues, description: null };
   }
 
   const name = typeof parsed.data.name === "string" ? parsed.data.name : null;
@@ -633,7 +635,7 @@ export function validateSkillFile(filePath: string): ValidationResult {
   // Check 10: Allowed tools field
   issues.push(...validateAllowedTools(parsed.data["allowed-tools"]));
 
-  return { skill: parentDir, file: filePath, issues };
+  return { skill: parentDir, file: filePath, issues, description };
 }
 
 // ── Skill discovery ──────────────────────────────────────────────────────────
@@ -682,6 +684,10 @@ export interface FrontmatterSkillResult {
   errors: string[];
   warnings: string[];
   checks: Record<string, boolean>;
+  /** Raw description text ("" when missing). */
+  description: string;
+  /** Character length of the description. */
+  descriptionLength: number;
 }
 
 export interface FrontmatterJsonResult {
@@ -723,6 +729,7 @@ function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
       passed++;
     }
 
+    const description = result.description ?? "";
     skills.push({
       name: result.skill,
       path: relative(REPO_ROOT, result.file).replace(/\\/g, "/"),
@@ -730,6 +737,8 @@ function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
       errors: errors.map(e => `[${e.check}] ${e.message}`),
       warnings: warnings.map(w => `[${w.check}] ${w.message}`),
       checks,
+      description,
+      descriptionLength: description.length,
     });
   }
 

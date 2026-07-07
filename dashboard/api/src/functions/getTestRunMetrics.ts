@@ -6,7 +6,7 @@ import { logRequestIdentity } from "../requestIdentity";
 const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
 const TOKEN_USAGE_TABLE_NAME = process.env.TOKEN_USAGE_TABLE_NAME;
 
-function getTokenUsageTableClient(): TableClient {
+function getTestRunMetricsTableClient(): TableClient {
     if (!STORAGE_ACCOUNT_NAME) {
         throw new Error("STORAGE_ACCOUNT_NAME environment variable is not set");
     }
@@ -29,21 +29,22 @@ function odataLiteral(value: string): string {
 }
 
 /**
- * Returns integration-test token usage rows from the table.
- * GET /api/token-usage
+ * Returns integration-test run metrics rows from the table.
+ * GET /api/test-run-metrics
  * Query params: skill (optional), test (optional), branch (optional)
  *
- * Each row represents one test, in one branch, for one run.
+ * Each row represents one test, in one branch, for one run, and carries token
+ * usage plus the run's total API duration and turn (LLM round-trip) count.
  */
-async function getTokenUsage(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getTokenUsage");
+async function getTestRunMetrics(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    logRequestIdentity(request, context, "getTestRunMetrics");
 
     const filterSkill = request.query.get("skill") || undefined;
     const filterTest = request.query.get("test") || undefined;
     const filterBranch = request.query.get("branch") || undefined;
 
     try {
-        const tableClient = getTokenUsageTableClient();
+        const tableClient = getTestRunMetricsTableClient();
 
         const filters: string[] = [];
         if (filterSkill) filters.push(`skill eq '${odataLiteral(filterSkill)}'`);
@@ -68,6 +69,8 @@ async function getTokenUsage(request: HttpRequest, context: InvocationContext): 
                 cacheReadTokens: entity.cacheReadTokens,
                 cacheWriteTokens: entity.cacheWriteTokens,
                 totalTokens: entity.totalTokens,
+                durationMs: entity.durationMs,
+                turns: entity.turns,
             });
         }
 
@@ -77,24 +80,24 @@ async function getTokenUsage(request: HttpRequest, context: InvocationContext): 
             body: JSON.stringify(entities),
         };
     } catch (err: any) {
-        context.error("Error querying token usage:", err?.message ?? err);
+        context.error("Error querying test run metrics:", err?.message ?? err);
         return {
             status: 500,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ error: "Failed to query token usage" }),
+            body: JSON.stringify({ error: "Failed to query test run metrics" }),
         };
     }
 }
 
 /**
  * Returns distinct skill, test, and branch values from the table.
- * GET /api/token-usage/filters
+ * GET /api/test-run-metrics/filters
  */
-async function getTokenUsageFilters(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getTokenUsageFilters");
+async function getTestRunMetricsFilters(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    logRequestIdentity(request, context, "getTestRunMetricsFilters");
 
     try {
-        const tableClient = getTokenUsageTableClient();
+        const tableClient = getTestRunMetricsTableClient();
         const skills = new Set<string>();
         const tests = new Set<string>();
         const branches = new Set<string>();
@@ -133,25 +136,25 @@ async function getTokenUsageFilters(request: HttpRequest, context: InvocationCon
             }),
         };
     } catch (err: any) {
-        context.error("Error querying token usage filters:", err?.message ?? err);
+        context.error("Error querying test run metrics filters:", err?.message ?? err);
         return {
             status: 500,
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ error: "Failed to query token usage filters" }),
+            body: JSON.stringify({ error: "Failed to query test run metrics filters" }),
         };
     }
 }
 
-app.http("getTokenUsage", {
+app.http("getTestRunMetrics", {
     methods: ["GET"],
     authLevel: "anonymous",
-    route: "token-usage",
-    handler: getTokenUsage,
+    route: "test-run-metrics",
+    handler: getTestRunMetrics,
 });
 
-app.http("getTokenUsageFilters", {
+app.http("getTestRunMetricsFilters", {
     methods: ["GET"],
     authLevel: "anonymous",
-    route: "token-usage/filters",
-    handler: getTokenUsageFilters,
+    route: "test-run-metrics/filters",
+    handler: getTestRunMetricsFilters,
 });
