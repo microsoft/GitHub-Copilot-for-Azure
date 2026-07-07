@@ -39,7 +39,10 @@ stimuli:
   # ── integration-diversity.test.ts ──────────────────────────────────
   # test: e2e — postgresql-event-sourcing (Java/Spring Boot + Kafka)
   - name: "Dependency Compat - Java Spring Boot"
-    prompt: "Can you check if my dependencies are compatible with Azure?"
+    turns:
+      - "Can you check if my dependencies are compatible with Azure?"
+      - "Continue without fixing — complete the dependency and readiness assessment."
+      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     tags:
       type: integration
       tier: full
@@ -54,6 +57,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -63,6 +71,30 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(ready|readyWithCaveats|blocked)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)java|spring"
       - type: output-matches
         config:
           pattern: "(?i)java|spring|gradle"
@@ -91,6 +123,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -100,6 +137,30 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)django|python"
       - type: output-matches
         config:
           pattern: "(?i)django|python|postgres"
@@ -113,7 +174,10 @@ stimuli:
 
   # test: e2e — fullstack-starter (4-component monorepo + GCP migration)
   - name: "Diversity - Monorepo Multi-Component Blockers"
-    prompt: "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
+    turns:
+      - "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
+      - "Yes, scan all components and complete the readiness assessment."
+      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     tags:
       type: integration
       tier: full
@@ -128,6 +192,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -137,6 +206,26 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
       - type: output-matches
         config:
           pattern: "(?i)component|monorepo|frontend|backend|gcp|blocker|service"
@@ -163,6 +252,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -173,6 +267,30 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)express|node"
       - type: output-matches
         config:
           pattern: "(?i)express|node|sqlite"
@@ -186,7 +304,10 @@ stimuli:
 
   # test: e2e — docker-static-site (Dockerfile + static)
   - name: "Readiness - Dockerfile Static Site"
-    prompt: "Is my app ready to deploy to Azure? Scan for any issues."
+    turns:
+      - "Is my app ready to deploy to Azure? Scan for any issues."
+      - "Continue without fixing — just complete the readiness assessment."
+      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     tags:
       type: integration
       tier: full
@@ -201,6 +322,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -210,6 +336,30 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)docker|static"
       - type: output-matches
         config:
           pattern: "(?i)docker|dockerfile|static|container"
@@ -220,7 +370,10 @@ stimuli:
 
   # test: e2e — wetty (completeness check: entry points, deps, config)
   - name: "Readiness - Wetty Completeness Check"
-    prompt: "What do I need before I can deploy to Azure?"
+    turns:
+      - "What do I need before I can deploy to Azure?"
+      - "Continue without fixing — just complete the readiness assessment."
+      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     tags:
       type: integration
       tier: full
@@ -235,6 +388,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -244,6 +402,30 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)node|typescript"
       - type: output-matches
         config:
           pattern: "(?i)docker|dependenc|entry|config|node|typescript"
@@ -254,7 +436,10 @@ stimuli:
 
   # test: e2e — full-stack-fastapi-template (multi-component: React frontend + FastAPI backend)
   - name: "Readiness - FastAPI Multi-Component"
-    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    turns:
+      - "Can you scan my repo and tell me if there are any blockers for deployment?"
+      - "Continue without fixing — scan all components and complete the assessment."
+      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     tags:
       type: integration
       tier: full
@@ -269,6 +454,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -278,6 +468,30 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)fastapi|python"
       - type: output-matches
         config:
           pattern: "(?i)react|fastapi|frontend|backend|component"
@@ -303,6 +517,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -332,6 +551,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -388,6 +612,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -416,6 +645,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -444,6 +678,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -473,6 +712,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -501,6 +745,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -529,6 +778,11 @@ stimuli:
     constraints:
       max_turns: 8
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -557,6 +811,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -586,6 +845,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -614,6 +878,11 @@ stimuli:
     constraints:
       max_turns: 16
     graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
@@ -643,7 +912,10 @@ stimuli:
 
   # test: invocation rate — dockerfile prerequisite prompt
   - name: "Routing - Dockerfile Prerequisite"
-    prompt: "Do I need a Dockerfile before deploying to Azure?"
+    turns:
+      - "Do I need a Dockerfile before deploying to Azure?"
+      - "Please complete the prerequisite readiness check."
+      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     tags:
       type: integration
       tier: smoke
