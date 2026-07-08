@@ -335,18 +335,17 @@ stimuli:
   # Segmented VNet with Linux VMs + Terraform IaC (followUp drives Phase 6 Terraform
   # generation; file-exists infra/main.tf asserts the Terraform output named in the test).
   - name: "Segmented VNet - Linux VMs + Terraform"
-    prompt: |
-      Spin up Linux VMs across a segmented VNet — separate web, app, and data subnets with NSGs between them and an internal load balancer — automate patch management via Azure Automation, and log inter-subnet traffic for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    turns:
+      - Spin up Linux VMs across a segmented VNet — separate web, app, and data subnets with NSGs between them and an internal load balancer — automate patch management via Azure Automation, and log inter-subnet traffic for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+      - "The resource list looks good, proceed with generating the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Terraform IaC for the approved plan."
     tags:
       type: integration
       tier: full
       cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Approve the plan as-is."
-        - "Yes, generate the Terraform IaC for the approved plan."
     constraints:
       max_turns: 80
     graders:
@@ -455,7 +454,10 @@ stimuli:
   # Jest: integration.test.ts → "invokes skill for hardened 3-tier VM infrastructure prompt"
   # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
   - name: "Skill - 3-Tier Hardened OS Images"
-    prompt: "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier."
+    turns: 
+      - "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier."
+      - "The resource list looks good, proceed with generating the plan."
+      - "Go with recommended options. Assume all defaults to make the plan."
     tags:
       type: integration
       tier: full
@@ -463,9 +465,6 @@ stimuli:
       area: routing
       skill: azure-enterprise-infra-planner
       earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Go with recommended options. Assume all defaults to make the plan."
     constraints:
       max_turns: 50
     graders:
@@ -481,7 +480,10 @@ stimuli:
   # Jest: integration.test.ts → "invokes skill for VMSS with WAF and encryption prompt"
   # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
   - name: "Skill - VMSS + App Gateway WAF"
-    prompt: "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks."
+    turns: 
+      - "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks."
+      - "The resource list looks good, proceed with generating the plan."
+      - "Go with recommended options. Assume all defaults to make the plan."
     tags:
       type: integration
       tier: full
@@ -489,9 +491,6 @@ stimuli:
       area: routing
       skill: azure-enterprise-infra-planner
       earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Go with recommended options. Assume all defaults to make the plan."
     constraints:
       max_turns: 50
     graders:
@@ -507,7 +506,10 @@ stimuli:
   # Jest: integration.test.ts → "invokes skill for backup and compliance prompt"
   # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
   - name: "Skill - Azure Backup Long-Term Retention"
-    prompt: "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly."
+    turns: 
+      - "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly."
+      - "The resource list looks good, proceed with generating the plan."
+      - "Go with recommended options. Assume all defaults to make the plan."
     tags:
       type: integration
       tier: full
@@ -515,9 +517,6 @@ stimuli:
       area: routing
       skill: azure-enterprise-infra-planner
       earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Go with recommended options. Assume all defaults to make the plan."
     constraints:
       max_turns: 50
     graders:
@@ -533,7 +532,10 @@ stimuli:
   # Jest: integration.test.ts → "invokes skill for secure multi-region 3-tier prompt"
   # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
   - name: "Skill - Secure Multi-Region 3-Tier Windows"
-    prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier."
+    turns: 
+      - "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier."
+      - "The resource list looks good, proceed with generating the plan."
+      - "Go with recommended options. Assume all defaults to make the plan."
     tags:
       type: integration
       tier: full
@@ -541,9 +543,6 @@ stimuli:
       area: routing
       skill: azure-enterprise-infra-planner
       earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Go with recommended options. Assume all defaults to make the plan."
     constraints:
       max_turns: 50
     graders:
@@ -584,16 +583,16 @@ stimuli:
   #   followUp 2 explicitly halts the agent at the Phase 6 IaC Gate
   #   (see plugin/skills/azure-enterprise-infra-planner/references/phases/6-generate-iac.md).
   - name: "Response - Jumpbox + NSGs + Internal LB (plan only)"
-    prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan."
+    turns:
+      - "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan."
+      - "The resource list looks good, proceed with generating the plan."
+      - "Approve the plan as-is. Do not generate any IaC."
     tags:
       type: integration
       tier: full
       cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Approve the plan as-is. Do not generate any IaC."
     constraints:
       max_turns: 50
     graders:
@@ -673,17 +672,17 @@ stimuli:
   #   ("Yes, generate the Bicep ...") — see references/phases/6-generate-iac.md.
   #   The agent creates infra/ + infra/modules/ itself per bicep-generation.md step 1.
   - name: "Response - SAP Backup Bicep Generation"
-    prompt: "Provision the backup infrastructure for an SAP VM workload — a Recovery Services vault with a policy-driven, encrypted and compressed backup policy, Key Vault-managed encryption keys, and diagnostic audit logs for all recovery tests. Assume all defaults to make the plan."
+    turns:
+      - "Provision the backup infrastructure for an SAP VM workload — a Recovery Services vault with a policy-driven, encrypted and compressed backup policy, Key Vault-managed encryption keys, and diagnostic audit logs for all recovery tests. Assume all defaults to make the plan."
+      - "The resource list looks good, proceed with generating the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Bicep IaC for the approved plan."
     tags:
       type: integration
       tier: full
       cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
-      followUp:
-        - "The resource list looks good, proceed with generating the plan."
-        - "Approve the plan as-is."
-        - "Yes, generate the Bicep IaC for the approved plan."
     constraints:
       max_turns: 80
     graders:

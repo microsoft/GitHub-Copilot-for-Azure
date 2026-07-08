@@ -157,22 +157,6 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
   }
 }
 
-export function getFollowUp(tags: Record<string, string[] | string> | undefined): string[] | undefined {
-  if (!tags) {
-    return undefined;
-  }
-  const followUp = tags["followUp"];
-  if (!followUp) {
-    return undefined;
-  }
-  if (Array.isArray(followUp)) {
-    return followUp;
-  } else {
-    console.error("Failed to get follow up from tags", followUp);
-    return undefined;
-  }
-}
-
 export function getSystemPrompt(tags: Record<string, string[] | string> | undefined): SystemMessageConfig | undefined {
   if (!tags) {
     return undefined;
