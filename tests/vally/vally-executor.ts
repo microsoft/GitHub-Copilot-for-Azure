@@ -45,8 +45,6 @@ export class IntegrationTestAgentRunner implements Executor {
     if (stimulus.turns) {
       followUps = stimulus.turns.slice(1);
     }
-    console.log("prompt", prompt);
-    console.log("followUps", followUps);
 
     const runConfig: AgentRunConfig = {
       workspace: workDir,
