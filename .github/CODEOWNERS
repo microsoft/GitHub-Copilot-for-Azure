@@ -39,4 +39,6 @@
 /plugin/skills/microsoft-foundry/foundry-agent/deploy/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/invoke/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/troubleshoot/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/routine/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/invocations-ws/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
