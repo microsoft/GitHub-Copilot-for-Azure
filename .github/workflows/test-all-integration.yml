@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       skills:
-        description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-rbac")'
+        description: 'Comma separated list of skills to test (e.g. "appinsights-instrumentation,azure-ai")'
         required: true
         type: string
       model-override:
