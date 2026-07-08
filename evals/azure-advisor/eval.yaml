@@ -147,7 +147,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: behavior
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"advisor_"},{"type":"tool-call-count","count":8}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"azure-advisor"},{"type":"tool-call-count","count":8}]'
     graders:
       - type: skill-invocation
         config:
@@ -156,7 +156,7 @@ stimuli:
       - type: tool-calls
         config:
           required:
-            - name: "advisor_"
+            - name: "azure-advisor"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -170,7 +170,7 @@ stimuli:
       tier: full
       cost: llm
       area: behavior
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"advisor_"},{"type":"tool-call-count","count":8}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"azure-advisor"},{"type":"tool-call-count","count":8}]'
     graders:
       - type: skill-invocation
         config:
@@ -179,7 +179,7 @@ stimuli:
       - type: tool-calls
         config:
           required:
-            - name: "advisor_"
+            - name: "azure-advisor"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
