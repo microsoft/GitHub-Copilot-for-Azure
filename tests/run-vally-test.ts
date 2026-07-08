@@ -311,6 +311,10 @@ async function main(): Promise<void> {
   const forwardedArgs = [...options.forwardedArgs];
 
   // default options
+  const hasWorkersArg = forwardedArgs.some(arg => arg === "--workers" || arg.startsWith("--workers="));
+  if (!hasWorkersArg) {
+    forwardedArgs.splice(0, 0, "--workers", "2");
+  }
   forwardedArgs.splice(0, 0, "--output-dir", "./results");
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));

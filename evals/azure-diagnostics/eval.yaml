@@ -16,10 +16,6 @@ tags:
   type: integration
   skill: azure-diagnostics
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-diagnostics
-
 config:
   runs: 5
   timeout: "10m"

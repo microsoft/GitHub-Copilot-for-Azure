@@ -9,10 +9,6 @@ description: |
 tags:
   skill: microsoft-foundry
 
-environment:
-  skills:
-    - ../../plugin/skills/microsoft-foundry
-
 config:
   runs: 5
   timeout: "30m"
@@ -370,6 +366,124 @@ stimuli:
           required:
             - microsoft-foundry
 
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Create
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Create Python hosted Foundry agent"
+    prompt: "Create a new hosted agent for Foundry using Python."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Create LangGraph hosted Foundry agent"
+    prompt: "Create a LangGraph hosted agent for Foundry in Python."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Deploy Foundry agent routing"
+    prompt: "Deploy my agent to Azure AI Foundry"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Containerize Foundry agent routing"
+    prompt: "Containerize my agent project for Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Invoke
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Invoke Foundry agent routing"
+    prompt: "Send a test message to my Foundry agent"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Troubleshoot
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Troubleshoot Foundry agent routing"
+    prompt: "Troubleshoot my Foundry agent that is returning errors"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ── Foundry E2E checks ──
   - name: "Golden Path - Create and deploy hosted agent"
     tags:
@@ -379,8 +493,7 @@ stimuli:
       cost: llm
       area: create
     prompt: |
-      Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly
-      The new resource group name: rg-foundry-skill-e2e-<6 random digits>
+      Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly.
     graders:
       - type: skill-invocation
         config:

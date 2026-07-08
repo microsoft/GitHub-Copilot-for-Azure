@@ -1,8 +1,10 @@
 # Tools and Toolboxes (azd ai)
 
-How to attach tools (web search, Azure AI Search, MCP, A2A) to a hosted agent using `azd ai toolbox` and `azd ai agent connection`.
+How to attach tools (web search, Azure AI Search, MCP, A2A) to a hosted agent using `azd ai toolbox` and `azd ai connection`.
 
 A **toolbox** is a curated bundle of connection-backed tools that Foundry exposes as a single MCP-compatible endpoint. The agent connects to one URL and discovers every tool inside. `azd deploy` does NOT auto-create toolboxes -- you drive the lifecycle explicitly.
+
+> 🚦 **Toolbox creation gate:** before creating a toolbox/connection, you MUST read the boundary rules in [create-hosted.md → Toolbox creation boundary](../create-hosted.md#toolbox-creation-boundary) and follow them, then continue with the rest of this file.
 
 ## Install the extension once
 
@@ -12,12 +14,13 @@ azd extension install azure.ai.toolboxes
 
 ## The flow (every recipe)
 
-1. Create the **connection** (`azd ai agent connection create ...`).
-2. Create or update the **toolbox** (`azd ai toolbox create` / `connection add`).
-3. Read the endpoint (`azd ai toolbox show <name> --output json`).
-4. `azd env set TOOLBOX_<NAME>_MCP_ENDPOINT "<endpoint>"`.
-5. Reference it in `<service-dir>/agent.yaml` `environment_variables[]`.
-6. `azd deploy`.
+1. Create the **connection** (`azd ai connection create ...`).
+2. Create the **toolbox** (`azd ai toolbox create`) or add tools to an existing one (`azd ai toolbox connection add`).
+3. If you added to an existing toolbox, **promote the new version** (`azd ai toolbox publish <name> <version>`) — `create` publishes its first version automatically, but later mutations do not.
+4. Read the endpoint (`azd ai toolbox show <name> --output json`).
+5. `azd env set TOOLBOX_<NAME>_MCP_ENDPOINT "<endpoint>"`.
+6. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
+7. `azd deploy`.
 
 ## Env var naming convention
 
@@ -34,17 +37,17 @@ To auto-pick up new default versions without redeploying, drop the `/versions/<v
 
 | Command | What it does |
 |---------|--------------|
-| `azd ai toolbox create <name> --from-file <path>` | Create toolbox + publish v1. File must list at least one connection. |
-| `azd ai toolbox connection add <toolbox> <connection> [--index ...] [--instance-name ...]` | Attach one; new default version. |
-| `azd ai toolbox connection add <toolbox> --from-file <path>` | Attach many in one call; ONE new version. |
-| `azd ai toolbox connection remove <toolbox> <connection>` | Detach; new default version. Refuses to leave zero tools. |
+| `azd ai toolbox create <name> --from-file <path>` | Create toolbox + its first version. File must list at least one connection, skill, or tool. |
+| `azd ai toolbox connection add <toolbox> <connection> [--index ...] [--instance-name ...]` | Attach one; creates a new version (default unchanged). |
+| `azd ai toolbox connection add <toolbox> --from-file <path>` | Attach many in one call; ONE new version (default unchanged). |
+| `azd ai toolbox connection remove <toolbox> <connection>` | Detach; creates a new version (default unchanged). Refuses to leave zero tools. |
 | `azd ai toolbox show <name> [--version <ver>]` | Show toolbox + MCP endpoint URL. |
 | `azd ai toolbox list` | List toolboxes. |
-| `azd ai toolbox version list <toolbox>` | List versions. |
-| `azd ai toolbox update <name> --default-version <ver>` | Re-point default (rollback). |
+| `azd ai toolbox versions list <toolbox>` | List versions. |
+| `azd ai toolbox publish <name> <version>` | Promote a version to default (also used to roll back). |
 | `azd ai toolbox delete <name> [--version <ver>] [--force]` | Delete toolbox or one version. |
 
-Every mutation publishes a new immutable version and promotes it to default.
+Every mutation publishes a new immutable version but does **not** change the default; run `azd ai toolbox publish <name> <version>` to promote one.
 
 ## `--from-file` shape
 
@@ -63,7 +66,7 @@ connections:
 
 ```bash
 # 1. Connection
-azd ai agent connection create github-mcp-conn \
+azd ai connection create github-mcp-conn \
   --kind remote-tool \
   --target https://api.githubcopilot.com/mcp \
   --auth-type custom-keys \
@@ -80,10 +83,10 @@ ENDPOINT=$(azd ai toolbox show agent-tools --output json | jq -r .endpoint)
 azd env set TOOLBOX_AGENT_TOOLS_MCP_ENDPOINT "$ENDPOINT"
 ```
 
-Add the env var to `<service-dir>/agent.yaml`:
+Add the env var to the agent service's `environmentVariables` in `azure.yaml`:
 
 ```yaml
-environment_variables:
+environmentVariables:
   - name: TOOLBOX_AGENT_TOOLS_MCP_ENDPOINT
     value: ${TOOLBOX_AGENT_TOOLS_MCP_ENDPOINT}
 ```
@@ -93,7 +96,7 @@ Then `azd deploy`.
 ## Recipe: Azure AI Search RAG
 
 ```bash
-azd ai agent connection create my-search-conn \
+azd ai connection create my-search-conn \
   --kind cognitive-search \
   --target https://my-search.search.windows.net/ \
   --auth-type api-key --key "<search-admin-key>"
@@ -106,7 +109,7 @@ For multiple indexes, add multiple entries with different `index` values.
 ## Recipe: A2A peer agent
 
 ```bash
-azd ai agent connection create peer-agent-conn \
+azd ai connection create peer-agent-conn \
   --kind remote-a2a \
   --target https://other-agent.foundry-account.westus2.azure.com/ \
   --auth-type none
@@ -131,9 +134,10 @@ connections:
 ```bash
 azd ai toolbox create agent-tools --from-file tools.yaml
 # OR (existing toolbox): azd ai toolbox connection add agent-tools --from-file tools.yaml
+#   then promote it: azd ai toolbox publish agent-tools <version>
 ```
 
-One new default version regardless of how many connections you attach in one call.
+One new version regardless of how many connections you attach in one call. `create` publishes it as the first (default) version; `connection add` leaves the default unchanged until you `publish`.
 
 ## Tools the CLI does NOT manage today
 
@@ -141,13 +145,7 @@ One new default version regardless of how many connections you attach in one cal
 
 To include any built-in in a toolbox today, use the Python / .NET / JS SDK or call the REST API directly.
 
-## Required header (agent code)
-
-Every MCP request to the toolbox endpoint must include:
-
-```http
-Foundry-Features: Toolboxes=V1Preview
-```
+## Token and RBAC (agent code)
 
 Token scope: `https://ai.azure.com/.default`. RBAC: the calling identity (developer + agent identity at runtime) needs **Foundry User** on the Foundry project.
 
@@ -164,7 +162,6 @@ def _inject_auth(request: httpx.Request) -> None:
     # Per-request token refresh -- static tokens expire in ~1 hour.
     token = _credential.get_token("https://ai.azure.com/.default").token
     request.headers["Authorization"] = f"Bearer {token}"
-    request.headers["Foundry-Features"] = "Toolboxes=V1Preview"
 
 tool = MCPStreamableHTTPTool(
     name="github",                    # becomes server_label prefix
@@ -182,7 +179,7 @@ Install: `pip install httpx azure-identity agent-framework`.
 - **Always stream.** Non-streaming is not supported.
 - **Don't call `prompts/list`.** Returns `500`. Pass `load_prompts=False`.
 - **Don't `send_ping()`** with generic clients (returns `500`). Agent Framework handles this.
-- **Tool names are prefixed with `server_label`.** `name="myserver"` -> tools appear as `myserver.<tool>`.
+- **Tool names are prefixed with `server_label`.** `name="myserver"` -> tools appear as `myserver___<tool>` (joined by three underscores).
 - **`require_approval`** is the client's responsibility -- the toolbox proxy does NOT enforce it. Pass `approval_mode="never_require"` or wire an approval handler.
 
 ## Verify the wire end-to-end
@@ -199,11 +196,10 @@ azd ai agent invoke "list the tools you have access to"
 | Symptom | Likely cause |
 |---------|--------------|
 | `TOOLBOX_<NAME>_MCP_ENDPOINT` not set | Run `azd ai toolbox show` + `azd env set`. |
-| Env var missing in deployed agent | Add to `agent.yaml` `environment_variables[]`, `azd deploy`. |
-| `400` mentioning `Toolboxes` | Missing `Foundry-Features: Toolboxes=V1Preview` header. |
+| Env var missing in deployed agent | Add to the agent service's `environmentVariables` in `azure.yaml`, `azd deploy`. |
 | `401` on MCP calls | Expired / wrong-scope token. Use `https://ai.azure.com/.default`; refresh per request. |
 | `403 Forbidden` | Caller missing `Foundry User` role. |
 | `500` on `prompts/list` / ping | Disable in MCP client (`load_prompts=False`). |
 | Empty response, tool never called | `require_approval: always` with no handler. Pass `approval_mode="never_require"`. |
 | `tools/list` returns zero | Bad credentials, or toolbox version still provisioning. |
-| Tool names don't match | Use `{server_label}.{tool_name}`. |
+| Tool names don't match | Use `{server_label}___{tool_name}` (three underscores). |

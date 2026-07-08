@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { listSkills } from "./skill-loader.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
@@ -34,9 +34,39 @@ const __dirname = path.dirname(__filename);
  * is not available inside Jest's ESM VM context (even with
  * `--experimental-vm-modules`). We replicate the same path arithmetic here
  * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ *
+ * Rather than hard-coding the entry filename, we read the package's `bin`
+ * field so we stay resilient to upstream renames (e.g. `index.js` →
+ * `npm-loader.js` in @github/copilot@1.0.67). We fall back to the known
+ * filenames if the manifest cannot be read.
  */
 function getBundledCliPath(): string {
-  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+  const pkgDir = path.resolve(__dirname, "../node_modules/@github/copilot");
+
+  const candidates: string[] = [];
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(pkgDir, "package.json"), "utf8")
+    ) as { bin?: string | Record<string, string> };
+    const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.copilot;
+    if (bin) {
+      candidates.push(bin);
+    }
+  } catch {
+    // Fall through to the well-known filenames below.
+  }
+  candidates.push("npm-loader.js", "index.js");
+
+  for (const candidate of candidates) {
+    const candidatePath = path.resolve(pkgDir, candidate);
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  // Last resort: return the conventional path so the caller surfaces a clear
+  // spawn error instead of a silent undefined.
+  return path.resolve(pkgDir, "npm-loader.js");
 }
 
 interface TokenUsage {
@@ -82,6 +112,12 @@ export interface AgentMetadata {
   tokenUsage?: TokenUsage;
 
   /**
+   * Number of assistant turns that started during the run,
+   * counted from `assistant.turn_start` events.
+   */
+  turnCount: number;
+
+  /**
    * Map from tool name to the number of times that tool was invoked during the run.
    * Excludes the `skill` pseudo-tool; all other tools (including MCP tools) are included,
    * keyed by the raw `event.data.toolName`.
@@ -96,6 +132,55 @@ export interface AgentMetadata {
    * also include a synthesized `SKILL.md` entry for `skill` tool calls.
    */
   skillFiles: Record<string, string[]>;
+}
+
+/**
+ * A single tool invocation captured during an agent run, in emission order.
+ * Includes the `skill` pseudo-tool so the full sequence can be reconstructed.
+ */
+export interface ToolCall {
+  /** 0-based index over `tool.execution_start` events in emission order. */
+  order: number;
+  /** Raw `event.data.toolName` (e.g. "skill", "bash", an MCP tool name). */
+  toolName: string;
+  /** Correlates the start event to its `tool.execution_complete`. */
+  toolCallId: string;
+  /** Full tool arguments, secret-redacted on write, untruncated. */
+  arguments: unknown;
+  /**
+   * Success of the matching `tool.execution_complete`, or `null` when no
+   * completion event was observed for this call.
+   */
+  success: boolean | null;
+  /**
+   * Wall-clock duration in milliseconds, computed from the start and matching
+   * completion event timestamps, or `null` when no completion was observed.
+   */
+  durationMs: number | null;
+  /**
+   * UTF-8 byte size of the tool's full textual output (`detailedContent`,
+   * falling back to `content`, then to text/terminal result blocks). Binary
+   * blocks (image/audio) are excluded. `null` when no completion was observed.
+   */
+  outputBytes: number | null;
+}
+
+/**
+ * Structured, per-run record of the tools called during a single agent run.
+ * Written alongside (and named to match) that run's markdown report so the tool
+ * sequence for a specific run can be reconstructed even when the same stimulus
+ * runs multiple times in the same test-case directory.
+ */
+export interface ToolUsageRecord {
+  testName: string;
+  /** Basename of this run's `agent-metadata-<token>.md` report (1:1 correlation). */
+  reportFile: string;
+  /** Session id from the `session.start` event, if present. */
+  sessionId: string | null;
+  model: string | undefined;
+  /** ISO-8601 timestamp of when this file was written. */
+  timestamp: string;
+  toolCalls: ToolCall[];
 }
 
 /**
@@ -115,6 +200,7 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  env?: Record<string, string>;
   model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
@@ -135,6 +221,13 @@ export interface AgentRunConfig {
    * If specified, only the skills in this array will be included. This option overrides the required skills specified in the {@link requiredSkills}.
    */
   includeSkills?: string[];
+
+  /**
+   * Maximum number of assistant turns allowed before the run is aborted.
+   * Each `assistant.turn_start` event counts as one turn.
+   * If undefined, there is no turn limit.
+   */
+  maxTurns?: number;
 
   /**
    * Number of milliseconds as timeout for follow ups.
@@ -294,6 +387,105 @@ function computeToolAndSkillStats(
   }
 
   return { toolCounts, skillFiles };
+}
+
+/**
+ * Build the ordered list of tool calls for a single run from its session events.
+ *
+ * - One entry per `tool.execution_start` event, in emission order, including the
+ *   `skill` pseudo-tool.
+ * - `success` is resolved by joining each start to its `tool.execution_complete`
+ *   by `toolCallId`; `null` when no completion event exists.
+ */
+export function computeToolUsage(events: SessionEvent[]): ToolCall[] {
+  // First pass: success and completion timestamp by toolCallId from completion events.
+  const successById = new Map<string, boolean>();
+  const completeTimeById = new Map<string, string>();
+  const outputBytesById = new Map<string, number | null>();
+  for (const event of events) {
+    if (event.type !== "tool.execution_complete") continue;
+    const id = event.data.toolCallId as string | undefined;
+    if (id !== undefined) {
+      successById.set(id, Boolean(event.data.success));
+      completeTimeById.set(id, event.timestamp);
+      outputBytesById.set(id, computeOutputBytes(event.data.result));
+    }
+  }
+
+  const toolCalls: ToolCall[] = [];
+  for (const event of events) {
+    if (event.type !== "tool.execution_start") continue;
+    const toolName = event.data.toolName as string | undefined;
+    const toolCallId = event.data.toolCallId as string | undefined;
+    if (!toolName || toolCallId === undefined) continue;
+    toolCalls.push({
+      order: toolCalls.length,
+      toolName,
+      toolCallId,
+      arguments: event.data.arguments ?? null,
+      success: successById.has(toolCallId) ? successById.get(toolCallId)! : null,
+      durationMs: computeDurationMs(event.timestamp, completeTimeById.get(toolCallId)),
+      outputBytes: outputBytesById.has(toolCallId) ? outputBytesById.get(toolCallId)! : null,
+    });
+  }
+  return toolCalls;
+}
+
+/**
+ * UTF-8 byte size of a completion's full textual output. Prefers `detailedContent`,
+ * falls back to `content`, then to concatenated text from text/terminal result
+ * blocks. Binary blocks (image/audio) and resources are excluded. Returns `null`
+ * when no textual output is present.
+ */
+function computeOutputBytes(
+  result:
+    | { content?: string; detailedContent?: string; contents?: unknown[] }
+    | undefined,
+): number | null {
+  if (!result) return null;
+  let text: string | undefined;
+  if (typeof result.detailedContent === "string") {
+    text = result.detailedContent;
+  } else if (typeof result.content === "string") {
+    text = result.content;
+  } else if (Array.isArray(result.contents)) {
+    const parts: string[] = [];
+    for (const block of result.contents) {
+      const blockText = (block as { text?: unknown }).text;
+      if (typeof blockText === "string") parts.push(blockText);
+    }
+    text = parts.length > 0 ? parts.join("") : undefined;
+  }
+  if (text === undefined) return null;
+  return Buffer.byteLength(text, "utf8");
+}
+
+/**
+ * Wall-clock duration in milliseconds between a tool call's start and matching
+ * completion timestamp. Returns `null` when the completion is missing or either
+ * timestamp is unparseable, or when the result would be negative.
+ */
+function computeDurationMs(startTs: string, completeTs: string | undefined): number | null {
+  if (!completeTs) return null;
+  const start = Date.parse(startTs);
+  const end = Date.parse(completeTs);
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  const delta = end - start;
+  return delta >= 0 ? delta : null;
+}
+
+/**
+ * Derive the per-run tool-usage JSON path from a run's markdown report path,
+ * so the two share the same `<token>` and correlate 1:1.
+ * `.../agent-metadata-<token>.md` -> `.../tool-usage-<token>.json`
+ */
+export function deriveToolUsageFileName(reportFilePath: string): string {
+  const dir = path.dirname(reportFilePath);
+  const base = path
+    .basename(reportFilePath)
+    .replace(/^agent-metadata-/, "tool-usage-")
+    .replace(/\.md$/, ".json");
+  return path.join(dir, base);
 }
 
 /**
@@ -573,7 +765,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     for (const entry of currentCleanups) {
       try {
         if (entry.session) {
-          await entry.session.destroy();
+          await entry.session.disconnect();
         }
       } catch { /* ignore */ }
       try {
@@ -651,13 +843,14 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
+    let isAborted = false;
 
     const entry: RunnerCleanup = { config: runConfig };
     currentCleanups.push(entry);
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = runConfig.preserveWorkspace;
 
-    const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], turnCount: 0, toolCounts: {}, skillFiles: {} };
     entry.agentMetadata = agentMetadata;
 
     try {
@@ -685,12 +878,15 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
-        cwd: testWorkspace,
-        cliArgs: cliArgs,
-        cliPath: getBundledCliPath(),
+        workingDirectory: testWorkspace,
+        connection: RuntimeConnection.forStdio({
+          path: getBundledCliPath(),
+          args: cliArgs
+        }),
         env: {
           ...process.env,
-          ...envVar
+          ...envVar,
+          ...runConfig.env
         }
       }) as CopilotClient;
       entry.client = client;
@@ -715,21 +911,26 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
+      const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
-        mcpServers: {
-          azure: {
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "@azure/mcp", "server", "start"],
-            tools: ["*"]
+        ...(disableAzureMcp ? {} : {
+          mcpServers: {
+            azure: {
+              type: "stdio",
+              command: "npx",
+              args: ["-y", "@azure/mcp", "server", "start"],
+              tools: ["*"]
+            }
           }
-        },
-        systemMessage: runConfig.systemPrompt
+        }),
+        systemMessage: runConfig.systemPrompt,
+        // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
+        enableSessionTelemetry: false
       });
       entry.session = session;
 
@@ -749,10 +950,35 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
           agentMetadata.events.push(event);
 
+          if (event.type === "assistant.turn_start") {
+            agentMetadata.turnCount++;
+            if (runConfig.maxTurns !== undefined && agentMetadata.turnCount > runConfig.maxTurns) {
+              agentMetadata.testComments.push(
+                `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
+              );
+              isComplete = true;
+              isAborted = true;
+              try {
+                await session.abort();
+              } catch (error) {
+                console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+              } finally {
+                resolve();
+              }
+              return;
+            }
+          }
+
           if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
-            resolve();
-            void session.abort();
+            isAborted = true;
+            try {
+              await session.abort();
+            } catch (error) {
+              console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+              resolve();
+            }
             return;
           }
         });
@@ -763,7 +989,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      for (const followUpPrompt of runConfig.followUp ?? []) {
+      // Skip follow-ups when the run was aborted.
+      for (const followUpPrompt of (runConfig.followUp ?? [])) {
+        if (isAborted) break;
         isComplete = false;
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
@@ -803,11 +1031,11 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
             tokenUsage.model = model;
             // Prefer shutdown totals if usage events were missed
             if (tokenUsage.apiCallCount === 0) {
-              tokenUsage.inputTokens = metrics.usage.inputTokens;
-              tokenUsage.outputTokens = metrics.usage.outputTokens;
-              tokenUsage.cacheReadTokens = metrics.usage.cacheReadTokens;
-              tokenUsage.cacheWriteTokens = metrics.usage.cacheWriteTokens;
-              tokenUsage.apiCallCount = metrics.requests.count;
+              tokenUsage.inputTokens = metrics?.usage.inputTokens ?? 0;
+              tokenUsage.outputTokens = metrics?.usage.outputTokens ?? 0;
+              tokenUsage.cacheReadTokens = metrics?.usage.cacheReadTokens ?? 0;
+              tokenUsage.cacheWriteTokens = metrics?.usage.cacheWriteTokens ?? 0;
+              tokenUsage.apiCallCount = metrics?.requests.count ?? 0;
             }
           }
         }
@@ -835,7 +1063,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               tools: ["*"]
             }
           },
-          onPermissionRequest: approveAll
+          onPermissionRequest: approveAll,
+          // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
+          enableSessionTelemetry: false
         });
         await playwrightSession.sendAndWait({
           prompt: `Use playwright mcp tools to take a screenshot of the deployed app. Save the screenshot to this directory at this file location ${screenshotPath}`
@@ -859,7 +1089,10 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
-      if (!isTest()) {
+      // Jest integration tests clean up in afterEach so reports can be written first.
+      // Non-Jest test runners such as Vally must clean up here; otherwise Copilot CLI
+      // child processes keep the Node process alive after results are written.
+      if (!isTest() || !useJest()) {
         await cleanup();
       }
     }
@@ -964,6 +1197,34 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
       skillFiles: agentMetadata.skillFiles,
     };
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
+
+    // Write per-run tool-usage JSON (Phase 1: capture for review). Named to match
+    // this run's markdown report so the tool sequence for a specific run can be
+    // reconstructed even when the same stimulus runs multiple times in one
+    // directory (where agent-metadata.json is overwritten). Best-effort: never
+    // fail a test because capture failed.
+    try {
+      const toolUsagePath = deriveToolUsageFileName(reportTargetPath);
+      const sessionId =
+        agentMetadata.events.find((e) => e.type === "session.start")?.id ?? null;
+      const toolUsage: ToolUsageRecord = {
+        testName,
+        reportFile: path.basename(reportTargetPath),
+        sessionId,
+        model: config.model ?? agentMetadata.tokenUsage?.model,
+        timestamp: new Date().toISOString(),
+        toolCalls: computeToolUsage(agentMetadata.events),
+      };
+      fs.writeFileSync(
+        toolUsagePath,
+        redactSecrets(JSON.stringify(toolUsage, null, 2)),
+        "utf-8",
+      );
+    } catch (error) {
+      if (process.env.DEBUG) {
+        console.error("Failed to write tool usage JSON:", error);
+      }
+    }
 
     if (process.env.DEBUG) {
       console.log(`Markdown report written to: ${reportTargetPath}`);

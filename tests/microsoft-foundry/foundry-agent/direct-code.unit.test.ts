@@ -28,8 +28,8 @@ describe("foundry-agent direct-code workflow docs", () => {
     expect(quickStart).toContain("azd ai agent init --no-prompt");
     expect(quickStart).toContain("--deploy-mode code");
     expect(deploy).toContain("Prefer **direct code deployment through azd**");
-    expect(deploy).toContain("`code_configuration:` present | **Direct code deploy** through `azd deploy`; no Docker/ACR build.");
-    expect(deploy).toContain("No `code_configuration:` | **Container/ACR deploy** through `azd deploy`");
+    expect(deploy).toContain("`codeConfiguration:` present | **Direct code deploy** through `azd deploy`; no Docker/ACR build.");
+    expect(deploy).toContain("No `codeConfiguration:` | **Container/ACR deploy** through `azd deploy`");
     expect(deploy).toContain("Default to direct code for standard hosted-agent code.");
   });
 
@@ -50,13 +50,13 @@ describe("foundry-agent direct-code workflow docs", () => {
     const quickStart = await readSkillFile("foundry-agent/create/quick-start-hosted.md");
     const deployModel = await readSkillFile("models/deploy-model/SKILL.md");
 
-    expect(createHosted).toContain("`azure.yaml services.<name>.config.deployments[]` is the **single source of truth**");
+    expect(createHosted).toContain("`azure.yaml services.ai-project.deployments[]` is the **single source of truth**");
     expect(createHosted).toContain("Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
     expect(createHosted).toContain("never `az cognitiveservices account deployment create ...`");
     expect(quickStart).toContain("Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
     expect(quickStart).toContain("Never `az cognitiveservices account deployment create`");
     expect(deployModel).toContain("For azd-managed Foundry projects");
-    expect(deployModel).toContain("declare deployments in `azure.yaml services.<name>.config.deployments[]`");
+    expect(deployModel).toContain("declare deployments in `azure.yaml services.ai-project.deployments[]`");
     expect(deployModel).toContain("Use this skill only for: (a) Foundry projects not managed by an azd project");
   });
 

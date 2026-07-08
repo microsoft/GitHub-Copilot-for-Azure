@@ -27,10 +27,6 @@ tags:
   type: integration
   skill: azure-reliability
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-reliability
-
 config:
   runs: 1
   timeout: "60m"
