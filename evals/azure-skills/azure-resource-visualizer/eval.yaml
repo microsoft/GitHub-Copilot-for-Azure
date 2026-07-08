@@ -73,14 +73,14 @@ stimuli:
   # Assertions: isSkillInvoked + doesWorkspaceFileIncludePattern(graph TB|LR, architecture*.md)
   # Uses nonInteractive + followUp for multi-turn execution
   - name: "Generate resource group architecture diagram"
-    prompt: "Generate a Mermaid diagram showing my Azure resource group architecture. Save the diagram to an architecture.md file in the current working directory."
+    turns:
+      - "Generate a Mermaid diagram showing my Azure resource group architecture. Save the diagram to an architecture.md file in the current working directory."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
       cost: llm
       area: behavior
-      followUp:
-        - "Continue with recommended options until complete."
     config:
       runs: 1
       timeout: "30m"
@@ -103,14 +103,14 @@ stimuli:
   # Assertions: isSkillInvoked + doesWorkspaceFileIncludePattern(graph TB|LR, architecture*.md)
   # Uses nonInteractive + followUp for multi-turn execution
   - name: "Visualize resource connections and relationships"
-    prompt: "Visualize how my Azure resources are connected and show their relationships. Save the diagram to an architecture.md file in the current working directory."
+    turns:
+      - "Visualize how my Azure resources are connected and show their relationships. Save the diagram to an architecture.md file in the current working directory."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
       cost: llm
       area: behavior
-      followUp:
-        - "Continue with recommended options until complete."
     config:
       runs: 1
       timeout: "30m"
