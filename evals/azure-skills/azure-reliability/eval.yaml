@@ -6,9 +6,6 @@
 #   - Functions app: assess reliability → deploy ZR fix → re-assess
 #   - App Service app: assess reliability → deploy ZR fix → re-assess
 #
-# Both tests use multi-turn follow-ups via the custom executor's followUp tag.
-# The systemPrompt tag injects a pseudo-random resource group name suffix.
-#
 # NOT TESTED (intentionally):
 #   - Storage redundancy upgrade (LRS/GRS → ZRS) — takes hours/days
 #   - Multi-region failover with Azure Front Door — high cost, long deploy
