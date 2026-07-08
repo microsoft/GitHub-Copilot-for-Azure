@@ -42,7 +42,7 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 
 Two pre-flight checks — run each script and act on its `[OK]` / `[WARN]` / `[ACTION]` summary prefixes.
 
-**1a — Canvas-first entry (GitHub Copilot app).** Run the canvas-entry check first (it can short-circuit the rest). **Skip 1a** if the user opts out, e.g. "skip the canvas" / "use the CLI".
+**1a — Canvas-first entry (GitHub Copilot app).** Detects whether the runtime is the GitHub Copilot app (`AI_AGENT=github_copilot_app_agent`) and the Foundry Agent Canvas extension is installed. If both are true, the canvas must be opened first so the user can authenticate and select a Foundry project before scaffolding. Run this check first (it can short-circuit the rest). **Skip 1a** if the user opts out, e.g. "skip the canvas" / "use the CLI".
 
 ```bash
 ./scripts/check-canvas-entry.sh     # macOS / Linux
