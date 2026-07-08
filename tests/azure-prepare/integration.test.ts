@@ -14,6 +14,8 @@ import {
   shouldSkipIntegrationTests,
   getIntegrationSkipReason,
 } from "../utils/agent-runner";
+import * as fs from "fs";
+import * as path from "path";
 import { hasValidationCommand } from "../azure-validate/utils";
 import { hasPlanReadyForValidation, hasServicesSection, getServiceProject } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
@@ -1048,6 +1050,31 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       return hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate");
     }
 
+    // Reads the driver's state file (.azure-prepare/prepare-info.json) and returns what the driver
+    // recorded under auto.functionsTemplate, or undefined when the file/record is absent. The driver
+    // now fetches the starter template itself (via the Azure MCP CLI), so this is how the test observes
+    // that the template was obtained instead of counting agent MCP calls.
+    function readDriverTemplateFetch(
+      workspacePath: string | undefined,
+    ): { fetched: boolean; id: string | null; placement: string | null; reason: string | null } | undefined {
+      if (!workspacePath) return undefined;
+      const infoPath = path.join(workspacePath, ".azure-prepare", "prepare-info.json");
+      if (!fs.existsSync(infoPath)) return undefined;
+      try {
+        const state = JSON.parse(fs.readFileSync(infoPath, "utf-8"));
+        const ft = state?.auto?.functionsTemplate;
+        if (!ft) return undefined;
+        return {
+          fetched: ft.fetched === true,
+          id: ft.id ?? null,
+          placement: ft.placement ?? null,
+          reason: ft.reason ?? null,
+        };
+      } catch {
+        return undefined;
+      }
+    }
+
     interface TriggerTestCase {
       name: string;
       language?: string;
@@ -1177,19 +1204,27 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           // 1. Skill must be invoked
           expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
 
-          // 2. functions_template_get MCP tool must be called (actual tool.execution_start events only)
-          const templateCallCount = countFunctionsTemplateCalls(agentMetadata);
-
-          agentMetadata.testComments.push(
-            `functions_template_get calls: ${templateCallCount} (${name}, lang: ${language ?? "python"})`
-          );
-
-          expect(templateCallCount).toBeGreaterThanOrEqual(1);
-
-          // 3. Workspace should have files generated
+          // 2. The official starter template must have been obtained for this trigger — either
+          //    fetched by the driver (recorded in .azure-prepare/prepare-info.json) or, on the legacy
+          //    path, via a functions_template_get MCP call. Both satisfy the original intent.
           expect(workspacePath).toBeDefined();
 
-          // 4. Code indicator: generated function code matches trigger pattern
+          const templateCallCount = countFunctionsTemplateCalls(agentMetadata);
+          const driverFetch = readDriverTemplateFetch(workspacePath);
+
+          agentMetadata.testComments.push(
+            `functions_template_get calls: ${templateCallCount}; ` +
+              `driver fetch: ${
+                driverFetch
+                  ? `fetched=${driverFetch.fetched} id=${driverFetch.id ?? "n/a"} reason=${driverFetch.reason ?? "ok"}`
+                  : "none"
+              } (${name}, lang: ${language ?? "python"})`
+          );
+
+          const templateObtained = templateCallCount >= 1 || driverFetch?.fetched === true;
+          expect(templateObtained).toBe(true);
+
+          // 3. Code indicator: generated function code matches trigger pattern
           const codeFilePatterns = /\.(py|ts|js|cs|java|ps1)$/;
           const hasCode = doesWorkspaceFileIncludePattern(
             workspacePath!,
@@ -1201,12 +1236,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           );
           expect(hasCode).toBe(true);
 
-          // 5. IaC files present
+          // 4. IaC files present
           if (iacPattern) {
             expectFiles(workspacePath!, [iacPattern], []);
           }
 
-          // 6. Extra indicator (service-specific Bicep/TF resource) — soft check
+          // 5. Extra indicator (service-specific Bicep/TF resource) — soft check
           if (extraIndicator) {
             const hasExtra = doesWorkspaceFileIncludePattern(workspacePath!, extraIndicator);
             agentMetadata.testComments.push(
