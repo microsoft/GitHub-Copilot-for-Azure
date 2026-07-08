@@ -442,10 +442,8 @@ apply_azd_environment() {
 
 # ---------------------------------------------------------------------------
 # Azure Functions template fetch (folds the functions_template_get MCP tool
-# into the driver: resolve → download → extract, deterministically)
+# into the driver by shelling out to the Azure MCP CLI, deterministically)
 # ---------------------------------------------------------------------------
-
-FUNCTIONS_MANIFEST_URL='https://cdn.functions.azure.com/public/templates-manifest/manifest.json'
 
 # Returns 0 when the project targets Azure Functions, using the detected host.json/SDK signal
 # or the LM-provided components/architecture (so greenfield NEW projects are covered too).
@@ -456,7 +454,7 @@ functions_intent() {
     return 1
 }
 
-# Maps the driver's coarse language tags to the manifest's PascalCase language names,
+# Maps the driver's coarse language tags to the CLI's language names (later lowercased),
 # disambiguating Node.js into TypeScript vs JavaScript from tsconfig.json / *.ts files.
 # Prints nothing when the language can't be determined confidently (e.g. greenfield).
 detect_functions_language() {
@@ -472,7 +470,7 @@ detect_functions_language() {
 }
 
 # Scans existing function source for a trigger/binding indicator and prints the matching
-# manifest resource (durable/cosmos/eventhub/servicebus/blob/sql/timer/mcp/http), or nothing.
+# template resource (durable/cosmos/eventhub/servicebus/blob/sql/timer/mcp/http), or nothing.
 # Specific triggers are checked before the generic http trigger.
 detect_functions_resource() {
     local f blob=''
@@ -494,88 +492,75 @@ detect_functions_resource() {
 }
 
 # Maps the chosen recipe to the IaC flavour used to filter templates (Terraform recipes → terraform,
-# everything else → bicep, since only bicep/terraform/none templates exist in the manifest).
+# everything else → bicep, since templates are provisioned with either bicep or terraform).
 recipe_to_iac() {
     local recipe; recipe="$(get_by_path 'input.recipe' 2>/dev/null || true)"
     case "$recipe" in *Terraform*) printf 'terraform' ;; *) printf 'bicep' ;; esac
 }
 
-# Downloads and caches the Functions templates manifest under the state dir and prints its path.
-# Returns non-zero (leaving no cache) when the download fails or the payload is not a manifest.
-functions_manifest_path() {
-    local mf="$StateDir/functions-manifest.json"
-    if [[ ! -s "$mf" ]]; then
-        curl -fsSL --max-time 30 "$FUNCTIONS_MANIFEST_URL" -o "$mf" 2>/dev/null || { rm -f "$mf"; return 1; }
-    fi
-    jq -e '.templates' "$mf" >/dev/null 2>&1 || { rm -f "$mf"; return 1; }
-    printf '%s' "$mf"
+# Invokes the Azure MCP CLI's `functions template get` command and prints its JSON result.
+# Returns non-zero when npx (or the CLI) is unavailable or the invocation fails.
+functions_cli() {
+    command -v npx >/dev/null 2>&1 || return 1
+    npx --yes @azure/mcp@latest functions template get "$@" 2>/dev/null
 }
 
-# Resolves the best template for a language/resource/IaC from the manifest and prints a compact
-# JSON record { id, repositoryUrl, folderPath, gitRef }, or nothing when no template matches.
-# Terraform requires an exact terraform template; bicep falls back to iac "none"; ties broken by priority.
+# Resolves the best template name for a language/resource/IaC by listing templates via the MCP CLI.
+# Prefers the canonical "<resource>-*" starter (skipping ai-* variants) and the "-trigger-" template,
+# breaking ties by shortest name. Prints the templateName, or nothing when no matching template exists.
 resolve_functions_template() {
-    local lang="$1" resource="$2" iac="$3" mf
-    mf="$(functions_manifest_path)" || return 1
-    jq -c --arg l "$lang" --arg r "$resource" --arg iac "$iac" '
-        ([.templates[] | select((.language|ascii_downcase)==($l|ascii_downcase) and (.resource|ascii_downcase)==($r|ascii_downcase))]) as $cand
-        | (if ($iac|ascii_downcase)=="terraform"
-             then [$cand[] | select((.iac|ascii_downcase)=="terraform")]
-             else [$cand[] | select((.iac|ascii_downcase)=="bicep")] + [$cand[] | select((.iac|ascii_downcase)=="none")]
-           end) as $f
-        | ($f | sort_by(.priority) | .[0]) as $t
-        | if $t == null then empty else {id:$t.id, repositoryUrl:$t.repositoryUrl, folderPath:$t.folderPath, gitRef:$t.gitRef} end
-    ' "$mf" 2>/dev/null
+    local lang="$1" resource="$2" iac="$3" json
+    json="$(functions_cli --language "$lang")" || return 1
+    printf '%s' "$json" | jq -e '.status==200 and ((.results.templateList.triggers // null)|type=="array")' >/dev/null 2>&1 || return 1
+    printf '%s' "$json" | jq -r --arg r "$resource" --arg iac "$iac" '
+        [.results.templateList.triggers[]
+         | select((.resource|ascii_downcase)==($r|ascii_downcase))
+         | select(if ($iac|ascii_downcase)=="terraform"
+                    then (.infrastructure|ascii_downcase)=="terraform"
+                    else (.infrastructure|ascii_downcase)=="bicep" end)] as $cand
+        | (($cand | map(select(.templateName|ascii_downcase|startswith(($r|ascii_downcase)+"-")))) as $canon
+           | if ($canon|length)>0 then $canon else $cand end)
+        | sort_by((.templateName|contains("-trigger-")|not), (.templateName|length), .templateName)
+        | (.[0].templateName // empty)
+    ' 2>/dev/null
 }
 
-# Downloads the template repo archive, extracts the folderPath subtree into $dest, and prints the
-# extracted files (relative to $dest). Returns non-zero on any network/extraction failure.
-download_extract_template() {
-    local repo="$1" gitref="$2" folder="$3" dest="$4"
-    local url tmp zip exdir root src
-    url="${repo%/}/archive/${gitref}.zip"
-    tmp="$(mktemp -d 2>/dev/null)" || return 1
-    zip="$tmp/t.zip"
-    curl -fsSL --max-time 60 "$url" -o "$zip" 2>/dev/null || { rm -rf "$tmp"; return 1; }
-    exdir="$tmp/ex"; mkdir -p "$exdir"
-    if command -v unzip >/dev/null 2>&1; then
-        unzip -q "$zip" -d "$exdir" 2>/dev/null || { rm -rf "$tmp"; return 1; }
-    elif command -v python3 >/dev/null 2>&1; then
-        python3 -c 'import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$zip" "$exdir" 2>/dev/null || { rm -rf "$tmp"; return 1; }
-    else
-        rm -rf "$tmp"; return 1
-    fi
-    root="$(find "$exdir" -maxdepth 1 -mindepth 1 -type d | head -n1)"
-    [[ -z "$root" ]] && { rm -rf "$tmp"; return 1; }
-    if [[ -z "$folder" || "$folder" == "." ]]; then src="$root"; else src="$root/$folder"; fi
-    [[ -d "$src" ]] || { rm -rf "$tmp"; return 1; }
+# Fetches the named template's files via the MCP CLI (--output New) and writes each {fileName, content}
+# under $dest, creating parent directories. Prints the written files (relative to $dest).
+# Returns non-zero on any CLI/parse failure or when the template has no files.
+fetch_template_files() {
+    local lang="$1" template="$2" dest="$3" jf fn b64
+    jf="$(mktemp 2>/dev/null)" || return 1
+    functions_cli --language "$lang" --template "$template" --output New > "$jf" || { rm -f "$jf"; return 1; }
+    jq -e '.status==200 and ((.results.functionTemplate.files // null)|type=="array") and ((.results.functionTemplate.files|length)>0)' "$jf" >/dev/null 2>&1 || { rm -f "$jf"; return 1; }
     mkdir -p "$dest"
-    ( shopt -s dotglob; cp -R "$src"/. "$dest"/ ) 2>/dev/null || { rm -rf "$tmp"; return 1; }
-    ( cd "$src" && find . -type f | sed 's|^\./||' )
-    rm -rf "$tmp"
+    while IFS=$'\t' read -r fn b64; do
+        [[ -n "$fn" ]] || continue
+        mkdir -p "$dest/$(dirname "$fn")"
+        printf '%s' "$b64" | base64 -d > "$dest/$fn" 2>/dev/null
+        printf '%s\n' "$fn"
+    done < <(jq -r '.results.functionTemplate.files[] | [.fileName, (.content|@base64)] | @tsv' "$jf")
+    rm -f "$jf"
 }
 
 # Fetches the Functions template selected in input.functionsTemplate and records the outcome under
-# auto.functionsTemplate. Greenfield (NEW) templates extract into the repo root; existing projects
-# extract into a staging dir for manual merge. Records a reason when no template exists or the fetch fails.
+# auto.functionsTemplate. Greenfield (NEW) templates land in the repo root; existing projects land
+# in a staging dir for manual merge. Records a reason when no template exists or the fetch fails.
 fetch_functions_template() {
-    local sel resource language iac tpl id repo gitref folder mode dest placement files files_json
+    local sel resource language cli_lang iac id mode dest placement files files_json
     sel="$(get_by_path 'input.functionsTemplate' 2>/dev/null || true)"
     [[ -z "$sel" ]] && return 0
     resource="$(jq -r '.resource // empty' <<<"$sel" 2>/dev/null)"
     language="$(jq -r '.language // empty' <<<"$sel" 2>/dev/null)"
     [[ -z "$resource" || -z "$language" ]] && return 0
+    cli_lang="$(printf '%s' "$language" | tr '[:upper:]' '[:lower:]')"
     iac="$(recipe_to_iac)"
-    tpl="$(resolve_functions_template "$language" "$resource" "$iac")"
-    if [[ -z "$tpl" ]]; then
+    id="$(resolve_functions_template "$cli_lang" "$resource" "$iac")"
+    if [[ -z "$id" ]]; then
         set_by_path 'auto.functionsTemplate' "$(jq -n --arg r "$resource" --arg l "$language" --arg i "$iac" \
             '{fetched:false, id:null, resource:$r, language:$l, iac:$i, placement:null, files:[], reason:"no-template-use-references"}')"
         return
     fi
-    id="$(jq -r '.id' <<<"$tpl")"
-    repo="$(jq -r '.repositoryUrl' <<<"$tpl")"
-    gitref="$(jq -r '.gitRef' <<<"$tpl")"
-    folder="$(jq -r '.folderPath' <<<"$tpl")"
     mode="$(get_by_path 'input.mode' 2>/dev/null || true)"
     if [[ "$mode" == NEW || "$(printf '%s' "$STATE" | jq -r '.auto.workspaceEmpty // false')" == true ]]; then
         dest="$RepoPath"; placement='repo-root'
@@ -583,14 +568,14 @@ fetch_functions_template() {
         dest="$StateDir/functions-template"; placement='staging'
         rm -rf "$dest"
     fi
-    files="$(download_extract_template "$repo" "$gitref" "$folder" "$dest")" || {
-        set_by_path 'auto.functionsTemplate' "$(jq -n --arg id "$id" --arg r "$repo" --arg g "$gitref" \
-            '{fetched:false, id:$id, repositoryUrl:$r, gitRef:$g, placement:null, files:[], reason:"fetch-failed"}')"
+    files="$(fetch_template_files "$cli_lang" "$id" "$dest")" || {
+        set_by_path 'auto.functionsTemplate' "$(jq -n --arg id "$id" \
+            '{fetched:false, id:$id, placement:null, files:[], reason:"fetch-failed"}')"
         return
     }
     files_json="$(printf '%s\n' "$files" | jq -R . | jq -s -c 'map(select(length>0))')"
-    set_by_path 'auto.functionsTemplate' "$(jq -n --arg id "$id" --arg r "$repo" --arg g "$gitref" --arg p "$placement" --arg d "$dest" --argjson f "$files_json" \
-        '{fetched:true, id:$id, repositoryUrl:$r, gitRef:$g, placement:$p, path:$d, files:$f, reason:null}')"
+    set_by_path 'auto.functionsTemplate' "$(jq -n --arg id "$id" --arg p "$placement" --arg d "$dest" --argjson f "$files_json" \
+        '{fetched:true, id:$id, placement:$p, path:$d, files:$f, reason:null}')"
 }
 
 # ---------------------------------------------------------------------------

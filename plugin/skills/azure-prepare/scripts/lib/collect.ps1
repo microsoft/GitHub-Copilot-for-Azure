@@ -538,9 +538,21 @@ function Apply-AzdEnvironment {
 
 # ---------------------------------------------------------------------------
 # Azure Functions template fetch (folds the functions_template_get MCP tool
-# into the driver: resolve -> download -> extract, deterministically)
+# into the driver by shelling out to the Azure MCP CLI, deterministically)
 # ---------------------------------------------------------------------------
-$script:FunctionsManifestUrl = 'https://cdn.functions.azure.com/public/templates-manifest/manifest.json'
+
+function Invoke-FunctionsCli {
+    # Invokes the Azure MCP CLI's `functions template get` command and returns its parsed JSON result,
+    # or $null when npx (or the CLI) is unavailable or the invocation fails.
+    param([string[]]$CliArgs)
+    if (-not (Get-Command npx -ErrorAction SilentlyContinue)) { return $null }
+    try {
+        $raw = & npx --yes '@azure/mcp@latest' functions template get @CliArgs 2>$null | Out-String
+        if ($LASTEXITCODE -ne 0 -or -not $raw) { return $null }
+        return ($raw | ConvertFrom-Json)
+    }
+    catch { return $null }
+}
 
 function Test-FunctionsIntent {
     # Returns $true when the project targets Azure Functions, using the detected host.json/SDK signal
@@ -557,7 +569,7 @@ function Test-FunctionsIntent {
 }
 
 function Get-FunctionsLanguage {
-    # Maps the driver's coarse language tags to the manifest's PascalCase language names,
+    # Maps the driver's coarse language tags to the CLI's language names (later lowercased),
     # disambiguating Node.js into TypeScript vs JavaScript. Returns $null when undeterminable.
     param([hashtable]$State)
     $langs = @(Get-ByPath $State 'auto.detectedLanguages')
@@ -572,7 +584,7 @@ function Get-FunctionsLanguage {
 }
 
 function Get-FunctionsResource {
-    # Scans existing function source for a trigger/binding indicator and returns the matching manifest
+    # Scans existing function source for a trigger/binding indicator and returns the matching template
     # resource (durable/cosmos/eventhub/servicebus/blob/sql/mcp/timer/http), or $null. Specific triggers first.
     param([hashtable]$State)
     $files = @(Get-RepoFiles) | Where-Object { $_.Extension -in '.cs', '.py', '.js', '.ts', '.java', '.ps1', '.json' }
@@ -593,84 +605,73 @@ function Get-FunctionsResource {
 
 function Get-FunctionsRecipeIac {
     # Maps the chosen recipe to the IaC flavour used to filter templates (Terraform recipes -> terraform,
-    # everything else -> bicep, since only bicep/terraform/none templates exist in the manifest).
+    # everything else -> bicep, since templates are provisioned with either bicep or terraform).
     param([hashtable]$State)
     if ("$(Get-ByPath $State 'input.recipe')" -match 'Terraform') { return 'terraform' }
     return 'bicep'
 }
 
-function Get-FunctionsManifest {
-    # Downloads and caches the Functions templates manifest under the state dir and returns the parsed
-    # object, or $null when the download fails or the payload is not a manifest.
-    $mf = Join-Path $StateDir 'functions-manifest.json'
-    if (-not (Test-Path -LiteralPath $mf) -or (Get-Item -LiteralPath $mf).Length -eq 0) {
-        try { Invoke-WebRequest -UseBasicParsing -Uri $script:FunctionsManifestUrl -OutFile $mf -TimeoutSec 30 }
-        catch { if (Test-Path -LiteralPath $mf) { Remove-Item -LiteralPath $mf -Force -ErrorAction SilentlyContinue }; return $null }
-    }
-    try {
-        $obj = Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json
-        if (-not $obj.templates) { return $null }
-        return $obj
-    }
-    catch { return $null }
-}
-
 function Resolve-FunctionsTemplate {
-    # Resolves the best template for a language/resource/IaC from the manifest and returns a hashtable
-    # { id, repositoryUrl, folderPath, gitRef }, or $null when none match. Terraform requires an exact
-    # terraform template; bicep falls back to iac "none"; ties broken by priority.
+    # Resolves the best template name for a language/resource/IaC by listing templates via the MCP CLI.
+    # Prefers the canonical "<resource>-*" starter (skipping ai-* variants) and the "-trigger-" template,
+    # breaking ties by shortest name. Returns the templateName, or $null when none match.
     param([hashtable]$State, [string]$Language, [string]$Resource, [string]$Iac)
-    $man = Get-FunctionsManifest
-    if (-not $man) { return $null }
-    $cand = @($man.templates | Where-Object { $_.language.ToLower() -eq $Language.ToLower() -and $_.resource.ToLower() -eq $Resource.ToLower() })
+    $res = Invoke-FunctionsCli @('--language', $Language)
+    if (-not $res -or $res.status -ne 200 -or -not $res.results.templateList.triggers) { return $null }
+    $rl = $Resource.ToLower()
+    $isTf = ($Iac.ToLower() -eq 'terraform')
+    $cand = @($res.results.templateList.triggers | Where-Object {
+            $_.resource.ToLower() -eq $rl -and
+            (($isTf -and $_.infrastructure.ToLower() -eq 'terraform') -or
+            ((-not $isTf) -and $_.infrastructure.ToLower() -eq 'bicep')) })
     if (-not $cand) { return $null }
-    if ($Iac.ToLower() -eq 'terraform') {
-        $f = @($cand | Where-Object { $_.iac.ToLower() -eq 'terraform' })
-    }
-    else {
-        $f = @($cand | Where-Object { $_.iac.ToLower() -eq 'bicep' }) + @($cand | Where-Object { $_.iac.ToLower() -eq 'none' })
-    }
-    if (-not $f) { return $null }
-    $t = $f | Sort-Object priority | Select-Object -First 1
-    return @{ id = $t.id; repositoryUrl = $t.repositoryUrl; folderPath = $t.folderPath; gitRef = $t.gitRef }
+    $canon = @($cand | Where-Object { $_.templateName.ToLower().StartsWith($rl + '-') })
+    if ($canon) { $cand = $canon }
+    $best = $cand | Sort-Object `
+        @{ Expression = { if ($_.templateName -like '*-trigger-*') { 0 } else { 1 } } }, `
+        @{ Expression = { $_.templateName.Length } }, templateName | Select-Object -First 1
+    return $best.templateName
 }
 
 function Expand-FunctionsTemplate {
-    # Downloads the template repo archive, extracts the folderPath subtree into $Dest, and returns the
-    # extracted files (relative to $Dest). Returns $null on any network/extraction failure.
-    param([string]$Repo, [string]$GitRef, [string]$Folder, [string]$Dest)
-    $url = ($Repo.TrimEnd('/')) + "/archive/$GitRef.zip"
-    $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ([System.IO.Path]::GetRandomFileName())
-    New-Item -ItemType Directory -Force -Path $tmp | Out-Null
-    try {
-        $zip = Join-Path $tmp 't.zip'
-        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip -TimeoutSec 60
-        $ex = Join-Path $tmp 'ex'; New-Item -ItemType Directory -Force -Path $ex | Out-Null
-        Expand-Archive -LiteralPath $zip -DestinationPath $ex -Force
-        $root = Get-ChildItem -LiteralPath $ex -Directory | Select-Object -First 1
-        if (-not $root) { return $null }
-        if (-not $Folder -or $Folder -eq '.') { $src = $root.FullName } else { $src = Join-Path $root.FullName $Folder }
-        if (-not (Test-Path -LiteralPath $src)) { return $null }
-        New-Item -ItemType Directory -Force -Path $Dest | Out-Null
-        Copy-Item -Path (Join-Path $src '*') -Destination $Dest -Recurse -Force
-        return @(Get-ChildItem -LiteralPath $src -Recurse -File | ForEach-Object { ($_.FullName.Substring($src.Length).TrimStart('\', '/')) -replace '\\', '/' })
+    # Fetches the named template's files via the MCP CLI (--output New) and writes each {fileName, content}
+    # under $Dest, creating parent directories. Returns the written files (relative to $Dest), or $null
+    # on any CLI/parse failure or when the template has no files.
+    param([string]$Language, [string]$Template, [string]$Dest)
+    $res = Invoke-FunctionsCli @('--language', $Language, '--template', $Template, '--output', 'New')
+    if (-not $res -or $res.status -ne 200) { return $null }
+    $files = @($res.results.functionTemplate.files)
+    if (-not $files -or $files.Count -eq 0) { return $null }
+    New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+    $enc = [System.Text.UTF8Encoding]::new($false)
+    $written = @()
+    foreach ($f in $files) {
+        $fn = "$($f.fileName)"
+        if (-not $fn) { continue }
+        $rel = $fn -replace '\\', '/'
+        $full = Join-Path $Dest $rel
+        $dir = Split-Path -Parent $full
+        if ($dir) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }
+        $content = if ($null -ne $f.content) { [string]$f.content } else { '' }
+        [System.IO.File]::WriteAllText($full, $content, $enc)
+        $written += $rel
     }
-    catch { return $null }
-    finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
+    return $written
 }
 
 function Invoke-FunctionsTemplateFetch {
     # Fetches the template selected in input.functionsTemplate and records the outcome under
-    # auto.functionsTemplate. Greenfield (NEW) templates extract into the repo root; existing projects
-    # extract into a staging dir. Records a reason when no template exists or the fetch fails.
+    # auto.functionsTemplate. Greenfield (NEW) templates land in the repo root; existing projects
+    # land in a staging dir. Records a reason when no template exists or the fetch fails.
     param([hashtable]$State)
     $sel = Get-ByPath $State 'input.functionsTemplate'
     if (-not ($sel -is [hashtable])) { return }
     $resource = "$($sel['resource'])"; $language = "$($sel['language'])"
     if (-not $resource -or -not $language) { return }
+    $cliLang = $language.ToLower()
     $iac = Get-FunctionsRecipeIac $State
-    $tpl = Resolve-FunctionsTemplate $State $language $resource $iac
-    if (-not $tpl) {
+    $id = Resolve-FunctionsTemplate $State $cliLang $resource $iac
+    if (-not $id) {
         Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $false; id = $null; resource = $resource; language = $language; iac = $iac; placement = $null; files = @(); reason = 'no-template-use-references' }
         return
     }
@@ -681,12 +682,12 @@ function Invoke-FunctionsTemplateFetch {
         $dest = Join-Path $StateDir 'functions-template'; $placement = 'staging'
         if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force -ErrorAction SilentlyContinue }
     }
-    $files = Expand-FunctionsTemplate $tpl.repositoryUrl $tpl.gitRef $tpl.folderPath $dest
+    $files = Expand-FunctionsTemplate $cliLang $id $dest
     if ($null -eq $files) {
-        Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $false; id = $tpl.id; repositoryUrl = $tpl.repositoryUrl; gitRef = $tpl.gitRef; placement = $null; files = @(); reason = 'fetch-failed' }
+        Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $false; id = $id; placement = $null; files = @(); reason = 'fetch-failed' }
         return
     }
-    Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $true; id = $tpl.id; repositoryUrl = $tpl.repositoryUrl; gitRef = $tpl.gitRef; placement = $placement; path = $dest; files = @($files); reason = $null }
+    Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $true; id = $id; placement = $placement; path = $dest; files = @($files); reason = $null }
 }
 
 # ---------------------------------------------------------------------------
