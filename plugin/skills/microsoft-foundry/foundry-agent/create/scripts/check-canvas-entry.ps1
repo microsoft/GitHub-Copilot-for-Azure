@@ -51,5 +51,5 @@ if (-not $installedAt) {
 }
 
 Write-Output "[OK] Foundry Agent Canvas is installed."
-Write-Output '[ACTION] Canvas-first gate applies. If the message <canvas-context> already lists canvas="agent-builder", the user has already driven the canvas -- proceed with the create workflow. Otherwise open_canvas (canvasId: "agent-builder"), have the user sign in / pick a project / configure / Send, then stop -- do not scaffold.'
+Write-Output '[ACTION] Canvas-first gate applies.'
 exit 1

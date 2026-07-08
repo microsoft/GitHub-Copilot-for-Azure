@@ -48,5 +48,5 @@ if [ -z "$installed_at" ]; then
 fi
 
 echo "[OK] Foundry Agent Canvas is installed."
-echo '[ACTION] Canvas-first gate applies. If the message <canvas-context> already lists canvas="agent-builder", the user has already driven the canvas -- proceed with the create workflow. Otherwise open_canvas (canvasId: "agent-builder"), have the user sign in / pick a project / configure / Send, then stop -- do not scaffold.'
+echo '[ACTION] Canvas-first gate applies.'
 exit 1
