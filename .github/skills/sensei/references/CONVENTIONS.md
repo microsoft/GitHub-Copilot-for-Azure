@@ -26,7 +26,7 @@ Skill name must:
 - Match parent directory name
 - Has 1-64 characters
 
-Description length must be >= 150 characters and <= 1024 characters. Description must contain trigger phrases ("USE FOR:"). Description should avoid having anti-triggers ("DO NOT USE FOR:"), see Anti-trigger rule section below.
+Description length must be >= 150 characters and <= 1024 characters. Description must contain trigger phrases ("WHEN:"). Description should avoid having anti-triggers ("DO NOT USE FOR:"), see Anti-trigger rule section below.
 
 The license must be MIT. The author must be "Microsoft". The version must be "0.0.0-placeholder".
 

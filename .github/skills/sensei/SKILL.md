@@ -4,7 +4,7 @@ description: "Iteratively improve skill frontmatter to achieve good routing test
 license: MIT
 metadata:
   author: Microsoft
-  version: "0.0.0-placeholder"
+  version: "1.0.6"
 ---
 
 ## Help
@@ -27,8 +27,8 @@ When user says "sensei help" or asks how to use sensei, show this:
 ║                                                                  ║
 ║  WHAT IT DOES:                                                   ║
 ║    1. READ      - Load skill's SKILL.md and tests                ║
-║    2. VERIFY    - Compare skill description with convention      ║
-║    3. SCAFFOLD  - Create tests from description if missing       ║
+║    2. VERIFY    - Compare skill frontmatter with convention      ║
+║    3. SCAFFOLD  - Create tests from frontmatter if missing       ║
 ║    4. IMPROVE   - Add WHEN: triggers                             ║
 ║    5. TEST      - Run tests, fix if needed                       ║
 ║    6. SUMMARY   - Show before/after with suggestions             ║
