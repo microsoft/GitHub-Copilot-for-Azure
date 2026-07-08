@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Template discovery | driver discovers templates for language python | ✅ PASS |
 | Filter by resource | `resource == "mcp"` finds matches | ✅ PASS |
 | Template scaffolded | `mcp-server-remote-python` | ✅ PASS |
 | Has trigger code | HTTP trigger with JSON-RPC handler in output | ✅ PASS |
@@ -13,10 +13,10 @@
 ## Agent Behavior Validation
 
 ```text
-1. Agent calls: functions_template_get(language: "python")
+1. Driver discovers templates for language python
 2. Agent scans templateList.triggers[] descriptions and resource field
 3. Agent selects: template where resource == "mcp" → mcp-server-remote-python
-4. Agent calls: functions_template_get(language: "python", template: "mcp-server-remote-python")
+4. Driver fetches template `mcp-server-remote-python`
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

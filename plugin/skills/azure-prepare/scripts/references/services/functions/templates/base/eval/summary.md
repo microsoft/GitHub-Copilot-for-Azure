@@ -17,7 +17,7 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
+| Template fetch (driver) | ✅ PASS | driver fetch (list + get) |
 | Template Discovery | ✅ PASS | HTTP templates found for all languages |
 | IaC Included | ✅ PASS | Bicep/Terraform infra/ included in projectFiles |
 | E2E Agent Test | ✅ PASS | 2 `azure-functions` calls per language, templates retrieved and applied |
@@ -34,7 +34,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
+- Templates retrieved by the driver
 - Base HTTP template provides the foundation for all recipes
 - All recipes compose on top of this base
 

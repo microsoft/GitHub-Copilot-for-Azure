@@ -35,8 +35,8 @@ Skill routing for special scenarios:
   - Azure Functions → STAY here. When the driver asks for `input.functionsTemplate`, set
     `{ resource, language }` using `scripts/references/services/functions/templates/selection.md`
     (the decision tree maps the intended trigger/binding + language to the template) — the
-    DRIVER then fetches the template for you (no `functions_template_get` call). Never
-    synthesize IaC by hand.
+    DRIVER then fetches the starter template for you. Do not fetch or synthesize the template
+    yourself, and never hand-write IaC.
   - PostgreSQL passwordless / security hardening → handle directly with service refs.
   - App Insights instrumentation → appinsights-instrumentation; AI apps → microsoft-foundry;
     cost-sensitive → azure-cost.

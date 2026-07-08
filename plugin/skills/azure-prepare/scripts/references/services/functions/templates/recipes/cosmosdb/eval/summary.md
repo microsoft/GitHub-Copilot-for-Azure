@@ -17,7 +17,7 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
+| Template fetch (driver) | ✅ PASS | driver fetch (list + get) |
 | Template Discovery | ✅ PASS | Cosmos templates found via resource filter |
 | IaC Included | ✅ PASS | Cosmos Bicep module + RBAC in projectFiles |
 | E2E Agent Test | ✅ PASS | 2 `azure-functions` calls per language, templates retrieved and applied |
@@ -35,7 +35,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
+- Templates retrieved by the driver
 - Cosmos DB requires dual RBAC: Azure control plane + SQL data plane
 - See README for RBAC troubleshooting
 

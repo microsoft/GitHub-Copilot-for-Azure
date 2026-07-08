@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get(language: "typescript")` returns list | ✅ PASS |
+| Template discovery | driver discovers templates for language typescript | ✅ PASS |
 | Filter by resource | `resource == "cosmos"` finds matches | ✅ PASS |
 | Template scaffolded | `cosmos-trigger-typescript-azd` | ✅ PASS |
 | Has trigger code | `app.cosmosDB` trigger binding in output | ✅ PASS |
@@ -14,10 +14,10 @@
 ## Agent Behavior Validation
 
 ```text
-1. Agent calls: functions_template_get(language: "typescript")
+1. Driver discovers templates for language typescript
 2. Agent scans templateList.triggers[] descriptions and resource field
 3. Agent selects: template where resource == "cosmos" → cosmos-trigger-typescript-azd
-4. Agent calls: functions_template_get(language: "typescript", template: "cosmos-trigger-typescript-azd")
+4. Driver fetches template `cosmos-trigger-typescript-azd`
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

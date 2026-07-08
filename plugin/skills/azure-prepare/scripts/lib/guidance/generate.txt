@@ -32,8 +32,8 @@ project, scaffold in a separate new dir and migrate changes in with confirmed ed
 `azd init` WITHOUT a template arg is fine in existing workspaces.
 
 ⛔ If the target compute is Azure Functions, the DRIVER already fetched the starter template
-for you (from the trigger/language in `input.functionsTemplate`) — do NOT call the
-`functions_template_get` MCP tool and do NOT hand-write Bicep/Terraform. Read
+for you (from the trigger/language in `input.functionsTemplate`) — do NOT fetch the template
+yourself and do NOT hand-write Bicep/Terraform. Read
 `auto.functionsTemplate` = {fetched, id, placement, path, files, reason}:
   - `fetched:true`, `placement:"repo-root"` → the template (functions + `infra/` + azure.yaml)
     was extracted into the repo root. Review `files[]`, wire in the app logic, and apply any
@@ -45,8 +45,8 @@ for you (from the trigger/language in `input.functionsTemplate`) — do NOT call
     `scripts/references/services/functions/templates/selection.md` and
     `scripts/references/services/functions/templates/recipes/composition.md`, then generate from
     those reference patterns.
-  - `fetched:false`, reason `fetch-failed` → the download failed: fall back to the
-    `functions_template_get` MCP tool, or the reference patterns above.
+  - `fetched:false`, reason `fetch-failed` → the driver could not retrieve a template: fall back
+    to the reference patterns above.
   The Functions bicep.md/terraform.md files are REFERENCE DOCS, not templates to copy —
   hand-writing from them yields missing RBAC and broken managed identity.
 For other compute (Container Apps, App Service, Static Web Apps) load their

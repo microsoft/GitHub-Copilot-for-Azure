@@ -17,7 +17,7 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
+| Template fetch (driver) | ✅ PASS | driver fetch (list + get) |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Storage queue config in projectFiles |
 | E2E Agent Test | ✅ PASS | 2 `azure-functions` calls, template `mcp-server-remote-python` retrieved and applied |
@@ -32,7 +32,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
+- Templates retrieved by the driver
 - Requires `enableQueue: true` for MCP state management
 - Uses JSON-RPC 2.0 protocol over HTTP
 

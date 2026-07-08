@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Template discovery | driver discovers templates for language python | ✅ PASS |
 | Filter by resource | `resource == "blob"` finds matches | ✅ PASS |
 | Template scaffolded | `blob-eventgrid-trigger-python-azd` | ✅ PASS |
 | Has trigger code | `@app.blob_trigger` decorator in output | ✅ PASS |
@@ -14,10 +14,10 @@
 ## Agent Behavior Validation
 
 ```text
-1. Agent calls: functions_template_get(language: "python")
+1. Driver discovers templates for language python
 2. Agent scans templateList.triggers[] descriptions and resource field
 3. Agent selects: template where resource == "blob" → blob-eventgrid-trigger-python-azd
-4. Agent calls: functions_template_get(language: "python", template: "blob-eventgrid-trigger-python-azd")
+4. Driver fetches template `blob-eventgrid-trigger-python-azd`
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

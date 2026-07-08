@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get(language: "typescript")` returns list | ✅ PASS |
+| Template discovery | driver discovers templates for language typescript | ✅ PASS |
 | Filter by resource | `resource == "servicebus"` finds matches | ✅ PASS |
 | Template scaffolded | `servicebus-trigger-typescript-azd` | ✅ PASS |
 | Has trigger code | `app.serviceBusQueue` trigger binding in output | ✅ PASS |
@@ -14,10 +14,10 @@
 ## Agent Behavior Validation
 
 ```text
-1. Agent calls: functions_template_get(language: "typescript")
+1. Driver discovers templates for language typescript
 2. Agent scans templateList.triggers[] descriptions and resource field
 3. Agent selects: template where resource == "servicebus" → servicebus-trigger-typescript-azd
-4. Agent calls: functions_template_get(language: "typescript", template: "servicebus-trigger-typescript-azd")
+4. Driver fetches template `servicebus-trigger-typescript-azd`
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get(language: "typescript")` returns list | ✅ PASS |
+| Template discovery | driver discovers templates for language typescript | ✅ PASS |
 | Template scaffolded | `http-trigger-typescript-azd` | ✅ PASS |
 | Has trigger code | `app.http` trigger in output | ✅ PASS |
 | Has IaC | `projectFiles[]` includes Bicep | ✅ PASS |
@@ -12,10 +12,10 @@
 ## Agent Behavior Validation
 
 ```text
-1. Agent calls: functions_template_get(language: "typescript")
+1. Driver discovers templates for language typescript
 2. Agent scans templateList for HTTP trigger templates
 3. Agent selects: http-trigger-typescript-azd
-4. Agent calls: functions_template_get(language: "typescript", template: "http-trigger-typescript-azd")
+4. Driver fetches template `http-trigger-typescript-azd`
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

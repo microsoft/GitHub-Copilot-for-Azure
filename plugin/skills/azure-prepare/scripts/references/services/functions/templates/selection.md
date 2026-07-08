@@ -1,8 +1,8 @@
 # Template Selection Guide
 
-Map user intent to MCP template `resource` filter.
+Map user intent to a template `resource` value for `input.functionsTemplate`.
 
-> **NEVER hardcode template names** — names can change. Always use `functions_template_get(language)` to discover available templates, then filter by `resource` field.
+> **NEVER hardcode template names** — names can change. Identify the `resource` from intent (below); the driver discovers the matching template for that `resource` + `language` and fetches it for you.
 
 ## Intent → Resource Mapping
 
@@ -23,25 +23,24 @@ Map user intent to MCP template `resource` filter.
 ## Selection Algorithm
 
 ```
-1. DISCOVER: functions_template_get(language) → template list
-2. DETECT (existing code): Scan for code indicators above → map to resource
-3. MATCH (new projects): Scan template descriptions for user intent
-4. FILTER: resource == mapped_resource AND infrastructure == user_iac_choice
-5. PREFER: AZD-enabled (infrastructure: "bicep" or "terraform")
-6. SELECT: Template whose description best matches user intent
-7. DEFAULT: If intent unclear or no trigger specified → use `http`
+1. DETECT (existing code): Scan for code indicators above → map to resource
+2. MATCH (new projects): Map user intent → resource (table above)
+3. IaC: infrastructure == user_iac_choice (bicep default, terraform if requested)
+4. DEFAULT: If intent unclear or no trigger specified → use `http`
+5. SET: input.functionsTemplate = { resource, language }  (the driver discovers,
+   filters, and fetches the best-matching AZD-enabled template)
 ```
 
 ## Output: Working Function App
 
-MCP templates return **complete, deployable projects** — each array entry has `{ path, content }`:
+The driver fetches **complete, deployable projects** into the repo. Review the fetched
+files in `auto.functionsTemplate.files[]` — each entry has `{ path, content }`:
 
-| Array | Contents | Action |
-|-------|----------|--------|
-| `functionFiles[]` | Function source code (triggers, bindings, business logic), infra and other files | Create directories from `path`, write `content` to each file |
-| `projectFiles[]` | settings.json, host.json, dependencies files | Create directories from `path`, write `content` to each file |
+| Contents | Action |
+|----------|--------|
+| Function source code (triggers, bindings, business logic), infra, config | Already written to the repo — review, then wire in your app logic |
 
-> Write files from the array output above. NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found.
+> NEVER hand-write Bicep/Terraform. If the driver reports no matching template, compose from the reference patterns (see [composition.md](recipes/composition.md)).
 
 For deployment steps, see [README.md](README.md#step-5-deploy).
 

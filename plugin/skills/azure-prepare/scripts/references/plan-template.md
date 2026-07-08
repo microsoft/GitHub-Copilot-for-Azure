@@ -160,7 +160,7 @@ For each resource type:
 
 ### Phase 2: Execution
 - [ ] Research components (load references, invoke skills)
-- [ ] **⛔ For Azure Functions: Load composition rules** (`services/functions/templates/selection.md` → `services/functions/templates/recipes/composition.md`) and use `functions_template_get` MCP tool to list and fetch templates, then write `functionFiles[]` + `projectFiles[]` directly — NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found
+- [ ] **⛔ For Azure Functions: the driver fetches the starter template** — set `input.functionsTemplate = { resource, language }` (see `services/functions/templates/selection.md`) and let the driver retrieve it; then review `auto.functionsTemplate.files[]`, wire in app logic, and apply required edits — NEVER hand-write Bicep/Terraform. When no template matches, compose from `services/functions/templates/recipes/composition.md`
 - [ ] For other services: Generate infrastructure files following service-specific guidance
 - [ ] Apply recipes for integrations (if needed)
 - [ ] Generate application configuration

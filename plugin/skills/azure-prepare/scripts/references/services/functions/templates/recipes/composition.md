@@ -2,17 +2,18 @@
 
 Combine multiple templates into a single deployable project.
 
-## Azure MCP Path
+## Composition Path
 
 ```
 INPUT: language, user_requirements
 OUTPUT: Complete project ready for `azd up`
 
-1. DISCOVER
-   functions_template_get(language) → template list with descriptions
+1. IDENTIFY BASE
+   The driver fetches the trigger template into the repo (from
+   input.functionsTemplate.resource + language). Review auto.functionsTemplate.files[].
 
 2. CHECK SINGLE-TEMPLATE MATCH
-   If one template's description covers ALL requirements → use it alone
+   If the fetched template covers ALL requirements → use it alone
 
 3. SELECT TEMPLATES
    - Trigger template (REQUIRED) — base project with IaC
@@ -79,24 +80,22 @@ OUTPUT: Complete project ready for `azd up`
 9. DEPLOY: azd up --no-prompt
 ```
 
-## Example (MCP)
+## Example
 
 **User:** "HTTP function that writes to Cosmos DB"
 
 ```
-1. Discover: functions_template_get(language: "python") → returns template list
-2. Check: No single template description mentions BOTH HTTP trigger AND Cosmos output
-3. Select from discovered list:
-   - Template with resource: "http" (trigger, base)
-   - Template with resource: "cosmos" and description mentioning "output" (binding)
-4. Fetch both templates by templateName from discovery results
-5. Compose:
-   - Base: HTTP template (has IaC, azure.yaml)
-   - Extract: Cosmos output binding + RBAC from cosmos template
+1. Identify base: set input.functionsTemplate = { resource: "http", language: "python" };
+   the driver fetches the HTTP template into the repo
+2. Check: the fetched HTTP template does not cover Cosmos output
+3. Reference the cosmos recipe for the Cosmos output binding + RBAC pattern
+4. Compose:
+   - Base: fetched HTTP template (has IaC, azure.yaml)
+   - Extract: Cosmos output binding + RBAC from the cosmos recipe
    - Merge: Add Cosmos module to infra/main.bicep
-6. Trim: Remove HTTP demo response code
-7. Write files
-8. Deploy
+5. Trim: Remove HTTP demo response code
+6. Write files
+7. Deploy
 ```
 
 ## Example (Fallback)

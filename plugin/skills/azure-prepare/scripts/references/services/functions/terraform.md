@@ -7,7 +7,7 @@
 >
 > 1. Load `templates/selection.md` to choose the correct base template
 > 2. Follow `templates/recipes/composition.md` for the exact algorithm
-> 3. Use `functions_template_get` MCP tool (with `infrastructure: "terraform"`) to list and fetch templates and write `functionFiles[]` + `projectFiles[]` directly — NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found
+> 3. Set `input.functionsTemplate = { resource, language }` (with the user's Terraform choice) so the driver fetches the AZD template — NEVER hand-write Bicep/Terraform
 >
 > Hand-writing Terraform from these patterns will result in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 

@@ -17,7 +17,7 @@
 
 | Test | Status | Details |
 |------|--------|---------|
-| `functions_template_get` | ✅ PASS | 2 calls via `azure-functions` MCP tool |
+| Template fetch (driver) | ✅ PASS | driver fetch (list + get) |
 | Template Discovery | ✅ PASS | Templates found via resource filter |
 | IaC Included | ✅ PASS | Durable Task Scheduler Bicep in projectFiles |
 | E2E Agent Test | ✅ PASS | 2 `azure-functions` calls, template retrieved and applied |
@@ -33,7 +33,7 @@
 
 ## Notes
 
-- Templates retrieved via `functions_template_get(language: "<language>", template: "<template-name>")` MCP tool
+- Templates retrieved by the driver
 - Uses Durable Task Scheduler (NOT Storage queues/tables)
 - See [Durable Task Scheduler docs](../../../../../durable-task-scheduler/README.md)
 

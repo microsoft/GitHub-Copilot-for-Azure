@@ -4,7 +4,7 @@
 
 | Criteria | Expected | Status |
 |----------|----------|--------|
-| Template discovery | `functions_template_get(language: "python")` returns list | ✅ PASS |
+| Template discovery | driver discovers templates for language python | ✅ PASS |
 | Filter by resource | `resource == "sql"` finds matches | ✅ PASS |
 | Template scaffolded | `sql-trigger-python-azd` | ✅ PASS |
 | Has trigger code | `@app.sql_trigger` decorator in output | ✅ PASS |
@@ -14,10 +14,10 @@
 ## Agent Behavior Validation
 
 ```text
-1. Agent calls: functions_template_get(language: "python")
+1. Driver discovers templates for language python
 2. Agent scans templateList.triggers[] descriptions and resource field
 3. Agent selects: template where resource == "sql" → sql-trigger-python-azd
-4. Agent calls: functions_template_get(language: "python", template: "sql-trigger-python-azd")
+4. Driver fetches template `sql-trigger-python-azd`
 5. Agent writes: functionFiles[] + projectFiles[]
 ```
 

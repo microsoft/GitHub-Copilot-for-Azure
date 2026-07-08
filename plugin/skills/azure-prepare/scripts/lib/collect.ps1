@@ -537,8 +537,8 @@ function Apply-AzdEnvironment {
 }
 
 # ---------------------------------------------------------------------------
-# Azure Functions template fetch (folds the functions_template_get MCP tool
-# into the driver by shelling out to the Azure MCP CLI, deterministically)
+# Azure Functions template fetch (the driver retrieves starter templates itself
+# by shelling out to the Azure MCP CLI, deterministically)
 # ---------------------------------------------------------------------------
 
 function Invoke-FunctionsCli {

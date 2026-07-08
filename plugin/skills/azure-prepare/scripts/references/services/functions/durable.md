@@ -23,10 +23,9 @@ Durable Functions requires a storage backend to persist orchestration state, que
 
 ## Get Durable Templates
 
-Use the [Azure Functions Templates workflow](templates/README.md) to discover and fetch durable samples:
-
-**MCP Tool:** `functions_template_get(language)` → filter `resource == "durable"`
-
-**Fallback:** CDN manifest → filter `resource == "durable"`
+Use the [Azure Functions Templates workflow](templates/README.md): set
+`input.functionsTemplate = { resource: "durable", language }` and the driver fetches the
+matching durable sample. If no AZD durable template exists for the language/IaC, the driver
+records `no-template-use-references` — compose from the patterns below.
 
 Available patterns: Fan-out/Fan-in, Order Processing (with Bicep), Distributed Tracing, Large Payload, Saga, AI Travel Planner, PDF Summarizer, .NET Aspire integration.

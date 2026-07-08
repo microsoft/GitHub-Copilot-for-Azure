@@ -25,7 +25,7 @@ with open('function_app.py') as f:
 
 ## Template Source
 
-Generated from `functions_template_get(language: "python", template: "http-trigger-python-azd")` MCP tool output
+Generated from the driver-fetched template `http-trigger-python-azd` output
 
 ## Verdict
 

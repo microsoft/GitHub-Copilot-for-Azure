@@ -42,9 +42,9 @@ This skill prepares artifacts. It does **not** deploy — `azd up`, `azd deploy`
 ## MCP Tools
 
 This skill orchestrates via the driver script rather than direct MCP calls. When a
-`NEXT ACTION` step calls for it, prefer Azure MCP tools over raw CLI — for example
-`functions_template_get` for Azure Functions templates, and the **azure-quotas** skill
-for provisioning-limit checks.
+`NEXT ACTION` step calls for it, prefer Azure MCP tools over raw CLI — for example the
+**azure-quotas** skill for provisioning-limit checks. The driver retrieves Azure Functions
+starter templates itself; you only supply the trigger/language in `input.functionsTemplate`.
 
 ## Workflow / Steps
 
