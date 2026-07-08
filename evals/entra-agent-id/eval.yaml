@@ -27,7 +27,7 @@ tags:
   type: integration
   skill: entra-agent-id
 
-config:
+defaults:
   runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner

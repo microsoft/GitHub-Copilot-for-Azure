@@ -28,7 +28,7 @@ tags:
   type: integration
   skill: python-appservice-deploy
 
-config:
+defaults:
   runs: 3
   # 35m global timeout accommodates the Flask e2e stimulus, which runs a
   # real Azure deployment. All other stimuli terminate early via the

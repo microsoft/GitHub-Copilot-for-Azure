@@ -27,7 +27,7 @@ tags:
   type: integration
   skill: azure-prepare
 
-config:
+defaults:
   runs: 1
   timeout: "30m"
   executor: integration-test-agent-runner
