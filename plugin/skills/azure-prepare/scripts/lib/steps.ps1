@@ -220,12 +220,34 @@ $Steps = @(
                     Set-ByPath $State 'input.functionsTemplate' @{ resource = $fres; language = $flang }
                 }
             }
+            # Once resource+language are known, list the matching templates ONCE (filter by resource +
+            # IaC). Auto-select when exactly one matches; when several match, cache the list so the LM
+            # can pick (need below); when none match, cache an empty list so the driver stops asking.
+            if ((Test-FunctionsIntent $State) -and (Test-Provided $State 'input.functionsTemplate') `
+                    -and -not (Test-Provided $State 'input.functionsTemplate.templateName') `
+                    -and -not ($State['auto'].ContainsKey('functionsTemplateCandidates'))) {
+                $fsel = Get-ByPath $State 'input.functionsTemplate'
+                $cres = "$($fsel['resource'])"; $clang = "$($fsel['language'])"
+                if ($cres -and $clang) {
+                    $ciac = Get-FunctionsRecipeIac $State
+                    $cands = Get-FunctionsCandidates $State $clang.ToLower() $cres $ciac
+                    if ($null -ne $cands) {
+                        $arr = @($cands)
+                        if ($arr.Count -eq 1) { Set-ByPath $State 'input.functionsTemplate.templateName' $arr[0].templateName }
+                        else { Set-ByPath $State 'auto.functionsTemplateCandidates' $arr }
+                    }
+                }
+            }
         }
         needs = {
             param($State)
             $n = @()
             if ((Test-FunctionsIntent $State) -and -not (Test-Provided $State 'input.functionsTemplate')) {
-                $n += @{ Path = 'input.functionsTemplate'; Prompt = 'Azure Functions template selection { "resource": <http|timer|cosmos|eventhub|servicebus|blob|sql|mcp|durable|connector>, "language": <CSharp|Python|TypeScript|JavaScript|Java|PowerShell> } — pick from the trigger/binding the app uses; the driver fetches the template' }
+                $n += @{ Path = 'input.functionsTemplate'; Prompt = 'Azure Functions template selection { "resource": <http|timer|cosmos|eventhub|servicebus|blob|sql|mcp|durable|connector>, "language": <CSharp|Python|TypeScript|JavaScript|Java|PowerShell> } — pick from the trigger/binding the app uses; the driver lists and fetches the template' }
+            }
+            elseif ((Test-FunctionsIntent $State) -and -not (Test-Provided $State 'input.functionsTemplate.templateName') `
+                    -and @(Get-ByPath $State 'auto.functionsTemplateCandidates').Count -gt 1) {
+                $n += @{ Path = 'input.functionsTemplate.templateName'; Prompt = 'Choose ONE template: set to the templateName of your pick from auto.functionsTemplateCandidates (each entry lists templateName + description). The driver then fetches it.' }
             }
             $n += @{ Path = 'input.researchDone'; Prompt = 'true when component research is complete' }
             $n

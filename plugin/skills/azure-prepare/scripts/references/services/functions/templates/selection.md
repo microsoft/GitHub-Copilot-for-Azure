@@ -27,8 +27,9 @@ Map user intent to a template `resource` value for `input.functionsTemplate`.
 2. MATCH (new projects): Map user intent → resource (table above)
 3. IaC: infrastructure == user_iac_choice (bicep default, terraform if requested)
 4. DEFAULT: If intent unclear or no trigger specified → use `http`
-5. SET: input.functionsTemplate = { resource, language }  (the driver discovers,
-   filters, and fetches the best-matching AZD-enabled template)
+5. SET: input.functionsTemplate = { resource, language }  (the driver discovers and
+   filters the matching templates; if several match it asks you to pick one via
+   input.functionsTemplate.templateName, then fetches it)
 ```
 
 ## Output: Working Function App

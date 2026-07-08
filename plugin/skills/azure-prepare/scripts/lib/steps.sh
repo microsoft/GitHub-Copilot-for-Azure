@@ -119,7 +119,10 @@ step_needs() {
             printf 'input.userApproved\t%s\n' 'true when the user has approved the plan' ;;
         research)
             if functions_intent && ! test_provided 'input.functionsTemplate'; then
-                printf 'input.functionsTemplate\t%s\n' 'Azure Functions template selection { "resource": <http|timer|cosmos|eventhub|servicebus|blob|sql|mcp|durable|connector>, "language": <CSharp|Python|TypeScript|JavaScript|Java|PowerShell> } — pick from the trigger/binding the app uses; the driver fetches the template'
+                printf 'input.functionsTemplate\t%s\n' 'Azure Functions template selection { "resource": <http|timer|cosmos|eventhub|servicebus|blob|sql|mcp|durable|connector>, "language": <CSharp|Python|TypeScript|JavaScript|Java|PowerShell> } — pick from the trigger/binding the app uses; the driver lists and fetches the template'
+            elif functions_intent && ! test_provided 'input.functionsTemplate.templateName' \
+                 && [[ "$(printf '%s' "$STATE" | jq -r '(.auto.functionsTemplateCandidates // []) | length')" -gt 1 ]]; then
+                printf 'input.functionsTemplate.templateName\t%s\n' 'Choose ONE template: set to the templateName of your pick from auto.functionsTemplateCandidates (each entry lists templateName + description). The driver then fetches it.'
             fi
             printf 'input.researchDone\t%s\n' 'true when component research is complete' ;;
         generate)
@@ -149,6 +152,29 @@ step_auto() {
                 flang="$(detect_functions_language)"
                 if [[ -n "$fres" && -n "$flang" ]]; then
                     set_by_path 'input.functionsTemplate' "$(jq -n --arg r "$fres" --arg l "$flang" '{resource:$r, language:$l}')"
+                fi
+            fi
+            # Once resource+language are known, list the matching templates ONCE (filter by
+            # resource + IaC). Auto-select when exactly one matches; when several match, cache the
+            # list so the LM can pick (need below); when none match, cache an empty list so the
+            # driver stops asking and the generate step records no-template.
+            if functions_intent && test_provided 'input.functionsTemplate' \
+               && ! test_provided 'input.functionsTemplate.templateName' \
+               && [[ "$(printf '%s' "$STATE" | jq -r '(.auto // {}) | has("functionsTemplateCandidates")')" != true ]]; then
+                local fsel cres clang ciac cands ccount
+                fsel="$(get_by_path 'input.functionsTemplate')"
+                cres="$(jq -r '.resource // empty' <<<"$fsel" 2>/dev/null)"
+                clang="$(jq -r '.language // empty' <<<"$fsel" 2>/dev/null)"
+                if [[ -n "$cres" && -n "$clang" ]]; then
+                    ciac="$(recipe_to_iac)"
+                    if cands="$(functions_candidates "$(printf '%s' "$clang" | tr '[:upper:]' '[:lower:]')" "$cres" "$ciac")"; then
+                        ccount="$(jq 'length' <<<"$cands" 2>/dev/null || printf 0)"
+                        if [[ "$ccount" -eq 1 ]]; then
+                            set_by_path 'input.functionsTemplate.templateName' "$(jq -c '.[0].templateName' <<<"$cands")"
+                        else
+                            set_by_path 'auto.functionsTemplateCandidates' "$cands"
+                        fi
+                    fi
                 fi
             fi ;;
         azure-context)

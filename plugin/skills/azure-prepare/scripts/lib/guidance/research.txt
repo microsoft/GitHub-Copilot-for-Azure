@@ -34,9 +34,12 @@ Skill routing for special scenarios:
   - GitHub Copilot SDK → invoke **azure-hosted-copilot-sdk** (scaffold+config), then resume.
   - Azure Functions → STAY here. When the driver asks for `input.functionsTemplate`, set
     `{ resource, language }` using `scripts/references/services/functions/templates/selection.md`
-    (the decision tree maps the intended trigger/binding + language to the template) — the
-    DRIVER then fetches the starter template for you. Do not fetch or synthesize the template
-    yourself, and never hand-write IaC.
+    (the decision tree maps the intended trigger/binding + language to the template). The DRIVER
+    then lists the matching templates: if exactly one matches it fetches it automatically; if
+    several match it asks you to set `input.functionsTemplate.templateName` — pick one from
+    `auto.functionsTemplateCandidates` (each entry has templateName + description). The driver
+    fetches the chosen template. Do not fetch or synthesize templates yourself, and never
+    hand-write IaC.
   - PostgreSQL passwordless / security hardening → handle directly with service refs.
   - App Insights instrumentation → appinsights-instrumentation; AI apps → microsoft-foundry;
     cost-sensitive → azure-cost.

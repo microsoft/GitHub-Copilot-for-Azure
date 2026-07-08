@@ -633,6 +633,27 @@ function Resolve-FunctionsTemplate {
     return $best.templateName
 }
 
+function Get-FunctionsCandidates {
+    # Lists candidate templates ({templateName, displayName, description}) for a language/resource/IaC
+    # via the MCP CLI, filtered by resource + infrastructure and ordered canonical-first. Returns an
+    # array (possibly empty) of matches, or $null when the CLI is unavailable or its output can't be parsed.
+    param([hashtable]$State, [string]$Language, [string]$Resource, [string]$Iac)
+    $res = Invoke-FunctionsCli @('--language', $Language)
+    if (-not $res -or $res.status -ne 200 -or -not $res.results.templateList.triggers) { return $null }
+    $rl = $Resource.ToLower()
+    $isTf = ($Iac.ToLower() -eq 'terraform')
+    $cand = @($res.results.templateList.triggers | Where-Object {
+            $_.resource.ToLower() -eq $rl -and
+            (($isTf -and $_.infrastructure.ToLower() -eq 'terraform') -or
+            ((-not $isTf) -and $_.infrastructure.ToLower() -eq 'bicep')) })
+    $sorted = @($cand | Sort-Object `
+        @{ Expression = { if ($_.templateName.ToLower().StartsWith($rl + '-')) { 0 } else { 1 } } }, `
+        @{ Expression = { if ($_.templateName -like '*-trigger-*') { 0 } else { 1 } } }, `
+        @{ Expression = { $_.templateName.Length } }, templateName)
+    $out = @($sorted | ForEach-Object { @{ templateName = $_.templateName; displayName = $_.displayName; description = $_.description } })
+    return , $out
+}
+
 function Expand-FunctionsTemplate {
     # Fetches the named template's files via the MCP CLI (--output New) and writes each {fileName, content}
     # under $Dest, creating parent directories. Returns the written files (relative to $Dest), or $null
@@ -661,16 +682,19 @@ function Expand-FunctionsTemplate {
 
 function Invoke-FunctionsTemplateFetch {
     # Fetches the template selected in input.functionsTemplate and records the outcome under
-    # auto.functionsTemplate. Greenfield (NEW) templates land in the repo root; existing projects
-    # land in a staging dir. Records a reason when no template exists or the fetch fails.
+    # auto.functionsTemplate. Uses input.functionsTemplate.templateName when the LM (or the driver's
+    # single-match auto-pick) has chosen one; otherwise falls back to the driver's deterministic pick.
+    # Greenfield (NEW) templates land in the repo root; existing projects land in a staging dir.
+    # Records a reason when no template exists or the fetch fails.
     param([hashtable]$State)
     $sel = Get-ByPath $State 'input.functionsTemplate'
     if (-not ($sel -is [hashtable])) { return }
     $resource = "$($sel['resource'])"; $language = "$($sel['language'])"
     if (-not $resource -or -not $language) { return }
+    $templateName = "$($sel['templateName'])"
     $cliLang = $language.ToLower()
     $iac = Get-FunctionsRecipeIac $State
-    $id = Resolve-FunctionsTemplate $State $cliLang $resource $iac
+    if ($templateName) { $id = $templateName } else { $id = Resolve-FunctionsTemplate $State $cliLang $resource $iac }
     if (-not $id) {
         Set-ByPath $State 'auto.functionsTemplate' @{ fetched = $false; id = $null; resource = $resource; language = $language; iac = $iac; placement = $null; files = @(); reason = 'no-template-use-references' }
         return

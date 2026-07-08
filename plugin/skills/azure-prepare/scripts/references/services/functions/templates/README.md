@@ -18,8 +18,10 @@ Use the intent→resource mapping in [selection.md](selection.md) to map user in
 ## Step 2: Hand Off to the Driver
 
 Set `input.functionsTemplate = { resource, language }`. The driver then discovers the
-available templates, filters by `resource` + IaC, selects the best AZD-enabled match, and
-fetches it into the project. You do **not** call any template tool or CLI yourself.
+available templates and filters by `resource` + IaC. If exactly one matches, it fetches that
+one automatically; if several match, it asks you to set `input.functionsTemplate.templateName`
+— pick one from `auto.functionsTemplateCandidates` (each entry has templateName + description).
+The driver fetches your choice. You do **not** call any template tool or CLI yourself.
 
 ## Step 3: Review What the Driver Fetched
 

@@ -525,6 +525,27 @@ resolve_functions_template() {
     ' 2>/dev/null
 }
 
+# Lists candidate templates (JSON array of {templateName, displayName, description}) for a
+# language/resource/IaC via the MCP CLI, filtered by resource + infrastructure and ordered
+# canonical-first. Prints "[]" when nothing matches; returns non-zero only when the CLI is
+# unavailable or its output can't be parsed.
+functions_candidates() {
+    local lang="$1" resource="$2" iac="$3" json
+    json="$(functions_cli --language "$lang")" || return 1
+    printf '%s' "$json" | jq -e '.status==200 and ((.results.templateList.triggers // null)|type=="array")' >/dev/null 2>&1 || return 1
+    printf '%s' "$json" | jq -c --arg r "$resource" --arg iac "$iac" '
+        [.results.templateList.triggers[]
+         | select((.resource|ascii_downcase)==($r|ascii_downcase))
+         | select(if ($iac|ascii_downcase)=="terraform"
+                    then (.infrastructure|ascii_downcase)=="terraform"
+                    else (.infrastructure|ascii_downcase)=="bicep" end)]
+        | sort_by((.templateName|ascii_downcase|startswith(($r|ascii_downcase)+"-")|not),
+                  (.templateName|contains("-trigger-")|not),
+                  (.templateName|length), .templateName)
+        | map({templateName, displayName, description})
+    ' 2>/dev/null
+}
+
 # Fetches the named template's files via the MCP CLI (--output New) and writes each {fileName, content}
 # under $dest, creating parent directories. Prints the written files (relative to $dest).
 # Returns non-zero on any CLI/parse failure or when the template has no files.
@@ -546,16 +567,26 @@ fetch_template_files() {
 # Fetches the Functions template selected in input.functionsTemplate and records the outcome under
 # auto.functionsTemplate. Greenfield (NEW) templates land in the repo root; existing projects land
 # in a staging dir for manual merge. Records a reason when no template exists or the fetch fails.
+# Fetches the Functions template selected in input.functionsTemplate and records the outcome under
+# auto.functionsTemplate. Uses input.functionsTemplate.templateName when the LM (or the driver's
+# single-match auto-pick) has chosen one; otherwise falls back to the driver's deterministic pick.
+# Greenfield (NEW) templates land in the repo root; existing projects land in a staging dir for
+# manual merge. Records a reason when no template exists or the fetch fails.
 fetch_functions_template() {
-    local sel resource language cli_lang iac id mode dest placement files files_json
+    local sel resource language template_name cli_lang iac id mode dest placement files files_json
     sel="$(get_by_path 'input.functionsTemplate' 2>/dev/null || true)"
     [[ -z "$sel" ]] && return 0
     resource="$(jq -r '.resource // empty' <<<"$sel" 2>/dev/null)"
     language="$(jq -r '.language // empty' <<<"$sel" 2>/dev/null)"
+    template_name="$(jq -r '.templateName // empty' <<<"$sel" 2>/dev/null)"
     [[ -z "$resource" || -z "$language" ]] && return 0
     cli_lang="$(printf '%s' "$language" | tr '[:upper:]' '[:lower:]')"
     iac="$(recipe_to_iac)"
-    id="$(resolve_functions_template "$cli_lang" "$resource" "$iac")"
+    if [[ -n "$template_name" ]]; then
+        id="$template_name"
+    else
+        id="$(resolve_functions_template "$cli_lang" "$resource" "$iac")"
+    fi
     if [[ -z "$id" ]]; then
         set_by_path 'auto.functionsTemplate' "$(jq -n --arg r "$resource" --arg l "$language" --arg i "$iac" \
             '{fetched:false, id:null, resource:$r, language:$l, iac:$i, placement:null, files:[], reason:"no-template-use-references"}')"
