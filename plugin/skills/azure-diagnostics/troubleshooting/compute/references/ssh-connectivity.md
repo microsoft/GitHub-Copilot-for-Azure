@@ -19,7 +19,7 @@ Use for Linux VM SSH failures.
 
 ## Quick Commands
 
-> Commands use VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) first.
+> Commands use VM agent/extensions. Run [Pre-Flight Safety Checks](troubleshooting/compute/references/cannot-connect-to-vm.md#pre-flight-safety-checks) first.
 
 ```bash
 az vm user reset-ssh --name <vm> -g <rg>
