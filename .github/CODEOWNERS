@@ -11,6 +11,7 @@
 /plugin/skills/ @tmeschter @RickWinter
 /plugin/skills/airunway-aks-setup/ @tmeschter @RickWinter
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
+/plugin/skills/azure-advisor/ @sachinsoni29 @ravigupta99 @koushik137 @RickWinter
 /plugin/skills/azure-ai/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-aigateway/ @azaslonov @RickWinter
 /plugin/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT @RickWinter
