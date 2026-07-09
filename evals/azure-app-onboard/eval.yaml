@@ -28,7 +28,7 @@ tags:
 
 config:
   runs: 1
-  timeout: "12m"
+  timeout: "40m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
@@ -361,6 +361,77 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
       - type: completed
+
+  # tests/azure-app-onboard/deploy/integration-container-apps.test.ts
+  # earlyTerminate fires on: ACR build executed (success path), Terraform executed (bad path),
+  # or azd up/provision/deploy executed (bad path).
+  # NOTE: no `completed` grader — earlyTerminate is used.
+  - name: "Deploy - Wetty Code To Container Apps"
+    prompt: "I want to take my local app and put it in the cloud — where do I start?"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/butlerx/wetty
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 100
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: deployment
+      debug: yes
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"az\\s+acr\\s+build|docker\\s+(build|push)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"terraform\\s+(apply|init)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision|deploy)\\b"}]'
+    graders:
+      # azure-app-onboard MUST be invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard
+      # Container Apps MUST be the target compute
+      - type: output-matches
+        config:
+          pattern: "(?i)container.?apps"
+      # Bicep MUST be used — not Terraform, not azd
+      - type: output-matches
+        config:
+          pattern: "(?i)bicep|\\.bicep|az deployment (sub|group) create"
+      # ACR build MUST have been executed (code deploy, not just IaC);
+      # Terraform and azd up/provision/deploy MUST NOT have been executed
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)az\\s+acr\\s+build|docker\\s+(build|push)"
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)terraform\\s+(init|plan|apply)"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision|deploy)\\b"
+      # Agent MUST NOT hand back manual "Next Steps" for code deploy instead of executing it
+      - type: output-not-matches
+        config:
+          pattern: "(?i)next steps.{0,100}(docker build|docker push|deploy your code|az containerapp update)"
+      # Bicep is the default IaC format — agent MUST NOT use Terraform
+      - type: output-not-matches
+        config:
+          pattern: "(?i)terraform\\s+(init|plan|apply)|hashicorp/azurerm"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # tests/azure-app-onboard/triggers.test.ts (negative trigger)
   - name: "Negative Trigger - Unrelated Prompt"
