@@ -63,10 +63,17 @@ interface AggregatedUsage {
     outputTokens: number;
     cacheReadTokens: number;
     cacheWriteTokens: number;
-    /** Total LLM API duration in ms, summed across the test's records. */
-    durationMs: number;
-    /** Number of LLM round-trips ("turns"), summed across the test's records. */
-    turns: number;
+    /**
+     * Total LLM API duration in ms, summed across the test's records. Left
+     * undefined when no record carried the metric, so absence is preserved
+     * (rendered as a gap downstream) rather than written as a real `0`.
+     */
+    durationMs?: number;
+    /**
+     * Number of LLM round-trips ("turns"), summed across the test's records.
+     * Undefined when no record carried the metric (see {@link durationMs}).
+     */
+    turns?: number;
 }
 
 /**
@@ -186,6 +193,23 @@ function parseTokenSummary(filePath: string): TokenSummaryRecord[] {
   return records;
 }
 
+/** Parse a metric that may be absent; returns undefined when missing/non-finite. */
+function optionalMetric(value: unknown): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * Add an optional metric to a running total while preserving absence: if both
+ * the accumulator and the addition are undefined the result stays undefined,
+ * otherwise the present values are summed (missing treated as 0).
+ */
+function addOptional(acc: number | undefined, add: number | undefined): number | undefined {
+  if (acc === undefined && add === undefined) return undefined;
+  return (acc ?? 0) + (add ?? 0);
+}
+
 /** Sum multiple records per test into a single aggregated row. */
 function aggregateByTest(records: TokenSummaryRecord[]): AggregatedUsage[] {
   const byTest = new Map<string, AggregatedUsage>();
@@ -195,15 +219,15 @@ function aggregateByTest(records: TokenSummaryRecord[]): AggregatedUsage[] {
     const output = Number(r.outputTokens) || 0;
     const cacheRead = Number(r.cacheReadTokens) || 0;
     const cacheWrite = Number(r.cacheWriteTokens) || 0;
-    const durationMs = Number(r.totalApiDurationMs) || 0;
-    const turns = Number(r.apiCallCount) || 0;
+    const durationMs = optionalMetric(r.totalApiDurationMs);
+    const turns = optionalMetric(r.apiCallCount);
     if (existing) {
       existing.inputTokens += input;
       existing.outputTokens += output;
       existing.cacheReadTokens += cacheRead;
       existing.cacheWriteTokens += cacheWrite;
-      existing.durationMs += durationMs;
-      existing.turns += turns;
+      existing.durationMs = addOptional(existing.durationMs, durationMs);
+      existing.turns = addOptional(existing.turns, turns);
       if (r.timestamp && r.timestamp > existing.timestamp) {
         existing.timestamp = r.timestamp;
         if (r.model) existing.model = r.model;
@@ -286,6 +310,11 @@ async function main(): Promise<void> {
     const runDate = usage.timestamp.slice(0, 10);
     const partitionKey = sanitizeKey(skill);
     const rowKey = buildRowKey(branch, runId, usage.testName);
+    // Only include duration/turns when present so absent metrics stay off the
+    // row (schemaless), keeping "missing" distinct from a real 0 downstream.
+    const optionalMetrics: { durationMs?: number; turns?: number } = {};
+    if (usage.durationMs !== undefined) optionalMetrics.durationMs = usage.durationMs;
+    if (usage.turns !== undefined) optionalMetrics.turns = usage.turns;
     try {
       await tableClient.upsertEntity(
         {
@@ -303,8 +332,7 @@ async function main(): Promise<void> {
           cacheReadTokens: usage.cacheReadTokens,
           cacheWriteTokens: usage.cacheWriteTokens,
           totalTokens,
-          durationMs: usage.durationMs,
-          turns: usage.turns,
+          ...optionalMetrics,
         },
         "Replace",
       );

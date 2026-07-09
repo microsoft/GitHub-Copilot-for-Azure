@@ -95,7 +95,14 @@ function Sparkline({
                 />
                 <YAxis hide domain={["auto", "auto"]} />
                 <Tooltip
-                    formatter={(value) => [format(Number(value)), ""] as [string, string]}
+                    formatter={(value) => {
+                        // Missing-data days carry null; show a placeholder
+                        // rather than a misleading "0".
+                        if (value === null || value === undefined) {
+                            return ["No data", ""] as [string, string];
+                        }
+                        return [format(Number(value)), ""] as [string, string];
+                    }}
                     labelFormatter={(l) => String(l)}
                     contentStyle={{ fontSize: 12 }}
                 />
