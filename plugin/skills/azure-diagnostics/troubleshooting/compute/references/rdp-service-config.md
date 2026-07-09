@@ -16,7 +16,7 @@ VM is reachable but the RDP service itself is broken or misconfigured.
 
 ## Quick Commands
 
-> ⚠️ **Warning:** Commands marked with ⚡ use the VM agent/extensions. Run [Pre-Flight Safety Checks](troubleshooting/compute/references/cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
+> ⚠️ **Warning:** Commands marked with ⚡ use the VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) before using them.
 
 ```bash
 # ⚡ Reset all RDP configuration to defaults

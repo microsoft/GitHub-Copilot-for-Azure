@@ -1,6 +1,6 @@
 # Azure VM Connectivity Troubleshooting
 
-Primary compute troubleshooting guide for incidents routed from [SKILL.md](SKILL.md). Use for Azure VM RDP/SSH failures, NSG/firewall blocks, credential resets, and VM agent/tooling issues.
+Primary compute troubleshooting guide for incidents routed from [../../SKILL.md](../../SKILL.md). Use for Azure VM RDP/SSH failures, NSG/firewall blocks, credential resets, and VM agent/tooling issues.
 
 ## Quick Reference
 
@@ -8,7 +8,7 @@ Primary compute troubleshooting guide for incidents routed from [SKILL.md](SKILL
 | --- | --- |
 | Best for | RDP/SSH failures, port 3389/22 timeouts, black screen, credential reset, VM agent issues |
 | Primary tools | `mcp_azure_mcp_compute`, `mcp_azure_mcp_resourcehealth`, `mcp_azure_mcp_monitor`, CLI fallback |
-| Router | [Cannot Connect to VM](troubleshooting/compute/references/cannot-connect-to-vm.md) |
+| Router | [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md) |
 
 ## MCP Tools
 
@@ -29,7 +29,7 @@ Primary compute troubleshooting guide for incidents routed from [SKILL.md](SKILL
 ## Guardrails
 
 - Default to read-only diagnostics; quote evidence before concluding root cause.
-- Do not run extension-backed commands (`az vm user update`, `az vm user reset-ssh`, `az vm user reset-remote-desktop`, `az vm run-command invoke`) until [Pre-Flight Safety Checks](troubleshooting/compute/references/cannot-connect-to-vm.md#pre-flight-safety-checks) pass.
+- Do not run extension-backed commands (`az vm user update`, `az vm user reset-ssh`, `az vm user reset-remote-desktop`, `az vm run-command invoke`) until [Pre-Flight Safety Checks](references/cannot-connect-to-vm.md#pre-flight-safety-checks) pass.
 - Do not restart, redeploy, deallocate, or delete unless the user explicitly approves remediation.
 - If multiple issues appear, fix network-layer blockers before agent-dependent fixes.
 
@@ -42,7 +42,7 @@ Primary compute troubleshooting guide for incidents routed from [SKILL.md](SKILL
 ## Workflow
 
 1. Classify intent. If unclear, ask whether the user uses RDP or SSH and what error appears.
-2. Open [Cannot Connect to VM](troubleshooting/compute/references/cannot-connect-to-vm.md), choose the matching symptom category, then open that reference.
+2. Open [references/cannot-connect-to-vm.md](references/cannot-connect-to-vm.md), choose the matching symptom category, then open that reference.
 3. If a command uses the VM agent/extensions, run pre-flight checks first and stop on any unsafe result.
 4. Use `mcp_azure_mcp_documentation` to fetch current docs for the selected URL or symptom.
 5. Respond with evidence, likely cause, safe diagnostic/fix commands, and escalation path.
