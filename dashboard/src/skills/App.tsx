@@ -170,18 +170,27 @@ export default function App() {
     // Load per-test metrics for the selected skill (main branch only).
     useEffect(() => {
         if (!selected) return;
+        // Abort a previous in-flight request so a slow response for an
+        // earlier skill can't overwrite the current selection's data.
+        const controller = new AbortController();
         setRowsLoading(true);
         setRowsError(null);
         setRows([]);
         const params = new URLSearchParams({ skill: selected, branch: "main" });
-        fetch(apiUrl(`/api/test-run-metrics?${params}`))
+        fetch(apiUrl(`/api/test-run-metrics?${params}`), { signal: controller.signal })
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json() as Promise<MetricsRow[]>;
             })
             .then((data) => setRows(data))
-            .catch((err) => setRowsError(err.message))
-            .finally(() => setRowsLoading(false));
+            .catch((err) => {
+                if (err.name !== "AbortError") setRowsError(err.message);
+            })
+            .finally(() => {
+                // Don't flip loading off if this effect was superseded.
+                if (!controller.signal.aborted) setRowsLoading(false);
+            });
+        return () => controller.abort();
     }, [selected]);
 
     const selectedSkill = useMemo(
