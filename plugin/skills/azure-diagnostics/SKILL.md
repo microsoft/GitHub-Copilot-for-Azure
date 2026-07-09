@@ -1,6 +1,7 @@
 ---
 name: azure-diagnostics
 description: "Debug Azure production issues using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, container apps, functions, AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, analyze logs, KQL, image pull failures, cold starts, health probes, Event Hubs or Service Bus SDK errors."
+description: "Debug Azure production issues using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, container apps, functions, AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, analyze logs, KQL, image pull failures, cold starts, health probes, Event Hubs or Service Bus SDK errors."
 license: MIT
 metadata:
   author: Microsoft
