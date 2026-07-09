@@ -28,7 +28,6 @@ interface FrontmatterSkillResult {
   warnings: string[];
   checks: Record<string, boolean>;
   description?: string;
-  descriptionLength?: number;
 }
 
 interface FrontmatterJsonResult {
@@ -64,10 +63,6 @@ function buildItems(skills: FrontmatterSkillResult[]): CategoryItem[] {
     };
     if (typeof skill.description === "string") {
       metadata.description = sanitize(skill.description);
-      metadata.descriptionLength =
-        typeof skill.descriptionLength === "number"
-          ? skill.descriptionLength
-          : skill.description.length;
     }
 
     return {

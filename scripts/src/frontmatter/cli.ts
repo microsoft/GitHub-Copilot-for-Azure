@@ -684,10 +684,8 @@ export interface FrontmatterSkillResult {
   errors: string[];
   warnings: string[];
   checks: Record<string, boolean>;
-  /** Raw description text ("" when missing). */
+  /** Raw description text ("" when missing). Length is derivable by consumers. */
   description: string;
-  /** Character length of the description. */
-  descriptionLength: number;
 }
 
 export interface FrontmatterJsonResult {
@@ -738,7 +736,6 @@ function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
       warnings: warnings.map(w => `[${w.check}] ${w.message}`),
       checks,
       description,
-      descriptionLength: description.length,
     });
   }
 

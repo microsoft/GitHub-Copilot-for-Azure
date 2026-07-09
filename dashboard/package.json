@@ -5,6 +5,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "vitest run",
     "dev:api": "cd api && npm run prestart && func start",
     "dev:all": "npx concurrently \"npm run dev\" \"npm run dev:api\""
   },
@@ -21,6 +22,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^9.1.0",
     "typescript": "6.0.2",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "^4.0.18"
   }
 }

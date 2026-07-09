@@ -45,10 +45,7 @@ function skillsFromHealthData(data: HealthData): Skill[] {
         // Only plugin skills; the frontmatter check also covers .github/skills.
         if (!path.startsWith("plugin/skills/")) continue;
         const description = String(item.metadata?.description ?? "");
-        const lenRaw = item.metadata?.descriptionLength;
-        const descriptionLength =
-            typeof lenRaw === "number" ? lenRaw : description.length;
-        skills.push({ name: item.name, description, descriptionLength });
+        skills.push({ name: item.name, description, descriptionLength: description.length });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
