@@ -26,7 +26,7 @@ We will triage your onboarding request and provide feedback. We encourage you to
 Before making code changes, ensure you have the following installed:
 
 - [Git](https://git-scm.com/downloads)
-- [Node.js 24+](https://nodejs.org) and NPM
+- [Node.js 22+](https://nodejs.org) and NPM
 - [GitHub Copilot CLI](https://github.com/github/copilot-cli)
 
 We encourage you to develop in a fork and submit PRs back to the upstream repo, instead of working directly in this repo. Use the following command to fork this repo and open your fork locally.
@@ -142,3 +142,10 @@ When submitting the PR, prefix the PR title with `feature:` and link the PR to y
 
 ## Releasing
 
+Once a skill is merged, it will be synced to the [azure-skills](https://github.com/microsoft/azure-skills) repo. Users will install the skills by installing the `azure` plugin from the azure-skills repo. For example, in Copilot CLI:
+
+```bash
+# Copilot CLI
+/plugin marketplace add microsoft/azure-skills
+/plugin install azure@azure-skills
+```
