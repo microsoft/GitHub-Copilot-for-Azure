@@ -23,7 +23,7 @@ permissions: {}
 jobs:
   eval:
     name: Run Microsoft Foundry E2E evals
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
       id-token: write
       contents: read
@@ -130,11 +130,26 @@ jobs:
       - name: Build plugin output
         run: npm run build
 
+      - name: Remove unrelated skills
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          skills_dir="output/skills"
+          if [[ ! -d "${skills_dir}/microsoft-foundry" ]]; then
+            echo "::error::${skills_dir}/microsoft-foundry not found."
+            exit 1
+          fi
+
+          find "${skills_dir}" -mindepth 1 -maxdepth 1 -type d ! -name "microsoft-foundry" -exec rm -rf -- {} +
+
       - name: Run Microsoft Foundry Vally evals
         working-directory: tests
+        shell: bash
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           VALLY_RUNS: ${{ inputs.runs }}
+          VALLY_RUNNER_DISABLE_AZURE_MCP: "true"
         run: |
           set -euo pipefail
 
@@ -146,7 +161,7 @@ jobs:
           npm run test:vally -- \
             --suite foundry-e2e \
             --runs "${VALLY_RUNS}" \
-            --output jsonl \
+            --workers 1 \
             --junit \
             --threshold 0.8
 

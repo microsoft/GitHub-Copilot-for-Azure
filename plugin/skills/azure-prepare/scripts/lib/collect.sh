@@ -21,7 +21,7 @@ invoke_auto_collect() {
     has_file_glob 'Cargo.toml' && langs+=(rust)
 
     # --- frameworks (best-effort from package.json / python files) ---
-    local frameworks=() copilot_sdk=false
+    local frameworks=()
     local pkg deps fw
     pkg="$(first_file_matching '/package\.json$')"
     if [[ -n "$pkg" && -f "$pkg" ]]; then
@@ -29,7 +29,6 @@ invoke_auto_collect() {
         for fw in react next express fastify '@angular/core' vue svelte nestjs '@nestjs/core'; do
             grep -qxF "$fw" <<<"$deps" && frameworks+=("$fw")
         done
-        grep -qxF '@github/copilot-sdk' <<<"$deps" && copilot_sdk=true
     fi
     local rf f
     for rf in 'requirements.txt' 'pyproject.toml'; do
@@ -117,10 +116,9 @@ invoke_auto_collect() {
         --argjson azureYamlProvider "$provider" \
         '{azureYaml:$azureYaml, bicep:$bicep, terraform:$terraform, dockerfile:$dockerfile, githubActions:$githubActions, azurePipelines:$azurePipelines, azureYamlProvider:$azureYamlProvider}')"
 
-    local comp_signals markers az_ctx azd_ctx auto
+    local comp_signals az_ctx azd_ctx auto
     comp_signals="$(jq -n --argjson aspire "$aspire" --argjson azureFunctions "$azure_functions" --argjson pureStaticSite "$pure_static" \
         '{aspire:$aspire, azureFunctions:$azureFunctions, pureStaticSite:$pureStaticSite}')"
-    markers="$(jq -n --argjson copilotSdk "$copilot_sdk" '{copilotSdk:$copilotSdk}')"
     az_ctx="$(get_az_context)"
     azd_ctx="$(get_azd_context)"
 
@@ -132,12 +130,11 @@ invoke_auto_collect() {
         --argjson detectedFrameworks "$fw_json" \
         --argjson existingInfra "$existing_infra" \
         --argjson componentSignals "$comp_signals" \
-        --argjson codebaseMarkers "$markers" \
         --argjson gitRoot "$git_root" \
         --argjson existingPlan "$existing_plan" \
         --argjson azContext "$az_ctx" \
         --argjson azdContext "$azd_ctx" \
-        '{scannedAtUtc:$scannedAtUtc, fileCount:$fileCount, workspaceEmpty:$workspaceEmpty, detectedLanguages:$detectedLanguages, detectedFrameworks:$detectedFrameworks, existingInfra:$existingInfra, componentSignals:$componentSignals, codebaseMarkers:$codebaseMarkers, gitRoot:$gitRoot, existingPlan:$existingPlan, azContext:$azContext, azdContext:$azdContext}')"
+        '{scannedAtUtc:$scannedAtUtc, fileCount:$fileCount, workspaceEmpty:$workspaceEmpty, detectedLanguages:$detectedLanguages, detectedFrameworks:$detectedFrameworks, existingInfra:$existingInfra, componentSignals:$componentSignals, gitRoot:$gitRoot, existingPlan:$existingPlan, azContext:$azContext, azdContext:$azdContext}')"
 
     # Merge collector output over any existing auto.* keys so that values recorded by
     # step onDone hooks in earlier invocations (e.g. auto.policyConstraints) survive.

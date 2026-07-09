@@ -3,7 +3,6 @@ The script already auto-detected (see `auto.*`):
   - `auto.detectedFrameworks` — react/next/express/flask/django/fastapi/etc.
   - `auto.existingInfra`      — azureYaml/bicep/terraform/dockerfile/githubActions/azurePipelines
   - `auto.componentSignals`   — aspire / azureFunctions / pureStaticSite
-  - `auto.codebaseMarkers`    — copilotSdk (specialized-skill trigger)
 
 Review the code and classify each component. Map signals to component types:
   - React/Vue/Angular in package.json        → SPA Frontend

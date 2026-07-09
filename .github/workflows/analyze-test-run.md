@@ -22,6 +22,7 @@ on:
 if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule'
 
 permissions:
+  copilot-requests: write
   contents: read
   actions: read
   issues: read

@@ -31,7 +31,6 @@ Service → reference / related skill (load README under scripts/references/serv
   - Azure OpenAI → scripts/references/services/foundry/ + microsoft-foundry;  AI Search → +azure-ai
 
 Skill routing for special scenarios:
-  - GitHub Copilot SDK → invoke **azure-hosted-copilot-sdk** (scaffold+config), then resume.
   - Azure Functions → STAY here. When the driver asks for `input.functionsTemplate`, set
     `{ resource, language }` using `scripts/references/services/functions/templates/selection.md`
     (the decision tree maps the intended trigger/binding + language to the template). The DRIVER

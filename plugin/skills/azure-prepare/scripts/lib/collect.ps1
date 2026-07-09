@@ -37,7 +37,6 @@ function Invoke-AutoCollect {
 
     # --- frameworks (best-effort from package.json / python files) ---
     $frameworks = [System.Collections.Generic.List[string]]::new()
-    $copilotSdk = $false
     $pkg = $files | Where-Object { $_.Name -eq 'package.json' } | Select-Object -First 1
     if ($pkg) {
         try {
@@ -49,7 +48,6 @@ function Invoke-AutoCollect {
             foreach ($fw in @('react', 'next', 'express', 'fastify', '@angular/core', 'vue', 'svelte', 'nestjs', '@nestjs/core')) {
                 if ($deps.ContainsKey($fw)) { $frameworks.Add($fw) }
             }
-            if ($deps.ContainsKey('@github/copilot-sdk')) { $copilotSdk = $true }
         }
         catch { }
     }
@@ -146,7 +144,6 @@ function Invoke-AutoCollect {
         detectedFrameworks = @($frameworks | Select-Object -Unique)
         existingInfra    = $existingInfra
         componentSignals = @{ aspire = $aspire; azureFunctions = $azureFunctions; pureStaticSite = $pureStaticSite }
-        codebaseMarkers  = @{ copilotSdk = $copilotSdk }
         gitRoot          = $gitRoot
         existingPlan     = (Test-Path -LiteralPath $planPath)
         azContext        = (Get-AzContext)

@@ -20,9 +20,5 @@
     "diagnostics"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
-  "hooks": {
-    "paths": ["./hooks/copilot-hooks.json"],
-    "exclusive": true
-  }
+  "mcpServers": "./.mcp.json"
 }

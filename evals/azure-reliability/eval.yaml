@@ -27,7 +27,7 @@ tags:
   type: integration
   skill: azure-reliability
 
-config:
+defaults:
   runs: 1
   timeout: "60m"
   executor: integration-test-agent-runner
