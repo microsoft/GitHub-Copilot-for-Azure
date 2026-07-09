@@ -25,7 +25,7 @@ az network watcher test-connectivity --source-resource <vm-resource-id> \
   --dest-address <ip> --dest-port <port> -g <rg>
 ```
 
-> Linux guest NIC commands use VM agent/extensions. Run [Pre-Flight Safety Checks](cannot-connect-to-vm.md#pre-flight-safety-checks) first.
+> Linux guest NIC commands use VM agent/extensions. Run [Pre-Flight Safety Checks](troubleshooting/compute/references/cannot-connect-to-vm.md#pre-flight-safety-checks) first.
 
 ```bash
 az vm repair reset-nic --name <vm> -g <rg> --yes
