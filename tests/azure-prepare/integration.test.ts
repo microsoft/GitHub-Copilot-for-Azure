@@ -1050,6 +1050,30 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       return hasValidationCommand(metadata) || isSkillInvoked(metadata, "azure-validate");
     }
 
+    // Recursively finds the driver's state file (.azure-prepare/prepare-info.json) anywhere under the
+    // workspace. The agent often scaffolds the app into a subdirectory and runs the driver there, so the
+    // state file may not live at the workspace root. Returns the first match found (breadth-first).
+    function findPrepareInfo(rootDir: string): string | undefined {
+      const queue: string[] = [rootDir];
+      while (queue.length > 0) {
+        const dir = queue.shift()!;
+        const candidate = path.join(dir, ".azure-prepare", "prepare-info.json");
+        if (fs.existsSync(candidate)) return candidate;
+        let entries: fs.Dirent[];
+        try {
+          entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch {
+          continue;
+        }
+        for (const entry of entries) {
+          if (!entry.isDirectory()) continue;
+          if (entry.name === "node_modules" || entry.name === ".git" || entry.name === ".azure-prepare") continue;
+          queue.push(path.join(dir, entry.name));
+        }
+      }
+      return undefined;
+    }
+
     // Reads the driver's state file (.azure-prepare/prepare-info.json) and returns what the driver
     // recorded under auto.functionsTemplate, or undefined when the file/record is absent. The driver
     // now fetches the starter template itself (via the Azure MCP CLI), so this is how the test observes
@@ -1058,8 +1082,8 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       workspacePath: string | undefined,
     ): { fetched: boolean; id: string | null; placement: string | null; reason: string | null } | undefined {
       if (!workspacePath) return undefined;
-      const infoPath = path.join(workspacePath, ".azure-prepare", "prepare-info.json");
-      if (!fs.existsSync(infoPath)) return undefined;
+      const infoPath = findPrepareInfo(workspacePath);
+      if (!infoPath) return undefined;
       try {
         const state = JSON.parse(fs.readFileSync(infoPath, "utf-8"));
         const ft = state?.auto?.functionsTemplate;
@@ -1207,6 +1231,9 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
           // 2. The official starter template must have been obtained for this trigger — either
           //    fetched by the driver (recorded in .azure-prepare/prepare-info.json) or, on the legacy
           //    path, via a functions_template_get MCP call. Both satisfy the original intent.
+          //    A driver determination that no template exists for this trigger + infrastructure combo
+          //    (reason "no-template-use-references") also satisfies intent: the catalog has no Terraform
+          //    templates and no generic Durable starter, so falling back to references is correct.
           expect(workspacePath).toBeDefined();
 
           const templateCallCount = countFunctionsTemplateCalls(agentMetadata);
@@ -1221,7 +1248,10 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
               } (${name}, lang: ${language ?? "python"})`
           );
 
-          const templateObtained = templateCallCount >= 1 || driverFetch?.fetched === true;
+          const templateObtained =
+            templateCallCount >= 1 ||
+            driverFetch?.fetched === true ||
+            driverFetch?.reason === "no-template-use-references";
           expect(templateObtained).toBe(true);
 
           // 3. Code indicator: generated function code matches trigger pattern
