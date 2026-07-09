@@ -148,7 +148,7 @@ The same `agent_session_id` can be used to stream container logs (see the [`trou
 | Error | Cause | Resolution |
 |-------|-------|------------|
 | HTTP 401 / 403 on WS upgrade | Missing or stale Entra token | Re-run `az account get-access-token --resource https://ai.azure.com`; ensure the caller has Foundry data-plane RBAC |
-| HTTP 404 on upgrade | Wrong `agent_name` / `project_name` path segment, missing `api-version`, or unsupported region | Verify with `agent_get`; ensure the project/agent path segments are correct and `api-version=v1` is on the URL; confirm region per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
+| HTTP 404 on upgrade | Wrong `{project}` / `{agentName}` path segment, missing `api-version`, or unsupported region | Verify with `agent_get`; ensure the project/agent path segments are correct and `api-version=v1` is on the URL; confirm region per [Hosted Agents region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability) |
 | WS closes immediately after accept | Container handler raised inside the request | Check logs via `azd ai agent monitor`; typical causes are missing env vars or unreachable backend services |
 | Browser cannot connect directly | Browser `WebSocket` cannot set `Authorization` | Run a thin server-side proxy that injects the token before forwarding |
 | Frames received but no response | Wire-format mismatch | Confirm both ends use the same framing (binary vs text, codec, sample rate, schema). The platform does **not** validate or transcode frames |
