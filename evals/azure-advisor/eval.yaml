@@ -22,7 +22,7 @@ tags:
   type: integration
   skill: azure-advisor
 
-config:
+defaults:
   runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner
