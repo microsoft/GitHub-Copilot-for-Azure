@@ -34,3 +34,7 @@ Select SKU based on `context.json.intent.budget`. Cross-reference with `intent.s
 - Single-component app + cost-optimized → cheapest viable SKU (App Service F1, Static Web Apps Free)
 - Simple web app with no DB → $0–$15/month
 - Always output exact SKU codes: "App Service F1 (Free)" not "Free tier"
+
+## Auto-Cheapest for Fast-Track
+
+⛔ **If `prereq-output.json.fastTrackEligible == true` AND `context.json.intent.budget` is unset, treat as `cost-optimized`.** Fast-track means single-component + no DB + no auth + no Dockerfile — by definition this app fits the cheapest tier. Pick App Service F1 (Free) for dynamic apps that need a runtime (Node.js/Python starter templates), or Static Web Apps Free for pure static HTML/JS/CSS with no server-side runtime. The user still sees the SKU + monthly cost in the scaffold approval gate — they can override via "Edit plan" if they want to upgrade. Do NOT ask the user about budget unless they mention cost first (per [intent-gathering.md](../../references/intent-gathering.md)).
