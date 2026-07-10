@@ -62,7 +62,11 @@ function buildItems(skills: FrontmatterSkillResult[]): CategoryItem[] {
       path: skill.path,
     };
     if (typeof skill.description === "string") {
-      metadata.description = sanitize(skill.description);
+      // Store the raw description exactly as parsed from the SKILL.md YAML
+      // frontmatter — no truncation, sanitizing, or whitespace changes — so
+      // consumers (e.g. the Skills dashboard) see the full text and an
+      // accurate character length.
+      metadata.description = skill.description;
     }
 
     return {
