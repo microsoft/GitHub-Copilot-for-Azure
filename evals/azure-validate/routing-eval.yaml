@@ -13,7 +13,7 @@ tags:
   type: integration
   skill: azure-validate
 
-config:
+defaults:
   runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner
