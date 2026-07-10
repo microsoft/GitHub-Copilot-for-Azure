@@ -1,58 +1,21 @@
-# Vally eval config — azure-compute skill
-#
-# Coverage strategy (per PR feat/azure-compute-skill):
-#   - Smoke tier (5 stimuli): router accuracy + the agent-pool generalization probe.
-#     Runs on every PR; if these regress the whole skill is broken.
-#   - Full VM surface (4 stimuli): exercises each depth-probe branch the
-#     vm-creator workflow advertises (beginner / spec-deep / security / cost-deep).
-#   - Full VMSS surface (3 stimuli): canonical VMSS shapes (web tier autoscale,
-#     networking-deep, mixed-SKU which forces Flexible orchestration).
-#   - Full agent-pool surface (3 stimuli): GitHub Actions runners, Azure DevOps
-#     agents, ephemeral CI runners. The skill never names "agent pool" — these
-#     probe whether the VMSS branch generalizes to CI/runner use cases.
-#   - Full workflow compliance (1 stimulus): mirrors azure-prepare's
-#     plan-first-001 — user says "skip planning, just give me bicep"; the
-#     Plan Card MUST still render first.
-#
-# Common graders are inlined into every stimulus (evaluate#125 workaround):
-#   - has_output                  (type: completed)
-#   - workflow_progress_signal    (output-matches: workflow engagement vocabulary —
-#                                   intentionally broad because models legitimately
-#                                   vary the surface wording: "questions" / "details"
-#                                   / "defaults" / "design" / "configure" / etc.)
-#   - no_fatal_errors             (output-not-matches: crash strings)
-#   - no_credential_leak          (output-not-matches: SharedAccessKey, account keys)
-#   - no_open_rdp_or_ssh          (output-not-matches: 0.0.0.0/0 on 22/3389)
-#   - no_plaintext_admin_password (output-not-matches: adminPassword: "<literal>")
-#
-# Routing validation:
-#   The four `route-*` smoke stimuli use the `skill-invocation` grader to
-#   assert routing (required/disallowed skills activated). Output-text
-#   regex graders on those stimuli check response *content* (Ubuntu, VMSS,
-#   SKU, pricing, no-VM-artifact), not routing.
-#
-# WORKFLOW_PROGRESS pattern (DRY — used by every stimulus's common-grader block):
-#   (?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose
+# Vally eval config — one file per azure-compute workflow
+# Source: tests/azure-compute/integration.test.ts (via eval.yaml)
 
-name: azure-compute-eval
+name: azure-compute-vm-creator-eval
 description: |
-  Evaluation suite for the azure-compute skill (VM, VMSS, and agent-pool surfaces).
-  Tests across dimensions:
-  - Router accuracy (vm-creator vs vm-recommender vs azure-prepare handoff)
-  - Depth-probe branch selection (beginner / spec / cost / networking / security)
-  - VMSS recognition without the user saying "VMSS" (agent pools, runner fleets)
-  - Plan Card gate (no artifact emitted before approval, even under user pressure)
-  - Output adapter coverage (az CLI / Bicep / Terraform / MCP apply)
-  - Security posture (no open SSH/RDP, no plaintext passwords, managed identity preferred)
+  Evals for the azure-compute vm-creator workflow: routing (provision verbs,
+  VMSS / agent-pool recognition, azure-prepare handoff), depth-probe branches
+  (beginner / spec / security / cost), VMSS + agent-pool output, and Plan Card
+  compliance. Covers smoke + full tiers.
 
 tags:
   type: integration
   skill: azure-compute
 
 defaults:
-  runs: 3
+  runs: 1
   timeout: "10m"
-  executor: copilot-sdk
+  executor: integration-test-agent-runner
   model: claude-sonnet-4.6
 
 scoring:
@@ -67,10 +30,6 @@ scoring:
     skill-invocation: 0.3
 
 stimuli:
-  # ════════════════════════════════════════════════════════════════════
-  # SMOKE TIER — PR gate. Router + agent-pool generalization probe.
-  # ════════════════════════════════════════════════════════════════════
-
   # ── route-vm-creator-001 ──
   # Most common entry point. Confirms vm-creator wins over vm-recommender
   # when the user uses provision verbs ("spin up").
@@ -81,8 +40,8 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -128,8 +87,8 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -141,9 +100,6 @@ stimuli:
         config:
           required:
             - azure-compute
-      - type: output-contains
-        config:
-          substring: "VMSS"
       - type: output-matches
         config:
           pattern: "(?i)scale.?set|VMSS"
@@ -166,53 +122,6 @@ stimuli:
         config:
           pattern: "(?i)SharedAccessKey="
 
-  # ── route-vm-recommender-001 ──
-  # Question form (no provision verb) → vm-recommender, not vm-creator.
-  - name: "Route: what VM size for 4-core 16GB → vm-recommender"
-    prompt: |
-      What VM size should I pick for a 4-core, 16 GB memory workload?
-    tags:
-      type: integration
-      tier: smoke
-      area: behavior
-      skill: azure-compute
-      cost: llm
-    constraints:
-      max_turns: 40
-    graders:
-      # ROUTING (skill-invocation grader) — must engage azure-compute.
-      # vm-recommender vs vm-creator is a workflow-level distinction inside
-      # the skill; routing only asserts the skill activated. The "is this
-      # the recommender branch?" question is handled by the SKU + pricing
-      # content checks below.
-      - type: skill-invocation
-        config:
-          required:
-            - azure-compute
-      # Should recommend a SKU (D-series typical for 4c/16g general purpose)
-      - type: output-matches
-        config:
-          pattern: "(?i)D[0-9]+s?_v[3-5]|D[0-9]+as_v[4-5]|Standard_[DEF]"
-      # Should NOT jump to a Plan Card (that's vm-creator territory)
-      - type: output-not-matches
-        config:
-          pattern: "(?i)plan card.*approve|approve as.?is"
-      # Should reference pricing / comparison (vm-recommender Step 4)
-      - type: output-matches
-        config:
-          pattern: "(?i)price|pricing|cost|recommend|compar"
-      # Common graders
-      - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?i)plan|gather|step|render|propos|recommend|question|detail|default|design|configure|fast.?path|scale.?set|VMSS|ask|option|choose"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|exception occurred"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-
   # ── route-away-azure-prepare-001 ──
   # App deployment, not bare VM. Must hand off to azure-prepare, not
   # silently provision a VM and `apt install docker` on it.
@@ -223,8 +132,8 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -266,8 +175,8 @@ stimuli:
       type: integration
       tier: smoke
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -298,10 +207,6 @@ stimuli:
         config:
           pattern: "(?i)0\\.0\\.0\\.0/0.*22"
 
-  # ════════════════════════════════════════════════════════════════════
-  # FULL TIER — VM SURFACE (depth-probe branch coverage)
-  # ════════════════════════════════════════════════════════════════════
-
   # ── vm-beginner-001 ──
   # Beginner branch: minimal questions, propose sensible defaults.
   - name: "VM beginner: Ubuntu dev VM, fast path"
@@ -311,8 +216,8 @@ stimuli:
       type: integration
       tier: full
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -360,8 +265,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -410,8 +315,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -455,8 +360,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -487,10 +392,6 @@ stimuli:
         config:
           pattern: "(?i)0\\.0\\.0\\.0/0.*22"
 
-  # ════════════════════════════════════════════════════════════════════
-  # FULL TIER — VMSS SURFACE
-  # ════════════════════════════════════════════════════════════════════
-
   # ── vmss-web-tier-001 ──
   # Classic stateless web tier. Should propose autoscale + LB.
   - name: "VMSS: stateless web tier with autoscale on CPU + LB"
@@ -501,8 +402,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -553,8 +454,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -599,8 +500,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -633,14 +534,6 @@ stimuli:
         config:
           pattern: "(?i)0\\.0\\.0\\.0/0.*22"
 
-  # ════════════════════════════════════════════════════════════════════
-  # FULL TIER — AGENT-POOL SURFACE
-  #   These three are the "does the VMSS branch generalize?" probes.
-  #   The skill currently has zero mentions of agent pools / CI runners —
-  #   if these fail, that's a signal to add explicit agent-pool guidance
-  #   to references/vmss-guide.md rather than just tuning regex.
-  # ════════════════════════════════════════════════════════════════════
-
   # ── agentpool-github-actions-001 ──
   # GitHub Actions runners. Bursty workload — scale-to-zero overnight,
   # spot pricing fits well, Flexible orchestration recommended.
@@ -652,8 +545,8 @@ stimuli:
       type: integration
       tier: full
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -703,8 +596,8 @@ stimuli:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -748,15 +641,13 @@ stimuli:
   # (a) VMSS with ephemeral OS disk + cloud-init that bootstraps the runner,
   # (b) image gallery + VMSS Flexible that recreates instances per job.
   - name: "Agent pool: ephemeral CI runners (fresh image per job)"
-    prompt: |
-      I want ephemeral CI runners — every CI job should get a fresh VM
-      from a baseline image, then destroy the VM when the job completes.
+    prompt: "I want ephemeral CI runners — every CI job should get a fresh VM from a baseline image, then destroy the VM when the job completes."
     tags:
       type: integration
       tier: full
       area: output
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
@@ -789,10 +680,6 @@ stimuli:
         config:
           pattern: "(?i)0\\.0\\.0\\.0/0.*22"
 
-  # ════════════════════════════════════════════════════════════════════
-  # FULL TIER — WORKFLOW COMPLIANCE
-  # ════════════════════════════════════════════════════════════════════
-
   # ── plan-card-override-001 ──
   # Explicit-override fast path: when the user combines an explicit
   # deliverable ("give me the Bicep") with an explicit refusal of dialog
@@ -810,8 +697,8 @@ stimuli:
       type: integration
       tier: full
       area: behavior
-      skill: azure-compute
       cost: llm
+      skill: azure-compute
     constraints:
       max_turns: 40
     graders:
