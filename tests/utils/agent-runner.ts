@@ -34,9 +34,39 @@ const __dirname = path.dirname(__filename);
  * is not available inside Jest's ESM VM context (even with
  * `--experimental-vm-modules`). We replicate the same path arithmetic here
  * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ *
+ * Rather than hard-coding the entry filename, we read the package's `bin`
+ * field so we stay resilient to upstream renames (e.g. `index.js` →
+ * `npm-loader.js` in @github/copilot@1.0.67). We fall back to the known
+ * filenames if the manifest cannot be read.
  */
 function getBundledCliPath(): string {
-  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+  const pkgDir = path.resolve(__dirname, "../node_modules/@github/copilot");
+
+  const candidates: string[] = [];
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(pkgDir, "package.json"), "utf8")
+    ) as { bin?: string | Record<string, string> };
+    const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.copilot;
+    if (bin) {
+      candidates.push(bin);
+    }
+  } catch {
+    // Fall through to the well-known filenames below.
+  }
+  candidates.push("npm-loader.js", "index.js");
+
+  for (const candidate of candidates) {
+    const candidatePath = path.resolve(pkgDir, candidate);
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  // Last resort: return the conventional path so the caller surfaces a clear
+  // spawn error instead of a silent undefined.
+  return path.resolve(pkgDir, "npm-loader.js");
 }
 
 interface TokenUsage {
@@ -80,6 +110,12 @@ export interface AgentMetadata {
    * Token usage and cost data extracted from assistant.usage and session.shutdown events.
    */
   tokenUsage?: TokenUsage;
+
+  /**
+   * Number of assistant turns that started during the run,
+   * counted from `assistant.turn_start` events.
+   */
+  turnCount: number;
 
   /**
    * Map from tool name to the number of times that tool was invoked during the run.
@@ -164,6 +200,7 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  env?: Record<string, string>;
   model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
@@ -184,6 +221,13 @@ export interface AgentRunConfig {
    * If specified, only the skills in this array will be included. This option overrides the required skills specified in the {@link requiredSkills}.
    */
   includeSkills?: string[];
+
+  /**
+   * Maximum number of assistant turns allowed before the run is aborted.
+   * Each `assistant.turn_start` event counts as one turn.
+   * If undefined, there is no turn limit.
+   */
+  maxTurns?: number;
 
   /**
    * Number of milliseconds as timeout for follow ups.
@@ -799,13 +843,14 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
+    let isAborted = false;
 
     const entry: RunnerCleanup = { config: runConfig };
     currentCleanups.push(entry);
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = runConfig.preserveWorkspace;
 
-    const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], turnCount: 0, toolCounts: {}, skillFiles: {} };
     entry.agentMetadata = agentMetadata;
 
     try {
@@ -840,7 +885,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         }),
         env: {
           ...process.env,
-          ...envVar
+          ...envVar,
+          ...runConfig.env
         }
       }) as CopilotClient;
       entry.client = client;
@@ -865,20 +911,23 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
+      const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
-        mcpServers: {
-          azure: {
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "@azure/mcp", "server", "start"],
-            tools: ["*"]
+        ...(disableAzureMcp ? {} : {
+          mcpServers: {
+            azure: {
+              type: "stdio",
+              command: "npx",
+              args: ["-y", "@azure/mcp", "server", "start"],
+              tools: ["*"]
+            }
           }
-        },
+        }),
         systemMessage: runConfig.systemPrompt,
         // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
         enableSessionTelemetry: false
@@ -901,10 +950,35 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
           agentMetadata.events.push(event);
 
+          if (event.type === "assistant.turn_start") {
+            agentMetadata.turnCount++;
+            if (runConfig.maxTurns !== undefined && agentMetadata.turnCount > runConfig.maxTurns) {
+              agentMetadata.testComments.push(
+                `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
+              );
+              isComplete = true;
+              isAborted = true;
+              try {
+                await session.abort();
+              } catch (error) {
+                console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+              } finally {
+                resolve();
+              }
+              return;
+            }
+          }
+
           if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
-            resolve();
-            void session.abort();
+            isAborted = true;
+            try {
+              await session.abort();
+            } catch (error) {
+              console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+              resolve();
+            }
             return;
           }
         });
@@ -915,7 +989,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      for (const followUpPrompt of runConfig.followUp ?? []) {
+      // Skip follow-ups when the run was aborted.
+      for (const followUpPrompt of (runConfig.followUp ?? [])) {
+        if (isAborted) break;
         isComplete = false;
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
@@ -1013,7 +1089,10 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
-      if (!isTest()) {
+      // Jest integration tests clean up in afterEach so reports can be written first.
+      // Non-Jest test runners such as Vally must clean up here; otherwise Copilot CLI
+      // child processes keep the Node process alive after results are written.
+      if (!isTest() || !useJest()) {
         await cleanup();
       }
     }

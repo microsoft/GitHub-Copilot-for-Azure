@@ -9,7 +9,7 @@ Use this when iterating on a hosted agent before deploying.
 > ```
 > If you already ran `azd provision`, extract these from `azd env get-values`.
 >
-> **If no project endpoint is available yet**, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
+> 🚦 **If no project endpoint is configured (not in the message, `azd env`, or `.env`) and the user hasn't asked to create one, stop and ask them to pick an existing project or confirm creating a new one — don't silently select or `azd provision` one.** Once they choose, follow [deploy.md Step 2](../../deploy/deploy.md#step-2----provision-azure-resources-one-time-per-env) to provision or resolve the project, then return here for local iteration before deploying the agent.
 >
 > **Critical: keep `.env` and `azd env` in sync.** `azd ai agent run` injects the active `azd env` values into the agent process before Python loads `.env`. Many samples use `load_dotenv(override=False)`, so an existing process environment value wins over `.env`. If you change the project endpoint or model deployment, update both `.env` and `azd env`:
 > ```bash
@@ -21,7 +21,7 @@ Use this when iterating on a hosted agent before deploying.
 
 ## Prepare the local environment
 
-For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and `agent.yaml` (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
+For Python agents, prepare the environment from the **agent's service source directory** -- the folder that contains `requirements.txt` and the agent source (typically `<repo>/src/<service-name>/`, not the azd project root). `azd ai agent run` resolves the venv relative to this folder; a `.venv` created in the project root is ignored and azd silently creates a second one without `uv`.
 
 1. `cd` into the service source directory.
 2. Create a venv, for example `python -m venv .venv`.
@@ -42,16 +42,16 @@ azd ai agent run
 What this does:
 
 1. Resolves the agent service from `azure.yaml` (auto-picks when only one exists).
-2. Detects the project type (Python, .NET, Node.js) from files in the service source dir.
+2. Detects the project type (Python, .NET) from files in the service source dir.
 3. Installs dependencies if needed. For Python, `azd ai agent run` installs `requirements.txt` itself and uses `uv` from the active local environment when available.
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens **Agent Inspector** in your browser (unless `--no-inspector`).
 
-> First startup takes 30-60 seconds. Wait before sending the first invocation.
+> Wait for the ready log line before sending the first invocation. Poll the log at short intervals; do not pre-sleep on a fixed duration.
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the "Agent ready" message, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
+For headless or CI runs, pass `--no-inspector` and start the local server in a managed background session that later steps can monitor and stop. Wait for the ready log line, invoke it from a second command, then stop the same background session before deploying or leaving a temporary workspace.
 
 Do **not** start `azd ai agent run` as a detached process that you cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
 
@@ -126,7 +126,7 @@ After the local invocation completes, stop the `azd ai agent run` process you st
 
 Local dev validates code shape; remote validates infra + identity + Foundry binding. Move to deploy when:
 
-- You changed `agent.yaml` `model:`, `tools:`, `connections:`, or `protocols:`. Those only take effect on the deployed agent.
+- You changed the agent's `model`, `tools`, `connections`, or `protocols` in `azure.yaml`. Those only take effect on the deployed agent.
 - You need to test against real Foundry connections (search indexes, Bing, MCP, A2A) that have no local mock.
 - You are ready to publish a new immutable agent version.
 

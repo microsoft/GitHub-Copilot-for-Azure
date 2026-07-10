@@ -25,11 +25,12 @@ This skill includes specialized sub-skills for specific workflows. **Use these i
 |-----------|-------------|-----------|
 | **deploy** | Deploy hosted agents to Foundry, smoke-test a deployment, create or update prompt agents, and manage agent versions and multi-environment deploys. | [deploy](foundry-agent/deploy/deploy.md) |
 | **invoke** | Send messages to an agent, single or multi-turn conversations | [invoke](foundry-agent/invoke/invoke.md) |
+| **routine** | Schedule or event-trigger Foundry agents with routines; use `azd` for CRUD, enable/disable, manual dispatch, and viewing past runs, or define routines in `azure.yaml`. | [routine](foundry-agent/routine/routine.md) |
 | **invocations-ws** | Build, deploy, and connect to hosted agents that speak the `invocations_ws` duplex WebSocket protocol — voice agents, real-time streams, and signaling for out-of-band media transports. | [invocations-ws](foundry-agent/invocations-ws/invocations-ws.md) |
 | **observe** | Evaluate agent quality, run batch evals, analyze failures, optimize prompts, improve agent instructions, compare versions, set up CI/CD monitoring, and enable continuous production evaluation | [observe](foundry-agent/observe/observe.md) |
 | **trace** | Query traces, analyze latency/failures, correlate eval results to specific responses via App Insights `customEvents` | [trace](foundry-agent/trace/trace.md) |
 | **troubleshoot** | View hosted agent logs, query telemetry, diagnose failures | [troubleshoot](foundry-agent/troubleshoot/troubleshoot.md) |
-| **create (quick start)** | Create a new hosted Foundry agent from scratch end-to-end — scaffold, provision a new Foundry project, deploy, and smoke-test. Opinionated happy-path that accepts common overrides (language, region, sample, topic, existing project, existing model). For anything not covered by the quickstart, use **create**. | [create/quick-start-hosted.md](foundry-agent/create/quick-start-hosted.md) |
+| **create (quick start)** | Create a new hosted Foundry agent from scratch end-to-end — scaffold, provision or use an existing Foundry project, deploy, and smoke-test. Opinionated happy-path that accepts common overrides (language, region, sample, topic, existing project, existing model). For anything not covered by the quickstart, use **create**. | [create/quick-start-hosted.md](foundry-agent/create/quick-start-hosted.md) |
 | **create** | Use when the standard end-to-end happy path doesn't fit — lifting existing agent code into the project, deploying outside the default code path, wiring connections at scaffold time, advanced setup, or recovering from a failed quickstart run. | [create](foundry-agent/create/create-hosted.md) |
 | **agent-optimizer** | Make existing Python hosted-agent code optimization-ready, configure eval.yaml, run Agent Optimizer jobs, apply candidates locally, and deploy through azd after review. | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) |
 | **eval-datasets** | Harvest production traces into evaluation datasets, manage dataset versions and splits, track evaluation metrics over time, detect regressions, and maintain full lineage from trace to deployment. Use for: create dataset from traces, dataset versioning, evaluation trending, regression detection, dataset comparison, eval lineage. | [eval-datasets](foundry-agent/eval-datasets/eval-datasets.md) |
@@ -72,6 +73,7 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 | Deploy an agent (code already exists) | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
 | Update/redeploy an agent after code changes | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
 | Invoke/test/chat with an agent | invoke |
+| Schedule/event-trigger an agent, or CRUD/enable/disable/dispatch a routine | routine |
 | Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
 | Evaluate and optimize agent (full loop) | observe |
 | Enable continuous evaluation monitoring | observe (Step 6: CI/CD & Monitoring) |
@@ -180,7 +182,7 @@ Layer sources in this order:
 1. Explicit user input and values already selected in the session
 2. azd environment values for deployment context
 3. `.foundry/agent-metadata*.yaml` overlay values and remote suite/cache references
-4. `agent.yaml` and `eval.yaml` local source configuration
+4. `azure.yaml` and `eval.yaml` local source configuration
 5. User prompts for anything still missing
 
 If azd and metadata both provide the same value and they differ, stop and ask which source is authoritative. If they match, use the azd value and avoid rewriting the duplicate on future metadata writes.
@@ -188,7 +190,7 @@ If azd and metadata both provide the same value and they differ, stop and ask wh
 | Effective Value | Preferred Source | Used By |
 |-----------------|------------------|---------|
 | Project endpoint | azd env | deploy, invoke, observe, trace, troubleshoot |
-| Agent name/version | azd agent variables, then `agent.yaml` | invoke, observe, trace, troubleshoot |
+| Agent name/version | azd agent variables, then `azure.yaml` | invoke, observe, trace, troubleshoot |
 | ACR | azd env | deploy |
 | Evaluation suites and cache paths | `.foundry/agent-metadata*.yaml` | observe, eval-datasets |
 | Local seed dataset/evaluator intent | `eval.yaml` | observe, eval-datasets |
