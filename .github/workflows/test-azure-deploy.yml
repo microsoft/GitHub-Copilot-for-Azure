@@ -8,6 +8,7 @@ name: Integration Tests - azure-deploy
 permissions:
   id-token: write
   contents: read
+  copilot-requests: write
 
 on:
   workflow_dispatch:
@@ -45,9 +46,6 @@ on:
         required: false
         type: boolean
         default: false
-    secrets:
-      COPILOT_CLI_TOKEN:
-        required: true
 
 jobs:
   setup:
@@ -167,17 +165,12 @@ jobs:
           npm ci --ignore-scripts
           npm run build
       
-      # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
-      # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
-      # As a known issue, when the permission of the token doesn't grant sufficient access,
-      # the agent will hang instead of giving an error.
-      # If you see the agent hang indefinitely, try refreshing the access token.
-      # See https://github.com/github/copilot-sdk/issues/343 for more details.
+      # github.token(aka. GITHUB_TOKEN) is granted permission to make CAPI requests by having the copilot-requests permission
       - name: Setup Copilot CLI
         id: setup-copilot-cli
         uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
         with:
-          token: ${{ secrets.COPILOT_CLI_TOKEN }}
+          token: ${{ github.token }}
 
       - name: Run tests – ${{ matrix.test-group }}
         env:
