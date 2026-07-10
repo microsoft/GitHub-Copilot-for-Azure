@@ -22,7 +22,7 @@ tags:
   type: integration
   skill: azure-enterprise-infra-planner
 
-config:
+defaults:
   runs: 1
   timeout: "10m"
   executor: integration-test-agent-runner
@@ -31,13 +31,15 @@ config:
 scoring:
   threshold: 0.8
   weights:
-    completed: 1.0
-    file-exists: 1.5
-    file-matches: 1.0
-    output-contains: 0.5
-    output-matches: 1.0
-    output-not-matches: 1.0
-    skill-invocation: 1.5
+    completed: 0.1
+    file-exists: 0.1
+    file-matches: 0.1
+    file-not-exists: 0.1
+    output-contains: 0.1
+    output-matches: 0.1
+    output-not-matches: 0.1
+    json-object-rules: 0.1
+    skill-invocation: 0.2
 
 stimuli:
   # ── invoke-simple-plan ──

@@ -9,7 +9,7 @@ description: |
 tags:
   skill: microsoft-foundry
 
-config:
+defaults:
   runs: 5
   timeout: "30m"
   executor: integration-test-agent-runner

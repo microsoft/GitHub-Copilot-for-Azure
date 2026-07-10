@@ -21,7 +21,7 @@ tags:
   type: integration
   skill: airunway-aks-setup
 
-config:
+defaults:
   runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner

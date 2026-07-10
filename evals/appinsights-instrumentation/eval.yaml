@@ -17,7 +17,7 @@ tags:
   type: integration
   skill: appinsights-instrumentation
 
-config:
+defaults:
   runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner

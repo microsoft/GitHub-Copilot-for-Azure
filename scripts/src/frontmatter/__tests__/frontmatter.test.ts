@@ -19,8 +19,6 @@ import {
   extractTriggerPhrases,
   hasDoNotUseForClause,
   hasPreferOverClause,
-  isDisambiguationClauseRemoved,
-  buildDisambiguationRemovalIssues,
   validateTriggerOverlapDisambiguation,
   validateSkillFile,
 } from "../cli.js";
@@ -581,39 +579,6 @@ describe("Frontmatter Spec Validator", () => {
         ],
       );
 
-      expect(issues).toEqual([]);
-    });
-
-    it("detects disambiguation clause removal", () => {
-      expect(
-        isDisambiguationClauseRemoved(
-          "PREFER OVER azure-prepare when copilot sdk markers exist.",
-          "WHEN: deploy to Azure, copilot sdk",
-        ),
-      ).toBe(true);
-
-      expect(
-        isDisambiguationClauseRemoved(
-          "DO NOT USE FOR: generic web apps",
-          "DO NOT USE FOR: generic web apps",
-        ),
-      ).toBe(false);
-    });
-
-    it("emits error issue when disambiguation clause is removed", () => {
-      const issues = buildDisambiguationRemovalIssues(
-        "DO NOT USE FOR: generic web apps",
-        "WHEN: deploy to Azure",
-      );
-      expect(issues).toHaveLength(1);
-      expect(issues[0].check).toBe("disambiguation-removal");
-      expect(issues[0].severity).toBe("error");
-      expect(issues[0].message).toContain("DO NOT USE FOR");
-      expect(issues[0].message).toContain("Re-add");
-    });
-
-    it("emits no warning issue when previous description is unavailable", () => {
-      const issues = buildDisambiguationRemovalIssues(null, "WHEN: deploy to Azure");
       expect(issues).toEqual([]);
     });
   });

@@ -33,7 +33,7 @@
     "@azure/identity": "^4.13.1",
     "@eslint/js": "^10.0.0",
     "@github/copilot-sdk": "^1.0.5",
-    "@microsoft/vally-cli": "^0.6.0",
+    "@microsoft/vally-cli": "^0.7.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.9.3",
     "cross-env": "^10.1.0",

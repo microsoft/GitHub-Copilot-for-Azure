@@ -1,0 +1,804 @@
+# Vally e2e eval suite for azure-prepare
+# Source: tests/azure-prepare/integration.test.ts
+# Covers: prepare-deployment, aspire-brownfield, entra-sql-auth,
+#         durable-task-scheduler, and functions-template-mcp suites.
+#
+# These tests let the agent run to file generation and check workspace outputs.
+# earlyTerminate stops runs before actual Azure provisioning (azd up/validate).
+# NOTE: earlyTerminate tests must NOT use the `completed` grader.
+#
+# Grader limitations vs Jest originals:
+#  - functions_template_get tool-call count: not expressible without a custom
+#    grader; approximated via file-matches on generated code content.
+#  - administratorLoginPassword absence in Bicep: no file-not-matches grader;
+#    approximated via output-not-matches (agent shouldn't mention it in output).
+
+name: azure-prepare-e2e-eval
+description: |
+  End-to-end evaluation suite for the azure-prepare skill.
+  Tests file generation quality and correctness across:
+  - IaC recipe selection (AZD+Bicep, Terraform, standalone Bicep)
+  - .NET Aspire brownfield (azure.yaml services section)
+  - Entra-only SQL authentication (no admin password in Bicep)
+  - Durable Task Scheduler infrastructure
+  - Azure Functions MCP template usage (14 trigger types, Python + TypeScript)
+
+tags:
+  type: integration
+  skill: azure-prepare
+
+defaults:
+  runs: 1
+  timeout: "30m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+stimuli:
+
+  # ═══════════════════════════════════════════
+  # prepare-deployment
+  # Source: describe("prepare-deployment")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates project files for static whiteboard web app before validation"
+  - name: "Whiteboard App Plan Ready"
+    prompt: "Create a static whiteboard web app and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: output
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/deployment-plan.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "creates correct files for AZD with Bicep recipe"
+  - name: "AZD Bicep Recipe"
+    prompt: "Create a simple todo web app and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/deployment-plan.md"
+      - type: file-exists
+        config:
+          path: "**/azure.yaml"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-not-exists
+        config:
+          path: "**/*.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "creates correct files for Terraform recipe"
+  - name: "Terraform Recipe"
+    prompt: "Create a simple todo web app and deploy it to Azure using azd with Terraform as the infrastructure provider."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/deployment-plan.md"
+      - type: file-exists
+        config:
+          path: "**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "**/*.bicep"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "creates correct files for standalone Bicep recipe"
+  - name: "Standalone Bicep Recipe"
+    prompt: "Create a simple todo web app and deploy it to Azure using azd with standalone Bicep templates."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/deployment-plan.md"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-not-exists
+        config:
+          path: "**/azure.yaml"
+      - type: file-not-exists
+        config:
+          path: "**/*.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # aspire-brownfield
+  # Source: describe("aspire-brownfield")
+  # ═══════════════════════════════════════════
+
+  # Jest: "generates azure.yaml with services section for Aspire projects"
+  - name: "Aspire With Azure Functions - Services Section"
+    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/aspire-with-azure-functions
+        - git checkout -q FETCH_HEAD
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/azure.yaml"
+      # Must have services: section (not just name + metadata)
+      - type: file-matches
+        config:
+          path: "**/azure.yaml"
+          pattern: "(?i)services:"
+      # AppHost project must be referenced as the service entry point
+      - type: file-matches
+        config:
+          path: "**/azure.yaml"
+          pattern: "AppHost"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "sets correct docker context for Aspire container-build sample"
+  - name: "Aspire Container Build - Services Section"
+    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/container-build
+        - git checkout -q FETCH_HEAD
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/azure.yaml"
+      - type: file-matches
+        config:
+          path: "**/azure.yaml"
+          pattern: "(?i)services:"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # entra-sql-auth
+  # Source: describe("entra-sql-auth")
+  # NOTE: No file-not-matches grader available. The absence of
+  #   administratorLoginPassword is approximated via output-not-matches.
+  # ═══════════════════════════════════════════
+
+  # Jest: "generates Entra-only SQL auth for ASP.NET Core EF Core app (not SQL admin password)"
+  - name: "Entra-Only SQL Auth"
+    prompt: "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment using azd. Use the eastus2 region and my current subscription."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      # Must use Entra-only authentication
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)azureADOnlyAuthentication\\s*:\\s*true"
+      # Connection string must use Active Directory auth
+      - type: file-matches
+        config:
+          path: "**/*"
+          pattern: "(?i)Authentication\\s*=\\s*Active\\s+Directory\\s+(Default|Managed\\s+Identity)"
+      # Must NOT propose legacy SQL admin password auth
+      - type: output-not-matches
+        config:
+          pattern: "(?i)administratorLoginPassword"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # durable-task-scheduler
+  # Source: describe("durable-task-scheduler")
+  # ═══════════════════════════════════════════
+
+  # Jest: "generates Durable Task Scheduler infrastructure and workflow code for a workflow app"
+  - name: "Durable Task Scheduler Infrastructure"
+    prompt: "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Use azd with Bicep — generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-exists
+        config:
+          path: "**/deployment-plan.md"
+      - type: file-exists
+        config:
+          path: "**/azure.yaml"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "Microsoft\\.DurableTask/schedulers"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "Microsoft\\.DurableTask/schedulers/taskHubs"
+      # DTS Contributor role definition ID
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "0ad04412-c4d5-4796-b79c-f76d14c8d402"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)ipAllowlist"
+      - type: file-matches
+        config:
+          path: "**/*"
+          pattern: "DURABLE_TASK_SCHEDULER_CONNECTION_STRING"
+      - type: file-not-exists
+        config:
+          path: "**/*.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # functions-template-mcp
+  # Source: describe("functions-template-mcp") / triggerTests test.each
+  #
+  # The functions_template_get tool-call check from Jest cannot be expressed
+  # with built-in vally graders. It is approximated by file-matches on
+  # generated code content (codeIndicator from the original test).
+  # ═══════════════════════════════════════════
+
+  # Jest: "calls functions_template_get for HTTP trigger (base)"
+  - name: "Functions MCP - HTTP Trigger (Python)"
+    prompt: "Create a Python Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "app\\.(route|function_name)|@app\\.route|func\\.FunctionApp"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Timer trigger"
+  - name: "Functions MCP - Timer Trigger (Python)"
+    prompt: "Create a Python Azure Functions app with a timer trigger that runs every 5 minutes and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)timer_trigger|TimerTrigger|schedule"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Cosmos DB trigger"
+  - name: "Functions MCP - Cosmos DB Trigger (Python)"
+    prompt: "Create a Python Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)cosmos_db_trigger|CosmosDBTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)cosmos|Microsoft\\.DocumentDB"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for SQL trigger"
+  - name: "Functions MCP - SQL Trigger (Python)"
+    prompt: "Create a Python Azure Functions app with a SQL database trigger and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)sql_trigger|SqlTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.Sql"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Blob Storage / Event Grid trigger"
+  - name: "Functions MCP - Blob Storage Event Grid Trigger (Python)"
+    prompt: "Create a Python Azure Functions app with Blob storage trigger using Event Grid and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)blob_trigger|BlobTrigger|event_grid"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.Storage|EventGrid"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Service Bus trigger"
+  - name: "Functions MCP - Service Bus Trigger (Python)"
+    prompt: "Create a Python Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)service_bus_queue_trigger|ServiceBusTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.ServiceBus|ServiceBusConnection"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Event Hubs trigger"
+  - name: "Functions MCP - Event Hubs Trigger (Python)"
+    prompt: "Create a Python Azure Functions app with an Event Hub trigger for streaming events and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)event_hub_message_trigger|EventHubTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.EventHub|EventHubConnection"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Durable Functions"
+  - name: "Functions MCP - Durable Functions (Python)"
+    prompt: "Create a Python Azure Durable Functions app with an orchestrator pattern and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)orchestration_trigger|OrchestrationTrigger|DurableClient"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)DurableTask|durable"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for MCP server on Functions"
+  - name: "Functions MCP - MCP Server (Python)"
+    prompt: "Create a Python Azure Functions MCP server that exposes tools over HTTP and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)jsonrpc|mcp|tools/list|tools/call"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for HTTP trigger with Terraform"
+  - name: "Functions MCP - HTTP Trigger Terraform (Python)"
+    prompt: "Create a Python Azure Functions HTTP API and deploy it to Azure using azd with Terraform infrastructure."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "app\\.(route|function_name)|@app\\.route|func\\.FunctionApp"
+      - type: file-exists
+        config:
+          path: "**/*.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Cosmos DB trigger with Terraform"
+  - name: "Functions MCP - Cosmos DB Trigger Terraform (Python)"
+    prompt: "Create a Python Azure Functions app with Cosmos DB change feed trigger and deploy it to Azure using azd with Terraform."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.py"
+          pattern: "(?i)cosmos_db_trigger|CosmosDBTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.tf"
+      - type: file-matches
+        config:
+          path: "**/*.tf"
+          pattern: "(?i)cosmos|azurerm_cosmosdb"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for HTTP trigger (TypeScript)"
+  - name: "Functions MCP - HTTP Trigger (TypeScript)"
+    prompt: "Create a TypeScript Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.ts"
+          pattern: "(?i)app\\.(http|get|post)|httpTrigger|HttpRequest"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Service Bus trigger (TypeScript)"
+  - name: "Functions MCP - Service Bus Trigger (TypeScript)"
+    prompt: "Create a TypeScript Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.ts"
+          pattern: "(?i)app\\.serviceBusQueue|serviceBusTrigger|ServiceBusQueueTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.ServiceBus|ServiceBusConnection"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "calls functions_template_get for Cosmos DB trigger (TypeScript)"
+  - name: "Functions MCP - Cosmos DB Trigger (TypeScript)"
+    prompt: "Create a TypeScript Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: file-matches
+        config:
+          path: "**/*.ts"
+          pattern: "(?i)app\\.cosmosDB|cosmosDBTrigger|CosmosDBTrigger"
+      - type: file-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)cosmos|Microsoft\\.DocumentDB"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
