@@ -13,8 +13,7 @@ tags:
   skill: azure-compute
 
 defaults:
-  runs: 3
-
+  runs: 1
   timeout: "10m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6

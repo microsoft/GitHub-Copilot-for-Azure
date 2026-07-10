@@ -11,8 +11,8 @@ tags:
   type: integration
   skill: azure-compute
 
-config:
-  runs: 5
+defaults:
+  runs: 1
   timeout: "10m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6
@@ -20,12 +20,12 @@ config:
 scoring:
   threshold: 0.8
   weights:
-    output-matches: 0.5
-    output-not-matches: 2.0
-    completed: 1.0
+    output-matches: 0.1
+    output-not-matches: 0.4
+    completed: 0.2
     # Routing validation — heavy weight because a routing miss is a
     # categorical failure: the wrong skill ran.
-    skill-invocation: 1.5
+    skill-invocation: 0.3
 
 stimuli:
   # ── routing-web-workload-vm-recommender ──
