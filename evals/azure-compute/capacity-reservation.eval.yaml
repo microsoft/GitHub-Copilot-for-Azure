@@ -1,0 +1,77 @@
+# Vally eval config — one file per azure-compute workflow
+# Source: tests/azure-compute/integration.test.ts (via eval.yaml)
+
+name: azure-compute-capacity-reservation-eval
+description: |
+  Routing evals for the azure-compute capacity-reservation workflow: Capacity
+  Reservation Group creation and VM/CRG association.
+
+tags:
+  type: integration
+  skill: azure-compute
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    output-not-matches: 2.0
+    completed: 1.0
+    # Routing validation — heavy weight because a routing miss is a
+    # categorical failure: the wrong skill ran.
+    skill-invocation: 1.5
+
+stimuli:
+  # ── routing-capacity-reservation-creation ──
+  # Jest: "routes capacity reservation creation prompt to capacity-reservation"
+  # Assertions: isSkillInvoked + isToolCalled(view, capacity-reservation) (rate = 100%)
+  - name: "Routing: capacity reservation group creation"
+    prompt: "I need to create a Capacity Reservation Group in Azure to guarantee Standard_D4s_v5 capacity in East US."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "capacity-reservation\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-crg-association ──
+  # Jest: "routes CRG association prompt to capacity-reservation"
+  # Assertions: isSkillInvoked + isToolCalled(view, capacity-reservation) (rate = 100%)
+  - name: "Routing: CRG association with VM"
+    prompt: "How do I associate my Azure VM with a Capacity Reservation Group (CRG) to guarantee reserved compute capacity?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "capacity-reservation\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

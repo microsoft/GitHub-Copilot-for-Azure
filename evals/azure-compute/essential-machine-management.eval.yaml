@@ -1,0 +1,77 @@
+# Vally eval config — one file per azure-compute workflow
+# Source: tests/azure-compute/integration.test.ts (via eval.yaml)
+
+name: azure-compute-essential-machine-management-eval
+description: |
+  Routing evals for the azure-compute essential-machine-management workflow:
+  enabling EMM and checking machine enrollment status across subscriptions.
+
+tags:
+  type: integration
+  skill: azure-compute
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    output-not-matches: 2.0
+    completed: 1.0
+    # Routing validation — heavy weight because a routing miss is a
+    # categorical failure: the wrong skill ran.
+    skill-invocation: 1.5
+
+stimuli:
+  # ── routing-emm-enable ──
+  # Jest: "routes EMM enable prompt to essential-machine-management"
+  # Assertions: isSkillInvoked + isToolCalled(view, essential-machine-management) (invocation rate ≥ 80%)
+  - name: "Routing: enable Essential Machine Management"
+    prompt: "How do I enable Essential Machine Management on my Azure subscription to onboard VMs for monitoring and security?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "essential-machine-management\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-emm-enrollment-status ──
+  # Jest: "routes EMM enrollment status prompt to essential-machine-management"
+  # Assertions: isSkillInvoked + isToolCalled(view, essential-machine-management) (invocation rate ≥ 80%)
+  - name: "Routing: EMM enrollment status check"
+    prompt: "Check which of my Azure subscriptions have machine enrollment enabled for EMM"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "essential-machine-management\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

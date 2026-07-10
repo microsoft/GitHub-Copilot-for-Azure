@@ -1,0 +1,181 @@
+# Vally eval config — one file per azure-compute workflow
+# Source: tests/azure-compute/integration.test.ts (via eval.yaml)
+
+name: azure-compute-vm-recommender-eval
+description: |
+  Evals for the azure-compute vm-recommender workflow: VM size/family
+  recommendation, GPU selection, VM-vs-VMSS guidance, and pricing comparison.
+  Covers routing (tool-view) and behavior across smoke + full tiers.
+
+tags:
+  type: integration
+  skill: azure-compute
+
+config:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    output-matches: 0.5
+    output-not-matches: 2.0
+    completed: 1.0
+    # Routing validation — heavy weight because a routing miss is a
+    # categorical failure: the wrong skill ran.
+    skill-invocation: 1.5
+
+stimuli:
+  # ── routing-web-workload-vm-recommender ──
+  # Jest: "routes web workload recommendation prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: web workload VM recommendation"
+    prompt: "Which Azure VM size should I use for a web server handling 500 concurrent users?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-gpu-vm-recommender ──
+  # Jest: "routes GPU VM prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: GPU VM for deep learning"
+    prompt: "I need a GPU VM on Azure for training a deep learning model. What do you recommend?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-vm-vs-vmss ──
+  # Jest: "routes VM vs VMSS prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(vm-recommender + vm-families) (invocation rate ≥ 80%)
+  - name: "Routing: VM vs VMSS decision"
+    prompt: "I'm deploying a stateless web API tier in Azure eastus2 that autoscales from 3 to 20 identical instances behind a load balancer. Recommend a specific VM SKU for it, tell me whether a VM Scale Set or individual VMs is the right call, confirm the SKU is available with enough quota in that region, and give me a current monthly cost estimate at baseline and peak."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-recommender\\.md"
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-families\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing-vm-family-comparison ──
+  # Jest: "routes VM family comparison prompt to vm-recommender"
+  # Assertions: isSkillInvoked + isToolCalled(view, vm-recommender) (invocation rate ≥ 80%)
+  - name: "Routing: VM family comparison for database"
+    prompt: "Compare Azure VM families for a memory-optimized database workload"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-recommender\\.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── route-vm-recommender-001 ──
+  # Question form (no provision verb) → vm-recommender, not vm-creator.
+  - name: "Route: what VM size for 4-core 16GB → vm-recommender"
+    prompt: |
+      What VM size should I pick for a 4-core, 16 GB memory workload?
+    tags:
+      type: integration
+      tier: smoke
+      area: behavior
+      cost: llm
+      skill: azure-compute
+    constraints:
+      max_turns: 40
+    graders:
+      # ROUTING (skill-invocation grader) — must engage azure-compute.
+      # vm-recommender vs vm-creator is a workflow-level distinction inside
+      # the skill; routing only asserts the skill activated. The "is this
+      # the recommender branch?" question is handled by the SKU + pricing
+      # content checks below.
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      # Should recommend a SKU (D-series typical for 4c/16g general purpose)
+      - type: output-matches
+        config:
+          pattern: "(?i)D[0-9]+s?_v[3-5]|D[0-9]+as_v[4-5]|Standard_[DEF]"
+      # Should NOT jump to a Plan Card (that's vm-creator territory)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)plan card.*approve|approve as.?is"
+      # Should reference pricing / comparison (vm-recommender Step 4)
+      - type: output-matches
+        config:
+          pattern: "(?i)price|pricing|cost|recommend|compar"
+      # Common graders
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|gather|step|render|propos|recommend|question|detail|default|design|configure|fast.?path|scale.?set|VMSS|ask|option|choose"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
