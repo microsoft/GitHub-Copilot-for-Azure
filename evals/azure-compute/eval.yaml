@@ -19,6 +19,7 @@ tags:
 
 defaults:
   runs: 3
+
   timeout: "10m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6
