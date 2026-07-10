@@ -158,6 +158,34 @@ describe("parseFrontmatterJson", () => {
     expect(meta!.checks).toBe(3);
   });
 
+  it("stores the raw description verbatim — no truncation, sanitizing, or whitespace changes", () => {
+    // A description longer than the old 500-char sanitize limit, containing
+    // internal runs of whitespace and newlines that whitespace-normalization
+    // would previously have collapsed.
+    const rawDescription =
+      "First line with  multiple   spaces.\nSecond line.\t" + "x".repeat(600);
+    const raw = JSON.stringify({
+      skills: [
+        {
+          name: "verbatim",
+          path: "plugin/skills/verbatim/SKILL.md",
+          status: "pass",
+          errors: [],
+          warnings: [],
+          checks: { "name-format": true },
+          description: rawDescription,
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, warnings: 0 },
+    });
+
+    const report = parseFrontmatterJson(raw);
+    const meta = report.items[0].metadata;
+
+    expect(meta!.description).toBe(rawDescription);
+    expect((meta!.description as string).length).toBe(rawDescription.length);
+  });
+
   it("sets skipped to 0 in summary", () => {
     const report = parseFrontmatterJson(makeFrontmatterJson());
     expect(report.summary.skipped).toBe(0);

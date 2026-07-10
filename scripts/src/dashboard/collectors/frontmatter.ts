@@ -27,6 +27,7 @@ interface FrontmatterSkillResult {
   errors: string[];
   warnings: string[];
   checks: Record<string, boolean>;
+  description?: string;
 }
 
 interface FrontmatterJsonResult {
@@ -54,17 +55,27 @@ function buildItems(skills: FrontmatterSkillResult[]): CategoryItem[] {
 
     const totalChecks = Object.keys(skill.checks).length;
 
+    const metadata: Record<string, string | number | boolean> = {
+      errors: skill.errors.length,
+      warnings: skill.warnings.length,
+      checks: totalChecks,
+      path: skill.path,
+    };
+    if (typeof skill.description === "string") {
+      // Store the raw description exactly as parsed from the SKILL.md YAML
+      // frontmatter — no truncation, sanitizing, or whitespace changes — so
+      // consumers (e.g. the Skills dashboard) see the full text and an
+      // accurate character length.
+      metadata.description = skill.description;
+    }
+
     return {
       name: skill.name,
       status: mapStatus(skill.status),
       message: messages.length > 0
         ? sanitize(messages.join("; "))
         : undefined,
-      metadata: {
-        errors: skill.errors.length,
-        warnings: skill.warnings.length,
-        checks: totalChecks,
-      },
+      metadata,
     };
   });
 }
