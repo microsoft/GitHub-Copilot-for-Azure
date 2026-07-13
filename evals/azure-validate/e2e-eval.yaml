@@ -63,7 +63,7 @@ stimuli:
       skill: azure-validate
       followUp:
         - "Continue with recommended options until complete."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
     graders:
       # azure-validate WAS invoked
       - type: skill-invocation
@@ -107,7 +107,7 @@ stimuli:
       skill: azure-validate
       followUp:
         - "Continue with recommended options until complete."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
     graders:
       - type: skill-invocation
         config:
@@ -155,7 +155,7 @@ stimuli:
       skill: azure-validate
       followUp:
         - "Continue with recommended options until complete."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
     graders:
       - type: skill-invocation
         config:
@@ -255,4 +255,4 @@ stimuli:
         config:
           disallowed:
             - name: "(?i)^(bash|powershell|pwsh)$"
-              command: "(?i)azd\\s+(provision|up|deploy)\\b"
+              command: "(?i)azd\\s+(up|deploy)\\b"
