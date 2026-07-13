@@ -110,7 +110,7 @@ Each entry has a `manifestUrl` and an `initCommand`. Prefer direct code deploy a
 
 For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
-Run `azd ai agent init` directly in the target directory. It bootstraps the project and creates or selects the azd environment automatically.
+Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
 Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
 
