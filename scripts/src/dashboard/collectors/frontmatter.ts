@@ -115,19 +115,27 @@ export const frontmatterCollector: Collector = {
     // The frontmatter npm script lives in scripts/package.json, so we
     // must run from the scripts/ directory, not the repo root.
     const scriptsCwd = resolve(options.cwd, "scripts");
+    // Validate the built output (output/skills/) rather than the source
+    // (plugin/skills/) so that stamped version numbers are used and the
+    // CLI does not fail on placeholder versions.
+    const builtSkillsDir = resolve(options.cwd, "output", "skills");
     let stdout: string;
     try {
-      stdout = execSync("npm run frontmatter -- --json", {
-        cwd: scriptsCwd,
-        timeout: options.timeout,
-        encoding: "utf-8",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      stdout = execSync(
+        `npm run frontmatter -- --json --skills-dir "${builtSkillsDir}"`,
+        {
+          cwd: scriptsCwd,
+          timeout: options.timeout,
+          encoding: "utf-8",
+          stdio: ["ignore", "pipe", "pipe"],
+        },
+      );
     } catch (err: unknown) {
       // The frontmatter CLI exits with code 1 when there are failures,
-      // but still writes valid JSON to stdout.
+      // but still writes valid JSON to stdout.  parseFrontmatterJson
+      // already strips any npm preamble by seeking the first "{".
       const execErr = err as { stdout?: string; status?: number };
-      if (execErr.stdout && execErr.stdout.trim().startsWith("{")) {
+      if (execErr.stdout && execErr.stdout.includes("{")) {
         stdout = execErr.stdout;
       } else {
         return {

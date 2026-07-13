@@ -664,12 +664,16 @@ function main(): void {
     args: process.argv.slice(2),
     options: {
       json: { type: "boolean", default: false },
+      "skills-dir": { type: "string" },
     },
     strict: false,
     allowPositionals: true,
   });
 
   const jsonOutput = values.json ?? false;
+  const pluginSkillsDir = values["skills-dir"]
+    ? resolve(values["skills-dir"] as string)
+    : PLUGIN_SKILLS_DIR;
 
   let skillFiles: string[];
 
@@ -681,7 +685,7 @@ function main(): void {
         skillFiles.push(resolve(arg));
       } else {
         // Try as skill name in both directories
-        const pluginPath = resolve(PLUGIN_SKILLS_DIR, arg, "SKILL.md");
+        const pluginPath = resolve(pluginSkillsDir, arg, "SKILL.md");
         const metaPath = resolve(META_SKILLS_DIR, arg, "SKILL.md");
 
         if (existsSync(pluginPath)) {
@@ -696,12 +700,12 @@ function main(): void {
       }
     }
   } else {
-    skillFiles = getAllSkillFiles();
+    skillFiles = [...findSkillFiles(pluginSkillsDir), ...findSkillFiles(META_SKILLS_DIR)];
   }
 
   // Validate all skill files
   const results: ValidationResult[] = [];
-  const routingContexts = buildSkillRoutingContexts(getAllSkillFiles());
+  const routingContexts = buildSkillRoutingContexts(skillFiles);
   const routingContextByName = new Map(routingContexts.map((context) => [context.name, context]));
 
   for (const file of skillFiles) {
