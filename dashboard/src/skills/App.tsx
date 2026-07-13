@@ -42,8 +42,8 @@ function skillsFromHealthData(data: HealthData): Skill[] {
     const skills: Skill[] = [];
     for (const item of items) {
         const path = String(item.metadata?.path ?? "");
-        // Only plugin skills; the frontmatter check also covers .github/skills.
-        if (!path.startsWith("plugin/skills/")) continue;
+        // Only plugin skills; dashboard collector validates output/skills/.
+        if (!path.startsWith("output/skills/")) continue;
         const description = String(item.metadata?.description ?? "");
         skills.push({ name: item.name, description, descriptionLength: description.length });
     }
