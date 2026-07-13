@@ -560,8 +560,8 @@ function findSkillFiles(skillsDir: string): string[] {
     .map((name) => resolve(skillsDir, name, "SKILL.md"));
 }
 
-function getAllSkillFiles(): string[] {
-  return [...findSkillFiles(PLUGIN_SKILLS_DIR), ...findSkillFiles(META_SKILLS_DIR)];
+function getAllSkillFiles(pluginSkillsDir = PLUGIN_SKILLS_DIR): string[] {
+  return [...findSkillFiles(pluginSkillsDir), ...findSkillFiles(META_SKILLS_DIR)];
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -675,6 +675,18 @@ function main(): void {
     ? resolve(values["skills-dir"] as string)
     : PLUGIN_SKILLS_DIR;
 
+  if (!existsSync(pluginSkillsDir)) {
+    console.error(`\n❌ Skills directory not found: ${pluginSkillsDir}\n`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (!statSync(pluginSkillsDir).isDirectory()) {
+    console.error(`\n❌ Skills directory is not a directory: ${pluginSkillsDir}\n`);
+    process.exitCode = 1;
+    return;
+  }
+
   let skillFiles: string[];
 
   if (positionals.length > 0) {
@@ -700,12 +712,12 @@ function main(): void {
       }
     }
   } else {
-    skillFiles = [...findSkillFiles(pluginSkillsDir), ...findSkillFiles(META_SKILLS_DIR)];
+    skillFiles = getAllSkillFiles(pluginSkillsDir);
   }
 
   // Validate all skill files
   const results: ValidationResult[] = [];
-  const routingContexts = buildSkillRoutingContexts(skillFiles);
+  const routingContexts = buildSkillRoutingContexts(getAllSkillFiles(pluginSkillsDir));
   const routingContextByName = new Map(routingContexts.map((context) => [context.name, context]));
 
   for (const file of skillFiles) {

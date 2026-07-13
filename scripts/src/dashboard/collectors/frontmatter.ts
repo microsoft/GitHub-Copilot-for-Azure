@@ -132,20 +132,24 @@ export const frontmatterCollector: Collector = {
       );
     } catch (err: unknown) {
       // The frontmatter CLI exits with code 1 when there are failures,
-      // but still writes valid JSON to stdout.  parseFrontmatterJson
-      // already strips any npm preamble by seeking the first "{".
+      // but still writes valid JSON to stdout.
       const execErr = err as { stdout?: string; status?: number };
-      if (execErr.stdout && execErr.stdout.includes("{")) {
-        stdout = execErr.stdout;
-      } else {
-        return {
-          status: "skip",
-          summary: { total: 0, passed: 0, failed: 0, warnings: 0, skipped: 0 },
-          items: [],
-          collectedAt: new Date().toISOString(),
-          collectorVersion: COLLECTOR_VERSION,
-        };
+
+      if (typeof execErr.stdout === "string" && execErr.stdout.trim().length > 0) {
+        try {
+          return parseFrontmatterJson(execErr.stdout);
+        } catch {
+          // Fall through to the skip report below when stdout is not valid JSON.
+        }
       }
+
+      return {
+        status: "skip",
+        summary: { total: 0, passed: 0, failed: 0, warnings: 0, skipped: 0 },
+        items: [],
+        collectedAt: new Date().toISOString(),
+        collectorVersion: COLLECTOR_VERSION,
+      };
     }
 
     return parseFrontmatterJson(stdout);
