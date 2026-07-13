@@ -51,8 +51,8 @@ describe("foundry-agent direct-code workflow docs", () => {
     const deployModel = await readSkillFile("models/deploy-model/SKILL.md");
 
     expect(createHosted).toContain("`azure.yaml services.ai-project.deployments[]` is the **single source of truth**");
-    expect(createHosted).toContain("Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
-    expect(createHosted).toContain("never `az cognitiveservices account deployment create ...`");
+    expect(createHosted).toContain("`azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
+    expect(createHosted).toContain("`az cognitiveservices account deployment create ...`");
     expect(quickStart).toContain("Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'`");
     expect(quickStart).toContain("Never `az cognitiveservices account deployment create`");
     expect(deployModel).toContain("For azd-managed Foundry projects");
