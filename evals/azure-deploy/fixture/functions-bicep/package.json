@@ -1,0 +1,7 @@
+{
+  "name": "serverless-http-api",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "func start"
+  }
+}
