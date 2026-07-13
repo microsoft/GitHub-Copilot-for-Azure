@@ -70,6 +70,8 @@ stimuli:
         config:
           required:
             - azure-validate
+          disallowed:
+            - azure-deploy
       # validate command WAS called; deploy command was NOT called
       - type: tool-calls
         config:
@@ -113,6 +115,8 @@ stimuli:
         config:
           required:
             - azure-validate
+          disallowed:
+            - azure-deploy
       - type: tool-calls
         config:
           required:
@@ -161,6 +165,8 @@ stimuli:
         config:
           required:
             - azure-validate
+          disallowed:
+            - azure-deploy
       - type: tool-calls
         config:
           required:
