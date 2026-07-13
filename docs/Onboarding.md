@@ -1,6 +1,6 @@
 # Onboarding
 
-> Note: if you are an MSFT employee, in addition to following the steps in this doc, please also follow the steps in the [internal-onboarding-doc](https://eng.ms/docs/cloud-ai-platform/devdiv/developer-ai-lukehoban/developer-ai-kvenkatrajan/azure-github-copilot-extension-for-vs-code-backend/github-copilot-for-azure/partnerhub/azureskills/onboarding-new-skills) to onboard your new skill.
+> Note: if you are an MSFT employee, in addition to following the steps in this doc, please also follow the steps in the [internal-onboarding-doc](https://aka.ms/azure-skills/onboarding) to onboard your new skill.
 
 ## Identify Areas for New Skills
 
@@ -51,7 +51,7 @@ plugin/skills/your-skill-name/
     └── *
 ```
 
-You should add your new skill as one of the pre-built skills.
+You should add your new skill as one of the pre-built skills. You may use existing skills as examples on what the file structure look like.
 
 1. **Create your skill folder** under `plugin/skills/your-skill-name/`
 2. **Write your SKILL.md** following the existing patterns
