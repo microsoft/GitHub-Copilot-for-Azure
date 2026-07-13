@@ -122,7 +122,7 @@ export const frontmatterCollector: Collector = {
     let stdout: string;
     try {
       stdout = execSync(
-        `npm run frontmatter -- --json --skills-dir "${builtSkillsDir}"`,
+        `npm run frontmatter -- --json "${builtSkillsDir}"`,
         {
           cwd: scriptsCwd,
           timeout: options.timeout,

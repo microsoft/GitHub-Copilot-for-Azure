@@ -229,7 +229,7 @@ describe("frontmatterCollector.collect", () => {
     expect(report.status).toBe("pass");
     expect(report.items).toHaveLength(2);
     expect(execSync).toHaveBeenCalledWith(
-      expect.stringContaining("--skills-dir \"D:\\fake\\output\\skills\""),
+      expect.stringContaining(`--json "D:\\fake\\output\\skills"`),
       expect.objectContaining({
         cwd: "D:\\fake\\scripts",
         timeout: 5000,
