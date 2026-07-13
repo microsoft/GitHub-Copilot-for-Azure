@@ -74,7 +74,7 @@ stimuli:
           dest: infra/main.parameters.json
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       skill: azure-deploy
@@ -105,7 +105,7 @@ stimuli:
           dest: infra/main.parameters.json
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       skill: azure-deploy
@@ -138,7 +138,7 @@ stimuli:
           dest: infra/main.parameters.json
     tags:
       type: integration
-      tier: full
+      tier: smoke
       cost: llm
       area: routing
       skill: azure-deploy
