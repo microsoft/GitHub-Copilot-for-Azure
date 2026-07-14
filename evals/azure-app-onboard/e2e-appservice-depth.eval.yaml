@@ -1,0 +1,211 @@
+# Vally eval config — azure-app-onboard Deploy Depth e2e
+# Source: tests/azure-app-onboard/deploy/integration-depth.test.ts
+#   ("deploy writes audit log and deploy-result.json with correct schema")
+#
+# Split from eval.yaml so it runs in parallel with e2e-appservice-free.eval.yaml and
+# e2e-container-apps.eval.yaml. Single stimulus: a real Azure deploy (cost: azure) of
+# bya-simple-web-app (Express/Node) to App Service via Bicep.
+name: azure-app-onboard-deploy-depth-eval
+description: |
+  Standalone e2e deploy eval for the azure-app-onboard deploy phase: bya-simple-web-app
+  (Express/Node) deploys to Azure App Service via Bicep, writing an incremental
+  deploy-audit.log and a schema-valid deploy-result.json.
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+defaults:
+  runs: 1
+  timeout: "50m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── deploy-depth-bya ──
+  # Test repo: samcdonald-ms/bya-simple-web-app (Express/Node web app).
+  # "New to Azure" deploy of an Express app with no infra setup: prereq → prepare →
+  # scaffold → deploy → App Service via Bicep. Filter: --tag debug=deploy-depth-bya.
+  # No `earlyTerminate`; runs to completion. Pass criteria = incremental deploy-audit.log
+  # written + schema-valid deploy-result.json (status "succeeded").
+  - name: "Deploy Depth - Audit Log And Result Schema"
+    prompt: "I'm new to Azure. Can you get my existing app running without me setting up infrastructure?"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 200
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      debug: deploy-depth-bya
+      skill: azure-app-onboard
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+      followUp:
+        - "Just go with defaults, cheapest option, using my current subscription."
+        - "Yes, proceed with scaffolding."
+        - "Yes, deploy to Azure now."
+        - "Yes, confirm the deployment."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+    graders:
+      # azure-app-onboard MUST be invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard
+      # Sub-agents MUST be dispatched via the `task` tool (delegation, not inlined).
+      # Vally emits no subagent.* events — the `task` tool call IS the dispatch signal.
+      # Mirrors Jest assertScaffoldSubagentsDispatched (task-count half).
+      - type: tool-calls
+        config:
+          required:
+            - name: "^task$"
+      # App Service deploy MUST have been executed. Uses shell-command-invoked
+      # (not the built-in tool-calls grader): it strips heredoc bodies before
+      # matching, so disallowed patterns like "azd up" that appear as literal
+      # text in the deploy-audit.log or a plan/checklist file cannot false-positive.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "(?i)az\\s+webapp\\s+deploy\\b|az\\s+deployment\\s+(sub|group)\\s+create\\b"
+              description: "App Service / Bicep deploy executed"
+          disallowed:
+            - command: "(?i)terraform\\s+(init|plan|apply)"
+              description: "Bicep is default IaC — no Terraform"
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+              description: "no azd — AppOnboard deploys via az deployment sub create"
+            - command: "(?i)\\baz\\s+(group|webapp|appservice)\\s+create\\b"
+              description: "no imperative resource create — flow uses IaC"
+            - command: "(?i)\\baz\\s+webapp\\s+up(?!date)\\b"
+              description: "no deprecated az webapp up (excludes az webapp update)"
+      # Agent MUST NOT hand back manual "Next Steps" instead of executing
+      - type: output-not-matches
+        config:
+          pattern: "(?i)next steps.{0,100}(az webapp deploy|zip.*deploy|deploy your code)"
+      # Bicep is default IaC — no Terraform
+      - type: output-not-matches
+        config:
+          pattern: "(?i)terraform\\s+(init|plan|apply)|hashicorp/azurerm"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # HARD (Jest): agent MUST NOT generate azure.yaml in the AppOnboard pipeline
+      - type: file-not-exists
+        config:
+          path: "**/azure.yaml"
+
+      # ── PREREQ ARTIFACTS + SCHEMA ──────────────────────────────────────────
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      # 3-axis verdict summary in readiness-report.md (format-agnostic)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+          pattern: '(?is)(?=.*\bbuild\b)(?=.*\bcompleteness\b)(?=.*\bdeployability\b)(?=.*\b(PASS|WARN|FAIL|SKIPPED)\b)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      # Framework detection: bya-simple-web-app is an Express/Node app
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)express|node"
+
+      # ── PHASE PROGRESSION (Jest assertPhaseArtifactsExist + assertContextJsonProgression) ──
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-checklist.md"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+      # context MUST record "deploy" in completedPhases (subsumes prereq/prepare/scaffold)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"deploy"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"currentPhase"\s*:\s*null'
+
+      # ── DEPLOY-AUDIT.LOG (Jest assertDeployAuditLog) ───────────────────────
+      # Incremental audit entries: "{ISO-timestamp} | {command} | started|succeeded|failed"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-audit.log"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-audit.log"
+          pattern: '(?im)^\d{4}-\d{2}-\d{2}T[\d:]+.*\|.*\|\s*(started|succeeded|failed)'
+
+      # ── DEPLOY-RESULT SCHEMA (Jest assertDeployResultSchema) ───────────────
+      # status MUST be "succeeded" — the strongest proof deploy completed end-to-end.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"status"\s*:\s*"succeeded"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceGroupName"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"sessionId"\s*:\s*"[0-9a-f\-]{36}"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"subscriptionId"\s*:\s*"[0-9a-f\-]{36}"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceIds"\s*:\s*\['
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"healthStatus"\s*:\s*"(healthy|degraded|unreachable|unknown)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"endpoints"\s*:\s*\['
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"deploymentNames"\s*:\s*\['
+
+      # ── LIVE ENDPOINT SURFACED: proof of real App Service deploy ───────────
+      - type: output-matches
+        config:
+          pattern: "azurewebsites\\.net"

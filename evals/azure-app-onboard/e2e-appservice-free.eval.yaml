@@ -1,0 +1,240 @@
+# Vally eval config — azure-app-onboard Fast Track e2e
+# Source: tests/azure-app-onboard/integration-fast-track.test.ts
+#
+# Split from eval.yaml so it runs in parallel with e2e-container-apps.eval.yaml and
+# e2e-appservice-depth.eval.yaml. Single stimulus: a real Azure deploy (cost: azure)
+# of a static HTML site to App Service Free (F1) / Static Web Apps Free.
+name: azure-app-onboard-fasttrack-eval
+description: |
+  Standalone e2e deploy eval for the azure-app-onboard Fast Track path:
+  a simple static HTML site deploys to Azure App Service Free (F1) / Static Web Apps Free.
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+defaults:
+  runs: 1
+  timeout: "45m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── fasttrack-html ──
+  # Test repo: Azure-Samples/app-service-web-html-get-started (static HTML site).
+  # Fast-track deploy of a static site to App Service F1 ($0) / Static Web Apps Free
+  # via Bicep — no stack/DB/auth questions asked. Filter: --tag debug=fasttrack-html.
+  # No `earlyTerminate` (substring-matches scaffold heredoc/checklist text and false-
+  # positives); runs to completion. Pass criterion = shell-command-invoked grader
+  # confirms `az webapp deploy` / `az staticwebapp create` actually ran.
+  - name: "Fast Track - HTML Site Free Tier"
+    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/app-service-web-html-get-started
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+    constraints:
+      max_turns: 200
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      debug: fasttrack-html
+      skill: azure-app-onboard
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+    graders:
+      # azure-app-onboard MUST be invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard
+      # Sub-agents MUST be dispatched via the `task` tool (delegation, not inlined).
+      # Vally emits no subagent.* events — the `task` tool call IS the dispatch signal
+      # (nothing else uses `task`). Mirrors Jest assertScaffoldSubagentsDispatched (task-count half).
+      - type: tool-calls
+        config:
+          required:
+            - name: "^task$"
+      # HTML/static-site language MUST appear in output
+      - type: output-matches
+        config:
+          pattern: "(?i)static|html"
+      # Free tier / F1 SKU signal MUST appear
+      - type: output-matches
+        config:
+          pattern: "(?i)free tier|f1|free|\\$0|static web"
+      # App Service deploy MUST have been executed. Uses shell-command-invoked
+      # (not the built-in tool-calls grader): it strips heredoc bodies before
+      # matching, so disallowed patterns like "azd up" that appear as literal
+      # text in a plan/checklist file cannot false-positive.
+      # Accept any of the valid deploy invocation paths:
+      #   • `az webapp deploy` — App Service F1 (Round 4 path: zip deploy)
+      #   • `az staticwebapp create` — direct SWA CLI creation
+      #   • `az deployment sub create` — Bicep subscription-scope deploy (Round 5 path: SWA via Bicep template)
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "(?i)az\\s+webapp\\s+deploy\\b|az\\s+staticwebapp\\s+create\\b|az\\s+deployment\\s+(sub|group)\\s+create\\b"
+              description: "App Service / SWA / Bicep deploy executed"
+          disallowed:
+            - command: "(?i)terraform\\s+(init|plan|apply)"
+              description: "Bicep is default IaC — no Terraform"
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+              description: "no azd fallback — tests az CLI path"
+            - command: "(?i)\\baz\\s+(group|webapp|appservice)\\s+create\\b"
+              description: "no imperative resource create — flow uses IaC"
+            - command: "(?i)\\baz\\s+webapp\\s+up(?!date)\\b"
+              description: "no deprecated az webapp up (excludes az webapp update)"
+      # Agent MUST NOT hand back manual "Next Steps" instead of executing
+      - type: output-not-matches
+        config:
+          pattern: "(?i)next steps.{0,100}(az webapp deploy|zip.*deploy|deploy your code)"
+      # Bicep is default IaC
+      - type: output-not-matches
+        config:
+          pattern: "(?i)terraform\\s+(init|plan|apply)|hashicorp/azurerm"
+      # Fast-track: static site → no stack/DB/auth questions
+      # (Mirrors Jest fast-track violation check — covers both `what ...?` and `which ...?` phrasings.)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)what (stack|language|framework|database|auth).*\\?"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)which (database|auth|framework).*\\?"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Prereq artifacts MUST be written
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      # Prereq output schema shape
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+          pattern: '(?is)(?=.*\bbuild\b)(?=.*\bcompleteness\b)(?=.*\bdeployability\b)(?=.*\b(PASS|WARN|FAIL|SKIPPED)\b)'
+      # F1-viable static site expected
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*true'
+      # Framework detection: HTML/static
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)html|static"
+
+      # ── PHASE COMPLETION: all 4 phases must be recorded in context.json ─────
+      # Context MUST list "deploy" in completedPhases (stronger than "prereq" — deploy
+      # can only be reached after prereq+prepare+scaffold, so this subsumes those checks).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"deploy"'
+      # After deploy finalizes, currentPhase MUST be null (per deploy/SKILL.md Step 8).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"currentPhase"\s*:\s*null'
+
+      # ── PHASE ARTIFACTS: every phase must have produced its output file ─────
+      # (Matches Jest `assertPhaseArtifactsExist` for full-pipeline stimuli.)
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-checklist.md"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+
+      # ── DEPLOY-RESULT SCHEMA: real deploy vs skeleton placeholder ──────────
+      # (Matches Jest `assertDeployResultSchema` — required fields, enum values.)
+      # status MUST be "succeeded" (not "in-progress" or "failed"). This is the strongest
+      # single assertion that the deploy actually completed successfully end-to-end.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"status"\s*:\s*"succeeded"'
+      # resourceGroupName MUST be populated (rules out empty-string placeholder).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceGroupName"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
+      # sessionId MUST be present (schema-required field per deploy-schemas.ts).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"sessionId"\s*:\s*"[0-9a-f\-]{36}"'
+      # subscriptionId MUST be present (schema-required field per deploy-schemas.ts / Jest assertDeployResultSchema).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"subscriptionId"\s*:\s*"[0-9a-f\-]{36}"'
+      # resourceIds array MUST be present (deploy-schemas.ts expects it; Jest warns when missing).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceIds"\s*:\s*\['
+      # healthStatus MUST be one of the DeployResult enum values from deploy-schemas.ts.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"healthStatus"\s*:\s*"(healthy|degraded|unreachable|unknown)"'
+      # endpoints array MUST be present (populated for successful deploys).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"endpoints"\s*:\s*\['
+      # deploymentNames array MUST be present (initial + any healing retries).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"deploymentNames"\s*:\s*\['
+
+      # ── FAST-TRACK AUTO-CHEAPEST: prepare-plan MUST pick F1 or Static Web Apps Free ──
+      # Validates the Fix C skill edit (prepare/references/sku-matrix.md § Auto-Cheapest).
+      # Cheapest App Service SKU is F1 ($0); cheapest static hosting is Static Web Apps Free.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '(?i)"sku"\s*:\s*"F1(\s+\(Free\))?"|Microsoft\.Web/staticSites|static\s*web\s*apps?.*free'
+
+      # ── LIVE ENDPOINT SURFACED: proof of real deploy output to user ────────
+      # (Matches Jest `hasEndpoint` check for the deployed URL — this cannot pass
+      # without an actual deployment succeeding and returning an endpoint.)
+      - type: output-matches
+        config:
+          pattern: "azurewebsites\\.net|azurestaticapps\\.net|azurecontainerapps\\.io"
