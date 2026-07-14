@@ -48,7 +48,7 @@ stimuli:
   # Original problem: empty workspace, agent had to create app + deploy.
   # Fix: provide a prepared SWA fixture; agent only needs to deploy.
   - name: "Deploy SWA - Whiteboard App (Bicep)"
-    prompt: "My static whiteboard web app is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My static whiteboard web app is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/swa-bicep/index.html
@@ -85,7 +85,7 @@ stimuli:
 
   # Jest: "creates static portfolio website with bicep"
   - name: "Deploy SWA - Portfolio Website (Bicep)"
-    prompt: "My static portfolio website is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My static portfolio website is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/swa-bicep/index.html
@@ -127,7 +127,7 @@ stimuli:
 
   # Jest: "creates discussion board"
   - name: "Deploy App Service - Discussion Board (Bicep)"
-    prompt: "My Node.js web application (a discussion board) is prepared and ready. Deploy it to Azure App Service using my current subscription in the westus2 region."
+    prompt: "My Node.js web application (a discussion board) is prepared and ready. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/app-service-bicep/app.js
@@ -166,7 +166,7 @@ stimuli:
 
   # Jest: "creates todo list with frontend and API"
   - name: "Deploy App Service - Todo List (Bicep)"
-    prompt: "My Node.js todo list application is prepared and ready. Deploy it to Azure App Service using my current subscription in the westus2 region."
+    prompt: "My Node.js todo list application is prepared and ready. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/app-service-bicep/app.js
@@ -210,7 +210,7 @@ stimuli:
 
   # Jest: "creates serverless HTTP API"
   - name: "Deploy Azure Functions - Serverless HTTP API (Bicep)"
-    prompt: "My Azure Functions serverless HTTP API is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My Azure Functions serverless HTTP API is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/functions-bicep/host.json
@@ -249,7 +249,7 @@ stimuli:
 
   # Jest: "creates event-driven function app"
   - name: "Deploy Azure Functions - Event-Driven (Bicep)"
-    prompt: "My event-driven Azure Functions app is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My event-driven Azure Functions app is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/functions-bicep/host.json
@@ -288,7 +288,7 @@ stimuli:
 
   # Jest: "creates Python function app with Service Bus trigger"
   - name: "Deploy Azure Functions - Python Service Bus (Bicep)"
-    prompt: "My Python Azure Functions app with Service Bus trigger is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My Python Azure Functions app with Service Bus trigger is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/functions-bicep/host.json
@@ -332,7 +332,7 @@ stimuli:
 
   # Jest: "creates and deploys workflow app with Durable Task Scheduler"
   - name: "Deploy DTS - Workflow App (Bicep)"
-    prompt: "My Durable Task Scheduler workflow application is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My Durable Task Scheduler workflow application is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/dts-bicep/host.json
@@ -383,7 +383,7 @@ stimuli:
 
   # Jest: "creates containerized web application with Bicep"
   - name: "Deploy Container Apps - Containerized Web App (Bicep)"
-    prompt: "My containerized web application is prepared and ready. Deploy it to Azure Container Apps using my current subscription in the swedencentral region."
+    prompt: "My containerized web application is prepared and ready. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/container-apps-bicep/app.js
@@ -442,7 +442,7 @@ stimuli:
 
   # Jest: "creates simple containerized Node.js app"
   - name: "Deploy Container Apps - Node.js App (Bicep)"
-    prompt: "My containerized Node.js application is prepared and ready. Deploy it to Azure Container Apps using my current subscription in the swedencentral region."
+    prompt: "My containerized Node.js application is prepared and ready. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/container-apps-bicep/app.js
@@ -498,7 +498,7 @@ stimuli:
 
   # Jest: "creates whiteboard application with Terraform"
   - name: "Deploy SWA - Whiteboard App (Terraform)"
-    prompt: "My static whiteboard web app is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My static whiteboard web app is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/swa-terraform/index.html
@@ -537,7 +537,7 @@ stimuli:
 
   # Jest: "creates static portfolio website with Terraform infrastructure"
   - name: "Deploy SWA - Portfolio Website (Terraform)"
-    prompt: "My static portfolio website is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My static portfolio website is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/swa-terraform/index.html
@@ -581,7 +581,7 @@ stimuli:
 
   # Jest: "creates discussion board with Terraform"
   - name: "Deploy App Service - Discussion Board (Terraform)"
-    prompt: "My Node.js discussion board application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure App Service using my current subscription in the westus2 region."
+    prompt: "My Node.js discussion board application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/app-service-terraform/app.js
@@ -622,7 +622,7 @@ stimuli:
 
   # Jest: "creates todo list with frontend and API using Terraform"
   - name: "Deploy App Service - Todo List (Terraform)"
-    prompt: "My Node.js todo list application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure App Service using my current subscription in the westus2 region."
+    prompt: "My Node.js todo list application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/app-service-terraform/app.js
@@ -668,7 +668,7 @@ stimuli:
 
   # Jest: "creates serverless HTTP API with Terraform"
   - name: "Deploy Azure Functions - Serverless HTTP API (Terraform)"
-    prompt: "My Azure Functions serverless HTTP API is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My Azure Functions serverless HTTP API is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/functions-terraform/host.json
@@ -707,7 +707,7 @@ stimuli:
 
   # Jest: "creates event-driven function app with Terraform"
   - name: "Deploy Azure Functions - Event-Driven (Terraform)"
-    prompt: "My event-driven Azure Functions app is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My event-driven Azure Functions app is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/functions-terraform/host.json
@@ -746,7 +746,7 @@ stimuli:
 
   # Jest: "creates URL shortener service with Terraform infrastructure"
   - name: "Deploy Azure Functions - URL Shortener (Terraform)"
-    prompt: "My Azure Functions URL shortener service is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region."
+    prompt: "My Azure Functions URL shortener service is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/functions-terraform/host.json
@@ -784,7 +784,7 @@ stimuli:
 
   # Jest: "creates containerized web application with Terraform"
   - name: "Deploy Container Apps - Containerized Web App (Terraform)"
-    prompt: "My containerized web application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region."
+    prompt: "My containerized web application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/container-apps-terraform/app.js
@@ -841,7 +841,7 @@ stimuli:
 
   # Jest: "creates simple containerized Node.js app with Terraform"
   - name: "Deploy Container Apps - Node.js App (Terraform)"
-    prompt: "My containerized Node.js application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region."
+    prompt: "My containerized Node.js application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/container-apps-terraform/app.js
@@ -886,7 +886,7 @@ stimuli:
 
   # Jest: "creates social media application with Terraform infrastructure"
   - name: "Deploy Container Apps - Social Media App (Terraform)"
-    prompt: "My containerized social media application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region."
+    prompt: "My containerized social media application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     environment:
       files:
         - src: fixture/container-apps-terraform/app.js
@@ -947,6 +947,7 @@ stimuli:
       Use my current subscription.
       This is for a small scale production environment.
       Use standard SKUs.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git clone --depth 1 https://github.com/dotnet/eShop.git .
@@ -986,6 +987,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1030,6 +1032,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/aspire-with-azure-functions.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1074,6 +1077,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/client-apps-integration.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1119,6 +1123,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/container-build.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1182,6 +1187,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/custom-resources.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1225,6 +1231,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/database-containers.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1270,6 +1277,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/orleans-voting.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1322,6 +1330,7 @@ stimuli:
       Use my current subscription.
       This is for a small scale production environment.
       Use standard SKUs.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git clone --depth 1 https://github.com/benc-uk/nodejs-demoapp.git .
@@ -1361,6 +1370,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/aspire-with-javascript.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1405,6 +1415,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/aspire-with-node.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q
@@ -1453,6 +1464,7 @@ stimuli:
       Use my current subscription.
       This is for a small scale production environment.
       Use standard SKUs.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git clone --depth 1 https://github.com/UltiRequiem/flask-calculator.git .
@@ -1492,6 +1504,7 @@ stimuli:
       This is for a small scale production environment.
       Use standard SKUs.
       The app can be found under samples/aspire-with-python.
+      Use azd as the deployment tool.
     environment:
       commands:
         - git init -q

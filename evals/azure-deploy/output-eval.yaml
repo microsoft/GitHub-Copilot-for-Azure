@@ -40,6 +40,7 @@ stimuli:
       My app is already prepared and validated.
       Give me deploy guidance and module preference order for Bicep.
       Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
+      Use azd as the deployment tool.
     tags:
       type: integration
       skill: azure-deploy
@@ -79,6 +80,7 @@ stimuli:
     prompt: |
       I'm deploying with Bicep and there is no AVM+AZD pattern module for my scenario.
       What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
+      Use azd as the deployment tool.
     tags:
       type: integration
       skill: azure-deploy
@@ -120,6 +122,7 @@ stimuli:
     prompt: |
       Set up azd infrastructure with Bicep for a container app.
       Use AVM modules and prefer AZD pattern modules over resource modules.
+      Use azd as the deployment tool.
     tags:
       type: integration
       skill: azure-deploy
