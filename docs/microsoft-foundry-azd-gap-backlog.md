@@ -70,8 +70,9 @@ Capabilities owned by non-bundled extensions are outside this planning scope. Pr
 | P0 | P0-3 | Fix inconsistent local-run guidance | The skill recommends a deprecated flag and omits Node.js support. |
 | P0 | P0-4 | Fix inconsistent named local invoke logic | The skill rejects a scenario that azd now explicitly supports. |
 | P0 | P0-5 | Fix inconsistent init deploy-mode logic | The documented non-interactive default is the opposite of the implemented default when code deployment is available. |
-| P0 | P0-6 | Fix inconsistent declarative resource lifecycle | Existing connection/toolbox guidance disagrees on the schema and on whether provision or deploy applies each resource. |
+| P0 | P0-6 | Fix inconsistent toolbox lifecycle guidance | The skill mixes unsupported declarative toolbox guidance with its two supported non-declarative paths. |
 | P0 | P0-7 | Fix inconsistent protocol naming | The skill treats `invocations` as A2A even though they are distinct protocols. |
+| P0 | P0-8 | Add shared azd guidance sub-skill | Cross-cutting CLI rules and references currently live under create and can drift across agent workflows. |
 | P1 | P1-1 | Add A2A and activity protocol workflows | The skill does not cover these two azd-supported protocol paths. |
 | P1 | P1-2 | Add agent lifecycle management | Delete, endpoint inspection, and code download are missing. |
 
@@ -84,8 +85,9 @@ Capabilities owned by non-bundled extensions are outside this planning scope. Pr
 - Fix local-run guidance across supported runtimes
 - Fix named local invocation for multi-agent projects
 - Fix init deploy-mode defaults and selection
-- Fix declarative connection and toolbox lifecycle
+- Fix toolbox guidance around manual and `azd ai toolbox` paths
 - Fix protocol naming and invocation guidance
+- Add shared azd guidance sub-skill for CLI rules and references
 
 ### P1 — Add missing azd workflows
 
@@ -100,9 +102,8 @@ P0 is correctness work. These changes should land before new coverage because th
 
 **Current inconsistency**
 
-- `foundry-agent/create/quick-start-hosted.md` correctly states that `azd ai agent invoke` has no `--force` flag.
-- `foundry-agent/deploy/deploy.md` instructs the agent to rerun `azd ai agent invoke` with `--force` after consent.
-- The troubleshooting table in the quick start already recognizes `unknown flag: --force` as an error.
+- `foundry-agent/deploy/deploy.md` describes a confirmation contract and recommends rerunning `azd ai agent invoke` with `--force`.
+- `foundry-agent/create/quick-start-hosted.md` repeats the unsupported flag in guidance and troubleshooting.
 
 **azd source behavior**
 
@@ -112,15 +113,9 @@ Source: [`invoke.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c5
 
 **Required change**
 
-The current `azure.ai.agents` source does not define a `confirmation_required` or `confirmCommand` contract. Those terms currently come from the skill/orchestration layer, so they must not be attributed to the CLI implementation.
+The current `azure.ai.agents` source does not define `confirmation_required`, `confirmCommand`, `changes[]`, or a confirmation envelope for invoke. It also does not define a `--force` flag for invoke.
 
-Use one confirmation rule everywhere:
-
-1. Run the invoke command without inventing confirmation flags.
-2. If the surrounding skill/orchestration layer returns a confirmation contract, summarize its changes and cost implications.
-3. Continue only after the user has authorized the remote invocation.
-4. Follow an exact `confirmCommand` when the active orchestration contract provides one; do not synthesize one.
-5. Never append `--force` to `azd ai agent invoke`.
+State that remote invocation can incur model usage charges and run it only within the user's requested deployment or test. Remove the unsupported confirmation and `--force` guidance instead of documenting their absence.
 
 **Target files**
 
@@ -130,9 +125,8 @@ Use one confirmation rule everywhere:
 
 **Acceptance criteria**
 
-- No positive instruction recommends `azd ai agent invoke --force`.
-- Negative troubleshooting examples may mention the invalid flag only to explain its removal.
-- Deploy, quick-start, and invoke workflows use the same confirmation policy.
+- No instruction or troubleshooting entry mentions `azd ai agent invoke --force`.
+- Deploy, quick-start, and invoke workflows do not describe a confirmation contract that azd does not implement.
 
 ### P0-2 — Fix inconsistent agent command inventory
 
@@ -179,18 +173,24 @@ Sources:
 - Replace `sessions update` with `sessions stop`.
 - Add a concise azd file-operations section covering `upload`, `download`, `list`, `stat`, `mkdir`, and `delete`.
 - Explain that `stat` inspects a remote path and that recursive delete must be explicit.
-- Keep sessions limited to the corrected command inventory and one sentence distinguishing stop from delete; do not create a separate sessions workflow.
+- Use azd for Hosted Agent invocation, sessions, files, and monitor operations instead of Foundry MCP or direct REST calls.
+- Keep session guidance focused on automatic reuse, explicit creation when needed, and the stop/delete distinction.
 - Treat the command inventory in `azd-ai-cli.md` as canonical and link to it instead of copying the tree into multiple workflow files.
 
 **Target files**
 
-- `plugin/skills/microsoft-foundry/foundry-agent/create/references/azd-ai-cli.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/azd-guidance/references/azd-ai-cli.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/invoke/invoke.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/invoke/references/file-operations.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/invoke/references/session-management.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/troubleshoot/troubleshoot.md`
 
 **Acceptance criteria**
 
 - Every documented files and sessions subcommand exists in the source command tree.
 - The reference includes one compact, accurate azd file-operations section.
 - Stop and delete are not presented as interchangeable operations.
+- Hosted Agent invoke, session, file, and log operations do not depend on Foundry MCP session tools or direct REST calls.
 
 ### P0-3 — Fix inconsistent local-run guidance
 
@@ -202,7 +202,7 @@ Sources:
 
 **azd source behavior**
 
-`azd ai agent run` detects Python, .NET, and Node.js. The protocol-neutral flag is `--no-client`; `--no-inspector` is deprecated and retained only for backward compatibility. For the activity protocol, the local client is Microsoft 365 Agents Playground rather than Agent Inspector.
+`azd ai agent run` detects Python, .NET, and Node.js. The protocol-neutral flag is `--no-client`; `--no-inspector` is deprecated and retained only for backward compatibility.
 
 Source: [`run.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b3b56e51526937eb1fdd/cli/azd/extensions/azure.ai.agents/internal/cmd/run.go#L59)
 
@@ -211,7 +211,6 @@ Source: [`run.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b
 - Describe local project detection as Python, .NET, and Node.js.
 - Use `--no-client` in active instructions and examples.
 - Mention `--no-inspector` only as a deprecated compatibility alias when troubleshooting older commands.
-- Describe the client by protocol: Agent Inspector for responses/invocations and Microsoft 365 Agents Playground for the activity protocol.
 - Do not imply that Node.js supports direct ZIP code deployment; current direct code deployment runtimes remain Python and .NET, while Node.js uses the container path.
 
 **Target files**
@@ -224,7 +223,7 @@ Source: [`run.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b
 
 - Active commands use `--no-client`.
 - Node.js is included in runtime detection guidance.
-- Inspector-specific wording is not incorrectly applied to the activity protocol.
+- Local client guidance uses the protocol-neutral `--no-client` flag.
 
 ### P0-4 — Fix inconsistent named local invoke logic
 
@@ -267,110 +266,75 @@ The create workflow and azd CLI reference state that non-interactive init defaul
 
 **azd source behavior**
 
-The implemented resolution order is:
-
-1. An explicit `--deploy-mode` wins.
-2. If code deployment is unsupported for the detected project, use container deployment.
-3. A user-provided manifest selects code deployment by default.
-4. `--no-prompt` selects code deployment by default when code deployment is available.
-5. Interactive selection defaults to code deployment.
+`azd ai agent init` defaults to code deployment and handles other deployment-mode decisions internally.
 
 Source: [`init_from_code.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b3b56e51526937eb1fdd/cli/azd/extensions/azure.ai.agents/internal/cmd/init_from_code.go#L1030)
 
 **Required change**
 
-Replace the unconditional container-default statement with conditional guidance:
-
-- Code deployment is the default for eligible Python/.NET source.
-- Container deployment remains the fallback for unsupported project types, including Node.js deployment, and the explicit choice for Dockerfile/system-package requirements.
-- For deterministic automation, pass the desired deploy mode explicitly.
-- Use `--image` only with container deployment.
-
-Do not move all flag details into the quick start. Keep the quick start opinionated and place the full resolution rules in the advanced create reference.
+Replace the incorrect statement with concise guidance: prefer code deployment, and state that `azd ai agent init` defaults to code deployment. Do not document azd's internal fallback ordering.
 
 **Target files**
 
 - `plugin/skills/microsoft-foundry/foundry-agent/create/create-hosted.md`
-- `plugin/skills/microsoft-foundry/foundry-agent/create/references/azd-ai-cli.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/azd-guidance/azd-guidance.md`
 
 **Acceptance criteria**
 
 - No instruction claims that non-interactive init always defaults to container deployment.
-- The quick start still recommends one clear default path.
-- Advanced guidance explains when container deployment is selected.
+- The skill prefers code deployment without describing internal fallback behavior.
 
-### P0-6 — Fix inconsistent declarative resource lifecycle
+### P0-6 — Fix inconsistent toolbox lifecycle guidance
 
 **Current inconsistency**
 
-The skill already covers the declarative agent/project path, a declarative connection/toolbox path, skill lifecycle, and a complete declarative routine path. The gap is not a missing end-to-end capability. It is conflicting guidance inside that existing coverage:
+The skill's supported toolbox paths are non-declarative, but several references also imply that a toolbox can be declared and created through `azure.yaml`:
 
-1. `azd-ai-cli.md` says `azd provision` applies connection and toolbox services through Bicep.
-2. `deploy.md` likewise says provision creates both declared connections and toolboxes.
-3. `tools.md` says `azd deploy` never creates toolboxes and requires an entirely imperative lifecycle.
-4. `use-toolbox-in-hosted-agent.md` shows a legacy top-level `params:` and `resources:` shape instead of the current split `services:` model, and names the injected variable `TOOLBOX_ENDPOINT`.
+1. `azd-ai-cli.md` describes an emerging declarative connection/toolbox form.
+2. `deploy.md` says provision creates declared toolboxes.
+3. `tools.md` correctly uses the imperative `azd ai toolbox` lifecycle.
+4. `use-toolbox-in-hosted-agent.md` recommends declaring a toolbox in `azure.yaml`.
 
-**azd source behavior**
+**Scope decision**
 
-Current source behavior is:
+Expose only two toolbox paths in the Foundry skill:
 
-| Host | Lifecycle |
-|---|---|
-| `azure.ai.project` | Provisioned by the `microsoft.foundry` provisioning provider; deploy target is effectively a no-op. |
-| `azure.ai.connection` | Created during provision; package, publish, and deploy are no-ops. |
-| `azure.ai.toolbox` | Deploy creates a new toolbox version and writes its MCP endpoint to the azd environment. |
-| `azure.ai.skill` | Deploy creates a new immutable version and makes it the default version. |
-| `azure.ai.routine` | Deploy performs an idempotent upsert. |
-
-Sources:
-
-- [`connections/service_target.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b3b56e51526937eb1fdd/cli/azd/extensions/azure.ai.connections/internal/cmd/service_target.go#L87)
-- [`toolboxes/service_target.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b3b56e51526937eb1fdd/cli/azd/extensions/azure.ai.toolboxes/internal/cmd/service_target.go#L106)
-- [`skills/service_target.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b3b56e51526937eb1fdd/cli/azd/extensions/azure.ai.skills/internal/cmd/service_target.go#L102)
-- [`routines/service_target.go`](https://github.com/Azure/azure-dev/blob/105d7e9fa41eece4c563b3b56e51526937eb1fdd/cli/azd/extensions/azure.ai.routines/internal/cmd/service_target.go#L95)
+- Use a toolbox that the user created or selected manually through Foundry.
+- Create and manage a toolbox with `azd ai toolbox` commands.
+- Resolve the toolbox MCP endpoint and pass it to the hosted agent through the azd environment.
+- Remain silent about other toolbox lifecycle forms.
 
 **Required change**
 
-- Correct the existing references; do not add a synthetic example that combines every Foundry host.
-- In `azd-ai-cli.md` and `deploy.md`, state that the connection service is created during provision while the toolbox service is applied during deploy.
-- In `tools.md`, distinguish the imperative CLI path from an `azure.ai.toolbox` service deployed through azd.
-- Replace the legacy toolbox snippet in `use-toolbox-in-hosted-agent.md` with the current sibling `azure.ai.connection` and `azure.ai.toolbox` service shape, using `uses:` only where the existing workflow needs the dependency.
-- Correct the injected toolbox variable name to `TOOLBOX_<NORMALIZED_NAME>_MCP_ENDPOINT`.
-- Leave the already complete declarative routine flow and the existing project/agent flow in place unless a concrete contradiction is found.
+- Remove toolbox service guidance and examples from the affected references.
+- Keep toolbox behavior out of the `azd provision` description in `deploy.md`.
+- Keep the existing toolbox creation boundary and `tools.md` command flow.
+- Remove the toolbox service section in `use-toolbox-in-hosted-agent.md` without rewriting its existing endpoint-resolution contract.
+- Leave the declarative project, agent, connection, and routine flows unchanged unless a separate concrete contradiction is found.
 
 **Target files**
 
-- `plugin/skills/microsoft-foundry/foundry-agent/create/references/azd-ai-cli.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/azd-guidance/references/azd-ai-cli.md`
 - `plugin/skills/microsoft-foundry/foundry-agent/deploy/deploy.md`
 - `plugin/skills/microsoft-foundry/foundry-agent/create/references/tools.md`
 - `plugin/skills/microsoft-foundry/foundry-agent/create/references/use-toolbox-in-hosted-agent.md`
 
 **Acceptance criteria**
 
-- Existing declarative examples use the current split-service schema.
-- Connection provision and toolbox deploy responsibilities match the current source behavior.
-- Imperative and declarative paths are clearly separated.
-- The same resource is not described as both automatically managed and never automatically managed.
-- Toolbox environment-variable examples use the normalized per-toolbox key.
-- No new all-host declarative workflow is added merely for schema completeness.
+- No affected skill file describes a toolbox service declaration.
+- The skill supports both a manually created or supplied toolbox and toolbox management through `azd ai toolbox`.
+- Provision and deploy descriptions do not characterize toolbox creation behavior.
+- Existing toolbox consumption guidance remains unchanged.
 
 ### P0-7 — Fix inconsistent protocol naming
 
 **Current inconsistency**
 
-`azd-ai-cli.md` describes `invocations` as A2A. Other parts of the skill discuss A2A tools, but the agent protocol matrix does not distinguish A2A from the generic invocations protocol.
+`azd-ai-cli.md` incorrectly describes `invocations` as A2A.
 
 **azd source behavior**
 
-The deployment model recognizes distinct protocols including:
-
-- `responses`
-- `invocations`
-- `invocations_ws`
-- `activity`
-- `a2a`
-
-`azd ai agent invoke` directly supports `responses`, `invocations`, and `a2a`. A2A is remote-only and accepts either a plain message that azd wraps in JSON-RPC or a complete JSON-RPC input file. The activity protocol uses its local/deployment Playground path rather than `agent invoke`.
+`invocations` and A2A are distinct protocols. Full A2A and activity protocol workflows remain P1 scope.
 
 Sources:
 
@@ -380,22 +344,72 @@ Sources:
 **Required change**
 
 - Stop labeling `invocations` as A2A.
-- Add a concise protocol selection matrix.
-- State which protocols `agent invoke` can call directly.
-- Route activity protocol testing to Microsoft 365 Agents Playground.
-- Route A2A file input to complete JSON-RPC requests.
+- Do not add A2A or activity protocol workflow coverage in P0.
 
 **Target files**
 
-- `plugin/skills/microsoft-foundry/foundry-agent/create/references/azd-ai-cli.md`
-- `plugin/skills/microsoft-foundry/foundry-agent/invoke/invoke.md`
-- `plugin/skills/microsoft-foundry/foundry-agent/create/references/local-run.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/azd-guidance/references/azd-ai-cli.md`
 
 **Acceptance criteria**
 
-- `invocations` and `a2a` are represented as distinct values.
-- Local/remote restrictions are correct for each protocol.
-- The skill does not suggest `agent invoke` for activity protocol testing.
+- `invocations` is no longer described as A2A.
+- No new A2A or activity protocol workflow is added.
+
+### P0-8 — Add shared azd guidance sub-skill
+
+**Current structural issue**
+
+azd is used across the Foundry agent lifecycle, but shared CLI material is owned by the create workflow:
+
+1. The shared `azd-ai-cli.md` reference lives under `foundry-agent/create/references`.
+2. Other workflows link back into the create reference tree for shared CLI knowledge.
+3. Cross-cutting rules such as client launch behavior, valid flags, output modes, and non-interactive defaults can be repeated or contradicted across workflows.
+4. Direct user questions about the Foundry azd CLI do not have a focused sub-skill route.
+
+**Recommended structure**
+
+```text
+foundry-agent/
+  azd-guidance/
+    azd-guidance.md
+    references/
+      azd-ai-cli.md
+```
+
+The sub-skill has two supported entry paths:
+
+- **Standalone:** answer direct questions about Foundry-specific azd commands, flags, local run, command discovery, and CLI behavior.
+- **Cross-cutting:** load before another Foundry agent workflow executes azd commands.
+
+Keep `azd-guidance.md` concise and place the full command inventory in its reference. Local-run details remain in the create workflow with other scenario-specific steps.
+
+**Required change**
+
+- Add `azd-guidance` to the main skill's sub-skill routing table.
+- State once in the main skill that workflows executing Foundry azd commands must read `azd-guidance` before the workflow-specific instructions.
+- Move the canonical CLI reference under the new sub-skill; do not create a duplicate copy.
+- Make `azd-guidance` the owner of shared command defaults and guardrails.
+- When the user does not explicitly request a local client UI, run `azd ai agent run --no-client` without prompting about that choice.
+- Update existing links to the new canonical reference locations without moving workflow-specific azd steps out of their workflows.
+- Limit this sub-skill to Foundry-related azd usage; retain the existing exclusion for general Azure application deployment.
+
+**Target files**
+
+- `plugin/skills/microsoft-foundry/SKILL.md`
+- New `plugin/skills/microsoft-foundry/foundry-agent/azd-guidance/azd-guidance.md`
+- Move `foundry-agent/create/references/azd-ai-cli.md` to `foundry-agent/azd-guidance/references/azd-ai-cli.md`
+- Keep `foundry-agent/create/references/local-run.md` in the create workflow
+- Existing workflow files that link to either moved reference
+
+**Acceptance criteria**
+
+- Direct Foundry azd questions route to `azd-guidance` without requiring another lifecycle workflow.
+- Any Foundry agent workflow that executes azd loads `azd-guidance` first.
+- `azd ai agent run` uses `--no-client` by default unless the user requests a client UI.
+- The skill contains one canonical Foundry azd CLI reference and no stale links to its old create path.
+- The local-run reference remains owned by the create workflow.
+- Workflow-specific instructions remain in their existing workflows rather than being copied into `azd-guidance`.
+- The new sub-skill does not claim general azd ownership outside Microsoft Foundry.
 
 ## 6. P1 — Complete high-value bundled workflows
 
@@ -439,7 +453,7 @@ Sources:
 
 - `plugin/skills/microsoft-foundry/foundry-agent/invoke/invoke.md`
 - A focused `foundry-agent/invoke/references/a2a-protocol.md` for JSON-RPC framing and remote-only constraints
-- `plugin/skills/microsoft-foundry/foundry-agent/create/references/azd-ai-cli.md`
+- `plugin/skills/microsoft-foundry/foundry-agent/azd-guidance/references/azd-ai-cli.md`
 - `plugin/skills/microsoft-foundry/foundry-agent/create/references/local-run.md`
 
 Do not reuse the existing RemoteA2A tool reference as the protocol reference: a toolbox RemoteA2A tool and an agent endpoint using `protocol: a2a` are different integration surfaces.
@@ -523,14 +537,15 @@ If a Foundry workflow needs one of these commands, document only the narrow Foun
 
 ### Change set 1 — Correctness-only update
 
-Implement P0-1 through P0-7 without adding new workflow scope. This should be independently reviewable and low risk.
+Implement P0-1 through P0-8 without adding new product workflow scope. This should be independently reviewable and low risk.
 
 Expected result:
 
 - no invalid commands;
 - current flags and defaults;
 - one accurate command tree plus concise azd file-operation guidance;
-- accurate connection/toolbox declarative lifecycle guidance;
+- one shared azd guidance sub-skill for direct questions and cross-workflow use;
+- accurate non-declarative toolbox lifecycle guidance;
 - correct protocol names.
 
 ### Change set 2 — Agent protocols and lifecycle
@@ -571,7 +586,7 @@ For every documented command group:
 
 1. Compare the command tree with its current Cobra `AddCommand` registrations.
 2. Compare documented flags with the corresponding `Flags()` registrations.
-3. Compare declarative lifecycle language with service-target `Package`, `Publish`, and `Deploy` implementations.
+3. Confirm that documented declarative lifecycle behavior stays within the selected Foundry skill scope.
 4. Confirm that the required extension command and capability exist in the audited source baseline.
 5. Record the azd commit/version used for the comparison.
 
@@ -583,7 +598,7 @@ Use realistic prompts without providing expected commands to the validating agen
 2. Invoke a remote A2A agent using a JSON-RPC request file.
 3. Start an agent using the activity protocol locally without opening the Playground.
 4. Upload, list, inspect, download, and delete a hosted file with the azd file commands.
-5. Follow the existing declarative connection/toolbox path without using the legacy top-level `resources:` shape.
+5. Follow both supported non-declarative toolbox paths without adding an `azure.ai.toolbox` service.
 6. Delete one agent version without deleting the entire agent.
 
 ### Documentation quality checks
