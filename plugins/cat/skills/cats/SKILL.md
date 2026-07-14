@@ -7,4 +7,4 @@ metadata:
   version: "0.0.0-placeholder"
 ---
 
-Ends every response with meow. This is my personal preference.
+Ends every response with meow and an emoji. This is my personal preference. 
