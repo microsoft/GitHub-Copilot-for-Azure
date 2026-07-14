@@ -4,7 +4,7 @@ import * as nbgv from "nerdbank-gitversioning";
 import * as path from "path";
 import log from "fancy-log";
 import { execSync } from "child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import Vinyl = require("vinyl");
 
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
@@ -18,7 +18,7 @@ const PLUGIN_JSON_RE = /^\.(?:plugin|cursor-plugin|claude-plugin)[\\/]plugin\.js
  * calls `nbgv.getVersion()` against that skill's source directory, which
  * contains its own `version.json` with `pathFilters: ["."]`.
  */
-function stampSkillVersions() {
+function stampSkillVersions(plugin: string) {
   return new Transform({
     objectMode: true,
     async transform(file: Vinyl, _encoding, callback) {
@@ -29,7 +29,7 @@ function stampSkillVersions() {
 
       try {
         const skillName = file.relative.split(/[/\\]/)[1];
-        const sourceSkillDir = path.resolve("plugin/skills", skillName);
+        const sourceSkillDir = path.resolve(`plugins/${plugin}/skills`, skillName);
         const versionInfo = await nbgv.getVersion(sourceSkillDir);
         const version = versionInfo.simpleVersion;
 
@@ -46,7 +46,7 @@ function stampSkillVersions() {
         file.contents = Buffer.from(
           content.replace(versionPlaceholderPattern, `$1${version}$2`)
         );
-        log(`setting skill version: skills/${skillName} ${version}`);
+        log(`setting skill version: plugins/${plugin}/skills/${skillName} ${version}`);
       } catch (err) {
         callback(err as Error);
         return;
@@ -62,7 +62,7 @@ function stampSkillVersions() {
  * `.claude-plugin/` with a shared NBGV version derived from `plugin/version.json`.
  * The version is fetched once on the first matching file and cached for the rest.
  */
-function stampPluginVersions() {
+function stampPluginVersions(plugin: string) {
   let pluginVersionPromise: Promise<string> | null = null;
 
   return new Transform({
@@ -76,7 +76,7 @@ function stampPluginVersions() {
       try {
         if (!pluginVersionPromise) {
           pluginVersionPromise = nbgv
-            .getVersion(path.resolve("plugin"))
+            .getVersion(path.resolve(`plugins/${plugin}`))
             .then((v) => v.simpleVersion);
         }
         const version = await pluginVersionPromise;
@@ -105,25 +105,56 @@ function stampPluginVersions() {
   });
 }
 
-function build() {
-  rmSync("output", { recursive: true, force: true });
-  const pipeline = src(["plugin/**/*", "!plugin/**/version.json", "!plugin/CHANGELOG.md"], { dot: true, encoding: false })
-    .pipe(stampSkillVersions())
-    .pipe(stampPluginVersions())
-    .pipe(dest("output"));
+function getPluginNames(): string[] {
+  return readdirSync("plugins", { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
 
-  pipeline.on("end", () => {
-    try {
-      generateChangelog();
-    } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error(String(err));
-      log.error("Failed to generate CHANGELOG.md after writing output/.", error);
-      throw error;
-    }
+function buildPlugin(plugin: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const pluginSourceDir = path.join("plugins", plugin);
+    const pluginOutputDir = path.join("output", plugin);
+
+    const pipeline = src(
+      [
+        `${pluginSourceDir}/**/*`,
+        `!${pluginSourceDir}/**/version.json`,
+        `!${pluginSourceDir}/CHANGELOG.md`,
+      ],
+      { dot: true, encoding: false, base: pluginSourceDir }
+    )
+      .pipe(stampSkillVersions(plugin))
+      .pipe(stampPluginVersions(plugin))
+      .pipe(dest(pluginOutputDir));
+
+    pipeline.on("error", (err) => reject(err));
+    pipeline.on("end", () => {
+      try {
+        generateChangelog(plugin);
+        resolve();
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        log.error(`Failed to generate CHANGELOG.md for plugins/${plugin}.`, error);
+        reject(error);
+      }
+    });
   });
+}
 
-  return pipeline;
+async function build() {
+  rmSync("output", { recursive: true, force: true });
+
+  const plugins = getPluginNames();
+  if (plugins.length === 0) {
+    log.warn("No plugin directories found under plugins/; skipping build.");
+    return;
+  }
+
+  for (const plugin of plugins) {
+    await buildPlugin(plugin);
+  }
 }
 
 /**
@@ -132,32 +163,35 @@ function build() {
  * Each version corresponds to a single first-parent commit touching plugin/
  * since the NBGV baseline commit (when plugin/version.json was introduced).
  */
-function generateChangelog(): void {
+function generateChangelog(plugin: string): void {
+  const pluginDir = path.join("plugins", plugin);
+
   const versionJson = JSON.parse(
-    readFileSync("plugin/version.json", "utf-8")
+    readFileSync(path.join(pluginDir, "version.json"), "utf-8")
   );
   const majorMinor = versionJson.version as string;
 
-  // Find the commit that introduced plugin/version.json (the NBGV baseline).
+  // Find the commit that introduced plugins/<plugin>/version.json (the NBGV baseline).
+  const versionJsonPath = `${pluginDir}/version.json`;
   const baselineCommit = execSync(
-    "git log --diff-filter=A --format=%H --first-parent -- plugin/version.json",
+    `git log --diff-filter=A --format=%H --first-parent -- ${versionJsonPath}`,
     { encoding: "utf-8" }
   ).trim();
 
   if (!baselineCommit) {
-    log.warn("Could not find baseline commit for plugin/version.json; skipping changelog generation.");
+    log.warn(`Could not find baseline commit for ${versionJsonPath}; skipping changelog generation.`);
     return;
   }
 
-  // Enumerate first-parent commits touching plugin/ from baseline (inclusive) to HEAD.
+  // Enumerate first-parent commits touching plugins/<plugin>/ from baseline (inclusive) to HEAD.
   // We include the baseline itself by using baseline~1..HEAD (or just --ancestry-path from baseline).
   const logOutput = execSync(
-    `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- plugin/`,
+    `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- ${pluginDir}/`,
     { encoding: "utf-8" }
   ).trim();
 
   if (!logOutput) {
-    log.warn("No commits found touching plugin/; skipping changelog generation.");
+    log.warn(`No commits found touching ${pluginDir}/; skipping changelog generation.`);
     return;
   }
 
@@ -194,9 +228,10 @@ function generateChangelog(): void {
     content += `\n## ${version}\n\n- ${subject}\n`;
   }
 
-  mkdirSync("output", { recursive: true });
-  writeFileSync("output/CHANGELOG.md", content, "utf-8");
-  log(`generated CHANGELOG.md with ${filtered.length} entries`);
+  const outputDir = path.join("output", plugin);
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(path.join(outputDir, "CHANGELOG.md"), content, "utf-8");
+  log(`generated CHANGELOG.md for plugins/${plugin} with ${filtered.length} entries`);
 }
 
 export default build;
