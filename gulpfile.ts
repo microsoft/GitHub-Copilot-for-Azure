@@ -122,6 +122,7 @@ function buildPlugin(plugin: string): Promise<void> {
         `${pluginSourceDir}/**/*`,
         `!${pluginSourceDir}/**/version.json`,
         `!${pluginSourceDir}/CHANGELOG.md`,
+        `!${pluginSourceDir}/changelog-*.md`,
       ],
       { dot: true, encoding: false, base: pluginSourceDir }
     )
@@ -166,10 +167,48 @@ async function build() {
 function generateChangelog(plugin: string): void {
   const pluginDir = path.join("plugins", plugin);
 
+  // To preserve old changelog entries after moving plugin files,
+  // we commit legacy changelog entries and compute a version offset so the
+  // new generated version numbers keep increasing.
+  const legacyChangelogFiles = readdirSync(pluginDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /^changelog-.*\.md$/i.test(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a));
+
+  let firstLegacyVersion: string | undefined;
+  let firstLegacyVersionParts:
+    | { major: number; minor: number; patch: number }
+    | undefined;
+  if (legacyChangelogFiles.length > 0) {
+    const firstLegacyContent = readFileSync(
+      path.join(pluginDir, legacyChangelogFiles[0]),
+      "utf-8"
+    );
+    const firstVersionMatch = firstLegacyContent.match(/\b(\d+)\.(\d+)\.(\d+)\b/);
+    if (firstVersionMatch) {
+      firstLegacyVersion = `${firstVersionMatch[1]}.${firstVersionMatch[2]}.${firstVersionMatch[3]}`;
+      firstLegacyVersionParts = {
+        major: Number(firstVersionMatch[1]),
+        minor: Number(firstVersionMatch[2]),
+        patch: Number(firstVersionMatch[3]),
+      };
+    }
+  }
+
   const versionJson = JSON.parse(
     readFileSync(path.join(pluginDir, "version.json"), "utf-8")
   );
   const majorMinor = versionJson.version as string;
+  const [major, minor] = majorMinor.split(".").map((s) => Number(s));
+
+  let patchOffset = 0;
+  if (firstLegacyVersionParts) {
+    // When major/minor version is higher than the most recent major/minor in the legacy changelog,
+    // the patch number must have been reset to 0 so we don't need an offset.
+    if (major === firstLegacyVersionParts.major && minor === firstLegacyVersionParts.minor) {
+      patchOffset = firstLegacyVersionParts.patch;
+    }
+  }
 
   // Find the commit that introduced plugins/<plugin>/version.json (the NBGV baseline).
   const versionJsonPath = `${pluginDir}/version.json`;
@@ -219,13 +258,30 @@ function generateChangelog(plugin: string): void {
 
   for (let i = filtered.length - 1; i >= 0; i--) {
     const entry = filtered[i];
-    const version = `${majorMinor}.${entry.height}`;
+    const version = `${majorMinor}.${entry.height + patchOffset}`;
     // Turn (#NNN) into a markdown link.
     const subject = entry.subject.replace(
       /\(#(\d+)\)/g,
       (_, num) => `([#${num}](${repoUrl}/pull/${num}))`
     );
     content += `\n## ${version}\n\n- ${subject}\n`;
+  }
+
+  // Add all the legacy changelog entries
+  for (const legacyFile of legacyChangelogFiles) {
+    const legacyContent = readFileSync(path.join(pluginDir, legacyFile), "utf-8");
+    if (!legacyContent) {
+      continue;
+    }
+
+    if (!content.endsWith("\n")) {
+      content += "\n";
+    }
+    content += "\n";
+    content += legacyContent;
+    if (!legacyContent.endsWith("\n")) {
+      content += "\n";
+    }
   }
 
   const outputDir = path.join("output", plugin);
