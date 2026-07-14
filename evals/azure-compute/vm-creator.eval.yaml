@@ -832,22 +832,17 @@ stimuli:
             - name: view
               path: "vm-creator\\.md"
             - name: "(?i)(azure-)?compute|bash|shell|terminal"
-              args:
-                command: "(?i)compute_vm_list-skus|vm list-skus"
+              command: "(?i)compute_vm_list-skus|vm list-skus"
             - name: "(?i)(azure-)?compute|bash|shell|terminal"
-              args:
-                command: "(?i)compute_vm_list-images|vm image list"
+              command: "(?i)compute_vm_list-images|vm image list"
             - name: "(?i)(azure-)?compute|bash|shell|terminal"
-              args:
-                command: "(?i)compute_vm_check-quota|vm list-usage"
+              command: "(?i)compute_vm_check-quota|vm list-usage"
           disallowed:
             - name: "(?i)(azure-)?compute"
-              args:
-                command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
+              command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
             - name: "(?i)compute_vm(ss)?_create"
             - name: "(?i)bash|shell|terminal|powershell|pwsh"
-              args:
-                command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
+              command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
       # Emit Bicep when validation succeeds, or surface the validation block.
       - type: output-matches
         config:
@@ -913,12 +908,10 @@ stimuli:
               path: "output-adapters/mcp-apply\\.md"
           disallowed:
             - name: "(?i)(azure-)?compute"
-              args:
-                command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
+              command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
             - name: "(?i)compute_vm(ss)?_create"
             - name: "(?i)bash|shell|terminal|powershell|pwsh"
-              args:
-                command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
+              command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
       - type: output-matches
         config:
           pattern: "(?i)plan card|\\|\\s*Setting\\s*\\|\\s*Value\\s*\\|\\s*Source"
@@ -959,12 +952,10 @@ stimuli:
               path: "vm-creator\\.md"
           disallowed:
             - name: "(?i)(azure-)?compute"
-              args:
-                command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
+              command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
             - name: "(?i)compute_vm(ss)?_create"
             - name: "(?i)bash|shell|terminal|powershell|pwsh"
-              args:
-                command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
+              command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
       - type: output-matches
         config:
           pattern: "(?i)scale.?set|VMSS"
