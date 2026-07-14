@@ -36,6 +36,11 @@ interface HealthData {
     categories?: Record<string, { items?: HealthCategoryItem[] }>;
 }
 
+function isPluginSkillPath(pathValue: string): boolean {
+    const normalized = pathValue.replace(/\\/g, "/");
+    return normalized.startsWith("output/skills/") || normalized.startsWith("plugin/skills/");
+}
+
 /** Extract plugin skills (with descriptions) from the frontmatter category. */
 function skillsFromHealthData(data: HealthData): Skill[] {
     const items = data.categories?.frontmatter?.items ?? [];
@@ -43,7 +48,7 @@ function skillsFromHealthData(data: HealthData): Skill[] {
     for (const item of items) {
         const path = String(item.metadata?.path ?? "");
         // Only plugin skills; the frontmatter check also covers .github/skills.
-        if (!path.startsWith("plugin/skills/")) continue;
+        if (!isPluginSkillPath(path)) continue;
         const description = String(item.metadata?.description ?? "");
         skills.push({ name: item.name, description, descriptionLength: description.length });
     }
