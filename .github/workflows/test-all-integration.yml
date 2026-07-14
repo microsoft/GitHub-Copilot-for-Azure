@@ -8,6 +8,7 @@ name: Integration Tests - all
 permissions:
   id-token: write
   contents: read
+  copilot-requests: write
 
 on:
   schedule:
@@ -167,8 +168,6 @@ jobs:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
-    secrets:
-      COPILOT_CLI_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
 
   test:
     name: Integration – ${{ matrix.skill }}
@@ -262,17 +261,12 @@ jobs:
           npm ci --ignore-scripts
           npm run build
 
-      # COPILOT_CLI_TOKEN must be a fine-grained access token with the Account level Copilot Request permission
-      # saved to the secrets of the microsoft/GitHub-Copilot-for-Azure repo.
-      # As a known issue, when the permission of the token doesn't grant sufficient access,
-      # the agent will hang instead of giving an error.
-      # If you see the agent hang indefinitely, try refreshing the access token.
-      # See https://github.com/github/copilot-sdk/issues/343 for more details.
+      # github.token(aka. GITHUB_TOKEN) is granted permission to make CAPI requests by having the copilot-requests permission
       - name: Setup Copilot CLI
         id: setup-copilot-cli
         uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
         with:
-          token: ${{ secrets.COPILOT_CLI_TOKEN }}
+          token: ${{ github.token }}
 
       # Integration tests are broken down per skill for easy tracking of partially complete runs.
       # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
