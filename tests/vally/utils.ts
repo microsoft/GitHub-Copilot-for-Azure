@@ -10,7 +10,9 @@ export function normalizeTestName(skillName: string, testName: string) {
 }
 
 /**
- * Sanitize a string for use as the filename from a given test name
+ * Sanitize a string for use as the filename from a given test name.
+ * 
+ * Note: keep this in sync with the sanitizeTestName function in tests/utils.ts.
  */
 export function sanitizeTestName(testName: string): string {
   return testName
