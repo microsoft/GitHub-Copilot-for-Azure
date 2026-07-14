@@ -10,7 +10,7 @@ import path from "path";
 const SKILL_NAME = "microsoft-foundry";
 
 const readSkillFile = (relativePath: string) =>
-  readFile(path.join(SKILLS_PATH, SKILL_NAME, relativePath), "utf-8");
+  readFile(path.join(OUTPUT_PATH, "azure", "skills", SKILL_NAME, relativePath), "utf-8");
 
 describe("foundry-agent create toolbox reference paths", () => {
   test("uses current toolbox sample and docs paths", async () => {

@@ -2,7 +2,7 @@
  * CLI wrapper for running vally tests.
  *
  * Example:
- * npm run test:vally -- --skill azure-ai [...vally eval arguments]
+ * npm run test:vally -- --plugin azure --skill azure-ai [...vally eval arguments]
  */
 
 import * as path from "node:path";
@@ -164,6 +164,7 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
 }
 
 type CliOptions = {
+  plugin?: string;
   skill?: string;
   passRate?: number;
   forwardedArgs: string[];
@@ -171,11 +172,31 @@ type CliOptions = {
 
 function parseCliOptions(argv: string[]): CliOptions {
   const forwardedArgs: string[] = [];
+  let plugin: string | undefined;
   let skill: string | undefined;
   let passRate: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+
+    if (arg === "--plugin") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --plugin");
+      }
+      plugin = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--plugin=")) {
+      const value = arg.slice("--plugin=".length);
+      if (!value) {
+        throw new Error("Missing value for --plugin");
+      }
+      plugin = value;
+      continue;
+    }
 
     if (arg === "--skill") {
       const value = argv[i + 1];
@@ -241,6 +262,7 @@ function parseCliOptions(argv: string[]): CliOptions {
   }
 
   return {
+    plugin,
     skill,
     passRate,
     forwardedArgs,
@@ -252,6 +274,7 @@ function printUsage(): void {
     "Usage: tsx tests/run-vally-test.ts [options] [-- <vally args>]",
     "",
     "Options:",
+    "  --plugin <name>           Plugin name for eval specs (default: azure)",
     "  --skill <name>            Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
@@ -305,6 +328,7 @@ async function main(): Promise<void> {
   }
 
   const options = parseCliOptions(rawArgs);
+  const pluginName = options.plugin ?? "azure";
   const passRateThreshold = options.passRate ?? 0.75;
 
   // Wrapper-specific args are parsed above; all other args are preserved here.
@@ -319,7 +343,7 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
-    const evalSpecDir = path.join(__dirname, `../evals/${options.skill}/`);
+    const evalSpecDir = path.join(__dirname, `../evals/${pluginName}/${options.skill}/`);
     const evalSpecPaths: string[] = [];
     const allFiles = await fs.readdir(evalSpecDir);
     for (const file of allFiles) {

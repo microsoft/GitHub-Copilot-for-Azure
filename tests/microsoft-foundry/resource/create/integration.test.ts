@@ -12,7 +12,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    skill = await loadSkill({ plugin: "azure", name: SKILL_NAME });;
   });
 
   describe("Skill Loading", () => {
@@ -37,7 +37,9 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
+        OUTPUT_PATH,
+        "azure",
+        "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
@@ -55,7 +57,9 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
+        OUTPUT_PATH,
+        "azure",
+        "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
@@ -73,7 +77,9 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
+        OUTPUT_PATH,
+        "azure",
+        "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
@@ -92,7 +98,9 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
+        OUTPUT_PATH,
+        "azure",
+        "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 
@@ -108,7 +116,9 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const referencesPath = path.join(
-        SKILLS_PATH,
+        OUTPUT_PATH,
+        "azure",
+        "skills",
         "microsoft-foundry/resource/create/references"
       );
 
@@ -130,7 +140,9 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
       const path = await import("path");
 
       const mainFilePath = path.join(
-        SKILLS_PATH,
+        OUTPUT_PATH,
+        "azure",
+        "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
 

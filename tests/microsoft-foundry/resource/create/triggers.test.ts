@@ -15,7 +15,7 @@ describe("microsoft-foundry:resource/create - Trigger Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    skill = await loadSkill({ plugin: "azure", name: SKILL_NAME });;
     triggerMatcher = new TriggerMatcher(skill);
   });
 

@@ -3,9 +3,9 @@ import { computeMetrics } from "@microsoft/vally";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
-import { listSkills } from "../utils/skill-loader.ts";
 import { getEarlyTerminateCondition, getFollowUp, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
+import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
 
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
@@ -34,6 +34,19 @@ export class IntegrationTestAgentRunner implements Executor {
     const requiredSkills = getRequiredSkillsCondition(tags);
     const timeout = options.timeout;
 
+    // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
+    const plugins = listPlugins();
+    const requiredSkillRefs: SkillRef[] = [];
+    requiredSkills?.forEach(skillName => {
+      const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === skillName)).at(0);
+      if (owningPlugin) {
+        requiredSkillRefs.push({
+          plugin: owningPlugin.name,
+          name: skillName
+        });
+      }
+    });
+
     const runConfig: AgentRunConfig = {
       workspace: workDir,
       env: {
@@ -47,7 +60,7 @@ export class IntegrationTestAgentRunner implements Executor {
       systemPrompt: systemPrompt,
       followUpTimeout: timeout,
       takeScreenshot: takeScreenshot,
-      requiredSkills: requiredSkills,
+      requiredSkills: requiredSkillRefs.length > 0 ? requiredSkillRefs : undefined,
       maxTurns: stimulus.constraints?.max_turns,
       // Always make our agent runner preserve workspace.
       // vally will delete the test workspace by default.
@@ -85,7 +98,7 @@ export class IntegrationTestAgentRunner implements Executor {
         completedAt,
         model: model,
         executor: this.name,
-        skillsLoaded: getSkills(),
+        skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
         sessionID: sessionId ?? "unknown",
       },
       metrics: {
@@ -235,12 +248,4 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
 
 export function registerExecutors(registry: ExecutorRegistry): void {
   registry.register(new IntegrationTestAgentRunner());
-}
-
-function getSkills(): string[] {
-  const noSkills = process.env.NO_SKILLS === "true";
-  if (noSkills) {
-    return [];
-  }
-  return listSkills();
 }

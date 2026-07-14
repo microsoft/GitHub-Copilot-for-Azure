@@ -46,7 +46,7 @@ describe("truncateSkills", () => {
       }
     );
 
-    await expect(truncateSkills(["azure-ai", "not-a-skill"], 20000)).rejects.toThrow(
+    await expect(truncateSkills(["azure"], [{ plugin: "azure", name: "azure-ai" }, { plugin: "azure", name: "not-a-skill" }], 20000)).rejects.toThrow(
       "Invalid requiredSkills"
     );
   });
@@ -59,7 +59,7 @@ describe("truncateSkills", () => {
       }
     );
 
-    await expect(truncateSkills(["azure-ai"], 20)).rejects.toThrow(
+    await expect(truncateSkills(["azure"], [{ plugin: "azure", name: "azure-ai" }], 20)).rejects.toThrow(
       "requiredSkills exceed SKILL_CHAR_BUDGET (20)"
     );
   });
@@ -78,7 +78,7 @@ describe("truncateSkills", () => {
     const edgeLen = (await getFormattedSkillDescription("edge", descriptions.edge)).length;
     const equalBudget = requiredLen + 1 + edgeLen + 1;
 
-    const disabled = await truncateSkills(["required"], equalBudget);
+    const disabled = await truncateSkills(["azure"], [{ plugin: "azure", name: "required" }], equalBudget);
 
     expect(disabled).toEqual(["edge"]);
   });

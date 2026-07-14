@@ -1,4 +1,4 @@
-import { listSkills, loadSkill } from "./skill-loader.ts";
+import { listSkills, loadSkill, type SkillRef } from "./skill-loader.ts";
 
 export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
 
@@ -7,17 +7,17 @@ export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
  * @param requiredSkills skills that cannot be truncated.
  * @returns the skills to disable to emulate truncation.
  */
-export async function truncateSkills(requiredSkills: string[], charBudget: number): Promise<string[] | undefined> {
-  const skills = listSkills();
-  const invalidSkills = requiredSkills.filter((s) => !skills.includes(s));
+export async function truncateSkills(plugins: string[], requiredSkills: SkillRef[], charBudget: number): Promise<SkillRef[] | undefined> {
+  const skillRefs = plugins.map(p => listSkills(p)).flat();
+  const invalidSkills = requiredSkills.filter((s) => !skillRefs.some(ref => ref.name === s.name));
   if (invalidSkills.length > 0) {
     throw new Error(`Invalid requiredSkills. ${invalidSkills} do not exist in azure-skills plugin.`);
   }
-  const nonRequiredSkills = skills.filter((s) => !requiredSkills.includes(s));
+  const nonRequiredSkills = skillRefs.filter((s) => !requiredSkills.some(rs => rs.name === s.name));
   let charCount = 0;
 
-  for (const skill of requiredSkills) {
-    const skillObject = await loadSkill(skill);
+  for (const skillRef of requiredSkills) {
+    const skillObject = await loadSkill(skillRef);
     const skillXml = await getFormattedSkillDescription(skillObject.metadata.name, skillObject.metadata.description);
     // +1 for newline between skills
     charCount += skillXml.length + 1;
@@ -36,8 +36,8 @@ export async function truncateSkills(requiredSkills: string[], charBudget: numbe
   }
 
   for (let i = 0; i < nonRequiredSkills.length; i++) {
-    const skill = nonRequiredSkills[i];
-    const skillObject = await loadSkill(skill);
+    const skillRef = nonRequiredSkills[i];
+    const skillObject = await loadSkill(skillRef);
     const skillXml = await getFormattedSkillDescription(skillObject.metadata.name, skillObject.metadata.description);
     if (charCount + skillXml.length + 1 >= charBudget) {
       // Return a list of skills including and after the current one

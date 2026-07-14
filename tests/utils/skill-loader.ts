@@ -13,31 +13,51 @@ import matter from "gray-matter";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-interface SkillMetadata {
+export type SkillMetadata = {
+  plugin: string;
   name: string;
   description: string;
   [key: string]: unknown;
+};
+
+export type SkillRef = {
+  plugin: string;
+  name: string;
 }
 
-export interface LoadedSkill {
+export type LoadedSkill = {
   metadata: SkillMetadata;
   content: string;
   path: string;
   filePath: string;
-}
+};
+
+export type Plugin = {
+  name: string;
+  skills: SkillRef[];
+};
 
 /**
  * Load a skill by name
  */
-export async function loadSkill(skillName: string): Promise<LoadedSkill> {
-  const skillPath = path.join(
-    global.SKILLS_PATH || path.resolve(__dirname, "../../output/skills"),
-    skillName
-  );
+export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
+  let skillPath;
+  if (global.OUTPUT_PATH) {
+    // global.OUTPUT_PATH is only defined in JEST context
+    skillPath = path.join(
+      path.join(global.OUTPUT_PATH, skillRef.plugin),
+      skillRef.name
+    );
+  } else {
+    skillPath = path.join(
+      path.resolve(__dirname, `../../output/${skillRef.plugin}/skills`),
+      skillRef.name
+    );
+  }
   const skillFile = path.join(skillPath, "SKILL.md");
 
   if (!fs.existsSync(skillFile)) {
-    throw new Error(`SKILL.md not found for skill: ${skillName} at ${skillFile}`);
+    throw new Error(`SKILL.md not found for skill: ${skillRef.name} at ${skillFile} in plugin ${skillRef.plugin}`);
   }
 
   const fileContent = fs.readFileSync(skillFile, "utf-8");
@@ -45,7 +65,8 @@ export async function loadSkill(skillName: string): Promise<LoadedSkill> {
 
   return {
     metadata: {
-      name: (metadata.name as string) || skillName,
+      plugin: skillRef.plugin,
+      name: (metadata.name as string) || skillRef.name,
       description: (metadata.description as string) || "",
       ...metadata
     },
@@ -56,10 +77,16 @@ export async function loadSkill(skillName: string): Promise<LoadedSkill> {
 }
 
 /**
- * @returns Names of skills in azure plugin.
+ * @returns SkillRef objects in a given plugin.
  */
-export function listSkills(): string[] {
-  const skillsDir = global.SKILLS_PATH || path.resolve(__dirname, "../../output/skills");
+export function listSkills(plugin: string): SkillRef[] {
+  let skillsDir;
+  if (global.OUTPUT_PATH) {
+    // global.OUTPUT_PATH is only defined in JEST context
+    skillsDir = path.join(global.OUTPUT_PATH, plugin, "skills")
+  } else {
+    skillsDir = path.resolve(__dirname, `../../output/${plugin}/skills`);
+  }
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
   return items
     .filter((item) => item.isDirectory())
@@ -67,5 +94,29 @@ export function listSkills(): string[] {
       const skillMdPath = path.join(skillsDir, item.name, "SKILL.md");
       return fs.existsSync(skillMdPath);
     })
-    .map((item) => item.name);
+    .map((item) => {
+      return {
+        plugin: plugin,
+        name: item.name
+      }
+    });
+}
+
+export function listPlugins(): Plugin[] {
+  let pluginsDir;
+  if (global.OUTPUT_PATH) {
+    // global.OUTPUT_PATH is only defined in JEST context
+    pluginsDir = global.OUTPUT_PATH
+  } else {
+    pluginsDir = path.resolve(__dirname, "../../output/");
+  }
+  const items = fs.readdirSync(pluginsDir, { withFileTypes: true });
+  return items
+    .filter((item) => item.isDirectory())
+    .map((item) => {
+      return {
+        name: item.name,
+        skills: listSkills(item.name)
+      }
+    });
 }
