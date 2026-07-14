@@ -5,7 +5,7 @@
  * output into a {@link CategoryReport}.
  */
 
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import type {
   Collector,
@@ -121,15 +121,12 @@ export const frontmatterCollector: Collector = {
     const builtSkillsDir = resolve(options.cwd, "output", "skills");
     let stdout: string;
     try {
-      stdout = execSync(
-        `npm run frontmatter -- --json "${builtSkillsDir}"`,
-        {
-          cwd: scriptsCwd,
-          timeout: options.timeout,
-          encoding: "utf-8",
-          stdio: ["ignore", "pipe", "pipe"],
-        },
-      );
+      stdout = execFileSync(process.execPath, [process.env.npm_execpath as string, "run", "frontmatter", "--", "--json", builtSkillsDir], {
+        cwd: scriptsCwd,
+        timeout: options.timeout,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "pipe"],
+      });
     } catch (err: unknown) {
       // The frontmatter CLI exits with code 1 when there are failures,
       // but still writes valid JSON to stdout.

@@ -559,15 +559,20 @@ function findSkillFiles(skillsDir: string): string[] {
     .map((name) => resolve(skillsDir, name, "SKILL.md"));
 }
 
+function getRoutingRoot(skillFile: string): string {
+  return dirname(dirname(skillFile));
+}
+
 /**
- * Resolve a CLI positional argument to one or more SKILL.md file paths.
+ * Resolve a CLI positional argument to one or more SKILL.md file paths and
+ * the skill-container roots needed for trigger-overlap validation.
  *
- * Three accepted forms:
- *   1. Path to a SKILL.md file directly → [that file]
- *   2. Path to a skill folder (directory containing SKILL.md) → [<dir>/SKILL.md]
- *   3. Path to a skills container (directory of skill subdirectories) → all SKILL.md inside
+ * Accepted forms:
+ *   1. Path to a SKILL.md file directly
+ *   2. Path to a skill folder (directory containing SKILL.md)
+ *   3. Path to a skills container (directory of skill subdirectories)
  */
-function resolveSkillFiles(arg: string): string[] | string {
+function resolveSkillSelection(arg: string): { skillFiles: string[]; routingRoots: string[] } | string {
   const resolved = resolve(arg);
 
   if (!existsSync(resolved)) {
@@ -580,21 +585,31 @@ function resolveSkillFiles(arg: string): string[] | string {
     if (basename(resolved) !== "SKILL.md") {
       return `Expected a SKILL.md file but got: ${arg}`;
     }
-    return [resolved];
+    return {
+      skillFiles: [resolved],
+      routingRoots: [getRoutingRoot(resolved)],
+    };
   }
 
   if (st.isDirectory()) {
     const directSkillMd = resolve(resolved, "SKILL.md");
     if (existsSync(directSkillMd)) {
       // Skill folder — the directory itself is the skill
-      return [directSkillMd];
+      return {
+        skillFiles: [directSkillMd],
+        routingRoots: [getRoutingRoot(directSkillMd)],
+      };
     }
+
     // Skills container — enumerate subdirectories
     const found = findSkillFiles(resolved);
     if (found.length === 0) {
       return `No skills found in directory: ${arg}`;
     }
-    return found;
+    return {
+      skillFiles: found,
+      routingRoots: [resolved],
+    };
   }
 
   return `Path is neither a file nor a directory: ${arg}`;
@@ -707,35 +722,37 @@ function main(): void {
 
   const jsonOutput = values.json ?? false;
 
-  if (positionals.length === 0) {
-    console.error("\n❌ No path specified.\n");
-    console.error("Usage:");
-    console.error("  npm run frontmatter <path/SKILL.md>        # Validate a specific SKILL.md file");
-    console.error("  npm run frontmatter <path/skills/mySkill>  # Validate a single skill folder");
-    console.error("  npm run frontmatter <path/skills>          # Validate all skills in a directory");
-    console.error("  npm run frontmatter <path1> <path2> ...    # Mix of the above\n");
-    process.exitCode = 1;
-    return;
-  }
+  const selectedArgs = positionals.length === 0
+    ? [resolve(REPO_ROOT, "output", "skills")]
+    : positionals;
 
   const skillFiles: string[] = [];
+  const routingRoots = new Set<string>();
 
-  for (const arg of positionals) {
-    const result = resolveSkillFiles(arg);
+  for (const arg of selectedArgs) {
+    const result = resolveSkillSelection(arg);
     if (typeof result === "string") {
       console.error(`\n❌ ${result}\n`);
       process.exitCode = 1;
       return;
     }
-    skillFiles.push(...result);
+
+    for (const file of result.skillFiles) {
+      skillFiles.push(file);
+    }
+    for (const root of result.routingRoots) {
+      routingRoots.add(root);
+    }
   }
+
+  const uniqueSkillFiles = [...new Set(skillFiles)];
 
   // Validate all skill files
   const results: ValidationResult[] = [];
-  const routingContexts = buildSkillRoutingContexts(skillFiles);
+  const routingContexts = buildSkillRoutingContexts([...routingRoots].flatMap((root) => findSkillFiles(root)));
   const routingContextByName = new Map(routingContexts.map((context) => [context.name, context]));
 
-  for (const file of skillFiles) {
+  for (const file of uniqueSkillFiles) {
     const result = validateSkillFile(file);
     const routingContext = routingContextByName.get(result.skill);
     if (routingContext) {

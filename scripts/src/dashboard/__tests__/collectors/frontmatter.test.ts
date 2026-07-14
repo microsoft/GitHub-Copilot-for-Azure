@@ -211,10 +211,14 @@ describe("frontmatterCollector.collect", () => {
 
   it("returns a valid CategoryReport from CLI output", async () => {
     const jsonOutput = makeFrontmatterJson();
-    const execSync = vi.fn(() => jsonOutput);
+    const capturedArgs: unknown[] = [];
+    const execFileSync = vi.fn((...args: unknown[]) => {
+      capturedArgs.splice(0, capturedArgs.length, ...args);
+      return jsonOutput;
+    });
 
     vi.doMock("node:child_process", () => ({
-      execSync,
+      execFileSync,
     }));
 
     const { frontmatterCollector } = await import(
@@ -228,13 +232,15 @@ describe("frontmatterCollector.collect", () => {
 
     expect(report.status).toBe("pass");
     expect(report.items).toHaveLength(2);
-    expect(execSync).toHaveBeenCalledWith(
-      expect.stringContaining("--json \"D:\\fake\\output\\skills\""),
-      expect.objectContaining({
-        cwd: "D:\\fake\\scripts",
-        timeout: 5000,
-      }),
-    );
+    expect(capturedArgs[0]).toBe(process.execPath);
+    expect(capturedArgs[1]).toEqual(expect.arrayContaining(["run", "frontmatter", "--", "--json"]));
+    expect(capturedArgs[2]).toEqual(expect.objectContaining({
+      cwd: expect.stringContaining("scripts"),
+      timeout: 5000,
+    }));
+    const callArgs = capturedArgs[1] as unknown as string[];
+    expect(String(callArgs[0])).toContain("npm-cli");
+    expect(callArgs[5]).toMatch(/output[\\/]+skills$/);
   });
 
   it("handles non-zero exit with valid JSON stdout", async () => {
@@ -253,7 +259,7 @@ describe("frontmatterCollector.collect", () => {
     });
 
     vi.doMock("node:child_process", () => ({
-      execSync: () => {
+      execFileSync: () => {
         const err = new Error("exit code 1") as Error & { stdout: string };
         err.stdout = jsonOutput;
         throw err;
@@ -275,7 +281,7 @@ describe("frontmatterCollector.collect", () => {
 
   it("returns skip when CLI is not found", async () => {
     vi.doMock("node:child_process", () => ({
-      execSync: () => {
+      execFileSync: () => {
         throw new Error("ENOENT: npm not found");
       },
     }));
@@ -295,7 +301,7 @@ describe("frontmatterCollector.collect", () => {
 
   it("returns skip when non-zero exit stdout is not valid JSON", async () => {
     vi.doMock("node:child_process", () => ({
-      execSync: () => {
+      execFileSync: () => {
         const err = new Error("exit code 1") as Error & { stdout: string };
         err.stdout = "npm ERR! something broke";
         throw err;
