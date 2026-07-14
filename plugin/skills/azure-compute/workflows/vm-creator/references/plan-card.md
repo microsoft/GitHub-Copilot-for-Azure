@@ -59,6 +59,8 @@ Implementation: a single `AskUserQuestion` tool call with `header: "Deliver"`, `
 
 **If the user picks "Edit a row first":** then ask which row, update, re-render the full Plan Card, and re-ask the same batched action picker. Do not splinter into multiple popups.
 
-**If the user already implied the answer in their original prompt** ("save bicep to ./infra" / "open a PR" / "just print az CLI" / "apply it"): **skip this prompt entirely** and proceed straight to delivery.
+**If the user already implied a non-destructive delivery answer in their original prompt** ("save bicep to ./infra" / "open a PR" / "just print az CLI"): **skip this prompt entirely** and proceed straight to delivery. An Apply via Azure MCP preference does not approve deployment: render the full Plan Card and ask for approval.
 
 **Explicit-override fast path — skip the Plan Card table too.** If the user combines an explicit deliverable ("give me the Bicep", "just print az CLI") with an explicit refusal of dialog ("no questions", "skip planning", "no plan", "just do it"): **do not render the Plan Card markdown table.** Instead emit a single-line preview of the high-signal decisions — e.g. *"→ Deploying `Standard_D2s_v5` in `eastus`, NSG = your public IP only on 22, est. ~$70/mo"* — and follow it immediately with the requested artifact. End with a one-liner noting the full Plan Card is available on request if they want to edit rows. Step 4 validation gates still run.
+
+Apply via Azure MCP is excluded: require Plan Card approval and final confirmation.

@@ -3,7 +3,14 @@
 User is in an MCP-connected host (Claude Code, VS Code Copilot, Cursor) with the Azure MCP server enabled and says "just do it" / "create it now" / "deploy".
 
 ## Prerequisite
+
 Azure MCP server installed, and the user is signed in to Azure (e.g. `az login`). The exact auth mechanism is an implementation detail of the MCP server and may vary.
+
+## Mandatory approval gates
+
+1. Render the full Plan Card and wait for explicit approval. A prior "apply it", "just do it", or "no questions" preference selects this adapter but does not approve deployment.
+2. After Plan Card approval, summarize the create operation and ask for final destructive-action confirmation.
+3. Do not call `compute_vm_create` or `compute_vmss_create` until both gates have passed.
 
 ## Pre-flight checks (read-only)
 
