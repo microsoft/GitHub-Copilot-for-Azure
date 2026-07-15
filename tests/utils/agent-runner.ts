@@ -20,6 +20,7 @@ import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type
 import { redactSecrets } from "./redact.ts";
 import { listSkills } from "./skill-loader.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
+import { sanitizeTestName } from "../vally/utils.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate.ts";
@@ -799,7 +800,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         const state = expect.getState();
         const testName = state.currentTestName ?? "unknown-test";
         // Sanitize for use as filename
-        return sanitizeFileName(testName);
+        return sanitizeTestName(testName);
       } catch {
         // Fallback if not running in Jest context
         return `test-${Date.now()}`;
@@ -1339,15 +1340,3 @@ export function getIntegrationSkipReason(): string | undefined {
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
 const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-
-/**
- * Sanitize a string for use as a filename
- */
-function sanitizeFileName(name: string): string {
-  return name
-    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
-    .replace(/\s+/g, "_")           // Replace spaces with underscores
-    .replace(/-+/g, "-")            // Collapse multiple dashes
-    .replace(/_+/g, "_")            // Collapse multiple underscores
-    .substring(0, 200);             // Limit length
-}
