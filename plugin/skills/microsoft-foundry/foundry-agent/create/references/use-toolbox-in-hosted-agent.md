@@ -228,6 +228,8 @@ $body = @{ jsonrpc = "2.0"; id = 1; method = "tools/list"; params = @{} } | Conv
 
 `?api-version=v1` is required.
 
+> ⚠️ **Agent-identity-authed tools won't work locally — that's expected, not a blocker.** The token above is your **user** identity, not the deployed agent's.
+
 ## Code Integration Patterns
 
 The sample repo provides integration patterns for both Python and C#. Read the sample code and adapt it to the user's project.

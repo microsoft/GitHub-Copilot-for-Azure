@@ -108,16 +108,18 @@ For multiple indexes, add multiple entries with different `index` values.
 
 ## Recipe: A2A peer agent
 
+Call any A2A-compatible agent (Foundry or external) as a tool. The target must already expose an A2A endpoint before you can wire a connection to it.
+
+**Step 1 (Foundry peers only) — Enable incoming A2A on the target agent.** If the peer already returns 200 on `/endpoint/protocols/a2a/agentCard/v1.0`, skip. Otherwise follow [enable-incoming-a2a.md](enable-incoming-a2a.md). For external A2A services, assume the peer owner has already done this — no action here.
+
+**Step 2 — Create the `remote-a2a` connection.** See [tool-a2a.md](tool-a2a.md) for the full connection command, including the Foundry-specific values (`AgenticIdentityToken` auth, audience, agent-card path, RBAC) and non-Foundry variants.
+
+**Step 3 — Attach to the toolbox.**
+
 ```bash
-azd ai connection create peer-agent-conn \
-  --kind remote-a2a \
-  --target https://other-agent.foundry-account.westus2.azure.com/ \
-  --auth-type none
-
 azd ai toolbox connection add agent-tools peer-agent-conn
+azd ai toolbox publish agent-tools <new-version>
 ```
-
-For authenticated peers, use `--auth-type project-managed-identity --audience https://ai.azure.com/.default`.
 
 ## Recipe: multi-tool toolbox in one call
 
