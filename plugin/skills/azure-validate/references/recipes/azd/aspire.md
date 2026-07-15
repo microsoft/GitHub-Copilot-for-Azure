@@ -34,11 +34,7 @@ See [Aspire Functions Secrets Reference](../../aspire-functions-secrets.md) for 
 
 When using Aspire with Container Apps in "limited mode" (in-memory infrastructure generation), `azd provision` creates Azure resources but doesn't automatically populate environment variables that `azd deploy` needs.
 
-**Run the helper script to set the three required variables.** It reads the azd
-environment, derives the resource group, and sets `AZURE_CONTAINER_REGISTRY_ENDPOINT`,
-`AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, and `MANAGED_IDENTITY_CLIENT_ID` **only if
-they are missing**, then prints what it set (or "already present") so you don't have to
-re-parse `azd env get-values`.
+**Run the helper script** ([scripts/set-aspire-aca-env.sh](scripts/set-aspire-aca-env.sh) or [scripts/set-aspire-aca-env.ps1](scripts/set-aspire-aca-env.ps1)). It sets `AZURE_CONTAINER_REGISTRY_ENDPOINT`, `AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID`, and `MANAGED_IDENTITY_CLIENT_ID` (only the ones that are missing).
 
 **bash:**
 ```bash
@@ -49,15 +45,3 @@ re-parse `azd env get-values`.
 ```powershell
 ./scripts/set-aspire-aca-env.ps1         # or: -Environment <azd-env-name>
 ```
-
-The scripts — [scripts/set-aspire-aca-env.sh](scripts/set-aspire-aca-env.sh) and
-[scripts/set-aspire-aca-env.ps1](scripts/set-aspire-aca-env.ps1) — are cross-platform
-equivalents that:
-
-- Load `azd env get-values` safely (no `eval`) and read `AZURE_RESOURCE_GROUP`.
-- Skip any variable already present; set missing ones from live Azure
-  (`az acr list` / `az identity list`).
-- Print a compact summary of each variable and fail with a clear message if the resource
-  group or a resource can't be resolved.
-
-**Why this is needed:** Aspire's "limited mode" generates infrastructure in-memory. While `azd provision` creates all necessary Azure resources (Container Registry, Managed Identity, Container Apps Environment), it doesn't populate the environment variables that reference those resources. The `azd deploy` phase requires these variables to authenticate with the container registry and configure managed identity bindings.
