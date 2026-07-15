@@ -69,6 +69,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -106,6 +107,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -150,6 +152,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -189,6 +192,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -233,6 +237,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -272,6 +277,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -311,6 +317,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -353,6 +360,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: durable-task-scheduler-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -410,6 +418,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -469,6 +478,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: vanilla-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -515,6 +525,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -554,6 +565,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -600,6 +612,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -641,6 +654,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -685,6 +699,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -724,6 +739,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -763,6 +779,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -805,6 +822,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -862,6 +880,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -907,6 +926,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: terraform-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
@@ -959,6 +979,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1004,6 +1025,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1049,6 +1071,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1094,6 +1117,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1140,6 +1164,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1204,6 +1229,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Stop if there is no further work; otherwise go with recommended options."
@@ -1248,6 +1274,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1294,6 +1321,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1342,6 +1370,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-javascript
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1387,6 +1416,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-javascript
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1432,6 +1462,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-javascript
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1476,6 +1507,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-python
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
@@ -1521,6 +1553,7 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-deploy
+      category: brownfield-python
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
