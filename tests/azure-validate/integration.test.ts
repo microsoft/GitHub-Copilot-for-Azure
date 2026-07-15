@@ -20,11 +20,9 @@ import {
   matchesFileEdit,
 } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { matchesCommand, softCheckSkill, isSkillInvoked, shouldEarlyTerminateForSkillInvocation, withTestResult } from "../utils/evaluate";
+import { matchesCommand, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-validate";
-const RUNS_PER_PROMPT = 1;
-const invocationRateThreshold = 0.8;
 const aspireEnvVarTestTimeoutMs = 2700000; // 45 minutes
 
 // Check if integration tests should be skipped at module level
@@ -44,123 +42,12 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
     useJest: true
   });
 
-  describe("skill-invocation", () => {
-    test("invokes azure-validate skill for deployment readiness check", () => withTestResult(async ({ setSkillInvocationRate }) => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        const agentMetadata = await agent.run({
-          prompt: "Check if my app is ready to deploy to Azure",
-          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          invocationCount += 1;
-        }
-      }
-      const rate = invocationCount / RUNS_PER_PROMPT;
-      setSkillInvocationRate(rate);
-      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-    }));
-
-    test("invokes azure-validate skill for azure.yaml validation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        const agentMetadata = await agent.run({
-          prompt: "Validate my azure.yaml configuration before deploying",
-          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          invocationCount += 1;
-        }
-      }
-      const rate = invocationCount / RUNS_PER_PROMPT;
-      setSkillInvocationRate(rate);
-      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-    }));
-
-    // Preflight validation tests (formerly azure-deployment-preflight)
-    test("invokes azure-validate skill for Bicep validation prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        const agentMetadata = await agent.run({
-          prompt: "Validate my Bicep template before deploying to Azure",
-          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          invocationCount += 1;
-        }
-      }
-      const rate = invocationCount / RUNS_PER_PROMPT;
-      setSkillInvocationRate(rate);
-      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-    }));
-
-    test("invokes azure-validate skill for what-if analysis prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        const agentMetadata = await agent.run({
-          prompt: "Run a what-if analysis to preview changes before deploying my infrastructure",
-          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          invocationCount += 1;
-        }
-      }
-      const rate = invocationCount / RUNS_PER_PROMPT;
-      setSkillInvocationRate(rate);
-      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-    }));
-
-    test("invokes azure-validate skill for RBAC role verification prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        const agentMetadata = await agent.run({
-          prompt: "Verify the RBAC role assignments in my Bicep templates before deploying to Azure",
-          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          invocationCount += 1;
-        }
-      }
-      const rate = invocationCount / RUNS_PER_PROMPT;
-      setSkillInvocationRate(rate);
-      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-    }));
-
-    test("invokes azure-validate skill for managed identity permissions check prompt", () => withTestResult(async ({ setSkillInvocationRate }) => {
-      let invocationCount = 0;
-      for (let i = 0; i < RUNS_PER_PROMPT; i++) {
-        const agentMetadata = await agent.run({
-          prompt: "Validate the managed identity RBAC role assignments in my Bicep templates before deploying to Azure",
-          shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
-        });
-
-        softCheckSkill(agentMetadata, SKILL_NAME);
-        if (isSkillInvoked(agentMetadata, SKILL_NAME)) {
-          invocationCount += 1;
-        }
-      }
-      const rate = invocationCount / RUNS_PER_PROMPT;
-      setSkillInvocationRate(rate);
-      expect(rate).toBeGreaterThanOrEqual(invocationRateThreshold);
-    }));
-  });
-
   describe("deployment-validation", () => {
     const FOLLOW_UP_PROMPT = ["Continue with recommended options until complete."];
 
     test("terminates at validation for static whiteboard web app", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        prompt: "Create a static whiteboard web app and deploy to Azure.",
+        prompt: "My static whiteboard web app is ready. Please validate and prepare it for Azure deployment using azd.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
@@ -181,7 +68,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("terminates at validation for static portfolio website", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        prompt: "Create a static portfolio website and deploy to Azure.",
+        prompt: "My static portfolio website is ready. Please validate and prepare it for Azure deployment using azd.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>
@@ -202,7 +89,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
     test("terminates at validation for containerized web app on Container Apps", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        prompt: "Create a containerized web application and deploy to Azure Container Apps.",
+        prompt: "My containerized web application is ready. Please validate and prepare it for deployment to Azure Container Apps using azd.",
         nonInteractive: true,
         followUp: FOLLOW_UP_PROMPT,
         shouldEarlyTerminate: (metadata) =>

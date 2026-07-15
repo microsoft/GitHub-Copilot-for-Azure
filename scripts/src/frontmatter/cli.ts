@@ -12,9 +12,10 @@
  *   4. Name must not start with reserved prefixes (claude- or anthropic-).
  *
  * Usage:
- *   npm run frontmatter                 # Validate all skills
- *   npm run frontmatter <skill>         # Validate a single skill
- *   npm run frontmatter <path/SKILL.md> # Validate a specific file
+ *   npm run frontmatter <path/SKILL.md>        # Validate a specific SKILL.md file
+ *   npm run frontmatter <path/skills/mySkill>  # Validate a single skill folder
+ *   npm run frontmatter <path/skills>          # Validate all skills in a directory
+ *   npm run frontmatter <path1> <path2> ...    # Mix of the above
  */
 
 import { dirname, resolve, basename, relative } from "node:path";
@@ -31,8 +32,6 @@ function getRepoRoot(): string {
 }
 
 const REPO_ROOT = getRepoRoot();
-const PLUGIN_SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
-const META_SKILLS_DIR = resolve(REPO_ROOT, ".github", "skills");
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -560,8 +559,45 @@ function findSkillFiles(skillsDir: string): string[] {
     .map((name) => resolve(skillsDir, name, "SKILL.md"));
 }
 
-function getAllSkillFiles(): string[] {
-  return [...findSkillFiles(PLUGIN_SKILLS_DIR), ...findSkillFiles(META_SKILLS_DIR)];
+/**
+ * Resolve a CLI positional argument to one or more SKILL.md file paths.
+ *
+ * Three accepted forms:
+ *   1. Path to a SKILL.md file directly → [that file]
+ *   2. Path to a skill folder (directory containing SKILL.md) → [<dir>/SKILL.md]
+ *   3. Path to a skills container (directory of skill subdirectories) → all SKILL.md inside
+ */
+function resolveSkillFiles(arg: string): string[] | string {
+  const resolved = resolve(arg);
+
+  if (!existsSync(resolved)) {
+    return `Path not found: ${arg}`;
+  }
+
+  const st = statSync(resolved);
+
+  if (st.isFile()) {
+    if (basename(resolved) !== "SKILL.md") {
+      return `Expected a SKILL.md file but got: ${arg}`;
+    }
+    return [resolved];
+  }
+
+  if (st.isDirectory()) {
+    const directSkillMd = resolve(resolved, "SKILL.md");
+    if (existsSync(directSkillMd)) {
+      // Skill folder — the directory itself is the skill
+      return [directSkillMd];
+    }
+    // Skills container — enumerate subdirectories
+    const found = findSkillFiles(resolved);
+    if (found.length === 0) {
+      return `No skills found in directory: ${arg}`;
+    }
+    return found;
+  }
+
+  return `Path is neither a file nor a directory: ${arg}`;
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -671,37 +707,32 @@ function main(): void {
 
   const jsonOutput = values.json ?? false;
 
-  let skillFiles: string[];
+  if (positionals.length === 0) {
+    console.error("\n❌ No path specified.\n");
+    console.error("Usage:");
+    console.error("  npm run frontmatter <path/SKILL.md>        # Validate a specific SKILL.md file");
+    console.error("  npm run frontmatter <path/skills/mySkill>  # Validate a single skill folder");
+    console.error("  npm run frontmatter <path/skills>          # Validate all skills in a directory");
+    console.error("  npm run frontmatter <path1> <path2> ...    # Mix of the above\n");
+    process.exitCode = 1;
+    return;
+  }
 
-  if (positionals.length > 0) {
-    skillFiles = [];
-    for (const arg of positionals) {
-      // Accept either a skill name or a direct path to SKILL.md
-      if (arg.endsWith("SKILL.md") && existsSync(arg)) {
-        skillFiles.push(resolve(arg));
-      } else {
-        // Try as skill name in both directories
-        const pluginPath = resolve(PLUGIN_SKILLS_DIR, arg, "SKILL.md");
-        const metaPath = resolve(META_SKILLS_DIR, arg, "SKILL.md");
+  const skillFiles: string[] = [];
 
-        if (existsSync(pluginPath)) {
-          skillFiles.push(pluginPath);
-        } else if (existsSync(metaPath)) {
-          skillFiles.push(metaPath);
-        } else {
-          console.error(`\n❌ Skill "${arg}" not found in plugin/skills/ or .github/skills/\n`);
-          process.exitCode = 1;
-          return;
-        }
-      }
+  for (const arg of positionals) {
+    const result = resolveSkillFiles(arg);
+    if (typeof result === "string") {
+      console.error(`\n❌ ${result}\n`);
+      process.exitCode = 1;
+      return;
     }
-  } else {
-    skillFiles = getAllSkillFiles();
+    skillFiles.push(...result);
   }
 
   // Validate all skill files
   const results: ValidationResult[] = [];
-  const routingContexts = buildSkillRoutingContexts(getAllSkillFiles());
+  const routingContexts = buildSkillRoutingContexts(skillFiles);
   const routingContextByName = new Map(routingContexts.map((context) => [context.name, context]));
 
   for (const file of skillFiles) {

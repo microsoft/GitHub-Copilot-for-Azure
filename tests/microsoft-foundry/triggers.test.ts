@@ -31,6 +31,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "Improve my agent instructions in Azure AI Foundry",
       "Use a prompt optimizer on my Foundry system prompt",
       "Set up agent monitoring and continuous evaluation in Foundry",
+      "Set up a CI/CD deployment pipeline for my Foundry agent",
       "Help me with Microsoft Foundry model deployment",
       "How to use knowledge index for RAG in Azure AI Foundry?",
       "Create a new Azure AI Foundry project",

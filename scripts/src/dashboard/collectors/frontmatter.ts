@@ -115,29 +115,41 @@ export const frontmatterCollector: Collector = {
     // The frontmatter npm script lives in scripts/package.json, so we
     // must run from the scripts/ directory, not the repo root.
     const scriptsCwd = resolve(options.cwd, "scripts");
+    // Validate the built output (output/skills/) rather than the source
+    // (plugin/skills/) so that stamped version numbers are used and the
+    // CLI does not fail on placeholder versions.
+    const builtSkillsDir = resolve(options.cwd, "output", "skills");
     let stdout: string;
     try {
-      stdout = execSync("npm run frontmatter -- --json", {
-        cwd: scriptsCwd,
-        timeout: options.timeout,
-        encoding: "utf-8",
-        stdio: ["ignore", "pipe", "pipe"],
-      });
+      stdout = execSync(
+        `npm run frontmatter -- --json "${builtSkillsDir}"`,
+        {
+          cwd: scriptsCwd,
+          timeout: options.timeout,
+          encoding: "utf-8",
+          stdio: ["ignore", "pipe", "pipe"],
+        },
+      );
     } catch (err: unknown) {
       // The frontmatter CLI exits with code 1 when there are failures,
       // but still writes valid JSON to stdout.
       const execErr = err as { stdout?: string; status?: number };
-      if (execErr.stdout && execErr.stdout.trim().startsWith("{")) {
-        stdout = execErr.stdout;
-      } else {
-        return {
-          status: "skip",
-          summary: { total: 0, passed: 0, failed: 0, warnings: 0, skipped: 0 },
-          items: [],
-          collectedAt: new Date().toISOString(),
-          collectorVersion: COLLECTOR_VERSION,
-        };
+
+      if (typeof execErr.stdout === "string" && execErr.stdout.trim().length > 0) {
+        try {
+          return parseFrontmatterJson(execErr.stdout);
+        } catch {
+          // Fall through to the skip report below when stdout is not valid JSON.
+        }
       }
+
+      return {
+        status: "skip",
+        summary: { total: 0, passed: 0, failed: 0, warnings: 0, skipped: 0 },
+        items: [],
+        collectedAt: new Date().toISOString(),
+        collectorVersion: COLLECTOR_VERSION,
+      };
     }
 
     return parseFrontmatterJson(stdout);
