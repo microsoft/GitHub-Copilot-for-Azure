@@ -1,22 +1,30 @@
-# Set the Container Apps environment variables that Aspire "limited mode" leaves unpopulated.
-#
-# When Aspire runs in "limited mode", `azd provision` creates the Azure resources
-# (Container Registry, Managed Identity, Container Apps Environment) but does NOT populate the
-# env vars that `azd deploy` needs to reference them. This script fills that gap.
-#
-# Run it AFTER `azd provision` but BEFORE `azd deploy`.
-#
-# USAGE:
-#   ./set-aspire-aca-env.ps1 [-Environment <azd-env-name>]
-#
-#   -Environment   Optional azd environment name (forwarded to `azd env` calls).
-#                  Defaults to the current/default azd environment.
-#
-# The script only sets a variable if it is currently missing, and prints what it did so the
-# result can be understood without re-inspecting `azd env get-values`:
-#   AZURE_CONTAINER_REGISTRY_ENDPOINT              <- az acr list ... [0].loginServer
-#   AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID   <- az identity list ... [0].id
-#   MANAGED_IDENTITY_CLIENT_ID                     <- az identity list ... [0].clientId
+<#
+.SYNOPSIS
+    Set the Container Apps environment variables that Aspire "limited mode" leaves unpopulated.
+
+.DESCRIPTION
+    When Aspire runs in "limited mode", `azd provision` creates the Azure resources
+    (Container Registry, Managed Identity, Container Apps Environment) but does NOT populate the
+    env vars that `azd deploy` needs to reference them. This script fills that gap.
+
+    Run it AFTER `azd provision` but BEFORE `azd deploy`.
+
+    The script only sets a variable if it is currently missing, and prints what it did so the
+    result can be understood without re-inspecting `azd env get-values`:
+      AZURE_CONTAINER_REGISTRY_ENDPOINT              <- az acr list ... [0].loginServer
+      AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID   <- az identity list ... [0].id
+      MANAGED_IDENTITY_CLIENT_ID                     <- az identity list ... [0].clientId
+
+.PARAMETER Environment
+    Optional azd environment name (forwarded to `azd env` calls).
+    Defaults to the current/default azd environment.
+
+.EXAMPLE
+    ./set-aspire-aca-env.ps1
+
+.EXAMPLE
+    ./set-aspire-aca-env.ps1 -Environment my-azd-env
+#>
 
 param(
     [string]$Environment
