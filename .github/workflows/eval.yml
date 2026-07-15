@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "evals/**"
-      - "plugin/skills/**"
+      - "plugins/*/skills/**"
       - ".vally.yaml"
   workflow_dispatch:
     inputs:
@@ -54,7 +54,7 @@ jobs:
           npm run vally validate-stimulus
 
       - name: Lint skill and eval specs
-        run: npx --yes @microsoft/vally-cli@^0.7.0 lint plugin/skills/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
+        run: npx --yes @microsoft/vally-cli@^0.7.0 lint plugins/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
 
       - name: Determine suite
         if: github.event_name != 'pull_request'
