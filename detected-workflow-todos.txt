@@ -1,0 +1,81 @@
+Old source plugin paths (plugin/...)
+
+eval.yml:7 uses plugin/skills/** in on.pull_request.paths
+
+eval.yml:53 lints plugin/skills/
+
+microsoft-foundry-e2e-eval.yml:55 removes plugin/skills/microsoft-foundry
+
+microsoft-foundry-e2e-eval.yml:56 restores plugin/skills/microsoft-foundry
+
+microsoft-foundry-e2e-eval.yml:58 log text mentions plugin/skills/microsoft-foundry
+
+microsoft-foundry-e2e-eval.yml:60 runs git status on plugin/skills/microsoft-foundry
+
+pr-plugin-version-check.yml:7 watches plugin/.plugin/plugin.json
+
+pr-plugin-version-check.yml:8 watches plugin/.claude-plugin/plugin.json
+
+pr-plugin-version-check.yml:9 watches plugin/.cursor-plugin/plugin.json
+
+pr.yml:215 watches plugin/skills/*/SKILL.md
+
+pr.yml:223 watches plugin/skills/**
+
+pr.yml:263 checks for ^plugin/skills/
+
+pr.yml:264 rewrites plugin/skills/ to old output path
+
+pr.yml:365 watches plugin/skills/**/*.md
+
+sync-to-azure-mcp.yml:41 passes ../plugin/skills to generateMcpAllowlists
+
+test-all-skills.yml:25 watches plugin/skills/** on push
+
+test-all-skills.yml:30 watches plugin/skills/** on pull_request
+
+Old build output paths (output/... at repo root)
+
+microsoft-foundry-e2e-eval.yml:138 sets skills_dir="output/skills"
+
+pr.yml:264 maps to output/skills/
+
+pr.yml:294 sets const skillsDir = 'output/skills';
+
+pr.yml:396 logs ../output/skills
+
+pr.yml:397 validates ../output/skills
+
+publish-to-marketplace.yml:62 sets SOURCE_DIR="source-repo/output/"
+
+publish-to-marketplace.yml:158 sets SOURCE_DIR="source-repo/output/"
+
+publish-to-marketplace.yml:173 copies source-repo/output/.plugin/plugin.json
+
+publish-to-marketplace.yml:174 copies source-repo/output/.mcp.json
+
+publish-to-marketplace.yml:176 copies source-repo/output/.claude-plugin/plugin.json
+
+publish-to-marketplace.yml:178 syncs source-repo/output/skills/
+
+publish-to-marketplace.yml:180 syncs source-repo/output/hooks/
+
+publish-to-marketplace.yml:181 copies source-repo/output/gemini-extension.json
+
+Comment or message text that still mentions the old layout
+
+pr.yml:259 comment mentions plugin/skills and output/skills
+
+pr.yml:310 log text mentions output/skills/
+
+pr.yml:335 log text mentions output/skills/
+
+publish-to-marketplace.yml:24 comment mentions build stamping into output
+
+publish-to-marketplace.yml:106 PR body says sync of plugin/
+
+publish-to-marketplace.yml:120 comment mentions build stamping into output
+
+publish-to-marketplace.yml:170 comment describes copying from old output layout
+
+publish-to-marketplace.yml:235 PR body says sync of plugin/
