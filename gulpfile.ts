@@ -13,6 +13,16 @@ const TOP_LEVEL_SKILL_RE = /^skills[\\/][^\\/]+[\\/]SKILL\.md$/;
 const PLUGIN_JSON_RE = /^\.(?:plugin|cursor-plugin|claude-plugin)[\\/]plugin\.json$/;
 
 /**
+ * By default the directory of the plugin in the build output should be the exact name of the plugin.
+ * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin may depend on it.
+ * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
+ * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
+ */
+const pluginDirnameMap = new Map<string, string>([
+  ["azure", "azure-skills"]
+]);
+
+/**
  * Stamps each top-level skill's SKILL.md with a per-skill NBGV version.
  * Matches files like `skills/<name>/SKILL.md` (but not nested skills) and
  * calls `nbgv.getVersion()` against that skill's source directory, which
@@ -115,14 +125,15 @@ function getPluginNames(): string[] {
 function buildPlugin(plugin: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const pluginSourceDir = path.join("plugins", plugin);
-    const pluginOutputDir = path.join("output", plugin);
+    const pluginDirnameOverride = pluginDirnameMap.get(plugin);
+    const pluginOutputDir = path.join("output", pluginDirnameOverride ?? plugin);
 
     const pipeline = src(
       [
         `${pluginSourceDir}/**/*`,
         `!${pluginSourceDir}/**/version.json`,
         `!${pluginSourceDir}/CHANGELOG.md`,
-        `!${pluginSourceDir}/changelog-*.md`,
+        `!${pluginSourceDir}/changelog-*.md`, // legacy changelog
       ],
       { dot: true, encoding: false, base: pluginSourceDir }
     )
@@ -175,7 +186,6 @@ function generateChangelog(plugin: string): void {
     .map((entry) => entry.name)
     .sort((a, b) => b.localeCompare(a));
 
-  let firstLegacyVersion: string | undefined;
   let firstLegacyVersionParts:
     | { major: number; minor: number; patch: number }
     | undefined;
@@ -186,7 +196,6 @@ function generateChangelog(plugin: string): void {
     );
     const firstVersionMatch = firstLegacyContent.match(/\b(\d+)\.(\d+)\.(\d+)\b/);
     if (firstVersionMatch) {
-      firstLegacyVersion = `${firstVersionMatch[1]}.${firstVersionMatch[2]}.${firstVersionMatch[3]}`;
       firstLegacyVersionParts = {
         major: Number(firstVersionMatch[1]),
         minor: Number(firstVersionMatch[2]),
