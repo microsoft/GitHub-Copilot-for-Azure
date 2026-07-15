@@ -1,0 +1,39 @@
+name: cats-integration-eval
+description: |
+  Integration evaluation for cats skill. Use for multi-plugin testing
+
+tags:
+  type: integration
+  skill: cats
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "says meow"
+    prompt: "What's the largest cat species on planet Earth?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - cats
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cats
+      - type: output-contains
+        config:
+          substring: "meow"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: completed
