@@ -23,3 +23,7 @@
 
 - Update vally-eval skill to reference the new file structure
 - 
+
+## Nuances
+
+azure plugin is named "azure" but the directory is named "azure-skills". Awesome Copilot repo encodes that information so we cannot simply change that. We need to patch the script to tell them to look for the files at azure-skills when the user refers to "azure" plugin. https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L121-L143
