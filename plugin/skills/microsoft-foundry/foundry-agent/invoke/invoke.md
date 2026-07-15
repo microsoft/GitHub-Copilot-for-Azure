@@ -15,13 +15,15 @@ Treat an `azure.yaml` service with `host: azure.ai.agent` as Hosted. If the type
 
 ### Step 1: Verify the Agent
 
-From the azd project, run:
+Inside an azd project, run:
 
 ```bash
 azd ai agent show --output json
 ```
 
 Verify that the deployed version is active. When multiple agent services exist, use the service name in subsequent commands.
+
+When invoking outside an azd project with a known protocol endpoint, skip this step.
 
 ### Step 2: Invoke
 
@@ -122,6 +124,7 @@ See [Invocations Protocol Guide](references/invocations-protocol.md) for request
 | Agent service cannot be resolved | Use the `azure.yaml` service name, correct the service block, or use `--agent-endpoint` outside the project |
 | Hosted version is not active | Inspect `azd ai agent show --output json` and deployment logs |
 | Session is missing or expired | Run `azd ai agent sessions list`, then use a valid ID or invoke with `--new-session` |
+| Conversation is missing after a session was deleted | For the responses protocol, retry with `--new-session --new-conversation` |
 | `session_not_ready` or `424 FailedDependency` | Inspect `azd ai agent monitor`, wait for readiness, and retry the same azd invoke |
 | Invocations schema mismatch | Inspect the handler or OpenAPI contract and correct the input file |
 | File operation fails | Run `azd ai agent sessions show <id>` and verify the path with `azd ai agent files list` or `stat` |

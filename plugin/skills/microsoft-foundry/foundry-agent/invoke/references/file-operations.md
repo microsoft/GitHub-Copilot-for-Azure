@@ -32,9 +32,10 @@ azd ai agent files list /data --output table
 azd ai agent files stat /data/output.csv
 ```
 
-Create a directory. Parent directories are created as needed:
+`mkdir` will not automatically create missing parent directories. Create each missing parent directory first:
 
 ```bash
+azd ai agent files mkdir /data
 azd ai agent files mkdir /data/input
 ```
 

@@ -14,8 +14,8 @@ azd ai agent init -m <manifestUrl>   # scaffold from a sample
 azd ai agent init --src <dir>        # scaffold from existing source
 
 azd ai agent run --no-client         # start on localhost:8088 without a client UI
-azd ai agent invoke "<msg>"          # remote invoke (billed; gated)
-azd ai agent invoke --local "<msg>"  # local invoke (no billing)
+azd ai agent invoke "<msg>"          # invoke the deployed agent
+azd ai agent invoke --local "<msg>"  # invoke the agent on localhost
 
 azd provision                        # core azd; creates Foundry project + infra
 azd deploy                           # core azd; packages + registers new agent version

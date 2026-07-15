@@ -76,7 +76,7 @@ azd ai agent run my-agent --no-client
 Resolution order (first non-empty wins):
 
 1. `--start-command` flag.
-2. `azure.yaml services.<name>.config.startupCommand`.
+2. `azure.yaml services.<name>.startupCommand`.
 3. Auto-detected from project type.
 
 Example:
@@ -88,8 +88,7 @@ services:
     project: src/my-agent
     language: python
     host: azure.ai.agent
-    config:
-      startupCommand: "uvicorn app:app --host 0.0.0.0 --port 4001"
+    startupCommand: "uvicorn app:app --host 0.0.0.0 --port 4001"
 ```
 
 If detection fails and no override is set, `run` errors with the project dir and asks for `--start-command` or `startupCommand`.

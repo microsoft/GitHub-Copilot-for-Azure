@@ -78,7 +78,7 @@ The full set is documented in [agent-tools.md](agent-tools.md) and — authorita
 
 ## Information to Gather Before Building a Toolbox Payload
 
-When the user asks to "add an MCP tool" or similar, **never guess**. Confirm each field before generating any JSON or `azure.yaml` snippet:
+When the user asks to "add an MCP tool" or similar, **never guess**. Confirm each field before generating a toolbox payload:
 
 | # | Question | Why needed |
 |---|----------|------------|

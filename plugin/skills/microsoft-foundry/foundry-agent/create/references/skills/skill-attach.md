@@ -74,7 +74,7 @@ Full working sample: [foundry-toolbox-mcp-skills (C#)](https://github.com/micros
 ## Verify end-to-end
 
 ```bash
-azd ai agent run
+azd ai agent run --no-client
 azd ai agent invoke --local "Hi, can I return my tent within 30 days?"
 ```
 
