@@ -414,7 +414,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      scenario: cost-deep
     constraints:
       max_turns: 40
     graders:
@@ -755,7 +754,6 @@ stimuli:
       area: output
       cost: llm
       skill: azure-compute
-      scenario: ephemeral-ci
     constraints:
       max_turns: 40
     graders:
@@ -818,7 +816,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      scenario: plan-card-override
     constraints:
       max_turns: 40
     graders:
@@ -891,7 +888,6 @@ stimuli:
       area: behavior
       cost: llm
       skill: azure-compute
-      scenario: approval-gate
       followUp:
         - "Do not approve or deploy. If validation found blockers, use your first recommended available region and SKU; otherwise keep my original values. Continue only until you render the updated Plan Card and ask for approval, then stop."
     constraints:
@@ -939,7 +935,6 @@ stimuli:
       area: routing
       cost: llm
       skill: azure-compute
-      scenario: implicit-vmss
       followUp:
         - "Use eastus, my existing SSH public key if present, and safe defaults for remaining choices. If validation finds a blocker, use your first recommended available alternative. Continue only until you render the Plan Card for the VMSS, then stop without generating or deploying."
     constraints:

@@ -37,7 +37,6 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      scenario: web-recommendation-routing
     graders:
       - type: completed
       - type: skill-invocation

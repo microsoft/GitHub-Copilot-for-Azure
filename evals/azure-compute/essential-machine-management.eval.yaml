@@ -60,7 +60,6 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      scenario: emm-status-routing
     graders:
       - type: completed
       - type: skill-invocation

@@ -35,7 +35,6 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      scenario: crg-creation-routing
     graders:
       - type: completed
       - type: skill-invocation
