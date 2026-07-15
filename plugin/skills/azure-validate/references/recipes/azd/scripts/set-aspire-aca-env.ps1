@@ -48,8 +48,8 @@ foreach ($line in (azd env get-values @azdEnvArgs)) {
 
 $rgName = $azdValues['AZURE_RESOURCE_GROUP']
 if (-not $rgName) {
-    [Console]::Error.WriteLine("ERROR: AZURE_RESOURCE_GROUP is not set in the azd environment.")
-    [Console]::Error.WriteLine("Run 'azd provision' before this script so the resource group is available.")
+    Write-Host "ERROR: AZURE_RESOURCE_GROUP is not set in the azd environment."
+    Write-Host "Run 'azd provision' before this script so the resource group is available."
     exit 1
 }
 
@@ -68,8 +68,8 @@ function Set-IfMissing {
 
     $value = (& $ValueCommand)
     if (-not $value) {
-        [Console]::Error.WriteLine("ERROR: Could not resolve $VarName ($Description) in resource group '$rgName'.")
-        [Console]::Error.WriteLine("Confirm 'azd provision' completed and the resource exists.")
+        Write-Host "ERROR: Could not resolve $VarName ($Description) in resource group '$rgName'."
+        Write-Host "Confirm 'azd provision' completed and the resource exists."
         exit 1
     }
 
