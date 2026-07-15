@@ -11,7 +11,7 @@
 # azure-deploy responsibilities. Each stimulus below instead provides a
 # pre-built fixture (azure.yaml + infra/) so the agent only needs to deploy.
 #
-# earlyTerminate fires when azd up/provision starts (success path).
+# earlyTerminate fires when azd up/provision completes (tool-call-result, success path).
 # NOTE: earlyTerminate tests must NOT use the `completed` grader.
 
 name: azure-deploy-e2e-eval
@@ -72,7 +72,7 @@ stimuli:
       category: vanilla-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -110,7 +110,7 @@ stimuli:
       category: vanilla-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -155,7 +155,7 @@ stimuli:
       category: vanilla-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -195,7 +195,7 @@ stimuli:
       category: vanilla-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -240,7 +240,7 @@ stimuli:
       category: vanilla-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -280,7 +280,7 @@ stimuli:
       category: vanilla-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -320,7 +320,7 @@ stimuli:
       category: vanilla-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -363,7 +363,7 @@ stimuli:
       category: durable-task-scheduler-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -421,7 +421,7 @@ stimuli:
       category: vanilla-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -481,7 +481,7 @@ stimuli:
       category: vanilla-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -528,7 +528,7 @@ stimuli:
       category: terraform-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -568,7 +568,7 @@ stimuli:
       category: terraform-static-web-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -615,7 +615,7 @@ stimuli:
       category: terraform-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -657,7 +657,7 @@ stimuli:
       category: terraform-app-service-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -702,7 +702,7 @@ stimuli:
       category: terraform-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -742,7 +742,7 @@ stimuli:
       category: terraform-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -782,7 +782,7 @@ stimuli:
       category: terraform-azure-functions-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -825,7 +825,7 @@ stimuli:
       category: terraform-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -883,7 +883,7 @@ stimuli:
       category: terraform-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -929,7 +929,7 @@ stimuli:
       category: terraform-azure-container-apps-deploy
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -983,7 +983,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1029,7 +1029,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1075,7 +1075,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1121,7 +1121,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1168,7 +1168,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1278,7 +1278,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1325,7 +1325,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1374,7 +1374,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1420,7 +1420,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1466,7 +1466,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1511,7 +1511,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
@@ -1557,7 +1557,7 @@ stimuli:
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
       followUp:
         - "Go with recommended options and proceed with Azure deployment."
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|provision)\\b"}]'
     graders:
       - type: skill-invocation
         config:
