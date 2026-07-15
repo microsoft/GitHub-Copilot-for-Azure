@@ -352,6 +352,14 @@ stimuli:
           dest: host.json
         - src: fixture/dts-bicep/azure.yaml
           dest: azure.yaml
+        - src: fixture/dts-bicep/package.json
+          dest: package.json
+        - src: fixture/dts-bicep/src/functions/orderOrchestrator.js
+          dest: src/functions/orderOrchestrator.js
+        - src: fixture/dts-bicep/src/functions/orderActivities.js
+          dest: src/functions/orderActivities.js
+        - src: fixture/dts-bicep/src/functions/startOrder.js
+          dest: src/functions/startOrder.js
         - src: fixture/dts-bicep/infra/main.bicep
           dest: infra/main.bicep
         - src: fixture/dts-bicep/infra/resources.bicep
