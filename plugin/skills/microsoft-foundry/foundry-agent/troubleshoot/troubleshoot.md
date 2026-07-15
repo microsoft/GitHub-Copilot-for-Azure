@@ -31,13 +31,13 @@ Use the project endpoint and agent name from the project context (see [Common Pr
 
 ### Step 2: Identify a Hosted Agent
 
-Run:
+Treat an `azure.yaml` service with `host: azure.ai.agent` as Hosted. Run:
 
 ```bash
 azd ai agent show --output json
 ```
 
-If azd returns Hosted Agent details, proceed to Step 3. If azd cannot resolve a Hosted Agent, proceed to Step 4.
+If azd returns Hosted Agent details, proceed to Step 3. If the command fails for an identified Hosted Agent, diagnose the reported error instead of proceeding to Step 4. Proceed to Step 4 only when `azure.yaml` has no Hosted Agent service.
 
 ### Step 3: Retrieve Logs (Hosted Agents Only)
 

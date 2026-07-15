@@ -123,7 +123,7 @@ services:
 
 | Variable | Read by | Where to set |
 |----------|---------|--------------|
-| `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` or `azd ai project show` |
+| `AZURE_AI_PROJECT_ENDPOINT` | Every `azd ai agent` command | `azd env set` |
 | `AZURE_AI_PROJECT_ID` | `azd ai agent show` (playground URL) | `azd env set` |
 | `AZURE_SUBSCRIPTION_ID`, `AZURE_LOCATION` | `azd provision` | Always set with `azd env set ...` immediately after init |
 | `AGENT_<SVC>_NAME` / `_VERSION` / `_<PROTO>_ENDPOINT` | Auto-written by deploy | Auto |
