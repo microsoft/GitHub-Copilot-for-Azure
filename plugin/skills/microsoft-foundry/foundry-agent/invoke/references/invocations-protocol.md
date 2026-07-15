@@ -8,7 +8,7 @@ The `invocations` protocol is **bytes in, bytes out**. The platform is pure pass
 |--------|------------|---------------|
 | **Input** | Natural language message | Raw HTTP request body from `--input-file`; format it as the container's invoke handler expects |
 | **Output** | Structured OpenAI response with `output_text` | **Raw response bytes** from the container — JSON, text, or SSE events. Format is defined by the agent developer |
-| **Conversation history** | Platform-managed and persisted by azd | Agent-managed via session filesystem |
+| **Conversation history** | Platform-managed; azd can persist the `conversationId` for reuse | Agent-managed via session filesystem |
 | **Streaming** | Platform-managed | Agent-controlled |
 
 ## Discovering the Expected Input Schema

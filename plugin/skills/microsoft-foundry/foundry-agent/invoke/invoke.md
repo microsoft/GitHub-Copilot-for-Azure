@@ -68,7 +68,7 @@ A normal remote invoke does not require a separate session create command. azd r
 | Start fresh session-backed state | `--new-session` |
 | Target a deployed version | `--version <version>` |
 
-For the responses protocol, azd also creates and persists a conversation. Use `--new-conversation` to reset response history or `--conversation-id <id>` to select one. For invocations, memory is session-backed, so `--new-conversation` has no effect.
+For the responses protocol, azd creates a platform-managed conversation and can persist its `conversationId` for reuse. Use `--new-conversation` to reset response history or `--conversation-id <id>` to select one. For invocations, memory is session-backed, so `--new-conversation` has no effect.
 
 Use explicit session commands only when a session must exist before invoke or file operations, or when inspecting and controlling its lifecycle. Read [Session Management](references/session-management.md).
 

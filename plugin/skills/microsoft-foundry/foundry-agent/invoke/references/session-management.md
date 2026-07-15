@@ -21,7 +21,7 @@ File and monitor commands automatically use the session saved by invoke or `sess
 | State | Used by | azd behavior |
 |-------|---------|--------------|
 | Session | All directly invocable Hosted protocols | Persisted per agent; controls compute affinity and filesystem state |
-| Conversation | `responses` | Created and persisted automatically for response history |
+| Conversation | `responses` | Platform-managed; azd can persist the `conversationId` for reuse |
 
 Use `--new-conversation` to reset responses history without replacing the session. Use `--new-session` to reset session-backed memory for invocations. `--new-conversation` has no effect for invocations. For completely fresh responses state, combine `--new-session` and `--new-conversation`.
 
@@ -31,7 +31,7 @@ Create a session when files must be uploaded before the first invoke, when a cal
 
 ```bash
 azd ai agent sessions create
-azd ai agent sessions create my-agent 3
+azd ai agent sessions create my-agent <version>
 azd ai agent sessions create --session-id my-session
 ```
 
