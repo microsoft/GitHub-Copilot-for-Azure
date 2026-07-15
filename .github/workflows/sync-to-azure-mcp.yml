@@ -36,9 +36,22 @@ jobs:
         working-directory: source-repo/scripts
         run: npm ci --ignore-scripts
 
-      - name: Generate JSON files
+      - name: Generate allowlist JSON files
         working-directory: source-repo/scripts
-        run: npm run generateMcpAllowlists -- ../plugin/skills ${{ github.workspace }}
+        run: |
+          PLUGIN_PATHS=()
+          for plugin_dir in ../plugins/*; do
+            if [ -d "$plugin_dir" ]; then
+              PLUGIN_PATHS+=("$plugin_dir")
+            fi
+          done
+
+          if [ "${#PLUGIN_PATHS[@]}" -eq 0 ]; then
+            echo "No plugin directories found under ../plugins"
+            exit 1
+          fi
+
+          npm run generateMcpAllowlists -- "${PLUGIN_PATHS[@]}" "${{ github.workspace }}"
 
       # 3. Generate a short-lived token from the GitHub App for microsoft/mcp
       - name: Generate token for microsoft/mcp
