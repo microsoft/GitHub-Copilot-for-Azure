@@ -394,7 +394,7 @@ function findEvalYamlFiles(dirPath: string): string[] {
       continue;
     }
 
-    if (entry.isFile() && entry.name === "eval.yaml") {
+    if (entry.isFile() && !entryPath.includes("fixture/") && entry.name.endsWith("yaml")) {
       files.push(entryPath);
     }
   }
