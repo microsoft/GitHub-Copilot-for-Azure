@@ -38,14 +38,9 @@ function main(): void {
   const jsonOutput = values.json ?? false;
 
   if (positionals.length === 0) {
-    console.error("\n❌ No path specified.\n");
-    console.error("Usage:");
-    console.error("  npm run frontmatter <path/SKILL.md>        # Validate a specific SKILL.md file");
-    console.error("  npm run frontmatter <path/skills/mySkill>  # Validate a single skill folder");
-    console.error("  npm run frontmatter <path/skills>          # Validate all skills in a directory");
-    console.error("  npm run frontmatter <path1> <path2> ...    # Mix of the above\n");
-    process.exitCode = 1;
-    return;
+    // Use default build output location
+    // Note that the path is relative to the scripts/ directory, not this module.
+    positionals.push("../output");
   }
 
   const skillFiles: string[] = [];
