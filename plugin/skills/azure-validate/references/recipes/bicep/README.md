@@ -10,7 +10,7 @@ Validation steps for standalone Bicep deployments.
 
 ## Validation Steps
 
-- [ ] 1. Core Validation (build, validate, what-if, auth) — run [`validate-deployment` script](../scripts/validate-deployment.sh)
+- [ ] 1. Core Validation (CLI, auth, build, validate, what-if) — run [`validate-deployment` script](../scripts/validate-deployment.sh)
 - [ ] 2. Linting (optional)
 - [ ] 3. Azure Policy Validation
 
@@ -71,7 +71,7 @@ See [Policy Validation Guide](../../policy-validation.md) for instructions on re
 
 | Check | Command | Pass |
 |-------|---------|------|
-| Core validation (build, validate, what-if, auth) | `validate-deployment` script | ☐ |
+| Core validation (CLI, auth, build, validate, what-if) | `validate-deployment` script | ☐ |
 | Policies validated | MCP Policy tool | ☐ |
 
 ## References

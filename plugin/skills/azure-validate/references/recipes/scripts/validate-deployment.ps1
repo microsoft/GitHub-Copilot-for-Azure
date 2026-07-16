@@ -10,7 +10,9 @@
       3. az bicep build     - template compiles cleanly
       4. az deployment ... validate  - template validates against the target scope
       5. az deployment ... what-if   - preview changes (Create/Modify/Delete summary)
-    Emits a per-step PASS/FAIL summary and an OVERALL result. Exits 1 if any step fails.
+    Emits per-step PASS/FAIL lines and an OVERALL result.
+    Exit codes: 0 = every step passed; 1 = a validation step failed;
+    2 = usage / argument error.
 .PARAMETER Scope
     Deployment scope: 'sub' or 'group' (required).
 .PARAMETER Location
@@ -72,14 +74,8 @@ if ($Scope -eq "sub") {
     $scopeDesc = "resource group '$ResourceGroup'"
 }
 
-# Track results
-$steps = [System.Collections.ArrayList]@()
+# Track overall result (0 = all passed, 1 = at least one failure).
 $overall = 0
-
-function Add-Result([string]$Name, [string]$Result) {
-    [void]$steps.Add([PSCustomObject]@{ Step = $Name; Result = $Result })
-    if ($Result -ne "PASS") { $script:overall = 1 }
-}
 
 Write-Host "=== Azure deployment validation ==="
 Write-Host "Template:   $Template"
@@ -91,13 +87,9 @@ Write-Host "--- Step 1: Azure CLI installed (az version) ---"
 az version *> $null
 if ($LASTEXITCODE -eq 0) {
     Write-Host "PASS: Azure CLI is installed."
-    Add-Result "Azure CLI installed" "PASS"
 } else {
     Write-Host "FAIL: Azure CLI not found. Install it, then re-run."
-    Add-Result "Azure CLI installed" "FAIL"
     Write-Host ""
-    Write-Host "=== Summary ==="
-    $steps | Format-Table -AutoSize | Out-String | Write-Host
     Write-Host "OVERALL: FAIL"
     exit 1
 }
@@ -105,14 +97,12 @@ Write-Host ""
 
 # Step 2: Authenticated
 Write-Host "--- Step 2: Authenticated (az account show) ---"
-$accountJson = az account show @subArgs -o json 2>$null
-if ($accountJson) {
-    $accountName = ($accountJson | ConvertFrom-Json).name
+$accountName = az account show @subArgs --query name -o tsv 2>$null
+if ($LASTEXITCODE -eq 0) {
     Write-Host "PASS: Authenticated (subscription: $accountName)."
-    Add-Result "Authenticated" "PASS"
 } else {
     Write-Host "FAIL: Not logged in. Run 'az login' (and 'az account set --subscription <id>')."
-    Add-Result "Authenticated" "FAIL"
+    $overall = 1
 }
 Write-Host ""
 
@@ -121,11 +111,10 @@ Write-Host "--- Step 3: Bicep compilation (az bicep build) ---"
 $buildOutput = az bicep build --file $Template 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "PASS: Template compiles cleanly."
-    Add-Result "Bicep compilation" "PASS"
 } else {
     Write-Host "FAIL: Bicep compilation errors:"
     Write-Host ($buildOutput | Out-String)
-    Add-Result "Bicep compilation" "FAIL"
+    $overall = 1
 }
 Write-Host ""
 
@@ -134,11 +123,10 @@ Write-Host "--- Step 4: Template validation (az deployment $Scope validate) ---"
 $validateOutput = az deployment $Scope validate @scopeTargetArgs --template-file $Template @paramArgs @subArgs 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "PASS: Template validated against the target scope."
-    Add-Result "Template validation" "PASS"
 } else {
     Write-Host "FAIL: Template validation errors:"
     Write-Host ($validateOutput | Out-String)
-    Add-Result "Template validation" "FAIL"
+    $overall = 1
 }
 Write-Host ""
 
@@ -151,17 +139,14 @@ if ($LASTEXITCODE -eq 0) {
     $modifyCount = ($lines | Where-Object { $_ -match '^\s*~ ' }).Count
     $deleteCount = ($lines | Where-Object { $_ -match '^\s*- ' }).Count
     Write-Host "PASS: What-if completed. Changes -> Create: $createCount, Modify: $modifyCount, Delete: $deleteCount"
-    Add-Result "What-if preview" "PASS"
 } else {
     Write-Host "FAIL: What-if errors:"
     Write-Host ($whatifOutput | Out-String)
-    Add-Result "What-if preview" "FAIL"
+    $overall = 1
 }
 Write-Host ""
 
-# Summary
-Write-Host "=== Summary ==="
-$steps | Format-Table -AutoSize | Out-String | Write-Host
+# Overall result (drives the exit code)
 if ($overall -eq 0) {
     Write-Host "OVERALL: PASS"
 } else {

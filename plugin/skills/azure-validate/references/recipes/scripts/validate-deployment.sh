@@ -29,9 +29,17 @@
 #   ./validate-deployment.sh --scope group --resource-group my-rg \
 #       --template ./infra/main.bicep --parameters ./infra/main.parameters.json
 #
-# Exit code: 0 if every step passes, 1 otherwise.
+# Exit codes:
+#   0 - every validation step passed
+#   1 - a validation step failed
+#   2 - usage / argument error (unknown or valueless option, missing required flag)
 
 set -uo pipefail
+
+# Ensure an option that consumes a value actually has one ($@ = remaining args).
+need_val() {
+    [ "$#" -ge 2 ] || { echo "ERROR: $1 requires a value." >&2; exit 2; }
+}
 
 SCOPE=""
 LOCATION=""
@@ -42,14 +50,14 @@ SUBSCRIPTION=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        --scope)          SCOPE="${2:-}"; shift 2 ;;
-        --location)       LOCATION="${2:-}"; shift 2 ;;
-        --resource-group) RESOURCE_GROUP="${2:-}"; shift 2 ;;
-        --template)       TEMPLATE="${2:-}"; shift 2 ;;
-        --parameters)     PARAMETERS="${2:-}"; shift 2 ;;
-        --subscription)   SUBSCRIPTION="${2:-}"; shift 2 ;;
+        --scope)          need_val "$@"; SCOPE="$2"; shift 2 ;;
+        --location)       need_val "$@"; LOCATION="$2"; shift 2 ;;
+        --resource-group) need_val "$@"; RESOURCE_GROUP="$2"; shift 2 ;;
+        --template)       need_val "$@"; TEMPLATE="$2"; shift 2 ;;
+        --parameters)     need_val "$@"; PARAMETERS="$2"; shift 2 ;;
+        --subscription)   need_val "$@"; SUBSCRIPTION="$2"; shift 2 ;;
         -h|--help)
-            grep '^#' "$0" | sed 's/^# \{0,1\}//'
+            grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'
             exit 0 ;;
         *)
             echo "Unknown argument: $1" >&2
@@ -90,16 +98,8 @@ else
     SCOPE_DESC="resource group '$RESOURCE_GROUP'"
 fi
 
-# Track results
-declare -a STEP_NAMES=()
-declare -a STEP_RESULTS=()
+# Track overall result (0 = all passed, 1 = at least one failure).
 OVERALL=0
-
-record() {
-    STEP_NAMES+=("$1")
-    STEP_RESULTS+=("$2")
-    [ "$2" = "PASS" ] || OVERALL=1
-}
 
 echo "=== Azure deployment validation ==="
 echo "Template:   $TEMPLATE"
@@ -110,13 +110,10 @@ echo ""
 echo "--- Step 1: Azure CLI installed (az version) ---"
 if az version >/dev/null 2>&1; then
     echo "PASS: Azure CLI is installed."
-    record "Azure CLI installed" PASS
 else
     echo "FAIL: Azure CLI not found. Install it, then re-run."
-    record "Azure CLI installed" FAIL
     # Nothing else can run without the CLI.
-    printf '\n=== Summary ===\n'
-    printf '%-28s %s\n' "${STEP_NAMES[0]}" "${STEP_RESULTS[0]}"
+    echo ""
     echo "OVERALL: FAIL"
     exit 1
 fi
@@ -124,14 +121,11 @@ echo ""
 
 # Step 2: Authenticated
 echo "--- Step 2: Authenticated (az account show) ---"
-ACCOUNT_JSON=$(az account show "${SUB_ARGS[@]}" -o json 2>/dev/null)
-if [ -n "$ACCOUNT_JSON" ]; then
-    ACCOUNT_NAME=$(echo "$ACCOUNT_JSON" | grep -o '"name"[^,]*' | head -1 | sed 's/.*: *"\(.*\)"/\1/')
+if ACCOUNT_NAME=$(az account show "${SUB_ARGS[@]}" --query name -o tsv 2>/dev/null); then
     echo "PASS: Authenticated (subscription: ${ACCOUNT_NAME:-unknown})."
-    record "Authenticated" PASS
 else
     echo "FAIL: Not logged in. Run 'az login' (and 'az account set --subscription <id>')."
-    record "Authenticated" FAIL
+    OVERALL=1
 fi
 echo ""
 
@@ -141,11 +135,10 @@ BUILD_OUTPUT=$(az bicep build --file "$TEMPLATE" 2>&1)
 BUILD_RC=$?
 if [ $BUILD_RC -eq 0 ]; then
     echo "PASS: Template compiles cleanly."
-    record "Bicep compilation" PASS
 else
     echo "FAIL: Bicep compilation errors:"
     echo "$BUILD_OUTPUT"
-    record "Bicep compilation" FAIL
+    OVERALL=1
 fi
 echo ""
 
@@ -157,11 +150,10 @@ VALIDATE_OUTPUT=$(az deployment "$SCOPE" validate "${SCOPE_TARGET_ARGS[@]}" \
 VALIDATE_RC=$?
 if [ $VALIDATE_RC -eq 0 ]; then
     echo "PASS: Template validated against the target scope."
-    record "Template validation" PASS
 else
     echo "FAIL: Template validation errors:"
     echo "$VALIDATE_OUTPUT"
-    record "Template validation" FAIL
+    OVERALL=1
 fi
 echo ""
 
@@ -176,19 +168,14 @@ if [ $WHATIF_RC -eq 0 ]; then
     MODIFY_COUNT=$(echo "$WHATIF_OUTPUT" | grep -c '^[[:space:]]*~ ')
     DELETE_COUNT=$(echo "$WHATIF_OUTPUT" | grep -c '^[[:space:]]*- ')
     echo "PASS: What-if completed. Changes -> Create: $CREATE_COUNT, Modify: $MODIFY_COUNT, Delete: $DELETE_COUNT"
-    record "What-if preview" PASS
 else
     echo "FAIL: What-if errors:"
     echo "$WHATIF_OUTPUT"
-    record "What-if preview" FAIL
+    OVERALL=1
 fi
 echo ""
 
-# Summary
-echo "=== Summary ==="
-for i in "${!STEP_NAMES[@]}"; do
-    printf '%-28s %s\n' "${STEP_NAMES[$i]}" "${STEP_RESULTS[$i]}"
-done
+# Overall result
 if [ $OVERALL -eq 0 ]; then
     echo "OVERALL: PASS"
 else
