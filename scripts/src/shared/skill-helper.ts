@@ -15,6 +15,10 @@ import matter from "gray-matter";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export function getRepoRoot(): string {
+  return path.resolve(__dirname, "../../..");
+}
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 /** Parsed frontmatter result from a SKILL.md file. */
@@ -147,10 +151,8 @@ const pluginDirnameMap = new Map<string, string>([
 export function loadSkill(skillRef: SkillRef): LoadedSkill {
   const pluginDirname = pluginDirnameMap.get(skillRef.pluginDirname) ?? skillRef.pluginDirname;
   const skillPath = path.join(
-    path.resolve(__dirname, "../../../plugins"),
-    pluginDirname,
-    "skills",
-    skillRef.name
+    getRepoRoot(),
+    `plugins/${pluginDirname}/skills/${skillRef.name}`
   );
   const skillFile = path.join(skillPath, "SKILL.md");
 
@@ -182,7 +184,10 @@ export function loadSkill(skillRef: SkillRef): LoadedSkill {
  * @returns SkillRef objects in a given plugin.
  */
 export function listSkills(pluginDirname: string): SkillRef[] {
-  const skillsDir = path.resolve(__dirname, `../../../output/${pluginDirname}/skills`);
+  const skillsDir = path.resolve(
+    getRepoRoot(),
+    `output/${pluginDirname}/skills`
+  );
 
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
   return items
@@ -200,7 +205,11 @@ export function listSkills(pluginDirname: string): SkillRef[] {
 }
 
 export function listPlugins(): Plugin[] {
-  const pluginsDir = path.resolve(__dirname, "../../../output/");
+  const pluginsDir = path.resolve(
+    __dirname,
+    getRepoRoot(),
+    "output"
+  );
   const items = fs.readdirSync(pluginsDir, { withFileTypes: true });
   return items
     .filter((item) => item.isDirectory())

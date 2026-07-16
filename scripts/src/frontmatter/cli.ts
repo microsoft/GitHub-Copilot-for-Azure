@@ -19,17 +19,11 @@
  */
 
 import { dirname, resolve, basename, relative } from "node:path";
-import { fileURLToPath } from "node:url";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { parseSkillContent } from "../shared/skill-helper.js";
+import { getRepoRoot, parseSkillContent } from "../shared/skill-helper.js";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
-
-function getRepoRoot(): string {
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(scriptDir, "../../..");
-}
 
 const REPO_ROOT = getRepoRoot();
 
