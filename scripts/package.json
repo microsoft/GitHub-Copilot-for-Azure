@@ -17,8 +17,6 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
-    "dashboard:serve": "sirv ../dashboard --port 3000 --dev",
-    "dashboard": "npm run dashboard:collect && npm run dashboard:serve",
     "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts",
     "vally": "node --import tsx src/vally/cli.ts"
   },
@@ -31,7 +29,6 @@
     "fast-xml-parser": "^5.9.0",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
-    "sirv-cli": "^3.0.1",
     "tsx": "^4.22.1",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.61.0",
