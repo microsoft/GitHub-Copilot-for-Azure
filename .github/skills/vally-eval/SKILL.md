@@ -1,6 +1,6 @@
 ---
 name: vally-eval
-description: "Author, validate, and run Vally eval.yaml evaluation suites for agent skills. TRIGGERS: create eval, write eval, add eval, run eval, validate eval, vally eval, eval.yaml, add stimulus, map test to eval, migrate test to eval, eval graders, eval scoring, add eval to CI."
+description: "Author, validate, and run Vally evaluation suites for agent skills. TRIGGERS: create eval, write eval, add eval, run eval, validate eval, vally eval, eval.yaml, add stimulus, map test to eval, migrate test to eval, eval graders, eval scoring, add eval to CI."
 license: MIT
 metadata:
   author: Microsoft
