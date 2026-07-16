@@ -19,7 +19,7 @@ Refer to the official documentation on the schema of the spec and the schema of 
 
 Vally eval suites for azure-skills plugin have the following file layout. The shared eval spec is located at `<repo-root>/.vally.yaml`. The eval suites are categorized by skills. The eval suites for each skill are located at `<repo-root>/evals/<skill-name>/*.yaml`, e.g. `<repo-root>/evals/azure-ai/eval.yaml`. 
 
-Use meaningful file names to categorize tests. If a skill needs fixture files for its eval suites, it should organize such fixture files in a `fixture` directory under its directory, e.g. `<repo-root>/evals/azure-ai/fixture/`. Our test runner and stimulus validation script will load all `*.yaml` files except for those under a `fixture/` directory. Make sure to put all fixture files under the `fixture/` directory.
+Use meaningful file names to categorize tests. If a skill needs fixture files for its eval suites, it should organize such fixture files in a `fixture` directory under its directory, e.g. `<repo-root>/evals/azure-ai/fixture/`. The [vally test runner](/tests/run-vally-test.ts) and [stimulus validation script](/scripts/src/vally/validate-stimulus.ts) will load all `*.yaml` files except for those under a `fixture/` directory. Make sure to put all fixture files under the `fixture/` directory.
 
 ## Migrate integration tests
 

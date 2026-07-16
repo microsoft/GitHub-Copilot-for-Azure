@@ -389,12 +389,12 @@ function findEvalYamlFiles(dirPath: string): string[] {
   for (const entry of entries) {
     const entryPath = join(dirPath, entry.name);
 
-    if (entry.isDirectory()) {
+    if (entry.isDirectory() && entry.name !== "fixture") {
       files.push(...findEvalYamlFiles(entryPath));
       continue;
     }
 
-    if (entry.isFile() && !entryPath.includes("fixture/") && entry.name.endsWith("yaml")) {
+    if (entry.isFile() && entry.name.endsWith(".yaml")) {
       files.push(entryPath);
     }
   }
