@@ -41,8 +41,7 @@ if ($Environment) {
 # rather than relying on $ErrorActionPreference.
 $azdOutput = azd env get-values @azdEnvArgs
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR: 'azd env get-values' failed with exit code $LASTEXITCODE."
-    Write-Host "Run 'azd provision' before this script so the azd environment is available."
+    Write-Error "'azd env get-values' failed with exit code $LASTEXITCODE. Run 'azd provision' before this script so the azd environment is available."
     exit 1
 }
 
@@ -56,8 +55,7 @@ foreach ($line in $azdOutput) {
 
 $rgName = $azdValues['AZURE_RESOURCE_GROUP']
 if (-not $rgName) {
-    Write-Host "ERROR: AZURE_RESOURCE_GROUP is not set in the azd environment."
-    Write-Host "Run 'azd provision' before this script so the resource group is available."
+    Write-Error "AZURE_RESOURCE_GROUP is not set in the azd environment. Run 'azd provision' before this script so the resource group is available."
     exit 1
 }
 
@@ -76,8 +74,7 @@ function Set-IfMissing {
 
     $value = (& $ValueCommand)
     if (-not $value) {
-        Write-Host "ERROR: Could not resolve $VarName ($Description) in resource group '$rgName'."
-        Write-Host "Confirm 'azd provision' completed and the resource exists."
+        Write-Error "Could not resolve $VarName ($Description) in resource group '$rgName'. Confirm 'azd provision' completed and the resource exists."
         exit 1
     }
 
