@@ -9,8 +9,6 @@ import {
   normalizePath,
   getErrorMessage,
   matchesPattern,
-  EXCLUDED_DIRS,
-  MARKDOWN_EXTENSIONS
 } from "../commands/types.js";
 
 describe("estimateTokens", () => {
