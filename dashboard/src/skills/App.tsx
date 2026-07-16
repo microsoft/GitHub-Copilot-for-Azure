@@ -87,7 +87,7 @@ function Sparkline({
     }
     return (
         <ResponsiveContainer width="100%" height={80}>
-            <LineChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+            <LineChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 4 }}>
                 <XAxis
                     dataKey="date"
                     tickFormatter={shortDate}
@@ -95,7 +95,12 @@ function Sparkline({
                     interval="preserveStartEnd"
                     minTickGap={16}
                 />
-                <YAxis hide domain={["auto", "auto"]} />
+                <YAxis
+                    domain={["auto", "auto"]}
+                    tickFormatter={format}
+                    tick={{ fontSize: 10 }}
+                    width={40}
+                />
                 <Tooltip
                     formatter={(value) => {
                         // Missing-data days carry null; show a placeholder
@@ -114,7 +119,7 @@ function Sparkline({
                     stroke="var(--color-focus, #3b82f6)"
                     strokeWidth={2}
                     dot={{ r: 2 }}
-                    connectNulls={false}
+                    connectNulls={true}
                     isAnimationActive={false}
                 />
             </LineChart>
