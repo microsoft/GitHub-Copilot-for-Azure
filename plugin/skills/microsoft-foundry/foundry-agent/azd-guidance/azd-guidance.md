@@ -14,6 +14,8 @@ Read this skill before running any Foundry agent workflow that uses azd. Also us
    AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd ai agent invoke
    ```
 
+Set it inline only (as shown above). Never persist it into code or committed config (for example, `azd env set`, `.env`, or `azure.yaml`). It is a local-development-only setting.
+
 2. If an azd command or flag is unclear, run the relevant `azd ... --help` command and follow its output.
 3. Unless the user explicitly asks to open a client, run `azd ai agent run --no-client`.
 4. If the needed azd guidance is not covered here or remains unclear, read [azd ai CLI Reference](references/azd-ai-cli.md).
