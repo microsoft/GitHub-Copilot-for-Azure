@@ -36,10 +36,10 @@ STEP_ERRORS=()   # captured error text (empty unless FAIL)
 
 record() {
     # record <name> <status> [error-text]
+    # Results are collected here and rendered once in the summary at the end.
     STEP_NAMES+=("$1")
     STEP_STATUS+=("$2")
     STEP_ERRORS+=("${3:-}")
-    printf '  [%-4s] %s\n' "$2" "$1"
 }
 
 echo "Terraform validation preflight - infra dir: $INFRA_DIR"
@@ -56,13 +56,17 @@ fi
 if command -v az >/dev/null 2>&1; then
     record "Azure CLI installed" "PASS"
 else
-    record "Azure CLI installed" "FAIL" "az not found on PATH. Install the Azure CLI (mcp_azure_mcp_extension_cli_install cli-type: az)."
+    record "Azure CLI installed" "FAIL" "az not found on PATH. Install the Azure CLI: mcp_azure_mcp_extension_cli_install(cli-type: \"az\")"
 fi
 
 # --- 3. Authentication -------------------------------------------------------
 if command -v az >/dev/null 2>&1; then
     if [ -n "$SUBSCRIPTION_ID" ]; then
-        az account set --subscription "$SUBSCRIPTION_ID" >/dev/null 2>&1 || true
+        if SUB_OUT=$(az account set --subscription "$SUBSCRIPTION_ID" 2>&1); then
+            record "Select subscription" "PASS"
+        else
+            record "Select subscription" "FAIL" "$SUB_OUT"
+        fi
     fi
     if ACCOUNT_OUT=$(az account show -o none 2>&1); then
         record "Authenticated (az account show)" "PASS"
@@ -86,12 +90,16 @@ run_tf() {
         record "$name" "SKIP" "terraform unavailable or infra dir '$INFRA_DIR' not found"
         return
     fi
-    local out
-    if out=$(cd "$INFRA_DIR" && terraform "$@" 2>&1); then
+    # Stream output to a temp file so large output (e.g. terraform plan) is not
+    # held in memory; only read it back when the command fails.
+    local tmp
+    tmp=$(mktemp)
+    if (cd "$INFRA_DIR" && terraform "$@") >"$tmp" 2>&1; then
         record "$name" "PASS"
     else
-        record "$name" "FAIL" "$out"
+        record "$name" "FAIL" "$(cat "$tmp")"
     fi
+    rm -f "$tmp"
 }
 
 # --- 4. Initialize -----------------------------------------------------------
@@ -121,6 +129,28 @@ $TEMPLATE_HITS"
     fi
 else
     record "Template-variable scan ({{ .Env.* }})" "SKIP" "infra dir '$INFRA_DIR' not found"
+fi
+
+# --- 10. main.tfvars.json JSON syntax ----------------------------------------
+TFVARS="$INFRA_DIR/main.tfvars.json"
+if [ -f "$TFVARS" ]; then
+    if command -v python3 >/dev/null 2>&1; then
+        if JSON_ERR=$(python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$TFVARS" 2>&1); then
+            record "main.tfvars.json is valid JSON" "PASS"
+        else
+            record "main.tfvars.json is valid JSON" "FAIL" "$JSON_ERR"
+        fi
+    elif command -v jq >/dev/null 2>&1; then
+        if JSON_ERR=$(jq empty "$TFVARS" 2>&1); then
+            record "main.tfvars.json is valid JSON" "PASS"
+        else
+            record "main.tfvars.json is valid JSON" "FAIL" "$JSON_ERR"
+        fi
+    else
+        record "main.tfvars.json is valid JSON" "SKIP" "no JSON parser (python3/jq) available"
+    fi
+else
+    record "main.tfvars.json is valid JSON" "SKIP" "$TFVARS not found"
 fi
 
 # --- summary -----------------------------------------------------------------

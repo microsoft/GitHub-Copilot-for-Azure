@@ -33,8 +33,8 @@ $steps = [System.Collections.Generic.List[object]]::new()
 
 function Add-Result {
     param([string]$Name, [string]$Status, [string]$ErrorText = "")
+    # Results are collected here and rendered once in the summary at the end.
     $steps.Add([pscustomobject]@{ Name = $Name; Status = $Status; Error = $ErrorText })
-    "  [{0,-4}] {1}" -f $Status, $Name | Write-Host
 }
 
 function Test-Command {
@@ -57,13 +57,18 @@ $hasAz = Test-Command "az"
 if ($hasAz) {
     Add-Result "Azure CLI installed" "PASS"
 } else {
-    Add-Result "Azure CLI installed" "FAIL" "az not found on PATH. Install the Azure CLI (mcp_azure_mcp_extension_cli_install cli-type: az)."
+    Add-Result "Azure CLI installed" "FAIL" "az not found on PATH. Install the Azure CLI: mcp_azure_mcp_extension_cli_install(cli-type: `"az`")"
 }
 
 # --- 3. Authentication -------------------------------------------------------
 if ($hasAz) {
     if ($SubscriptionId) {
-        az account set --subscription $SubscriptionId 2>&1 | Out-Null
+        $subOut = az account set --subscription $SubscriptionId 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Add-Result "Select subscription" "PASS"
+        } else {
+            Add-Result "Select subscription" "FAIL" ($subOut | Out-String).Trim()
+        }
     }
     $accountOut = az account show -o none 2>&1
     if ($LASTEXITCODE -eq 0) {
@@ -86,12 +91,18 @@ function Invoke-Tf {
     }
     Push-Location $InfraDir
     try {
-        $out = & terraform @Args 2>&1
+        # Stream output to a temp file so large output (e.g. terraform plan) is
+        # not held in memory; only read it back when the command fails.
+        $tmp = New-TemporaryFile
+        & terraform @Args *> $tmp.FullName
         if ($LASTEXITCODE -eq 0) {
             Add-Result $Name "PASS"
         } else {
-            Add-Result $Name "FAIL" ($out | Out-String).Trim()
+            $content = Get-Content -Raw $tmp.FullName
+            if ($null -eq $content) { $content = "" }
+            Add-Result $Name "FAIL" $content.Trim()
         }
+        Remove-Item $tmp.FullName -ErrorAction SilentlyContinue
     } finally {
         Pop-Location
     }
@@ -125,6 +136,19 @@ if (Test-Path -Path $InfraDir -PathType Container) {
     }
 } else {
     Add-Result "Template-variable scan ({{ .Env.* }})" "SKIP" "infra dir '$InfraDir' not found"
+}
+
+# --- 10. main.tfvars.json JSON syntax ----------------------------------------
+$tfvars = Join-Path $InfraDir "main.tfvars.json"
+if (Test-Path -Path $tfvars -PathType Leaf) {
+    try {
+        Get-Content -Raw $tfvars | ConvertFrom-Json -ErrorAction Stop | Out-Null
+        Add-Result "main.tfvars.json is valid JSON" "PASS"
+    } catch {
+        Add-Result "main.tfvars.json is valid JSON" "FAIL" $_.Exception.Message
+    }
+} else {
+    Add-Result "main.tfvars.json is valid JSON" "SKIP" "$tfvars not found"
 }
 
 # --- summary -----------------------------------------------------------------

@@ -9,10 +9,10 @@ Validation steps for Terraform deployments.
 
 ## Run the preflight script
 
-Run the pre-built validation script instead of executing each check by hand. It runs
-the full deterministic preflight sequence in one call and prints a compact
-**PASS / FAIL / SKIP** summary plus the captured error text for any failed step, so you
-can jump straight to remediation without re-parsing raw command output.
+Run the pre-built validation script instead of executing each check by hand. It runs the
+full deterministic preflight sequence in one call and prints a compact **PASS / FAIL / SKIP**
+summary plus captured error text for any failed step — jump straight to remediation without
+re-parsing raw command output.
 
 | Script | Purpose |
 |--------|---------|
@@ -20,9 +20,11 @@ can jump straight to remediation without re-parsing raw command output.
 | [`scripts/validate-terraform.ps1`](scripts/validate-terraform.ps1) | PowerShell preflight runner |
 
 The script runs, in order: Terraform installed → Azure CLI installed → authenticated
-(`az account show`) → `terraform init` → `terraform fmt -check` → `terraform validate` →
-`terraform plan` → `terraform state list` → Go-style `{{ .Env.* }}` template-variable scan.
-It runs **every** check even if an earlier one fails, and exits non-zero when any step fails.
+(`az account show`) → `terraform init` → `fmt -check` → `validate` → `plan` →
+`state list` → Go-style `{{ .Env.* }}` template-variable scan → `main.tfvars.json`
+JSON-syntax check. A subscription-selection step is added when a subscription id is
+supplied. It runs **every** check even if an earlier one fails, and exits non-zero when
+any step fails.
 
 **Usage:**
 
@@ -43,10 +45,10 @@ It runs **every** check even if an earlier one fails, and exits non-zero when an
 .\scripts\validate-terraform.ps1 -InfraDir ./infra
 ```
 
-**Reading the output:** the summary table lists every step with `PASS`, `FAIL`, or `SKIP`
-(a step is skipped when a prerequisite such as Terraform or the infra directory is missing).
-For each `FAIL`, a **FAILURE DETAILS** section prints the captured error text. Use the
-remediation guidance below to fix failed steps, then re-run the script.
+**Reading the output:** the summary table lists every step as `PASS`, `FAIL`, or `SKIP`
+(skipped when a prerequisite such as Terraform or the infra directory is missing). Each
+`FAIL` is expanded in a **FAILURE DETAILS** section with the captured error text. Fix
+failed steps using the guidance below, then re-run the script.
 
 ## Remediation
 
@@ -57,7 +59,7 @@ The script only **runs and reports** — fixing failures is manual. Guidance per
 - Terraform: see https://developer.hashicorp.com/terraform/install
 - Azure CLI: `mcp_azure_mcp_extension_cli_install(cli-type: "az")`
 
-### Not authenticated
+### Not authenticated / wrong subscription
 
 ```bash
 az login
@@ -70,7 +72,7 @@ az account set --subscription <subscription-id>
 terraform fmt -recursive
 ```
 
-### Validate / plan / state failures
+### Init / validate / plan / state failures
 
 Read the captured error text in the script output, then consult
 [Error handling](./errors.md).
@@ -92,10 +94,7 @@ When the template-variable scan reports `FAIL`:
 
 1. **Fix the syntax** in `main.tfvars.json` — replace `{{ .Env.VAR }}` with `${VAR}`:
    ```json
-   {
-       "environment_name": "${AZURE_ENV_NAME}",
-       "location": "${AZURE_LOCATION}"
-   }
+   { "environment_name": "${AZURE_ENV_NAME}", "location": "${AZURE_LOCATION}" }
    ```
 2. For additional variables, use **`TF_VAR_*` environment variables**:
    ```bash
