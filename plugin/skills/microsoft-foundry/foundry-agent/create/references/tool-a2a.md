@@ -16,9 +16,11 @@ azd ai connection create <conn-name> \
 
 ### Foundry peer
 
-> 🚦 **Prerequisite: the target Foundry agent must have incoming A2A enabled** and return 200 on `<base>/agentCard/v1.0`. If the card URL 404s, follow [enable-incoming-a2a.md](enable-incoming-a2a.md) on the peer first.
+`$TARGET_AGENT_A2A_ENDPOINT` is `https://<account>.services.ai.azure.com/api/projects/<project>/agents/<peer>/endpoint/protocols/a2a`.
 
-Grant the **calling** agent's identity the **Foundry Agent Consumer** role (least privilege) on the peer project. `$TARGET_AGENT_A2A_ENDPOINT` is `https://<account>.services.ai.azure.com/api/projects/<project>/agents/<peer>/endpoint/protocols/a2a`.
+> 🚦 **Prerequisite: the target Foundry agent must have incoming A2A enabled** and return 200 on `$TARGET_AGENT_A2A_ENDPOINT/agentCard/v1.0`. If that URL 404s, follow [enable-incoming-a2a.md](enable-incoming-a2a.md) on the peer first.
+
+Grant the **calling** agent's identity the **Foundry Agent Consumer** role (least privilege) on the peer project.
 
 ```bash
 azd ai connection create $CONNECTION_NAME \

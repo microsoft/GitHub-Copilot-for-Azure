@@ -69,7 +69,7 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
 | Create a new hosted agent end-to-end (scaffold + deploy + test) | [quick-start-hosted](foundry-agent/create/quick-start-hosted.md) (self-contained end-to-end) |
-| Anything beyond the standard quickstart (existing code, deployment customization, scaffold-time connections, A2A, recovery) | [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
+| Anything beyond the standard quickstart (existing code, deployment customization, scaffold-time connections, A2A (Agent2Agent), recovery) | [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Optimize existing Python hosted agent | [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) → scaffold/review → eval.yaml → optimize → apply candidate → deploy → invoke |
 | Deploy an agent (code already exists) | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |
 | Update/redeploy an agent after code changes | deploy (includes eval-suite setup) → invoke → observe (evaluate/optimize) |

@@ -57,7 +57,7 @@ Then `azd deploy`. Bakes A2A in from v1 on a fresh agent, or bumps to a new vers
 Same three-block YAML as Path A, but `endpoint update` PATCHes `agent_endpoint` and `agent_card` on the deployed agent without a new version:
 
 ```bash
-azd ai agent endpoint update <agent-service-name>
+azd ai agent endpoint update
 ```
 
 **Does not touch** the top-level `protocols:` block — that's a per-version implementation declaration and only takes effect via `azd deploy`. If the deployed version doesn't already advertise `a2a` in its `protocol_versions`, use Path A first.
