@@ -25,7 +25,6 @@
 /plugin/skills/azure-messaging/ @kashifkhan @RickWinter
 /plugin/skills/azure-prepare/ @tmeschter @kvenkatrajan @RickWinter
 /plugin/skills/azure-quotas/ @rakal-dyh @RickWinter
-/plugin/skills/azure-rbac/ @JasonYeMSFT @msalaman @RickWinter
 /plugin/skills/azure-reliability/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
 /plugin/skills/azure-resource-lookup/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-resource-visualizer/ @tmeschter @RickWinter
