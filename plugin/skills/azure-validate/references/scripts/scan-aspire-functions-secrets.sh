@@ -33,18 +33,40 @@ fi
 CALL="AddAzureFunctionsProject"
 SETTING="AzureWebJobsSecretStorageType"
 
-# Collect *.cs files that reference AddAzureFunctionsProject (NUL-delimited for safe paths).
-matches=""
+# file_contains <fixed-string> <file>
+# Returns 0 if the file contains the literal string, 1 if not.
+# A grep read error (exit code 2) is fatal: this is a critical pre-provision
+# scan, so a file we cannot read must not be silently reported as "no match".
+file_contains() {
+  local pattern="$1" file="$2" rc
+  if grep -Fq -- "$pattern" "$file"; then
+    return 0
+  fi
+  rc=$?
+  if [ "$rc" -eq 2 ]; then
+    echo "ERROR: failed to read '$file' while scanning for '$pattern'." >&2
+    exit 3
+  fi
+  return 1
+}
+
+# first_line <fixed-string> <file>
+# Prints the 1-based line number of the first literal match (or nothing).
+first_line() {
+  grep -Fn -- "$1" "$2" | head -n1 | cut -d: -f1
+}
+
+# Collect *.cs files that reference AddAzureFunctionsProject into an array.
+# find ... -print0 + read -d '' keeps paths intact even if they contain
+# newlines or spaces (genuinely NUL-safe, unlike a newline-joined string).
+matches=()
 while IFS= read -r -d '' file; do
-  if grep -q "$CALL" "$file"; then
-    matches+="$file"$'\n'
+  if file_contains "$CALL" "$file"; then
+    matches+=("$file")
   fi
 done < <(find "$ROOT" -type f -name "*.cs" -print0)
 
-# Strip trailing newline.
-matches="${matches%$'\n'}"
-
-if [ -z "$matches" ]; then
+if [ "${#matches[@]}" -eq 0 ]; then
   echo "VERDICT: NOT APPLICABLE"
   echo "No '$CALL' call found in any *.cs file under '$ROOT'."
   echo "The Functions secret-storage check does not apply — skip it."
@@ -52,39 +74,31 @@ if [ -z "$matches" ]; then
 fi
 
 # Partition matching files by whether they already configure the setting.
-needs_fix=""
-configured=""
-while IFS= read -r file; do
-  [ -n "$file" ] || continue
-  if grep -q "$SETTING" "$file"; then
-    configured+="$file"$'\n'
+needs_fix=()
+configured=()
+for file in "${matches[@]}"; do
+  if file_contains "$SETTING" "$file"; then
+    configured+=("$file")
   else
-    needs_fix+="$file"$'\n'
+    needs_fix+=("$file")
   fi
-done <<< "$matches"
+done
 
-needs_fix="${needs_fix%$'\n'}"
-configured="${configured%$'\n'}"
-
-if [ -z "$needs_fix" ]; then
+if [ "${#needs_fix[@]}" -eq 0 ]; then
   echo "VERDICT: ALREADY CONFIGURED"
   echo "Every file that calls '$CALL' already sets '$SETTING':"
-  while IFS= read -r file; do
-    [ -n "$file" ] || continue
-    line=$(grep -n "$SETTING" "$file" | head -n1 | cut -d: -f1)
-    echo "  - $file (line $line)"
-  done <<< "$configured"
+  for file in "${configured[@]}"; do
+    echo "  - $file (line $(first_line "$SETTING" "$file"))"
+  done
   echo "No change required."
   exit 0
 fi
 
 echo "VERDICT: FIX REQUIRED"
 echo "The following file(s) call '$CALL' but do NOT set '$SETTING':"
-while IFS= read -r file; do
-  [ -n "$file" ] || continue
-  line=$(grep -n "$CALL" "$file" | head -n1 | cut -d: -f1)
-  echo "  - $file (line $line)"
-done <<< "$needs_fix"
+for file in "${needs_fix[@]}"; do
+  echo "  - $file (line $(first_line "$CALL" "$file"))"
+done
 echo ""
 echo "Add .WithEnvironment(\"$SETTING\", \"Files\") to the AddAzureFunctionsProject"
 echo "builder chain in each file above BEFORE running 'azd provision'."

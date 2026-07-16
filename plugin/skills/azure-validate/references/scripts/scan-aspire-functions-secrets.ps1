@@ -26,7 +26,8 @@ param(
     [string]$Path = "."
 )
 
-$ErrorActionPreference = "Stop"
+# Leave $ErrorActionPreference at its default ("Continue") so that Write-Error
+# below is non-terminating and the explicit `exit` codes are honored.
 
 if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
     Write-Error "'$Path' is not a directory."
