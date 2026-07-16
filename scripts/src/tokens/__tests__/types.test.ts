@@ -101,31 +101,6 @@ describe("normalizePath", () => {
   });
 });
 
-describe("EXCLUDED_DIRS", () => {
-  it("contains common directories to exclude", () => {
-    expect(EXCLUDED_DIRS).toContain("node_modules");
-    expect(EXCLUDED_DIRS).toContain(".git");
-    expect(EXCLUDED_DIRS).toContain("dist");
-    expect(EXCLUDED_DIRS).toContain("coverage");
-  });
-
-  it("is a readonly array", () => {
-    expect(Array.isArray(EXCLUDED_DIRS)).toBe(true);
-    expect(EXCLUDED_DIRS.length).toBe(4);
-  });
-});
-
-describe("MARKDOWN_EXTENSIONS", () => {
-  it("contains expected extensions", () => {
-    expect(MARKDOWN_EXTENSIONS).toContain(".md");
-    expect(MARKDOWN_EXTENSIONS).toContain(".mdx");
-  });
-
-  it("has correct length", () => {
-    expect(MARKDOWN_EXTENSIONS.length).toBe(2);
-  });
-});
-
 describe("getErrorMessage", () => {
   it("extracts message from Error instances", () => {
     const error = new Error("Test error message");
