@@ -30,7 +30,7 @@ const __dirname = path.dirname(__filename);
 
 /**
  * By default the directory of the plugin in the build output should be the exact name of the plugin.
- * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin may depend on it.
+ * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin already depend on it.
  * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
  * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
  */

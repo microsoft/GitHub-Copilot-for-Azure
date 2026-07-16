@@ -38,6 +38,16 @@ export type Plugin = {
 };
 
 /**
+ * By default the directory of the plugin in the build output should be the exact name of the plugin.
+ * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin already depend on it.
+ * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
+ * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
+ */
+const pluginDirnameMap = new Map<string, string>([
+  ["azure", "azure-skills"]
+]);
+
+/**
  * Load a skill by name
  */
 export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
@@ -49,8 +59,9 @@ export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
       skillRef.name
     );
   } else {
+    const pluginDirname = pluginDirnameMap.get(skillRef.plugin) ?? skillRef.plugin;
     skillPath = path.join(
-      path.resolve(__dirname, `../../output/${skillRef.plugin}/skills`),
+      path.resolve(__dirname, `../../output/${pluginDirname}/skills`),
       skillRef.name
     );
   }
@@ -85,7 +96,8 @@ export function listSkills(plugin: string): SkillRef[] {
     // global.OUTPUT_PATH is only defined in JEST context
     skillsDir = path.join(global.OUTPUT_PATH, plugin, "skills")
   } else {
-    skillsDir = path.resolve(__dirname, `../../output/${plugin}/skills`);
+    const pluginDirname = pluginDirnameMap.get(plugin) ?? plugin;
+    skillsDir = path.resolve(__dirname, `../../output/${pluginDirname}/skills`);
   }
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
   return items

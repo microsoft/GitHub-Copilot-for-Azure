@@ -31,18 +31,29 @@ export interface ParsedSkill {
   raw: string;
 }
 
-interface SkillMetadata {
+export type SkillMetadata = {
+  plugin: string;
   name: string;
   description: string;
   [key: string]: unknown;
+};
+
+export type SkillRef = {
+  plugin: string;
+  name: string;
 }
 
-export interface LoadedSkill {
+export type LoadedSkill = {
   metadata: SkillMetadata;
   content: string;
   path: string;
   filePath: string;
-}
+};
+
+export type Plugin = {
+  name: string;
+  skills: SkillRef[];
+};
 
 // ── Parser ───────────────────────────────────────────────────────────────────
 
@@ -92,33 +103,47 @@ export function parseSkillContent(fileContent: string): ParsedSkill | null {
 // ── Loaders ──────────────────────────────────────────────────────────────────
 
 /**
+ * By default the directory of the plugin in the build output should be the exact name of the plugin.
+ * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin already depend on it.
+ * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
+ * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
+ */
+const pluginDirnameMap = new Map<string, string>([
+  ["azure", "azure-skills"]
+]);
+
+/**
  * Load a skill by name.
  *
  * Reads the SKILL.md file from `plugin/skills/<skillName>` and parses it
  * via `parseSkillContent`.  Throws when the file is missing or contains
  * no valid frontmatter.
  */
-export function loadSkill(skillName: string): LoadedSkill {
+export function loadSkill(skillRef: SkillRef): LoadedSkill {
+  const pluginDirname = pluginDirnameMap.get(skillRef.plugin) ?? skillRef.plugin;
   const skillPath = path.join(
-    path.resolve(__dirname, "../../../plugin/skills"),
-    skillName
+    path.resolve(__dirname, "../../../plugins"),
+    pluginDirname,
+    "skills",
+    skillRef.name
   );
   const skillFile = path.join(skillPath, "SKILL.md");
 
   if (!fs.existsSync(skillFile)) {
-    throw new Error(`SKILL.md not found for skill: ${skillName} at ${skillFile}`);
+    throw new Error(`SKILL.md not found for skill: ${skillRef} at ${skillFile} in plugin ${skillRef.plugin}`);
   }
 
   const fileContent = fs.readFileSync(skillFile, "utf-8");
   const parsed = parseSkillContent(fileContent);
 
   if (!parsed) {
-    throw new Error(`Invalid or missing frontmatter in SKILL.md for skill: ${skillName}`);
+    throw new Error(`Invalid or missing frontmatter in SKILL.md for skill: ${skillRef}`);
   }
 
   return {
     metadata: {
-      name: (parsed.data.name as string) || skillName,
+      plugin: skillRef.plugin,
+      name: (parsed.data.name as string) || skillRef.name,
       description: (parsed.data.description as string) || "",
       ...parsed.data
     },
@@ -129,10 +154,12 @@ export function loadSkill(skillName: string): LoadedSkill {
 }
 
 /**
- * @returns Names of skills in azure plugin.
+ * @returns SkillRef objects in a given plugin.
  */
-export function listSkills(): string[] {
-  const skillsDir = path.resolve(__dirname, "../../../plugin/skills");
+export function listSkills(plugin: string): SkillRef[] {
+  const pluginDirname = pluginDirnameMap.get(plugin) ?? plugin;
+  const skillsDir = path.resolve(__dirname, `../../../output/${pluginDirname}/skills`);
+
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
   return items
     .filter((item) => item.isDirectory())
@@ -140,5 +167,23 @@ export function listSkills(): string[] {
       const skillMdPath = path.join(skillsDir, item.name, "SKILL.md");
       return fs.existsSync(skillMdPath);
     })
-    .map((item) => item.name);
+    .map((item) => {
+      return {
+        plugin: plugin,
+        name: item.name
+      }
+    });
+}
+
+export function listPlugins(): Plugin[] {
+  const pluginsDir = path.resolve(__dirname, "../../../output/");
+  const items = fs.readdirSync(pluginsDir, { withFileTypes: true });
+  return items
+    .filter((item) => item.isDirectory())
+    .map((item) => {
+      return {
+        name: item.name,
+        skills: listSkills(item.name)
+      }
+    });
 }
