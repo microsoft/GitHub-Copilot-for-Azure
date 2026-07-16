@@ -22,9 +22,6 @@
 import { parseArgs } from "node:util";
 import { buildJsonResult, buildSkillRoutingContexts, resolveSkillFiles, validateSkillFile, validateTriggerOverlapDisambiguation, ValidationResult } from "./helpers.js";
 
-
-// ── CLI entry point ──────────────────────────────────────────────────────────
-
 function main(): void {
   const { values, positionals } = parseArgs({
     args: process.argv.slice(2),
