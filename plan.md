@@ -21,4 +21,6 @@
 
 - Update vally-eval skill to reference the new file structure
 
-## Nuances
+## Misc
+
+- Rewrite codeowner to re-assign owner to the new files

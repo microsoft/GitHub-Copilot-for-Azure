@@ -37,7 +37,7 @@ Commands:
 Default Scope:
   All commands scan these directories by default:
   - .github/skills
-  - plugin/skills
+  - plugins/
   - .github/agents
 
 Options vary by command. Use --help with any command for details.

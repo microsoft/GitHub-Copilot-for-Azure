@@ -1,6 +1,6 @@
 paths:
   skills:
-    - plugin/skills
+    - plugins/skills
   evals:
     - evals
   evalFilenames: ["eval.yaml", "eval.yml", "*.eval.yaml"]
