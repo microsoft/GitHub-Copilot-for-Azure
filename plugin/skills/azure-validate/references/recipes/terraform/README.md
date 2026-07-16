@@ -7,118 +7,89 @@ Validation steps for Terraform deployments.
 - `./infra/main.tf` exists
 - State backend accessible
 
-## Validation Steps
+## Run the preflight script
 
-- [ ] 1. Terraform Installation
-- [ ] 2. Azure CLI Installation
-- [ ] 3. Authentication
-- [ ] 4. Initialize
-- [ ] 5. Format Check
-- [ ] 6. Validate Syntax
-- [ ] 7. Plan Preview
-- [ ] 8. State Backend
-- [ ] 9. Azure Policy Validation
-- [ ] 10. Template Variable Resolution Check (AZD+Terraform)
+Run the pre-built validation script instead of executing each check by hand. It runs
+the full deterministic preflight sequence in one call and prints a compact
+**PASS / FAIL / SKIP** summary plus the captured error text for any failed step, so you
+can jump straight to remediation without re-parsing raw command output.
 
-## Validation Details
+| Script | Purpose |
+|--------|---------|
+| [`scripts/validate-terraform.sh`](scripts/validate-terraform.sh) | Bash preflight runner |
+| [`scripts/validate-terraform.ps1`](scripts/validate-terraform.ps1) | PowerShell preflight runner |
 
-### 1. Terraform Installation
+The script runs, in order: Terraform installed → Azure CLI installed → authenticated
+(`az account show`) → `terraform init` → `terraform fmt -check` → `terraform validate` →
+`terraform plan` → `terraform state list` → Go-style `{{ .Env.* }}` template-variable scan.
+It runs **every** check even if an earlier one fails, and exits non-zero when any step fails.
 
-Verify Terraform is installed:
-
-```bash
-terraform version
-```
-
-**If not installed:** See https://developer.hashicorp.com/terraform/install
-
-### 2. Azure CLI Installation
-
-Verify Azure CLI is installed:
+**Usage:**
 
 ```bash
-az version
+./scripts/validate-terraform.sh [infra-dir] [subscription-id]   # infra-dir defaults to ./infra
+```
+```powershell
+.\scripts\validate-terraform.ps1 [-InfraDir <path>] [-SubscriptionId <id>]
 ```
 
-**If not installed:**
-```
-mcp_azure_mcp_extension_cli_install(cli-type: "az")
-```
-
-### 3. Authentication
+**Examples:**
 
 ```bash
-az account show
+./scripts/validate-terraform.sh                 # validate ./infra
+./scripts/validate-terraform.sh ./infra 00000000-0000-0000-0000-000000000000
+```
+```powershell
+.\scripts\validate-terraform.ps1 -InfraDir ./infra
 ```
 
-**If not logged in:**
+**Reading the output:** the summary table lists every step with `PASS`, `FAIL`, or `SKIP`
+(a step is skipped when a prerequisite such as Terraform or the infra directory is missing).
+For each `FAIL`, a **FAILURE DETAILS** section prints the captured error text. Use the
+remediation guidance below to fix failed steps, then re-run the script.
+
+## Remediation
+
+The script only **runs and reports** — fixing failures is manual. Guidance per step:
+
+### Terraform / Azure CLI not installed
+
+- Terraform: see https://developer.hashicorp.com/terraform/install
+- Azure CLI: `mcp_azure_mcp_extension_cli_install(cli-type: "az")`
+
+### Not authenticated
+
 ```bash
 az login
 az account set --subscription <subscription-id>
 ```
 
-### 4. Initialize
+### Format check failed
 
-```bash
-cd infra
-terraform init
-```
-
-### 5. Format Check
-
-```bash
-terraform fmt -check -recursive
-```
-
-**Fix if needed:**
 ```bash
 terraform fmt -recursive
 ```
 
-### 6. Validate Syntax
+### Validate / plan / state failures
 
-```bash
-terraform validate
-```
+Read the captured error text in the script output, then consult
+[Error handling](./errors.md).
 
-### 7. Plan Preview
+### Azure Policy Validation
 
-```bash
-terraform plan -out=tfplan
-```
+The script does not cover policy checks. See
+[Policy Validation Guide](../../policy-validation.md) for retrieving and validating Azure
+policies for your subscription.
 
-### 8. State Backend
-
-Verify state is accessible:
-
-```bash
-terraform state list
-```
-
-### 9. Azure Policy Validation
-
-See [Policy Validation Guide](../../policy-validation.md) for instructions on retrieving and validating Azure policies for your subscription.
-
-### 10. Template Variable Resolution Check (AZD+Terraform)
+### Template Variable Resolution (AZD+Terraform)
 
 > ⚠️ **CRITICAL for azd+Terraform projects.** azd substitutes `${VAR}` references in
 > `main.tfvars.json` via envsubst, but does NOT interpolate Go-style template variables
 > (`{{ .Env.* }}`). Unresolved Go-style template strings passed to Terraform cause
 > cascading deployment failures, state conflicts, and timeouts.
 
-**Check for Go-style template variables:**
+When the template-variable scan reports `FAIL`:
 
-```bash
-# Check for Go-style template variables in Terraform files
-grep -rn '{{ *\.Env\.' infra/ --include='*.tf' --include='*.tfvars.json' || echo "OK: No Go-style template variables found"
-
-# Check main.tfvars.json uses correct ${VAR} syntax
-if test -f infra/main.tfvars.json; then
-  grep -n '{{ *\.Env\.' infra/main.tfvars.json && echo "WARNING: Use \${VAR} syntax instead of {{ .Env.* }}" || echo "OK: main.tfvars.json syntax is correct"
-fi
-```
-
-**If Go-style template variables are found:**
 1. **Fix the syntax** in `main.tfvars.json` — replace `{{ .Env.VAR }}` with `${VAR}`:
    ```json
    {
@@ -130,12 +101,12 @@ fi
    ```bash
    azd env set TF_VAR_environment_name "$(azd env get-value AZURE_ENV_NAME)"
    ```
-3. **Verify** that `variables.tf` declares all required variables
-4. **Re-run** `terraform validate` and `terraform plan` to confirm
+3. **Verify** that `variables.tf` declares all required variables.
+4. **Re-run** the script to confirm `terraform validate` / `plan` and the scan now pass.
 
-**If `.tfvars.json` uses wrong syntax:**
-- Replace Go-style `{{ .Env.* }}` with `${VAR}` (azd's envsubst format)
-- Prefer putting static defaults in `variables.tf` `default` values. Using `terraform.tfvars` (HCL) for static defaults is acceptable if your team prefers it; this restriction is specifically about avoiding Go-style template expressions in `.tfvars.json` files.
+> Prefer putting static defaults in `variables.tf` `default` values. Using `terraform.tfvars`
+> (HCL) for static defaults is acceptable if your team prefers it; this restriction is
+> specifically about avoiding Go-style template expressions in `.tfvars.json` files.
 
 ## References
 
