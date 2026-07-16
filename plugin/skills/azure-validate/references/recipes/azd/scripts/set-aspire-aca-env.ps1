@@ -30,17 +30,25 @@ param(
     [string]$Environment
 )
 
-$ErrorActionPreference = 'Stop'
-
 # Shared `-e <name>` argument list for azd calls (empty when no env name given).
 $azdEnvArgs = @()
 if ($Environment) {
     $azdEnvArgs = @('-e', $Environment)
 }
 
+# Capture azd environment values and verify the call succeeded. PowerShell does not treat a
+# native command's non-zero exit code as a terminating error, so check $LASTEXITCODE explicitly
+# rather than relying on $ErrorActionPreference.
+$azdOutput = azd env get-values @azdEnvArgs
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "ERROR: 'azd env get-values' failed with exit code $LASTEXITCODE."
+    Write-Host "Run 'azd provision' before this script so the azd environment is available."
+    exit 1
+}
+
 # Load azd environment values into a hashtable.
 $azdValues = @{}
-foreach ($line in (azd env get-values @azdEnvArgs)) {
+foreach ($line in $azdOutput) {
     if (-not $line) { continue }
     $name, $value = $line.Split('=', 2)
     $azdValues[$name] = $value.Trim('"')

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Set the Container Apps environment variables that Aspire "limited mode" leaves unpopulated.
 #
 # When Aspire runs in "limited mode", `azd provision` creates the Azure resources
@@ -42,39 +42,40 @@ if [ -n "$AZD_ENV_NAME" ]; then
   AZD_ENV_ARGS="-e $AZD_ENV_NAME"
 fi
 
-# Safely load azd environment values into an associative array (no eval).
-declare -A AZD_VALUES
-while IFS= read -r line; do
-  [ -n "$line" ] || continue
-  key=${line%%=*}
-  value=${line#*=}
-  case "$value" in
-    \"*\") value=${value#\"}; value=${value%\"} ;;
-    \'*\') value=${value#\'}; value=${value%\'} ;;
-  esac
-  AZD_VALUES["$key"]="$value"
-done < <(azd env get-values $AZD_ENV_ARGS)
+# Capture azd environment values via command substitution so `set -e` aborts if the
+# `azd env get-values` call itself fails (rather than silently continuing with no values).
+AZD_VALUES=$(azd env get-values $AZD_ENV_ARGS)
 
-RG_NAME="${AZD_VALUES[AZURE_RESOURCE_GROUP]}"
+# get_env_value <KEY> — print the (unquoted) value of KEY from AZD_VALUES, empty if absent.
+# Uses only POSIX-friendly tools so it works on the widely-available Bash 3.2 (e.g. macOS).
+get_env_value() {
+  printf '%s\n' "$AZD_VALUES" \
+    | grep "^$1=" \
+    | head -n 1 \
+    | sed -e "s/^$1=//" -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"
+}
+
+RG_NAME=$(get_env_value AZURE_RESOURCE_GROUP)
 if [ -z "$RG_NAME" ]; then
   echo "ERROR: AZURE_RESOURCE_GROUP is not set in the azd environment." >&2
   echo "Run 'azd provision' before this script so the resource group is available." >&2
   exit 1
 fi
 
-# set_if_missing <ENV_VAR_NAME> <description> <command that prints the value>
+# set_if_missing <ENV_VAR_NAME> <description> <resolver command...>
+# The resolver command is passed as arguments and run via "$@" — no eval.
 set_if_missing() {
   var_name="$1"
   description="$2"
-  value_cmd="$3"
+  shift 2
 
-  existing="${AZD_VALUES[$var_name]}"
+  existing=$(get_env_value "$var_name")
   if [ -n "$existing" ]; then
     echo "$var_name: already present ($existing)"
     return 0
   fi
 
-  value=$(eval "$value_cmd")
+  value=$("$@")
   if [ -z "$value" ]; then
     echo "ERROR: Could not resolve $var_name ($description) in resource group '$RG_NAME'." >&2
     echo "Confirm 'azd provision' completed and the resource exists." >&2
@@ -90,16 +91,16 @@ echo "Resource group: $RG_NAME"
 set_if_missing \
   "AZURE_CONTAINER_REGISTRY_ENDPOINT" \
   "container registry login server" \
-  "az acr list --resource-group \"$RG_NAME\" --query \"[0].loginServer\" -o tsv"
+  az acr list --resource-group "$RG_NAME" --query "[0].loginServer" -o tsv
 
 set_if_missing \
   "AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID" \
   "managed identity resource id" \
-  "az identity list --resource-group \"$RG_NAME\" --query \"[0].id\" -o tsv"
+  az identity list --resource-group "$RG_NAME" --query "[0].id" -o tsv
 
 set_if_missing \
   "MANAGED_IDENTITY_CLIENT_ID" \
   "managed identity client id" \
-  "az identity list --resource-group \"$RG_NAME\" --query \"[0].clientId\" -o tsv"
+  az identity list --resource-group "$RG_NAME" --query "[0].clientId" -o tsv
 
 echo "Aspire Container Apps environment variables are ready for 'azd deploy'."
