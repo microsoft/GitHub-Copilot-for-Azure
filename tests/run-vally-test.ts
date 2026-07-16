@@ -328,7 +328,7 @@ async function main(): Promise<void> {
   }
 
   const options = parseCliOptions(rawArgs);
-  const pluginName = options.plugin ?? "azure";
+  const pluginDirname = options.plugin ?? "azure-skills";
   const passRateThreshold = options.passRate ?? 0.75;
 
   // Wrapper-specific args are parsed above; all other args are preserved here.
@@ -343,7 +343,7 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
-    const evalSpecDir = path.join(__dirname, `../evals/${pluginName}/${options.skill}/`);
+    const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
     const evalSpecPaths: string[] = [];
     const allFiles = await fs.readdir(evalSpecDir);
     for (const file of allFiles) {

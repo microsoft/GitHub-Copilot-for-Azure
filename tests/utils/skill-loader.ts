@@ -14,38 +14,53 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export type SkillMetadata = {
-  plugin: string;
+  /**
+   * The directory name containing the plugin files in the shared plugins directory.
+   */
+  pluginDirname: string;
   name: string;
   description: string;
   [key: string]: unknown;
 };
 
 export type SkillRef = {
-  plugin: string;
+  /**
+   * The directory name containing the plugin files in the shared plugins directory.
+   */
+  pluginDirname: string;
   name: string;
 }
 
 export type LoadedSkill = {
   metadata: SkillMetadata;
   content: string;
+
+  /**
+   * Absolute path to the skill's directory.
+   */
   path: string;
+
+  /**
+   * Absolute path to the skill's SKILL.md file.
+   */
   filePath: string;
 };
 
 export type Plugin = {
-  name: string;
+  /**
+   * The directory name containing the plugin files in the shared plugins directory.
+   * 
+   * Plugin directory name can be different from from the plugin's name.
+   * For example, the directory name of "azure" plugin has been "azure-skills". 
+   * Some external marketplaces already depend on it.
+   * For example, see https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
+   * Given a plugin's directory name, we can easily retrieve its plugin name by reading the plugin.json file.
+   * Discover a plugin directory name from the plugin name is much harder.
+   * Therefore we maintain references to plugins by their directory names.
+   */
+  dirname: string;
   skills: SkillRef[];
 };
-
-/**
- * By default the directory of the plugin in the build output should be the exact name of the plugin.
- * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin already depend on it.
- * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
- * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
- */
-const pluginDirnameMap = new Map<string, string>([
-  ["azure", "azure-skills"]
-]);
 
 /**
  * Load a skill by name
@@ -55,20 +70,19 @@ export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
   if (global.OUTPUT_PATH) {
     // global.OUTPUT_PATH is only defined in JEST context
     skillPath = path.join(
-      path.join(global.OUTPUT_PATH, skillRef.plugin),
+      path.join(global.OUTPUT_PATH, skillRef.pluginDirname),
       skillRef.name
     );
   } else {
-    const pluginDirname = pluginDirnameMap.get(skillRef.plugin) ?? skillRef.plugin;
     skillPath = path.join(
-      path.resolve(__dirname, `../../output/${pluginDirname}/skills`),
+      path.resolve(__dirname, `../../output/${skillRef.pluginDirname}/skills`),
       skillRef.name
     );
   }
   const skillFile = path.join(skillPath, "SKILL.md");
 
   if (!fs.existsSync(skillFile)) {
-    throw new Error(`SKILL.md not found for skill: ${skillRef.name} at ${skillFile} in plugin ${skillRef.plugin}`);
+    throw new Error(`SKILL.md not found for skill: ${skillRef.name} at ${skillFile} in plugin ${skillRef.pluginDirname}`);
   }
 
   const fileContent = fs.readFileSync(skillFile, "utf-8");
@@ -76,7 +90,7 @@ export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
 
   return {
     metadata: {
-      plugin: skillRef.plugin,
+      pluginDirname: skillRef.pluginDirname,
       name: (metadata.name as string) || skillRef.name,
       description: (metadata.description as string) || "",
       ...metadata
@@ -90,13 +104,12 @@ export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
 /**
  * @returns SkillRef objects in a given plugin.
  */
-export function listSkills(plugin: string): SkillRef[] {
+export function listSkills(pluginDirname: string): SkillRef[] {
   let skillsDir;
   if (global.OUTPUT_PATH) {
     // global.OUTPUT_PATH is only defined in JEST context
-    skillsDir = path.join(global.OUTPUT_PATH, plugin, "skills")
+    skillsDir = path.join(global.OUTPUT_PATH, pluginDirname, "skills")
   } else {
-    const pluginDirname = pluginDirnameMap.get(plugin) ?? plugin;
     skillsDir = path.resolve(__dirname, `../../output/${pluginDirname}/skills`);
   }
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
@@ -108,7 +121,7 @@ export function listSkills(plugin: string): SkillRef[] {
     })
     .map((item) => {
       return {
-        plugin: plugin,
+        pluginDirname: pluginDirname,
         name: item.name
       }
     });
@@ -127,7 +140,7 @@ export function listPlugins(): Plugin[] {
     .filter((item) => item.isDirectory())
     .map((item) => {
       return {
-        name: item.name,
+        dirname: item.name,
         skills: listSkills(item.name)
       }
     });

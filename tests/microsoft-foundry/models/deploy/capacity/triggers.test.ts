@@ -15,7 +15,7 @@ describe("capacity - Trigger Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill({ plugin: "azure", name: SKILL_NAME });;
+    skill = await loadSkill({ pluginDirname: "azure-skills", name: SKILL_NAME });;
     triggerMatcher = new TriggerMatcher(skill);
   });
 

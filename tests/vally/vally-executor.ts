@@ -41,7 +41,7 @@ export class IntegrationTestAgentRunner implements Executor {
       const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === skillName)).at(0);
       if (owningPlugin) {
         requiredSkillRefs.push({
-          plugin: owningPlugin.name,
+          pluginDirname: owningPlugin.dirname,
           name: skillName
         });
       }

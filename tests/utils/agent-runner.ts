@@ -29,16 +29,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * By default the directory of the plugin in the build output should be the exact name of the plugin.
- * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin already depend on it.
- * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
- * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
- */
-const pluginDirnameMap = new Map<string, string>([
-  ["azure", "azure-skills"]
-]);
-
-/**
  * Resolve the bundled Copilot CLI entry point.
  *
  * The SDK's default `getBundledCliPath()` uses `import.meta.resolve()`, which
@@ -919,18 +909,17 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
 
       // The plugins to include are inferred by the requiredSkills.
       // We include a plugin if and only if there is at least one required skill from it.
-      const plugins = new Set<string>();
+      const pluginDirnames = new Set<string>();
       runConfig.requiredSkills?.forEach(skillRef => {
-        plugins.add(skillRef.plugin);
+        pluginDirnames.add(skillRef.pluginDirname);
       });
-      const pluginsList = [...plugins.values()];
-      const skillDirectories = pluginsList.map(plugin => {
-        const pluginDirname = pluginDirnameMap.get(plugin) ?? plugin;
-        return path.resolve(__dirname, `../../output/${pluginDirname}/skills`)
+      const pluginDirnamesList = [...pluginDirnames.values()];
+      const skillDirectories = pluginDirnamesList.map(pluginDir => {
+        return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
       });
 
       let disabledSkills: SkillRef[] | undefined;
-      const skillRefs = pluginsList.map(plugin => listSkills(plugin)).flat();
+      const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
       if (runConfig.includeSkills) {
         if (runConfig.includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
           const invalidSkills = runConfig.includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
@@ -943,7 +932,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
         // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
         if (runConfig.requiredSkills) {
-          disabledSkills = (await truncateSkills(pluginsList, runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
+          disabledSkills = (await truncateSkills(pluginDirnamesList, runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
         }
       }
       const noSkills = process.env.NO_SKILLS === "true";

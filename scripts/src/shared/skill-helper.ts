@@ -32,26 +32,51 @@ export interface ParsedSkill {
 }
 
 export type SkillMetadata = {
-  plugin: string;
+  /**
+   * The directory name containing the plugin files in the shared plugins directory.
+   */
+  pluginDirname: string;
   name: string;
   description: string;
   [key: string]: unknown;
 };
 
 export type SkillRef = {
-  plugin: string;
+  /**
+   * The directory name containing the plugin files in the shared plugins directory.
+   */
+  pluginDirname: string;
   name: string;
 }
 
 export type LoadedSkill = {
   metadata: SkillMetadata;
   content: string;
+
+  /**
+   * Absolute path to the skill's directory.
+   */
   path: string;
+
+  /**
+   * Absolute path to the skill's SKILL.md file.
+   */
   filePath: string;
 };
 
 export type Plugin = {
-  name: string;
+  /**
+   * The directory name containing the plugin files in the shared plugins directory.
+   * 
+   * Plugin directory name can be different from from the plugin's name.
+   * For example, the directory name of "azure" plugin has been "azure-skills". 
+   * Some external marketplaces already depend on it.
+   * For example, see https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
+   * Given a plugin's directory name, we can easily retrieve its plugin name by reading the plugin.json file.
+   * Discover a plugin directory name from the plugin name is much harder.
+   * Therefore we maintain references to plugins by their directory names.
+   */
+  dirname: string;
   skills: SkillRef[];
 };
 
@@ -120,7 +145,7 @@ const pluginDirnameMap = new Map<string, string>([
  * no valid frontmatter.
  */
 export function loadSkill(skillRef: SkillRef): LoadedSkill {
-  const pluginDirname = pluginDirnameMap.get(skillRef.plugin) ?? skillRef.plugin;
+  const pluginDirname = pluginDirnameMap.get(skillRef.pluginDirname) ?? skillRef.pluginDirname;
   const skillPath = path.join(
     path.resolve(__dirname, "../../../plugins"),
     pluginDirname,
@@ -130,7 +155,7 @@ export function loadSkill(skillRef: SkillRef): LoadedSkill {
   const skillFile = path.join(skillPath, "SKILL.md");
 
   if (!fs.existsSync(skillFile)) {
-    throw new Error(`SKILL.md not found for skill: ${skillRef} at ${skillFile} in plugin ${skillRef.plugin}`);
+    throw new Error(`SKILL.md not found for skill: ${skillRef} at ${skillFile} in plugin ${skillRef.pluginDirname}`);
   }
 
   const fileContent = fs.readFileSync(skillFile, "utf-8");
@@ -142,7 +167,7 @@ export function loadSkill(skillRef: SkillRef): LoadedSkill {
 
   return {
     metadata: {
-      plugin: skillRef.plugin,
+      pluginDirname: skillRef.pluginDirname,
       name: (parsed.data.name as string) || skillRef.name,
       description: (parsed.data.description as string) || "",
       ...parsed.data
@@ -156,8 +181,7 @@ export function loadSkill(skillRef: SkillRef): LoadedSkill {
 /**
  * @returns SkillRef objects in a given plugin.
  */
-export function listSkills(plugin: string): SkillRef[] {
-  const pluginDirname = pluginDirnameMap.get(plugin) ?? plugin;
+export function listSkills(pluginDirname: string): SkillRef[] {
   const skillsDir = path.resolve(__dirname, `../../../output/${pluginDirname}/skills`);
 
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
@@ -169,7 +193,7 @@ export function listSkills(plugin: string): SkillRef[] {
     })
     .map((item) => {
       return {
-        plugin: plugin,
+        pluginDirname: pluginDirname,
         name: item.name
       }
     });
@@ -182,7 +206,7 @@ export function listPlugins(): Plugin[] {
     .filter((item) => item.isDirectory())
     .map((item) => {
       return {
-        name: item.name,
+        dirname: item.name,
         skills: listSkills(item.name)
       }
     });

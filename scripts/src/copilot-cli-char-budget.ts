@@ -71,7 +71,7 @@ function checkPluginCharBudget(pluginName: string, budget: number): PluginCheckR
  * Iterates over every directory in plugins/ and checks each one independently.
  */
 function checkCopilotCliSkillsCharBudget(): Record<string, PluginCheckResult> {
-  const pluginNames = listPlugins().map((p) => p.name);
+  const pluginNames = listPlugins().map((p) => p.dirname);
   const budget = getSkillCharBudget();
 
   const result: Record<string, PluginCheckResult> = {};

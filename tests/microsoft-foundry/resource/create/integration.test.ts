@@ -12,7 +12,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill({ plugin: "azure", name: SKILL_NAME });;
+    skill = await loadSkill({ pluginDirname: "azure-skills", name: SKILL_NAME });;
   });
 
   describe("Skill Loading", () => {
@@ -38,7 +38,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
 
       const mainFilePath = path.join(
         OUTPUT_PATH,
-        "azure",
+        "azure-skills",
         "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
@@ -58,7 +58,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
 
       const mainFilePath = path.join(
         OUTPUT_PATH,
-        "azure",
+        "azure-skills",
         "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
@@ -78,7 +78,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
 
       const mainFilePath = path.join(
         OUTPUT_PATH,
-        "azure",
+        "azure-skills",
         "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
@@ -99,7 +99,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
 
       const mainFilePath = path.join(
         OUTPUT_PATH,
-        "azure",
+        "azure-skills",
         "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );
@@ -117,7 +117,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
 
       const referencesPath = path.join(
         OUTPUT_PATH,
-        "azure",
+        "azure-skills",
         "skills",
         "microsoft-foundry/resource/create/references"
       );
@@ -141,7 +141,7 @@ describe(`${SKILL_NAME}_resource-create - Integration Tests`, () => {
 
       const mainFilePath = path.join(
         OUTPUT_PATH,
-        "azure",
+        "azure-skills",
         "skills",
         "microsoft-foundry/resource/create/create-foundry-resource.md"
       );

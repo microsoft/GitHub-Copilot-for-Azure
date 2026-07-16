@@ -7,8 +7,8 @@ export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
  * @param requiredSkills skills that cannot be truncated.
  * @returns the skills to disable to emulate truncation.
  */
-export async function truncateSkills(plugins: string[], requiredSkills: SkillRef[], charBudget: number): Promise<SkillRef[] | undefined> {
-  const skillRefs = plugins.map(p => listSkills(p)).flat();
+export async function truncateSkills(pluginDirnames: string[], requiredSkills: SkillRef[], charBudget: number): Promise<SkillRef[] | undefined> {
+  const skillRefs = pluginDirnames.map(p => listSkills(p)).flat();
   const invalidSkills = requiredSkills.filter((s) => !skillRefs.some(ref => ref.name === s.name));
   if (invalidSkills.length > 0) {
     throw new Error(`Invalid requiredSkills. ${invalidSkills} do not exist in azure-skills plugin.`);
