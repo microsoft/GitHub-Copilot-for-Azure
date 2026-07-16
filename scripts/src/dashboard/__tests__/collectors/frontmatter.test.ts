@@ -26,7 +26,7 @@ function makeFrontmatterJson(overrides?: {
     skills: [
       {
         name: "skill-a",
-        path: "plugin/skills/skill-a/SKILL.md",
+        path: "plugins/plugin-a/skills/skill-a/SKILL.md",
         status: "pass" as const,
         errors: [],
         warnings: [],
@@ -34,7 +34,7 @@ function makeFrontmatterJson(overrides?: {
       },
       {
         name: "skill-b",
-        path: "plugin/skills/skill-b/SKILL.md",
+        path: "plugins/plugin-b/skills/skill-b/SKILL.md",
         status: "pass" as const,
         errors: [],
         warnings: [],
@@ -231,7 +231,7 @@ describe("frontmatterCollector.collect", () => {
     expect(report.status).toBe("pass");
     expect(report.items).toHaveLength(2);
     expect(execSync).toHaveBeenCalledWith(
-      expect.stringContaining(`--json "${resolve(fakeRoot, "output", "skills")}"`),
+      expect.stringContaining(`--json "${resolve(fakeRoot, "output")}"`),
       expect.objectContaining({
         cwd: resolve(fakeRoot, "scripts"),
         timeout: 5000,

@@ -20,7 +20,7 @@ describe("count command integration", () => {
       // Ignore clean up errors in tests
     }
     mkdirSync(join(TEST_DIR, ".github", "skills"), { recursive: true });
-    mkdirSync(join(TEST_DIR, "plugin", "skills"), { recursive: true });
+    mkdirSync(join(TEST_DIR, "plugins", "test-plugin", "skills"), { recursive: true });
 
     // Spy on console.log to capture output
     consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
@@ -40,7 +40,7 @@ describe("count command integration", () => {
   it("counts tokens in default directories", () => {
     // Create test files
     writeFileSync(join(TEST_DIR, ".github", "skills", "test.md"), "a".repeat(400)); // 100 tokens
-    writeFileSync(join(TEST_DIR, "plugin", "skills", "another.md"), "b".repeat(800)); // 200 tokens
+    writeFileSync(join(TEST_DIR, "plugins", "test-plugin", "skills", "another.md"), "b".repeat(800)); // 200 tokens
 
     count(TEST_DIR, []);
 

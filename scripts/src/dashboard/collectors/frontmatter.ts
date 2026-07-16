@@ -115,10 +115,10 @@ export const frontmatterCollector: Collector = {
     // The frontmatter npm script lives in scripts/package.json, so we
     // must run from the scripts/ directory, not the repo root.
     const scriptsCwd = resolve(options.cwd, "scripts");
-    // Validate the built output (output/skills/) rather than the source
-    // (plugin/skills/) so that stamped version numbers are used and the
+    // Validate the built output (output/) rather than the source
+    // (plugins/) so that stamped version numbers are used and the
     // CLI does not fail on placeholder versions.
-    const builtSkillsDir = resolve(options.cwd, "output", "skills");
+    const builtSkillsDir = resolve(options.cwd, "output");
     let stdout: string;
     try {
       stdout = execSync(
