@@ -100,6 +100,8 @@ function collectTestResultPaths(
  * Sanitize a test name the same way agent-runner.ts does when naming directories.
  * Used to match token-summary.jsonl entries (which contain the sanitised name)
  * against skill-invocation test entries (which use the raw Jest name).
+ * 
+ * Note: keep this in sync with the sanitizeTestName function in tests/utils.ts.
  */
 function sanitizeTestName(name: string): string {
     return name

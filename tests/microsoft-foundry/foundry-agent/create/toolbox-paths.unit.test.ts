@@ -28,4 +28,19 @@ describe("foundry-agent create toolbox reference paths", () => {
     expect(reference).not.toContain("samples/python/toolbox/copilot-sdk");
     expect(reference).not.toContain("samples/python/toolbox/SUPPORTED_TOOLBOX_TOOLS.md");
   });
+
+  test("does not describe a declarative toolbox lifecycle", async () => {
+    const create = await readSkillFile("foundry-agent/create/create-hosted.md");
+    const tools = await readSkillFile("foundry-agent/create/references/tools.md");
+    const usage = await readSkillFile("foundry-agent/create/references/use-toolbox-in-hosted-agent.md");
+    const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
+    const cli = await readSkillFile("foundry-agent/azd-guidance/references/azd-ai-cli.md");
+    const guidance = `${create}\n${tools}\n${usage}\n${deploy}\n${cli}`;
+
+    expect(guidance).not.toContain("Does not create a toolbox");
+    expect(guidance).not.toContain("host: azure.ai.toolbox");
+    expect(guidance).not.toContain("kind: toolbox");
+    expect(guidance).not.toContain("declaring the toolbox in `azure.yaml`");
+    expect(guidance).not.toContain("connection/toolbox services");
+  });
 });
