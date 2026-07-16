@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { resolve } from "node:path";
 import type { CategoryReport } from "../../schema.js";
 import { parseFrontmatterJson } from "../../collectors/frontmatter.js";
 
@@ -212,6 +213,7 @@ describe("frontmatterCollector.collect", () => {
   it("returns a valid CategoryReport from CLI output", async () => {
     const jsonOutput = makeFrontmatterJson();
     const execSync = vi.fn(() => jsonOutput);
+    const fakeRoot = "/fake";
 
     vi.doMock("node:child_process", () => ({
       execSync,
@@ -222,16 +224,16 @@ describe("frontmatterCollector.collect", () => {
     );
 
     const report: CategoryReport = await frontmatterCollector.collect({
-      cwd: "/fake",
+      cwd: fakeRoot,
       timeout: 5000,
     });
 
     expect(report.status).toBe("pass");
     expect(report.items).toHaveLength(2);
     expect(execSync).toHaveBeenCalledWith(
-      expect.stringContaining("--json \"D:\\fake\\output\\skills\""),
+      expect.stringContaining(`--json "${resolve(fakeRoot, "output", "skills")}"`),
       expect.objectContaining({
-        cwd: "D:\\fake\\scripts",
+        cwd: resolve(fakeRoot, "scripts"),
         timeout: 5000,
       }),
     );
