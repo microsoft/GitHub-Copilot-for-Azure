@@ -15,7 +15,6 @@ Routes Azure VM and Virtual Machine Scale Set (VMSS) requests to the right workf
 
 - User wants to **recommend, compare, or price** a VM or VMSS
 - User wants to **create, provision, or deploy** a VM or VMSS
-- User **can't connect** to a VM (RDP / SSH / port refused / black screen / password reset)
 - User asks about **Capacity Reservation Groups** (CRG) — reserve, guarantee capacity, pre-provision
 - User asks about **Essential Machine Management** (EMM) — machine enrollment, monitor
 
