@@ -1,17 +1,6 @@
 import { BlobServiceClient } from "@azure/storage-blob";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-
-export interface BlobEntry {
-    name: string;
-    blobName: string;
-}
-
-export interface BlobTreeNode {
-    files: BlobEntry[];
-    children: Record<string, BlobTreeNode>;
-}
-
-export type BlobTree = Record<string, BlobTreeNode>;
+import type { BlobTree, BlobTreeNode } from "./shared/blobTree";
 
 const MSBENCH_STORAGE_ACCOUNT = process.env.MSBENCH_STORAGE_ACCOUNT;
 const MSBENCH_REPORTS_CONTAINER_NAME = process.env.MSBENCH_REPORTS_CONTAINER;
@@ -37,7 +26,15 @@ function getContainerClient() {
 
 function isExcluded(blobName: string): boolean {
     const filename = blobName.split("/").pop() ?? "";
-    return EXCLUDED_FILENAMES.has(filename);
+    if (EXCLUDED_FILENAMES.has(filename)) {
+        return true;
+    }
+    // Per-run tool-usage capture files (tool-usage-<token>.json) are uploaded but
+    // not exposed via the dashboard API yet.
+    if (filename.startsWith("tool-usage-") && filename.endsWith(".json")) {
+        return true;
+    }
+    return false;
 }
 
 function createNode(): BlobTreeNode {

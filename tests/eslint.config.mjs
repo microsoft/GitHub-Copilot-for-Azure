@@ -50,7 +50,6 @@ export default defineConfig(
       "reports/**",
       "**/resources/**",
       "**/__snapshots__/**",
-      "swa-deployment-tests/**",
       "**/eval/fixtures/**",  // Test fixtures - not real TS projects
       "**/evals/fixtures/**",  // Test fixtures - not real TS projects
     ],

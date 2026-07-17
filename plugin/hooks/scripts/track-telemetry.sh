@@ -34,6 +34,58 @@
 #                     transcript_path may be absent, so stable vs Insiders can only be
 #                     distinguished when skills are called from agent-plugins (which
 #                     includes transcript_path)
+#
+# === Event Types ===
+#
+# 1. skill_invocation
+#    - Triggered when: the "skill"/"Skill" tool is called with a skill name,
+#      OR a SKILL.md file is read from a recognized azure-skills path
+#    - Tracked fields: --skill-name <name>, --skill-version <version>
+#
+# 2. tool_invocation
+#    - Triggered when: a tool matching an Azure MCP prefix is called
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*)
+#    - Tracked field: --tool-name <toolName>
+#
+# 3. reference_file_read
+#    - Triggered when: a file read tool (view/Read/read_file) targets a file
+#      inside a recognized azure-skills path that is NOT a SKILL.md
+#    - These are the reference/instruction files that skills bundle alongside
+#      SKILL.md (e.g., recipes, templates, requirement docs)
+#    - Tracked fields: --file-reference <relative-path-after-skills/>,
+#      --skill-version <version>
+#
+# === Skill Version ===
+#
+# The skill version is read from the SKILL.md frontmatter (metadata.version),
+# which the build stamps at package time. It is resolved as follows:
+#   - skill/Skill tool call: locate SKILL.md relative to this script's plugin
+#     root ("<plugin-root>/skills/<name>/SKILL.md")
+#   - SKILL.md read:          read the version from the SKILL.md being read
+#   - reference_file_read:    read the version from the sibling SKILL.md at the
+#                             root of the skill folder the reference lives in
+#    - Example: azure-validate/references/recipes/azd/README.md
+#
+# === Reference File Detection ===
+#
+# When a file read tool is invoked (Copilot CLI: "view", Claude Code: "Read",
+# VS Code: "read_file"), the script extracts the file path from the tool input
+# and checks if it falls within a recognized azure-skills folder:
+#
+#   Path field lookup order:
+#     - toolArgs.path / toolArgs.filePath       (Copilot CLI)
+#     - tool_input.filePath / tool_input.file_path / tool_input.path  (Claude Code / VS Code)
+#
+#   Recognized azure-skills install paths:
+#     - .copilot/installed-plugins/azure-skills/azure/skills/...
+#     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
+#     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
+#     - .agents/skills/...
+#
+#   If the path matches AND is not a SKILL.md file, the relative path after
+#   "skills/" is extracted and emitted as a reference_file_read event.
+#   SKILL.md reads are tracked as skill_invocation instead (not double-counted).
 
 set +e  # Don't exit on errors - fail silently for privacy
 
@@ -47,6 +99,28 @@ fi
 return_success() {
     echo '{"continue":true}'
     exit 0
+}
+
+# Resolve this script's directory so we can locate bundled skills. In the
+# installed plugin, hooks/ and skills/ are siblings under the plugin root, so
+# <script-dir>/../../skills/<name>/SKILL.md is the skill definition.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
+SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
+
+# Extract the skill version from a SKILL.md frontmatter (metadata.version).
+# Prints nothing if the file or version cannot be read.
+get_skill_version() {
+    local skillMdPath="$1"
+    [ -n "$skillMdPath" ] || return 0
+    # Normalize backslashes so Windows-style paths are readable
+    skillMdPath="$(echo "$skillMdPath" | tr '\\' '/')"
+    [ -f "$skillMdPath" ] || return 0
+    # Read the frontmatter block (between the first two --- lines) and pull the
+    # version value, stripping surrounding quotes and whitespace.
+    sed -n '/^---[[:space:]]*$/,/^---[[:space:]]*$/p' "$skillMdPath" 2>/dev/null \
+        | grep -E '^[[:space:]]*version:[[:space:]]*' \
+        | head -1 \
+        | sed -E 's/^[[:space:]]*version:[[:space:]]*//; s/^["'"'"']//; s/["'"'"'][[:space:]]*$//; s/[[:space:]]*$//'
 }
 
 # === JSON Parsing Functions (using sed - portable across platforms) ===
@@ -173,6 +247,7 @@ is_azure_skills_path() {
     local p="$1"
     [[ "$p" == *".copilot/installed-plugins/azure-skills/azure/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
+    [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
     [[ "$p" == *".agents/skills/"* ]] && return 0
     return 1
@@ -181,6 +256,7 @@ is_azure_skills_path() {
 shouldTrack=false
 eventType=""
 skillName=""
+skillVersion=""
 azureToolName=""
 filePath=""
 
@@ -193,6 +269,7 @@ if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
     if [ -n "$skillName" ]; then
         eventType="skill_invocation"
         shouldTrack=true
+        skillVersion=$(get_skill_version "$SKILLS_DIR/$skillName/SKILL.md")
     fi
 fi
 
@@ -211,6 +288,7 @@ if [ "$toolName" = "view" ] || [ "$toolName" = "Read" ] || [ "$toolName" = "read
                 skillName="${BASH_REMATCH[1]}"
                 eventType="skill_invocation"
                 shouldTrack=true
+                skillVersion=$(get_skill_version "$pathToCheck")
             fi
         fi
     fi
@@ -247,6 +325,13 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
                 if [ "$shouldTrack" = false ]; then
                     shouldTrack=true
                     eventType="reference_file_read"
+                    # Resolve the version from the sibling SKILL.md at the root
+                    # of the skill folder this reference lives in. Strip the
+                    # relative suffix by length (literal removal) so glob
+                    # metacharacters in the path can't corrupt the result.
+                    skillNameSeg="${filePath%%/*}"
+                    skillRootAbs="${pathNormalized:0:${#pathNormalized}-${#filePath}}"
+                    skillVersion=$(get_skill_version "${skillRootAbs}${skillNameSeg}/SKILL.md")
                 fi
             fi
         fi
@@ -266,6 +351,7 @@ if [ "$shouldTrack" = true ]; then
     [ -n "$eventType" ] && mcpArgs+=("--event-type" "$eventType")
     [ -n "$sessionId" ] && mcpArgs+=("--session-id" "$sessionId")
     [ -n "$skillName" ] && mcpArgs+=("--skill-name" "$skillName")
+    [ -n "$skillVersion" ] && mcpArgs+=("--skill-version" "$skillVersion")
     [ -n "$azureToolName" ] && mcpArgs+=("--tool-name" "$azureToolName")
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")

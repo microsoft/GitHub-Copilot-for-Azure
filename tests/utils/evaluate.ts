@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner.ts";
 
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
@@ -101,31 +101,310 @@ export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolea
  * @returns True if any file contains content matching the value pattern
  */
 export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern: RegExp, filePattern?: RegExp): boolean {
-  const scanDirectory = (dir: string): boolean => {
+  return readWorkspaceTextFiles(workspace, filePattern ?? /.*/).some(content => content.match(valuePattern));
+}
+
+function readWorkspaceTextFiles(workspace: string, filePattern: RegExp): string[] {
+  const contents: string[] = [];
+
+  const scanDirectory = (dir: string): void => {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory() && entry.name !== "node_modules") {
-        if (scanDirectory(fullPath)) return true;
+        scanDirectory(fullPath);
+      } else if (entry.isFile() && entry.name.match(filePattern)) {
+        try {
+          contents.push(fs.readFileSync(fullPath, "utf-8"));
+        } catch {
+          // Skip files that can't be read as text
+        }
+      }
+    }
+  };
+
+  scanDirectory(workspace);
+  return contents;
+}
+
+function expressionContainsPublicPlaceholderImage(expression: string, symbolExpressions: Map<string, string>, seenSymbols = new Set<string>()): boolean {
+  if (/["']mcr\.microsoft\.com\//i.test(expression)) {
+    return true;
+  }
+
+  for (const symbolName of expression.matchAll(/\b[A-Za-z_]\w*\b/g)) {
+    const name = symbolName[0];
+    if (seenSymbols.has(name)) {
+      continue;
+    }
+
+    const symbolExpression = symbolExpressions.get(name);
+    if (!symbolExpression) {
+      continue;
+    }
+
+    seenSymbols.add(name);
+    if (expressionContainsPublicPlaceholderImage(symbolExpression, symbolExpressions, seenSymbols)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
+  const blocks: string[] = [];
+
+  for (const match of content.matchAll(blockStartPattern)) {
+    const blockStart = match.index;
+    const openBraceIndex = content.indexOf("{", blockStart);
+    if (openBraceIndex === -1) {
+      continue;
+    }
+
+    let depth = 0;
+    for (let index = openBraceIndex; index < content.length; index++) {
+      if (content[index] === "{") {
+        depth += 1;
+      } else if (content[index] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          blocks.push(content.slice(blockStart, index + 1));
+          break;
+        }
+      }
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * Extract the body of a terraform list assignment.
+ * @param block A text block that contains one list assignment.
+ * @param attributeName The attribute name of the list.
+ * @returns the body of the list, or the original text in the assignment if it's not a list.
+ * @example "ignore_changes = [ value[0], value[1] ]" => "[ value[0], value[2] ]"
+ */
+export function extractTerraformListAssignment(block: string, attributeName: string): string | undefined {
+  const escapedAttributeName = attributeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignmentMatch = block.match(new RegExp(`(^|\\n)\\s*${escapedAttributeName}\\s*=\\s*`, "i"));
+  if (!assignmentMatch || assignmentMatch.index === undefined) {
+    return undefined;
+  }
+  const valueStart = assignmentMatch.index + assignmentMatch[0].length;
+  const valueText = block.slice(valueStart).trimStart();
+
+  if (!valueText.startsWith("[")) {
+    return valueText.match(/^[^\n]+/)?.[0]?.trim();
+  }
+
+  let depth = 0;
+  for (let index = 0; index < valueText.length; index++) {
+    if (valueText[index] === "[") {
+      depth += 1;
+    } else if (valueText[index] === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        return valueText.slice(0, index + 1);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Checks that generated Bicep provisions Container Apps with a public MCR placeholder image.
+ * This verifies the deployment behavior instead of a specific parameter name/default spelling.
+ */
+export function doesBicepContainerAppUsePublicPlaceholderImage(workspace: string): boolean {
+  const bicepFiles = readWorkspaceTextFiles(workspace, /\.bicep$/i)
+    .filter(content => /Microsoft\.App\/containerApps/i.test(content));
+
+  for (const content of bicepFiles) {
+    const symbolExpressions = new Map<string, string>();
+
+    for (const match of content.matchAll(/^\s*param\s+([A-Za-z_]\w*)\s+string\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*var\s+([A-Za-z_]\w*)\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    const containerAppBlocks = extractBlocks(
+      content,
+      /^\s*resource\s+[A-Za-z_]\w*\s+'Microsoft\.App\/containerApps@[^']+'\s*=\s*{/gmi,
+    );
+
+    for (const block of containerAppBlocks) {
+      for (const match of block.matchAll(/^\s*image\s*:\s*(.+)$/gmi)) {
+        if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks that generated Terraform provisions Container Apps with a public MCR placeholder image.
+ * This verifies the container app image expression instead of any incidental MCR string in the workspace.
+ */
+export function doesTerraformContainerAppUsePublicPlaceholderImage(workspace: string): boolean {
+  const terraformFiles = readWorkspaceTextFiles(workspace, /\.tf$/i)
+    .filter(content => /azurerm_container_app\b/i.test(content));
+
+  for (const content of terraformFiles) {
+    const symbolExpressions = new Map<string, string>();
+
+    for (const match of content.matchAll(/variable\s+"([A-Za-z_]\w*)"\s*{[\s\S]*?default\s*=\s*(.+?)\s*(?:\n|})/gi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    const containerAppBlocks = extractBlocks(content, /resource\s+"azurerm_container_app"\s+"[^"]+"\s*{/gi);
+    for (const containerAppBlock of containerAppBlocks) {
+      for (const match of containerAppBlock.matchAll(/^\s*image\s*=\s*(.+)$/gmi)) {
+        if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks that generated Terraform tells Container Apps to ignore externally deployed image changes.
+ */
+export function doesTerraformContainerAppIgnoreImageChanges(workspace: string): boolean {
+  const terraformFiles = readWorkspaceTextFiles(workspace, /\.tf$/i)
+    .filter(content => /azurerm_container_app\b/i.test(content));
+
+  for (const content of terraformFiles) {
+    const containerAppBlocks = extractBlocks(content, /resource\s+"azurerm_container_app"\s+"[^"]+"\s*{/gi);
+    for (const containerAppBlock of containerAppBlocks) {
+      const lifecycleBlocks = extractBlocks(containerAppBlock, /lifecycle\s*{/gi);
+      for (const lifecycleBlock of lifecycleBlocks) {
+        const ignoreChanges = extractTerraformListAssignment(lifecycleBlock, "ignore_changes");
+        if (ignoreChanges && /\b(image|all)\b/i.test(ignoreChanges)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+export type SeparateFilesPatternResult =
+  | { isSeparate: true }
+  | {
+    isSeparate: false;
+    reason: "pattern-not-found";
+    missingPatterns: Array<"patternA" | "patternB">;
+  }
+  | {
+    isSeparate: false;
+    reason: "same-file";
+    filePaths: string[];
+  };
+
+/**
+ * Checks that two value patterns exist in **different** files within the workspace.
+ * This verifies patterns that must exist in different files — e.g. the AcrPull role assignment and the Container App must be in separate bicep modules so they can be provisioned separately to avoid cyclic dependency.
+ * @param workspace Path to a directory containing the files of interest.
+ * @param patternA First value pattern to match
+ * @param patternB Second value pattern — must be in a different file from patternA
+ * @param filePattern If provided, only files whose names match the pattern are considered
+ * @returns Whether the patterns were found in separate files, or why they were not
+ */
+export function arePatternsInSeparateFiles(
+  workspace: string,
+  patternA: RegExp,
+  patternB: RegExp,
+  filePattern?: RegExp,
+): SeparateFilesPatternResult {
+  let hasA = false;
+  let hasB = false;
+  let hasBInDifferentFileFromA = false;
+  const sameFileMatches = new Set<string>();
+
+  const scanDirectory = (dir: string): SeparateFilesPatternResult | undefined => {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        const nestedResult = scanDirectory(fullPath);
+        if (nestedResult) {
+          return nestedResult;
+        }
       } else if (entry.isFile()) {
-        // Skip if filePattern is provided and doesn't match
         if (filePattern && !entry.name.match(filePattern)) {
           continue;
         }
         try {
           const content = fs.readFileSync(fullPath, "utf-8");
-          if (content.match(valuePattern)) {
-            return true;
+          const matchesA = !!content.match(patternA);
+          const matchesB = !!content.match(patternB);
+
+          if (matchesA) {
+            hasA = true;
+          }
+          if (matchesB) {
+            hasB = true;
+          }
+          if (matchesA && matchesB) {
+            sameFileMatches.add(fullPath);
+          }
+          if (matchesB && !matchesA) {
+            hasBInDifferentFileFromA = true;
+          }
+
+          if (hasA && hasBInDifferentFileFromA) {
+            return { isSeparate: true };
           }
         } catch {
           // Skip files that can't be read as text
         }
       }
     }
-    return false;
+    return undefined;
   };
 
-  return scanDirectory(workspace);
+  const result = scanDirectory(workspace);
+  if (result) {
+    return result;
+  }
+
+  const missingPatterns: Array<"patternA" | "patternB"> = [];
+  if (!hasA) {
+    missingPatterns.push("patternA");
+  }
+  if (!hasB) {
+    missingPatterns.push("patternB");
+  }
+  if (missingPatterns.length > 0) {
+    return {
+      isSeparate: false,
+      reason: "pattern-not-found",
+      missingPatterns,
+    };
+  }
+
+  return {
+    isSeparate: false,
+    reason: "same-file",
+    filePaths: Array.from(sameFileMatches),
+  };
 }
 
 /**
@@ -170,12 +449,8 @@ export function expectFiles(
  */
 export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
   return metadata.events
-    .filter(event => event.type === "tool.execution_start")
-    .filter(event => event.data.toolName === "skill")
-    .some(event => {
-      const args = event.data.arguments;
-      return JSON.stringify(args).includes(skillName);
-    });
+    .filter(event => event.type === "skill.invoked")
+    .some(event => event.data.name === skillName);
 }
 
 /**
@@ -268,7 +543,10 @@ export function getAllToolText(metadata: AgentMetadata): string {
   const parts: string[] = [];
   for (const event of metadata.events) {
     if (event.type === "tool.execution_start") {
-      parts.push(argsString(event));
+      // @todo: Use the actual type when copilot-sdk ships this fix
+      // https://github.com/github/copilot-sdk/issues/1156
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parts.push(argsString(event as any));
     }
     if (event.type === "tool.execution_complete") {
       const result = event.data.result as { content?: string } | undefined;
@@ -344,7 +622,14 @@ const maxToolCallBeforeSkillInvocationTerminate = 3;
  * Helper context passed to the test function inside `withTestResult`.
  */
 interface WithTestResultContext {
+  /**
+   * Sets the skill vocation rate in the test results indicating how many attempts successfully invoked a skill of interest.
+   */
   setSkillInvocationRate: (rate: number) => void;
+  /**
+   * Sets the screenshot flag in the test result indicating the test case expects a screenshot of a deployed website.
+   */
+  expectScreenshot: () => void;
 }
 
 /**
@@ -355,19 +640,26 @@ interface WithTestResultContext {
  */
 export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise<void> | void): Promise<void> {
   let skillInvocationRate: number | undefined;
-
+  let expectsScreenshot: boolean = false;
   const ctx: WithTestResultContext = {
     setSkillInvocationRate: (rate: number) => {
       skillInvocationRate = rate;
     },
+    expectScreenshot: () => {
+      expectsScreenshot = true;
+    }
   };
 
   try {
     // Before agent run starts, initialize the test result as if it failed.
     // This ensures every test case has a result even when the agent run times out.
-    global.setTestResult({ isPass: false, message: "agent run did not finish; test likely timed out or was terminated before completion" });
+    global.setTestResult({
+      isPass: false,
+      message: "agent run did not finish; test likely timed out or was terminated before completion",
+      expectsScreenshot: false
+    });
     await fn(ctx);
-    global.setTestResult({ isPass: true, skillInvocationRate });
+    global.setTestResult({ isPass: true, skillInvocationRate, expectsScreenshot });
   } catch (e) {
     let message: string | undefined;
     if (e instanceof Error) {
@@ -376,7 +668,7 @@ export async function withTestResult(fn: (ctx: WithTestResultContext) => Promise
     } else {
       message = String(e).slice(0, 4096);
     }
-    global.setTestResult({ isPass: false, message, skillInvocationRate });
+    global.setTestResult({ isPass: false, message, skillInvocationRate, expectsScreenshot });
     throw e;
   }
 }

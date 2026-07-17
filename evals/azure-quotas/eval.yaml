@@ -1,0 +1,193 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-quotas/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+#
+# Note on runs:
+# - Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
+#   a stimulus-level `config.runs: 1` annotation.
+# - Stimuli with earlyTerminate tags MUST NOT use the `completed` grader.
+
+name: azure-quotas-integration-eval
+description: |
+  Integration evaluation for azure-quotas skill — migrated from Jest integration tests.
+  Tests skill routing for quota check and quota increase prompts using invocation rate
+  measurement (5 runs, 80% threshold), plus response quality checks for quota check
+  scripts, quota update workflow, region comparison, and extension installation.
+
+tags:
+  type: integration
+  skill: azure-quotas
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Skill invocation routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── quota-check-routing ──
+  # Jest: "invokes azure-quotas skill for quota check prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Note: original Jest test used shouldEarlyTerminateForSkillInvocation
+  - name: "Quota check for compute in East US"
+    prompt: "How do I check my Azure compute quota limits in East US?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-quotas"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── quota-increase-routing ──
+  # Jest: "invokes azure-quotas skill for quota increase prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  # Note: original Jest test used shouldEarlyTerminateForSkillInvocation
+  - name: "Quota increase request for VM vCPUs"
+    prompt: "I need to request a quota increase for VM vCPUs in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-quotas"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Response quality tests
+  # ═══════════════════════════════════════════
+
+  # ── quota-check-commands-quality ──
+  # Jest: "provides quota check commands for compute resources"
+  # Assertions: isSkillInvoked + doToolCallArgsIncludeKeyword("check-quota.ps1" | "check-quota.sh")
+  # Migration note: original checked tool call args for script invocation;
+  #   migrated to output-matches since the agent mentions script names in its response.
+  - name: "Quota check uses check-quota script"
+    prompt: "Check my Azure VM quota limits and current usage in East US"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)check-quota\\.(ps1|sh)"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── quota-increase-workflow-quality ──
+  # Jest: "provides quota increase workflow"
+  # Assertions: isSkillInvoked + doesAssistantMessageIncludeKeyword("az quota update")
+  - name: "Quota increase mentions az quota update"
+    prompt: "How do I request an Azure quota increase for Standard_DS_v3 VMs?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: output-matches
+        config:
+          pattern: "(?i)az quota update"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── region-comparison-quality ──
+  # Jest: "handles region comparison query"
+  - name: "Region comparison triggers check-quota script"
+    prompt: "Compare Azure compute quota availability across East US, West US 2, and Central US"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: tool-calls
+        config:
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # Copilot CLI uses "bash" tool for executing scripts on other platforms
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)check-quota\\.(sh|ps1)"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── extension-installation-quality ──
+  # Jest: "mentions extension installation requirement"
+  - name: "Quota check triggers check-quota script"
+    prompt: "What are my Azure service quotas and how do I check them?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+      - type: tool-calls
+        config:
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # Copilot CLI uses "bash" tool for executing scripts on other platforms
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)check-quota\\.(sh|ps1)"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

@@ -1,110 +1,147 @@
 # Agent Metadata Contract
 
-Use this contract for every agent source folder that participates in Microsoft Foundry workflows.
+Use this contract for Microsoft Foundry agent folders. In azd projects, `.foundry/agent-metadata*.yaml` is an overlay/cache, not the source of truth for azd-owned deployment context.
 
-## Required Local Layout
+## Local Layout
 
 ```text
 <agent-root>/
   .foundry/
     agent-metadata.yaml
+    agent-metadata.<env>.yaml
+    suites/
     datasets/
     evaluators/
     results/
 ```
 
-- `agent-metadata.yaml` is the required source of truth for environment-specific Foundry configuration.
-- `datasets/` and `evaluators/` are local cache folders. Reuse existing files when they are current, and ask before refreshing or overwriting them.
-- `results/` stores local evaluation outputs and comparison artifacts by environment.
+- `agent-metadata.yaml` is the preferred local/dev overlay.
+- Optional `agent-metadata.<env>.yaml` files can hold a single prod or CI-targeted overlay.
+- `suites/`, `datasets/`, `evaluators/`, and `results/` are local cache/result folders. Ask before overwriting user-edited files.
 
-## Environment Model
+## Effective Context Model
 
-| Field | Required | Purpose |
-|-------|----------|---------|
-| `defaultEnvironment` | ✅ | Environment used when the user does not choose one explicitly |
-| `environments.<name>.projectEndpoint` | ✅ | Foundry project endpoint for that environment |
-| `environments.<name>.agentName` | ✅ | Deployed Foundry agent name |
-| `environments.<name>.azureContainerRegistry` | ✅ for hosted agents | ACR used for deployment and image refresh |
-| `environments.<name>.observability.applicationInsightsResourceId` | Recommended | App Insights resource for trace workflows |
-| `environments.<name>.observability.applicationInsightsConnectionString` | Optional | Connection string when needed for tooling |
-| `environments.<name>.testCases[]` | ✅ | Dataset + local/remote references + evaluator + threshold bundles for evaluation workflows |
+Resolve deployment and evaluation context by layering sources in this order:
 
-## Example `agent-metadata.yaml`
+| Value | Preferred source | Fallbacks | Metadata write behavior |
+|-------|------------------|-----------|-------------------------|
+| Agent root | `azure.yaml` service `project` for `host: azure.ai.agent` | `.foundry` discovery, user path | Do not write except to initialize cache |
+| Environment | user/session, then azd env/default | metadata `defaultEnvironment` | Store azd binding only when useful |
+| Project endpoint | `azd env get-values` | metadata, user input | Do not duplicate azd values |
+| Agent name/version | azd `AGENT_<SERVICE>_*` vars | `azure.yaml`, metadata, user input | Do not duplicate azd values |
+| ACR | azd registry vars | metadata, user input | Do not duplicate azd values |
+| Observability | azd App Insights vars | metadata, user input | Do not copy secrets if azd has them |
+| Local eval draft | `eval.yaml` | metadata, user input | Sync to `.foundry` only after remote lookup/registration |
+| Remote suite/cache refs | metadata | Foundry lookups | Persist in `.foundry` |
+
+If azd and metadata both provide the same value and differ, stop and ask which source is authoritative. If they match, use the azd value and omit the duplicate on future metadata rewrites.
+
+## Environment Overlay Model
+
+| Field | Required when | Purpose |
+|-------|---------------|---------|
+| `defaultEnvironment` | Any metadata file exists | Default key inside this overlay file |
+| `environments.<env>.azd.environmentName` | Optional | Binds overlay to an azd environment |
+| `environments.<env>.azd.service` | Optional | Binds overlay to an `azure.yaml` service |
+| `environments.<env>.projectEndpoint` | Required for non-azd/manual workflows | Explicit override when azd cannot resolve it |
+| `environments.<env>.agentName` / `agentVersion` | `agentName` required for non-azd/manual workflows; `agentVersion` optional | Explicit override when azd cannot resolve it |
+| `environments.<env>.azureContainerRegistry` | Required for non-azd/manual hosted-agent Docker/ACR deploy flow | Explicit override when azd cannot resolve it |
+| `environments.<env>.observability.*` | Required only for trace workflows when azd cannot resolve observability | Trace lookup config when azd cannot resolve it |
+| `environments.<env>.evaluationSuites[]` | Required after evaluation setup/sync | Remote suite/dataset/evaluator refs plus local cache paths |
+| `environments.<env>.lastEval` | Optional | Last local result summary and result file path |
+
+## Example azd Overlay
 
 ```yaml
 defaultEnvironment: dev
 environments:
   dev:
-    projectEndpoint: https://contoso.services.ai.azure.com/api/projects/support-dev
-    agentName: support-agent-dev
-    azureContainerRegistry: contosoregistry.azurecr.io
-    observability:
-      applicationInsightsResourceId: /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Insights/components/support-dev-ai
-    testCases:
+    azd:
+      environmentName: <azd-env-name>
+      service: <azure-yaml-service-name>
+    evaluationSuites:
       - id: smoke-core
-        priority: P0
-        dataset: support-agent-dev-eval-seed
-        datasetVersion: v1
-        datasetFile: .foundry/datasets/support-agent-dev-eval-seed-v1.jsonl
+        suiteName: <foundry-suite-name>
+        suiteVersion: "1"
+        generationSource: eval-yaml
+        tags:
+          tier: smoke
+          purpose: baseline
+        suiteFile: .foundry/suites/<suite>-v1.json
+        dataset: <dataset-name>
+        datasetVersion: "1"
+        datasetFile: .foundry/datasets/<agent>-<dataset>-v1.ref.json
         datasetUri: <foundry-dataset-uri>
         evaluators:
-          - name: intent_resolution
+          - name: <evaluator-name>
+            version: "1"
             threshold: 4
-          - name: task_adherence
-            threshold: 4
-          - name: citation_quality
-            threshold: 0.9
-            definitionFile: .foundry/evaluators/citation-quality.yaml
-      - id: trace-regressions
-        priority: P1
-        dataset: support-agent-dev-traces
-        datasetVersion: v3
-        datasetFile: .foundry/datasets/support-agent-dev-traces-v3.jsonl
-        datasetUri: <foundry-dataset-uri>
-        evaluators:
-          - name: coherence
-            threshold: 4
-          - name: groundedness
-            threshold: 4
-  prod:
-    projectEndpoint: https://contoso.services.ai.azure.com/api/projects/support-prod
-    agentName: support-agent-prod
-    azureContainerRegistry: contosoregistry.azurecr.io
-    testCases:
-      - id: production-guardrails
-        priority: P0
-        dataset: support-agent-prod-curated
-        datasetVersion: v2
-        datasetFile: .foundry/datasets/support-agent-prod-curated-v2.jsonl
-        datasetUri: <foundry-dataset-uri>
-        evaluators:
-          - name: violence
-            threshold: 1
-          - name: self_harm
-            threshold: 1
+            definitionFile: .foundry/evaluators/<evaluator>-v1.json
 ```
+
+## Example Manual Overlay
+
+```yaml
+defaultEnvironment: dev
+environments:
+  dev:
+    projectEndpoint: https://<account>.services.ai.azure.com/api/projects/<project>
+    agentName: <agent-name>
+    azureContainerRegistry: <registry>.azurecr.io
+    evaluationSuites:
+      - id: smoke-core
+        datasetFile: .foundry/datasets/<agent>-smoke-v1.ref.json
+        evaluators:
+          - name: relevance
+            threshold: 4
+```
+
+## eval.yaml Mapping
+
+When `eval.yaml` exists in the selected agent root, treat it as local evaluation intent, not proof of a Foundry suite.
+
+| eval.yaml field | Use |
+|-----------------|-----|
+| `agent.name` | Candidate target agent; verify it matches selected context |
+| `dataset.local_uri` | Local seed dataset candidate |
+| `dataset.name`, `dataset.version` | Registered dataset candidate |
+| `validation_dataset` | Optional validation dataset candidate |
+| `evaluators[]` | Candidate evaluator names; verify with `evaluator_catalog_get` |
+| `name` | Candidate eval/suite name; verify remotely before storing as `suiteName` |
+| `options.eval_model` | Candidate judge/generation deployment |
+| `options.optimization_model` | Candidate optimizer reasoning deployment |
+| `options.max_candidates` | Candidate optimization iteration limit |
+| `options.optimization_config.model_search_space` | Candidate target model search space |
+| `options.pass_threshold` | Candidate evaluator threshold/default pass gate |
+| `max_samples`, `trace_days`, `generation_instruction` | Suite setup defaults |
+
+Legacy `dataset_file`, `dataset_reference`, and `validation_reference` keys may be normalized in memory when reading older files, but new files should use `dataset` and `validation_dataset`.
+
+Persist eval.yaml-derived suite metadata only after the relevant dataset/evaluator/suite has been registered or found in Foundry. Use `generationSource: eval-yaml` for synced suite entries created from local eval config.
 
 ## Workflow Rules
 
-1. Auto-discover agent roots by searching for `.foundry/agent-metadata.yaml`.
-2. If exactly one agent root is found, use it. If multiple roots are found, require the user to choose one.
-3. Resolve environment in this order: explicit user choice, remembered session choice, `defaultEnvironment`.
-4. Keep the selected agent root and environment visible in every deploy, eval, dataset, and trace summary.
-5. Treat `datasets/` and `evaluators/` as cache folders. Reuse local files when present, but offer refresh when the user asks or when remote state is newer.
-6. Never overwrite cache files or metadata silently.
+1. Prefer azd service discovery before `.foundry` discovery when `azure.yaml` has `host: azure.ai.agent`.
+2. Once an agent root is selected, use only that root's `.foundry`, source tree, `azure.yaml`, and `eval.yaml` unless the user switches roots.
+3. Select metadata files in this order: explicit file/path, environment sidecar, `.foundry/agent-metadata.yaml`, then prompt if ambiguous.
+4. Resolve environment from user/session, azd env/default, single-environment metadata, then `defaultEnvironment`.
+5. Keep the selected root, environment, metadata overlay file, and primary context source visible in deploy/eval/trace summaries.
+6. Treat metadata deployment fields as overrides when azd cannot resolve the value.
+7. Treat `evaluationSuites[]` as the canonical synced suite model; normalize legacy fields in memory before use.
+8. Writes target only the selected metadata file and selected environment. Never merge sibling metadata files automatically.
+9. On metadata rewrites for azd projects, persist non-derivable overlay/cache state and omit azd-owned deployment duplicates.
+10. Never silently overwrite cache files or metadata. Show a summary before refreshing, pruning duplicate fields, or replacing suite refs.
 
-## Test-Case Guidance
+## Legacy Compatibility
 
-| Priority | Meaning | Typical Use |
-|----------|---------|-------------|
-| `P0` | Must-pass gate | Smoke checks, safety, deployment blockers |
-| `P1` | High-value regression coverage | Production trace regressions, key business flows |
-| `P2` | Broader quality coverage | Long-tail scenarios, exploratory quality checks |
+If the selected environment has `testSuites[]` but no `evaluationSuites[]`, treat `testSuites[]` as the current suite source and migrate it on the next metadata write. If it has only legacy `testCases[]`, normalize that list the same way.
 
-Each test case should point to one dataset and one or more evaluators with explicit thresholds. Store `dataset` as the stable Foundry dataset name (without the `-vN` suffix), store the version separately in `datasetVersion`, and keep the local cache filename versioned (for example, `...-v3.jsonl`). Persist the local `datasetFile` and remote `datasetUri` together so every test case can resolve both the cache artifact and the Foundry-registered dataset. Local dataset filenames should start with the selected environment's Foundry `agentName`, followed by stage and version suffixes, so related cache files stay grouped by agent. If `agentName` already encodes the environment (for example, `support-agent-dev`), do not append the environment key again. Use test-case IDs in evaluation names, result folders, and regression summaries so the flow remains traceable.
+Preserve `id`, `suiteName`, `suiteVersion`, `generationJobId`, `generationSource`, `dataset`, `datasetVersion`, `datasetFile`, `datasetUri`, `evaluators`, and existing `tags`. Map legacy `priority` to `tags.tier` only when `tags.tier` is missing: `P0` -> `smoke`, `P1` -> `regression`, `P2` -> `coverage`.
 
-## Sync Guidance
+## Evaluation Suite Guidance
 
-- Pull/refresh when the user asks, when the workflow detects missing local cache, or when remote versions clearly differ from local metadata.
-- Push/register updates after the user confirms local changes that should be shared in Foundry.
-- Record remote dataset names, versions, dataset URIs, and last sync timestamps in `.foundry/datasets/manifest.json` or the relevant metadata section.
+Use `tags` as freeform key/value metadata. Suggested keys: `tier` (`smoke`, `regression`, `coverage`), `purpose` (`baseline`, `safety`, `tools`, `quality`), and `stage` (`local`, `generated`, `traces`, `curated`, `prod`).
+
+Each synced suite should point to one dataset and one or more evaluators with thresholds. Store stable remote names separately from versions, keep local cache filenames versioned, and persist `suiteFile`, `datasetFile`, `datasetContentPath`, `datasetUri`, and evaluator `definitionFile` when available. Local dataset filenames should start with the effective Foundry agent name. Use evaluation-suite IDs in evaluation names, result folders, and regression summaries.
+
+For generated Foundry suites, persist `suiteName`, `suiteVersion`, `generationJobId`, and `generationSource`. `suiteName` must start with a letter (`A-Z` or `a-z`); prefix derived numeric names with an alphabetic label such as `suite-`. A suite with `suiteName` still runs batch eval through `evaluation_agent_batch_eval_create`; use `evaluation_suite_get` only to resolve reviewed dataset/evaluator metadata.

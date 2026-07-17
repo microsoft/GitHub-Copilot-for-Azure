@@ -11,13 +11,21 @@
  *      through a chain of markdown links starting from SKILL.md.
  *
  * Usage:
- *   npm run references              # Validate all skills
- *   npm run references <skill>      # Validate a single skill
+ *   npm run references                       # Validate all skills
+ *   npm run references <skill>               # Validate a single skill
+ *   npm run references -- --json             # Emit validation results as JSON
+ *   npm run references -- --list             # Emit every discovered local
+ *                                            # and remote link as JSON
+ *
+ * Tip: when redirecting JSON output to a file, pass `--silent` to npm so it
+ * does not prepend its own banner lines (which would corrupt the JSON):
+ *
+ *   npm run --silent references -- --list > out.json
  */
 
 import { dirname, resolve, relative, normalize } from "node:path";
 import { existsSync, readdirSync, statSync } from "node:fs";
-import { extractLocalLinks } from "./link-helpers.js";
+import { extractLocalLinks, extractRemoteLinks } from "./link-helpers.js";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
@@ -30,6 +38,20 @@ function getRepoRoot(): string {
 
 const REPO_ROOT = getRepoRoot();
 let SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
+
+const FILTERED_REMOTE_HOSTS = new Set<string>([]);
+const FILTERED_REMOTE_HOST_SUFFICES: string[] = [];
+
+function shouldPrintRemoteHost(host: string): boolean {
+  const normalizedHost = host.toLowerCase().replace(/:\d+$/, "");
+  if (FILTERED_REMOTE_HOSTS.has(normalizedHost)) {
+    return false;
+  }
+  if (FILTERED_REMOTE_HOST_SUFFICES.some(s => host.endsWith(s))) {
+    return false;
+  }
+  return true;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,10 +67,30 @@ interface OrphanedFile {
   reason: string;     // Human-readable explanation
 }
 
+interface RemoteLinkDetail {
+  file: string;
+  line: number;
+  link: string;
+  protocol: "http" | "https";
+  host: string;
+  path: string;
+}
+
+interface LocalLinkDetail {
+  file: string;
+  line: number;
+  link: string;
+  absPath: string;
+  exists: boolean;
+  isDirectory?: boolean;
+}
+
 interface ValidationResult {
   skill: string;
   issues: LinkIssue[];
   orphanedFiles: OrphanedFile[];
+  remoteLinks: RemoteLinkDetail[];
+  localLinks: LocalLinkDetail[];
 }
 
 // ── Markdown file discovery ──────────────────────────────────────────────────
@@ -122,8 +164,14 @@ function findReferenceFiles(skillDir: string): string[] {
 
 // ── Validation logic ─────────────────────────────────────────────────────────
 
-function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
+function validateFile(mdFile: string, skillDir: string): {
+  issues: LinkIssue[];
+  remoteLinks: RemoteLinkDetail[];
+  localLinks: LocalLinkDetail[];
+} {
+  // Local links
   const localLinks = extractLocalLinks(mdFile, skillDir);
+  const remoteLinks = extractRemoteLinks(mdFile, skillDir);
   const issues: LinkIssue[] = [];
 
   // Check 1: find all references that don't exist
@@ -172,17 +220,46 @@ function validateFile(mdFile: string, skillDir: string): LinkIssue[] {
     }
   }).filter((issue) => issue !== undefined));
 
-  return issues;
+  return {
+    issues,
+    remoteLinks: remoteLinks.filter((item) => {
+      return shouldPrintRemoteHost(item.host);
+    }).map((item) => {
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        protocol: item.protocol,
+        host: item.host,
+        path: item.path,
+      };
+    }),
+    localLinks: localLinks.map((item) => {
+      return {
+        file: mdFile,
+        line: item.line,
+        link: item.link,
+        absPath: item.absPath,
+        exists: item.exists,
+        isDirectory: item.isDirectory,
+      };
+    }),
+  };
 }
 
 function validateSkill(skillName: string): ValidationResult {
   const skillDir = resolve(SKILLS_DIR, skillName);
   const mdFiles = findMarkdownFiles(skillDir);
   const issues: LinkIssue[] = [];
+  const remoteLinks: RemoteLinkDetail[] = [];
+  const localLinks: LocalLinkDetail[] = [];
 
   // Validate all markdown files for link issues
   for (const mdFile of mdFiles) {
-    issues.push(...validateFile(mdFile, skillDir));
+    const result = validateFile(mdFile, skillDir);
+    issues.push(...result.issues);
+    remoteLinks.push(...result.remoteLinks);
+    localLinks.push(...result.localLinks);
   }
 
   // Track visited files for orphan detection
@@ -230,7 +307,7 @@ function validateSkill(skillName: string): ValidationResult {
     }
   }
 
-  return { skill: skillName, issues, orphanedFiles };
+  return { skill: skillName, issues, orphanedFiles, remoteLinks, localLinks };
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -303,6 +380,75 @@ function buildReferencesJson(
   };
 }
 
+// ── List output ─────────────────────────────────────────────────────────────
+
+export interface LinkListEntry {
+  source: string;
+  sourceLine: number;
+  link: string;
+}
+
+export interface LocalLinkListEntry extends LinkListEntry {
+  resolved: string;
+  status: "file" | "directory" | "missing";
+}
+
+export interface RemoteLinkListEntry extends LinkListEntry {
+  protocol: "http" | "https";
+  host: string;
+  path: string;
+}
+
+export interface SkillLinkList {
+  skill: string;
+  localLinks: LocalLinkListEntry[];
+  remoteLinks: RemoteLinkListEntry[];
+}
+
+export interface ReferencesListResult {
+  skills: SkillLinkList[];
+  summary: {
+    totalSkills: number;
+    totalLocalLinks: number;
+    totalRemoteLinks: number;
+  };
+}
+
+function buildListJson(results: ValidationResult[]): ReferencesListResult {
+  let totalLocal = 0;
+  let totalRemote = 0;
+
+  const skills: SkillLinkList[] = results.map((result) => {
+    const localLinks: LocalLinkListEntry[] = result.localLinks.map((l) => ({
+      source: formatPath(l.file),
+      sourceLine: l.line,
+      link: l.link,
+      resolved: formatPath(l.absPath),
+      status: !l.exists ? "missing" : l.isDirectory ? "directory" : "file",
+    }));
+    const remoteLinks: RemoteLinkListEntry[] = result.remoteLinks.map((r) => ({
+      source: formatPath(r.file),
+      sourceLine: r.line,
+      link: r.link,
+      protocol: r.protocol,
+      host: r.host,
+      path: r.path,
+    }));
+    totalLocal += localLinks.length;
+    totalRemote += remoteLinks.length;
+    return { skill: result.skill, localLinks, remoteLinks };
+  });
+
+  return {
+    skills,
+    summary: {
+      totalSkills: results.length,
+      totalLocalLinks: totalLocal,
+      totalRemoteLinks: totalRemote,
+    },
+  };
+}
+
 // ── CLI entry point ──────────────────────────────────────────────────────────
 
 function listSkills(): string[] {
@@ -323,6 +469,7 @@ function main(): void {
     args: process.argv.slice(2),
     options: {
       json: { type: "boolean", default: false },
+      list: { type: "boolean", default: false },
       "skills-dir": { type: "string" },
     },
     strict: false,
@@ -339,6 +486,7 @@ function main(): void {
   }
 
   const jsonOutput = values.json ?? false;
+  const listOutput = values.list ?? false;
   const requestedSkill = positionals[0];
 
   const skills = requestedSkill ? [requestedSkill] : listSkills();
@@ -361,6 +509,13 @@ function main(): void {
   const results: ValidationResult[] = [];
   for (const skill of skills) {
     results.push(validateSkill(skill));
+  }
+
+  // ── List output mode ────────────────────────────────────────────────────
+  if (listOutput) {
+    const listResult = buildListJson(results);
+    console.log(JSON.stringify(listResult, null, 2));
+    return;
   }
 
   // ── JSON output mode ────────────────────────────────────────────────────

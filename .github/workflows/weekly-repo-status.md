@@ -7,10 +7,11 @@ description: |
 
 on:
   schedule:
-    - cron: "0 18 * * 5"
+    - cron: "0 17 * * 4"
   workflow_dispatch:
 
 permissions:
+  copilot-requests: write
   contents: read
   issues: read
   pull-requests: read
