@@ -83,6 +83,21 @@
     font-size: 0.9rem;
 }
 
+.skills-source-link {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+}
+
+.skills-source-link a {
+    color: var(--color-focus, #3b82f6);
+    text-decoration: none;
+}
+
+.skills-source-link a:hover,
+.skills-source-link a:focus {
+    text-decoration: underline;
+}
+
 .skills-tests-heading {
     margin: 1.5rem 0 0.75rem;
     font-size: 1.15rem;

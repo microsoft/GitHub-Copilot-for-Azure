@@ -25,6 +25,31 @@ interface Skill {
     name: string;
     description: string;
     descriptionLength: number;
+    /** Repo-relative path to the skill's SKILL.md, as reported by the collector. */
+    path: string;
+}
+
+/**
+ * Base URL for linking to source files in the repository.
+ * Kept as a single constant so the repo/branch is easy to change.
+ */
+const REPO_BLOB_BASE =
+    "https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main";
+
+/**
+ * Build a link to a skill's SKILL.md source file on GitHub.
+ *
+ * The frontmatter collector validates the built `output/skills/` tree, so the
+ * reported path may be prefixed with `output/`. That directory is git-ignored,
+ * so we normalize it back to the `plugin/skills/` source path. Returns null
+ * when no usable SKILL.md path is available.
+ */
+export function skillMdUrl(path: string): string | null {
+    const normalized = path.replace(/\\/g, "/").trim();
+    if (!normalized.endsWith("/SKILL.md")) return null;
+    const sourcePath = normalized.replace(/^output\/skills\//, "plugin/skills/");
+    if (!sourcePath.startsWith("plugin/skills/")) return null;
+    return `${REPO_BLOB_BASE}/${sourcePath}`;
 }
 
 /** Minimal shape of the health data returned by /api/static. */
@@ -42,7 +67,7 @@ function isPluginSkillPath(pathValue: string): boolean {
 }
 
 /** Extract plugin skills (with descriptions) from the frontmatter category. */
-function skillsFromHealthData(data: HealthData): Skill[] {
+export function skillsFromHealthData(data: HealthData): Skill[] {
     const items = data.categories?.frontmatter?.items ?? [];
     const skills: Skill[] = [];
     for (const item of items) {
@@ -50,7 +75,7 @@ function skillsFromHealthData(data: HealthData): Skill[] {
         // Only plugin skills; the frontmatter check also covers .github/skills.
         if (!isPluginSkillPath(path)) continue;
         const description = String(item.metadata?.description ?? "");
-        skills.push({ name: item.name, description, descriptionLength: description.length });
+        skills.push({ name: item.name, description, descriptionLength: description.length, path });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -254,6 +279,17 @@ export default function App() {
                             <p className="skills-desc-length">
                                 Description length: {selectedSkill.descriptionLength} characters
                             </p>
+                            {skillMdUrl(selectedSkill.path) && (
+                                <p className="skills-source-link">
+                                    <a
+                                        href={skillMdUrl(selectedSkill.path) as string}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View SKILL.md
+                                    </a>
+                                </p>
+                            )}
                         </header>
 
                         <h2 className="skills-tests-heading">
