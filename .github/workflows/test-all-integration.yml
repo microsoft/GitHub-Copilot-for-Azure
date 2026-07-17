@@ -130,9 +130,6 @@ jobs:
               core.setOutput("debug", debugMap[cron]);
             }
 
-            core.info(`Resolved skills: ${core.getState("skills")}`);
-            core.info(`Resolved debug: ${core.getState("debug")}`);
-
   setup:
     name: Build skill matrix
     needs: resolve-inputs
@@ -155,7 +152,7 @@ jobs:
             const skills = skillsInput.split(",").map(s => s.trim());
 
             // Check if azure-deploy is in the list
-            const hasAzureDeploy = skills.includes("azure-deploy");
+            const hasAzureDeploy = skills.includes("azure-skills/azure-deploy");
             core.setOutput("has_azure_deploy", hasAzureDeploy.toString());
 
             // Build matrix excluding azure-deploy
@@ -285,7 +282,9 @@ jobs:
           SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
           SKILL: ${{ matrix.skill }}
         run: |
-          npm run test:integration "$SKILL" "$SKILL_TEST_PATTERN"
+          PLUGIN_DIR="${SKILL%%/*}"
+          SKILL_NAME="${SKILL##*/}"
+          npm run test:integration "$SKILL_NAME" "$SKILL_TEST_PATTERN"
         continue-on-error: false
 
       # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
