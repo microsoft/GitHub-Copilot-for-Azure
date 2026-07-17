@@ -600,7 +600,7 @@ export function resolveSkillFiles(relativePath: string): {
   return {
     files: [],
     errorMessage: `Path is neither a file nor a directory: ${relativePath}`,
-  }
+  };
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────

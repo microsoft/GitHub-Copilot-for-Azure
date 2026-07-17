@@ -475,7 +475,7 @@ function main(): void {
     }];
   } else {
     if (requestedPluginDirname) {
-      skills = listSkills(requestedPluginDirname)
+      skills = listSkills(requestedPluginDirname);
     } else {
       const plugins = listPlugins();
       for (const plugin of plugins) {
