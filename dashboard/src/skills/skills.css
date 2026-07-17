@@ -83,6 +83,20 @@
     font-size: 0.9rem;
 }
 
+.skills-telemetry {
+    margin: 0.5rem 0 0;
+}
+
+.skills-telemetry-link {
+    color: var(--color-focus);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.skills-telemetry-link:hover {
+    text-decoration: underline;
+}
+
 .skills-tests-heading {
     margin: 1.5rem 0 0.75rem;
     font-size: 1.15rem;
