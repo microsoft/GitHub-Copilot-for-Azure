@@ -133,7 +133,8 @@ function findRepoRoot(startDir: string): string {
     try {
       const gitDir = resolve(dir, ".git");
       const gitStat = statSync(gitDir);
-      if (gitStat.isDirectory()) return dir;
+      // .git is a directory in a normal clone, a file (gitfile) in a worktree
+      if (gitStat.isDirectory() || gitStat.isFile()) return dir;
     } catch {
       // keep walking
     }

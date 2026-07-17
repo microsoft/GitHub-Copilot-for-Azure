@@ -226,7 +226,12 @@ function formatRate(rate: number | null): string {
 }
 
 function formatTestName(name: string): string {
-    return name.replace(/\s+/g, "_");
+    return name
+        .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
+        .replace(/\s+/g, "_")           // Replace spaces with underscores
+        .replace(/-+/g, "-")            // Collapse multiple dashes
+        .replace(/_+/g, "_")            // Collapse multiple underscores
+        .substring(0, 200);             // Limit length
 }
 
 function App() {
@@ -656,8 +661,8 @@ function ToolCallItem({ date, runToken, call }: { date: string; runToken: string
         call.successState === "true"
             ? "it-tool-ok"
             : call.successState === "false"
-              ? "it-tool-fail"
-              : "it-tool-unknown";
+                ? "it-tool-fail"
+                : "it-tool-unknown";
 
     return (
         <li className="it-tool-call">

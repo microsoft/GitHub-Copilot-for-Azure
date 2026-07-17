@@ -24,7 +24,7 @@ tags:
   type: integration
   skill: azure-upgrade
 
-config:
+defaults:
   runs: 1
   timeout: "20m"
   executor: integration-test-agent-runner

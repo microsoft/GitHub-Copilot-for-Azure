@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Todo App</title></head>
+<body>
+  <h1>Todos</h1>
+  <input id="text" placeholder="New todo" />
+  <button onclick="add()">Add</button>
+  <ul id="list"></ul>
+  <script>
+    const API = "/api/todos";
+    async function load() {
+      const todos = await fetch(API).then(r => r.json());
+      document.getElementById("list").innerHTML =
+        todos.map(t => `<li>${t.text} <button onclick="del(${t.id})">✕</button></li>`).join("");
+    }
+    async function add() {
+      const text = document.getElementById("text").value;
+      await fetch(API, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({text}) });
+      load();
+    }
+    async function del(id) {
+      await fetch(`${API}/${id}`, { method: "DELETE" });
+      load();
+    }
+    load();
+  </script>
+</body>
+</html>

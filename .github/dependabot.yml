@@ -1,5 +1,7 @@
 updates:
 - directory: /
+  cooldown:
+    default-days: 7
   groups:
     minor:
       update-types:
@@ -15,6 +17,8 @@ updates:
     day: monday
     interval: weekly
 - directory: /scripts
+  cooldown:
+    default-days: 7
   groups:
     minor:
       update-types:
@@ -30,6 +34,8 @@ updates:
     day: monday
     interval: weekly
 - directory: /tests
+  cooldown:
+    default-days: 7
   groups:
     minor:
       update-types:
@@ -62,6 +68,14 @@ updates:
   - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
   open-pull-requests-limit: 0
   package-ecosystem: pip
+  schedule:
+    interval: weekly
+- directories:
+  - "/evals/**"
+  ignore:
+  - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
+  open-pull-requests-limit: 0
+  package-ecosystem: npm
   schedule:
     interval: weekly
 version: 2

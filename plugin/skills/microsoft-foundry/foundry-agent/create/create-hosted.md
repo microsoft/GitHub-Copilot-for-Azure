@@ -13,10 +13,10 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 | Agent type | Hosted (container or code) |
 | Primary CLI | `azd ai agent` (from extension `azure.ai.agents`) |
 | Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--src <dir>` for brownfield) |
-| Local run | `azd ai agent run` + `azd ai agent invoke --local "..."` |
+| Local run | `azd ai agent run --no-client` + `azd ai agent invoke --local "..."` |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
-| Reference docs | [azd-ai-cli](references/azd-ai-cli.md), [local-run](references/local-run.md), [tools](references/tools.md) |
+| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [tools](references/tools.md) |
 
 ## When to Use This Skill
 
@@ -33,21 +33,33 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 |--|--------|--------|
 | Custom Python / .NET code? | Yes -> this skill | No -> [create-prompt.md](create-prompt.md) |
 | Tools / RAG / MCP / A2A | Toolbox + connections | Built-in tool configs |
-| Local debugging | `azd ai agent run` | Limited |
+| Local debugging | `azd ai agent run --no-client` | Limited |
 | Output | New immutable agent version per `azd deploy` | `agent_update` via MCP / SDK |
 
 ## Workflow
 
 ### Step 1 -- Verify the environment
 
-Run the bundled verification script before any other create/deploy command:
+Two pre-flight checks — run each script and act on its `[OK]` / `[WARN]` / `[ACTION]` summary prefixes.
+
+**1a — Canvas-first entry (GitHub Copilot app).** Detects whether the runtime is the GitHub Copilot app (`AI_AGENT=github_copilot_app_agent`) and the Foundry Agent Canvas extension is installed. If both are true, the canvas must be opened first so the user can authenticate and select a Foundry project before scaffolding. Run this check first (it can short-circuit the rest). **Skip 1a** if the user opts out, e.g. "skip the canvas" / "use the CLI".
+
+```bash
+./scripts/check-canvas-entry.sh     # macOS / Linux
+./scripts/check-canvas-entry.ps1    # Windows (pwsh)
+```
+
+- **No `[ACTION]`** (only `[OK]`/`[WARN]`) — the gate doesn't apply (not in the Copilot app, or the canvas isn't installed). Continue to 1b.
+- **`[ACTION]`** — the gate applies. If the user message's `<canvas-context>` already lists **`canvas="agent-builder"`**, the user has already driven the canvas — continue to 1b using their prompt/config (loop guard, independent of prompt wording). Otherwise `open_canvas` (`canvasId: "agent-builder"`), then state this non-question reminder in the normal response: **You can create the agent in the open canvas: sign in, select a subscription + Foundry project, then Send.** Then **stop — do not run 1b or scaffold**.
+
+**1b — Tooling & auth.** Run the bundled verification script before any other create/deploy command:
 
 ```bash
 ./scripts/verify-environment.sh     # macOS / Linux
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Do not continue past Step 1 while any `[ACTION]` remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd init`, `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
+Do not continue past Step 1 while any `[ACTION]` remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
 
 Act on the summary prefixes:
 
@@ -55,28 +67,7 @@ Act on the summary prefixes:
 - `[WARN]` -- non-blocking; continue.
 - `[ACTION]` -- resolve first, then rerun the script. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. For how to install `azd`, see <https://learn.microsoft.com/en-us/azure/developer/azure-developer-cli/install-azd>. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually. Missing `azure.ai.agents` / `azure.ai.projects` extensions may be resolved with `azd extension install <name>`. Failed `az` or `azd` auth checks must stop the workflow until the user logs in manually.
 
-> **Preflight: get `AZURE_SUBSCRIPTION_ID` + `AZURE_LOCATION` into the azd env *before* the first `azd ai agent init`.** Without both, init defers model resolution -> `azure.yaml services.ai-project.deployments[]` ends up empty -> `AI_PROJECT_DEPLOYMENTS=[]` -> `azd provision` creates zero model deployments -> the agent service's `environmentVariables` keep the literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` placeholder. `azd ai agent init` itself has **no** `--subscription` / `--location` flags (those live on core `azd init`). Pick the **first** option that fits, ranked best-first:
->
-> 1. **Pre-bootstrap with core `azd init`** — per-project, no global state. **Recommended default for scripted / MCP / agent-driven flows.** Run in the target empty directory:
->    ```bash
->    azd init -t Azure-Samples/azd-ai-starter-basic . -e <env-name> --subscription <id> -l <region>
->    azd ai agent init -m <manifest-url> --no-prompt --deploy-mode code --runtime python_3_13 --entry-point main.py
->    ```
->    Core `azd init` creates `azure.yaml` + the azd env with `AZURE_SUBSCRIPTION_ID` / `AZURE_LOCATION` already populated; the extension's `ensureProject` sees the existing project and the model resolver reads the values core just wrote. (Use this even though `azd ai agent init` can scaffold from scratch — it's the only headless path that avoids deferral without mutating global config.)
-> 2. **`azd ai agent init --project-id <arm-id>`** — only when the Foundry project already exists in Azure. Init extracts the subscription from the ARM ID and uses the project's own location. Skip Option 1.
-> 3. **Interactive mode** — omit `--no-prompt`. Init prompts for subscription + location. Only when a human is at a terminal.
-> 4. **Global config (last resort, mutates `~/.azure/config.json` for every azd project on the machine):**
->    ```bash
->    azd config set defaults.subscription <id>
->    azd config set defaults.location <region>
->    ```
->    Avoid in per-project / scripted flows. Use only when no per-project option fits and the machine is single-tenant.
->
-> **If you only discover the need to set sub + location *after* init has already scaffolded `src/<name>/`, do *not* naively re-run `azd ai agent init`.** It is not idempotent: under `--no-prompt` it silently creates `<service>-2`; in interactive mode the collision prompt's **default selection is "Use a different service name"** (you must actively arrow-up to "Overwrite existing"). See the [recovery paths](#step-4a----greenfield-scaffold-from-a-sample) in Step 4a.
->
-> Never `azd env set AI_PROJECT_DEPLOYMENTS '[...]'` and never `az cognitiveservices account deployment create ...` for the azd Golden Path — both break the lifecycle.
-
-Branch on the reported agent status:
+Branch on the agent status reported by `verify-environment`:
 
 - `not_deployed` -> Step 2.
 - `active` / `deployed` -> already deployed. Skip to [deploy/deploy.md](../deploy/deploy.md) for redeploy or [tools](references/tools.md) to add a tool.
@@ -96,6 +87,8 @@ Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip
 
 Do not guess, derive, or construct the project ID from the endpoint. For `--project-id`, pass either the user-supplied project ARM resource ID or the `id` returned by Azure lookup / the bundled resolve script.
 
+> `azd ai agent init` initializes both the azd project and its environment. Run it directly in the target directory. For an existing Foundry project, also pass `--project-id <arm-id>`.
+
 ### Step 3 -- Pick the scaffolding source
 
 | User has ... | Use |
@@ -113,17 +106,11 @@ List the curated catalog (filter by language if known):
 azd ai agent sample list --featured-only --language python --output json
 ```
 
-Each entry has a `manifestUrl` and an `initCommand`. Prefer direct code deploy at init time. `--no-prompt` defaults to container deploy unless you pass `--deploy-mode code`, so include the code flags up front.
+Each entry has a `manifestUrl` and an `initCommand`. Prefer code deployment. `azd ai agent init` defaults to code deployment.
 
 For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
-> **Before running init**, make sure subscription + location are resolvable via one of the four options in [Step 1 preflight](#step-1----verify-the-environment). For headless / scripted flows the recommended path is to **pre-bootstrap with core `azd init`**:
->
-> ```bash
-> azd init -t Azure-Samples/azd-ai-starter-basic . -e <env-name> --subscription <id> -l <region>
-> ```
->
-> Then run `azd ai agent init` inside the bootstrapped directory. `azd ai agent init` itself has **no** `--subscription` / `--location` flags (passing them fails with `unknown flag`); core `azd init` does. If init still defers resolution (empty `services.ai-project.deployments[]` / `{{...}}` placeholder), see the recovery paths after the init example below — do **not** blindly re-run init.
+Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
 Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
 
@@ -135,13 +122,21 @@ azd ai agent init --no-prompt \
   --entry-point main.py
 ```
 
+Immediately after init, set the collected subscription and location on the active azd environment:
+
+```bash
+azd env set \
+  AZURE_SUBSCRIPTION_ID="<subscription-id>" \
+  AZURE_LOCATION="<region>"
+```
+
 > `--agent-name` at init sets both the `azure.yaml` service key and its `name:` in one shot; renaming after init requires editing both in `azure.yaml`.
 
 Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
-`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<name>/`, and `<service-dir>/.agentignore` (code-deploy only). A successful direct-code init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](references/azd-ai-cli.md).
+`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<name>/`, and `<service-dir>/.agentignore`. A successful direct-code init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 
 #### Model deployments (azd Golden Path)
 
@@ -157,13 +152,12 @@ Rules:
 - **`deployments[].name` is the literal Azure deployment resource name** — not a label, not a placeholder. Use a human-readable model name (e.g. `gpt-4o-mini`, `gpt-4.1-mini`). **Never** use the literal string `AZURE_AI_MODEL_DEPLOYMENT_NAME` as the `name` value; doing so creates a deployment literally named `AZURE_AI_MODEL_DEPLOYMENT_NAME` and the agent will 404 on its first invoke.
 - **Adding a *second* model (or any change to `services.ai-project.deployments[]`) to an existing project:** edit `azure.yaml services.ai-project.deployments[]` directly (and update the agent service's `environmentVariables` `AZURE_AI_MODEL_DEPLOYMENT_NAME` if the new entry should become the default), then run `azd provision`. The extension's `preprovision` hook calls `envUpdate` automatically, which re-marshals the deployments and re-writes `AI_PROJECT_DEPLOYMENTS` with the correct double-escaping before Bicep runs. **Do not re-run `azd ai agent init`** for this case — it triggers the non-idempotent collision flow (see anti-patterns) and at best (with explicit "Overwrite existing") re-resolves models from the original manifest rather than merging your edit.
 - **Agent `environmentVariables`: prefer `${AZURE_AI_MODEL_DEPLOYMENT_NAME}` over a hardcoded model name.** The `${VAR}` form is resolved from the active azd env at run / deploy time, so a single `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME <name>` (or env switch dev → prod) updates the agent without touching the file. Init writes this form by default; only the literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` (double braces) is a failure marker that means model resolution deferred.
-- **Recovery: `services.ai-project.deployments[]` is empty or the agent service's `environmentVariables` have the literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` placeholder.** First get sub + location into the env (see [Step 1 preflight](#step-1----verify-the-environment) options). Then pick **one** of these three paths — init is **not** idempotent:
+- **Recovery: `services.ai-project.deployments[]` is empty or the agent service's `environmentVariables` have the literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` placeholder.** First verify the active azd environment has the intended subscription and location. Then pick **one** of these three paths — init is **not** idempotent:
   1. **Clean re-init (preferred when no user code has been added to `src/<name>/` yet):** delete `src/<name>/`, remove the `services.<name>:` block from `azure.yaml`, then re-run `azd ai agent init`. No collision, scaffolds cleanly with the resolved model.
   2. **Interactive overwrite:** re-run `azd ai agent init` **without `--no-prompt`**. When the collision prompt appears, **actively arrow-up and select "Overwrite existing"** — the default selection is *not* overwrite (it's "Use a different service name", which produces `<name>-2`).
   3. **Hand-fix in place (preserves any user code in `src/<name>/`):** edit `azure.yaml services.ai-project.deployments[]` to add the model block (`name`, `model.{name, format, version}`, `sku.{name, capacity}`), replace the literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` in the agent service's `environmentVariables` with `${AZURE_AI_MODEL_DEPLOYMENT_NAME}`, then `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME <deployment-name>`. Run `azd provision`; the `preprovision` hook auto-syncs `AI_PROJECT_DEPLOYMENTS`.
 - **Anti-patterns — do not do these:**
   - **Blindly re-running `azd ai agent init` against an existing project.** Under `--no-prompt` init silently auto-suffixes (`<service>-2`, then `-3`, ...) via `nextAvailableName`; in interactive mode the collision prompt's default is "Use a different service name". There is **no flag** (`--force` does not apply here) to make `--no-prompt` overwrite. Use one of the three recovery paths above.
-  - **Reaching for `azd config set defaults.subscription` / `defaults.location` as the *first* fix for the deferral.** This mutates `~/.azure/config.json` for every azd project on the machine. Prefer pre-bootstrap with `azd init -t ... --subscription -l` (per-project) or `--project-id` (existing project) first — see the [Step 1 preflight options](#step-1----verify-the-environment).
   - `azd env set AI_PROJECT_DEPLOYMENTS '[...]'` — `AI_PROJECT_DEPLOYMENTS` is internal extension state. The extension writes it with double-escaped JSON (`\\` and `\"`) required by Bicep parameter substitution; `azd env set` only single-escapes and breaks the parse with `invalid character 'n' after object key:value pair`.
   - `az cognitiveservices account deployment create ...` against the azd-managed Foundry account — creates the deployment outside the azd lifecycle, so `azd provision` won't manage it and `azd down` won't clean it up. Use `az cognitiveservices` (or [models/deploy-model](../../models/deploy-model/SKILL.md)) **only** for shared/pre-existing Foundry projects that are not managed by this azd project.
   - Hand-patching the `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` placeholder in the agent service's `environmentVariables` *without also* adding the matching entry to `azure.yaml services.ai-project.deployments[]` — the agent will reference a deployment name that Bicep never created. Use the [hand-fix recovery path](#step-4a----greenfield-scaffold-from-a-sample) above (path #3) which fixes both together.
@@ -183,9 +177,8 @@ Check the scaffold before local run:
    FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
    AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
    ```
-4. Prefer direct code deployment. Inspect the agent's `azure.yaml` service block; if `codeConfiguration:` is missing and the agent does not need a custom Dockerfile or system packages, add it before deployment.
-5. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the `azure.yaml` service key AND its `name:` to the same value, preserving its `project:` path.
-6. If you change CPU or memory, set it in the agent service's `container.resources` in `azure.yaml`.
+4. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the `azure.yaml` service key AND its `name:` to the same value, preserving its `project:` path.
+5. If you change CPU or memory, set it in the agent service's `container.resources` in `azure.yaml`.
 
 ### Step 4b -- Brownfield: lift existing code
 
@@ -204,7 +197,7 @@ azd ai agent init --no-prompt \
 
 ### Step 5 -- Write the agent instruction file (required)
 
-Applies to both 4a and 4b, and to any existing project you touch (not just fresh scaffolds). Do **not** skip this. Add a one-line marker to the project's `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If the file already exists, append the line; don't overwrite it or add a second file.
+Applies to both 4a and 4b, and to any existing project you touch (not just fresh scaffolds). Do **not** skip this. The project needs a marker in its `AGENTS.md` (or `CLAUDE.md` in Claude Code) so future prompts reload this skill. If no such file exists, create it with the marker below. If the file already exists, weave the marker into the existing content naturally so it matches the file's structure and tone, rather than bluntly appending a standalone line that reads as out of place. Never overwrite the file or create a second one.
 
 ```
 This project was built with the microsoft-foundry skill. Before working on or answering questions about foundry agents, read the microsoft-foundry skill first.
@@ -274,7 +267,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 2. **Prefer azd over az** -- fall back to `az` only as a last resort, with explicit consent.
 3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user and stop.
 4. **JSON output** -- add `--output json` only to read-only `azd ai agent` commands such as `show`. Do not add it to `azd ai agent invoke`; invoke supports `default` and `raw`, not `json`.
-5. **One file** -- the agent is defined as a service block in `azure.yaml` (`host: azure.ai.agent`). See [azd-ai-cli](references/azd-ai-cli.md).
+5. **One file** -- the agent is defined as a service block in `azure.yaml` (`host: azure.ai.agent`). See [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 6. **Reserved env vars** -- `FOUNDRY_*` and `AGENT_*` are platform-injected at runtime; `AI_PROJECT_DEPLOYMENTS`, `AI_PROJECT_RESOURCES`, and `AI_PROJECT_TOOL_CONNECTIONS` are extension-managed transport for Bicep. Never set any of these with `azd env set` -- edit `azure.yaml` and re-run `azd ai agent init`.
 
 ## Non-Interactive / YOLO Mode
@@ -283,7 +276,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 > - **Project:** if the user named a project or asked to create one, go ahead; otherwise stop and ask before provisioning.
 > - **Toolbox/connection:** create it only when the user asked you to; otherwise leave the configs as placeholders and ask.
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. Always set the subscription and location after init as shown in Step 4a. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 
@@ -291,8 +284,7 @@ Defaults when unspecified: greenfield + Python + `azd ai agent sample list --fea
 |-------|-----|
 | `extension not installed` | `azd extension install azure.ai.agents` |
 | `not_logged_in` / `login_expired` | Ask user to run `az login` and `azd auth login`; never run those commands for them. |
-| `unknown flag: --subscription` / `--location` on `azd ai agent init` | Wrong command — those flags live on **core** `azd init`. See [Step 1 preflight](#step-1----verify-the-environment) for the four options. |
-| `no project exists; to create a new project, run azd init` on `azd env set` | The azd env does not exist yet — `azd env set` cannot create it. See [Step 1 preflight](#step-1----verify-the-environment). |
+| `unknown flag: --subscription` / `--location` on `azd ai agent init` | After init, set both values with `azd env set AZURE_SUBSCRIPTION_ID=<id> AZURE_LOCATION=<region>`. |
 | the agent service's `environmentVariables` contain literal `{{AZURE_AI_MODEL_DEPLOYMENT_NAME}}` placeholder after init | Init deferred model resolution. **Do not blindly re-run init** (default prompt = `<name>-2`; `--no-prompt` silently auto-suffixes). Pick one of the three [recovery paths](#model-deployments-azd-golden-path): clean re-init after deleting `src/<name>/`, interactive overwrite, or hand-fix `azure.yaml` + replace `{{...}}` with `${AZURE_AI_MODEL_DEPLOYMENT_NAME}` and `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME <name>`, then `azd provision`. |
 | `azure.yaml` has duplicate `<service>-2` entry after re-running init | Init is not idempotent: interactive default is "Use a different service name" and `--no-prompt` silently appends `-2`. To recover, delete the `<service>-2` entry from `azure.yaml`, remove `src/<service>-2/`, then `azd provision`. |
 | `invalid character 'n' after object key:value pair` during `azd provision` | You used `azd env set AI_PROJECT_DEPLOYMENTS '[...]'` (single-escaped JSON breaks Bicep `json()`). Clear it (`azd env set AI_PROJECT_DEPLOYMENTS ""`), declare the deployment in `azure.yaml services.ai-project.deployments[]` instead, then re-run `azd provision` (its `preprovision` hook re-syncs `AI_PROJECT_DEPLOYMENTS` with the correct double-escaping). |

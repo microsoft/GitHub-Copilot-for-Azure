@@ -24,7 +24,7 @@ tags:
   type: integration
   skill: azure-resource-lookup
 
-config:
+defaults:
   runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner

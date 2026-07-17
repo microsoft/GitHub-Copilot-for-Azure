@@ -35,7 +35,11 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --ignore-scripts
+
+      - name: Install stimuli validation dependencies
+        working-directory: scripts
+        run: npm ci --ignore-scripts
 
       - name: Install test dependencies
         working-directory: tests
@@ -50,7 +54,7 @@ jobs:
           npm run vally validate-stimulus
 
       - name: Lint skill and eval specs
-        run: npx --yes @microsoft/vally-cli@^0.5.0 lint plugin/skills/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
+        run: npx --yes @microsoft/vally-cli@^0.7.0 lint plugin/skills/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
 
       - name: Determine suite
         if: github.event_name != 'pull_request'

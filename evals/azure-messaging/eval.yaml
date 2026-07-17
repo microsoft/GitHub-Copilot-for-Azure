@@ -15,7 +15,7 @@ tags:
   type: integration
   skill: azure-messaging
 
-config:
+defaults:
   runs: 3
   timeout: "10m"
   executor: integration-test-agent-runner
