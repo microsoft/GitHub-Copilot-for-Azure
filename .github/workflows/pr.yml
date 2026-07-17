@@ -117,6 +117,9 @@ jobs:
         working-directory: ./scripts
         run: npm ci --ignore-scripts
 
+      - name: Build output
+        run: npm ci --ignore-scripts && npm run build
+
       - name: Check Copilot CLI skill char budget
         working-directory: ./scripts
         run: npm run checkCopilotCliCharBudget
@@ -415,7 +418,7 @@ jobs:
 
           # Validate built plugin skill output so version-stamped files are checked
           echo "Validating references in ../output/<plugin>/skills"
-          if OUTPUT=$(npm run references -- --plugins-dir ../output 2>&1); then
+          if OUTPUT=$(npm run references 2>&1); then
             echo "$OUTPUT"
             echo "✅ output/<plugin>/skills references are valid" >> $GITHUB_STEP_SUMMARY
           else
