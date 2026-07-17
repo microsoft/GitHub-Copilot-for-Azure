@@ -178,6 +178,53 @@ stimuli:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd provision --no-prompt"
 
+  # Jest: "runs the validate-deployment script for a standalone Bicep (az CLI) project"
+  # No azure.yaml → azure-prepare selects the Bicep/AZCLI recipe, whose validation is the
+  # shared validate-deployment.{sh,ps1} helper. The agent must RUN that script (not azd,
+  # not raw az deployment create).
+  - name: "Runs validate-deployment Script - Standalone Bicep (az CLI)"
+    prompt: "My static status page is ready. I deploy it directly with the Azure CLI (az deployment) using my Bicep templates in ./infra — I do NOT use azd. Please prepare and validate it for deployment to my current subscription in eastus2."
+    environment:
+      files:
+        - src: fixture/bicep-cli/index.html
+          dest: index.html
+        - src: fixture/bicep-cli/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/bicep-cli/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/bicep-cli/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    constraints:
+      max_turns: 50
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+      followUp:
+        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"validate-deployment\\.(sh|ps1)"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"az\\s+deployment\\b.*\\b(create|up)\\b"}]'
+    graders:
+      # azure-validate WAS invoked; azure-deploy was NOT
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed:
+            - azure-deploy
+      # The shared validate-deployment script WAS run; no actual deployment happened
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)validate-deployment\\.(sh|ps1)"
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)az\\s+deployment\\b.*\\bcreate\\b"
+
   # ═══════════════════════════════════════════
   # brownfield-dotnet-validate
   # Source: describe("brownfield-dotnet-validate")
