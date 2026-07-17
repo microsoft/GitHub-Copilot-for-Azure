@@ -54,6 +54,7 @@ param name string
 param location string = resourceGroup().location
 param tags object = {}
 param logAnalyticsWorkspaceId string
+@secure()
 param logAnalyticsSharedKey string
 
 // logAnalytics resource must be declared or passed as parameter
