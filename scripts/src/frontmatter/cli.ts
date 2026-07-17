@@ -269,8 +269,7 @@ export function validateMetadata(metadata: unknown): ValidationIssue[] {
 }
 
 /**
- * Check 8: Validate `metadata.version` is present and follows semver (X.Y.Z),
- * except plugin source skills which use the NBGV-stamped placeholder.
+ * Check 8: Validate `metadata.version` is present and follows semver (X.Y.Z).
  */
 export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -297,10 +296,6 @@ export function validateMetadataVersion(metadata: unknown): ValidationIssue[] {
   }
 
   const versionStr = String(version);
-  if (versionStr === "0.0.0-placeholder") {
-    return issues;
-  }
-
   if (!SEMVER_RE.test(versionStr)) {
     issues.push({
       check: "metadata-version",
