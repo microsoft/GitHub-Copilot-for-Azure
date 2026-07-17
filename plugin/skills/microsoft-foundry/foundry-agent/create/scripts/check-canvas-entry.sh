@@ -38,20 +38,19 @@ home_dir="${HOME:-${USERPROFILE:-}}"
 [ -n "$home_dir" ] && [ -n "${COPILOT_AGENT_SESSION_ID:-}" ] && \
   dirs+=("$home_dir/.copilot/session-state/$COPILOT_AGENT_SESSION_ID/extensions/$ext")
 
-# Plugin-contributed extensions live under ~/.copilot/installed-plugins/<repo>/<plugin>/...
-# The layout varies (some nest the extension under an extensions/ subfolder, others place it
-# directly), but the leaf directory holding extension.mjs is always named after the extension.
-plugin_root="$home_dir/.copilot/installed-plugins"
-if [ -n "$home_dir" ] && [ -d "$plugin_root" ]; then
-  while IFS= read -r mjs; do
-    [ -n "$mjs" ] && dirs+=("$(dirname "$mjs")")
-  done < <(find "$plugin_root" -maxdepth 6 -type f -name extension.mjs -path "*/$ext/extension.mjs" 2>/dev/null)
-fi
-
 installed_at=""
 for d in "${dirs[@]}"; do
   if [ -f "$d/extension.mjs" ]; then installed_at="$d"; break; fi
 done
+
+# Plugin-contributed extensions live under ~/.copilot/installed-plugins/<repo>/<plugin>/...
+# The layout varies (some nest the extension under an extensions/ subfolder, others place it
+# directly), but the leaf directory holding extension.mjs is always named after the extension.
+plugin_root="$home_dir/.copilot/installed-plugins"
+if [ -z "$installed_at" ] && [ -n "$home_dir" ] && [ -d "$plugin_root" ]; then
+  mjs="$(find "$plugin_root" -maxdepth 6 -type f -name extension.mjs -path "*/$ext/extension.mjs" -print -quit 2>/dev/null)"
+  [ -n "$mjs" ] && installed_at="$(dirname "$mjs")"
+fi
 
 if [ -z "$installed_at" ]; then
   echo "[WARN] Foundry Agent Canvas is not installed -- canvas-first gate does not apply; continue with the normal create workflow."

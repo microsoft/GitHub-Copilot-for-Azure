@@ -43,17 +43,18 @@ if ($homeDir -and $env:COPILOT_AGENT_SESSION_ID) {
 # Plugin-contributed extensions live under ~/.copilot/installed-plugins/<repo>/<plugin>/...
 # The layout varies (some nest the extension under an extensions/ subfolder, others place it
 # directly), but the leaf directory holding extension.mjs is always named after the extension.
-if ($homeDir) {
-    $pluginRoot = Join-Path $homeDir ".copilot/installed-plugins"
-    if (Test-Path $pluginRoot) {
-        Get-ChildItem -Path $pluginRoot -Recurse -Depth 4 -Directory -Filter $ext -ErrorAction SilentlyContinue |
-            ForEach-Object { $dirs += $_.FullName }
-    }
-}
-
 $installedAt = $null
 foreach ($d in $dirs) {
     if (Test-Path (Join-Path $d "extension.mjs")) { $installedAt = $d; break }
+}
+
+if (-not $installedAt -and $homeDir) {
+    $pluginRoot = Join-Path $homeDir ".copilot/installed-plugins"
+    if (Test-Path $pluginRoot) {
+        $installedAt = Get-ChildItem -Path $pluginRoot -Recurse -Depth 4 -Directory -Filter $ext -ErrorAction SilentlyContinue |
+            Where-Object { Test-Path (Join-Path $_.FullName "extension.mjs") -PathType Leaf } |
+            Select-Object -First 1 -ExpandProperty FullName
+    }
 }
 
 if (-not $installedAt) {
