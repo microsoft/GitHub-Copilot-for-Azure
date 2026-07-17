@@ -59,7 +59,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
     functionAppConfig: {
       runtime: {
         name: 'node'
-        version: '20'
+        version: '22'
       }
       scaleAndConcurrency: {
         alwaysReady: [
