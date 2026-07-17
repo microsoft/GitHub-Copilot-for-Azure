@@ -20,6 +20,18 @@ import {
 /** Number of trailing days shown in every graph. */
 const WINDOW_DAYS = 10;
 
+/** Repository whose issues are surfaced from each skill page. */
+const ISSUES_REPO = "microsoft/GitHub-Copilot-for-Azure";
+
+/**
+ * Build a GitHub search URL for the open issues labelled with a skill's name.
+ * The skill name is used verbatim as the label value.
+ */
+export function issuesUrl(skillName: string): string {
+    const query = `is:issue state:open label:"${skillName}"`;
+    return `https://github.com/${ISSUES_REPO}/issues?q=${encodeURIComponent(query)}`;
+}
+
 /** A plugin skill with its description, as surfaced by the frontmatter collector. */
 interface Skill {
     name: string;
@@ -253,6 +265,15 @@ export default function App() {
                             </p>
                             <p className="skills-desc-length">
                                 Description length: {selectedSkill.descriptionLength} characters
+                            </p>
+                            <p className="skills-issues-link">
+                                <a
+                                    href={issuesUrl(selectedSkill.name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    View open issues for {selectedSkill.name} ↗
+                                </a>
                             </p>
                         </header>
 
