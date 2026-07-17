@@ -167,9 +167,12 @@ async function build() {
 function generateChangelog(plugin: string): void {
   const pluginDir = path.join("plugins", plugin);
 
+  // Moving files causes the git commit history to be lost and thus erases old changelog entries.
   // To preserve old changelog entries after moving plugin files,
   // we commit legacy changelog entries and compute a version offset so the
   // new generated version numbers keep increasing.
+  // The file is named `changelog-<date-of-creation>.md` in `plugins/<plugin-dir>/`.
+  // Update the file if we ever need to move files again.
   const legacyChangelogFiles = readdirSync(pluginDir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && /^changelog-.*\.md$/i.test(entry.name))
     .map((entry) => entry.name)
