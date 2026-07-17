@@ -12,9 +12,10 @@
  *   4. Name must not start with reserved prefixes (claude- or anthropic-).
  *
  * Usage:
- *   npm run frontmatter                 # Validate all skills
- *   npm run frontmatter <skill>         # Validate a single skill
- *   npm run frontmatter <path/SKILL.md> # Validate a specific file
+ *   npm run frontmatter <path/SKILL.md>        # Validate a specific SKILL.md file
+ *   npm run frontmatter <path/skills/mySkill>  # Validate a single skill folder
+ *   npm run frontmatter <path/skills>          # Validate all skills in a directory
+ *   npm run frontmatter <path1> <path2> ...    # Mix of the above
  */
 
 import { dirname, resolve, basename, relative } from "node:path";
@@ -31,8 +32,6 @@ function getRepoRoot(): string {
 }
 
 const REPO_ROOT = getRepoRoot();
-const PLUGIN_SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
-const META_SKILLS_DIR = resolve(REPO_ROOT, ".github", "skills");
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +45,16 @@ export interface ValidationResult {
   skill: string;
   file: string;
   issues: ValidationIssue[];
+  /** Raw description text, or null when missing/unparseable. */
+  description?: string | null;
+}
+
+export interface SkillRoutingContext {
+  name: string;
+  file: string;
+  description: string;
+  triggerPhrases: string[];
+  broad: boolean;
 }
 
 // ── Validation checks ────────────────────────────────────────────────────────
@@ -361,6 +370,126 @@ export function validateAllowedTools(allowedTools: unknown): ValidationIssue[] {
   return issues;
 }
 
+const TRIGGER_SECTION_KEYWORDS = ["WHEN", "USE FOR", "TRIGGERS"] as const;
+const TRIGGER_SECTION_STOP_HEADERS = ["DO NOT USE FOR", ...TRIGGER_SECTION_KEYWORDS] as const;
+// Extracts only explicit trigger sections and stops before disambiguation/next trigger section.
+// Section headers must include a trailing colon; `PREFER OVER` is handled separately
+// because it may appear without one.
+const TRIGGER_SECTION_RE = new RegExp(
+  `\\b(?:${TRIGGER_SECTION_KEYWORDS.join("|")}):\\s*([^]*?)(?=(?:\\b(?:${TRIGGER_SECTION_STOP_HEADERS.join("|")}):|\\bPREFER OVER\\b|$))`,
+  "gi",
+);
+const DO_NOT_USE_FOR_RE = /\bDO NOT USE FOR:/i;
+const SANITIZED_DO_NOT_USE_FOR_MARKER = "DO_NOT_USE_FOR:";
+const DISAMBIGUATION_CLAUSE_MARKER_RE = new RegExp(`(?:${SANITIZED_DO_NOT_USE_FOR_MARKER}|PREFER OVER\\b)`, "i");
+const BROAD_SKILL_NAMES = new Set(["azure-prepare", "azure-deploy"]);
+const MIN_TRIGGER_PHRASE_LENGTH = 4;
+const OVERLAP_PREVIEW_LIMIT = 3;
+
+function normalizeTriggerPhrase(phrase: string): string {
+  return phrase
+    .toLowerCase()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .replace(/\([^)]*\)/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+export function extractTriggerPhrases(description: string | null): string[] {
+  if (!description) return [];
+
+  // Prevent `USE FOR:` inside `DO NOT USE FOR:` from being treated as a trigger section.
+  const sanitizedDescription = description.replace(/\bDO NOT USE FOR:/gi, SANITIZED_DO_NOT_USE_FOR_MARKER);
+  const phrases: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = TRIGGER_SECTION_RE.exec(sanitizedDescription)) !== null) {
+    const section = match[1];
+    const disambiguationStart = section.search(DISAMBIGUATION_CLAUSE_MARKER_RE);
+    const triggerSection = disambiguationStart >= 0 ? section.slice(0, disambiguationStart) : section;
+    for (const rawPhrase of triggerSection.split(/[;,]/)) {
+      const normalized = normalizeTriggerPhrase(rawPhrase);
+      if (normalized.length >= MIN_TRIGGER_PHRASE_LENGTH) {
+        phrases.push(normalized);
+      }
+    }
+  }
+
+  return [...new Set(phrases)];
+}
+
+export function hasDoNotUseForClause(description: string | null): boolean {
+  if (!description) return false;
+  return DO_NOT_USE_FOR_RE.test(description);
+}
+
+export function hasPreferOverClause(description: string | null, competingSkillName: string): boolean {
+  if (!description) return false;
+  const escapedName = competingSkillName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\bPREFER OVER\\s+${escapedName}\\b`, "i").test(description);
+}
+
+function hasAnyDisambiguationClause(description: string | null, competingSkillName: string): boolean {
+  return hasDoNotUseForClause(description) || hasPreferOverClause(description, competingSkillName);
+}
+
+function buildSkillRoutingContexts(skillFiles: string[]): SkillRoutingContext[] {
+  const contexts: SkillRoutingContext[] = [];
+  for (const file of skillFiles) {
+    const content = readFileSync(file, "utf-8");
+    const parsed = parseSkillContent(content);
+    if (parsed === null) continue;
+    const name = typeof parsed.data.name === "string" ? parsed.data.name : basename(dirname(file));
+    const description = typeof parsed.data.description === "string" ? parsed.data.description : "";
+    const triggerPhrases = extractTriggerPhrases(description);
+    contexts.push({
+      name,
+      file,
+      description,
+      triggerPhrases,
+      broad: isBroadRoutingSkill(name),
+    });
+  }
+  return contexts;
+}
+
+function isBroadRoutingSkill(name: string): boolean {
+  // Restrict "broad" classification to an explicit allowlist to avoid
+  // specialized skills being accidentally reclassified as broad.
+  return BROAD_SKILL_NAMES.has(name);
+}
+
+export function validateTriggerOverlapDisambiguation(
+  skill: SkillRoutingContext,
+  allSkills: SkillRoutingContext[],
+): ValidationIssue[] {
+  if (skill.broad || skill.triggerPhrases.length === 0) return [];
+
+  const issues: ValidationIssue[] = [];
+  const skillTriggerSet = new Set(skill.triggerPhrases);
+
+  for (const competitor of allSkills) {
+    if (competitor.name === skill.name || !competitor.broad) continue;
+    if (competitor.triggerPhrases.length === 0) continue;
+
+    const overlaps = competitor.triggerPhrases.filter(
+      (trigger) => skillTriggerSet.has(trigger),
+    );
+    if (overlaps.length === 0) continue;
+
+    if (!hasAnyDisambiguationClause(skill.description, competitor.name)) {
+      const overlapPreview = overlaps.slice(0, OVERLAP_PREVIEW_LIMIT).join(", ");
+      const overlapSuffix = overlaps.length > OVERLAP_PREVIEW_LIMIT ? ", ..." : "";
+      issues.push({
+        check: "trigger-overlap-disambiguation",
+        severity: "error",
+        message: `Trigger overlap with broad skill "${competitor.name}" (${overlapPreview}${overlapSuffix}). Add DO NOT USE FOR: or PREFER OVER ${competitor.name}.`,
+      });
+    }
+  }
+
+  return issues;
+}
+
 // ── Validate a single SKILL.md ──────────────────────────────────────────────
 
 export function validateSkillFile(filePath: string): ValidationResult {
@@ -371,7 +500,7 @@ export function validateSkillFile(filePath: string): ValidationResult {
 
   if (parsed === null) {
     issues.push({ check: "frontmatter", message: "Missing YAML frontmatter (file must start with ---)" });
-    return { skill: parentDir, file: filePath, issues };
+    return { skill: parentDir, file: filePath, issues, description: null };
   }
 
   const name = typeof parsed.data.name === "string" ? parsed.data.name : null;
@@ -412,7 +541,7 @@ export function validateSkillFile(filePath: string): ValidationResult {
   // Check 10: Allowed tools field
   issues.push(...validateAllowedTools(parsed.data["allowed-tools"]));
 
-  return { skill: parentDir, file: filePath, issues };
+  return { skill: parentDir, file: filePath, issues, description };
 }
 
 // ── Skill discovery ──────────────────────────────────────────────────────────
@@ -430,8 +559,45 @@ function findSkillFiles(skillsDir: string): string[] {
     .map((name) => resolve(skillsDir, name, "SKILL.md"));
 }
 
-function getAllSkillFiles(): string[] {
-  return [...findSkillFiles(PLUGIN_SKILLS_DIR), ...findSkillFiles(META_SKILLS_DIR)];
+/**
+ * Resolve a CLI positional argument to one or more SKILL.md file paths.
+ *
+ * Three accepted forms:
+ *   1. Path to a SKILL.md file directly → [that file]
+ *   2. Path to a skill folder (directory containing SKILL.md) → [<dir>/SKILL.md]
+ *   3. Path to a skills container (directory of skill subdirectories) → all SKILL.md inside
+ */
+function resolveSkillFiles(arg: string): string[] | string {
+  const resolved = resolve(arg);
+
+  if (!existsSync(resolved)) {
+    return `Path not found: ${arg}`;
+  }
+
+  const st = statSync(resolved);
+
+  if (st.isFile()) {
+    if (basename(resolved) !== "SKILL.md") {
+      return `Expected a SKILL.md file but got: ${arg}`;
+    }
+    return [resolved];
+  }
+
+  if (st.isDirectory()) {
+    const directSkillMd = resolve(resolved, "SKILL.md");
+    if (existsSync(directSkillMd)) {
+      // Skill folder — the directory itself is the skill
+      return [directSkillMd];
+    }
+    // Skills container — enumerate subdirectories
+    const found = findSkillFiles(resolved);
+    if (found.length === 0) {
+      return `No skills found in directory: ${arg}`;
+    }
+    return found;
+  }
+
+  return `Path is neither a file nor a directory: ${arg}`;
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -450,6 +616,8 @@ const ALL_CHECKS = [
   "metadata-version",
   "compatibility",
   "allowed-tools",
+  "trigger-overlap-disambiguation",
+  "disambiguation-removal",
 ] as const;
 
 export interface FrontmatterSkillResult {
@@ -459,6 +627,8 @@ export interface FrontmatterSkillResult {
   errors: string[];
   warnings: string[];
   checks: Record<string, boolean>;
+  /** Raw description text ("" when missing). Length is derivable by consumers. */
+  description: string;
 }
 
 export interface FrontmatterJsonResult {
@@ -500,6 +670,7 @@ function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
       passed++;
     }
 
+    const description = result.description ?? "";
     skills.push({
       name: result.skill,
       path: relative(REPO_ROOT, result.file).replace(/\\/g, "/"),
@@ -507,6 +678,7 @@ function buildJsonResult(results: ValidationResult[]): FrontmatterJsonResult {
       errors: errors.map(e => `[${e.check}] ${e.message}`),
       warnings: warnings.map(w => `[${w.check}] ${w.message}`),
       checks,
+      description,
     });
   }
 
@@ -535,38 +707,41 @@ function main(): void {
 
   const jsonOutput = values.json ?? false;
 
-  let skillFiles: string[];
+  if (positionals.length === 0) {
+    console.error("\n❌ No path specified.\n");
+    console.error("Usage:");
+    console.error("  npm run frontmatter <path/SKILL.md>        # Validate a specific SKILL.md file");
+    console.error("  npm run frontmatter <path/skills/mySkill>  # Validate a single skill folder");
+    console.error("  npm run frontmatter <path/skills>          # Validate all skills in a directory");
+    console.error("  npm run frontmatter <path1> <path2> ...    # Mix of the above\n");
+    process.exitCode = 1;
+    return;
+  }
 
-  if (positionals.length > 0) {
-    skillFiles = [];
-    for (const arg of positionals) {
-      // Accept either a skill name or a direct path to SKILL.md
-      if (arg.endsWith("SKILL.md") && existsSync(arg)) {
-        skillFiles.push(resolve(arg));
-      } else {
-        // Try as skill name in both directories
-        const pluginPath = resolve(PLUGIN_SKILLS_DIR, arg, "SKILL.md");
-        const metaPath = resolve(META_SKILLS_DIR, arg, "SKILL.md");
+  const skillFiles: string[] = [];
 
-        if (existsSync(pluginPath)) {
-          skillFiles.push(pluginPath);
-        } else if (existsSync(metaPath)) {
-          skillFiles.push(metaPath);
-        } else {
-          console.error(`\n❌ Skill "${arg}" not found in plugin/skills/ or .github/skills/\n`);
-          process.exitCode = 1;
-          return;
-        }
-      }
+  for (const arg of positionals) {
+    const result = resolveSkillFiles(arg);
+    if (typeof result === "string") {
+      console.error(`\n❌ ${result}\n`);
+      process.exitCode = 1;
+      return;
     }
-  } else {
-    skillFiles = getAllSkillFiles();
+    skillFiles.push(...result);
   }
 
   // Validate all skill files
   const results: ValidationResult[] = [];
+  const routingContexts = buildSkillRoutingContexts(skillFiles);
+  const routingContextByName = new Map(routingContexts.map((context) => [context.name, context]));
+
   for (const file of skillFiles) {
-    results.push(validateSkillFile(file));
+    const result = validateSkillFile(file);
+    const routingContext = routingContextByName.get(result.skill);
+    if (routingContext) {
+      result.issues.push(...validateTriggerOverlapDisambiguation(routingContext, routingContexts));
+    }
+    results.push(result);
   }
 
   // ── JSON output mode ────────────────────────────────────────────────────

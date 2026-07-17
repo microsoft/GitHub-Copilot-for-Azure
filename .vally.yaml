@@ -1,0 +1,37 @@
+paths:
+  skills:
+    - plugin/skills
+  evals:
+    - evals
+  evalFilenames: ["eval.yaml", "eval.yml", "*.eval.yaml"]
+  results: results
+
+suites:
+  smoke:
+    description: "Quick routing checks — 1 stimulus per skill, runs: 1"
+    filter:
+      tier: smoke
+
+  pr:
+    description: "PR gate — smoke routing checks"
+    filter:
+      tier: smoke
+
+  triggers:
+    description: "All routing/trigger evals"
+    filter:
+      type: trigger
+
+  integration:
+    description: "All behavior/integration evals (LLM-backed)"
+    filter:
+      type: integration
+
+  foundry-e2e:
+    description: "Azure-authenticated Microsoft Foundry E2E evals"
+    filter:
+      type: foundry-e2e
+
+  full:
+    description: "All evals including LLM graders — nightly"
+    filter: {}

@@ -5,11 +5,10 @@
 **STOP. Before choosing a mode, check the user's prompt for specialized technology keywords.**
 If matched, invoke the corresponding skill **immediately** — it has tested templates and correct SDK usage.
 
-> ⚠️ **Re-entry guard**: If azure-prepare was invoked as a **resume** from a specialized skill (e.g., azure-hosted-copilot-sdk Step 4), **skip this check** and go directly to Step 4.
+> ⚠️ **Re-entry guard**: If azure-prepare was invoked as a **resume** from a specialized skill, **skip this check** and go directly to Step 4.
 
 | User prompt mentions | Action |
 |---------------------|--------|
-| copilot SDK, copilot app, copilot-powered, copilot-sdk-service, @github/copilot-sdk, CopilotClient, sendAndWait | **Invoke azure-hosted-copilot-sdk skill NOW** → then resume azure-prepare at Step 4 |
 | Azure Functions, function app, serverless function, timer trigger, func new | Stay in **azure-prepare**. When selecting compute, **prefer Azure Functions** templates and best practices, then continue from Step 4. |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. This is critical for greenfield projects with no codebase. See [full routing table](specialized-routing.md).
@@ -93,7 +92,7 @@ Converting an existing application to run on Azure.
 
 1. Load `services/functions/templates/selection.md` — decision tree for base template + recipe
 2. Load `services/functions/templates/recipes/composition.md` — the exact algorithm to follow
-3. Use `azd init -t <template>` to generate proven IaC — **NEVER hand-write Bicep/Terraform**
+3. Use `functions_template_get` MCP tool to list and fetch templates and write `functionFiles[]` + `projectFiles[]` directly — NEVER hand-write Bicep/Terraform and use `azd init -t <template>`/`func init`/`func new` as fallback when composing multiple recipes and required templates are not found
 
 > ⚠️ **Critical**: The Functions `bicep.md` and `terraform.md` files are **REFERENCE DOCUMENTATION**, not templates to copy. Hand-writing infrastructure from these patterns results in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 

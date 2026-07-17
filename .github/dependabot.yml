@@ -1,51 +1,81 @@
-# Dependabot configuration
-# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
-version: 2
 updates:
-  # npm ecosystem — root package.json
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-    open-pull-requests-limit: 10
-
-  # npm ecosystem — scripts/
-  - package-ecosystem: "npm"
-    directory: "/scripts"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-    open-pull-requests-limit: 5
-
-  # npm ecosystem — tests/
-  - package-ecosystem: "npm"
-    directory: "/tests"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    groups:
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
-    open-pull-requests-limit: 5
-
-  # GitHub Actions — keep SHA-pinned actions up to date
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    open-pull-requests-limit: 10
+- directory: /
+  cooldown:
+    default-days: 7
+  groups:
+    minor:
+      update-types:
+      - minor
+  ignore:
+  - dependency-name: "*"
+    update-types:
+    - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
+  open-pull-requests-limit: 10
+  package-ecosystem: npm
+  schedule:
+    day: monday
+    interval: weekly
+- directory: /scripts
+  cooldown:
+    default-days: 7
+  groups:
+    minor:
+      update-types:
+      - minor
+  ignore:
+  - dependency-name: "*"
+    update-types:
+    - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
+  open-pull-requests-limit: 5
+  package-ecosystem: npm
+  schedule:
+    day: monday
+    interval: weekly
+- directory: /tests
+  cooldown:
+    default-days: 7
+  groups:
+    minor:
+      update-types:
+      - minor
+  ignore:
+  - dependency-name: "*"
+    update-types:
+    - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
+  open-pull-requests-limit: 5
+  package-ecosystem: npm
+  schedule:
+    day: monday
+    interval: weekly
+- directory: /
+  ignore:
+  - dependency-name: "*"
+    update-types:
+    - version-update:semver-patch
+  - dependency-name: "github/gh-aw-actions/**"
+  - dependency-name: "github/gh-aw-actions" # Managed by gh aw compile. Version-locked to the gh-aw compiler; do not bump.
+  open-pull-requests-limit: 10
+  package-ecosystem: github-actions
+  schedule:
+    day: monday
+    interval: weekly
+- directories:
+  - "/evals/**"
+  ignore:
+  - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
+  open-pull-requests-limit: 0
+  package-ecosystem: pip
+  schedule:
+    interval: weekly
+- directories:
+  - "/evals/**"
+  ignore:
+  - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
+  open-pull-requests-limit: 0
+  package-ecosystem: npm
+  schedule:
+    interval: weekly
+version: 2

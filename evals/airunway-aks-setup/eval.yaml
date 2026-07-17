@@ -1,0 +1,230 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/airunway-aks-setup/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+#
+# Note on runs:
+# - Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Vally currently applies runs at
+#   eval scope, so each quality stimulus includes a documented stimulus-level `config.runs: 1`
+#   annotation for future per-stimulus support, but the current runtime still uses eval-level runs.
+
+name: airunway-aks-setup-integration-eval
+description: |
+  Integration evaluation for airunway-aks-setup skill — migrated from Jest integration tests.
+  Tests skill routing for AI Runway AKS setup prompts, plus response quality for controller
+  installation, GPU guidance, provider setup, first deployment, and kubeconfig-aware setup.
+
+tags:
+  type: integration
+  skill: airunway-aks-setup
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── AI Runway setup prompt ──
+  # Jest: "invokes skill for AI Runway setup prompt"
+  # Assertions: isSkillInvoked (invocation rate ≥ 80%)
+  - name: "AI Runway setup prompt"
+    prompt: "How do I set up AI Runway on my AKS cluster?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"airunway-aks-setup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - airunway-aks-setup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── model deployment prompt ──
+  # Jest: "invokes skill for model deployment prompt"
+  # Assertions: isSkillInvoked (invocation rate ≥ 80%)
+  - name: "model deployment prompt"
+    prompt: "I want to deploy Llama on my AKS cluster with GPUs"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"airunway-aks-setup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - airunway-aks-setup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── GPU inference setup prompt ──
+  # Jest: "invokes skill for GPU inference setup prompt"
+  # Assertions: isSkillInvoked (invocation rate ≥ 80%)
+  - name: "GPU inference setup prompt"
+    prompt: "How do I set up GPU inference on my AKS cluster to run LLMs?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"airunway-aks-setup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - airunway-aks-setup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── response mentions controller installation steps ──
+  # Jest: "response mentions controller installation steps"
+  # Assertions: assistant output mentions controller OR make OR CRD
+  - name: "response mentions controller installation steps"
+    prompt: "Walk me through installing the AI Runway controller on my AKS cluster."
+    # Original Jest test ran once. This annotation documents intended per-stimulus behavior.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)controller|make|crd"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── response covers GPU assessment guidance ──
+  # Jest: "response covers GPU assessment guidance"
+  # Assertions: assistant output mentions float16 OR bfloat16 OR T4 OR dtype
+  - name: "response covers GPU assessment guidance"
+    prompt: "My AKS cluster has T4 GPUs — what do I need to know before deploying a model with AI Runway?"
+    # Original Jest test ran once. This annotation documents intended per-stimulus behavior.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)float16|bfloat16|t4|dtype"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── response recommends a starter model for an A10G cluster ──
+  # Jest: "response recommends a starter model for an A10G cluster"
+  # Assertions: assistant output mentions Llama OR Phi OR KAITO
+  - name: "response recommends a starter model for an A10G cluster"
+    prompt: "Which model should I deploy first on an AKS cluster with a single A10G GPU using AI Runway?"
+    # Original Jest test ran once. This annotation documents intended per-stimulus behavior.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)llama|phi|kaito"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── response explains ModelDeployment CR for first deployment ──
+  # Jest: "response explains ModelDeployment CR for first deployment"
+  # Assertions: assistant output mentions ModelDeployment OR kubectl apply OR airunway.ai
+  - name: "response explains ModelDeployment CR for first deployment"
+    prompt: "How do I deploy a model with AI Runway? Show me the Kubernetes resource I need to apply."
+    # Original Jest test ran once. This annotation documents intended per-stimulus behavior.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)modeldeployment|kubectl apply|airunway\\.ai"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── works with a kubeconfig in the workspace ──
+  # Jest: "works with a kubeconfig in the workspace"
+  # Setup: copies fixture/kubeconfig.yaml into the workspace before execution
+  # Assertions: isSkillInvoked
+  - name: "works with a kubeconfig in the workspace"
+    prompt: "I have a kubeconfig in the workspace — set up AI Runway on this cluster."
+    # Original Jest test ran once. This annotation documents intended per-stimulus behavior.
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/kubeconfig.yaml
+          dest: kubeconfig.yaml
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: workspace-fixture
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - airunway-aks-setup
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resumes from a specific step when skip-to-step is provided ──
+  # Jest: "resumes from a specific step when skip-to-step is provided"
+  # Assertions: assistant output mentions provider OR KAITO OR Dynamo OR KubeRay
+  - name: "resumes from a specific step when skip-to-step is provided"
+    prompt: "skip-to-step 4 — I already have the AI Runway controller installed. Help me set up an inference provider."
+    # Original Jest test ran once. This annotation documents intended per-stimulus behavior.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)provider|kaito|dynamo|kuberay"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

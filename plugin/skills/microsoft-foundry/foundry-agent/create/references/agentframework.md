@@ -18,19 +18,17 @@ Best practices when building hosted agents with Microsoft Agent Framework for de
 
 ## Installation
 
-**Python:** `pip install agent-framework --pre` (installs all sub-packages)
+**Python:** `pip install agent-framework agent-framework-foundry-hosting` (installs all sub-packages)
 
 **.NET:** `dotnet add package Microsoft.Agents.AI`
-
-> ⚠️ **Warning:** Always pin specific pre-release versions. Use `--pre` to get the latest. Check the [PyPI page](https://pypi.org/project/agent-framework/) or [NuGet profile](https://www.nuget.org/profiles/MicrosoftAgentFramework/) for current stable versions.
 
 ## Hosting Adapter
 
 Hosted agents must expose an HTTP server using the hosting adapter. This enables local testing and Foundry deployment with the same code.
 
-**Python adapter packages:** `azure-ai-agentserver-core`, `azure-ai-agentserver-agentframework`
+**Python adapter packages:** `agent_framework_foundry_hosting`
 
-**.NET adapter packages:** `Azure.AI.AgentServer.Core`, `Azure.AI.AgentServer.AgentFramework`
+**.NET adapter packages:** `Azure.AI.AgentServer.Core`, `Microsoft.Agents.AI.Foundry.Hosting`
 
 The adapter handles protocol translation between Foundry request/response formats and your framework's native data structures, including conversation management, message serialization, and streaming.
 
@@ -38,9 +36,9 @@ The adapter handles protocol translation between Foundry request/response format
 
 ## Key Patterns
 
-### Python: Async Credentials
+### Python: Credentials
 
-For **local development**, use `DefaultAzureCredential` from `azure.identity.aio` (not `azure.identity`) — `AzureAIClient` requires async credentials. In production, use `ManagedIdentityCredential` from `azure.identity.aio`. See [auth-best-practices.md](../../../references/auth-best-practices.md).
+For **local development**, use `DefaultAzureCredential` from `azure.identity`. In production, use `ManagedIdentityCredential`. See [auth-best-practices.md](../../../references/auth-best-practices.md).
 
 ### Python: Environment Variables
 
@@ -74,19 +72,19 @@ For workflow samples and advanced patterns, search the [Agent Framework GitHub r
 
 ## Debugging
 
-Use [AI Toolkit for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) with the `agentdev` CLI tool for interactive debugging:
+Use [Foundry Toolkit for VS Code (Formerly AI Toolkit)](https://marketplace.visualstudio.com/items?itemName=ms-windows-ai-studio.windows-ai-studio) with the `agentdev` CLI tool for interactive debugging:
 
 1. Install `debugpy` for VS Code Python Debugger support
 2. Install `agent-dev-cli` (pre-release) for the `agentdev` command
 3. Key debug tasks: `agentdev run <entrypoint>.py --port 8087` starts the agent HTTP server, `debugpy --listen 127.0.0.1:5679` attaches the debugger, and the `ai-mlstudio.openTestTool` VS Code command opens the Agent Inspector UI
 
-For VS Code `launch.json` and `tasks.json` configuration templates, see [AI Toolkit Agent Inspector — Configure debugging manually](https://github.com/microsoft/vscode-ai-toolkit/blob/main/doc/agent-test-tool.md#configure-debugging-manually).
+For VS Code `launch.json` and `tasks.json` configuration templates, see [Foundry Toolkit Agent Inspector — Configure debugging manually](https://github.com/microsoft/vscode-ai-toolkit/blob/main/doc/agent-test-tool.md#configure-debugging-manually).
 
 ## Common Errors
 
 | Error | Cause | Fix |
 |-------|-------|-----|
-| `ModuleNotFoundError` | Missing SDK | `pip install agent-framework --pre` in venv |
-| Async credential error | Wrong import | Use `azure.identity.aio.DefaultAzureCredential` (local dev) or `azure.identity.aio.ManagedIdentityCredential` (production) |
+| `ModuleNotFoundError` | Missing SDK | `pip install agent-framework agent-framework-foundry-hosting` in venv |
+| Credential error | Wrong import | Use `azure.identity.DefaultAzureCredential` (local dev) or `ManagedIdentityCredential` (production) |
 | Agent name validation error | Invalid characters | Use alphanumeric + hyphens, start/end alphanumeric, max 63 chars |
-| Hosting adapter not found | Missing package | Install `azure-ai-agentserver-agentframework` |
+| Hosting adapter not found | Missing package | Install `agent-framework-foundry-hosting` |
