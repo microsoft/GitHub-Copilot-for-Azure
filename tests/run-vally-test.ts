@@ -2,7 +2,7 @@
  * CLI wrapper for running vally tests.
  *
  * Example:
- * npm run test:vally -- --plugin azure --skill azure-ai [...vally eval arguments]
+ * npm run test:vally -- --plugin azure-skills --skill azure-ai [...vally eval arguments]
  */
 
 import * as path from "node:path";
@@ -274,7 +274,7 @@ function printUsage(): void {
     "Usage: tsx tests/run-vally-test.ts [options] [-- <vally args>]",
     "",
     "Options:",
-    "  --plugin <name>           Plugin name for eval specs (default: azure)",
+    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: azure-skills). Note that a plugin's dirname may be different from its name.",
     "  --skill <name>            Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",

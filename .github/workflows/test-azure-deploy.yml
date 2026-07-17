@@ -56,19 +56,19 @@ jobs:
     steps:
       - name: Parse test-pattern input into matrix
         id: set-matrix
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
         env:
           INPUT: ${{ inputs.test-pattern }}
-        run: |
-          # Default test groups if input is empty
-          DEFAULT='["skill-invocation","vanilla-static-web-apps-deploy","vanilla-app-service-deploy","vanilla-azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"]'
-          
-          if [ -z "$INPUT" ]; then
-            echo "matrix=$DEFAULT" >> "$GITHUB_OUTPUT"
-          else
-            # Convert comma-delimited input to JSON array
-            JSON=$(echo "$INPUT" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | jq -R . | jq -sc .)
-            echo "matrix=$JSON" >> "$GITHUB_OUTPUT"
-          fi
+        with:
+          script: |
+            const DEFAULT = ["skill-invocation","vanilla-static-web-apps-deploy","vanilla-app-service-deploy","vanilla-azure-functions-deploy","vanilla-azure-container-apps-deploy","terraform-static-web-apps-deploy","terraform-app-service-deploy","terraform-azure-functions-deploy","terraform-azure-container-apps-deploy","brownfield-dotnet","brownfield-javascript","brownfield-python"];
+            const input = process.env.INPUT || "";
+
+            const matrix = input
+              ? input.split(",").map(s => s.trim()).filter(Boolean)
+              : DEFAULT;
+
+            core.setOutput("matrix", JSON.stringify(matrix));
 
   test:
     name: azure-deploy – ${{ matrix.test-group }}
@@ -180,7 +180,6 @@ jobs:
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           TEST_GROUP: ${{ matrix.test-group }}
         run: |
-          echo test with $MODEL_OVERRIDE
           npm run test:integration -- azure-deploy "$TEST_GROUP"
         continue-on-error: true
 
