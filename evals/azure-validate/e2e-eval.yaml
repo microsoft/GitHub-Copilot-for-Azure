@@ -1,0 +1,264 @@
+# Vally e2e eval suite for azure-validate
+# Source: tests/azure-validate/integration.test.ts
+# Covers: deployment-validation (3 tests) and brownfield-dotnet-validate (2 tests)
+#
+# earlyTerminate fires on azure-deploy skill call, azd up/deploy command, or
+# validation command (success path — agent ran azd provision).
+# NOTE: earlyTerminate tests must NOT use the `completed` grader.
+
+name: azure-validate-e2e-eval
+description: |
+  End-to-end evaluation suite for the azure-validate skill.
+  Tests:
+  - deployment-validation: agent terminates at validation (not deployment) for
+    whiteboard app, portfolio website, and containerized app scenarios.
+  - brownfield-dotnet-validate: correct azd init flags and env-var injection
+    for .NET Aspire brownfield samples from dotnet/aspire-samples.
+
+tags:
+  type: integration
+  skill: azure-validate
+
+defaults:
+  runs: 1
+  timeout: "45m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+
+  # ═══════════════════════════════════════════
+  # deployment-validation
+  # Source: describe("deployment-validation")
+  # The agent should invoke azure-validate (azd provision), NOT azure-deploy.
+  # earlyTerminate fires on the validation command (success), azure-deploy skill
+  # call, or azd up/deploy command (failure paths).
+  # ═══════════════════════════════════════════
+
+  # Jest: "terminates at validation for static whiteboard web app"
+  - name: "Terminates at Validation - Whiteboard App"
+    prompt: "My static whiteboard web app is ready. Please validate and prepare it for Azure deployment using azd."
+    environment:
+      files:
+        - src: fixture/whiteboard/index.html
+          dest: index.html
+        - src: fixture/whiteboard/azure.yaml
+          dest: azure.yaml
+        - src: fixture/whiteboard/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/whiteboard/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/whiteboard/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    constraints:
+      max_turns: 50
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+      followUp:
+        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
+    graders:
+      # azure-validate WAS invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed:
+            - azure-deploy
+      # validate command WAS called; deploy command was NOT called
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+provision\\b.*--preview|az\\s+deployment\\b.*\\bvalidate\\b|terraform\\s+validate"
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd provision --no-prompt"
+
+  # Jest: "terminates at validation for static portfolio website"
+  - name: "Terminates at Validation - Portfolio Website"
+    prompt: "My static portfolio website is ready. Please validate and prepare it for Azure deployment using azd."
+    environment:
+      files:
+        - src: fixture/portfolio/index.html
+          dest: index.html
+        - src: fixture/portfolio/azure.yaml
+          dest: azure.yaml
+        - src: fixture/portfolio/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/portfolio/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/portfolio/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    constraints:
+      max_turns: 50
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+      followUp:
+        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed:
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+provision\\b.*--preview|az\\s+deployment\\b.*\\bvalidate\\b|terraform\\s+validate"
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd provision --no-prompt"
+
+  # Jest: "terminates at validation for containerized web app on Container Apps"
+  - name: "Terminates at Validation - Containerized App on Container Apps"
+    prompt: "My containerized web application is ready. Please validate and prepare it for deployment to Azure Container Apps using azd."
+    environment:
+      files:
+        - src: fixture/containerized-app/app.js
+          dest: app.js
+        - src: fixture/containerized-app/package.json
+          dest: package.json
+        - src: fixture/containerized-app/Dockerfile
+          dest: Dockerfile
+        - src: fixture/containerized-app/azure.yaml
+          dest: azure.yaml
+        - src: fixture/containerized-app/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/containerized-app/infra/abbreviations.json
+          dest: infra/abbreviations.json
+        - src: fixture/containerized-app/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/containerized-app/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    constraints:
+      max_turns: 50
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+      followUp:
+        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed:
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+provision\\b.*--preview|az\\s+deployment\\b.*\\bvalidate\\b|terraform\\s+validate"
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd provision --no-prompt"
+
+  # ═══════════════════════════════════════════
+  # brownfield-dotnet-validate
+  # Source: describe("brownfield-dotnet-validate")
+  # ═══════════════════════════════════════════
+
+  # Jest: "passes --environment on azd init and sets subscription before provision"
+  - name: "Brownfield - azd init with --environment and subscription"
+    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/client-apps-integration
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 50
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+      followUp:
+        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(provision|up|deploy)\\b"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      # azd init must include --environment (-e) flag
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+init\\b.*(-e|--environment)\\s+\\S+"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+env\\s+set\\s+AZURE_SUBSCRIPTION_ID\\s+\\S+"
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd provision --no-prompt"
+
+  # Jest: "sets AzureWebJobsSecretStorageType for aspire-with-azure-functions"
+  - name: "Brownfield - AzureWebJobsSecretStorageType for Aspire Functions"
+    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/aspire-with-azure-functions
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 50
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-validate
+      followUp:
+        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(provision|up|deploy)\\b"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+      # Agent must edit AppHost.cs to add AzureWebJobsSecretStorageType
+      - type: file-matches
+        config:
+          path: "**/AppHost.cs"
+          pattern: "(?i)AzureWebJobsSecretStorageType"
+      # Deploy command must NOT have run
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"

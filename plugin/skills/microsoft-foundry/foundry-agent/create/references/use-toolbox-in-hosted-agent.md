@@ -78,7 +78,7 @@ The full set is documented in [agent-tools.md](agent-tools.md) and — authorita
 
 ## Information to Gather Before Building a Toolbox Payload
 
-When the user asks to "add an MCP tool" or similar, **never guess**. Confirm each field before generating any JSON or `azure.yaml` snippet:
+When the user asks to "add an MCP tool" or similar, **never guess**. Confirm each field before generating a toolbox payload:
 
 | # | Question | Why needed |
 |---|----------|------------|
@@ -147,42 +147,6 @@ When the user asks to "add an MCP tool" or similar, **never guess**. Confirm eac
 }
 ```
 
-### Declarative path via `azd`
-
-If the project already uses `azd ai agent init`, prefer declaring the toolbox in `azure.yaml` so `azd deploy` provisions it and injects `TOOLBOX_ENDPOINT` automatically:
-
-```yaml
-# Declare secret parameters first; azd will prompt for the value on `azd up`
-# (or read it from `AZURE_<NAME>` env vars) and never store it in plaintext.
-params:
-  - name: github_pat
-    type: securestring
-
-resources:
-  - kind: connection
-    name: <CONNECTION_NAME>
-    target: <MCP_SERVER_URL>
-    category: remoteTool
-    credentials:
-      type: CustomKeys
-      keys:
-        # Header name comes from the catalog entry's x-ms-connection-parameters.
-        # {{ github_pat }} is resolved from the `params` block above.
-        Authorization: "Bearer {{ github_pat }}"
-
-  - kind: toolbox
-    name: agent-tools
-    tools:
-      - type: toolbox_search_preview   # recommended for any toolbox > ~5 tools
-      - type: web_search
-      - type: mcp
-        server_label: <LABEL>
-        server_url: <MCP_SERVER_URL>
-        project_connection_id: <CONNECTION_NAME>
-```
-
-See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-developer-cli/azd-schema#params) for the full parameter syntax.
-
 ## Operational helpers via `azd ai` CLI
 
 > The `azd ai` CLI also exposes `connection create`, `toolbox create`, `toolbox list`, and `toolbox delete`. Prefer **Foundry Toolkit (VS Code)** or the **Foundry Portal** for those — the UI gives you tool browsing, connection wizards, and validation. The two commands below are the ones the skill should still drive directly because they're *operational*, not setup.
@@ -193,22 +157,22 @@ See [azd `params` reference](https://learn.microsoft.com/azure/developer/azure-d
 > $PE = "https://<account>.services.ai.azure.com/api/projects/<project>"
 > ```
 
-### Retarget the default version — `azd ai toolbox update`
+### Retarget the default version — `azd ai toolbox publish`
 
-Each toolbox version is **immutable**. The version an agent actually hits is the one marked `*` in `version list` — i.e. the **default version**. Use `update` to point that pointer at any existing version (e.g. rollback to a known-good version after a bad publish).
+Each toolbox version is **immutable**. The version an agent actually hits is the one marked `*` in `versions list` — i.e. the **default version**. Use `publish` to point that pointer at any existing version (e.g. rollback to a known-good version after a bad publish).
 
 ```pwsh
 # Inspect first — current default is marked with '*'
-azd ai toolbox version list my-toolbox --project-endpoint $PE
+azd ai toolbox versions list my-toolbox --project-endpoint $PE
 
 # Retarget the default
-azd ai toolbox update my-toolbox --default-version 20 --project-endpoint $PE --no-prompt
+azd ai toolbox publish my-toolbox 20 --project-endpoint $PE --no-prompt
 
 # Verify (Default version / Shown version / Endpoint all reflect the new value)
 azd ai toolbox show my-toolbox --project-endpoint $PE
 ```
 
-- `--default-version` is the only field `update` accepts today.
+- `publish <name> <version>` promotes an existing version to default (also used to roll back).
 - Validated: switched `default-tb` from version 21 → 20 → 21; both `show` and the computed MCP endpoint (`.../toolboxes/<name>/versions/<n>/mcp?api-version=v1`) tracked the change immediately.
 
 ### End-to-end smoke test
@@ -220,14 +184,15 @@ $TOK = az account get-access-token --resource "https://ai.azure.com" --query acc
 $H   = @{
   Authorization      = "Bearer $TOK"
   "Content-Type"     = "application/json"
-  "Foundry-Features" = "Toolboxes=V1Preview"
 }
 $URL = "$PE/toolboxes/my-toolbox/mcp?api-version=v1"
 $body = @{ jsonrpc = "2.0"; id = 1; method = "tools/list"; params = @{} } | ConvertTo-Json
 (Invoke-RestMethod -Method POST -Uri $URL -Headers $H -Body $body).result.tools | Select-Object name
 ```
 
-`?api-version=v1` and the `Foundry-Features: Toolboxes=V1Preview` header are both required.
+`?api-version=v1` is required.
+
+> ⚠️ **Agent-identity-authed tools won't work locally — that's expected, not a blocker.** The token above is your **user** identity, not the deployed agent's.
 
 ## Code Integration Patterns
 
@@ -251,11 +216,10 @@ The sample repo provides integration patterns for both Python and C#. Read the s
 **Notes** (apply to all patterns, both Python and C#):
 
 - Auth: Inject a bearer token with scope `https://ai.azure.com/.default` on every request (Python: `httpx.Auth` subclass; C#: `DefaultAzureCredential` + `BearerTokenAuthenticationPolicy`).
-- Header: Always include `Foundry-Features: Toolboxes=V1Preview`.
 - MCP client: Pass `load_prompts=False` — the toolbox endpoint does not support `prompts/list`.
 - Endpoint: Construct from `{project_endpoint}/toolboxes/{toolbox_name}/mcp?api-version=v1`.
 - Multi-tool toolboxes: at most one tool per unnamed type, and unique `server_label` per MCP tool (see [toolbox-reference.md](toolbox-reference.md#multi-tool-toolbox-constraint)). `toolbox_search_preview` doesn't count toward this limit.
-- Tool naming: MCP-sourced tools are prefixed `{server_label}.{tool_name}`; **all other tool types** use the entry's `name` field value (or the default tool name).
+- Tool naming: MCP-sourced tools are prefixed `{server_label}___{tool_name}` (three underscores); **all other tool types** use the entry's `name` field value (or the default tool name).
 
 > 💡 **Tip:** If MCP tools have `require_approval: "always"` in `_meta.tool_configuration`, the agent runtime must ask the user for confirmation before invoking. The toolbox endpoint does not enforce this — your agent code is responsible.
 

@@ -3,6 +3,7 @@ paths:
     - plugin/skills
   evals:
     - evals
+  evalFilenames: ["eval.yaml", "eval.yml", "*.eval.yaml"]
   results: results
 
 suites:
