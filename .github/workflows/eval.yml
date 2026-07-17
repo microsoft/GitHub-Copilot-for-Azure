@@ -35,7 +35,11 @@ jobs:
           node-version: "22"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --ignore-scripts
+
+      - name: Install stimuli validation dependencies
+        working-directory: scripts
+        run: npm ci --ignore-scripts
 
       - name: Install test dependencies
         working-directory: tests
