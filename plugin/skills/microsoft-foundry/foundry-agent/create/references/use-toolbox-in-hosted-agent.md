@@ -73,7 +73,7 @@ The full set is documented — authoritatively — in the public [Toolbox docs (
 
 **Adjacent (not a `type` in a toolbox version):**
 
-- **Agent Memory** — use the `MemorySearchPreviewTool` SDK class on prompt agents; for hosted agents, configure the memory store via the project (separate from the toolbox). See [tool-memory.md](tools/prompt-agent/tool-memory.md).
+- **Agent Memory** — for hosted agents, configure the memory store at the **project** level (separate from the toolbox); it is not a toolbox `type` and is not wired through agent code. See the public [Memory docs](https://learn.microsoft.com/azure/ai-foundry/agents/how-to/memory-usage?view=foundry).
 - **Routines (preview)** — not a tool; an agent **trigger** (`schedule` / `timer` / `github_issue` / `custom`) that invokes an existing agent. See the [public Routines docs](https://learn.microsoft.com/azure/foundry/agents/how-to/use-routines).
 
 ## Information to Gather Before Building a Toolbox Payload
