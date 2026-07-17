@@ -4,7 +4,7 @@ Follow these steps to add a skill's Vally suites to the CI test workflow so they
 
 ## Prerequisites
 
-- The skill's Vally suites are implemented under `evals/<plugin-dirname><skill-name>/eval.yaml` (or split across multiple YAML files).
+- The skill's Vally suites are implemented under `evals/<plugin-dirname>/<skill-name>/eval.yaml` (or split across multiple YAML files).
 - The Vally suites use the `integration-test-agent-runner` custom executor.
 - The test results can be made public.
 

@@ -8,7 +8,7 @@
 /.github/workflows/ @microsoft/github-copilot-for-azure-writers
 
 # Plugin skills owners (kept for reference)
-/plugin/skills/ @microsoft/github-copilot-for-azure-writers
+/plugin/skills/ @tmeschter @RickWinter
 /plugin/skills/airunway-aks-setup/ @tmeschter @RickWinter
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-ai/ @JasonYeMSFT @RickWinter
@@ -44,7 +44,7 @@
 /plugin/skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
 
 # Plugin skills owners (multi-plugin)
-/plugins/azure-skills/skills/ @microsoft/github-copilot-for-azure-writers
+/plugins/azure-skills/skills/ @tmeschter @RickWinter
 /plugins/azure-skills/skills/airunway-aks-setup/ @tmeschter @RickWinter
 /plugins/azure-skills/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
 /plugins/azure-skills/skills/azure-ai/ @JasonYeMSFT @RickWinter

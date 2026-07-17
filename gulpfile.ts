@@ -13,16 +13,6 @@ const TOP_LEVEL_SKILL_RE = /^skills[\\/][^\\/]+[\\/]SKILL\.md$/;
 const PLUGIN_JSON_RE = /^\.(?:plugin|cursor-plugin|claude-plugin)[\\/]plugin\.json$/;
 
 /**
- * By default the directory of the plugin in the build output should be the exact name of the plugin.
- * However, "azure" plugin has been published with "azure-skills" and external marketplaces that references our plugin may depend on it.
- * For example, https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
- * If a plugin has a mapped directory name here, its build output will be written under the mapped directory name.
- */
-const pluginDirnameMap = new Map<string, string>([
-  ["azure", "azure-skills"]
-]);
-
-/**
  * Stamps each top-level skill's SKILL.md with a per-skill NBGV version.
  * Matches files like `skills/<name>/SKILL.md` (but not nested skills) and
  * calls `nbgv.getVersion()` against that skill's source directory, which
@@ -115,18 +105,17 @@ function stampPluginVersions(plugin: string) {
   });
 }
 
-function getPluginNames(): string[] {
+function getPluginDirnames(): string[] {
   return readdirSync("plugins", { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
 }
 
-function buildPlugin(plugin: string): Promise<void> {
+function buildPlugin(pluginDirname: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const pluginSourceDir = path.join("plugins", plugin);
-    const pluginDirnameOverride = pluginDirnameMap.get(plugin);
-    const pluginOutputDir = path.join("output", pluginDirnameOverride ?? plugin);
+    const pluginSourceDir = path.join("plugins", pluginDirname);
+    const pluginOutputDir = path.join("output", pluginDirname);
 
     const pipeline = src(
       [
@@ -137,18 +126,18 @@ function buildPlugin(plugin: string): Promise<void> {
       ],
       { dot: true, encoding: false, base: pluginSourceDir }
     )
-      .pipe(stampSkillVersions(plugin))
-      .pipe(stampPluginVersions(plugin))
+      .pipe(stampSkillVersions(pluginDirname))
+      .pipe(stampPluginVersions(pluginDirname))
       .pipe(dest(pluginOutputDir));
 
     pipeline.on("error", (err) => reject(err));
     pipeline.on("end", () => {
       try {
-        generateChangelog(plugin);
+        generateChangelog(pluginDirname);
         resolve();
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
-        log.error(`Failed to generate CHANGELOG.md for plugins/${plugin}.`, error);
+        log.error(`Failed to generate CHANGELOG.md for plugins/${pluginDirname}.`, error);
         reject(error);
       }
     });
@@ -158,7 +147,7 @@ function buildPlugin(plugin: string): Promise<void> {
 async function build() {
   rmSync("output", { recursive: true, force: true });
 
-  const plugins = getPluginNames();
+  const plugins = getPluginDirnames();
   if (plugins.length === 0) {
     log.warn("No plugin directories found under plugins/; skipping build.");
     return;
@@ -219,7 +208,7 @@ function generateChangelog(plugin: string): void {
     }
   }
 
-  // Find the commit that introduced plugins/<plugin>/version.json (the NBGV baseline).
+  // Find the commit that introduced plugins/<plugin-dir>/version.json (the NBGV baseline).
   const versionJsonPath = `${pluginDir}/version.json`;
   const baselineCommit = execSync(
     `git log --diff-filter=A --format=%H --first-parent -- ${versionJsonPath}`,
@@ -231,7 +220,7 @@ function generateChangelog(plugin: string): void {
     return;
   }
 
-  // Enumerate first-parent commits touching plugins/<plugin>/ from baseline (inclusive) to HEAD.
+  // Enumerate first-parent commits touching plugins/<plugin-dir>/ from baseline (inclusive) to HEAD.
   // We include the baseline itself by using baseline~1..HEAD (or just --ancestry-path from baseline).
   const logOutput = execSync(
     `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- ${pluginDir}/`,

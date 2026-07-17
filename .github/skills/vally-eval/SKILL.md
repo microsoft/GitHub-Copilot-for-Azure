@@ -56,7 +56,7 @@ Use vally-cli to run vally eval suites. In most cases, you would like to use a c
 
 ```bash
 # In tests/
-npm run test:vally -- --pluginDir $PLUGIN_DIR --skill $SKILL
+npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL
 ```
 
 See [vally test runner](/tests/run-vally-test.ts) on how it composes the vally commands under the hood.

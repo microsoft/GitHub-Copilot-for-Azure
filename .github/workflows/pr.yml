@@ -293,7 +293,7 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // Get all skill directories from output/<plugin>/skills/
+            // Get all skill directories from output/<plugin-dir>/skills/
             const outputDir = "output";
             const pluginDirs = fs.readdirSync(outputDir)
               .filter(f => fs.statSync(path.join(outputDir, f)).isDirectory());
@@ -328,7 +328,7 @@ jobs:
             const jsonSkillsStr = JSON.stringify(jsonSkills);
             if (skillDirsStr !== jsonSkillsStr) {
               console.log();
-              console.log("skills in skills.json doesn't match available skills in output/<plugin>/skills/");
+              console.log("skills in skills.json doesn't match available skills in output/<plugin-dir>/skills/");
               hasError = true;
             }
 
@@ -355,7 +355,7 @@ jobs:
             if (skillDirsStr !== scheduledSkillsStr) {
               console.log("skillDirs", JSON.stringify(skillDirs));
               console.log("scheduledSkills", JSON.stringify(scheduledSkills));
-              console.log("integrationTestSchedule in skills.json doesn't match available skills in output/<plugin>/skills/");
+              console.log("integrationTestSchedule in skills.json doesn't match available skills in output/<plugin-dir>/skills/");
               hasError = true;
             }
 
@@ -416,13 +416,13 @@ jobs:
           VALIDATION_FAILED=0
 
           # Validate built plugin skill output so version-stamped files are checked
-          echo "Validating references in ../output/<plugin>/skills"
+          echo "Validating references in ../output/<plugin-dir>/skills"
           if OUTPUT=$(npm run references 2>&1); then
             echo "$OUTPUT"
-            echo "✅ output/<plugin>/skills references are valid" >> $GITHUB_STEP_SUMMARY
+            echo "✅ output/<plugin-dir>/skills references are valid" >> $GITHUB_STEP_SUMMARY
           else
             echo "$OUTPUT"
-            echo "❌ output/<plugin>/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
+            echo "❌ output/<plugin-dir>/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY

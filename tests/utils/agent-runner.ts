@@ -127,7 +127,7 @@ export interface AgentMetadata {
 
   /**
    * Map from skill name to the sorted, deduped list of files under that skill's
-   * directory (i.e., paths under `output/<plugin>/skills/<skillName>/`) that were referenced
+   * directory (i.e., paths under `output/<plugin-dir>/skills/<skillName>/`) that were referenced
    * by tool invocations during the run.
    * Populated from tool arguments that reference files in a skill directory, and may
    * also include a synthesized `SKILL.md` entry for `skill` tool calls.
@@ -341,7 +341,7 @@ function extractSkillDirPaths(args: unknown, skillDirectories: string[]): string
  *
  * - `toolCounts` keys are raw `event.data.toolName`, excluding the `skill` pseudo-tool.
  * - `skillFiles` is populated from any tool invocation whose arguments reference
- *   a path under the given skill directory (`output/<plugin>/skills/<skill>/...`).
+ *   a path under the given skill directory (`output/<plugin-dir>/skills/<skill>/...`).
  */
 function computeToolAndSkillStats(
   events: SessionEvent[],
@@ -384,8 +384,8 @@ function computeToolAndSkillStats(
     }
 
     for (const filePath of extractSkillDirPaths(event.data.arguments, skillDirectories)) {
-      // filePath is <prefix>/output/<plugin>/<skill>/<relative-path>
-      // normalizedSkillDirs has paths like <prefix>/output/<plugin>/<skill>/<relative-path>
+      // filePath is <prefix>/output/<plugin-dir>/skills/<skill>/<relative-path>
+      // normalizedSkillDirs has paths like <prefix>/output/<plugin-dir>/skills/<skill>/<relative-path>
       const matchingSkillDir = normalizedSkillDirs.filter(dir => filePath.startsWith(dir)).at(0);
       if (matchingSkillDir) {
         const relative = filePath.slice(matchingSkillDir.length + 1);

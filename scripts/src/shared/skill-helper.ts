@@ -73,7 +73,7 @@ export type Plugin = {
    * The directory name containing the plugin files in the shared plugins directory.
    * 
    * Plugin directory name can be different from from the plugin's name.
-   * For example, the directory name of "azure" plugin has been "azure-skills". 
+   * For example, the directory name of "azure" plugin is "azure-skills". 
    * Some external marketplaces already depend on it.
    * For example, see https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L142
    * Given a plugin's directory name, we can easily retrieve its plugin name by reading the plugin.json file.
