@@ -39,7 +39,7 @@ traces
 **Fix — Terminate and purge:**
 ```bash
 # Terminate a stuck instance
-func durable terminate --id INSTANCE_ID --reason "Manual termination — stuck" \
+func durable terminate --id INSTANCE_ID --reason "Manual termination - stuck" \
   --connection-string-setting AzureWebJobsStorage --task-hub-name TASKHUB
 
 # Purge completed/terminated instances older than 7 days
@@ -77,7 +77,9 @@ exceptions
 | where timestamp > ago(24h)
 | where type contains "NonDeterministic" or
   outerMessage contains "non-deterministic" or
-  outerMessage contains "orchestrator function completed with"
+  (outerMessage contains "orchestrator function" and
+    (outerMessage contains "completed with a different result" or
+      outerMessage contains "completed with a different task count"))
 | project timestamp, operation_Name, type, outerMessage
 | order by timestamp desc
 ```
