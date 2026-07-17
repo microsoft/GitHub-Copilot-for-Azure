@@ -70,7 +70,9 @@ export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
   if (global.OUTPUT_PATH) {
     // global.OUTPUT_PATH is only defined in JEST context
     skillPath = path.join(
-      path.join(global.OUTPUT_PATH, skillRef.pluginDirname),
+      global.OUTPUT_PATH,
+      skillRef.pluginDirname,
+      "skills",
       skillRef.name
     );
   } else {
