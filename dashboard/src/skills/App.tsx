@@ -25,6 +25,7 @@ interface Skill {
     name: string;
     description: string;
     descriptionLength: number;
+    fileCount: number;
     /** Repo-relative path to the skill's SKILL.md, as reported by the collector. */
     path: string;
 }
@@ -75,7 +76,14 @@ export function skillsFromHealthData(data: HealthData): Skill[] {
         // Only plugin skills; the frontmatter check also covers .github/skills.
         if (!isPluginSkillPath(path)) continue;
         const description = String(item.metadata?.description ?? "");
-        skills.push({ name: item.name, description, descriptionLength: description.length, path });
+        const fileCount = Number(item.metadata?.fileCount ?? 0);
+        skills.push({
+            name: item.name,
+            description,
+            descriptionLength: description.length,
+            fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+            path,
+        });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -278,6 +286,9 @@ export default function App() {
                             </p>
                             <p className="skills-desc-length">
                                 Description length: {selectedSkill.descriptionLength} characters
+                            </p>
+                            <p className="skills-file-count">
+                                Files: {selectedSkill.fileCount}
                             </p>
                             {skillMdUrl(selectedSkill.path) && (
                                 <p className="skills-source-link">
