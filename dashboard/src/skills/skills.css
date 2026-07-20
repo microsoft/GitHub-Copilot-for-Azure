@@ -97,6 +97,13 @@
     text-decoration: underline;
 }
 
+.skills-issues-link a:focus-visible {
+    outline: 2px solid var(--color-focus, #3b82f6);
+    outline-offset: 2px;
+    text-decoration: underline;
+    border-radius: 2px;
+}
+
 .skills-file-count {
     margin: 0;
     color: var(--color-text-muted);

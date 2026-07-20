@@ -8,6 +8,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../shared/apiUrl";
+import { issuesUrl } from "./issuesUrl";
 import {
     buildDaySeries,
     groupByTest,
@@ -19,18 +20,6 @@ import {
 
 /** Number of trailing days shown in every graph. */
 const WINDOW_DAYS = 10;
-
-/** Repository whose issues are surfaced from each skill page. */
-const ISSUES_REPO = "microsoft/GitHub-Copilot-for-Azure";
-
-/**
- * Build a GitHub search URL for the open issues labelled with a skill's name.
- * The skill name is used verbatim as the label value.
- */
-export function issuesUrl(skillName: string): string {
-    const query = `is:issue state:open label:"${skillName}"`;
-    return `https://github.com/${ISSUES_REPO}/issues?q=${encodeURIComponent(query)}`;
-}
 
 /** A plugin skill with its description, as surfaced by the frontmatter collector. */
 interface Skill {
@@ -281,6 +270,7 @@ export default function App() {
                                     href={issuesUrl(selectedSkill.name)}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    title={`Open issues for ${selectedSkill.name} in a new tab`}
                                 >
                                     View open issues for {selectedSkill.name} ↗
                                 </a>

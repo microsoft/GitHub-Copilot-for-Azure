@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { issuesUrl } from "../App";
+import { issuesUrl } from "../issuesUrl";
 
 describe("issuesUrl", () => {
     it("points at the repo's issue search", () => {
