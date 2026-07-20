@@ -12,7 +12,7 @@
 
 set -uo pipefail
 
-# Tag azd/az telemetry
+# Tag azd telemetry
 export AZURE_DEV_USER_AGENT="microsoft_foundry_skill"
 
 ACTION_REQUIRED=0

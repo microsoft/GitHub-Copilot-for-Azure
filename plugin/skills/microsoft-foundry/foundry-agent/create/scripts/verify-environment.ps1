@@ -13,7 +13,7 @@
 
 $ErrorActionPreference = "Stop"
 
-# Tag azd/az telemetry
+# Tag azd telemetry
 $env:AZURE_DEV_USER_AGENT = "microsoft_foundry_skill"
 
 $actionRequired = $false
