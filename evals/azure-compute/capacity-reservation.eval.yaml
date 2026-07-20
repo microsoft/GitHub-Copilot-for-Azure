@@ -17,13 +17,12 @@ defaults:
   model: claude-sonnet-4.6
 
 scoring:
-  threshold: 0.8
+  threshold: 1.0
   weights:
-    output-not-matches: 0.4
-    completed: 0.2
-    # Routing validation — heavy weight because a routing miss is a
-    # categorical failure: the wrong skill ran.
-    skill-invocation: 0.4
+    output-not-matches: 0.15
+    completed: 0.15
+    skill-invocation: 0.35
+    tool-calls: 0.35
 
 stimuli:
   # ── routing-capacity-reservation-creation ──
@@ -35,7 +34,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: routing
     graders:
       - type: completed
       - type: skill-invocation
@@ -60,7 +59,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: routing
     graders:
       - type: completed
       - type: skill-invocation

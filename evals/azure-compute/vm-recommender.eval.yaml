@@ -18,14 +18,13 @@ defaults:
   model: claude-sonnet-4.6
 
 scoring:
-  threshold: 0.8
+  threshold: 1.0
   weights:
-    output-matches: 0.1
-    output-not-matches: 0.4
-    completed: 0.2
-    # Routing validation — heavy weight because a routing miss is a
-    # categorical failure: the wrong skill ran.
-    skill-invocation: 0.3
+    output-matches: 0
+    output-not-matches: 0.15
+    completed: 0.15
+    skill-invocation: 0.35
+    tool-calls: 0.35
 
 stimuli:
   # ── routing-web-workload-vm-recommender ──
@@ -37,7 +36,7 @@ stimuli:
       type: integration
       tier: smoke
       cost: llm
-      area: behavior
+      area: routing
     graders:
       - type: completed
       - type: skill-invocation
@@ -62,7 +61,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: routing
     graders:
       - type: completed
       - type: skill-invocation
@@ -87,7 +86,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: routing
     graders:
       - type: completed
       - type: skill-invocation
@@ -117,7 +116,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: behavior
+      area: routing
     graders:
       - type: completed
       - type: skill-invocation
@@ -141,7 +140,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      area: behavior
+      area: routing
       cost: llm
       skill: azure-compute
     constraints:
@@ -156,6 +155,11 @@ stimuli:
         config:
           required:
             - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-recommender\\.md"
       # Should recommend a SKU (D-series typical for 4c/16g general purpose)
       - type: output-matches
         config:

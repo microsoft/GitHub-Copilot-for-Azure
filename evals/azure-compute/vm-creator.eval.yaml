@@ -19,15 +19,16 @@ defaults:
   model: claude-sonnet-4.6
 
 scoring:
-  threshold: 0.8
+  threshold: 1.0
   weights:
+    # Routing, required workflow output, completion, and safety checks are
+    # categorical. Broad wording regexes remain diagnostic.
     output-contains: 0.1
-    output-matches: 0.1
-    output-not-matches: 0.3
-    completed: 0.2
-    # Routing validation (router smoke stimuli only) — heavy weight because
-    # a routing miss is a categorical failure: the wrong skill ran.
-    skill-invocation: 0.3
+    output-matches: 0
+    output-not-matches: 0.1
+    completed: 0.1
+    skill-invocation: 0.35
+    tool-calls: 0.35
 
 stimuli:
   # ── route-vm-creator-001 ──
@@ -39,7 +40,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      area: behavior
+      area: routing
       cost: llm
       skill: azure-compute
     constraints:
@@ -56,6 +57,11 @@ stimuli:
             - azure-compute
           disallowed:
             - azure-prepare
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       # CONTENT — should land on Ubuntu without re-asking (signal already given)
       - type: output-matches
         config:
@@ -86,7 +92,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      area: behavior
+      area: routing
       cost: llm
       skill: azure-compute
     constraints:
@@ -100,6 +106,11 @@ stimuli:
         config:
           required:
             - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-matches
         config:
           pattern: "(?i)scale.?set|VMSS"
@@ -131,7 +142,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      area: behavior
+      area: routing
       cost: llm
       skill: azure-compute
     constraints:
@@ -148,6 +159,11 @@ stimuli:
         config:
           disallowed:
             - azure-compute
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: view
+              path: "vm-creator\\.md"
       # Must NOT silently emit a VM artifact
       - type: output-not-matches
         config:
@@ -174,12 +190,21 @@ stimuli:
     tags:
       type: integration
       tier: smoke
-      area: behavior
+      area: routing
       cost: llm
       skill: azure-compute
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       # The point of this test: does the skill propose VMSS unprompted?
       - type: output-matches
         config:
@@ -221,6 +246,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-matches
         config:
           pattern: "(?i)ubuntu|22\\.04|24\\.04"
@@ -270,6 +304,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-contains
         config:
           substring: "D8s_v5"
@@ -320,6 +363,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-matches
         config:
           pattern: "(?i)Windows.?Server|2022-datacenter|MicrosoftWindowsServer"
@@ -354,8 +406,8 @@ stimuli:
   # Cost-deep branch: user wants cheapest. Should surface B-series and/or spot.
   - name: "VM cost-deep: cheapest dev VM (B-series or spot)"
     prompt: |
-      I need the absolute cheapest Linux VM for a non-critical dev workload.
-      Budget is tight — surprise me with the most cost-optimized option.
+      Create the absolute cheapest Linux VM for a non-critical dev workload.
+      Budget is tight — choose the most cost-optimized option.
     tags:
       type: integration
       tier: full
@@ -365,6 +417,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       # Must surface burstable / spot / cheap SKUs
       - type: output-matches
         config:
@@ -407,6 +468,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-matches
         config:
           pattern: "(?i)scale.?set|VMSS|Microsoft\\.Compute/virtualMachineScaleSets"
@@ -459,6 +529,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-matches
         config:
           pattern: "(?i)application gateway|app.?gateway|Microsoft\\.Network/applicationGateways"
@@ -505,6 +584,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       - type: output-matches
         config:
           pattern: "(?i)Flexible|orchestrationMode[\"']?\\s*[:=]?\\s*[\"']?Flexible"
@@ -550,6 +638,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       # Recognize the VMSS shape unprompted
       - type: output-matches
         config:
@@ -601,6 +698,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       # VMSS preferred over 5 single VMs (even for fixed-size fleets)
       - type: output-matches
         config:
@@ -651,6 +757,15 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
       # Must address the ephemeral requirement — either ephemeral OS disk
       # or explicit instance lifecycle (delete on job completion)
       - type: output-matches
@@ -684,14 +799,16 @@ stimuli:
   # Explicit-override fast path: when the user combines an explicit
   # deliverable ("give me the Bicep") with an explicit refusal of dialog
   # ("no questions"), vm-creator Step 5 says the agent MUST honor it —
-  # emit a one-line preview and the Bicep directly, no Plan Card markdown
-  # table, no "Approve as-is / edit a row" AskUserQuestion popup.
+  # emit a one-line preview and the Bicep directly when validation succeeds,
+  # with no Plan Card table or approval popup. A validation failure must stop
+  # artifact generation and explain the blocked SKU, image, region, or quota.
   # Step 4 validation gates (SKU / quota / region) still run.
   # (Earlier draft of this test enforced the opposite — Plan Card forced
   # even under explicit user override. Softened per PR 2297 review.)
-  - name: "Plan Card override: explicit 'no questions' emits Bicep directly, no popup"
+  - name: "Plan Card override: artifact or validation block, no popup"
     prompt: |
-      Skip the planning, just give me the Bicep for a Standard_D2s_v5 Linux VM
+      Skip the planning. First validate SKU availability, the image, and quota
+      in eastus, then give me the Bicep to create a Standard_D2s_v5 Linux VM
       right now. No questions.
     tags:
       type: integration
@@ -702,10 +819,31 @@ stimuli:
     constraints:
       max_turns: 40
     graders:
-      # Bicep artifact must be emitted directly
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
+            - name: "(?i)(azure-)?compute|bash|shell|terminal"
+              command: "(?i)compute_vm_list-skus|vm list-skus"
+            - name: "(?i)(azure-)?compute|bash|shell|terminal"
+              command: "(?i)compute_vm_list-images|vm image list"
+            - name: "(?i)(azure-)?compute|bash|shell|terminal"
+              command: "(?i)compute_vm_check-quota|vm list-usage"
+          disallowed:
+            - name: "(?i)(azure-)?compute"
+              command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
+            - name: "(?i)compute_vm(ss)?_create"
+            - name: "(?i)^(?:bash|shell|terminal|powershell|pwsh)$"
+              command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
+      # Emit Bicep when validation succeeds, or surface the validation block.
       - type: output-matches
         config:
-          pattern: "(?i)Microsoft\\.Compute/virtualMachines|targetScope|resource\\s+\\w+\\s+'Microsoft"
+          pattern: "(?i)Microsoft\\.Compute/virtualMachines|targetScope|resource\\s+\\w+\\s+'Microsoft|validation (gate )?(failed|failure)|(SKU|image|region|quota).*(failed|failure|blocked|restricted|unavailable|not available|not found|unsupported|insufficient|exceeded)"
       # High-signal preview must name the SKU the user asked for
       - type: output-matches
         config:
@@ -721,9 +859,6 @@ stimuli:
           pattern: "(?i)approve as.?is|edit a row"
       # Common graders
       - type: completed
-      - type: output-matches
-        config:
-          pattern: "(?i)plan|gather|step|render|propos|question|detail|default|design|configure|recommend|fast.?path|scale.?set|VMSS|ask|option|choose"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|crashed|exception occurred"
@@ -736,3 +871,97 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)adminPassword[\"']?\\s*[:=]\\s*[\"'][A-Za-z0-9!@#$%]{4,}[\"']"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)deployment (completed|succeeded)|provisioningState.*Succeeded"
+
+  # Apply is always gated, even when the user already chose the output mode.
+  - name: "Apply preference: Plan Card approval before Azure MCP deployment"
+    prompt: |
+      Create a small Ubuntu 24.04 VM named validation-vm in eastus using
+      Standard_B2s in a new validation-vm-rg resource group. Use SSH from my
+      public IP, no tags, and Apply via Azure MCP as the output choice. Follow
+      the standard workflow and stop at the next required user decision.
+    tags:
+      type: integration
+      tier: full
+      area: behavior
+      cost: llm
+      skill: azure-compute
+      followUp:
+        - "Do not approve or deploy. If validation found blockers, use your first recommended available region and SKU; otherwise keep my original values. Continue only until you render the updated Plan Card and ask for approval, then stop."
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
+            - name: view
+              path: "output-adapters/mcp-apply\\.md"
+          disallowed:
+            - name: "(?i)(azure-)?compute"
+              command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
+            - name: "(?i)compute_vm(ss)?_create"
+            - name: "(?i)^(?:bash|shell|terminal|powershell|pwsh)$"
+              command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
+      - type: output-contains
+        config:
+          substring: "Plan Card"
+      - type: output-contains
+        config:
+          substring: "approve"
+      - type: output-contains
+        config:
+          substring: "Apply via Azure MCP"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)deployment (completed|succeeded)|provisioningState.*Succeeded"
+
+  - name: "Implicit VMSS: autoscaling web fleet without VMSS terminology"
+    prompt: |
+      Create an autoscaling web tier in Azure with 3 to 20 identical Ubuntu
+      instances behind a load balancer. Use Bicep, and stop for my Plan Card
+      approval before generating or deploying anything.
+    tags:
+      type: integration
+      tier: full
+      area: routing
+      cost: llm
+      skill: azure-compute
+      followUp:
+        - "Use eastus, my existing SSH public key if present, and safe defaults for remaining choices. If validation finds a blocker, use your first recommended available alternative. Continue only until you render the Plan Card for the VMSS, then stop without generating or deploying."
+    constraints:
+      max_turns: 40
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "vm-creator\\.md"
+          disallowed:
+            - name: "(?i)(azure-)?compute"
+              command: "(?i)compute_vm(ss)?_create|vm(ss)? create"
+            - name: "(?i)compute_vm(ss)?_create"
+            - name: "(?i)^(?:bash|shell|terminal|powershell|pwsh)$"
+              command: "(?i)(^|[;&|]\\s*|\\r?\\n\\s*)az\\s+(?:[\\w-]+\\s+){0,3}create\\b|(^|[;&|]\\s*|\\r?\\n\\s*)terraform\\s+apply\\b|New-Az(VM|Vmss|Deployment|ResourceGroupDeployment|SubscriptionDeployment|ManagementGroupDeployment|TenantDeployment)\\b"
+      - type: output-contains
+        config:
+          substring: "VMSS"
+      - type: output-contains
+        config:
+          substring: "Plan Card"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)deployment (completed|succeeded)|provisioningState.*Succeeded"

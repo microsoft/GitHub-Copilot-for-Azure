@@ -64,13 +64,15 @@ Outcomes:
 
 Ask: *"Approve as-is, edit a row, or change output format?"* — do not generate until approved.
 
-**Explicit-override fast path.** If the user's prompt combines (a) an explicit deliverable ("give me the Bicep", "just print the az CLI", "apply it via MCP") **and** (b) an explicit refusal of dialog ("no questions", "skip planning", "no plan", "just do it"), **respect them**. Skip the Plan Card table and the approval AskUserQuestion. Instead:
+**Explicit-override fast path (artifact output only).** If the user's prompt combines (a) an explicit non-destructive deliverable ("give me the Bicep", "just print the az CLI", "print Terraform") **and** (b) an explicit refusal of dialog ("no questions", "skip planning", "no plan", "just do it"), **respect them**. Skip the Plan Card table and the approval AskUserQuestion. Instead:
 
 1. Emit a **single-line preview** that surfaces the high-signal decisions inline — e.g. *"→ Deploying `Standard_D2s_v5` in `eastus`, OS `Ubuntu2404`, NSG = your public IP only on 22, est. ~$70/mo."*
-2. Immediately emit the requested artifact (Bicep / Terraform / az CLI / MCP apply).
+2. Immediately emit the requested artifact (Bicep / Terraform / az CLI).
 3. Mention once, at the end, that the full Plan Card is available on request if they want to edit rows.
 
 Step 4 validation gates (SKU / image / quota / region) still run on the fast path — they protect against broken artifacts, not user intent. If validation fails, fall back to the ❌ outcome in Step 4 (propose alternate SKU/region, do not generate output).
+
+**Live apply is never eligible for the fast path.** Require the full Plan Card approval and Step 6 confirmation before any create tool.
 
 ### Step 6 — Output Choice
 
@@ -83,7 +85,7 @@ Ask the user to pick one of four formats (or use the one they already specified)
 | **Terraform** | Existing TF state, multi-cloud | [terraform.md](references/output-adapters/terraform.md) |
 | **Apply via Azure MCP** | "Just do it" — MCP connected, user trusts the Plan Card | [mcp-apply.md](references/output-adapters/mcp-apply.md) |
 
-All four adapters consume the **same Plan Card parameter set** — switching format is a re-render, not a re-gather. For Apply via MCP, confirm one more time (the only destructive path) before calling `compute_vm_create` / `compute_vmss_create`.
+All adapters consume the **same Plan Card parameter set**. For Apply via MCP, confirm after Plan Card approval and before `compute_vm_create` / `compute_vmss_create`; "just do it" is not confirmation.
 
 ### Step 7 — Delivery
 
