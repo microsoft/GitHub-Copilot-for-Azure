@@ -1,5 +1,5 @@
 /** Repository whose issues are surfaced from each skill page. */
-export const ISSUES_REPO = "microsoft/GitHub-Copilot-for-Azure";
+const ISSUES_REPO = "microsoft/GitHub-Copilot-for-Azure";
 
 /**
  * Build a GitHub search URL for the open issues labelled with a skill's name.
