@@ -19,7 +19,7 @@
 /plugin/skills/azure-cost/ @saikoumudi @RickWinter
 /plugin/skills/azure-deploy/ @microsoft/github-copilot-for-azure-writers @paulyuk
 /plugin/skills/azure-diagnostics/ @tmeschter @saikoumudi @RickWinter
-/plugin/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @RickWinter
+/plugin/skills/azure-enterprise-infra-planner/ @micha31r @arunrab @RickWinter
 /plugin/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @RickWinter
 /plugin/skills/azure-kusto/ @saikoumudi @RickWinter
 /plugin/skills/azure-messaging/ @kashifkhan @RickWinter
