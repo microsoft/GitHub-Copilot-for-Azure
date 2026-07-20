@@ -6,7 +6,8 @@
  */
 
 import { execSync } from "node:child_process";
-import { resolve } from "node:path";
+import { readdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import type {
   Collector,
   CollectorOptions,
@@ -40,7 +41,50 @@ interface FrontmatterJsonResult {
   };
 }
 
-const COLLECTOR_VERSION = "1.0.0";
+const COLLECTOR_VERSION = "1.1.0";
+
+/**
+ * Count files (not directories) recursively under `dir`.
+ *
+ * Returns 0 when the directory is missing or unreadable. Nested sub-skill
+ * files are intentionally included so a parent skill's count reflects every
+ * file shipped under its directory in the built output.
+ */
+function countFilesRecursive(dir: string): number {
+  let count = 0;
+  let entries;
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+  for (const entry of entries) {
+    const full = resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      count += countFilesRecursive(full);
+    } else if (entry.isFile()) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/**
+ * Populate `metadata.fileCount` on each item from the number of files in the
+ * built/output skill directory (the directory containing the skill's
+ * SKILL.md, as recorded in `metadata.path`). Mutates and returns `report`.
+ */
+function addFileCounts(report: CategoryReport, cwd: string): CategoryReport {
+  for (const item of report.items) {
+    const path = item.metadata?.path;
+    if (typeof path !== "string" || path.length === 0) continue;
+    const skillDir = resolve(cwd, dirname(path));
+    const metadata = item.metadata ?? {};
+    metadata.fileCount = countFilesRecursive(skillDir);
+    item.metadata = metadata;
+  }
+  return report;
+}
 
 function mapStatus(status: "pass" | "fail" | "warn"): CategoryStatus {
   return status;
@@ -137,7 +181,7 @@ export const frontmatterCollector: Collector = {
 
       if (typeof execErr.stdout === "string" && execErr.stdout.trim().length > 0) {
         try {
-          return parseFrontmatterJson(execErr.stdout);
+          return addFileCounts(parseFrontmatterJson(execErr.stdout), options.cwd);
         } catch {
           // Fall through to the skip report below when stdout is not valid JSON.
         }
@@ -152,6 +196,6 @@ export const frontmatterCollector: Collector = {
       };
     }
 
-    return parseFrontmatterJson(stdout);
+    return addFileCounts(parseFrontmatterJson(stdout), options.cwd);
   },
 };

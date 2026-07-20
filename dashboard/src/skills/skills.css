@@ -83,6 +83,12 @@
     font-size: 0.9rem;
 }
 
+.skills-file-count {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
 .skills-tests-heading {
     margin: 1.5rem 0 0.75rem;
     font-size: 1.15rem;
