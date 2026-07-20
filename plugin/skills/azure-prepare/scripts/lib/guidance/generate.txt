@@ -1,0 +1,92 @@
+Generate infrastructure and configuration files for the selected recipe. Research
+(prior step) MUST be complete and its findings applied.
+
+✅ FIRST — .NET Aspire (`auto.componentSignals.aspire` true): the DRIVER already ran
+`azd init --from-code -e <env>` for you — do NOT run it yourself and do NOT hand-create
+azure.yaml or infra/ files. Read `auto.azdInit` = {ran, ok, envName, servicesFound,
+reason}:
+  - `ok:false` with reason `azd not available` → azd CLI is missing: record a blocker and
+    STOP (do NOT hand-author artifacts).
+  - `ok:false` with reason `unsupported-resource-type` → the AppHost uses a resource azd
+    can't map: hard stop, record a blocker, do NOT patch the source.
+  - `ok:false` with any other reason → `azd init` failed: record a blocker and STOP.
+  - `ok:true` but `servicesFound:false` → the generated azure.yaml has no deployable
+    `services:` (AppHost has only local-only resources via `.ExcludeFromManifest()`):
+    record a blocker and STOP, do NOT hand-author artifacts to work around it.
+  - `ok:true` and `servicesFound:true` → proceed. For Aspire + Azure Functions, add
+    `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` to the
+    `AddAzureFunctionsProject` chain (an AppHost source edit) before `azd up`.
+Subscription/location/principal env values are applied programmatically after this step —
+do NOT run `azd env set` yourself. See `scripts/references/aspire.md` and
+`scripts/references/recipes/azd/aspire.md`. Manually authoring azure.yaml for Aspire is the
+most common deployment failure.
+
+Other special patterns: complex existing codebase → consider `azd init --from-code`;
+existing azure.yaml (`auto.existingInfra.azureYaml`) → MODIFY the existing config.
+
+⛔ Global rules (see `scripts/references/global-rules.md`): destructive actions
+(delete/overwrite/purge/expensive provisioning/RBAC changes) ALWAYS require `ask_user`
+first — never delete the user's project or workspace directory. `azd init -t <template>`
+is for NEW projects only: run it ONLY in an empty/new directory. To re-init an existing
+project, scaffold in a separate new dir and migrate changes in with confirmed edits;
+`azd init` WITHOUT a template arg is fine in existing workspaces.
+
+⛔ If the target compute is Azure Functions, the DRIVER already fetched the starter template
+for you (from the trigger/language in `input.functionsTemplate`) — do NOT fetch the template
+yourself and do NOT hand-write Bicep/Terraform. Read
+`auto.functionsTemplate` = {fetched, id, placement, path, files, reason}:
+  - `fetched:true`, `placement:"repo-root"` → the template (functions + `infra/` + azure.yaml)
+    was extracted into the repo root. Review `files[]`, wire in the app logic, and apply any
+    required Functions edits (e.g. secret-storage type, managed identity) — do NOT recreate infra.
+  - `fetched:true`, `placement:"staging"` → template extracted to `path` (a staging dir);
+    selectively MERGE its infra/config into the existing project (never clobber user code).
+  - `fetched:false`, reason `no-template-use-references` → no matching template exists (e.g. a
+    Terraform trigger with no template). Load
+    `scripts/references/services/functions/templates/selection.md` and
+    `scripts/references/services/functions/templates/recipes/composition.md`, then generate from
+    those reference patterns.
+  - `fetched:false`, reason `fetch-failed` → the driver could not retrieve a template: fall back
+    to the reference patterns above.
+  The Functions bicep.md/terraform.md files are REFERENCE DOCS, not templates to copy —
+  hand-writing from them yields missing RBAC and broken managed identity.
+For other compute (Container Apps, App Service, Static Web Apps) load their
+`scripts/references/services/<service>/README.md`. Load the selected recipe's README (above)
+for detailed generation steps.
+
+Before generating IaC, research best practices via MCP (per recipe):
+  - Bicep recipes (AZD Bicep / AZCLI / Bicep): `mcp_bicep_get_bicep_best_practices`,
+    `mcp_bicep_list_avm_metadata`, `mcp_bicep_get_az_resource_type_schema`.
+  - Terraform recipes (AZD Terraform / Terraform): `mcp_azure_mcp_azureterraformbestpractices`.
+  - General: `mcp_azure_mcp_get_azure_bestpractices`.
+  AVM module selection order is MANDATORY: prefer AVM Pattern modules → AVM Resource
+  modules → AVM Utility modules (same order for Bicep and Terraform); only fall back to
+  non-AVM when no AVM module exists. See the recipe README + iac-rules.md for detail.
+
+Generation order: (1) azure.yaml (AZD only) → (2) app code scaffolding (entry points,
+health endpoints) → (3) Dockerfiles (if containerized) → (4) IaC in ./infra/ →
+(5) CI/CD (if requested). Typical layout: .azure/, infra/{main.bicep|main.tf,modules/},
+src/<component>/Dockerfile, azure.yaml.
+
+⚠️ Create the full directory tree (`mkdir -p`) BEFORE writing files — the `create`
+tool does NOT make parent directories. The script already scaffolded the `infra/` tree
+and a standard parameters stub for the selected recipe — see `auto.scaffold` for the
+files it created (do NOT recreate them; fill in `infra/main.bicep`/`main.tf` + modules).
+
+Security requirements (MANDATORY):
+  - No hardcoded secrets; Key Vault for sensitive values; Managed Identity for auth;
+    HTTPS only, TLS 1.2+.
+  - SQL Server Bicep MUST use Entra-only auth — omit administratorLogin /
+    administratorLoginPassword entirely (incl. conditional branches); these names must
+    not appear in any .bicep. See `scripts/references/services/sql-database/bicep.md`.
+  - SQL + Managed Identity → MUST generate scripts/grant-sql-access.sh + .ps1 and a
+    `postprovision` hook in azure.yaml (ARM role assignments only grant control-plane).
+    The script already sets `AZURE_PRINCIPAL_ID`/`AZURE_PRINCIPAL_NAME` in the azd env
+    (from `auto.principalId`/`auto.principalName`) — do NOT run `az ad signed-in-user show`
+    or `azd env set AZURE_PRINCIPAL_ID` yourself. grant-sql-access scripts should resolve
+    the principal at RUNTIME (not hardcode an id) so they work for whoever runs them.
+  - App Service Bicep → every Microsoft.Web/sites MUST carry
+    tags: union(tags, { 'azd-service-name': serviceName }) or `azd deploy` can't find it.
+  - Containerized apps → apply runtime production settings (e.g. `scripts/references/runtimes/nodejs.md`).
+
+After generation: record the generated file list in `.azure/deployment-plan.md`.
+Set `input.generateDone` to true when artifacts are written.

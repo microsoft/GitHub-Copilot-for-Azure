@@ -1,0 +1,27 @@
+The script already auto-detected (see `auto.*`):
+  - `auto.detectedLanguages`  — nodejs/dotnet/python/java/go/rust
+  - `auto.detectedFrameworks` — react/next/express/flask/django/fastapi/etc.
+  - `auto.existingInfra`      — azureYaml/bicep/terraform/dockerfile/githubActions/azurePipelines
+  - `auto.componentSignals`   — aspire / azureFunctions / pureStaticSite
+
+Review the code and classify each component. Map signals to component types:
+  - React/Vue/Angular in package.json        → SPA Frontend
+  - Only .html/.css/.js, no package.json       → Pure Static Site
+  - Express/Fastify/Koa, Flask/FastAPI/Django → API Service
+  - Next.js/Nuxt                               → SSR Web App
+  - Celery/Bull/Agenda                         → Background Worker
+  - azure-functions SDK                        → Azure Function
+  - *.AppHost.csproj / Aspire.Hosting / #:sdk Aspire.AppHost.Sdk → .NET Aspire App
+
+Caveats:
+  - Pure Static Site (`auto.componentSignals.pureStaticSite` true): do NOT add a
+    `language` field to azure.yaml — it triggers unwanted build steps.
+  - .NET Aspire (`auto.componentSignals.aspire` true): the driver runs
+    `azd init --from-code -e <env>` for you at the generate step (never hand-author
+    azure.yaml). If the AppHost calls `AddAzureFunctionsProject`, you MUST add
+    `.WithEnvironment("AzureWebJobsSecretStorageType", "Files")` before deploy.
+    See `scripts/references/aspire.md` for the full procedure.
+
+Set `input.components` to an array of objects:
+  [ { "name": "...", "type": "Frontend|API|Worker|Function|Aspire|Static|...",
+      "technology": "...", "path": "...", "dependsOn": ["PostgreSQL", "api", ...] } ]

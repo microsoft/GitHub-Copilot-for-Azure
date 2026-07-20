@@ -1,0 +1,5 @@
+Present `.azure/deployment-plan.md` (the script just generated/updated it) to the user
+and ask for explicit approval. Do NOT proceed without it.
+Set `input.userApproved` to true once the user approves (false/keep null to revise).
+If the user requests changes, update the relevant `input.*` fields and re-run so the
+plan regenerates before asking again.

@@ -1,0 +1,30 @@
+Use `ask_user` to gather deployment requirements, then record them. Confirm each
+of: classification, scale, budget, and compliance/data-residency needs.
+
+Classification (drives reliability + monitoring footprint):
+  - POC          → minimal infra, cost-optimized
+  - Development   → balanced, team-focused internal tooling
+  - Production    → full reliability, monitoring, customer-facing
+
+Scale (drives SKUs + redundancy):
+  - Small  (<1K users)     → single region, basic SKUs
+  - Medium (1K-100K users) → auto-scaling, multi-zone
+  - Large  (100K+ users)   → multi-region, premium SKUs
+
+Budget (drives SKU tier):
+  - Cost-Optimized → minimize spend, lower SKUs
+  - Balanced        → value for money, standard SKUs
+  - Performance     → maximum capability, premium SKUs
+
+Compliance (drives region + security controls): data residency (region
+constraints), industry regulations (security controls), internal policies
+(approval workflows).
+
+Set `input.requirements` to an object:
+  { "classification": "POC|Development|Production",
+    "scale": "Small|Medium|Large",
+    "budget": "Cost-Optimized|Balanced|Performance",
+    "compliance": "free text, or 'None' " }
+
+Note: Azure Policy enforcement constraints are gathered separately in the
+azure-context step once a subscription is confirmed.

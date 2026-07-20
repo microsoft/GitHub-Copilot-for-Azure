@@ -1,2 +1,4 @@
 .github/workflows/*.lock.yml linguist-generated=true merge=ours
 *.sh text eol=lf
+# Shared azure-prepare guidance text is read by the Bash driver; keep LF.
+plugin/skills/azure-prepare/scripts/lib/guidance/*.txt text eol=lf
