@@ -37,6 +37,7 @@ interface Skill {
     name: string;
     description: string;
     descriptionLength: number;
+    fileCount: number;
 }
 
 /** Minimal shape of the health data returned by /api/static. */
@@ -62,7 +63,13 @@ function skillsFromHealthData(data: HealthData): Skill[] {
         // Only plugin skills; the frontmatter check also covers .github/skills.
         if (!isPluginSkillPath(path)) continue;
         const description = String(item.metadata?.description ?? "");
-        skills.push({ name: item.name, description, descriptionLength: description.length });
+        const fileCount = Number(item.metadata?.fileCount ?? 0);
+        skills.push({
+            name: item.name,
+            description,
+            descriptionLength: description.length,
+            fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+        });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -265,6 +272,9 @@ export default function App() {
                             </p>
                             <p className="skills-desc-length">
                                 Description length: {selectedSkill.descriptionLength} characters
+                            </p>
+                            <p className="skills-file-count">
+                                Files: {selectedSkill.fileCount}
                             </p>
                             <p className="skills-issues-link">
                                 <a
