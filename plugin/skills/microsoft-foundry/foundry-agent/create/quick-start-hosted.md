@@ -39,7 +39,8 @@ Two pre-flight checks — run each script and act on its `[OK]` / `[WARN]` / `[A
 - **No `[ACTION]`** (only `[OK]`/`[WARN]`) — the gate doesn't apply (not in the Copilot app, or the canvas isn't installed). Continue to 1b.
 - **`[ACTION]`** — the gate applies. Check `<canvas-context>`:
   - **`canvas="agent-builder"` present** — canvas is already open; do **not** call `open_canvas`. If the user's prompt includes project/subscription details, continue to 1b. Otherwise remind and **stop**: **The Foundry Agent Canvas is already open — sign in, select a subscription + Foundry project, then Send.**
-  - **`canvas="agent-builder"` absent** — call `open_canvas` (`canvasId: "agent-builder"`), remind and **stop**: **You can create the agent in the open canvas: sign in, select a subscription + Foundry project, then Send.**
+  - **`<canvas-context>` present, `canvas="agent-builder"` absent** — canvas is not open; call `open_canvas` (`canvasId: "agent-builder"`), remind and **stop**: **You can create the agent in the open canvas: sign in, select a subscription + Foundry project, then Send.**
+  - **`<canvas-context>` entirely absent** — do **not** call `open_canvas`; if the user's prompt includes project details, continue to 1b. Otherwise ask whether the canvas is already open.
 
 **1b — Tooling & auth.** Run the bundled script:
 
