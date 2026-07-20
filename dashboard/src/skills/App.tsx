@@ -237,6 +237,10 @@ export default function App() {
         () => skills.find((s) => s.name === selected),
         [skills, selected],
     );
+    const selectedSkillMdUrl = useMemo(
+        () => (selectedSkill ? skillMdUrl(selectedSkill.path) : null),
+        [selectedSkill],
+    );
     const byTest = useMemo(() => groupByTest(rows), [rows]);
 
     const handleSelect = (name: string) => {
@@ -290,10 +294,10 @@ export default function App() {
                             <p className="skills-file-count">
                                 Files: {selectedSkill.fileCount}
                             </p>
-                            {skillMdUrl(selectedSkill.path) && (
+                            {selectedSkillMdUrl && (
                                 <p className="skills-source-link">
                                     <a
-                                        href={skillMdUrl(selectedSkill.path) as string}
+                                        href={selectedSkillMdUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
