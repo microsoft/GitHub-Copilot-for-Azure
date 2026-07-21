@@ -39,16 +39,16 @@ stimuli:
   # ── integration-diversity.test.ts ──────────────────────────────────
   # test: e2e — postgresql-event-sourcing (Java/Spring Boot + Kafka)
   - name: "Dependency Compat - Java Spring Boot"
-    turns:
-      - "Can you check if my dependencies are compatible with Azure?"
-      - "Continue without fixing — complete the dependency and readiness assessment."
-      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
+    prompt: "Can you check if my dependencies are compatible with Azure?"
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
+      followUp:
+        - "Continue without fixing — complete the dependency and readiness assessment."
+        - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     environment:
       commands:
         - git init -q
@@ -176,16 +176,16 @@ stimuli:
 
   # test: e2e — fullstack-starter (4-component monorepo + GCP migration)
   - name: "Diversity - Monorepo Multi-Component Blockers"
-    turns:
-      - "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
-      - "Yes, scan all components and complete the readiness assessment."
-      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
+    prompt: "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes, scan all components and complete the readiness assessment."
+        - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     environment:
       commands:
         - git init -q
@@ -308,16 +308,16 @@ stimuli:
 
   # test: e2e — docker-static-site (Dockerfile + static)
   - name: "Readiness - Dockerfile Static Site"
-    turns:
-      - "Is my app ready to deploy to Azure? Scan for any issues."
-      - "Continue without fixing — just complete the readiness assessment."
-      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
+    prompt: "Is my app ready to deploy to Azure? Scan for any issues."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
+      followUp:
+        - "Continue without fixing — just complete the readiness assessment."
+        - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     environment:
       commands:
         - git init -q
@@ -375,16 +375,16 @@ stimuli:
 
   # test: e2e — wetty (completeness check: entry points, deps, config)
   - name: "Readiness - Wetty Completeness Check"
-    turns:
-      - "What do I need before I can deploy to Azure?"
-      - "Continue without fixing — just complete the readiness assessment."
-      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
+    prompt: "What do I need before I can deploy to Azure?"
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
+      followUp:
+        - "Continue without fixing — just complete the readiness assessment."
+        - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     environment:
       commands:
         - git init -q
@@ -442,16 +442,16 @@ stimuli:
 
   # test: e2e — full-stack-fastapi-template (multi-component: React frontend + FastAPI backend)
   - name: "Readiness - FastAPI Multi-Component"
-    turns:
-      - "Can you scan my repo and tell me if there are any blockers for deployment?"
-      - "Continue without fixing — scan all components and complete the assessment."
-      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
+    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
+      followUp:
+        - "Continue without fixing — scan all components and complete the assessment."
+        - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     environment:
       commands:
         - git init -q
@@ -939,16 +939,16 @@ stimuli:
 
   # test: invocation rate — dockerfile prerequisite prompt
   - name: "Routing - Dockerfile Prerequisite"
-    turns:
-      - "Do I need a Dockerfile before deploying to Azure?"
-      - "Please complete the prerequisite readiness check."
-      - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
+    prompt: "Do I need a Dockerfile before deploying to Azure?"
     tags:
       type: integration
       tier: smoke
       cost: llm
       area: routing
       skill: azure-app-onboard-prereq
+      followUp:
+        - "Please complete the prerequisite readiness check."
+        - "Before we wrap up, give me a short recap: the languages/frameworks and Azure services you detected, the main components and their dependencies, the overall readiness verdict, and the recommended next steps to deploy."
     constraints:
       max_turns: 1
     graders:

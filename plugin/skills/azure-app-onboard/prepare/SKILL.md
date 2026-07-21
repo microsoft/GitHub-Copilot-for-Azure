@@ -1,12 +1,3 @@
----
-name: prepare
-description: "Maps detected application components to Azure services, selects budget-aware SKUs, estimates monthly costs via Azure Retail Prices API, validates subscription quota capacity, and produces prepare-plan.json for scaffold consumption."
-license: MIT
-metadata:
-  author: Microsoft
-  version: "0.0.0-placeholder"
----
-
 # Prepare — Architecture Planning & Cost Estimation
 
 ## Quick Reference

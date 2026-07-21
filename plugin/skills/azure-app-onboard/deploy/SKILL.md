@@ -1,12 +1,3 @@
----
-name: deploy
-description: "Validates IaC, runs preflight checks, presents an approval gate with cost and resource summary, executes Bicep or Terraform deployment, performs post-deploy health checks, and writes deploy-result.json."
-license: MIT
-metadata:
-  author: Microsoft
-  version: "0.0.0-placeholder"
----
-
 # Deploy — IaC Execution & Health Verification
 
 ## Quick Reference

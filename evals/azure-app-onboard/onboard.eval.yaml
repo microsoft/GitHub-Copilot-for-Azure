@@ -49,7 +49,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: onboard-invocation-mvp
+      category: onboard-invocation-mvp
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -76,7 +76,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: onboard-invocation-firsttime
+      category: onboard-invocation-firsttime
       skill: azure-app-onboard
       earlyTerminate: '[{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":15}]'
     constraints:
@@ -98,7 +98,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: onboard-invocation-onboarding
+      category: onboard-invocation-onboarding
       skill: azure-app-onboard
       earlyTerminate: '[{"type":"skill-call","skill":"azure-app-onboard"},{"type":"tool-call-count","count":15}]'
     constraints:
@@ -120,7 +120,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: onboard-invocation-greenfield
+      category: onboard-invocation-greenfield
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -170,7 +170,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: safety
-      debug: onboard-negative-unsupported
+      category: onboard-negative-unsupported
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -225,7 +225,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: safety
-      debug: onboard-negative-broken
+      category: onboard-negative-broken
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -279,7 +279,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: safety
-      debug: onboard-negative-dvwa
+      category: onboard-negative-dvwa
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -341,7 +341,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: remediation
-      debug: onboard-remediation-broken
+      category: onboard-remediation-broken
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -411,7 +411,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: pipeline
-      debug: onboard-pipeline-resume
+      category: onboard-pipeline-resume
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -454,7 +454,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: pipeline
-      debug: onboard-pipeline-intentstall
+      category: onboard-pipeline-intentstall
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -481,7 +481,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: pipeline
-      debug: onboard-pipeline-zerocode
+      category: onboard-pipeline-zerocode
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -522,7 +522,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: catalog
-      debug: onboard-catalog-simple
+      category: onboard-catalog-simple
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -589,7 +589,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: catalog
-      debug: onboard-catalog-microblog
+      category: onboard-catalog-microblog
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -638,7 +638,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: catalog
-      debug: onboard-catalog-fastapi
+      category: onboard-catalog-fastapi
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."

@@ -39,7 +39,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: prepare-delegation-arch
+      category: prepare-delegation-arch
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -69,7 +69,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: prepare-delegation-sku
+      category: prepare-delegation-sku
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -103,7 +103,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: output
-      debug: prepare-cost-depth
+      category: prepare-cost-depth
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -174,7 +174,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: output
-      debug: prepare-depth-schema
+      category: prepare-depth-schema
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -243,7 +243,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: output
-      debug: prepare-depth-quota
+      category: prepare-depth-quota
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -298,7 +298,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: output
-      debug: prepare-map-go
+      category: prepare-map-go
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -364,7 +364,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: prepare-map-aws-migrate
+      category: prepare-map-aws-migrate
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -416,7 +416,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: routing
-      debug: prereq-cloudsdk-continue
+      category: prereq-cloudsdk-continue
       skill: azure-app-onboard
       followUp:
         - "Continue anyway"
@@ -479,7 +479,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: output
-      debug: prepare-map-yamtrack
+      category: prepare-map-yamtrack
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -540,7 +540,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: output
-      debug: prepare-map-kafka
+      category: prepare-map-kafka
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."

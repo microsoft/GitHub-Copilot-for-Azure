@@ -45,7 +45,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: scaffold
-      debug: scaffold-bicep-gen
+      category: scaffold-bicep-gen
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -57,7 +57,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:(?:^|&&|;|\\|)\\s*(?:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -113,7 +113,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: scaffold
-      debug: scaffold-existing-foundry
+      category: scaffold-existing-foundry
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -126,7 +126,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:(?:^|&&|;|\\|)\\s*(?:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -166,14 +166,14 @@ stimuli:
       tier: full
       cost: llm+execute
       area: scaffold
-      debug: scaffold-existing-mongo
+      category: scaffold-existing-mongo
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:(?:^|&&|;|\\|)\\s*(?:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -212,7 +212,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: scaffold
-      debug: scaffold-existing-bicep
+      category: scaffold-existing-bicep
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -222,7 +222,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:(?:^|&&|;|\\|)\\s*(?:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -264,7 +264,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: scaffold
-      debug: scaffold-security-baseline
+      category: scaffold-security-baseline
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -276,7 +276,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:(?:^|&&|;|\\|)\\s*(?:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -363,7 +363,7 @@ stimuli:
       tier: full
       cost: llm+execute
       area: scaffold
-      debug: scaffold-mysql-conformance
+      category: scaffold-mysql-conformance
       skill: azure-app-onboard
       followUp:
         - "Just go with defaults using my current subscription."
@@ -375,7 +375,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:(?:^|&&|;|\\|)\\s*(?:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q

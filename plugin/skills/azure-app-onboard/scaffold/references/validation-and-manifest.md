@@ -13,10 +13,10 @@ Do NOT auto-generate workflow files or create branches/PRs. Scaffold only writes
 Run these checks directly. All must pass.
 
 **11a. Bicep compilation:**
-```bash
+```powershell
 az bicep build --file infra/main.bicep --stdout > $null
 ```
-Pass: exit 0. Fail: fix errors and retry.
+(Bash: redirect to `/dev/null` instead of `$null`.) Pass: exit 0. Fail: fix errors and retry.
 
 **11b. Static RBAC review** — review generated Bicep for correct role assignments per [rbac-roles.md](rbac-roles.md). Every managed identity ↔ resource pair must have a `Microsoft.Authorization/roleAssignments` resource with the correct role GUID.
 
@@ -42,7 +42,7 @@ Pass: exit 0. Fail: fix errors and retry.
 
 ⛔ **You MUST read [`scaffold-schemas.ts`](scaffold-schemas.ts)** to get the exact `ScaffoldManifest` interface. Write to the session folder with ALL fields populated: `files[]`, `selfReview.findings[]`, AND `validationResult` (from Step 11). This is a single write — validation is already complete.
 
-> ⛔ **Phase exit gate: `scaffold-manifest.json.validationResult` MUST NOT be null.** If validation ran: `{ status: 'Passed'/'Failed', details }`. If skipped: `{ status: 'Skipped', reason }`. Null = incomplete scaffold.
+> ⛔ **Phase exit gate: `scaffold-manifest.json.validationResult` MUST NOT be null.** If validation ran: `{ status: 'Validated'/'Partial'/'Failed', details }` (per `ValidationResult` in [`scaffold-schemas.ts`](scaffold-schemas.ts)). Null = incomplete scaffold.
 
 **You MUST also update `context.json`** per `AppOnboardContext` in [`session-schemas.ts`](../../references/session-schemas.ts): append `"scaffold"` to `completedPhases`, set `currentPhase` to `"deploy"`, update `lastModifiedUtc`.
 

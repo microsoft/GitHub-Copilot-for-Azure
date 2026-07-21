@@ -1,12 +1,3 @@
----
-name: scaffold
-description: "Generate deployment-ready IaC (Bicep default, Terraform alt) and Dockerfiles from prepare-plan.json. 4-layer adversarial self-review, self-healing validation loop (max 3 attempts), writes scaffold-manifest.json. WHEN: \"prepare phase complete\", \"generate infrastructure code\", \"scaffold IaC\", \"create Bicep templates\", \"create Terraform modules\", \"generate Dockerfiles\". DO NOT USE FOR: user-triggered IaC without a prepare-plan (use azure-prepare), subscription-scope landing zones (use azure-enterprise-infra-planner)."
-license: MIT
-metadata:
-  author: Microsoft
-  version: "0.0.0-placeholder"
----
-
 # Azure App Onboard Scaffold — IaC Generation + Self-Review
 
 Generate deployment-ready infrastructure code from an architecture plan, verify it with adversarial self-review, and bridge to validation — all without deploying.

@@ -45,7 +45,7 @@ stimuli:
       tier: full
       cost: azure
       area: e2e-deployment
-      debug: fasttrack-html
+      category: fasttrack-html
       skill: azure-app-onboard
       # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'

@@ -39,7 +39,7 @@ stimuli:
       tier: full
       cost: azure
       area: deployment
-      debug: deploy-verify-appservice
+      category: deploy-verify-appservice
       skill: azure-app-onboard
       # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
@@ -225,7 +225,7 @@ stimuli:
       tier: full
       cost: azure
       area: deployment
-      debug: deploy-verify-containerapps
+      category: deploy-verify-containerapps
       skill: azure-app-onboard
       # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
