@@ -76,9 +76,16 @@ kubectl cluster-info
 kubectl get nodes -o wide
 kubectl get pods -n kube-system
 kubectl get events -A --sort-by=.lastTimestamp
-kubectl describe pod <pod-name> -n <namespace>
-kubectl logs <pod-name> -n <namespace> --previous
 ```
+
+For unhealthy pods, gather the full read-only evidence bundle (describe, current + previous logs, resources vs usage) with the pod-evidence script instead of running the commands one by one — [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) / [`../../scripts/pod-evidence.ps1`](../../scripts/pod-evidence.ps1):
+
+```bash
+../../scripts/pod-evidence.sh <pod-name> -n <namespace>
+../../scripts/pod-evidence.sh --all-failing
+```
+
+See [pod-failures.md](pod-failures.md) for how to interpret the digest.
 
 Keep these read-only unless the user explicitly asks for remediation.
 

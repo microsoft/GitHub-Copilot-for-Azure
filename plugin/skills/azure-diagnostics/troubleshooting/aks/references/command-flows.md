@@ -28,8 +28,13 @@ kubectl get nodes -o wide
 kubectl get pods -n kube-system
 kubectl get events -A --sort-by=.lastTimestamp
 kubectl get pods -n <namespace>
-kubectl describe pod <pod-name> -n <namespace>
-kubectl logs <pod-name> -n <namespace> --previous
+```
+
+For pod detail and logs, gather the read-only evidence bundle (describe, current + previous logs, resources vs usage) with the pod-evidence script — [`../../../scripts/pod-evidence.sh`](../../../scripts/pod-evidence.sh) / [`../../../scripts/pod-evidence.ps1`](../../../scripts/pod-evidence.ps1):
+
+```bash
+../../../scripts/pod-evidence.sh <pod-name> -n <namespace>
+../../../scripts/pod-evidence.sh --all-failing
 ```
 
 ## Connectivity Flow

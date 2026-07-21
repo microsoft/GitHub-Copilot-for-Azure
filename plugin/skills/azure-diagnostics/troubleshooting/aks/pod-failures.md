@@ -1,18 +1,20 @@
 # Pod Failures & Application Issues
 
-## Common Pod Diagnostic Commands
+## Evidence Bundle Script
+
+For **any** pod symptom below, run the **pod-evidence** script to collect the same
+read-only evidence bundle. Per pod it digests **STATUS**, **STATE** (exit code, reason,
+last state), **EVENTS**, current/previous **LOGS**, and **RESOURCES** (requests/limits
+vs `top`). It only gathers; interpret it with the tables.
+
+Bash [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) · PowerShell [`../../scripts/pod-evidence.ps1`](../../scripts/pod-evidence.ps1)
 
 ```bash
-# List unhealthy pods across all namespaces
-kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
-# All pods wide view
-kubectl get pods -A -o wide
-# Detailed pod status - events section is critical
-kubectl describe pod <pod-name> -n <namespace>
-# Pod logs (current and previous crash)
-kubectl logs <pod-name> -n <namespace>
-kubectl logs <pod-name> -n <namespace> --previous
+../../scripts/pod-evidence.sh <pod-name> -n <namespace>   # one pod
+../../scripts/pod-evidence.sh --all-failing               # all unhealthy pods
 ```
+
+PowerShell: `pod-evidence.ps1 <pod-name> -Namespace <namespace>` (`-AllFailing` scans all).
 
 ---
 
@@ -20,15 +22,7 @@ kubectl logs <pod-name> -n <namespace> --previous
 
 Pod starts, crashes, restarts with exponential backoff (10s, 20s, 40s... up to 5m).
 
-**Diagnostics:**
-
-```bash
-kubectl describe pod <pod-name> -n <namespace>
-# Check: Exit Code, Reason, Last State, Events
-
-kubectl logs <pod-name> -n <namespace> --previous
-# Shows stdout/stderr from the last crashed container
-```
+**Diagnostics:** [pod-evidence](#evidence-bundle-script) → read **STATE** (exit code, reason, last state) and **PREV LOGS** (last crashed container).
 
 **Decision tree:**
 
@@ -40,14 +34,7 @@ kubectl logs <pod-name> -n <namespace> --previous
 | `139`     | Segfault (SIGSEGV)                                    | Binary compatibility issue or native code bug                 |
 | `143`     | SIGTERM - graceful shutdown                           | Pod was terminated; check if liveness probe killed it         |
 
-**OOMKilled specifically:**
-
-```bash
-kubectl describe pod <pod-name> -n <namespace> | grep -A2 "Last State"
-# Reason: OOMKilled -> container exceeded memory limit
-```
-
-Fix: increase `resources.limits.memory` or optimize application memory usage. Check `kubectl top pod <pod-name> -n <namespace>` for actual usage.
+**OOMKilled specifically:** the **STATE** section shows `terminated=OOMKilled` and **RESOURCES** shows the memory limit vs live usage. Fix: increase `resources.limits.memory` or optimize application memory usage.
 
 **OOM kill tracing with Inspektor Gadget:** Use `trace_oomkill` (timeout 30) with `--k8s-namespace <namespace> --k8s-podname <pod-name>` to see which process was killed and memory at kill time. See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
@@ -67,12 +54,7 @@ See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
 Pod can't pull the container image.
 
-**Diagnostics:**
-
-```bash
-kubectl describe pod <pod-name> -n <namespace>
-# Events section shows the exact pull error
-```
+**Diagnostics:** [pod-evidence](#evidence-bundle-script) → read **EVENTS** for the exact pull error.
 
 | Error Message                           | Cause                        | Fix                                                            |
 | --------------------------------------- | ---------------------------- | -------------------------------------------------------------- |
@@ -94,12 +76,7 @@ az aks check-acr -g <rg> -n <cluster> --acr <acr-name>.azurecr.io
 
 Pod stays in `Pending` - scheduler can't place it.
 
-**Diagnostics:**
-
-```bash
-kubectl describe pod <pod-name> -n <namespace>
-# Events section shows why scheduling failed
-```
+**Diagnostics:** [pod-evidence](#evidence-bundle-script) → read **EVENTS** for why scheduling failed.
 
 | Event Message                                                          | Cause                               | Fix                                                             |
 | ---------------------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------- |
@@ -115,15 +92,7 @@ kubectl describe pod <pod-name> -n <namespace>
 
 **Readiness probe failure** -> pod removed from Service endpoints (no traffic). **Liveness probe failure** -> pod killed and restarted.
 
-**Diagnostics:**
-
-```bash
-kubectl describe pod <pod-name> -n <namespace>
-# Look for: "Readiness probe failed" or "Liveness probe failed" in Events
-
-# Check the pod's READY column - must show n/n
-kubectl get pod <pod-name> -n <namespace>
-```
+**Diagnostics:** [pod-evidence](#evidence-bundle-script) → **EVENTS** shows `Readiness/Liveness probe failed`; **STATUS** shows the READY column (must be n/n).
 
 | Symptom                              | Cause                   | Fix                                                        |
 | ------------------------------------ | ----------------------- | ---------------------------------------------------------- |
@@ -137,15 +106,7 @@ kubectl get pod <pod-name> -n <namespace>
 
 ## Resource Constraints (CPU/Memory)
 
-**Check actual usage vs limits:**
-
-```bash
-kubectl top pod <pod-name> -n <namespace>
-kubectl top pod -n <namespace> --sort-by=memory
-
-# Compare with requests/limits
-kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.containers[*].resources}'
-```
+**Check actual usage vs limits:** [pod-evidence](#evidence-bundle-script) → **RESOURCES** compares requests/limits against live `top` usage. To rank a namespace by memory: `kubectl top pod -n <namespace> --sort-by=memory`.
 
 | Symptom                          | Cause                                   | Fix                                                 |
 | -------------------------------- | --------------------------------------- | --------------------------------------------------- |
