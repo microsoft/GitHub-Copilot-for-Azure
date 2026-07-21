@@ -111,6 +111,30 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── messaging-namespace-connectivity-probe ──
+  # Added with issue #2511: the messaging "cannot connect at all" flow should
+  # surface the test-messaging-connectivity probe script rather than raw
+  # curl/nslookup commands.
+  - name: "Service Bus namespace connectivity probe"
+    prompt: "My app can't connect to my Azure Service Bus namespace 'contoso' at all. How can I check whether it's a network or firewall problem — like which of the messaging ports are actually reachable?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-matches
+        config:
+          pattern: "test-messaging-connectivity"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ── vm-ssh-troubleshooting-prompt ──
   # Migrated from azure-compute ownership: VM connectivity incidents now route to azure-diagnostics.
   - name: "VM SSH refused troubleshooting"
