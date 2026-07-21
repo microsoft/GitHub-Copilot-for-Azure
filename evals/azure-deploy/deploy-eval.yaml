@@ -52,7 +52,7 @@ stimuli:
   - name: "Deploy SWA - Whiteboard App (Bicep)"
     prompt: "Create a static whiteboard web app and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -80,7 +80,7 @@ stimuli:
   - name: "Deploy SWA - Portfolio Website (Bicep)"
     prompt: "Create a static portfolio website and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -113,7 +113,7 @@ stimuli:
   - name: "Deploy App Service - Discussion Board (Bicep)"
     prompt: "Create a discussion board application and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -141,7 +141,7 @@ stimuli:
   - name: "Deploy App Service - Todo List (Bicep)"
     prompt: "Create a todo list with frontend and API and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -174,7 +174,7 @@ stimuli:
   - name: "Deploy Azure Functions - Serverless HTTP API (Bicep)"
     prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -201,7 +201,7 @@ stimuli:
   - name: "Deploy Azure Functions - Event-Driven (Bicep)"
     prompt: "Create an event-driven function app to process messages and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -228,7 +228,7 @@ stimuli:
   - name: "Deploy Azure Functions - Python Service Bus (Bicep)"
     prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -258,9 +258,9 @@ stimuli:
 
   # Jest: "creates and deploys workflow app with Durable Task Scheduler"
   - name: "Deploy DTS - Workflow App (Bicep)"
-    prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline. Make the app as simple as possible for demonstration purposes only. Then deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -301,7 +301,7 @@ stimuli:
   - name: "Deploy Container Apps - Containerized Web App (Bicep)"
     prompt: "Create a containerized web application and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -344,7 +344,7 @@ stimuli:
   - name: "Deploy Container Apps - Node.js App (Bicep)"
     prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -384,7 +384,7 @@ stimuli:
   - name: "Deploy SWA - Whiteboard App (Terraform)"
     prompt: "Create a static whiteboard web app and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -418,7 +418,7 @@ stimuli:
   - name: "Deploy SWA - Portfolio Website (Terraform)"
     prompt: "Create a static portfolio website and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -457,7 +457,7 @@ stimuli:
   - name: "Deploy App Service - Discussion Board (Terraform)"
     prompt: "Create a discussion board application and deploy it to Azure App Service, prefer Terraform over Bicep, in my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -491,7 +491,7 @@ stimuli:
   - name: "Deploy App Service - Todo List (Terraform)"
     prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform in my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -530,7 +530,7 @@ stimuli:
   - name: "Deploy Azure Functions - Serverless HTTP API (Terraform)"
     prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -563,7 +563,7 @@ stimuli:
   - name: "Deploy Azure Functions - Event-Driven (Terraform)"
     prompt: "Create an event-driven function app to process messages and deploy it to Azure Functions using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -596,7 +596,7 @@ stimuli:
   - name: "Deploy Azure Functions - URL Shortener (Terraform)"
     prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -628,7 +628,7 @@ stimuli:
   - name: "Deploy Container Apps - Containerized Web App (Terraform)"
     prompt: "Create a containerized web application and deploy it to Azure Container Apps using terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -675,7 +675,7 @@ stimuli:
   - name: "Deploy Container Apps - Node.js App (Terraform)"
     prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
@@ -710,7 +710,7 @@ stimuli:
   - name: "Deploy Container Apps - Social Media App (Terraform)"
     prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
-      max_turns: 50
+      max_turns: 80
     tags:
       type: integration
       tier: full
