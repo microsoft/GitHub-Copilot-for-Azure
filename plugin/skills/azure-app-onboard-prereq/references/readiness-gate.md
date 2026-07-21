@@ -51,6 +51,8 @@
 
 ## Batch-Then-Approve Flow
 
+⛔ **Artifacts before message.** Write AND read back all 3 artifacts (`prereq-output.json`, `context.json`, `readiness-report.md`) to confirm they exist on disk BEFORE presenting any findings or cloud-SDK stop prompt. Those messages can end the turn, so every artifact MUST already be persisted — NEVER batch artifact writes after the message.
+
 1. **Detect ALL issues first** — full 3-axis scan, all components.
 2. **Present ALL findings at once** — summary: "🔍 Readiness: 2 critical, 1 recommended fix, 3 warnings". Group: 🛑 → 🔶 → ❌ → 🔧 → ⚠️.
 3. **Fix plan** — for ❌, 🔧, 🔶, ⚠️ with `fixPhase: "prereq"`: describe WHAT and WHY. ⛔ Exclude 🔶 with `routeToSkill` set. Never include 🛑.

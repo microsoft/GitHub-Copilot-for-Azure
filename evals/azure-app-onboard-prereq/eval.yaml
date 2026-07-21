@@ -26,7 +26,7 @@ tags:
   type: integration
   skill: azure-app-onboard-prereq
 
-config:
+defaults:
   runs: 1
   timeout: "12m"
   executor: integration-test-agent-runner
@@ -631,9 +631,16 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-app-onboard-prereq"]
-      - type: output-matches
+      # Security-detection signal read from the ARTIFACT, not the streamed output.
+      # An intentionally-vulnerable app is a hard halt, so the deterministic verdict
+      # `overallHealth: "blocked"` is always written to prereq-output.json — even when
+      # the agent's streamed summary is thin/truncated (its conclusion lives in reasoning
+      # + the written report, neither of which feed the graded `output`). Asserting on the
+      # artifact removes the streamed-output flake entirely.
+      - type: file-matches
         config:
-          pattern: "(?i)vulnerab|security|insecure|risk|unsafe|dvwa|caution"
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"blocked"'
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"

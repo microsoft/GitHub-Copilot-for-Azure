@@ -33,7 +33,7 @@ Assess whether at least one deployment recipe is viable.
 
 Check if the repo's stack requires a specialized deployment skill. If a match is found, set `context.json.routeToSkill` and `routeReason` so Step 8 routes directly.
 
-> **Non-Azure cloud SDK deps** (AWS/GCP SDKs, Firebase, etc.) — if present (user chose "Continue evaluation" in Step 2), they are evaluated and `routeToSkill` is set in [dependency-compatibility.md § Non-Azure Cloud SDK Dependencies](dependency-compatibility.md).
+> **Non-Azure cloud SDK deps** (AWS/GCP SDKs, Firebase, etc.) — evaluated and carried as 🔶 blockers (no `routeToSkill`); prereq stops at Step 8. See [dependency-compatibility.md § Non-Azure Cloud SDK Dependencies](dependency-compatibility.md).
 
 | Dependency / Pattern | `routeToSkill` | `routeReason` |
 |---------------------|----------------|---------------|

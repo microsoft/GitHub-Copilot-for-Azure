@@ -12,7 +12,7 @@ Read deploy reference files and distill deployment-specific rules into `deploy-c
 | Field | Source |
 |-------|--------|
 | `prepare-plan.json` content | services[], naming, region, costEstimate, deploymentVariables |
-| `scaffold-manifest.json` content | deployCommand, validationResult, filesWritten[] |
+| `scaffold-manifest.json` content | deployCommand, validationResult, files[] |
 | `context.json` content | azure.subscriptionId, subscriptionName, resourceGroup, sessionId, intent |
 | `prereq-output.json` content | buildRequirements, warnings[], components[] |
 | Session folder path + working directory | Required |

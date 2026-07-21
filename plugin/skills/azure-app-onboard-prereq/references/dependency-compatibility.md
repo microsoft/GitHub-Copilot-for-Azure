@@ -45,9 +45,11 @@ Detect via **code structure first**, metadata second. These apps are designed to
 
 **Verdict:** ≥2 code signals OR 1 code + 1 metadata → 🛑 HALT. Single metadata only → ⚠️ WARN (could be a disclosure).
 
+> ⛔ **🛑 HALT is a verdict, not an exit** — still write all 3 artifacts (Step 4, `overallHealth: "blocked"`) before presenting.
+
 ## Non-Azure Cloud SDK Dependencies
 
-If user chose "Continue evaluation anyway" at cloud SDK gate, see [cloud-sdk-migration.md](cloud-sdk-migration.md) for classification and observability. Populate `prereq-output.json.cloudSdkFindings[]`. Set `context.json.routeToSkill: "azure-cloud-migrate"`.
+Functional cloud SDK deps → 🔶 blockers; classification and observability carve-out in [cloud-sdk-migration.md](cloud-sdk-migration.md). The redirect gate (SKILL.md Step 2) and the deploy-blocking stop (SKILL.md Step 8 Row 2) own all routing — no `routeToSkill` decision happens here.
 
 ## Platform-Specific Dependencies
 
@@ -61,6 +63,7 @@ If user chose "Continue evaluation anyway" at cloud SDK gate, see [cloud-sdk-mig
 | Jib container build (no Dockerfile) | ⚠️ WARN — note Jib path for scaffold |
 | Redis client without TLS config | ⚠️ WARN `W-REDIS-TLS` — **fix:** "Add TLS config" **fixPhase:** `prereq`. **Config key registration:** if the app uses a config library that requires keys to be pre-registered before env var override (Go/Viper `Unmarshal()`, Spring `@ConfigurationProperties`), the config file must also declare the TLS key (e.g., add `tlsEnabled: false` to YAML) — otherwise the env var is silently ignored. Detection: grep for `viper.Unmarshal`, `mapstructure`, `@ConfigurationProperties`. |
 | PostgreSQL client with SSL disabled | ⚠️ WARN `W-PG-SSL` — **fix:** "Set SSL mode env var" **fixPhase:** `scaffold` |
+| MySQL client without TLS config | ⚠️ WARN `W-MYSQL-SSL` — **fix:** "Enable client TLS for Azure MySQL" **fixPhase:** `prereq`. Most MySQL drivers/ORMs need an in-code SSL option (no SSL env var like Postgres has), so this is a client-config change → prereq remediation batch (like `W-REDIS-TLS`), not IaC-only scaffold. Detection: MySQL in the plan (`mysql:*` in compose, or a MySQL driver/ORM — e.g. `mysql2`, `sequelize` dialect mysql, `typeorm`, `prisma`, `knex`) with no SSL/TLS option in the client config. |
 | Go Viper without env key replacer | ⚠️ WARN `W-VIPER-ENV` — **fix:** "Add SetEnvKeyReplacer call" **fixPhase:** `prereq` |
 | Licensed/proprietary SDKs | ⚠️ WARN |
 

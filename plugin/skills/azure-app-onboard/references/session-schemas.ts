@@ -127,6 +127,12 @@ export interface AppOnboardContext {
   /** Service dependencies parsed from docker-compose, config files, or code imports */
   detectedServices: readonly DetectedService[];
   overrides: AppOnboardOverride[];
+  /** Set when a phase routes the pipeline to another skill — e.g. "azure-cloud-migrate"
+   *  (non-Azure cloud SDK deps) or "azure-prepare" (existing azd template). Presence halts
+   *  the greenfield pipeline; the resume path in session-protocol.md clears it and re-runs prereq. */
+  routeToSkill?: string;
+  /** Human-readable reason paired with `routeToSkill` (e.g. "existing-azd-template"). */
+  routeReason?: string;
 }
 
 // ─── active-session.json ─────────────────────────────────────────────────────

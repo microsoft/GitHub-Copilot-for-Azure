@@ -4,8 +4,10 @@ Commands the agent must NEVER execute. Block decisions are non-negotiable — us
 
 | Pattern | Action | Reason |
 |---------|--------|--------|
-| `rm -rf` on `infra/`, `.azure/`, `.copilot-azure/` | ⛔ Block | Prevents accidental IaC deletion |
-| `git push --force` to `main` or `master` | ⛔ Block | Prevents force-push of generated code |
+| `rm -rf` (any path outside a fresh temp dir) | ⛔ Block | Prevents accidental deletion of IaC, app code, or session artifacts — especially `infra/`, `.azure/`, `.copilot-azure/`. |
+| `git reset --hard`, `git checkout -- <path>`, `git restore`, `git clean` | ⛔ Block | Discards uncommitted work. During region-fallback healing the agent edits Bicep/app config; these wipe the user's unstaged changes irrecoverably. |
+| `git push --force` / `--force-with-lease` (any branch) | ⛔ Block | Prevents force-push of generated code over remote history. |
+| `--no-verify` (on `git commit` / `git push`) | ⛔ Block | Bypasses hooks (secret-scan, lint) that guard the commit. |
 | `DROP TABLE` / `DROP DATABASE` | ⛔ Block | Prevents data loss |
 | `terraform destroy` | ⛔ Block | Prevents accidental teardown (user must run manually) |
 | `az group delete` | ⛔ HARD BLOCK | **NEVER delete resource groups yourself.** During healing: if switching regions/RGs, add the old RG to your `orphanedResourceGroups[]` list (per `OrphanResourceGroup` in [`deploy-schemas.ts`](deploy-schemas.ts)) instead of deleting it. At handoff: emit `az group delete` commands in the handoff message for the USER to run — the agent never executes them. If you are about to type `az group delete` into a terminal command, STOP — you are violating this rule. Track it in `orphanedResourceGroups[]` instead. |
@@ -25,6 +27,7 @@ Commands the agent must NEVER execute. Block decisions are non-negotiable — us
 | Writing secrets to temp files on disk | ⛔ Block | ⛔ NEVER write secrets to temp files on disk. Seed secrets into Key Vault via `az keyvault secret set`, then reference via SecretUri in IaC. Temp files risk exposure in crash dumps, logs, and unprotected storage. |
 | `az group create` (during healing) | ⛔ HARD BLOCK | **NEVER create resource groups imperatively during healing.** All RG creation must go through `az deployment sub create` with Bicep `targetScope = 'subscription'`. If you need a new RG for region fallback, update the Bicep region parameter and redeploy. |
 | `az rest --method put/patch` (for individual resource creation) | ⛔ HARD BLOCK | **NEVER create individual Azure resources via REST API as a fallback for Bicep failures.** After a deployment failure, the ONLY allowed remediation is: fix the Bicep parameters/template → re-run `az deployment sub create`. Compiling Bicep→ARM and deploying via REST is still imperative resource creation. |
+| Disabling a security control to unblock — `require_secure_transport`/TLS → OFF, HTTPS-only off, KV purge protection off, auth off (via `az ... parameter set` OR editing the Bicep) | ⛔ HARD BLOCK | **NEVER weaken a security control to make a failing deploy pass.** A DB TLS handshake failure means the *client* lacks SSL config — fix the client (prereq `W-MYSQL-SSL`/`W-PG-SSL`) or surface the tradeoff to the user. Downgrading the server control is forbidden. |
 | `Compress-Archive -Path $files.FullName` | ⛔ Block | Absolute paths flatten directory structure — app crashes on `./src/app` not found. Use `System.IO.Compression.ZipFile` with relative paths from workspace root. On Windows, normalize: `$entryName = $relativePath.Replace('\', '/')`. |
 
 > **Repos with existing `azure.yaml`:** See [`pipeline-rules.md`](../../references/pipeline-rules.md) § azure.yaml prohibition. Deploy via `az deployment sub create` — do NOT run `azd up`.

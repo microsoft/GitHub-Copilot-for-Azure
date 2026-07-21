@@ -44,7 +44,7 @@ This is a complete azd template — it already defines how to build and deploy y
 1. Write routing state to `context.json`:
    ```json
    {
-     "routedTo": "azure-prepare",
+     "routeToSkill": "azure-prepare",
      "routeReason": "existing-azd-template",
      "completedPhases": [],
      "currentPhase": null,

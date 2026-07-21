@@ -22,7 +22,7 @@ Extract every security claim from the generated IaC and check for internal contr
 |-------|---------|
 | Managed identity declared but secret hardcoded | `identity: { type: 'SystemAssigned' }` but `password: 'hardcoded'` in same file |
 | HTTPS enforced but HTTP endpoint exposed | `httpsOnly: true` but ingress allows HTTP |
-| Key Vault referenced but RBAC not granted | `@Microsoft.KeyVault(...)` but no `roleAssignment` for app identity |
+| Resource accessed via managed identity but matching role not granted | KV secret read without KV Secrets User, ACR image pull without AcrPull, or any MI→resource dependency missing its `roleAssignment` — access fails at runtime → `FLAGGED` |
 | ⛔ Role assignment scope targets wrong resource | `scope: resourceGroup()` on resource-specific roles → `FLAGGED`. Must scope to specific resource. |
 | `principalType` missing on role assignments | Causes intermittent 30s+ delays |
 | ⛔ Identity block missing on compute resource | ⛔ **MANDATORY FAIL** — ALL compute MUST have `identity: { type: 'SystemAssigned' }`. ⛔ **HARD EXCEPTION — F1/D1 Linux:** MI sidecar causes OOM on free tier → rate `PLAUSIBLE`, **NEVER** `FLAGGED`. The gen template intentionally omits MI for F1/D1. If F1/D1 detected in plan, this check MUST be `PLAUSIBLE`. |
@@ -85,6 +85,7 @@ Catch fabricated resource types, API versions, SKU names, or properties.
 | Check | How |
 |-------|-----|
 | API versions, resource types, property names valid | `bicep build` — errors = `FLAGGED` |
+| ⛔ Deploy-time value validity (`bicep build` blind spot) | The compiler accepts any schema-valid string, but ARM rejects wrong enum-like values (engine versions, region-restricted SKUs), wrong resource `scope`, and empty resource-ID properties. Any such value the generator chose from memory — not traceable to `prepare-plan.json` or a pattern file — MUST be confirmed against the provider capabilities API; unconfirmed → `FLAGGED`. |
 | SKU names match `prepare-plan.json` | Cross-reference `services[].sku` |
 | OpenAI deployment uses `scaleSettings` instead of `sku` | `scaleSettings` deprecated → `FLAGGED` |
 | Any resource uses `-preview` API version | Use latest GA from MCP tool → `FLAGGED` |
@@ -115,7 +116,7 @@ Per-pillar spot check against [Azure Well-Architected Framework](https://learn.m
 | Reliability | Health probes configured. ⛔ Verify probe path matches `prereq-output.json.healthEndpoint` — non-existent or mismatched path = `FLAGGED`. ⛔ ACA probes do NOT follow HTTP redirects — if app has trailing-slash normalization (Express `redirect`), use path WITHOUT trailing `/` (e.g., `/app` not `/app/`). |
 | Security | No public blob access, TLS 1.2+, managed identity |
 | Cost | SKU matches budget tier from `prepare-plan.json` |
-| Ops | Diagnostic settings route to Log Analytics |
+| Ops | App Insights present + connected for APM, 5 AppOnboard tags on resources, all values parameterized. Present = `VERIFIED`. App Insights absent = `PLAUSIBLE`. ⛔ `diagnostic-settings` is not part of the plan — if the generator added one it MUST be gated (`if (enableDiagnostics)`, default `false`) or absent; wired UNCONDITIONALLY in `main.bicep` = `FLAGGED` (blocks first deploy). |
 | Performance | Autoscale rules present for production SKUs |
 | Reliability | ⛔ Env var values compatible with app config validation (Pydantic `Settings`, Django `settings.py`). Typed fields reject wrong formats → `FLAGGED` |
 

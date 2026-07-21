@@ -53,7 +53,7 @@ Override via `context.json.overrides[]` with `key: "naming.pattern"`.
 ## Rules
 
 1. **ALL resources get the `{suffix}`** — including resource groups. This prevents cross-session naming collisions when the same app is deployed multiple times. The suffix is a 4-char random string generated once per session.
-2. **Container Registry + Storage Account:** strip hyphens (alphanumeric only)
+2. **Container Registry + Storage Account:** strip hyphens (alphanumeric only). ⛔ **Mechanical transform — do NOT re-derive char-by-char:** `('cr' + resourcePrefix).replace(/-/g,'').toLowerCase()`, truncate to ≤50 (ACR) / ≤24 (Storage). Worked example: `resourcePrefix = bezkoder-dev-18a3` → `cr` + `bezkoderdev18a3` → `crbezkoderdev18a3`. Copy the pattern; do not spell out the concatenation.
 3. **Validate length** after substitution — Key Vault (24 chars) is the tightest constraint. Budget for `{project}`: `24 - len(abbreviation) - len(env) - len(suffix) - 3 - 2` (separators + healing reserve). For `kv` + `dev`: 10 chars max. The 2-char reserve ensures room for a healing suffix (e.g., `edd6` → `edd602`) on region fallback. **Truncation when over budget:**
    1. Truncate at the nearest hyphen boundary within budget (e.g., `broken-web-app` at 10 → `broken-web`)
    2. If no hyphen within budget: hard truncate, no trailing hyphen

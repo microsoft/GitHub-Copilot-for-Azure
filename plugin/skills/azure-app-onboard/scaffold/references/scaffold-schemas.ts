@@ -64,8 +64,24 @@ export interface ValidationResult {
 }
 
 export interface ScaffoldManifest {
+  /** Session id this manifest belongs to. */
+  sessionId: string;
+  /** UTC timestamp when scaffold completed. */
+  scaffoldCompletedUtc: string;
   iacFormat: IacFormat;
+  /** Deployment scope for the generated IaC (deploy preflight branches on this). */
+  targetScope: "subscription" | "resourceGroup";
   files: ScaffoldFile[];
+  /** Entry-point IaC file, e.g. "infra/main.bicep". */
+  entryPoint?: string;
+  /** Parameters file, e.g. "infra/main.parameters.json". */
+  parametersFile?: string;
+  /** Exact command the deploy phase runs to provision (read by deploy preflight). */
+  deployCommand: string;
+  /** Container Apps two-phase (infra, then image) wiring, when applicable. */
+  twoPhaseWiring?: boolean;
+  /** Ordered phase-2 steps (e.g. image build/push) for two-phase deploys. */
+  phase2Steps?: readonly string[];
   selfReview: {
     findings: SelfReviewFinding[];
     healingAttempts?: readonly ScaffoldHealingAttempt[];

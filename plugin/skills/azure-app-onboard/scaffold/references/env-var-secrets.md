@@ -40,7 +40,7 @@ secrets: isPlaceholder ? [] : [
 ]
 ```
 
-> ⛔ **Do NOT use `@secure()` parameters to pass secrets inline.** Do NOT hardcode passwords in `main.parameters.json`, `terraform.tfvars`, env vars, or any generated file. The deploy phase seeds secrets into Key Vault via `az keyvault secret set` after database provisioning — see [code-deployment-appservice.md](../../deploy/references/code-deployment-appservice.md) or [code-deployment-container-apps.md](../../deploy/references/code-deployment-container-apps.md) § Database Post-Deploy.
+> ⛔ **Do NOT hardcode secrets in committed files** — not in `main.parameters.json`, `terraform.tfvars`, env vars, or any generated file. (`@secure()` Bicep params ARE the correct way to pass a secret at deploy time — the ban is on committing the value, not on the parameter.) The deploy phase seeds secrets into Key Vault via `az keyvault secret set` after database provisioning — see [code-deployment-appservice.md](../../deploy/references/code-deployment-appservice.md) or [code-deployment-container-apps.md](../../deploy/references/code-deployment-container-apps.md) § Database Post-Deploy.
 
 ## Azure Managed Service SSL/TLS Requirements
 

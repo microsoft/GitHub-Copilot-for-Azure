@@ -15,6 +15,20 @@ No `armSkuName`. Filter: `serviceName eq 'Azure Container Apps' and armRegionNam
 
 ---
 
+### Container Registry (ACR)
+
+Empty `armSkuName` — ⛔ do NOT filter by `sku` (returns `[]`). Filter: `serviceName eq 'Container Registry' and armRegionName eq '{region}' and priceType eq 'Consumption'`, then match `meterName`.
+
+| Tier | `meterName` | `unitOfMeasure` | Monthly |
+|------|-------------|-----------------|---------|
+| Basic | `Basic Registry Unit` | `1/Day` | `retailPrice × 30` (~$5) |
+| Standard | `Standard Registry Unit` | `1/Day` | `retailPrice × 30` (~$20) |
+| Premium | `Premium Registry Unit` | `1/Day` | `retailPrice × 30` (~$50) |
+
+⛔ **`1/Day` → × 30, NOT × 730.** The other ACR meters (`Task vCPU Duration` = `1 Second` build compute, `Data Stored` = `1 GB/Month`) are usage-based — exclude from the fixed monthly unless the app builds heavily. ACR Basic fixed cost ≈ **$5/mo**.
+
+---
+
 ### App Service
 
 **MCP call:** `pricing_get --service "Azure App Service" --region "{region}"`

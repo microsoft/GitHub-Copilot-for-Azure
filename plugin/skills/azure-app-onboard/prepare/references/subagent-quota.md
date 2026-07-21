@@ -14,6 +14,7 @@ Validate SKU quota and offer restrictions across candidate regions before presen
 | `subscriptionId` | YES |
 | SKU list from Step 4 (service type + SKU per service) | YES |
 | Restricted-offer services (PostgreSQL, MySQL) | If present in plan |
+| **Detected DB version per DB service** (from `context.json.detectedServices[]`, e.g. MySQL `5.7`) | ⛔ REQUIRED if a DB is in the plan — the version-selection algorithm in [`sku-quota-validation.md`](sku-quota-validation.md) needs it. |
 
 ## Output
 
@@ -25,7 +26,7 @@ Return JSON (≤500 tokens):
       "region": "{checked region}",
       "services": [
         { "service": "{provider}", "sku": "{sku}", "limit": "{from API}", "used": "{from API}", "available": "{limit - used > 0}" },
-        // if DB service: add "offerRestricted": "{from capabilities API}"
+        // if DB service: add "offerRestricted": "{from capabilities API}", "version": "{selected per sku-quota-validation.md — exact patch, never major-only '8.0'}"
       ],
       "allAvailable": "{true only if ALL services in this region have available=true}"
     }
@@ -40,6 +41,8 @@ Return JSON (≤500 tokens):
   "offerRestrictionsVerified": "{true only if every DB service from input has ≥1 entry in offerRestrictions[]}"
 }
 ```
+
+⛔ **Caller:** copy each DB service's returned `version` into `prepare-plan.json.services[].version` at plan-write — scaffold needs the exact patch (ARM rejects major-only `'8.0'`).
 
 ## Workflow
 

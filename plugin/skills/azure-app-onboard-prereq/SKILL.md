@@ -58,7 +58,7 @@ Scan for project files. Detect components, `repo{}`, `detectedInfra[]`, `detecte
 
 > If no project files, no Dockerfile, AND no index.html → ⛔ read [zero-code-path.md](references/zero-code-path.md).
 
-> ⛔ **Cloud SDK early gate.** Grep for `aws-sdk|@aws-sdk|boto3|google-cloud|@google-cloud|firebase`. If functional deps found → read [cloud-sdk-migration.md](references/cloud-sdk-migration.md), then `ask_user`: **"Redirect to Azure Cloud Migrate"** (set `routeToSkill: "azure-cloud-migrate"`) · **"Continue anyway"** (🔶 blockers carry to Step 8) · **"Cancel"**.
+> ⛔ **Cloud SDK early gate.** Grep for `aws-sdk|@aws-sdk|boto3|google-cloud|@google-cloud|firebase`. If functional deps found → read [cloud-sdk-migration.md](references/cloud-sdk-migration.md), then `ask_user`: **"Redirect to Azure Cloud Migrate"** (set `routeToSkill: "azure-cloud-migrate"`) · **"Continue evaluation anyway"** (finish readiness eval + SDK→Azure mapping, then STOP at Step 8 — no plan until the deps are swapped) · **"Cancel"**.
 
 ### Step 3: Per-Component Evaluation
 
@@ -85,7 +85,7 @@ Per [readiness-gate.md § Present Findings](references/readiness-gate.md) — sh
 
 ### Step 7: Write Final State
 
-Update `context.json`: append `"prereq"` to `completedPhases`, set `currentPhase: null`.
+`completedPhases` already has `"prereq"` + `currentPhase: null` (from Step 4). Then:
 
 > ⛔ **Write `lastScanCommit`.** Run `git rev-parse HEAD` and store the full 40-character SHA as `context.json.repo.lastScanCommit`. Required — staleness guard in Step 1 compares to HEAD on resume to detect changes.
 
@@ -102,10 +102,11 @@ Update `context.json`: append `"prereq"` to `completedPhases`, set `currentPhase
 | # | Condition | Action |
 |---|-----------|--------|
 | 1 | `routeToSkill` set (any entry) | `ask_user`: "Redirect to {routeToSkill}" / "Not now". ⛔ Pipeline stops — do NOT proceed to architecture planning. |
-| 2 | Orchestrator + no `routeToSkill` | Tell the user: "✅ Your app has been evaluated and is ready — let's plan your Azure deployment." Then invoke `azure-app-onboard`. ⛔ Do NOT stop, do NOT wait for user input, do NOT narrate internal handoffs. The user already consented to the full pipeline at scope triage. |
-| 3 | Direct + ready/readyWithCaveats + no Azure infra | `ask_user`: "Deploy to Azure (full pipeline)" → invoke `azure-app-onboard` / "Not now" |
-| 4 | Direct + ready/readyWithCaveats + existing Azure infra | `ask_user`: "Start fresh" → invoke `azure-app-onboard` / "Use existing infra" → invoke `azure-prepare` / "Not now" |
-| 5 | Direct + blocked | Report blocker summary + "Fix and re-run." |
+| 2 | `cloudSdkFindings[]` non-empty (user chose "Continue evaluation anyway") | Present the cloud-SDK → Azure swap mapping as 🔶 blockers, then `ask_user` with this exact prompt: **"🔶 Cloud SDK migration required — these dependencies must be swapped before this app can deploy to Azure. (Redirect to azure-cloud-migrate / Stop — swap manually and re-run)"** — Redirect sets `routeToSkill: "azure-cloud-migrate"`, Stop halts. ⛔ Pipeline stops — do NOT proceed to architecture planning, and do NOT offer a "continue to prepare" option; the app can't deploy until the deps are swapped. |
+| 3 | Orchestrator + no `routeToSkill` | Tell the user: "✅ Your app has been evaluated and is ready — let's plan your Azure deployment." Then invoke `azure-app-onboard`. ⛔ Do NOT stop, do NOT wait for user input, do NOT narrate internal handoffs. The user already consented to the full pipeline at scope triage. |
+| 4 | Direct + ready/readyWithCaveats + no Azure infra | `ask_user`: "Deploy to Azure (full pipeline)" → invoke `azure-app-onboard` / "Not now" |
+| 5 | Direct + ready/readyWithCaveats + existing Azure infra | `ask_user`: "Start fresh" → invoke `azure-app-onboard` / "Use existing infra" → invoke `azure-prepare` / "Not now" |
+| 6 | Direct + blocked | Report blocker summary + "Fix and re-run." |
 
 Severity tiers (🛑🔶❌🔧⚠️✅) are defined in [readiness-gate.md](references/readiness-gate.md).
 

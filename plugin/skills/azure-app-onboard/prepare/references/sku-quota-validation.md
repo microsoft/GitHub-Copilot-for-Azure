@@ -54,11 +54,6 @@ az staticwebapp list --query "length([?sku.name=='Free'])" -o tsv
 ```
 At/near cap → treat SWA Free as UNAVAILABLE (no self-service increase — raises need a support request). Fall back per [After Checking](#after-checking).
 
-**Storage / Key Vault:** Default limits rarely exhausted — skip unless plan requires multiple accounts.
-  } else { Write-Host "$_ : no-data" }
-}
-```
-
 **Storage** — default limit 250 accounts/region. Rarely exhausted — skip programmatic check unless the plan requires multiple storage accounts.
 
 **Key Vault** — no quota API exists (returns `NotFound`). Default limit ~1000 vaults/subscription. Skip programmatic check.
@@ -70,8 +65,12 @@ At/near cap → treat SWA Free as UNAVAILABLE (no self-service increase — rais
 
 ### After Checking
 
-1. Only present regions with confirmed capacity.
-2. ALL regions zero → try next SKU tier. ALL tiers exhausted → **HALT** with options: specify region, switch compute type, request increase at portal, cancel.
+1. Only offer regions with **confirmed** capacity — "try anyway" on zero/unconfirmed quota is a known deploy failure.
+1b. **Free tier missing in requested region but present elsewhere** → present BOTH, ranked by cost: (a) free tier in nearest confirmed region ($0, recommended), (b) cheapest tier IN the requested region (show monthly cost + `assumptions[]` note). User picks — never silently relocate (region may be a data-residency/latency requirement).
+2. **Free SKU zero in ALL regions** → step down the fallback ladder to the **cheapest available** option (don't jump to a named tier — let live quota decide):
+   - Static-capable app → SWA Free, but only if its cap isn't reached (see **Static Web Apps** above).
+   - No free option left → cheapest available paid tier the app supports. This breaks the "free" promise — add an `assumptions[]` note stating why (e.g., "No F1 quota in {checkedRegions} and SWA Free cap reached").
+   - All tiers exhausted → **HALT**: specify region, switch compute type, request increase at portal, or cancel.
 3. Write `prepare-plan.json.quotaValidation`: `{ verified: true, method: "cli", verifiedRegion, verifiedSku, checkedRegions[], failedResources[] }`.
 
 ### Offer Restriction Check (Database Services)
@@ -94,6 +93,11 @@ $sub = '{subscriptionId}'; $provider = 'Microsoft.DBforPostgreSQL'; $apiVer = '2
 > For MySQL: change `$provider = 'Microsoft.DBforMySQL'` and `$apiVer = '2023-12-30'`.
 
 ⛔ JMESPath MUST start with `value[0].`. URL MUST include `/locations/{region}/`. Empty/null response = BLOCKED. Write results to `quotaValidation.offerRestrictions[]`.
+
+> ⛔ **Select the engine version deterministically from the capabilities payload** — match the app's detected version, upgrading only to the nearest compatible release. The payload lists supported versions at `value[0].supportedFlexibleServerEditions[0].supportedServerVersions[].name` (e.g. MySQL: `5.7`, `8.0.21`, `8.4`, `9.5`). Using the **detected DB version passed by the caller** (from `context.json.detectedServices[]`):
+> 1. If the **exact detected version** (or its exact patch) is in the supported list → use it.
+> 2. Else use the **lowest supported version whose major ≥ the detected major** (detected `5.7`, supported `[5.7, 8.0.21, 8.4, 9.5]` → `8.0.21`). Picking the lowest compatible major — not the newest — avoids the 60+ minute provisioning hangs seen on brand-new majors (e.g. `9.x`) and keeps compatibility with the app's driver/ORM.
+> Return it in the quota output's per-service `version` field; the orchestrator copies it to `prepare-plan.json.services[].version` at plan-write (exact patch required — see [prepare-schemas.ts](prepare-schemas.ts) `version`). Record the bump in `assumptions[]` if the detected version was upgraded.
 
 ### Anti-Patterns
 

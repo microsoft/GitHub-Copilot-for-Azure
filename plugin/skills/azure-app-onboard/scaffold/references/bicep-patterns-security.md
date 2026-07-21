@@ -97,16 +97,21 @@ appSettings: [
 ]
 ```
 
-Key Vault config:
-
-> ⛔ **Do NOT set `enablePurgeProtection`.** Setting `true` blocks KV deletion until retention expires, breaking cleanup. Setting `false` is rejected by ARM. Omit the property entirely.
+Key Vault module — emit this resource EXACTLY; add no other properties. `enablePurgeProtection` is deliberately absent (ARM rejects `false`; `true` blocks cleanup).
 
 ```bicep
-properties: {
-  sku: { family: 'A', name: 'standard' }
-  tenantId: subscription().tenantId
-  enableRbacAuthorization: true  // RBAC, not access policies
-  // Do NOT add enablePurgeProtection — omit entirely
+resource kv 'Microsoft.KeyVault/vaults@{apiVersion}' = {
+  name: kvName
+  location: location
+  tags: tags
+  properties: {
+    sku: { family: 'A', name: 'standard' }
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true          // RBAC, not access policies
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 7
+    networkAcls: { defaultAction: 'Allow', bypass: 'AzureServices' }
+  }
 }
 ```
 
@@ -151,7 +156,7 @@ resource ftpAuth 'Microsoft.Web/sites/basicPublishingCredentialsPolicies@2023-12
 }
 ```
 
-> **Deploy lifecycle:** Scaffold sets `scm.allow: true` so `az webapp deploy` works. After code upload + health check, deploy phase runs `az rest --method put .../basicPublishingCredentialsPolicies/scm` with `allow: false` to re-harden. If scaffold omits these resources, deploy's Step 7b REST API call fails silently.
+> **Deploy lifecycle:** Scaffold sets `scm.allow: true` so `az webapp deploy` works. After code upload + health check, deploy phase runs `az rest --method put .../basicPublishingCredentialsPolicies/scm` with `allow: false` to re-harden. If scaffold omits these resources, deploy's Step 7 SCM re-disable REST API call fails silently.
 
 ### Cosmos DB — Data Plane RBAC
 

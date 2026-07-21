@@ -6,7 +6,7 @@ Cross-cutting rules enforced across all workflow steps. Referenced from [SKILL.m
 
 ⛔ **Two separate approval gates are required — never merge them.**
 
-1. **Scaffold gate (Step 6):** "✅ Ready to proceed with scaffolding? (Yes / Edit plan / Cancel)" — approves IaC generation only.
+1. **Scaffold gate (Step 6):** "✅ Ready to proceed with scaffolding? (Yes / Edit plan / Cancel)" — approves IaC generation only. ⛔ When the plan includes PostgreSQL/MySQL, add `Private access` as a selectable choice — see approval-gates.md for the exact variant.
 2. **Deploy gate (Step 8):** "🚀 Ready to deploy? (Yes / Run manually / Edit plan / Cancel)" — approves resource provisioning.
 
 The scaffold gate does NOT grant deploy permission. After scaffold completes, you MUST present the deploy gate as a SEPARATE response. Never go from scaffold approval directly to `az group create` or `az deployment`.

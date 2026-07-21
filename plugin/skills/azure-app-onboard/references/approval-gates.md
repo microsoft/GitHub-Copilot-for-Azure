@@ -24,7 +24,15 @@ Verify file list against target SKU — F1/D1: no Dockerfile (built-in runtime).
 
 > ⛔ **Data-loss warnings at the gate.** If `prereq-output.json.warnings[]` contains any data-loss findings (SQLite on App Service, in-memory sessions, local file storage), surface them prominently with ⛔ formatting ABOVE the approval prompt. The user must see these before approving — do not bury them in a table or omit them.
 
-> ⛔ Use EXACT text: **"✅ Ready to proceed with scaffolding? (Yes / Edit plan / Cancel)"** — do NOT paraphrase, reword, or add extra options.
+> ⛔ **Database network access (when plan includes PostgreSQL/MySQL).** Show a **Database access** line above the approval prompt: the default `AllowAllAzureServicesAndResourcesWithinAzureIps` (`0.0.0.0`) lets the app connect but opens the server to **all** Azure services. ⛔ **Render the exposure as its own bold sentence so a fast "Yes" is still an informed "Yes":** **"Proceeding opens the database to all Azure services — not just this app."** Offer the alternative: *"For private networking (VNet integration + private endpoint), say **'Private access'** — AppOnboard does not build private networking itself, so it will hand off to `azure-enterprise-infra-planner`, which then owns the secure networking design **and** its deployment. AppOnboard stops here — it does not resume afterward."* If the user proceeds (Yes), that counts as consent to the `0.0.0.0` rule.
+
+> ⛔ **Private networking redirect.** If the user chooses **Private access** (here or during Edit plan): set `context.json.routeToSkill: "azure-enterprise-infra-planner"` and `routeReason: "private-networking-requested"`, then **HALT** — do NOT generate IaC. Tell the user: *"AppOnboard can't generate private networking (VNet + private endpoint). Handing off to azure-enterprise-infra-planner, which will design the secure topology and deploy it from here — it takes over the rest of the onboarding. Your AppOnboard session is saved for reference."* Then invoke `{"skill": "azure-enterprise-infra-planner"}`. This mirrors the prereq `routeToSkill` halt (SKILL.md Step 3) but fires at the Scaffold Gate.
+
+> ⛔ **Pick the prompt variant FIRST (based on whether the plan has a database), then use it verbatim — do NOT paraphrase or reword:**
+> - **Plan includes PostgreSQL/MySQL** → **"✅ Ready to proceed with scaffolding? (Yes / Edit plan / Private access / Cancel)"** — the `ask_user` choices MUST be exactly: `Yes`, `Edit plan`, `Private access`, `Cancel`.
+> - **No database in plan** → **"✅ Ready to proceed with scaffolding? (Yes / Edit plan / Cancel)"** — the `ask_user` choices MUST be exactly: `Yes`, `Edit plan`, `Cancel`.
+>
+> The `ask_user` choices MUST match the prompt text exactly — never name an option in one and omit it from the other (e.g. `Private access` must be a selectable choice, not something the user has to type).
 
 > ⛔ **RESPONSE BOUNDARY — MANDATORY.** The approval gate MUST be the LAST content in your response. Do NOT generate any files, write any IaC, create any Dockerfiles, or execute any commands in the same response as the gate. Your next action MUST be reading the user's reply. If the user has not yet responded, WAIT — do not proceed.
 
@@ -56,7 +64,7 @@ Only after user approves: proceed to deploy sub-skill (Step 9). `context.json` a
 
 > ⛔ **Before entering deploy:** ⛔ Read [`deploy/SKILL.md`](../deploy/SKILL.md) before any deployment action. After mid-session compaction, re-read `deploy/SKILL.md` Steps 4-8. You MUST write `deploy-result.json`.
 
-> ⛔ Deploy via `az deployment sub create` (see [pipeline-rules.md](pipeline-rules.md)). If AppOnboard-generated `azure.yaml` found, DELETE it.
+> ⛔ Deploy via `az deployment sub create` (see [pipeline-rules.md](pipeline-rules.md)). AppOnboard-generated `azure.yaml` found → never delete/overwrite; move to `.copilot-azure/sessions/<id>/replaced-files/` (mirror path).
 
 > ⛔ **Container Apps code deploy is NOT optional.** After IaC placeholder deploys, complete: `az acr build` → update image params → redeploy → health check. Do NOT present manual CLI "Next Steps" for core deploy tasks. If `hasBuildKitSyntax`, create `Dockerfile.azure` first.
 

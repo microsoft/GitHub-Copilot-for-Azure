@@ -47,6 +47,11 @@ export interface PlannedService {
   component: string;
   region: string;
   resourceName: string;
+  /** Exact engine version for managed database services (MySQL/PostgreSQL Flexible Server),
+   *  sourced from the provider capabilities API during quota validation — NOT guessed.
+   *  ARM rejects major-only strings (e.g. MySQL '8.0'); use the exact supported patch
+   *  (e.g. '8.0.21'). Omit for non-DB services. */
+  version?: string;
 }
 
 export interface CostBreakdownItem {
@@ -171,6 +176,12 @@ export interface PreparePlan {
   assumptions: string[];
   /** IaC format for scaffold — "bicep" (default) or "terraform" */
   iacFormat: "bicep" | "terraform";
+  /** Application database name the app expects to exist (from compose env such as
+   *  MYSQL_DATABASE / MYSQLDB_DATABASE / POSTGRES_DB, a connection string, or ORM config).
+   *  Scaffold emits a `flexibleServers/databases` child resource for this so the schema DB
+   *  exists in IaC before the container starts; the conformance gate's DB-NAME-PRESENT check
+   *  asserts it. Omit only when no managed database is in the plan. */
+  appDbName?: string;
   postDeployRecommendations?: PostDeployRecommendation[];
   /** Instrumentation decision — object with boolean + reason, NOT a bare boolean */
   instrumentation?: InstrumentationConfig;

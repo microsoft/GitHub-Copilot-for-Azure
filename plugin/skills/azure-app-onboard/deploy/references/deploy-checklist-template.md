@@ -15,7 +15,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 
 ## ⛔ Secret generation (BEFORE first az deployment)
 - Auto-generate ALL `@secure()` params before first `az deployment sub create` — NEVER `ask_user`
-- On retry: reuse password from `deploy-audit.log` or Key Vault — do NOT regenerate
+- ⛔ On ANY retry OR redeploy (incl. after a conversation compaction): read the SAME `@secure()` value back from Key Vault (source of truth) or `deploy-audit.log` — NEVER regenerate. A secret that's both applied to a resource AND stored in KV desyncs if regenerated: e.g. a DB module re-applying `administratorLoginPassword` re-sets the server admin but not the KV secret the app reads → auth 500s while provisioning still reports success.
 
 ## ⛔ Read deploy/SKILL.md
 - You MUST `view` deploy/SKILL.md BEFORE running any `az deployment` command
@@ -66,7 +66,9 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 ## During healing / retries
 - ⛔ REGION LOCK: Deploy region MUST match plan region ({region}). Any region change → RE-PRESENT deploy approval gate with old and new region. Do NOT silently switch. After approval: update `prepare-plan.json.services[].region`, `deploymentVariables.location`, AND append attempt number to `naming.suffix` (e.g., `edd6` → `edd602`). Recompute ALL resource names from the new suffix before redeploying — globally unique names (App Service, Key Vault) from the old region may be soft-deleted and unavailable.
 - ⛔ IaC-only: NEVER use `az containerapp update --image`, `az webapp update`, `az appservice plan delete`, or `az group create` — fix the Bicep and redeploy via `az deployment sub create`
+- ⛔ IaC-only for app-managed roles: NEVER `az role assignment create` for AcrPull or KV Secrets User — Bicep-managed (deterministic GUID), so an imperative grant collides on redeploy (`RoleAssignmentExists`). Missing app role = fix the Bicep module and redeploy. (Deployer/subscription-scope 403s are the ONLY exception — see [`error-classification.md`](error-classification.md).)
 - ⛔ **On error: read [`error-classification.md`](error-classification.md)** to classify the failure and follow the prescribed remediation. Do NOT ad-hoc heal without reading the classification.
+- ⛔ **Never weaken a security control to unblock** — do NOT flip `require_secure_transport`/TLS, HTTPS-only, KV purge protection, or auth OFF to make a failing deploy pass. A DB TLS handshake failure = fix the client SSL config (prereq `W-MYSQL-SSL`) or ask the user; never downgrade the server.
 - Count ALL attempts in deploy-result.json.healingAttempts[]
   After 3: STOP and ask user ("Yes / I have a suggestion / Stop")
 - NEVER run `az group delete` — track in orphanedResourceGroups[]

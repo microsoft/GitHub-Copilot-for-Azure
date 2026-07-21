@@ -61,7 +61,7 @@ describe(`${SKILL_PATH} - Unit Tests`, () => {
       expect(skill.content).toContain("azure-deploy");
     });
 
-    test("has Workflow with steps 0 through 9 in table format", () => {
+    test("has Workflow with expected step IDs (0,1,3,4,5b,6,6b,7,8,9) in table format", () => {
       expect(skill.content).toMatch(/## Workflow/);
       for (const step of ["0", "1", "3", "4", "5b", "6", "6b", "7", "8", "9"]) {
         expect(skill.content).toMatch(new RegExp(`\\|\\s*${step}\\s*\\|\\s*\\*\\*`));

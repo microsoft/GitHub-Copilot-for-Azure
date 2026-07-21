@@ -26,7 +26,7 @@ Add `container-registry.bicep` module (ACR Basic, `adminUserEnabled: false`) + A
 |------|---------|-------|
 | 1. Build image | `az acr build --subscription {subscriptionId} -r {acrName} -t {appName}:latest . --no-logs` | Builds from workspace root. If `buildRequirements.hasBuildKitSyntax`, use `-f Dockerfile.azure` (see BuildKit handling below). ⛔ **Build-time env vars:** If Dockerfile has `ARG NEXT_PUBLIC_*` or `ARG VITE_*`, pass `--build-arg NEXT_PUBLIC_API_URL=https://{api-fqdn}` to inject the deployed API URL. These vars are baked into the JS bundle at build time — runtime env vars have no effect on client-side code. Get the API FQDN from Phase 1 output: `az containerapp show -g {rg} -n {apiApp} --query properties.configuration.ingress.fqdn -o tsv`. |
 | 2. Update Bicep image | Edit `infra/modules/{containerapp}.bicep`: replace placeholder with `image: '{acrLoginServer}/{appName}:latest'`. Add ACR registry config: `registries: [{ server: acrLoginServer, identity: 'system' }]` | IaC-only — no imperative `az containerapp update` |
-| 3. Redeploy | `az deployment sub create --subscription {subscriptionId} --location {location} --template-file infra/main.bicep --parameters @infra/main.parameters.json --name app-onboard-code-deploy-{timestamp} --query properties.provisioningState -o tsv` | Emit new portal link |
+| 3. Redeploy | `az deployment sub create --subscription {subscriptionId} --location {location} --template-file infra/main.bicep --parameters @infra/main.parameters.json --parameters administratorLoginPassword=$dbPassword --name app-onboard-code-deploy-{timestamp} --query properties.provisioningState -o tsv` | Emit new portal link. ⛔ `$dbPassword` = existing KV secret, never new/placeholder — see [Parameter Pass-Through](#parameter-pass-through-bicep-redeploy-safety). |
 | 4. Verify revision | `az containerapp show --subscription {subscriptionId} -g {rg} -n {ca} --query "{revision:properties.latestReadyRevisionName, image:properties.template.containers[0].image}" -o json` | Confirm image is not the placeholder |
 
 > ⛔ **`az acr build` failures count toward the `deploy-result.json.healingAttempts[]` counter.** After 3 failed builds (even with different root causes), pause and present a diagnosis to the user: "Web image build failed 3 times: [root causes]. Continue healing? (Yes / Cancel)." Each build fix attempt = 1 healing entry. Cross-reference deploy SKILL.md healing loop rule.
@@ -49,7 +49,7 @@ After Phase 1, seed real secret values into KV before Phase 2 activates `secretR
 az keyvault secret set --subscription {subscriptionId} --vault-name {kvName} --name {secret-name} --value $generatedValue
 ```
 
-> ⛔ Use the SAME generated password passed to `az deployment sub create`. Shell variables don't persist between tool calls — read back from `deploy-audit.log` or pass to BOTH commands in the same block.
+> ⛔ Use the SAME generated password passed to `az deployment sub create`. Shell variables don't persist between tool calls — reload from `deploy-secrets.env` (see deploy-safety.md § Deploy Checklist) or pass to BOTH commands in the same block.
 
 ## After Code Deploy (all paths)
 
@@ -75,12 +75,19 @@ Creating Azure-specific config (e.g., `config-azure.yml`) is fine for non-secret
 
 ACR's `az acr build` uses the classic Docker builder — it does NOT support BuildKit. When `buildRequirements.hasBuildKitSyntax == true`: build using the ACR-compatible copy instead: `az acr build -f Dockerfile.azure .`. The user's original Dockerfile stays untouched. If `Dockerfile.azure` doesn't exist yet, create it by stripping BuildKit syntax from the original Dockerfile per [`dockerfile-generation.md § ACR Build Compatibility`](../../scaffold/references/dockerfile-generation.md).
 
-## Image Parameter Pass-Through (Bicep Redeploy Safety)
+## Parameter Pass-Through (Bicep Redeploy Safety)
 
-When Bicep uses `param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'` as a placeholder, re-deploying IaC (e.g., to fix a firewall rule) resets the image. Pass the real image on every Bicep redeploy:
+⛔ **On every redeploy, pass the SAME values you originally used** — a full desired-state apply, not a patch, so an omitted param reverts to its default and a regenerated secret overwrites the live value. Two params bite:
+
+- **`containerImage`** — omitting it reverts the Container App to the placeholder image.
+- **`administratorLoginPassword`** (DB modules) — passing a new or placeholder value silently RESETS the database admin password, desyncing it from the Key Vault secret the app reads → runtime auth failures (`Access denied for user`).
 
 ```powershell
-az deployment sub create ... --parameters containerImage='{acrLoginServer}/{appName}:latest' --query properties.provisioningState -o tsv
+$dbPassword = az keyvault secret show --subscription {subscriptionId} --vault-name {kvName} --name {db-secret} --query value -o tsv
+az deployment sub create ... `
+  --parameters containerImage='{acrLoginServer}/{appName}:latest' `
+  --parameters administratorLoginPassword=$dbPassword `
+  --query properties.provisioningState -o tsv
 ```
 
 ## Database Post-Deploy Verification

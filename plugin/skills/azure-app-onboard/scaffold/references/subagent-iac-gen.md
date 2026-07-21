@@ -67,9 +67,11 @@ Read [env-var-secrets.md](env-var-secrets.md).
 
 ### Step 6 — Generate data modules (if needed)
 
-ONLY if PostgreSQL or Redis is in the plan. Skip if neither is present.
+ONLY if PostgreSQL, MySQL, or Redis is in the plan. Skip if none are present.
 
-**PostgreSQL Flexible Server module** — include firewall rule (`AllowAllAzureServicesAndResourcesWithinAzureIps` with `0.0.0.0`), extension allow-list (`azure.extensions` config: `uuid-ossp,pgcrypto,pg_trgm`), SSL enforcement, storage config (default 32 GB). Use `@secure() param administratorLoginPassword`. ⛔ Deploy phase must generate password ONCE and pass the SAME value to both `az deployment` and `az keyvault secret set` in a SINGLE command block — shell variables do NOT persist between tool calls.
+**PostgreSQL Flexible Server module** — include the `AllowAllAzureServicesAndResourcesWithinAzureIps` (`0.0.0.0`) firewall rule, extension allow-list (`azure.extensions` config: `uuid-ossp,pgcrypto,pg_trgm`), SSL enforcement, storage config (default 32 GB). Set the server `version` from `prepare-plan.json.services[].version` (capabilities-verified) — do NOT hardcode or guess. Use `@secure() param administratorLoginPassword` — deploy generates the value once and reuses it on redeploy; do NOT bake a value.
+
+**MySQL Flexible Server module** — mirror the PostgreSQL module, with the MySQL-only deltas: `require_secure_transport: ON` config, the server `version` from `prepare-plan.json.services[].version` (ARM rejects major-only strings like `'8.0'` — needs an exact patch such as `'8.0.21'`), and a `flexibleServers/databases` child resource for the compose-declared DB name (e.g. `MYSQLDB_DATABASE`) so the app's schema DB exists in IaC before the container starts. See [bicep-patterns-data.md § MySQL Flexible Server Module](bicep-patterns-data.md).
 
 **Redis Cache module** — Basic SKU, `enableNonSslPort: false`, `minimumTlsVersion: '1.2'`. Store hostname + access key in Key Vault. ⛔ Known Bicep type issue: `sku` property may cause BCP035/BCP187 warnings — these are false positives. If deploy fails with `InvalidRequestBody` for `properties.sku.name`, create via `az redis create --sku Basic --vm-size c0` then reference with `existing` keyword in Bicep.
 
@@ -81,9 +83,9 @@ Wire connection strings via Key Vault `secretRef` (Container Apps) or `@Microsof
 
 **Do:** Create the `infra/` directory and write all files:
 1. `infra/bicepconfig.json` — write `{ "formatting": { "newlineKind": "LF" } }` if it doesn't already exist (user's repo may have one). LF is critical because Bicep triple-quoted strings pass content literally to ARM, and `\r` bytes crash `/bin/sh` in containers.
-2. `infra/main.bicep` — subscription scope, RG creation with tags, module calls for all services + `role-assignments` module (KV deployer + app-to-KV RBAC) + `diagnostic-settings` module (route compute logs → Log Analytics). ⛔ Role assignments and diagnostic settings are NOT optional — they MUST be wired as module calls in `main.bicep` alongside service modules.
+2. `infra/main.bicep` — subscription scope, RG creation with tags, module calls for all services + `role-assignments` module (KV deployer + app-to-KV RBAC), all unconditional.
 3. `infra/main.parameters.json` — ARM JSON format (NOT `.bicepparam`). Include `environmentName`, `location`, `sessionId`, `deployedBy`, `createdAt`. ⛔ **`createdAt` value:** run `Get-Date -Format "o"` in terminal to get the current ISO 8601 timestamp — NEVER use a hardcoded or placeholder date. Do NOT include `@secure()` params (passed at deploy time). Include `deployerObjectId` param (deploy phase passes via `az ad signed-in-user show --query id -o tsv`).
-4. `infra/modules/{service}.bicep` — one module per service from the plan, PLUS `role-assignments.bicep` (KV Secrets Officer for deployer, KV Secrets User for app identity if MI enabled — see [bicep-patterns-security.md](bicep-patterns-security.md) § Key Vault Deployer RBAC) and `diagnostic-settings.bicep` (route App Service/Container Apps logs + metrics to Log Analytics workspace)
+4. `infra/modules/{service}.bicep` — one module per service from the plan, PLUS `role-assignments.bicep` (KV Secrets Officer for deployer, KV Secrets User for app identity if MI enabled — see [bicep-patterns-security.md](bicep-patterns-security.md) § Key Vault Deployer RBAC).
 5. If `buildRequirements.hasBuildKitSyntax == true`: ⛔ create `{component}/Dockerfile.azure` per [dockerfile-generation.md § ACR Build Compatibility](dockerfile-generation.md).
 6. If Container Apps and component has NO Dockerfile: read [dockerfile-generation.md](dockerfile-generation.md) and generate one. Follow the layer ordering, port alignment, and security defaults from that reference — do NOT generate from memory.
 

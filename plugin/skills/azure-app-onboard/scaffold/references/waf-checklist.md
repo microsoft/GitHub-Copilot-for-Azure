@@ -30,7 +30,7 @@ Per-pillar Well-Architected Framework alignment for AppOnboard-generated infrast
 
 ## Operational Excellence
 
-- Diagnostic settings route to Log Analytics workspace
+- `diagnostic-settings` is not scaffolded; if the generator added one it MUST be gated behind `enableDiagnostics` (default `false`) or absent — never wired unconditionally (that blocks the first deploy).
 - Application Insights connected for APM
 - Resource tagging: `app-onboard-skill`, `app-onboard-session-id`, `created-at` (see `bicep-patterns.md` § Service Tagging or `terraform-patterns.md` § Resource Tags)
 - All configurable values parameterized (no hardcoded regions, names, SKUs)

@@ -8,6 +8,8 @@ Artifact write procedures for the prereq phase exit. Read at Step 4 of the [read
 
 1. **`prereq-output.json`** — ⛔ Read [`prereq-schemas.ts`](prereq-schemas.ts) for `PrereqOutput` interface.
 
+   > ⛔ **Per-component verdicts MUST persist.** Every entry in `components[]` MUST include a `verdicts` object: `{ "build", "completeness", "deployability" }` with values `PASS`/`WARN`/`FAIL` (`build` may be `SKIPPED` when build validation was skipped; `completeness`/`deployability` are never `SKIPPED`). Downstream readiness scoring and the prepare phase read these — never omit them.
+   >
    > ⛔ **Warnings MUST persist.** Every ⚠️ WARN → `warnings[]`: `{ "id": "W-{ID}", "component", "axis", "summary", "detail", "fix", "fixPhase" }`. Both `fix` and `fixPhase` are required — validate before writing.
    >
    > ⛔ **Health endpoint:** Write detected path to `healthEndpoint` (e.g., `"/api/v1/health/"`). If none → `null` + `W-HEALTH` warning with `fixPhase: "scaffold"`.
@@ -16,7 +18,7 @@ Artifact write procedures for the prereq phase exit. Read at Step 4 of the [read
    >
    > ⛔ **`postDeployRecommendations[]`:** For each ⚠️ WARN, write per `PostDeployRecommendation` schema from [`session-schemas.ts`](session-schemas.ts): `{ "title", "reason", "effort": "low|medium|high", "services": [] }`.
 
-2. **`context.json`** — ⛔ Use `edit` (not `create` — Step 1 already created it). Populate `components[]`, `repo`, `detectedInfra[]`, `detectedServices[]`, `app.name` (from primary component's project manifest or workspace root dir name). Append `"prereq"` to `completedPhases`, set `currentPhase: null`, update `lastModifiedUtc`.
+2. **`context.json`** — ⛔ Use `edit` (not `create` — Step 1 already created it). Populate `components[]`, `repo`, `detectedInfra[]`, `detectedServices[]`, `app.name` (from primary component's project manifest or workspace root dir name). Append `"prereq"` to `completedPhases` NOW (before presenting), set `currentPhase: null`, update `lastModifiedUtc`.
 
 3. **`readiness-report.md`** — Summary table (Build/Completeness/Deployability verdicts), detected stack, all warnings with actionable detail. Clean markdown, no rigid template.
 

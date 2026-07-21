@@ -13,6 +13,8 @@ For each endpoint: HTTPS GET, 30s timeout, 3 retries (10s/20s/40s backoff).
 | 5xx ×3 | `degraded` | |
 | Timeout/DNS ×3 | `unreachable` | |
 
+> ⛔ **DB-backed apps: a 200 on `/` is NOT healthy.** When `prepare-plan.json.services[]` includes a database, probing only `/` (or any non-DB route) just proves the web server booted. Probe at least one **data-backed route** (derive from the app's detected routes, e.g. a REST resource path) and inspect the body for DB errors (`insecure transport`, `Access denied`, `connection refused`, `Unknown database`, `doesn't exist`) → mark `degraded`, not `healthy`.
+
 ### HTTP Redirect Handling (Container Apps)
 
 > ⛔ **ACA health probes do NOT follow HTTP redirects.** A 301/302 response from the probe path causes `ActivationFailed` — the probe treats it as a failure, not a redirect.
@@ -74,12 +76,13 @@ Overall `healthStatus` = worst status across all endpoints. If any `unreachable`
 
 ## Functional Endpoint Verification
 
-> ⛔ **For apps with user seeding or init scripts, verify functional endpoints after health check.**
+> ⛔ **A 200 on `/` only proves the web server booted — not that the app works.** After the HTTP check, confirm the app actually functions against the services the plan provisioned (database, cache, KV secrets), not just that it responds.
 
-Health checks only confirm the web server is responding — they do NOT confirm the app is fully functional. For apps with initialization patterns, also test:
+Health checks only confirm the web server is responding. Exercise a route that depends on the backing services — for example:
 
 | Pattern | Functional Check |
 |---------|-----------------|
+| Database in the plan (MySQL/PostgreSQL/SQL/Cosmos) | Probe a route that reads/writes the DB (a detected app route, NOT `/` — root often serves a static page with no DB access, so 200 on `/` masks broken DB connectivity). A 5xx or a DB error in the body (`Access denied`, `connection refused`, `does not exist`) → `degraded` — usually a KV↔DB credential mismatch or an unseeded secret. |
 | `FIRST_SUPERUSER` env var or `prestart.sh`/`init_db()` | After health passes, attempt login endpoint. If 401/500 → startup scripts may have failed. Trigger `az containerapp revision restart` to re-run startup. |
 | Migration frameworks (Alembic, Django, Prisma, EF) | After health passes, check `prereq-output.json` for migration signals. If found, run migrations per [database-post-deploy.md](database-post-deploy.md). |
 | Two-phase Container Apps with KV secrets | Wait 60s after Phase 2 for RBAC propagation. If login/API fails with auth errors, KV secrets may not have resolved at revision startup. Create a new revision. |

@@ -7,7 +7,7 @@
 
 ## Remediation Scope
 
-⛔ **Fix ONLY Azure-deployment blockers:** missing dependencies causing build/startup failure, missing entry point, startup crashes, Azure-required configuration (port binding, env var externalization). Everything else → `postDeployRecommendations[]`.
+⛔ **Fix ONLY Azure-deployment blockers:** missing dependencies causing build/startup failure, missing entry point, startup crashes, Azure-required configuration (port binding, env var externalization, managed-DB client TLS/SSL — e.g. `W-MYSQL-SSL`). Everything else → `postDeployRecommendations[]`.
 
 ## Remediation Loop
 
