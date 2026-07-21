@@ -63,7 +63,17 @@ function stampSkillVersions() {
  * The version is fetched once on the first matching file and cached for the rest.
  */
 function stampPluginVersions() {
-  let pluginVersionPromise: Promise<string> | null = null;
+  const versionJson = JSON.parse(
+    readFileSync("plugin/version.json", "utf-8")
+  );
+  const majorMinor = versionJson.version as string;
+
+  const filteredCommits = getFilteredCommits();
+
+  // The last commit is the most recent commit
+  const patchNumber = filteredCommits.length > 0 ? filteredCommits[filteredCommits.length - 1].height : 0;
+
+  const version = `${majorMinor}.${patchNumber}`;
 
   return new Transform({
     objectMode: true,
@@ -74,13 +84,6 @@ function stampPluginVersions() {
       }
 
       try {
-        if (!pluginVersionPromise) {
-          pluginVersionPromise = nbgv
-            .getVersion(path.resolve("plugin"))
-            .then((v) => v.simpleVersion);
-        }
-        const version = await pluginVersionPromise;
-
         const content = file.contents!.toString();
         const versionPlaceholderPattern =
           /("version":\s*")0\.0\.0-placeholder(")/;
@@ -126,18 +129,13 @@ function build() {
   return pipeline;
 }
 
-/**
- * Generates a CHANGELOG.md in the output directory based on merged PRs
- * that touch plugin/ and have titles starting with fix:, feat:, feature:, chore:, misc:, test:, or eval:.
- * Each version corresponds to a single first-parent commit touching plugin/
- * since the NBGV baseline commit (when plugin/version.json was introduced).
- */
-function generateChangelog(): void {
-  const versionJson = JSON.parse(
-    readFileSync("plugin/version.json", "utf-8")
-  );
-  const majorMinor = versionJson.version as string;
+type Commit = {
+  hash: string;
+  subject: string;
+  height: number;
+};
 
+function getFilteredCommits(): Commit[] {
   // Find the commit that introduced plugin/version.json (the NBGV baseline).
   const baselineCommit = execSync(
     "git log --diff-filter=A --format=%H --first-parent -- plugin/version.json",
@@ -146,7 +144,7 @@ function generateChangelog(): void {
 
   if (!baselineCommit) {
     log.warn("Could not find baseline commit for plugin/version.json; skipping changelog generation.");
-    return;
+    return [];
   }
 
   // Enumerate first-parent commits touching plugin/ from baseline (inclusive) to HEAD.
@@ -158,7 +156,7 @@ function generateChangelog(): void {
 
   if (!logOutput) {
     log.warn("No commits found touching plugin/; skipping changelog generation.");
-    return;
+    return [];
   }
 
   const commits = logOutput.split("\n").map((line, index) => {
@@ -169,6 +167,21 @@ function generateChangelog(): void {
   // Filter to only include PRs with fix:/feat:/feature:/chore:/misc:/test:/eval: prefixes.
   const prefixRe = /^(fix|feat|feature|chore|misc|test|eval)(\(.+?\))?:/i;
   const filtered = commits.filter((c) => prefixRe.test(c.subject));
+
+  return filtered;
+}
+
+/**
+ * Generates a CHANGELOG.md in the output directory based on merged PRs
+ * that touch plugin/ and have titles starting with fix:, feat:, feature:, chore:, misc:, test:, or eval:.
+ * Each version corresponds to a single first-parent commit touching plugin/
+ * since the NBGV baseline commit (when plugin/version.json was introduced).
+ */
+function generateChangelog(): void {
+  const versionJson = JSON.parse(
+    readFileSync("plugin/version.json", "utf-8")
+  );
+  const majorMinor = versionJson.version as string;
 
   // Determine the repository URL for PR links. Prefer the "upstream" remote
   // (the canonical repo where PRs live) and fall back to "origin".
@@ -183,8 +196,10 @@ function generateChangelog(): void {
   // Build changelog content (newest first).
   let content = "# Changelog\n";
 
-  for (let i = filtered.length - 1; i >= 0; i--) {
-    const entry = filtered[i];
+  const filteredCommits = getFilteredCommits();
+
+  for (let i = filteredCommits.length - 1; i >= 0; i--) {
+    const entry = filteredCommits[i];
     const version = `${majorMinor}.${entry.height}`;
     // Turn (#NNN) into a markdown link.
     const subject = entry.subject.replace(
@@ -196,7 +211,7 @@ function generateChangelog(): void {
 
   mkdirSync("output", { recursive: true });
   writeFileSync("output/CHANGELOG.md", content, "utf-8");
-  log(`generated CHANGELOG.md with ${filtered.length} entries`);
+  log(`generated CHANGELOG.md with ${filteredCommits.length} entries`);
 }
 
 export default build;
