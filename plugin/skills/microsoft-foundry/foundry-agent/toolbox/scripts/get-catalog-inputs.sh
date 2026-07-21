@@ -39,7 +39,8 @@ done
 
 GALLERY="https://eastus.api.azureml.ms/asset-gallery/v1.0/tools"
 # Prefer real `python`; the bare `python3` on Windows is often a broken Store alias.
-PY="$(command -v python || command -v python3)"
+PY="$(command -v python || command -v python3 || true)"
+[ -n "$PY" ] || { echo "error: python (or python3) is required" >&2; exit 2; }
 
 TOKEN=$(az account get-access-token --resource "https://management.azure.com" --query accessToken -o tsv)
 SUB=$(az account show --query id -o tsv)
