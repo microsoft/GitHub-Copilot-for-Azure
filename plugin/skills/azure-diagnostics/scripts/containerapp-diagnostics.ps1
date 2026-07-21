@@ -36,12 +36,12 @@ if ($LASTEXITCODE -ne 0) { Write-Host "(failed to list revisions)" }
 Write-Host ""
 
 Write-Host "--- Registry Config ---"
-az containerapp show --name $Name -g $ResourceGroup @subArgs --query "properties.configuration.registries" -o json
+az containerapp show --name $Name -g $ResourceGroup @subArgs --query "properties.configuration.registries"
 if ($LASTEXITCODE -ne 0) { Write-Host "(failed to read registry config)" }
 Write-Host ""
 
 Write-Host "--- Ingress Config ---"
-az containerapp show --name $Name -g $ResourceGroup @subArgs --query "properties.configuration.ingress" -o json
+az containerapp show --name $Name -g $ResourceGroup @subArgs --query "properties.configuration.ingress"
 if ($LASTEXITCODE -ne 0) { Write-Host "(failed to read ingress config)" }
 Write-Host ""
 

@@ -52,12 +52,12 @@ echo ""
 
 echo "--- Registry Config ---"
 az containerapp show --name "$APP" -g "$RG" "${SUB_ARGS[@]}" \
-    --query "properties.configuration.registries" -o json || echo "(failed to read registry config)"
+    --query "properties.configuration.registries" || echo "(failed to read registry config)"
 echo ""
 
 echo "--- Ingress Config ---"
 az containerapp show --name "$APP" -g "$RG" "${SUB_ARGS[@]}" \
-    --query "properties.configuration.ingress" -o json || echo "(failed to read ingress config)"
+    --query "properties.configuration.ingress" || echo "(failed to read ingress config)"
 echo ""
 
 echo "--- Recent Logs (last 20 lines) ---"
