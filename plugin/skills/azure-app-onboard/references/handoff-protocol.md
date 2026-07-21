@@ -78,14 +78,30 @@ Include this in the chat handoff AND in `deployment-summary.md`.
 
 > ⛔ **Skill-based next steps are MANDATORY.** Always suggest at minimum `azure-compliance` and `azure-resource-visualizer`. Evaluate every condition below.
 
-> ⛔ **Suggest only — do NOT invoke.** Present skill names as suggestions. Do NOT route to, execute, or offer to run them. The pipeline ends at handoff.
+> ⛔ **Suggest, don't self-execute.** Present these as optional suggestions. The deploy agent must NEVER perform post-deploy infra changes itself — zone redundancy, private endpoints, SKU upgrades, and resource re-creation are imperative mutations the deploy phase must not make. If the user explicitly opts into one, route to that skill as a new, scoped task; otherwise the pipeline ends at handoff.
 
 | Condition | Suggest |
 |-----------|--------|
 | Always | **`azure-compliance`** — "Run a compliance scan on your deployed resources" |
 | Always | **`azure-resource-visualizer`** — "Generate an architecture diagram of your resource group" |
+| Reliability/HA gaps (single-zone, no failover, prod workload) or user asks to "harden" / "make production-ready" | **`azure-reliability`** — "Assess & improve reliability: zone redundancy, multi-region failover, health probes" |
+| Cost-sensitive workload or user asks about spend | **`azure-cost`** — "Review and optimize your Azure spend" |
 | Health check failed / `healthStatus: "degraded"/"unreachable"` | **`azure-diagnostics`** — "Troubleshoot your deployment" |
 | Auth/OAuth/MSAL detected in intent or prereq | **`entra-app-registration`** — "Set up app registration for your auth flow" |
 | `postDeployRecommendations[]` has upgrade suggestions | **`azure-upgrade`** — "Upgrade your runtime or framework" |
 | Storage-heavy patterns | **`azure-storage`** — "Optimize your storage configuration" |
-| `postDeployRecommendations[]` mentions RBAC/role | **`mcp_azure_mcp_role`** — offer to configure custom role assignments |
+| `postDeployRecommendations[]` mentions RBAC/role | **`azure-rbac`** — "Configure least-privilege role assignments" |
+
+## Completion
+
+> ⛔ **End the handoff with an explicit completion line — the LAST thing you emit.** It marks the pipeline done (so you stop working) and tells the user the core task succeeded and anything more is their choice. Frame it as closure WITH an open door — never a hard stop.
+>
+> ⛔ **Use this EXACT sentence verbatim — do NOT paraphrase, reword, or reorder it:** "The onboarding pipeline is finished." Only `{primary endpoint URL}` varies. This exact phrase is a required completion marker.
+
+```
+✅ **Deployment complete — your app is live at {primary endpoint URL}.** The onboarding pipeline is
+finished. The next steps above are optional — tell me which you'd like and I'll route you to the
+right skill.
+```
+
+> ⛔ **The recommendations above are OPTIONAL — do NOT autonomously execute them.** Present them and let the user choose; if they pick one, route to the matching skill (it makes the change properly). Don't turn a general acknowledgment into a batch of unsolicited hardening. Beyond this point the session is the user's — they may continue, invoke another skill, or run their own commands; that's expected and no longer part of this pipeline.

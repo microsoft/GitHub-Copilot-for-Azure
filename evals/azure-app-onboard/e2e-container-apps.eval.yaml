@@ -27,8 +27,8 @@ stimuli:
   # Test repo: butlerx/wetty (Node/TypeScript, Dockerized terminal-in-browser app).
   # Deploy a Dockerized GitHub app to Azure Container Apps: ACR build + Container Apps
   # via Bicep. Cost ~$5 (Container Apps + ACR). Filter: --tag debug=wetty-container-apps.
-  # No `earlyTerminate`; runs to completion. Pass criterion = shell-command-invoked
-  # grader confirms `az acr build` / `docker build` ran and ingress URL is azurecontainerapps.io.
+  # `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished"); `az acr build`
+  # / `docker build` + ingress URL (azurecontainerapps.io) all complete before it.
   - name: "Deploy - Wetty Code To Container Apps"
     prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
     environment:
@@ -46,6 +46,8 @@ stimuli:
       area: e2e-deployment
       debug: wetty-container-apps
       skill: azure-app-onboard
+      # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
       followUp:
         - "Just go with defaults using my current subscription."
@@ -93,11 +95,16 @@ stimuli:
           required:
             - command: "(?i)az\\s+acr\\s+build|docker\\s+(build|push)"
               description: "ACR build / docker build executed"
+            # ── LIVE HEALTH CHECK RAN: agent must actually HTTP-GET the Container Apps ingress FQDN.
+            - command: "(?is)(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b.*azurecontainerapps\\.io"
+              description: "agent ran a live HTTP health check against the deployed endpoint"
           disallowed:
             - command: "(?i)terraform\\s+(init|plan|apply)"
               description: "no Terraform"
             - command: "(?i)azd\\s+(up|provision|deploy)\\b"
               description: "no azd fallback"
+            - command: "(?i)\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
+              description: "no imperative resource create"
       # Agent MUST NOT hand back manual "Next Steps" for code deploy instead of executing it
       - type: output-not-matches
         config:
@@ -109,12 +116,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      # Agent MUST NOT create Azure resources imperatively — flow uses IaC (folded from shallow duplicate)
-      - type: shell-command-invoked
-        config:
-          disallowed:
-            - command: "(?i)\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
-              description: "no imperative resource create"
       # Prereq artifacts MUST be written (folded from shallow duplicate)
       - type: file-exists
         config:
@@ -144,6 +145,10 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
           pattern: "(?i)node|typescript|docker"
+      # Dockerized app detected in output (migrated from prepare Service Mapping - Wetty)
+      - type: output-matches
+        config:
+          pattern: "(?i)dockerfile|docker-compose|docker compose|compose\\.y"
       # Context MUST record completed phases (folded from shallow duplicate)
       - type: file-matches
         config:
@@ -182,11 +187,11 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
           pattern: '"resourceIds"\s*:\s*\['
-      # healthStatus MUST be one of the DeployResult enum values from deploy-schemas.ts.
+      # healthStatus MUST be "healthy" — degraded/unreachable/unknown → failing grader (⚠ PASS* at 0.8).
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"healthStatus"\s*:\s*"(healthy|degraded|unreachable|unknown)"'
+          pattern: '"healthStatus"\s*:\s*"healthy"'
       # endpoints array MUST be present (populated for successful deploys).
       - type: file-matches
         config:

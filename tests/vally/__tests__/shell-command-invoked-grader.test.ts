@@ -109,6 +109,23 @@ describe("ShellCommandInvokedGrader", () => {
     expect(result.score).toBe(0);
   });
 
+  test("scans shell tools beyond bash/powershell by default (e.g. run_in_terminal)", async () => {
+    // The CLI emits shell commands under tool names like `run_in_terminal`,
+    // `run_command`, `shell`, and `terminal` — not just bash/powershell/pwsh.
+    // A disallowed command run through any of them MUST fail; otherwise a
+    // banned `azd up` would silently pass ungraded.
+    for (const toolName of ["run_in_terminal", "run_command", "shell", "terminal"]) {
+      const events = [makeToolCall(toolName, "cd infra && azd up --no-prompt")];
+      const result = await grader.grade(
+        makeInput(events, {
+          disallowed: [{ command: "\\bazd\\s+(up|provision|deploy)\\b" }],
+        }),
+      );
+      expect(result.passed).toBe(false);
+      expect(result.score).toBe(0);
+    }
+  });
+
   test("supports a leading (?i) inline-flag prefix (case-insensitive match)", async () => {
     const events = [makeToolCall("bash", "az acr build --registry myacr .")];
     const result = await grader.grade(

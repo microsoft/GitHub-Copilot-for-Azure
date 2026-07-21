@@ -78,7 +78,7 @@ Check before mapping — delegate to specialized skill if matched:
 | Copilot SDK, `@github/copilot-sdk` | `azure-hosted-copilot-sdk` |
 | Foundry agent, AI agent deployment | `microsoft-foundry` |
 
-> ⛔ **Non-Azure cloud SDK deps** (AWS/GCP/Firebase) are handled by prereq — `routeToSkill: "azure-cloud-migrate"` is set and the pipeline halts before reaching prepare. If you see cloud SDK findings here, prereq routing failed — HALT and do NOT continue architecture planning.
+> ⛔ **Non-Azure cloud SDK deps** (AWS/GCP/Firebase) are handled by prereq — the pipeline does NOT reach prepare with cloud SDK findings present. If you see cloud SDK findings here, prereq failed to stop — HALT and do NOT continue architecture planning.
 
 ## Non-Azure Terraform Resource Mapping
 

@@ -3,7 +3,7 @@
 | Error | Remediation |
 |-------|-------------|
 | `prepare-plan.json` missing | Trigger prepare backfill via `azure-app-onboard` orchestrator. Do not generate IaC without a plan. |
-| Existing Azure IaC (`.bicep`, `azure.yaml`, or `.tf` with `azurerm` provider) | Refuse overwrite. Inform user: "Found existing Azure IaC files. Remove or rename before scaffolding." |
+| Existing Azure IaC (`.bicep`, `azure.yaml`, or `.tf` with `azurerm` provider) | ⛔ Never delete/overwrite; move to `.copilot-azure/sessions/<id>/replaced-files/` (mirror path), tell the user their original was preserved at that backup location, then scaffold. |
 | Existing non-Azure IaC (`.tf` with GCP/AWS provider) | Generate Azure TF alongside — see [terraform-patterns.md § Non-Azure IaC coexistence](terraform-patterns.md). Do NOT halt. |
 | MCP tool unavailable | Fall back to reference patterns. Flag generated IaC as "unverified against best practices." |
 | Self-review finds FLAGGED items | Include in `scaffold-manifest.json.selfReview.findings[]`. Surface at approval gate. |

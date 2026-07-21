@@ -16,6 +16,8 @@ Display the architecture plan for user approval BEFORE generating any files:
 
 Also display: services + SKUs + region + resource names + monthly cost estimate + files to generate. **Check `context.json.overrides[]` for `iacFormat`** — if Terraform, display "Terraform templates (`infra/*.tf`)"; if Bicep (default), display "Bicep templates (`infra/main.bicep`)". Show resource names so the user sees what will be created.
 
+> ⛔ **Surface plan assumptions.** If `prepare-plan.json.assumptions[]` is present (e.g., free-tier degradation to a paid SKU), display each note prefixed with ⚠️ ABOVE the approval prompt — the user MUST see WHY the cost or SKU differs from the fast-track default. Do not bury or omit them.
+
 Verify file list against target SKU — F1/D1: no Dockerfile (built-in runtime). ⛔ **Exclude `azure.yaml` from file list** (see pipeline-rules.md).
 
 > ⛔ **Container Apps code deploy preview (when plan includes Container Apps).** After the service table, preview the deploy path: build via ACR, replace placeholder images, redeploy. If `buildRequirements.hasBuildKitSyntax == true`, note ACR-compatible versions will be created.

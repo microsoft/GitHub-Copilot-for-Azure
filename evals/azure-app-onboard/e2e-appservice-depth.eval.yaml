@@ -29,8 +29,8 @@ stimuli:
   # Test repo: samcdonald-ms/bya-simple-web-app (Express/Node web app).
   # "New to Azure" deploy of an Express app with no infra setup: prereq → prepare →
   # scaffold → deploy → App Service via Bicep. Filter: --tag debug=deploy-depth-bya.
-  # No `earlyTerminate`; runs to completion. Pass criteria = incremental deploy-audit.log
-  # written + schema-valid deploy-result.json (status "succeeded").
+  # `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished"); deploy
+  # commands + deploy-audit.log + schema-valid deploy-result.json (status "succeeded") all complete by then.
   - name: "Deploy Depth - Audit Log And Result Schema"
     prompt: "I'm new to Azure. Can you get my existing app running without me setting up infrastructure?"
     environment:
@@ -48,6 +48,8 @@ stimuli:
       area: e2e-deployment
       debug: deploy-depth-bya
       skill: azure-app-onboard
+      # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
       followUp:
         - "Just go with defaults, cheapest option, using my current subscription."
@@ -82,6 +84,9 @@ stimuli:
           required:
             - command: "(?i)az\\s+webapp\\s+deploy\\b|az\\s+deployment\\s+(sub|group)\\s+create\\b"
               description: "App Service / Bicep deploy executed"
+            # ── LIVE HEALTH CHECK RAN: agent must actually HTTP-GET the deployed endpoint.
+            - command: "(?is)(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b.*azurewebsites\\.net"
+              description: "agent ran a live HTTP health check against the deployed endpoint"
           disallowed:
             - command: "(?i)terraform\\s+(init|plan|apply)"
               description: "Bicep is default IaC — no Terraform"
@@ -192,10 +197,11 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
           pattern: '"resourceIds"\s*:\s*\['
+      # healthStatus MUST be "healthy" — degraded/unreachable/unknown → failing grader (⚠ PASS* at 0.8).
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"healthStatus"\s*:\s*"(healthy|degraded|unreachable|unknown)"'
+          pattern: '"healthStatus"\s*:\s*"healthy"'
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"

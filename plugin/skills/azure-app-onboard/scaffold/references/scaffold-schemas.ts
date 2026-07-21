@@ -43,7 +43,7 @@ export interface ScaffoldFile {
 }
 
 export interface SelfReviewFinding {
-  layer: number;
+  layer: string; // "L1" | "L2" | "L3" | "L4"
   claim: string;
   rating: SelfReviewRating;
   detail: string;

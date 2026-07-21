@@ -46,6 +46,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -112,6 +113,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -181,6 +183,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -241,6 +244,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -311,6 +315,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -377,6 +382,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -443,6 +449,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -506,6 +513,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -540,6 +548,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -573,6 +582,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -601,6 +611,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -634,6 +645,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -667,6 +679,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -701,6 +714,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
     environment:
@@ -734,6 +748,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
     environment:
@@ -767,6 +782,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
     environment:
@@ -800,6 +816,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
     environment:
@@ -834,6 +851,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -867,6 +885,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
     environment:
@@ -901,6 +920,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
+      cost: llm
       area: routing
       skill: azure-app-onboard-prereq
     constraints:
@@ -919,6 +939,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
+      cost: llm
       area: routing
       skill: azure-app-onboard-prereq
     constraints:
@@ -934,6 +955,7 @@ stimuli:
     tags:
       type: integration
       tier: smoke
+      cost: llm
       area: routing
       skill: azure-app-onboard-prereq
     constraints:

@@ -36,8 +36,10 @@ $sub = '{subscriptionId}'; $sku = '{sku}'
 @('{userRegion}','{alt1}','{alt2}','{alt3}') | ForEach-Object {
   $limit = az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Web/locations/$_/providers/Microsoft.Quota/quotas/$sku?api-version=2023-02-01" --query "properties.limit.value" -o tsv 2>$null
   $used  = az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.Web/locations/$_/providers/Microsoft.Quota/usages/$sku?api-version=2023-02-01" --query "properties.usages.value" -o tsv 2>$null
-  $avail = if ($limit -and $used) { [int]$limit - [int]$used } elseif ($limit) { [int]$limit } else { 'unknown' }
-  Write-Host "$_ : $sku available=$avail"
+  # limit=0 with used=-1 is the API's "Free tier not offered here" sentinel — treat limit<=0 as BLOCKED and clamp negative usage so 0-(-1) does NOT become a false-positive 1.
+  $ln = if ($limit) { [int]$limit } else { $null }; $un = if ($used) { [int]$used } else { 0 }
+  $avail = if ($null -eq $ln) { 'unknown' } elseif ($ln -le 0) { 0 } else { $ln - [math]::Max(0, $un) }
+  Write-Host "$_ : $sku limit=$limit available=$avail"
 }
 ```
 
@@ -45,6 +47,12 @@ $sub = '{subscriptionId}'; $sku = '{sku}'
 ```powershell
 az rest --method get --url "https://management.azure.com/subscriptions/$sub/providers/Microsoft.App/locations/{region}/usages?api-version=2024-03-01" --query "value[?name.value=='ManagedEnvironmentCount'].{used:currentValue, limit:limit}" -o json
 ```
+
+**Static Web Apps:** No `Microsoft.Quota` provider — Free plan caps at ~10 apps/subscription (per docs; may vary, treat as guideline). Count existing Free apps:
+```powershell
+az staticwebapp list --query "length([?sku.name=='Free'])" -o tsv
+```
+At/near cap → treat SWA Free as UNAVAILABLE (no self-service increase — raises need a support request). Fall back per [After Checking](#after-checking).
 
 **Storage / Key Vault:** Default limits rarely exhausted — skip unless plan requires multiple accounts.
   } else { Write-Host "$_ : no-data" }
@@ -57,7 +65,7 @@ az rest --method get --url "https://management.azure.com/subscriptions/$sub/prov
 
 ### Interpret Results
 
-- `available > 0` → AVAILABLE. `available = 0` / `limit = 0` → BLOCKED. 404/empty → fallback candidate.
+- `available > 0` → AVAILABLE. `available = 0` / `limit <= 0` → BLOCKED (a `limit=0`, `used=-1` response is the API sentinel for "Free tier not offered in this region" — the script clamps it so it does not read as available). 404/empty → fallback candidate.
 - `az rest` fails → `quotaValidation: { verified: false, method: "unverifiable" }`.
 
 ### After Checking

@@ -12,6 +12,7 @@ Resolve active session via pointer file.
 >
 > 1. **STOP** — Do not answer the user's question, scan code, or plan architecture yet
 > 2. **CHECK** — Read `.copilot-azure/sessions/active-session.json`.
+>    - ⛔ **First, ensure the repo's `.gitignore` contains `.copilot-azure/`** (append if missing, create the file if absent) — this runs on EVERY path below, BEFORE any branch writes a session file, since session artifacts may hold deploy secrets.
 >    - **Pointer exists** → ⛔ **You MUST read [`session-schemas.ts`](session-schemas.ts)** to get the exact field names and types for `AppOnboardContext`. Do not guess field names. Then read the pointed-to session's `context.json`. Display: "Found session from [lastModifiedUtc] — {statusSummary}." ⛔ **You MUST ask the user via `ask_user`: "Resume this session or start fresh?" Do NOT auto-resume.** This gate is mandatory — stale sessions from prior tests cause the agent to skip sub-SKILL.md reads and miss artifact writes.
 >      - Resume → ⛔ **Read the sub-SKILL.md for the NEXT phase** (derive from `completedPhases`). E.g., prereq done → read `prepare/SKILL.md`. Then continue from that phase.
 >        - ⛔ **If `context.json.routeToSkill` is set:** The previous session was halted for migration (e.g., `azure-cloud-migrate`). The code has likely changed since then. **Do NOT skip prereq** — start fresh: clear `routeToSkill`, `routeReason`, remove `"prereq"` from `completedPhases`, and re-run from Step 2. This ensures the migrated codebase gets a clean 3-axis evaluation.
@@ -53,6 +54,7 @@ Call `mcp_azure_mcp_extension_cli_install` with `cli-type: "az"` to verify Azure
 | Location | Artifacts |
 |----------|-----------|
 | `.copilot-azure/sessions/{uuid}/` | `context.json`, `prereq-output.json`, `prepare-plan.json`, `scaffold-manifest.json`, `deploy-result.json` |
+| `.copilot-azure/sessions/{uuid}/replaced-files/` | User files displaced by scaffold (existing IaC), stored at their original relative path (**mirror path** = same directory structure as the repo). Never overwritten or deleted — moved here so the original is preserved. |
 
 ## Phase-gated Reference Loading
 

@@ -11,8 +11,10 @@ import { stripNonExecutableContent } from "../utils/evaluate.ts";
  */
 export type ShellCommandInvokedRule = {
   /**
-   * Regex for the tool name. Defaults to `(?i)^(bash|powershell|pwsh)$`
-   * (case-insensitive, matching the built-in `tool-calls` grader configs).
+   * Regex for the tool name. Defaults to
+   * `(?i)^(bash|powershell|pwsh|run_in_terminal|run_command|shell|terminal)$`
+   * (case-insensitive) so every shell tool the CLI emits is scanned — a
+   * disallowed command run via `run_in_terminal` must not slip through ungraded.
    * Supports a leading `(?ims)` inline-flag prefix.
    */
   name?: string;
@@ -43,7 +45,7 @@ export type ShellCommandInvokedGraderConfig = {
   disallowed?: ShellCommandInvokedRule[];
 };
 
-const DEFAULT_TOOL_NAME_PATTERN = "(?i)^(bash|powershell|pwsh)$";
+const DEFAULT_TOOL_NAME_PATTERN = "(?i)^(bash|powershell|pwsh|run_in_terminal|run_command|shell|terminal)$";
 const INLINE_FLAGS = /^\(\?([ims]+)\)/;
 
 /**

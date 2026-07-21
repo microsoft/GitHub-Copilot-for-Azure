@@ -35,7 +35,7 @@ When `az deployment sub create` returns 403 (insufficient subscription-scope per
 
 ## Deploy Checklist
 
-> ⛔ **Use sync shells** so state persists. **Persist secrets** to `.copilot-azure/sessions/{id}/deploy-secrets.env` — generate each secret ONCE (URL-safe, no `/+=`), reload in every later shell. Never regenerate an existing key.
+> ⛔ **Use sync shells** so state persists. **Persist secrets** to `.copilot-azure/sessions/{id}/deploy-secrets.env` — generate each secret ONCE (URL-safe, no `/+=`), reload in every later shell. Never regenerate an existing key. Key Vault is the durable source of truth for every secret (the file is only a cross-shell reload cache and is git-ignored via `.copilot-azure/`). NEVER echo or log rendered secret values.
 >
 > ⛔ **URL-safe passwords required** when app uses URL-based connection strings. Forbidden chars: `# @ / ? % : & = + ;`.
 > ⛔ **`az webapp deploy` does NOT support `--track-status`.**

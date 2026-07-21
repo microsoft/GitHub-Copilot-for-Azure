@@ -123,4 +123,4 @@ Per-pillar spot check against [Azure Well-Architected Framework](https://learn.m
 
 ## Output
 
-Write findings to `scaffold-manifest.json.selfReview.findings[]`: `{ "layer": N, "claim": "...", "rating": "FLAGGED", "detail": "..." }`. All `FLAGGED` must be resolved or surfaced at deploy gate. `PLAUSIBLE` = informational.
+Write findings to `scaffold-manifest.json.selfReview.findings[]`: `{ "layer": "L1", "claim": "...", "rating": "FLAGGED", "detail": "..." }` (layer is one of `"L1"`|`"L2"`|`"L3"`|`"L4"`). All `FLAGGED` must be resolved or surfaced at deploy gate. `PLAUSIBLE` = informational.

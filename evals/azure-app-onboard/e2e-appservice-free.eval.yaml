@@ -27,9 +27,9 @@ stimuli:
   # Test repo: Azure-Samples/app-service-web-html-get-started (static HTML site).
   # Fast-track deploy of a static site to App Service F1 ($0) / Static Web Apps Free
   # via Bicep — no stack/DB/auth questions asked. Filter: --tag debug=fasttrack-html.
-  # No `earlyTerminate` (substring-matches scaffold heredoc/checklist text and false-
-  # positives); runs to completion. Pass criterion = shell-command-invoked grader
-  # confirms `az webapp deploy` / `az staticwebapp create` actually ran.
+  # `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished") — the
+  # LAST handoff emit, so no false-positive on scaffold/checklist text. All deploy commands + artifacts
+  # complete by then; it blocks post-handoff drift.
   - name: "Fast Track - HTML Site Free Tier"
     prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
     environment:
@@ -47,6 +47,8 @@ stimuli:
       area: e2e-deployment
       debug: fasttrack-html
       skill: azure-app-onboard
+      # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
       followUp:
         - "Just go with defaults using my current subscription."
@@ -76,10 +78,12 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)static|html"
-      # Free tier / F1 SKU signal MUST appear
+      # Fast Track path: the skill auto-selects the cheapest viable tier WITHOUT asking — assert the
+      # cost-optimization reasoning, NOT a literal tier, so it passes whether it lands on F1, SWA Free,
+      # or a quota-driven fallback. ("No stack/DB/auth questions" is asserted separately below.)
       - type: output-matches
         config:
-          pattern: "(?i)free tier|f1|free|\\$0|static web"
+          pattern: "(?i)cheap|lowest.?cost|cost.?effective|most affordable|free|\\$0|budget|economical|low.?cost"
       # App Service deploy MUST have been executed. Uses shell-command-invoked
       # (not the built-in tool-calls grader): it strips heredoc bodies before
       # matching, so disallowed patterns like "azd up" that appear as literal
@@ -93,6 +97,10 @@ stimuli:
           required:
             - command: "(?i)az\\s+webapp\\s+deploy\\b|az\\s+staticwebapp\\s+create\\b|az\\s+deployment\\s+(sub|group)\\s+create\\b"
               description: "App Service / SWA / Bicep deploy executed"
+            # ── LIVE HEALTH CHECK RAN: agent must actually HTTP-GET the deployed endpoint
+            #    (not just self-report healthStatus). Grounded in observed curl/iwr calls.
+            - command: "(?is)(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b.*(azurewebsites\\.net|azurestaticapps\\.net)"
+              description: "agent ran a live HTTP health check against the deployed endpoint"
           disallowed:
             - command: "(?i)terraform\\s+(init|plan|apply)"
               description: "Bicep is default IaC — no Terraform"
@@ -208,11 +216,12 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
           pattern: '"resourceIds"\s*:\s*\['
-      # healthStatus MUST be one of the DeployResult enum values from deploy-schemas.ts.
+      # healthStatus MUST be "healthy" — a degraded/unreachable/unknown app (the skill's own
+      # health check found a default page, 5xx, or timeout) is a failing grader → ⚠ PASS* at 0.8.
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"healthStatus"\s*:\s*"(healthy|degraded|unreachable|unknown)"'
+          pattern: '"healthStatus"\s*:\s*"healthy"'
       # endpoints array MUST be present (populated for successful deploys).
       - type: file-matches
         config:
@@ -224,13 +233,23 @@ stimuli:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
           pattern: '"deploymentNames"\s*:\s*\['
 
-      # ── FAST-TRACK AUTO-CHEAPEST: prepare-plan MUST pick F1 or Static Web Apps Free ──
-      # Validates the Fix C skill edit (prepare/references/sku-matrix.md § Auto-Cheapest).
-      # Cheapest App Service SKU is F1 ($0); cheapest static hosting is Static Web Apps Free.
+      # ── FAST-TRACK AUTO-CHEAPEST (+ justified paid fallback) ───────────────
+      # Fast-track picks the cheapest AVAILABLE tier: F1 / Static Web Apps Free when quota allows,
+      # otherwise the cheapest available paid tier when there is no F1 quota AND the SWA Free cap is
+      # reached (see prepare/references/sku-quota-validation.md § After Checking).
+      # (1) SKU is a free tier OR the cheapest paid fallback (Basic). Standard/Premium (S*/P*) are a
+      #     genuine over-provision for fast-track and MUST fail this grader.
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prepare-plan.json"
-          pattern: '(?i)"sku"\s*:\s*"F1(\s+\(Free\))?"|Microsoft\.Web/staticSites|static\s*web\s*apps?.*free'
+          pattern: '(?i)"sku"\s*:\s*"(F1|Free|B1|B2|B3)"|Microsoft\.Web/staticSites|static\s*web\s*apps?'
+      # (2) NO SILENT UPGRADE: either it stayed on a free tier, OR the plan records WHY fast-track
+      #     degraded off free (the assumptions[] note surfaced at the approval gate). A paid SKU with
+      #     no degradation reason fails this grader — catching a silent, unexplained upgrade.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '(?is)"sku"\s*:\s*"(F1(\s+\(Free\))?|Free)"|static\s*web\s*apps?.*free|no F1 quota|free (tier|cap)|cap reached|not possible|fall ?back|degrad'
 
       # ── LIVE ENDPOINT SURFACED: proof of real deploy output to user ────────
       # (Matches Jest `hasEndpoint` check for the deployed URL — this cannot pass

@@ -30,9 +30,21 @@
 
 1. Pick SKU from [sku-matrix.md](sku-matrix.md) based on budget intent.
 2. Find service section in [pricing-guide-services.md](pricing-guide-services.md) for filter strings and formulas.
-3. Call `mcp_azure_mcp_pricing` → `pricing_get` per paid service (parallel OK — independent queries). ⛔ Requires at least one filter: `--sku`, `--service`, `--region`, `--service-family`, or `--filter`. Use `--sku` only when `armSkuName` is populated for that service.
-4. Apply per-service monthly formula.
+3. Call the pricing router — tool `mcp_azure_mcp_pricing` (VS Code) / `azure-pricing` (CLI) — with `intent`, `command: "pricing_get"`, and a `parameters` object (NOT `--flags`). Parallel OK. ⛔ At least one filter inside `parameters`: `sku`, `service`, `region`, `service-family`, or `filter`. ⛔ **`sku` matches `armSkuName`, not `skuName`** — use it ONLY when `armSkuName` is populated (App Service, MySQL/PostgreSQL, Redis). Empty-`armSkuName` services (ACR, Storage, Cosmos, Key Vault) return `[]` or 400 for `sku`/`service` — use a raw `filter` on `serviceName` + `meterName` instead.
+4. Apply the monthly multiplier from each meter's `unitOfMeasure` (see § Monthly Multiplier) — NOT a per-service constant.
 5. Cross-check returned `retailPrice` against planned SKU.
+
+## Monthly Multiplier — by Meter Unit
+
+⛔ **Read `unitOfMeasure` per price record — NEVER blanket `× 730`** (one service mixes units, e.g. ACR returns `1/Day` + `1 Second` + `1 GB/Month`):
+
+| `unitOfMeasure` | Monthly formula |
+|-----------------|-----------------|
+| `1 Hour` / `1/Hour` | `retailPrice × 730` |
+| `1/Day` / `1 Day` | `retailPrice × 30` |
+| `1 GB/Month` | `retailPrice × estimatedGB` (already monthly) |
+| `1 Second` / `1 GiB Second` | `retailPrice × activeUnitsPerMonth` (usage-based) |
+| `10K` / `1M` operations | `retailPrice × estimatedOps ÷ unitSize` |
 
 ## Usage-Based Services
 
@@ -44,9 +56,9 @@ See [pricing-guide-services.md](pricing-guide-services.md) for per-service filte
 
 **Key rules:**
 - `armSkuName` is empty for most PaaS — filter by `meterName` or `productName`
-- SQL DTU: multiply by 30 (per-day). Container Apps: per-second
+- Monthly multiplier: read `unitOfMeasure` (§ Monthly Multiplier) — never assume ×730
 - Functions Consumption / Static Web Apps: not in API
-- Always include `isPrimaryMeterRegion eq true` and `priceType eq 'Consumption'`
+- Default `isPrimaryMeterRegion eq true` + `priceType eq 'Consumption'` — but check the service section in [pricing-guide-services.md](pricing-guide-services.md) first; some drop `isPrimaryMeterRegion` (Service Bus, Cosmos 100 RU/s, Redis Basic).
 - Service names are case-sensitive
 
 ## Troubleshooting

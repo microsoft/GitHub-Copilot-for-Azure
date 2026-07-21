@@ -33,6 +33,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - Verify portal link is still correct if healing changed the deployment name
 
 ## Code deploy — App Service (delete if not using App Service)
+- ⛔ **Deploy command: `az webapp deploy --type zip`** (Entra-capable, supports `--async`). NEVER `az webapp deployment source config-zip` — it needs SCM basic auth and is disallowed.
 - Wait for stabilization: `az webapp show -g {rgName} -n {appName} --query state` → "Running"
 - Verify `SCM_DO_BUILD_DURING_DEPLOYMENT=true` is active before deploy (ARM timing can delay)
 - If build reports "0 seconds" but app needs deps: re-set the setting, wait 10s, retry
@@ -74,7 +75,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 
 ## Before handoff (Step 8)
 - ⛔ Read [`deploy-schemas.ts`](deploy-schemas.ts) for exact DeployResult field names
-- Finalize `deploy-result.json` — overwrite skeleton with real values: status (succeeded/failed), deploymentNames (all used), healthStatus (worst across endpoints), duration.completedUtc, resourceResults from `az deployment operation list`. Read back to verify.
+- Finalize `deploy-result.json` — overwrite skeleton IN PLACE (keep exact field names, do NOT rename): status (lowercase `succeeded`/`failed`), resourceGroupName, subscriptionId, deploymentNames (all used), resourceIds, endpoints, healthStatus (worst across endpoints), duration.completedUtc, resourceResults from `az deployment operation list`. Read back to verify.
 - ⛔ `deployment-summary.md` — generate from `deploy-result.json` fields (Status, Health, Portal Links, Cleanup). NOT a separate data source.
 - ⛔ `context.json` — add "deploy" to completedPhases, set currentPhase to null, update lastModifiedUtc. VERIFY by reading back.
 - SCM re-disabled (App Service) or image param set (Container Apps)
@@ -82,7 +83,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 
 ## Artifact verification (Step 8 — MANDATORY)
 ⛔ Before returning to orchestrator, verify ALL artifacts exist by reading each one back:
-1. `deploy-result.json` — MUST contain: `status`, `deploymentNames[]`, `healthStatus`, `duration.completedUtc`, `resourceResults[]`, `endpoints[]`. Missing fields → rewrite with real values NOW
+1. `deploy-result.json` — MUST contain (exact names): `status` (lowercase `succeeded`/`failed`), `resourceGroupName`, `subscriptionId`, `deploymentNames[]`, `resourceIds[]`, `endpoints[]`, `healthStatus`, `duration.completedUtc`, `resourceResults[]`. Missing/renamed fields → rewrite with real values NOW
 2. `deploy-audit.log` — MUST exist with ≥2 entries (started + result for at least 1 command). Missing → reconstruct from memory
 3. `deployment-summary.md` — MUST contain Status, Health, Portal Links sections. Missing → generate from deploy-result.json
 4. `context.json` — MUST have `"deploy"` in `completedPhases`, `currentPhase: null`, updated `lastModifiedUtc`

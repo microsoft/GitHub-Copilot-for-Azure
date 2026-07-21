@@ -31,7 +31,7 @@ Read deploy reference files and distill deployment-specific rules into `deploy-c
 
 Read all 4 session artifacts. Extract: services[], naming, costEstimate, deployCommand, validationResult, deploymentVariables, subscriptionId, sessionId, buildRequirements, warnings[], quotaValidation.
 
-If `deploy-result.json` missing, write skeleton: `{ sessionId, subscriptionId, resourceGroupName, deploymentName: "app-onboard-deploy-{first 8 of sessionId}", status: "in-progress", startedUtc, endpoints: [], healingAttempts: [] }`.
+If `deploy-result.json` missing, write skeleton with these EXACT field names (do NOT rename): `{ sessionId, subscriptionId, resourceGroupName, deploymentNames: ["app-onboard-deploy-{first 8 of sessionId}"], status: "in-progress", startedUtc, resourceIds: [], endpoints: [], healthStatus: "unknown", resourceResults: [], healingAttempts: [] }`.
 
 ### Step 2 — Read safety + blocked patterns refs
 

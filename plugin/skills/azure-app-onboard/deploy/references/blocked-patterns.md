@@ -9,13 +9,13 @@ Commands the agent must NEVER execute. Block decisions are non-negotiable — us
 | `DROP TABLE` / `DROP DATABASE` | ⛔ Block | Prevents data loss |
 | `terraform destroy` | ⛔ Block | Prevents accidental teardown (user must run manually) |
 | `az group delete` | ⛔ HARD BLOCK | **NEVER delete resource groups yourself.** During healing: if switching regions/RGs, add the old RG to your `orphanedResourceGroups[]` list (per `OrphanResourceGroup` in [`deploy-schemas.ts`](deploy-schemas.ts)) instead of deleting it. At handoff: emit `az group delete` commands in the handoff message for the USER to run — the agent never executes them. If you are about to type `az group delete` into a terminal command, STOP — you are violating this rule. Track it in `orphanedResourceGroups[]` instead. |
-| `az containerapp up --source` | ⛔ Block | Creates ACR + CA Environment + Log Analytics imperatively — orphan resources invisible to `terraform destroy`, `az deployment sub delete`, and session tag-based bulk cleanup. State drift from IaC is unrecoverable. Use Bicep + `az deployment group create`. For code deploy on existing CA, use Step 6d |
+| `az containerapp up --source` / `az containerapp create` | ⛔ Block | Creates ACR + CA Environment + Log Analytics imperatively — orphan resources invisible to `terraform destroy`, `az deployment sub delete`, and session tag-based bulk cleanup. State drift from IaC is unrecoverable. The Container App MUST be created via Bicep `az deployment sub create` — for code deploy on an existing CA use `az containerapp update --source` (Step 6d) |
 | `az appservice plan update` | ⛔ Block | Imperative SKU change — edit Bicep + redeploy |
 | `az webapp update` | ⛔ Block | Imperative resource modification — all changes via IaC |
 | `az functionapp update` | ⛔ Block | Imperative resource modification — all changes via IaC |
 | `az webapp deployment source config-zip` | ⛔ Block | Requires SCM basic auth — use `az webapp deploy` (Entra auth) |
 | `az webapp deploy --track-status` | ⛔ Block | `--track-status` flag does not exist. Remove it. |
-| `az webapp up` | ⛔ Block | Creates App Service Plan + App imperatively — bypasses IaC entirely |
+| `az webapp up` / `az webapp create` / `az appservice plan create` | ⛔ Block | Creates App Service Plan + App imperatively — bypasses IaC entirely |
 | `az containerapp update` (config changes) | ⛔ Block | Imperative resource modification — all changes via IaC |
 | `az containerapp update --revision-suffix` (no config changes) | ⚠️ ALLOWED | KV secret rotation only — when KV secrets were updated post-deploy and a new revision is needed to pick up cached values |
 | `az webapp delete` | ⛔ Block | Imperative resource deletion — destroys resources outside IaC |
