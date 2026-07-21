@@ -121,7 +121,13 @@ stimuli:
       type: integration
       tier: full
       cost: llm
+      # area: output — this is an output-content assertion (does the skill surface
+      # the probe script?), not a routing test, so it is intentionally not counted
+      # in skill-invocation reporting.
       area: output
+      # Cap cost: terminate as soon as the probe script is surfaced. The
+      # output-matches grader still sees it in the accumulated assistant messages.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"test-messaging-connectivity"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:

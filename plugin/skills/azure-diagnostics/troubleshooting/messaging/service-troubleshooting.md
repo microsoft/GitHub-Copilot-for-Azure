@@ -15,21 +15,26 @@ If the client **cannot connect at all**:
 
 ### Quick Connectivity Test
 
-Run the connectivity probe script with the namespace. It resolves DNS, tests HTTPS reachability, and probes the messaging ports (AMQP `5671`/`5672`, HTTPS `443`), returning a normalized report instead of raw `curl`/`nslookup` output. Add `--kafka` / `-Kafka` to also probe the Event Hubs Kafka port `9093`.
+Run the connectivity probe script. It resolves DNS, tests HTTPS reachability, and probes the messaging ports (AMQP `5671`/`5672`, HTTPS `443`), returning a normalized report instead of raw `curl`/`nslookup` output. Add `--kafka` / `-Kafka` to also probe the Event Hubs Kafka port `9093`.
+
+Scripts (paths below are relative to the skill root, `plugin/skills/azure-diagnostics`, so run them from there): [`scripts/test-messaging-connectivity.sh`](../../scripts/test-messaging-connectivity.sh) (bash) and [`scripts/test-messaging-connectivity.ps1`](../../scripts/test-messaging-connectivity.ps1) (PowerShell).
 
 ```powershell
-..\..\scripts\test-messaging-connectivity.ps1 -Namespace <namespace>
+# from plugin/skills/azure-diagnostics
+.\scripts\test-messaging-connectivity.ps1 -Namespace <namespace>
 ```
 ```bash
-../../scripts/test-messaging-connectivity.sh <namespace>
+# from plugin/skills/azure-diagnostics
+./scripts/test-messaging-connectivity.sh <namespace>
 ```
 
-The namespace may be a full FQDN or a bare name (`.servicebus.windows.net` is appended automatically). Scripts: [test-messaging-connectivity.sh](../../scripts/test-messaging-connectivity.sh) · [test-messaging-connectivity.ps1](../../scripts/test-messaging-connectivity.ps1).
+The namespace may be a full FQDN or a bare name (`.servicebus.windows.net` is appended automatically).
 
 **Example (Event Hubs, including Kafka):**
 
 ```bash
-../../scripts/test-messaging-connectivity.sh contoso.servicebus.windows.net --kafka
+# from plugin/skills/azure-diagnostics
+./scripts/test-messaging-connectivity.sh contoso.servicebus.windows.net --kafka
 ```
 
 ## Transient Connectivity Issues

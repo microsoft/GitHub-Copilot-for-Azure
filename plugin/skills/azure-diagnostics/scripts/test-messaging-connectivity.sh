@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
             INCLUDE_KAFKA=1
             ;;
         -h|--help)
-            grep '^#' "$0" | sed 's/^# \{0,1\}//'
+            grep '^#' "$0" | grep -v '^#!' | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         --*)

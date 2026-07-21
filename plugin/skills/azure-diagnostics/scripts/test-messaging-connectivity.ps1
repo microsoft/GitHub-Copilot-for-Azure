@@ -80,23 +80,23 @@ function Get-PortResult {
 
 # ── HTTPS reachability ────────────────────────────────────────────────────────
 # On success the namespace returns an Atom feed or HTTP 401 — either proves the
-# endpoint is reachable. A connection failure means blocked.
+# endpoint is reachable. A connection failure means blocked. -SkipHttpErrorCheck
+# is intentionally not used: it is unavailable in Windows PowerShell 5.1, so we
+# instead treat an HTTP-error response (caught below) as proof of reachability.
 function Get-HttpsResult {
     try {
         $resp = Invoke-WebRequest -Uri "https://$fqdn/" -Method Get -TimeoutSec 15 `
-            -UseBasicParsing -SkipHttpErrorCheck -ErrorAction Stop
+            -UseBasicParsing -ErrorAction Stop
         return "reachable (HTTP $($resp.StatusCode))"
-    } catch [System.Net.WebException] {
-        # An HTTP error response (e.g. 401) still proves reachability.
-        if ($_.Exception.Response -and $_.Exception.Response.StatusCode) {
-            return "reachable (HTTP $([int]$_.Exception.Response.StatusCode))"
+    } catch {
+        # An HTTP error response (e.g. 401) still proves reachability. The
+        # exception type differs between PowerShell editions (WebException in
+        # 5.1, HttpResponseException in 7+) but both expose Response.StatusCode.
+        $status = $_.Exception.Response.StatusCode
+        if ($null -ne $status) {
+            return "reachable (HTTP $([int]$status))"
         }
         # Fall back to a plain TCP probe of 443.
-        if (Test-TcpPort -TargetHost $fqdn -Port 443) {
-            return "reachable (TCP 443 open)"
-        }
-        return "BLOCKED"
-    } catch {
         if (Test-TcpPort -TargetHost $fqdn -Port 443) {
             return "reachable (TCP 443 open)"
         }
