@@ -36,7 +36,7 @@ COPY . .
 
 ### Security defaults
 
-- Non-root user: `RUN addgroup -S app && adduser -S app -G app` then `USER app`
+- Non-root user — Debian/`-slim` base: `RUN groupadd -r app && useradd -r -g app app`; Alpine base: `RUN addgroup -S app && adduser -S app -G app`. Then `USER app`
 - Never `COPY .env` or secrets — use `.dockerignore`
 - Direct exec: `CMD ["node", "server.js"]` not `CMD ["npm", "start"]`
 
