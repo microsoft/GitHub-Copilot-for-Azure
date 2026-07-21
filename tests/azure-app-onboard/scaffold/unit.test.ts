@@ -16,7 +16,6 @@ const SKILL_PATH = `azure-app-onboard/${SUBSKILL_NAME}`;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = path.resolve(__dirname, "../../../plugin/skills/azure-app-onboard/scaffold");
-const PARENT_REFS = path.resolve(__dirname, "../../../plugin/skills/azure-app-onboard/references");
 
 describe(`${SKILL_PATH} - Unit Tests`, () => {
   let skill: LoadedSkill;

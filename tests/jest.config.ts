@@ -19,12 +19,11 @@ const config: Config = {
     "**/*.test.ts"
   ],
 
-  // Ignore template folder and fixture repos in test runs
+  // Ignore template folder in test runs (it's just examples)
   testPathIgnorePatterns: [
     "/node_modules/",
     "/_template/",
-    "/dist/",
-    "/fixtures/"
+    "/dist/"
   ],
 
   // Global setup — runs once before any worker starts
