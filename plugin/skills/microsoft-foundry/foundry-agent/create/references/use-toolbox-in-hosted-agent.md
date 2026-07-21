@@ -135,4 +135,5 @@ Verification checklist:
 ## References
 
 - [Toolbox Docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox)
+- [Configure tools in a toolbox](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/toolbox#configure-tools)
 - [Supported Toolbox Scenarios (sample-side reference)](https://github.com/microsoft-foundry/foundry-samples/blob/main/samples/python/hosted-agents/SUPPORTED_TOOLBOX_SCENARIOS.md)

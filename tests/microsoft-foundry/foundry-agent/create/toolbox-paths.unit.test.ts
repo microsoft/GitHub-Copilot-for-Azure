@@ -31,7 +31,7 @@ describe("foundry-agent create toolbox reference paths", () => {
 
   test("does not describe a declarative toolbox lifecycle", async () => {
     const create = await readSkillFile("foundry-agent/create/create-hosted.md");
-    const tools = await readSkillFile("foundry-agent/create/references/tools.md");
+    const tools = await readSkillFile("foundry-agent/create/references/tools/prompt-agent/agent-tools.md");
     const usage = await readSkillFile("foundry-agent/create/references/use-toolbox-in-hosted-agent.md");
     const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
     const cli = await readSkillFile("foundry-agent/azd-guidance/references/azd-ai-cli.md");
