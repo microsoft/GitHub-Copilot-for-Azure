@@ -8,6 +8,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../shared/apiUrl";
+import { issuesUrl } from "./issuesUrl";
 import {
     buildDaySeries,
     groupByTest,
@@ -278,6 +279,16 @@ export default function App() {
                             </p>
                             <p className="skills-file-count">
                                 Files: {selectedSkill.fileCount}
+                            </p>
+                            <p className="skills-issues-link">
+                                <a
+                                    href={issuesUrl(selectedSkill.name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`Open issues for ${selectedSkill.name} in a new tab`}
+                                >
+                                    View open issues for {selectedSkill.name} ↗
+                                </a>
                             </p>
                             <p className="skills-telemetry">
                                 <a
