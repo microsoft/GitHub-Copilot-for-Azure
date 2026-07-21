@@ -9,7 +9,7 @@ const SECRET_PATTERNS = [
 // Key=value style secrets (including JSON-style properties). Capture the key + separator as group 1
 // so we can preserve the structure and only redact the value.
 const KEY_VALUE_SECRET_PATTERN =
-  /((?:password|passwd|secret|token|api[_-]?key|accountkey|connection[_-]?string)[\\]*["']?\s*[:=]\s*[\\]*["']?)[^\s"',]{8,}/gi;
+  /((?:password|passwd|secret|token|api[_-]?key|account[_-]?key|connection[_-]?string)[\\]*["']?\s*[:=]\s*[\\]*["']?)[^\s"',;]{8,}/gi;
 
 export function redactSecrets(text: string): string {
   let result = text;
