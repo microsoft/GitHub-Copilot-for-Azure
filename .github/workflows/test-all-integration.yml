@@ -326,15 +326,6 @@ jobs:
         if: always() && matrix.skill == 'microsoft-foundry'
         run: npm run quality-report || true
 
-      - name: Export report
-        if: always()
-        id: export-report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: integration-report-${{ matrix.skill }}
-          path: tests/reports/
-          retention-days: 30
-
       # Note: The managed identity must have write permission to the target storage account
       - name: Publish report to Azure Storage
         if: always() && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
