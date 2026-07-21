@@ -157,6 +157,38 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
   }
 }
 
+/**
+ * Extract the `tool-call-match` early-terminate conditions from a stimulus's tags.
+ *
+ * A `tool-call-match` condition aborts the agent the moment a matching tool call
+ * *starts*, so the matching call never produces a completion event. Callers use
+ * these patterns to recognize that started-but-aborted call and count it as
+ * "called" for grading — mirroring how `skill-call` terminates are counted.
+ */
+export function getToolCallMatchTerminateConditions(
+  tags: Record<string, string[] | string> | undefined
+): Array<{ toolPattern: string; argsPattern: string }> {
+  if (!tags) {
+    return [];
+  }
+  const value = tags["earlyTerminate"];
+  if (!value || typeof value !== "string") {
+    return [];
+  }
+  try {
+    const conditions: EarlyTerminateCondition[] = JSON.parse(value);
+    return conditions
+      .filter(
+        (c): c is Extract<EarlyTerminateCondition, { type: "tool-call-match" }> =>
+          c.type === "tool-call-match"
+      )
+      .map((c) => ({ toolPattern: c.toolPattern, argsPattern: c.argsPattern }));
+  } catch (error) {
+    console.error("Failed to parse earlyTerminateCondition", value, error);
+    return [];
+  }
+}
+
 export function getFollowUp(tags: Record<string, string[] | string> | undefined): string[] | undefined {
   if (!tags) {
     return undefined;
