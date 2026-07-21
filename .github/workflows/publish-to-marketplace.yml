@@ -2,7 +2,7 @@ name: Publish to marketplace repos
 
 on:
   schedule:
-    - cron: '0 11 * * 1-5'
+    - cron: "0 11 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -16,17 +16,17 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: source-repo
-          fetch-depth: 0  # Full history required for NBGV version computation
+          fetch-depth: 0 # Full history required for NBGV version computation
 
       # 2. Build the plugin (stamps NBGV versions into output/)
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: source-repo/package-lock.json
 
       - name: Build plugin
@@ -35,9 +35,19 @@ jobs:
           npm ci --ignore-scripts
           npm run build
 
+      # Generate a short-lived token from the GitHub App for microsoft/skills
+      - name: Generate token for microsoft/skills
+        id: skills-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: skills
+
       - name: Clone microsoft/skills and create feature branch
         env:
-          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ steps.skills-token.outputs.token }}
         run: |
           gh repo clone microsoft/skills target-repo -- --branch main --single-branch
 
@@ -66,7 +76,7 @@ jobs:
         id: commit
         working-directory: target-repo
         env:
-          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ steps.skills-token.outputs.token }}
         run: |
           gh auth setup-git
           git config user.name "github-actions[bot]"
@@ -85,7 +95,7 @@ jobs:
       - name: Create Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/skills repo
+          GH_TOKEN: ${{ steps.skills-token.outputs.token }}
         run: |
           cd target-repo
           gh pr create \
@@ -102,17 +112,17 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: source-repo
-          fetch-depth: 0  # Full history required for NBGV version computation
+          fetch-depth: 0 # Full history required for NBGV version computation
 
       # 2. Build the plugin (stamps NBGV versions into output/)
       - name: Setup Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: source-repo/package-lock.json
 
       - name: Build plugin
@@ -121,9 +131,19 @@ jobs:
           npm ci --ignore-scripts
           npm run build
 
+      # Generate a short-lived token from the GitHub App for microsoft/azure-skills
+      - name: Generate token for microsoft/azure-skills
+        id: azure-skills-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: azure-skills
+
       - name: Clone microsoft/azure-skills and create feature branch
         env:
-          GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
+          GH_TOKEN: ${{ steps.azure-skills-token.outputs.token }}
         run: |
           gh repo clone microsoft/azure-skills target-repo -- --branch main --single-branch
 
@@ -164,12 +184,14 @@ jobs:
           rm -f "target-repo/copilot-hooks.json"
 
       # 6. Replace repository URLs in synced files
+      # CHANGELOG.md file contains links to PRs in the GitHub-Copilot-for-Azure repo. These links should not be replaced.
+      # Otherwise they will all get 404.
       - name: Replace repository URLs
         run: |
           TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
-              if matches=$(grep -rli --include='*.md' --include='*.json' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
+              if matches=$(grep -rli --include='*.md' --include='*.json' --exclude='CHANGELOG.md' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
                 echo "$matches" | while IFS= read -r file; do
                   sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
                   sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
@@ -183,7 +205,7 @@ jobs:
         id: commit
         working-directory: target-repo
         env:
-          GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
+          GH_TOKEN: ${{ steps.azure-skills-token.outputs.token }}
         run: |
           gh auth setup-git
           git config user.name "github-actions[bot]"
@@ -202,7 +224,7 @@ jobs:
       - name: Create Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.AZURE_SKILLS_REPO_PAT }} # A PAT that has content: write and pull-request: write permissions to the microsoft/azure-skills repo
+          GH_TOKEN: ${{ steps.azure-skills-token.outputs.token }}
         run: |
           cd target-repo
           gh pr create \

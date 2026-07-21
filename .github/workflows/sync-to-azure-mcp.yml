@@ -20,7 +20,7 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: source-repo
 
@@ -40,10 +40,19 @@ jobs:
         working-directory: source-repo/scripts
         run: npm run generateMcpAllowlists -- ../plugin/skills ${{ github.workspace }}
 
-      # 3. Clone microsoft/mcp and create feature branch
+      # 3. Generate a short-lived token from the GitHub App for microsoft/mcp
+      - name: Generate token for microsoft/mcp
+        id: mcp-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: mcp
+
       - name: Clone microsoft/mcp and create feature branch
         env:
-          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
         run: |
           gh repo clone microsoft/mcp mcp-repo -- --branch main --single-branch
 
@@ -64,7 +73,7 @@ jobs:
         id: commit
         working-directory: mcp-repo
         env:
-          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
         run: |
           gh auth setup-git
           git config user.name "github-actions[bot]"
@@ -86,7 +95,7 @@ jobs:
       - name: Create or update Pull Request
         if: steps.commit.outputs.has_changes == 'true'
         env:
-          GH_TOKEN: ${{ secrets.MCP_REPO_PAT }} # A PAT with content: write and pull-requests: write permissions to the microsoft/mcp repo
+          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
         run: |
           cd mcp-repo
           PR_TITLE="Sync skill references from GitHub-Copilot-for-Azure"

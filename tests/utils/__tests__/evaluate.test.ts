@@ -1,10 +1,8 @@
 /**
- * Tests for evaluate utility — specifically the stripNonExecutableContent function
- * which filters out heredoc bodies, comments, and other non-command content
- * before shell command pattern matching.
+ * Tests for evaluate utility helpers used by integration assertions.
  */
 
-import { stripNonExecutableContent } from "../evaluate";
+import { extractTerraformListAssignment, stripNonExecutableContent } from "../evaluate";
 
 describe("stripNonExecutableContent", () => {
   test("passes through simple commands unchanged", () => {
@@ -229,5 +227,42 @@ azd provision`;
     expect(result).not.toContain("azd up");
     expect(result).not.toContain("azd deploy");
     expect(result).toContain("azd provision");
+  });
+});
+
+describe("extractTerraformListAssignment", () => {
+  test("returns the full top-level ignore_changes list when entries contain index syntax", () => {
+    const lifecycleBlock = `lifecycle {
+  ignore_changes = [
+    template[0].container[0].image,
+    registry,
+  ]
+}`;
+
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe(`[
+    template[0].container[0].image,
+    registry,
+  ]`);
+  });
+  test("returns the simple ignore_changes list", () => {
+    const lifecycleBlock = `lifecycle {
+  ignore_changes = [ image ]
+}`;
+
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe("[ image ]");
+  });
+  test("returns the non list value", () => {
+    const lifecycleBlock = `lifecycle {
+  ignore_changes = all
+}`;
+
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe("all");
+  });
+  test("returns undefined", () => {
+    const lifecycleBlock = `lifecycle {
+  unmatched_key = all
+}`;
+
+    expect(extractTerraformListAssignment(lifecycleBlock, "ignore_changes")).toBe(undefined);
   });
 });

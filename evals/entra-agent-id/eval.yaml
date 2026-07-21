@@ -1,0 +1,346 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/entra-agent-id/integration.test.ts
+# Migration: Jest → Vally
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+#
+# Note on runs:
+# - Routing stimuli preserve the original Jest invocation-rate behavior (5 runs, 80% threshold).
+# - Response-quality stimuli were single-run tests in Jest. Each quality stimulus includes
+#   a stimulus-level `config.runs: 1` to match original intent.
+#
+# Note on output-matches scope:
+# - The original Jest suite searched both assistant messages and tool-call/script content
+#   (via getSearchableContent in utils.ts). Vally's output-matches grader evaluates
+#   trajectory.output (assistant messages only). This is an accepted known limitation
+#   consistent with other migrated eval suites.
+
+name: entra-agent-id-integration-eval
+description: |
+  Integration evaluation for entra-agent-id skill — migrated from Jest integration tests.
+  Tests skill routing for Microsoft Entra Agent Identity Blueprint creation, runtime token exchange,
+  SDK sidecar deployment, per-instance identity, OBO authentication, permission grants, and troubleshooting.
+  Also validates content quality for Graph API patterns (typed endpoints, sponsors binding, fmi_path exchange).
+
+tags:
+  type: integration
+  skill: entra-agent-id
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SKILL-INVOCATION (routing) tests
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # ── blueprint-creation-routing ──
+  # Jest: "invokes entra-agent-id for Blueprint creation prompt"
+  - name: "Blueprint creation routing"
+    prompt: "How do I create a Microsoft Entra Agent Identity Blueprint and provision agent identities?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── runtime-token-exchange-routing ──
+  # Jest: "invokes entra-agent-id for runtime token exchange prompt"
+  - name: "Runtime token exchange routing"
+    prompt: "Set up the fmi_path token exchange so each agent instance has a distinct Graph token"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── sdk-sidecar-routing ──
+  # Jest: "invokes entra-agent-id for SDK sidecar prompt"
+  - name: "SDK sidecar deployment routing"
+    prompt: "Deploy the Microsoft Entra SDK for AgentID as a sidecar container for my Python agent"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── blueprint-with-sponsor-routing ──
+  # Jest: "invokes entra-agent-id for Agent Identity Blueprint with sponsor prompt"
+  - name: "Blueprint with sponsor routing"
+    prompt: "Create a new Microsoft Entra Agent Identity Blueprint with a user sponsor and its required BlueprintPrincipal"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── per-instance-identity-routing ──
+  # Jest: "invokes entra-agent-id for per-instance Agent Identity creation prompt"
+  - name: "Per-instance identity creation routing"
+    prompt: "Register a new per-instance agent identity service principal under an existing Agent Identity Blueprint via Microsoft Graph"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── obo-authentication-routing ──
+  # Jest: "invokes entra-agent-id for OBO runtime authentication prompt"
+  - name: "OBO runtime authentication routing"
+    prompt: "Implement on-behalf-of token exchange so my agent can call Microsoft Graph as the signed-in user using its Agent Identity"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── permission-grant-routing ──
+  # Jest: "invokes entra-agent-id for per-Agent-Identity permission grant prompt"
+  - name: "Per-identity permission grant routing"
+    prompt: "Grant User.Read.All application permission to a specific Agent Identity service principal, scoped per agent instance not to the BlueprintPrincipal"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── troubleshooting-routing ──
+  # Jest: "invokes entra-agent-id for AADSTS82001 troubleshooting prompt"
+  - name: "AADSTS82001 troubleshooting routing"
+    prompt: "My Agent Identity token exchange is failing with AADSTS82001 — what is the correct grant type and fmi_path usage?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"entra-agent-id"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # CONTENT-ASSERTION (output quality) tests
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  # ── blueprint-creation-content ──
+  # Jest: "Blueprint creation prompt produces typed Graph endpoint, BlueprintPrincipal step, and sponsors@odata.bind"
+  # Assertions: mentionsBlueprintCreation, mentionsBlueprintPrincipalStep, mentionsSponsorsBinding
+  - name: "Blueprint creation content quality"
+    prompt: "Walk me through creating a Microsoft Entra Agent Identity Blueprint with a user sponsor using Microsoft Graph. Include the BlueprintPrincipal step and the exact request body shape."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      # mentionsBlueprintCreation: microsoft.graph.agentIdentityBlueprint (not Principal)
+      - type: output-matches
+        config:
+          pattern: "(?i)microsoft\\.graph\\.agentIdentityBlueprint(?!Principal)"
+      # mentionsBlueprintPrincipalStep: microsoft.graph.agentIdentityBlueprintPrincipal
+      - type: output-matches
+        config:
+          pattern: "(?i)microsoft\\.graph\\.agentIdentityBlueprintPrincipal"
+      # mentionsSponsorsBinding: sponsors@odata.bind
+      - type: output-matches
+        config:
+          pattern: "(?i)sponsors@odata\\.bind"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── per-instance-identity-content ──
+  # Jest: "Per-instance Agent Identity prompt uses microsoft.graph.agentIdentity and references the parent Blueprint"
+  # Assertions: mentionsAgentIdentityCreation, mentionsBlueprintBackreference
+  - name: "Per-instance identity content quality"
+    prompt: "Show me the Microsoft Graph request to create a per-instance Agent Identity service principal under an existing Blueprint, including how to reference the Blueprint."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      # mentionsAgentIdentityCreation: microsoft.graph.agentIdentity (not followed by more letters)
+      - type: output-matches
+        config:
+          pattern: "(?i)microsoft\\.graph\\.agentIdentity(?![A-Za-z])"
+      # mentionsBlueprintBackreference: agentIdentityBlueprintId
+      - type: output-matches
+        config:
+          pattern: "(?i)agentIdentityBlueprintId"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── fmi-path-exchange-content ──
+  # Jest: "fmi_path exchange prompt describes the two-step exchange with client_credentials and /.default"
+  # Assertions: mentionsFmiPathExchange (fmi_path + client_credentials + AzureADTokenExchange or /.default)
+  - name: "fmi_path token exchange content quality"
+    prompt: "Show me the two-step fmi_path token exchange so an Agent Identity gets its own Microsoft Graph access token. Include the grant type and scopes."
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      # fmi_path keyword
+      - type: output-matches
+        config:
+          pattern: "(?i)\\bfmi_path\\b"
+      # client_credentials grant type
+      - type: output-matches
+        config:
+          pattern: "(?i)client_credentials"
+      # AzureADTokenExchange or /.default scope
+      - type: output-matches
+        config:
+          pattern: "(?i)(AzureADTokenExchange|/\\.default)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── supported-auth-content ──
+  # Jest: "Auth guidance prompt steers toward client_credentials / Connect-MgGraph (not DefaultAzureCredential)"
+  # Assertions: recommendsSupportedAuth (ClientSecretCredential | client_credentials | Connect-MgGraph)
+  - name: "Auth guidance content quality"
+    prompt: "What credential should I use to call the Microsoft Entra Agent Identity APIs in Microsoft Graph?"
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      # recommendsSupportedAuth: one of ClientSecretCredential, client_credentials, Connect-MgGraph
+      - type: output-matches
+        config:
+          pattern: "(?i)(ClientSecretCredential|client_credentials|Connect-MgGraph)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── permission-grant-content ──
+  - name: "Permission grant content quality"
+    prompt: "How to grant User.Read.All application permission to a specific Agent Identity service principal?"
+    # Original Jest test ran once. Override eval-level runs for content assertions.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - entra-agent-id
+      # mentionsPerAgentPermissionGrant: appRoleAssignment or oauth2PermissionGrant
+      - type: output-matches
+        config:
+          pattern: "(?i)(appRoleAssignment|oauth2PermissionGrant)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

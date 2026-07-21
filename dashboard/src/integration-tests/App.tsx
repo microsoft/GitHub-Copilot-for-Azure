@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
+import { apiUrl, pageUrl } from "../shared/apiUrl";
 
 interface TestCase {
     testName: string;
@@ -17,7 +18,7 @@ function fetchBlobTree(date: string): Promise<BlobTree> {
     const key = encodeURIComponent(date);
     let cached = blobTreeCache.get(key);
     if (!cached) {
-        cached = fetch(`/api/data/${key}`)
+        cached = fetch(apiUrl(`/api/data/${key}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json() as Promise<BlobTree>;
@@ -67,7 +68,7 @@ async function openAgentMetadataLinks(date: string, testName: string): Promise<v
         // to open the new page after the first one.
         // The user may unblock pop ups from this website or open them individually.
         window.open(
-            `/nightly-runs.html?file=${encodeURIComponent(blobName)}`,
+            pageUrl(`/nightly-runs.html?file=${encodeURIComponent(blobName)}`),
             "_blank",
             "noopener,noreferrer",
         );
@@ -80,6 +81,128 @@ async function findAppSnapshotBlob(date: string, testName: string): Promise<stri
     if (!dateNode) return null;
     const found = findTestCaseBlobs(dateNode, testName, /\/app-snapshot\.jpe?g$/i);
     return found[0] ?? null;
+}
+
+// --- Tool usage (Phase 2b) -------------------------------------------------
+
+/** One tool call as returned by GET /api/tool-usage (one row per call). */
+interface ToolCallRow {
+    runToken: string;
+    runId: string;
+    runDate: string;
+    runTimestamp: string;
+    order: number;
+    toolName: string;
+    /** "true" | "false" | "unknown". */
+    successState: string;
+    /** Present only when a completion was observed. */
+    durationMs?: number;
+    outputBytes?: number;
+}
+
+/** Tool calls for a single run, ordered by call order. */
+interface ToolRun {
+    runToken: string;
+    runId: string;
+    runTimestamp: string;
+    calls: ToolCallRow[];
+}
+
+// Cache /api/tool-usage responses keyed by skill+test+date so re-expanding a
+// test's Tools section reuses a single network request.
+const toolUsageCache = new Map<string, Promise<ToolCallRow[]>>();
+
+function fetchToolUsage(skill: string, test: string, runDate: string): Promise<ToolCallRow[]> {
+    const key = `${skill}\u0000${test}\u0000${runDate}`;
+    let cached = toolUsageCache.get(key);
+    if (!cached) {
+        const params = new URLSearchParams({ skill, test, runDate });
+        cached = fetch(apiUrl(`/api/tool-usage?${params.toString()}`))
+            .then((res) => {
+                if (!res.ok) throw new Error(`API error: ${res.status}`);
+                return res.json() as Promise<ToolCallRow[]>;
+            })
+            .catch((err) => {
+                toolUsageCache.delete(key);
+                throw err;
+            });
+        toolUsageCache.set(key, cached);
+    }
+    return cached;
+}
+
+/** Group flat tool-call rows into runs (by runToken), each sorted by order. */
+function groupToolRuns(rows: ToolCallRow[]): ToolRun[] {
+    const byToken = new Map<string, ToolRun>();
+    for (const r of rows) {
+        let run = byToken.get(r.runToken);
+        if (!run) {
+            run = { runToken: r.runToken, runId: r.runId, runTimestamp: r.runTimestamp, calls: [] };
+            byToken.set(r.runToken, run);
+        }
+        run.calls.push(r);
+    }
+    const runs = [...byToken.values()];
+    for (const run of runs) {
+        run.calls.sort((a, b) => a.order - b.order);
+    }
+    runs.sort(
+        (a, b) =>
+            (a.runTimestamp || "").localeCompare(b.runTimestamp || "") ||
+            a.runToken.localeCompare(b.runToken),
+    );
+    return runs;
+}
+
+/** Locate this run's tool-usage-<runToken>.json blob within the date's tree. */
+async function findToolUsageBlob(date: string, runToken: string): Promise<string | null> {
+    const tree = await fetchBlobTree(date);
+    const dateNode = tree[date];
+    if (!dateNode) return null;
+    const target = `tool-usage-${runToken}.json`;
+    let result: string | null = null;
+    const walk = (node: BlobTreeNode): void => {
+        if (result) return;
+        for (const file of node.files) {
+            if (file.name === target) {
+                result = file.blobName;
+                return;
+            }
+        }
+        for (const child of Object.values(node.children)) {
+            if (result) return;
+            walk(child);
+        }
+    };
+    walk(dateNode);
+    return result;
+}
+
+/** Fetch a single tool call's full arguments on demand from the per-run blob. */
+async function fetchToolCallArguments(date: string, runToken: string, order: number): Promise<unknown> {
+    const blobName = await findToolUsageBlob(date, runToken);
+    if (!blobName) throw new Error("Tool-usage blob not found for this run.");
+    const res = await fetch(apiUrl(`/api/fetch?path=${encodeURIComponent(blobName)}`));
+    if (!res.ok) throw new Error(`Fetch error: ${res.status}`);
+    const data = (await res.json()) as { toolCalls?: Array<{ order: number; arguments?: unknown }> };
+    const call = data.toolCalls?.find((c) => c.order === order);
+    if (!call) throw new Error("Tool call not found in run blob.");
+    return call.arguments ?? null;
+}
+
+/** Human-readable duration; em dash when unknown (no completion observed). */
+function formatDuration(durationMs?: number): string {
+    if (typeof durationMs !== "number") return "\u2014";
+    if (durationMs < 1000) return `${durationMs} ms`;
+    return `${(durationMs / 1000).toFixed(2)} s`;
+}
+
+/** Human-readable byte size; em dash when unknown. */
+function formatBytes(bytes?: number): string {
+    if (typeof bytes !== "number") return "\u2014";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 const AZURE_DEPLOY_SKILL = "azure-deploy";
@@ -103,7 +226,12 @@ function formatRate(rate: number | null): string {
 }
 
 function formatTestName(name: string): string {
-    return name.replace(/\s+/g, "_").replace(/_+/g, "_");
+    return name
+        .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
+        .replace(/\s+/g, "_")           // Replace spaces with underscores
+        .replace(/-+/g, "-")            // Collapse multiple dashes
+        .replace(/_+/g, "_")            // Collapse multiple underscores
+        .substring(0, 200);             // Limit length
 }
 
 function App() {
@@ -117,7 +245,7 @@ function App() {
 
     // Fetch available dates on mount
     useEffect(() => {
-        fetch("/api/dates")
+        fetch(apiUrl("/api/dates"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -141,7 +269,7 @@ function App() {
         setTestResults(null);
         setDetailsPanelSkill(null);
 
-        fetch(`/api/test-results/${encodeURIComponent(selectedDate)}`)
+        fetch(apiUrl(`/api/test-results/${encodeURIComponent(selectedDate)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -273,7 +401,7 @@ function App() {
                                     <li key={idx} className="it-failed-item">
                                         <a
                                             className="it-failed-name"
-                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(ft.testName))}`}
+                                            href={pageUrl(`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(ft.testName))}`)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -289,6 +417,11 @@ function App() {
                                         )}
                                         <ViewAgentMetadataButton
                                             date={selectedDate!}
+                                            testName={ft.testName}
+                                        />
+                                        <ToolUsageSection
+                                            date={selectedDate!}
+                                            skill={detailsPanelSkill!}
                                             testName={ft.testName}
                                         />
                                         {/* Show the preview for legacy items which don't the flag set */}
@@ -313,7 +446,7 @@ function App() {
                                     <li key={idx} className="it-passed-item">
                                         <a
                                             className="it-passed-name"
-                                            href={`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(pt.testName))}`}
+                                            href={pageUrl(`/nightly-runs.html?date=${encodeURIComponent(selectedDate!)}#${encodeURIComponent(formatTestName(pt.testName))}`)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                         >
@@ -326,6 +459,11 @@ function App() {
                                         )}
                                         <ViewAgentMetadataButton
                                             date={selectedDate!}
+                                            testName={pt.testName}
+                                        />
+                                        <ToolUsageSection
+                                            date={selectedDate!}
+                                            skill={detailsPanelSkill!}
                                             testName={pt.testName}
                                         />
                                         {/* Show the preview for legacy items which don't the flag set */}
@@ -408,8 +546,8 @@ function AppSnapshotPreview({ date, testName }: { date: string; testName: string
         );
     }
 
-    const url = `/api/fetch?path=${encodeURIComponent(blobName)}`;
-    const viewerUrl = `/image-viewer.html?path=${encodeURIComponent(blobName)}`;
+    const url = apiUrl(`/api/fetch?path=${encodeURIComponent(blobName)}`);
+    const viewerUrl = pageUrl(`/image-viewer.html?path=${encodeURIComponent(blobName)}`);
     return (
         <div className="it-app-snapshot">
             <a
@@ -428,6 +566,127 @@ function AppSnapshotPreview({ date, testName }: { date: string; testName: string
                 />
             </a>
         </div>
+    );
+}
+
+function ToolUsageSection({ date, skill, testName }: { date: string; skill: string; testName: string }) {
+    const [open, setOpen] = useState(false);
+    const [runs, setRuns] = useState<ToolRun[] | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+    const toggle = async () => {
+        const next = !open;
+        setOpen(next);
+        if (next && runs === null && !loading) {
+            setLoading(true);
+            setErr(null);
+            try {
+                const rows = await fetchToolUsage(skill, formatTestName(testName), date);
+                setRuns(groupToolRuns(rows));
+            } catch (e) {
+                setErr(e instanceof Error ? e.message : String(e));
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    return (
+        <div className="it-tools">
+            <button className="it-tools-toggle" onClick={toggle} aria-expanded={open}>
+                {open ? "\u25be" : "\u25b8"} Tools
+            </button>
+            {open && (
+                <div className="it-tools-body">
+                    {loading ? (
+                        <p className="it-muted">Loading tools&hellip;</p>
+                    ) : err ? (
+                        <p className="it-error">{err}</p>
+                    ) : !runs || runs.length === 0 ? (
+                        <p className="it-muted">No tool data for this run.</p>
+                    ) : (
+                        runs.map((run, i) => (
+                            <div key={run.runToken} className="it-tool-run">
+                                <div className="it-tool-run-header">
+                                    <span className="it-tool-run-title">
+                                        {runs.length > 1 ? `Run ${i + 1}` : "Run"} &middot; {run.calls.length} call{run.calls.length === 1 ? "" : "s"}
+                                    </span>
+                                    <span className="it-tool-run-meta">{run.runTimestamp}</span>
+                                </div>
+                                <ol className="it-tool-call-list">
+                                    {run.calls.map((call) => (
+                                        <ToolCallItem
+                                            key={call.order}
+                                            date={date}
+                                            runToken={run.runToken}
+                                            call={call}
+                                        />
+                                    ))}
+                                </ol>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ToolCallItem({ date, runToken, call }: { date: string; runToken: string; call: ToolCallRow }) {
+    const [open, setOpen] = useState(false);
+    const [args, setArgs] = useState<string | undefined>(undefined);
+    const [loading, setLoading] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+    const toggleArgs = async () => {
+        const next = !open;
+        setOpen(next);
+        if (next && args === undefined && !loading) {
+            setLoading(true);
+            setErr(null);
+            try {
+                const a = await fetchToolCallArguments(date, runToken, call.order);
+                setArgs(JSON.stringify(a, null, 2));
+            } catch (e) {
+                setErr(e instanceof Error ? e.message : String(e));
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    const icon = call.successState === "true" ? "\u2713" : call.successState === "false" ? "\u2717" : "?";
+    const iconClass =
+        call.successState === "true"
+            ? "it-tool-ok"
+            : call.successState === "false"
+                ? "it-tool-fail"
+                : "it-tool-unknown";
+
+    return (
+        <li className="it-tool-call">
+            <div className="it-tool-call-row">
+                <span className="it-tool-order">{call.order}</span>
+                <span className={`it-tool-status ${iconClass}`} title={`success: ${call.successState}`}>
+                    {icon}
+                </span>
+                <span className="it-tool-name">{call.toolName}</span>
+                <span className="it-tool-metric" title="duration">{formatDuration(call.durationMs)}</span>
+                <span className="it-tool-metric" title="output size">{formatBytes(call.outputBytes)}</span>
+                <button className="it-tool-args-btn" onClick={toggleArgs} aria-expanded={open}>
+                    {open ? "hide args" : "args"}
+                </button>
+            </div>
+            {open &&
+                (loading ? (
+                    <p className="it-muted">Loading args&hellip;</p>
+                ) : err ? (
+                    <p className="it-error">{err}</p>
+                ) : (
+                    <pre className="it-tool-args">{args}</pre>
+                ))}
+        </li>
     );
 }
 

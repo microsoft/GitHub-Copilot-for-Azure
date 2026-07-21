@@ -20,8 +20,10 @@ async function fetchBlob(request: HttpRequest, context: InvocationContext): Prom
         return { status: 400, body: "Invalid path" };
     }
 
+    const container = request.query.get("container") || undefined;
+
     try {
-        const buffer = await getBlobBuffer(blobPath);
+        const buffer = await getBlobBuffer(blobPath, container);
         return {
             status: 200,
             headers: {

@@ -1,6 +1,6 @@
 ---
 name: azure-prepare
-description: "Prepare Azure apps for deployment (infra Bicep/Terraform, azure.yaml, Dockerfiles). Use for create/modernize or create+deploy; not cross-cloud migration (use azure-cloud-migrate). DO NOT USE FOR: copilot-sdk apps (use azure-hosted-copilot-sdk). WHEN: \"create app\", \"build web app\", \"create API\", \"create serverless HTTP API\", \"create frontend\", \"create back end\", \"build a service\", \"modernize application\", \"update application\", \"add authentication\", \"add caching\", \"host on Azure\", \"create and deploy\", \"deploy to Azure\", \"deploy to Azure using Terraform\", \"deploy to Azure App Service\", \"deploy to Azure App Service using Terraform\", \"deploy to Azure Container Apps\", \"deploy to Azure Container Apps using Terraform\", \"generate Terraform\", \"generate Bicep\", \"function app\", \"timer trigger\", \"service bus trigger\", \"event-driven function\", \"containerized Node.js app\", \"social media app\", \"static portfolio website\", \"todo list with frontend and API\", \"prepare my Azure application to use Key Vault\", \"managed identity\"."
+description: "Prepare azd-based Azure projects for deployment: generates azure.yaml, infrastructure (Bicep/Terraform), and Dockerfiles for the Azure Developer CLI (azd) workflow. USE ONLY when the user explicitly wants to use azd as the deployment tool, or the project already has an azure.yaml file. DO NOT USE FOR: non-azd deployments, Python App Service code-only deploys (use python-appservice-deploy), or cross-cloud migration (use azure-cloud-migrate). WHEN: prepare app for azd, create azure.yaml, set up azd infrastructure, modernize app for Azure with azd, deploy with azd, function app, timer trigger, service bus trigger, event-driven function, managed identity, generate Bicep, generate Terraform, create and deploy to Azure."
 license: MIT
 metadata:
   author: Microsoft
@@ -53,7 +53,7 @@ Activate this skill when user wants to:
 >
 > The `.azure/deployment-plan.md` file is the **source of truth** for this workflow and for azure-validate and azure-deploy skills. Without it, those skills will fail.
 >
-> ⚠️ **CRITICAL: `.azure/deployment-plan.md` must be WRITTEN TO DISK inside the workspace root** (e.g., `/tmp/my-project/.azure/deployment-plan.md`), not in the session-state folder. Use a file-write tool to create this file. This is the deployment plan artifact read by azure-validate and azure-deploy. **You MUST create this file — do not proceed without it.** 
+> ⚠️ **CRITICAL: `.azure/deployment-plan.md` must be WRITTEN TO DISK inside the workspace root** (e.g., `<workspace-root>/.azure/deployment-plan.md`), not in the session-state folder. Use a file-write tool to create this file. This is the deployment plan artifact read by azure-validate and azure-deploy. **You MUST create this file — do not proceed without it.** 
 > ⚠️ **CRITICAL: You must create the file with the name `.azure/deployment-plan.md` as is**. You must not use other names such as `.azure/plan.md`.
 >
 > ⛔ **Critical:** Skipping the plan file creation will cause azure-validate and azure-deploy to fail. This requirement has no exceptions.
@@ -68,21 +68,12 @@ Activate this skill when user wants to:
 
 | Prompt keywords | Invoke FIRST |
 |----------------|-------------|
+| Python + App Service (e.g., "deploy Python to App Service", "Flask on Azure App Service", "publish Python web app to App Service") | **python-appservice-deploy** |
 | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** |
-| copilot SDK, copilot app, copilot-powered, @github/copilot-sdk, CopilotClient | **azure-hosted-copilot-sdk** |
 | Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
 | APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
 | AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
 | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** — select **durable** recipe in Step 4. **MUST** load [durable.md](references/services/functions/durable.md), [DTS reference](references/services/durable-task-scheduler/README.md), and [DTS Bicep patterns](references/services/durable-task-scheduler/bicep.md). |
-
-### Check 2: Codebase markers (even if prompt is generic like "deploy to Azure")
-
-| Codebase marker | Where | Invoke FIRST |
-|----------------|-------|-------------|
-| `@github/copilot-sdk` in dependencies | `package.json` | **azure-hosted-copilot-sdk** |
-| `copilot-sdk` in name or dependencies | `package.json` | **azure-hosted-copilot-sdk** |
-| `CopilotClient` import | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
-| `createSession` + `sendAndWait` calls | `.ts`/`.js` source files | **azure-hosted-copilot-sdk** |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. Critical for greenfield projects with no codebase to scan. See [full routing table](references/specialized-routing.md).
 
@@ -96,7 +87,7 @@ Create `.azure/deployment-plan.md` by completing these steps. Do NOT generate an
 
 | # | Action | Reference |
 |---|--------|-----------|
-| 0 | **❌ Check Prompt AND Codebase for Specialized Tech** — If user mentions copilot SDK, Azure Functions, etc., OR codebase contains `@github/copilot-sdk`, invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
+| 0 | If the prompt matches a specialized technology with a dedicated skill, invoke that skill first | [specialized-routing.md](references/specialized-routing.md) |
 | 1 | **Analyze Workspace** — Determine mode: NEW, MODIFY, or MODERNIZE | [analyze.md](references/analyze.md) |
 | 2 | **Gather Requirements** — Classification, scale, budget | [requirements.md](references/requirements.md) |
 | 3 | **Scan Codebase** — Identify components, technologies, dependencies | [scan.md](references/scan.md) |

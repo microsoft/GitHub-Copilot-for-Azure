@@ -1,0 +1,63 @@
+name: Request New Skill Onboarding
+description: Partner teams - request onboarding a brand new skill to the Azure Skills Plugin.
+title: "[New Skill]: "
+labels:
+  - "onboarding"
+  - "skills"
+  - "needs-triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in onboarding a **new skill** to the **Azure Skills Plugin**!
+
+        This repo packages [agent skills](https://agentskills.io/specification) (markdown-based knowledge packages) that teach Copilot how to help customers with Azure services. Use this template to request a **brand new skill**.
+
+        > ⚠️ The char-count budget for skill descriptions is close to the Copilot CLI limit. **Adding new skills risks truncation — if your capability fits an existing skill, please use the [Add Capability to an Existing Skill](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/new?template=skill_extension_request.yml) template instead.**
+        >
+        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skill onboarding guide](https://aka.ms/azure-skills/onboarding).
+
+  - type: input
+    id: skill-name
+    attributes:
+      label: Skill Name
+      description: Proposed name for the new skill (lowercase, hyphens only).
+      placeholder: ex. azure-prepare
+    validations:
+      required: true
+
+  - type: input
+    id: contacts
+    attributes:
+      label: Contacts
+      description: List of contacts who own the skill being onboarded.
+      placeholder: ex. Bob Dylan (bdylan)
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Intended Agent Scenarios
+      description: What customer scenarios should this skill solve? Describe the tasks a user would ask Copilot to do and the value delivered.
+      placeholder: |
+        ex. "Create a web app and deploy it to Azure"
+        ex. "Generate Bicep/Terraform infrastructure for my app and host it on Azure App Service or Container Apps"
+        ex. "Modernize my existing application and add Key Vault and managed identity"
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      description: Your desired onboarding timeline (e.g., Q3 2026, Q4 2026, TBD).
+      placeholder: TBD
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Anything else that helps us understand the request - related skills, dependencies, regional considerations, etc.

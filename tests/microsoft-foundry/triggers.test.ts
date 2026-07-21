@@ -25,17 +25,21 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
       "How do I deploy an AI model from Microsoft Foundry catalog?",
       "Build a RAG application with Azure AI Foundry knowledge index",
       "Create an AI agent in Microsoft Foundry with web search",
+      "Add a tool to my Foundry agent",
       "Evaluate agent performance using Foundry evaluators",
       "Optimize my prompt for a Microsoft Foundry agent",
       "Improve my agent instructions in Azure AI Foundry",
       "Use a prompt optimizer on my Foundry system prompt",
       "Set up agent monitoring and continuous evaluation in Foundry",
+      "Set up a CI/CD deployment pipeline for my Foundry agent",
       "Help me with Microsoft Foundry model deployment",
       "How to use knowledge index for RAG in Azure AI Foundry?",
       "Create a new Azure AI Foundry project",
       "Set up a Foundry project for my AI agents",
       "How do I onboard to Microsoft Foundry and create a project?",
       "Provision Foundry infrastructure with azd",
+      "Scaffold and deploy a hosted Foundry agent with azd ai agent",
+      "Create a hosted Foundry agent quick start and run a remote smoke test",
       "I need a new Foundry project to host my models",
     ];
 
@@ -54,7 +58,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     // RBAC-specific prompts that SHOULD trigger this skill
     const rbacTriggerPrompts: string[] = [
       "Grant Alice role assignment access to my Microsoft Foundry project",
-      "Assign Azure AI User role to a user in Foundry",
+      "Assign Foundry User role to a user in Foundry",
       "Make Bob a project manager in Azure AI Foundry",
       "Who has role assignment access to my Microsoft Foundry resource?",
       "Audit role assignments on my Foundry account",

@@ -1,17 +1,14 @@
 # Skills Testing Guide
 
-> **For AI Agents**: This document provides patterns and conventions for creating and maintaining tests for Azure Copilot skills. When asked to "scaffold tests" for a skill, follow the instructions below.
+> **For AI Agents**: This document provides patterns and conventions for creating and maintaining tests for azure-skills plugin. When asked to "scaffold tests" for a skill, follow the instructions below.
 
 ## Scaffolding Tests for a Skill
 
 When a user asks to scaffold, create, or add tests for a skill, follow these steps:
 
-### Step 1: Copy the template
-```bash
-cp -r tests/_template tests/{skill-name}
-```
+### Step 1: Read the vally-eval skill
 
-> **For AI Agents**: Do not add or change files outside of the new test directory.
+Skills in azure-skills plugin use [vally](https://microsoft.github.io/vally/get-started/) to run integration tests that run prompts against an LLM Agent and evaluate the outcome. The vally-eval skill provides the knowledge on where to add the test code, how to run the tests and where to collect the test results. Combine the instructions in vally-eval skill, the official documentation of vally and the rest of the instructions in this file to learn how to write vally eval suites for azure-skills plugin. 
 
 ### Step 2: Read the skill's SKILL.md
 Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
@@ -24,63 +21,47 @@ Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
 - `references/services/` - Multiple Azure services the skill supports
 - References load only when explicitly linked, so understand what paths SKILL.md links to
 
-> **Frontmatter Format Rule:** Descriptions over 200 characters MUST use folded YAML format (`>-`) for maintainability. The `>-` format keeps descriptions readable in source while parsing to a flat string compatible with skills.sh and other registries. Do NOT use `|` (literal block) as it preserves newlines.
+### Step 3: Write eval spec
+Based on the skill's description and content, create test cases in which a user would submit prompts that trigger the agent to load the skill, do some work and accomplish something for the user.
 
-### Step 3: Update test files
-In each test file (`unit.test.ts`, `triggers.test.ts`), change:
-```typescript
-const SKILL_NAME = '{skill-name}';  // Must match the folder name exactly
-```
+Follow the vally documentation to write the eval suite for each test case. Each test case consists of the following things:
 
-### Step 4: Generate trigger prompts
-Based on the skill's description and content, add to `triggers.test.ts`:
+1. The environment in which the user prompts the agent. This can include source code in the local workspace, access to local CLI tools, access to Cloud resources, etc. For example, if the user prompt asks the agent to deploy an app to Azure, the workspace should already have the source code of the app.
+2. The user prompt that triggers the agent to do work. The user prompt should imitate what a reasonable user would submit in practice. Avoid giving too little or too much details in the test user prompt. If a test case naturally requires multi-turn agent interaction, such as user confirmation, it can specify follow up prompts to simulate multi-turn interactions with the agent.
+3. The pass/fail criterion for the outcome. For example, a test case can expect the agent to load a certain skill, emit certain tokens to the user as assistant messages, not emit certain tokens, etc. See [vally-graders-catalog](https://microsoft.github.io/vally/reference/graders/) to learn what graders are supported.
 
-**shouldTriggerPrompts** (at least 5) - prompts that mention:
-- The skill's primary Azure service (e.g., "Redis", "Cosmos DB", "Key Vault")
-- Common tasks the skill helps with
-- Keywords from the skill's description
+### Step 4: Run and verify locally
 
-**shouldNotTriggerPrompts** (at least 5) - prompts about:
-- Unrelated topics ("weather", "poetry")
-- Different cloud providers ("AWS", "GCP")
-- Different Azure services not covered by this skill
+Sign into Copilot CLI locally to make sure Copilot SDK can access CAPI. Run this command to run all tests for the new skill.
 
-### Step 5: Add skill-specific unit tests
-In `unit.test.ts`, add tests that verify the skill's content contains expected sections, commands, or patterns documented in its SKILL.md.
-
-### Step 6: Configure integration tests (optional)
-In `integration.test.ts`, customize the prompts to test real agent behavior.
-
-Follow existing `integration.test.ts` files for how to implement such tests. 
-
-### Step 7: Run and verify
 ```bash
 cd tests
 
-# Run all tests (integration runs if SDK available)
-npm test -- --testPathPatterns={skill-name}
-
-# Skip integration tests explicitly
-SKIP_INTEGRATION_TESTS=true npm test -- --testPathPatterns={skill-name}
+# Run all tests for {skill-name}
+npm run test:vally -- --skill {skill-name}
 ```
 
-### Step 8: Update coverage grid
-```bash
-npm run coverage:grid
-```
+### Step 5: Configure nightly integration test runs
 
----
+Skills in azure-skills plugin are configured to run nightly tests and publish test results. If you are adding tests for a new skill that hasn't been configured before, you need to make changes to configure it.
+
+Before adding the tests to the nightly run, evaluate the cost of the tests to make sure all the tests of the new skill can consistently finish in less than 6 hours. We run all the tests for each skill in one GitHub Actions job, which can only run for 6 hours. If the tests takes a long time to finish, consider breaking long duration tasks down or using earlyTerminate tags to make them more efficient.
+
+After that, follow these steps to add the new tests to the scheduled jobs.
+
+- Add the skill to [skills.json](./skills.json). Add one entry in the full skill list and another in one of the existing schedule slots. azure-deploy and microsoft-foundry have their own slot because they take much longer than the rest of the skills. Try adding the new tests to the slot where all other skills belong to unless there are issues. **DO NOT** create a new schedule slot.
+- Manually queue a job at [test-all-integration](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/test-all-integration.yml) workflow. Provide the name of the new skill as input. Wait and check to make sure the job can run the new tests.
+- Wait for one day for the nightly test run to finish and check the results at the [integration tests dashboard](https://aka.ms/azure-skills-tests).
 
 ## Overview
 
-This testing framework uses **Jest** to validate skill behavior across three test categories:
-- **Unit Tests** - Isolated logic testing
-- **Trigger Tests** - Skill activation validation  
-- **Integration Tests** - MCP tool interaction testing
+> Note: azure-skills plugin used to use an in-house Jest based test framework to run integration tests. We have deprecated that. All new tests should be written as vally eval suites instead.
+
+azure-skills plugin uses **Vally** to validate skill behavior across these test categories:
+- **Skill format** - Validate if the skills have correct format. Vally has built-in rules for validating skill format. We don't need explicit test code for that.
+- **Integration Tests** - Run target prompts against a real LLM agent and evaluate the outcome.
 
 ## Quick Reference: Test File Conventions
-
----
 
 ## Test File Conventions
 
@@ -88,123 +69,21 @@ This testing framework uses **Jest** to validate skill behavior across three tes
 
 | File | Purpose |
 |------|---------|
-| `unit.test.ts` | Tests isolated skill logic and metadata |
-| `triggers.test.ts` | Tests skill activation on prompts |
-| `integration.test.ts` | Tests real Copilot agent behavior (optional) |
-| `fixtures/*.json` | Test data and mock responses |
+| `evals/<skill-name>/eval.yaml` | Definition of test cases for a skill |
+| `evals/<skill-name>/fixtures/**/*` | Optional files for initializing a test environment |
 
 ### Directory Structure
 
 ```
-tests/{skill-name}/
-├── unit.test.js
-├── triggers.test.js
-├── integration.test.js   # Optional - requires Copilot CLI auth
-├── __snapshots__/        # Auto-generated by Jest
-│   └── triggers.test.js.snap
-└── fixtures/
-    └── prompts.json      # Trigger test prompts
+evals/{skill-name}/
+├── eval.yaml
+└── fixtures/        # Optional
+    └── data.json
 ```
-
----
-
-## Writing Unit Tests
-
-Unit tests validate skill metadata and any extractable logic.
-
-### Required Tests
-
-Every skill should have these basic unit tests:
-
-```typescript
-describe('Skill Metadata', () => {
-  test('has valid SKILL.md with required fields', () => {
-    expect(skill.metadata.name).toBe(SKILL_NAME);
-    expect(skill.metadata.description).toBeDefined();
-    expect(skill.metadata.description.length).toBeGreaterThan(10);
-  });
-});
-```
-
----
-
-## Writing Trigger Tests
-
-Trigger tests verify that prompts correctly activate (or don't activate) your skill.
-
-### Parameterized Tests
-
-Use `test.each` for testing multiple prompts:
-
-```typescript
-const shouldTriggerPrompts = [
-  'How do I deploy to Azure App Service?',
-  'Configure my Azure storage account',
-  'Help with Azure CLI commands',
-];
-
-test.each(shouldTriggerPrompts)(
-  'triggers on: "%s"',
-  (prompt) => {
-    const result = triggerMatcher.shouldTrigger(prompt);
-    expect(result.triggered).toBe(true);
-  }
-);
-```
-
-### Snapshot Tests
-
-Snapshots catch unintended changes to trigger behavior:
-
-```typescript
-test('skill keywords match snapshot', () => {
-  expect(triggerMatcher.getKeywords()).toMatchSnapshot();
-});
-```
-
-### Updating Snapshots
-
-When trigger behavior intentionally changes:
-
-```bash
-npm run update:snapshots -- --testPathPatterns=your-skill-name
-```
-
-**Always review snapshot changes before committing!**
-
----
 
 ## Using Fixtures
 
-### Loading Fixtures
-
-```typescript
-import { loadFixtures, loadFixture } from '../utils/fixtures';
-
-// Load all fixtures for a skill
-const fixtures = loadFixtures('azure-validation');
-
-// Load a specific fixture
-const prompts = loadFixture('azure-validation', 'prompts');
-```
-
-### Fixture File Format
-
-`fixtures/prompts.json`:
-```json
-{
-  "shouldTrigger": [
-    "Deploy to Azure",
-    "Configure storage account"
-  ],
-  "shouldNotTrigger": [
-    "Help with AWS",
-    "Write a poem"
-  ]
-}
-```
-
----
+Follow 
 
 ## Writing Integration Tests
 
@@ -215,187 +94,23 @@ Integration tests run a real Copilot agent session to verify skill behavior.
 1. Install Copilot CLI: `npm install -g @github/copilot-cli`
 2. Authenticate: Run `copilot` and follow prompts
 
-### Basic Integration Test
-
-```typescript
-import { 
-  run, 
-  isSkillInvoked, 
-  doesAssistantMessageIncludeKeyword,
-  shouldSkipIntegrationTests,
-  getIntegrationSkipReason
-} from '../utils/agent-runner';
-
-const SKILL_NAME = 'azure-rbac';
-
-// Integration tests auto-skip if SDK unavailable or in CI
-const skipTests = shouldSkipIntegrationTests();
-const skipReason = getIntegrationSkipReason();
-if (skipTests && skipReason) {
-  console.log(`⏭️  Skipping integration tests: ${skipReason}`);
-}
-
-const describeIntegration = skipTests ? describe.skip : describe;
-
-describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  test('invokes skill for relevant prompt', async () => {
-    const agentMetadata = await run({
-      prompt: 'What role should I assign for blob storage access?'
-    });
-
-    expect(isSkillInvoked(agentMetadata, SKILL_NAME)).toBe(true);
-    expect(doesAssistantMessageIncludeKeyword(agentMetadata, 'Storage Blob')).toBe(true);
-  });
-});
-```
-
-### Agent Runner Helpers
-
-| Helper | Purpose |
-|--------|---------|
-| `agentRunner.run(config)` | Execute agent session with prompt |
-| `agentRunner.isSkillInvoked(metadata, skillName)` | Check if skill was invoked |
-| `agentRunner.areToolCallsSuccess(metadata, toolName)` | Check if tool calls succeeded |
-| `agentRunner.doesAssistantMessageIncludeKeyword(metadata, keyword)` | Search response for keyword |
-
-### Test with Workspace Setup
-
-```javascript
-test('works with project files', async () => {
-  if (shouldSkip()) return;
-  
-  const agentMetadata = await agentRunner.run({
-    setup: async (workspace) => {
-      const fs = require('fs');
-      const path = require('path');
-      fs.writeFileSync(path.join(workspace, 'main.bicep'), 'resource ...');
-    },
-    prompt: 'Validate my Bicep file'
-  });
-
-  expect(agentRunner.isSkillInvoked(agentMetadata, 'azure-validation')).toBe(true);
-});
-```
-
----
-
 ## Running Tests
 
 ### Local Development
 
+Run tests for a skill locally using this command.
+
 ```bash
-# Run all tests (integration runs if SDK available, skips if not)
-npm test
+cd tests
 
-# Unit and trigger tests only (always skips integration)
-npm run test:unit
-
-# Skip integration tests explicitly
-SKIP_INTEGRATION_TESTS=true npm test
-
-# Specific skill
-npm test -- --testPathPatterns=azure-validation
-
-# Watch mode
-npm run test:watch -- --testPathPatterns=azure-validation
-
-# With coverage
-npm run test:coverage -- --testPathPatterns=azure-validation
-
-# Verbose output
-npm run test:verbose
+# Run all tests for {skill-name}
+npm run test:vally -- --skill {skill-name}
 ```
 
 ### CI Environment
 
-Tests automatically run on:
-- Push to `main` affecting skill or test files
-- Pull requests affecting skill or test files
-- Manual workflow dispatch
-
-Output formats:
-- **Console**: Human-readable Jest output
-- **CI**: JUnit XML in `tests/reports/junit.xml`
-- **PR**: Annotations via GitHub Actions
-
----
+Run tests for a subset of skills in the CI workflow by manually queuing a job at [test-all-integration](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/test-all-integration.yml) and collect the test results at the destination storage account, or collect the test results from nightly runs at the destination storage account.
 
 ## Coverage Requirements
 
-### Minimum Thresholds
-
-| Metric | Target |
-|--------|--------|
-| Statements | 60% |
-| Branches | 50% |
-| Functions | 60% |
-| Lines | 60% |
-
-### Checking Coverage
-
-```bash
-npm run test:coverage
-```
-
-Coverage reports are generated in `tests/coverage/`.
-
----
-
-## GitHub Actions Integration
-
-### Running Tests in CI
-
-Use the **workflow_dispatch** trigger on `test-all-skills.yml`:
-
-1. Go to **Actions** → **Test All Skills**
-2. Click **Run workflow**
-3. Enter a skill name (e.g., `azure-validation`) or leave empty for all skills
-
-### Full Test Suite
-
-`.github/workflows/test-all-skills.yml` runs all skill tests and updates the README coverage grid.
-
----
-
-## Troubleshooting
-
-### Test Not Running
-
-1. Check skill name matches folder name exactly
-2. Verify test file ends with `.test.js`
-3. Check `testPathIgnorePatterns` in `jest.config.js`
-
-### Snapshot Mismatch
-
-1. Review the diff carefully
-2. If change is intentional: `npm run update:snapshots`
-3. If change is unintentional: investigate and fix
-
----
-
-## Best Practices
-
-1. **One assertion per test** when possible for clear failure messages
-2. **Descriptive test names**: `test('rejects storage names over 24 characters')`
-3. **Test edge cases**: Empty input, very long input, special characters
-4. **Keep fixtures small**: Only include data needed for the test
-5. **Review snapshots**: Don't blindly update—understand the change
-6. **Clean up mocks**: Reset between tests to prevent interference
-
----
-
-## Adding Tests Checklist
-
-When adding tests for a new skill:
-
-- [ ] Copy `_template/` to `tests/{skill-name}/`
-- [ ] Update `SKILL_NAME` in all test files
-- [ ] Add 5+ prompts that should trigger
-- [ ] Add 5+ prompts that should NOT trigger  
-- [ ] Add unit tests for any validation logic
-- [ ] Run tests locally and verify passing
-- [ ] Update coverage grid if significant changes
-
----
-
-*Last updated: Auto-generated by skill testing framework*
+Every skill must have integration tests that checks for the skill invocation. For skills that involves calling tools, we strongly recommend adding tests that check for expected tools.

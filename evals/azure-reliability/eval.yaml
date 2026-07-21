@@ -1,0 +1,132 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-reliability/integration.test.ts
+# Migration: Jest → Vally
+#
+# These are end-to-end tests that deploy real Azure resources:
+#   - Functions app: assess reliability → deploy ZR fix → re-assess
+#   - App Service app: assess reliability → deploy ZR fix → re-assess
+#
+# Both tests use multi-turn follow-ups via the custom executor's followUp tag.
+# The systemPrompt tag injects a pseudo-random resource group name suffix.
+#
+# NOT TESTED (intentionally):
+#   - Storage redundancy upgrade (LRS/GRS → ZRS) — takes hours/days
+#   - Multi-region failover with Azure Front Door — high cost, long deploy
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure
+# is duplicated into every stimulus block below.
+
+name: azure-reliability-integration-eval
+description: |
+  Integration evaluation for azure-reliability skill — migrated from Jest integration tests.
+  Tests end-to-end reliability assessment and zone-redundancy fix for Azure Functions
+  and App Service apps. Multi-turn evaluation using follow-ups to drive the full
+  assess → fix → re-assess workflow.
+
+tags:
+  type: integration
+  skill: azure-reliability
+
+defaults:
+  runs: 1
+  timeout: "60m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  # ── e2e-zone-redundancy-fix (Functions) ──
+  # Jest: "assess function app, deploy ZR fix, verify ZR is now ON"
+  # Multi-turn flow: assess → confirm IaC fix → deploy → decline storage → re-assess
+  - name: "Functions app zone redundancy e2e"
+    prompt: |
+      I have an Azure Functions sample app in this workspace.
+      Use my current Azure subscription and the eastus2 region.
+      Assess and improve the reliability of my function app.
+      When you ask about storage migration, decline (no/later).
+      Multi-region is not needed.
+    tags:
+      type: integration
+      skill: azure-reliability
+      tier: full
+      cost: llm
+      area: output
+      followUp:
+        - "Yes, proceed with the quick-win zone-redundancy fix using IaC patches (Path B)."
+        - "Yes, deploy now."
+        - "No to storage migration — leave storage as-is."
+        - "Now re-run the reliability assessment and confirm zone redundancy is ON for the compute plan."
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+    environment:
+      commands:
+        - git clone https://github.com/Azure-Samples/functions-quickstart-javascript-azd.git --depth 1
+    graders:
+      # 1. Skill must be invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-reliability
+      # 2. Initial assessment mentions zone redundancy gap
+      - type: output-matches
+        config:
+          pattern: "(?i)zone.?redundan(cy|t)|zoneRedundant"
+      # 3. Agent drove a deploy (azd up / az deployment / terraform apply / Deployed)
+      - type: output-matches
+        config:
+          pattern: "(?i)azd up|az deployment|terraform apply|Deployed"
+      # 4. Re-assessment shows ZR is now ON
+      - type: output-matches
+        config:
+          pattern: "(?i)🟢 ON|now ON|zoneRedundant:\\s*true|Zone redundant:\\s*✅"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+
+  # ── app-service-e2e-zone-redundancy-fix ──
+  # Jest: "assess web app, deploy ZR fix, verify ZR is now ON"
+  # Multi-turn flow: assess → confirm IaC fix → deploy → re-assess
+  - name: "App Service zone redundancy e2e"
+    prompt: |
+      I have an Azure App Service sample app in this workspace.
+      Use my current Azure subscription and the eastus2 region.
+      Assess and improve the reliability of my Web app.
+      Multi-region is not needed.
+    tags:
+      type: integration
+      skill: azure-reliability
+      tier: full
+      cost: llm
+      area: output
+      followUp:
+        - "Yes, proceed with the quick-win zone-redundancy fix using IaC patches (Path B)."
+        - "Yes, deploy now."
+        - "Now re-run the reliability assessment and confirm zone redundancy is ON for the App Service plan."
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+    environment:
+      commands:
+        - git clone https://github.com/Azure-Samples/quickstart-deploy-aspnet-core-app-service.git --depth 1
+    graders:
+      # 1. Skill must be invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-reliability
+      # 2. Initial assessment mentions zone redundancy gap
+      - type: output-matches
+        config:
+          pattern: "(?i)zone.?redundan(cy|t)|zoneRedundant"
+      # 3. Agent drove a deploy
+      - type: output-matches
+        config:
+          pattern: "(?i)azd up|az deployment|terraform apply|Deployed"
+      # 4. Re-assessment shows ZR is now ON
+      - type: output-matches
+        config:
+          pattern: "(?i)🟢 ON|now ON|zoneRedundant:\\s*true|Zone redundant:\\s*✅"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"

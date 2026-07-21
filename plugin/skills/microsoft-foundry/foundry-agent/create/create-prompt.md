@@ -57,7 +57,7 @@ For a **workflow**:
 
 If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 - See [SDK Operations](references/sdk-operations.md) for create, list, update, delete code samples
-- See [Agent Tools](references/agent-tools.md) for adding tools to agents
+- See [Agent Tools](references/tools/prompt-agent/agent-tools.md) for adding tools to agents
 
 ### Step 4: Add Tools (Optional)
 
@@ -65,16 +65,16 @@ If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 
 | Tool Category | Reference |
 |---------------|-----------|
-| Code Interpreter, Function Calling | [Simple Tools](references/agent-tools.md) |
-| File Search (requires vector store) | [File Search](references/tool-file-search.md) |
-| Web Search (default, no setup needed) | [Web Search](references/tool-web-search.md) |
-| Bing Grounding (explicit request only) | [Bing Grounding](references/tool-bing-grounding.md) |
-| Azure AI Search (private data) | [Azure AI Search](references/tool-azure-ai-search.md) |
-| MCP Servers | [MCP Tool](references/tool-mcp.md) |
-| Memory (persistent across sessions) | [Memory](references/tool-memory.md) |
+| Code Interpreter, Function Calling | [Simple Tools](references/tools/prompt-agent/agent-tools.md) |
+| File Search (requires vector store) | [File Search](references/tools/prompt-agent/tool-file-search.md) |
+| Web Search (default, no setup needed) | [Web Search](references/tools/prompt-agent/tool-web-search.md) |
+| Bing Grounding (explicit request only) | [Bing Grounding](references/tools/prompt-agent/tool-bing-grounding.md) |
+| Azure AI Search (private data) | [Azure AI Search](references/tools/prompt-agent/tool-azure-ai-search.md) |
+| MCP Servers | [MCP Tool](references/tools/prompt-agent/tool-mcp.md) |
+| Memory (persistent across sessions) | [Memory](references/tools/prompt-agent/tool-memory.md) |
 | Connections (for tools that need them) | [Project Connections](../../project/connections.md) |
 
-> ⚠️ **Web Search Default:** Use `WebSearchPreviewTool` for web search. Only use `BingGroundingAgentTool` when the user explicitly requests Bing Grounding.
+> ⚠️ **Web Search Default:** Use `WebSearchPreviewTool` for web search. Only use `BingGroundingTool` when the user explicitly requests Bing Grounding.
 
 ## Error Handling
 
@@ -82,7 +82,7 @@ If MCP tools are unavailable, use the `azure-ai-projects` SDK:
 |-------|-------|------------|
 | Agent creation fails | Missing model deployment | Deploy a model first via `foundry_models_deploy` or portal |
 | MCP tool not found | MCP server not running | Fall back to SDK — see [SDK Operations](references/sdk-operations.md) |
-| Permission denied | Insufficient RBAC | Need `Azure AI User` role on the project |
+| Permission denied | Insufficient RBAC | Need `Foundry User` role on the project |
 | Agent name conflict | Name already exists | Use a unique name or update the existing agent |
 | Tool not available | Tool not configured for project | Verify tool prerequisites (e.g., Bing resource for grounding) |
 | SDK version mismatch | Using 1.x instead of 2.x | Install `azure-ai-projects --pre` for v2.x preview |

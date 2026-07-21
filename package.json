@@ -20,11 +20,11 @@
   "devDependencies": {
     "@types/fancy-log": "^2.0.2",
     "@types/gulp": "^4.0.18",
-    "@types/node": "^25.6.0",
+    "@types/node": "^25.9.0",
     "@types/vinyl": "^2.0.12",
     "fancy-log": "^2.0.0",
     "gulp": "^5.0.1",
-    "nerdbank-gitversioning": "^3.9.50",
+    "nerdbank-gitversioning": "^3.10.70",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }

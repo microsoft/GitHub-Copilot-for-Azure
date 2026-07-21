@@ -1,56 +1,57 @@
-# Vally eval config — migrated from Waza
-# Source: tests/azure-enterprise-infra-planner/evals/eval.yaml + tasks/*.yaml
-# Migration: Waza → Vally (issue #1817, Phase 1)
+# Vally eval config — migrated from Waza and Jest integration tests
+# Waza source: tests/azure-enterprise-infra-planner/evals/eval.yaml + tasks/*.yaml
+# Jest source: tests/azure-enterprise-infra-planner/{integration,triggers}.test.ts
+# Migration: Waza → Vally; Jest → Vally
 #
 # Global graders (evaluate#125 workaround): has_output, no_runtime_failure,
-# and security_posture are duplicated into every stimulus block below.
+# and security_posture are duplicated into every Waza-migrated stimulus block.
+# Jest-migrated routing stimuli additionally carry no_runtime_failure to match the
+# repo-wide routing convention; the remaining Jest-migrated stimuli omit the global
+# graders — the original Jest tests did not assert on runtime failure or security posture.
+#
 # Global efficiency constraint (max_tool_calls: 50) → constraints.max_turns: 50.
 
 name: azure-enterprise-infra-planner-eval
 description: |
-  Evaluation suite for the azure-enterprise-infra-planner skill.
-  Tests across dimensions:
-  - Infrastructure plan quality (resource selection, plan schema, plan-first workflow)
-  - Anti-trigger accuracy (redirects to azure-prepare, azure-deploy, azure-validate)
-  - IaC format awareness (Bicep and Terraform)
-  - Security posture (managed identity, RBAC, no connection strings)
-  - Workload coverage (GenAI, AKS, Container Apps, 3-tier, serverless, data pipeline, ML, IoT, backup/DR)
+  Evaluation suite for the azure-enterprise-infra-planner skill — covers
+  workload planning (GenAI, AKS, Container Apps, 3-tier, serverless, data
+  pipeline, ML, IoT, backup/DR), routing accuracy, plan JSON structure,
+  Bicep generation under infra/, and security posture.
 
 tags:
   type: integration
   skill: azure-enterprise-infra-planner
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-enterprise-infra-planner
-
-config:
+defaults:
   runs: 1
   timeout: "10m"
-  executor: copilot-sdk
-  model: claude-sonnet-4.5
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
 
 scoring:
   threshold: 0.8
   weights:
-    completed: 1.0
-    file-exists: 1.5
-    file-matches: 1.0
-    output-contains: 0.5
-    output-matches: 1.0
-    output-not-matches: 1.0
-    skill-invocation: 1.5
+    completed: 0.1
+    file-exists: 0.1
+    file-matches: 0.1
+    file-not-exists: 0.1
+    output-contains: 0.1
+    output-matches: 0.1
+    output-not-matches: 0.1
+    json-object-rules: 0.1
+    skill-invocation: 0.2
 
 stimuli:
   # ── invoke-simple-plan ──
   # Waza source: tasks/invoke-simple-plan.yaml
-  # Basic plan invocation — web app + database + Redis
+  # Basic plan invocation — simple network topology (VNet + subnets + NSG + Bastion)
   - name: "Invoke Simple Plan"
-    prompt: "Plan Azure infrastructure for a web app with a database and a Redis cache. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+    prompt: "Plan a simple Azure network with one VNet, two subnets, an NSG, and a Bastion host for secure VM access. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
     tags:
       type: integration
-      tier: smoke
-      area: files
+      tier: full
+      cost: llm
+      area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
@@ -60,7 +61,7 @@ stimuli:
       # Task grader: plan_generated (file must_exist)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -90,12 +91,42 @@ stimuli:
     tags:
       type: integration
       tier: full
-      area: behavior
+      cost: llm
+      area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
     graders:
-      # Task grader: skill_invoked (skill_invocation → completed; implicit)
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "aks"
+      - type: output-contains
+        config:
+          substring: "database"
+      - type: output-contains
+        config:
+          substring: "monitor"
+      # Task grader: identifies_compute_resources
+      - type: output-matches
+        config:
+          pattern: "(?i)aks|kubernetes|managed.?cluster"
+      # Task grader: identifies_networking
+      - type: output-matches
+        config:
+          pattern: "(?i)vnet|subnet|network|load.?balancer|ingress"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)managedcluster|kubernetes|containerservice"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -126,6 +157,7 @@ stimuli:
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
@@ -160,10 +192,10 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)recovery|replicate|failover"
       # Global: has_output
       - type: completed
@@ -186,21 +218,20 @@ stimuli:
         config:
           required: ["azure-enterprise-infra-planner"]
 
-  # ── plan-container-apps-001 ──
-  # Waza source: tasks/plan-container-apps.yaml
-  # Stateless REST API on Azure Container Apps with auto-scaling
-  - name: "Container Apps - Stateless REST API"
+  # ── plan-container-apps-network-001 ──
+  # Adapted from flagged Container Apps REST API → VNet-integrated ACA network topology
+  - name: "VNet-Integrated Container Apps"
     prompt: |
-      Deploy a stateless REST API in a container image, auto-scale based on HTTP requests, and persist user uploads in Azure Blob Storage using Azure Container Apps. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+      I need to design the network for a stateless REST API on Azure Container Apps that auto-scales on HTTP requests and persists user uploads to Blob Storage — it should sit inside a VNet with private endpoints and no public exposure. Can you plan the network infrastructure for this? Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
     graders:
-      # Task: expected.output_contains
       - type: output-contains
         config:
           substring: "container"
@@ -210,37 +241,33 @@ stimuli:
       - type: output-contains
         config:
           substring: "blob"
-      # Task grader: identifies_container_apps
       - type: output-matches
         config:
           pattern: "(?i)container.?app|aca|container"
-      # Task grader: identifies_scaling
       - type: output-matches
         config:
           pattern: "(?i)scale|auto.?scale|http.?request|replica"
-      # Task grader: identifies_storage
       - type: output-matches
         config:
           pattern: "(?i)blob|storage|upload|persist"
-      # Task grader: plan_created
+      # Task grader: identifies_network_isolation (PR reword: VNet + private endpoints)
+      - type: output-matches
+        config:
+          pattern: "(?i)private.?endpoint|private.?link|vnet|virtual.?network"
       - type: output-matches
         config:
           pattern: "(?i)plan|infrastructure|resource"
-      # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)container.?app"
-      # Global: has_output
       - type: completed
-      # Global: no_runtime_failure
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
       - type: output-not-matches
         config:
           pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
@@ -250,20 +277,20 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
 
-  # ── plan-data-pipeline ──
-  # Waza source: tasks/plan-data-pipeline.yaml
-  # Real-time data pipeline — IoT sensor ingestion + analytics
-  - name: "Plan Data Pipeline"
-    prompt: "I need to set up a real-time data pipeline on Azure that ingests IoT sensor data from 10,000 devices, processes events in near real-time, stores raw and processed data for analytics, and triggers alerts when thresholds are exceeded. What Azure resources do I need? Please plan the infrastructure. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
+  # ── plan-genai-chatbot-isolated-001 ──
+  # Adapted from flagged GenAI Chatbot → network-isolated GPT-4 backend topology
+  - name: "Network-Isolated GenAI Chatbot"
+    prompt: |
+      I need to design the network isolation for a GPT-4 customer support chatbot — it should reach Azure OpenAI through a private endpoint, expose its REST API frontend behind Application Gateway, and connect to the conversation database with no public access. Can you plan the network infrastructure for this? Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
     tags:
       type: integration
       tier: full
-      area: behavior
+      cost: llm
+      area: output-files
       skill: azure-enterprise-infra-planner
     constraints:
       max_turns: 50
@@ -271,352 +298,19 @@ stimuli:
       # Task grader: skill_invoked (skill_invocation → completed; implicit)
       # Global: has_output
       - type: completed
-      # Global: no_runtime_failure
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
-      - type: output-not-matches
-        config:
-          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-enterprise-infra-planner"]
-
-  # ── plan-genai-chatbot ──
-  # Waza source: tasks/plan-genai-chatbot.yaml
-  # GPT-4 customer support chatbot on Azure OpenAI
-  - name: "Plan GenAI Chatbot"
-    prompt: "I need to build a customer support chatbot powered by GPT-4. It should use Azure OpenAI Service for the LLM, store conversation history in a database, and have a REST API frontend. The system needs to handle about 1000 concurrent users. Can you plan the Azure infrastructure for this? Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
-    tags:
-      type: integration
-      tier: full
-      area: behavior
-      skill: azure-enterprise-infra-planner
-    constraints:
-      max_turns: 50
-    graders:
-      # Task grader: skill_invoked (skill_invocation → completed; implicit)
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
-      - type: output-not-matches
-        config:
-          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-enterprise-infra-planner"]
-
-  # ── plan-iot-telemetry-001 ──
-  # Waza source: tasks/plan-iot-telemetry.yaml
-  # IoT solution — 1000+ edge devices + Event Hub streaming
-  - name: "IoT Telemetry - Edge Devices + Event Hub"
-    prompt: |
-      Provision an IoT solution that collects data from 1000+ edge devices, processes data with Azure IoT Edge, and forwards alerts in real time to Azure Event Hub. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
-    tags:
-      type: integration
-      tier: full
-      area: output-files
-      skill: azure-enterprise-infra-planner
-    constraints:
-      max_turns: 50
-    graders:
-      # Task: expected.output_contains
-      - type: output-contains
-        config:
-          substring: "iot"
-      - type: output-contains
-        config:
-          substring: "edge"
-      - type: output-contains
-        config:
-          substring: "event hub"
-      # Task grader: identifies_iot_resources
+      # Network isolation check (PR reword: private endpoint + App Gateway)
       - type: output-matches
         config:
-          pattern: "(?i)iot.?hub|iot.?edge|iot.?central|device"
-      # Task grader: identifies_event_streaming
-      - type: output-matches
-        config:
-          pattern: "(?i)event.?hub|stream|alert|real.?time"
-      # Task grader: includes_edge_computing
-      - type: output-matches
-        config:
-          pattern: "(?i)edge|device|gateway|process"
-      # Task grader: plan_created
-      - type: output-matches
-        config:
-          pattern: "(?i)plan|infrastructure|resource"
-      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+          pattern: "(?i)private.?endpoint|private.?link|application.?gateway|app.?gateway"
+      # Plan artifact generated (prompt proceeds to plan generation)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
+      # Network isolation reflected in the generated plan
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
-          pattern: "(?i)iot|iothub"
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
-      - type: output-not-matches
-        config:
-          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-enterprise-infra-planner"]
-
-  # ── plan-ml-inference-001 ──
-  # Waza source: tasks/plan-ml-inference.yaml
-  # ML model scoring endpoint with JWT auth and monitoring
-  - name: "ML Inference - Model Scoring Endpoint"
-    prompt: |
-      Launch an ML model scoring endpoint using Azure ML online endpoint, load model from registry, enforce JWT authentication, and log predictions to Azure Monitor. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
-    tags:
-      type: integration
-      tier: full
-      area: output-files
-      skill: azure-enterprise-infra-planner
-    constraints:
-      max_turns: 50
-    graders:
-      # Task: expected.output_contains
-      - type: output-contains
-        config:
-          substring: "endpoint"
-      - type: output-contains
-        config:
-          substring: "model"
-      - type: output-contains
-        config:
-          substring: "monitor"
-      # Task grader: identifies_ml_endpoint
-      - type: output-matches
-        config:
-          pattern: "(?i)ml.?endpoint|online.?endpoint|scoring|inference|model"
-      # Task grader: identifies_authentication
-      - type: output-matches
-        config:
-          pattern: "(?i)jwt|auth|identity|token|secure"
-      # Task grader: identifies_monitoring
-      - type: output-matches
-        config:
-          pattern: "(?i)monitor|log|prediction|telemetry|insight"
-      # Task grader: plan_created
-      - type: output-matches
-        config:
-          pattern: "(?i)plan|infrastructure|resource"
-      # Task grader: generates_infra_artifacts (file-exists + file-matches)
-      - type: file-exists
-        config:
-          path: ".azure/infrastructure-plan.json"
-      - type: file-matches
-        config:
-          path: ".azure/infrastructure-plan.json"
-          pattern: "(?i)ml|machinelearning|endpoint"
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
-      - type: output-not-matches
-        config:
-          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-enterprise-infra-planner"]
-
-  # ── plan-ml-training-pipeline-001 ──
-  # Waza source: tasks/plan-ml-training-pipeline.yaml
-  # Distributed deep learning training with GPU compute
-  - name: "ML Training - Distributed Deep Learning"
-    prompt: |
-      Provision an Azure ML workspace for distributed deep learning, scale GPU clusters dynamically, and version datasets with Azure ML Data. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
-    tags:
-      type: integration
-      tier: full
-      area: output-files
-      skill: azure-enterprise-infra-planner
-    constraints:
-      max_turns: 50
-    graders:
-      # Task: expected.output_contains
-      - type: output-contains
-        config:
-          substring: "ml"
-      - type: output-contains
-        config:
-          substring: "gpu"
-      - type: output-contains
-        config:
-          substring: "dataset"
-      # Task grader: identifies_ml_workspace
-      - type: output-matches
-        config:
-          pattern: "(?i)ml.?workspace|machine.?learning|azure.?ml"
-      # Task grader: identifies_gpu_compute
-      - type: output-matches
-        config:
-          pattern: "(?i)gpu|compute|cluster|training|deep.?learning"
-      # Task grader: identifies_data_management
-      - type: output-matches
-        config:
-          pattern: "(?i)data|dataset|version|storage"
-      # Task grader: plan_created
-      - type: output-matches
-        config:
-          pattern: "(?i)plan|infrastructure|resource"
-      # Task grader: generates_infra_artifacts (file-exists + file-matches)
-      - type: file-exists
-        config:
-          path: ".azure/infrastructure-plan.json"
-      - type: file-matches
-        config:
-          path: ".azure/infrastructure-plan.json"
-          pattern: "(?i)ml|machinelearning|workspace"
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
-      - type: output-not-matches
-        config:
-          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-enterprise-infra-planner"]
-
-  # ── plan-serverless-workflow-001 ──
-  # Waza source: tasks/plan-serverless-workflow.yaml
-  # Serverless order processing — Event Grid + Functions + Table Storage
-  - name: "Serverless Workflow - Order Processing"
-    prompt: |
-      Deploy a serverless workflow for order processing, trigger via Azure Event Grid from incoming messages, and archive completed order data in Azure Table Storage. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
-    tags:
-      type: integration
-      tier: full
-      area: output-files
-      skill: azure-enterprise-infra-planner
-    constraints:
-      max_turns: 50
-    graders:
-      # Task: expected.output_contains
-      - type: output-contains
-        config:
-          substring: "function"
-      - type: output-contains
-        config:
-          substring: "event grid"
-      - type: output-contains
-        config:
-          substring: "table storage"
-      # Task grader: identifies_serverless_compute
-      - type: output-matches
-        config:
-          pattern: "(?i)function|serverless|logic.?app|workflow"
-      # Task grader: identifies_event_trigger
-      - type: output-matches
-        config:
-          pattern: "(?i)event.?grid|trigger|event.?driven|message"
-      # Task grader: identifies_storage
-      - type: output-matches
-        config:
-          pattern: "(?i)table.?storage|storage|archive|persist"
-      # Task grader: plan_created
-      - type: output-matches
-        config:
-          pattern: "(?i)plan|infrastructure|resource"
-      # Task grader: generates_infra_artifacts (file-exists + file-matches)
-      - type: file-exists
-        config:
-          path: ".azure/infrastructure-plan.json"
-      - type: file-matches
-        config:
-          path: ".azure/infrastructure-plan.json"
-          pattern: "(?i)function|eventgrid|serverless"
-      # Global: has_output
-      - type: completed
-      # Global: no_runtime_failure
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
-      # Global: security_posture
-      - type: output-not-matches
-        config:
-          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)SharedAccessKey="
-      - type: output-not-matches
-        config:
-          pattern: "(?i)masterKey="
-      # Skill invocation grader (P1-3)
-      - type: skill-invocation
-        config:
-          required: ["azure-enterprise-infra-planner"]
-
-  # ── plan-three-tier-bicep ──
-  # Waza source: tasks/plan-three-tier-bicep.yaml
-  # 3-tier web app — React SWA + Node.js App Service + PostgreSQL
-  - name: "Plan Three-Tier Bicep"
-    prompt: "Plan a 3-tier web application architecture on Azure with a React frontend hosted on Static Web Apps, a Node.js API layer on App Service, and Azure Database for PostgreSQL. Include a CDN for static assets and Application Gateway for load balancing across the API tier. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation."
-    tags:
-      type: integration
-      tier: full
-      area: behavior
-      skill: azure-enterprise-infra-planner
-    constraints:
-      max_turns: 50
-    graders:
-      # Task grader: skill_invoked (skill_invocation → completed; implicit)
-      # Global: has_output
-      - type: completed
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)privateendpoint|privatelink|applicationgateway"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -638,17 +332,23 @@ stimuli:
 
   # ── plan-three-tier-terraform-001 ──
   # Waza source: tasks/plan-three-tier-terraform.yaml
-  # Classic 3-tier with Linux VMs + Terraform IaC
-  - name: "3-Tier Architecture - Linux VMs + Terraform"
+  # Segmented VNet with Linux VMs + Terraform IaC (followUp drives Phase 6 Terraform
+  # generation; file-exists infra/main.tf asserts the Terraform output named in the test).
+  - name: "Segmented VNet - Linux VMs + Terraform"
     prompt: |
-      Spin up Linux VMs for each tier, automate patch management via Azure Automation, and log traffic between subnets for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+      Spin up Linux VMs across a segmented VNet — separate web, app, and data subnets with NSGs between them and an internal load balancer — automate patch management via Azure Automation, and log inter-subnet traffic for compliance. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
     tags:
       type: integration
       tier: full
+      cost: llm
       area: output-files
       skill: azure-enterprise-infra-planner
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Approve the plan as-is."
+        - "Yes, generate the Terraform IaC for the approved plan."
     constraints:
-      max_turns: 50
+      max_turns: 80
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -679,11 +379,15 @@ stimuli:
       # Task grader: generates_infra_artifacts (file-exists + file-matches)
       - type: file-exists
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
       - type: file-matches
         config:
-          path: ".azure/infrastructure-plan.json"
+          path: "**/.azure/infrastructure-plan.json"
           pattern: "(?i)virtual.?machine|vm"
+      # Terraform IaC generated (validates the "Terraform" in the test name)
+      - type: file-exists
+        config:
+          path: "**/infra/main.tf"
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -701,6 +405,650 @@ stimuli:
         config:
           pattern: "(?i)masterKey="
       # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── trigger-geo-redundant-sql-backup ──
+  # Jest: triggers.test.ts → "Should Trigger" (geo-redundant SQL backup prompt)
+  # Assertions: skill-invocation (mirrors `matcher.shouldTrigger(...).triggered === true`)
+  - name: "Trigger - Geo-Redundant SQL Backup DR"
+    prompt: "Set up geo-redundant disaster recovery for on-premises SQL servers across paired Azure regions, with cross-region replication, a failover network, encryption-at-rest, and automated monthly DR tests."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── trigger-vmware-asr-runbooks ──
+  # Jest: triggers.test.ts → "Should Trigger" (VMware ASR runbooks prompt)
+  # Assertions: skill-invocation. tier:full keeps the smoke suite to 1 stimulus per skill.
+  - name: "Trigger - VMware ASR Runbooks"
+    prompt: "Deploy a cross-region failover setup for on-premises VMware VMs — Azure Site Recovery replication into a recovery VNet, orchestrated runbooks for failover, and compliance audit trails."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── skill-3tier-hardened-os ──
+  # Jest: integration.test.ts → "invokes skill for hardened 3-tier VM infrastructure prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - 3-Tier Hardened OS Images"
+    prompt: "Deploy 3-tier architecture with hardened OS images, VM backups scheduled daily, and application-level redundancy for the business logic tier."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── skill-vmss-appgw-waf ──
+  # Jest: integration.test.ts → "invokes skill for VMSS with WAF and encryption prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - VMSS + App Gateway WAF"
+    prompt: "Deploy three distinct VM scale sets for a legacy app, route incoming HTTP/S via Application Gateway with WAF, and encrypt all data disks."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── skill-azure-backup-ltr ──
+  # Jest: integration.test.ts → "invokes skill for backup and compliance prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - Azure Backup Long-Term Retention"
+    prompt: "Set up Azure Backup for critical VM workloads, create a long-term retention policy for compliance, and test backup restores quarterly."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── skill-secure-multi-region-3tier-windows ──
+  # Jest: integration.test.ts → "invokes skill for secure multi-region 3-tier prompt"
+  # Assertions: skill-invocation (invocation rate ≥ 80%, early-terminates on skill-call)
+  - name: "Skill - Secure Multi-Region 3-Tier Windows"
+    prompt: "Set up a secure multi-region 3-tier stack with Windows VMs for web and app layers, scale out the web tier with Azure Load Balancer, attach Premium Managed Disks to database tier."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Go with recommended options. Assume all defaults to make the plan."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── skill-ml-scoring-endpoint-isolation ──
+  # Net-new: the removed app-centric ML Inference workload (Azure ML scoring endpoint),
+  # rephrased to be infra-led so it routes to infra-planner instead of azure-prepare.
+  # Asserts infra-planner still triggers for the ML infra/networking slice.
+  - name: "Skill - Network-Isolated ML Scoring Endpoint"
+    prompt: "Design a network-isolated ML model scoring endpoint on Azure — an Azure ML online endpoint that loads its model from the registry, deployed inside a VNet with private endpoints, dedicated subnets, and NSGs blocking all public internet access, with prediction logs sent to Azure Monitor."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-enterprise-infra-planner
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-enterprise-infra-planner"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── response-jumpbox-nsgs-internal-lb ──
+  # Jest: integration.test.ts → response-quality "generates infrastructure-plan.json with expected resources"
+  # Assertions: skill-invocation + file-exists(.azure/insights.json, infrastructure-plan.json) + JSON schema markers
+  #   + networking+compute resource types in plan + no IaC files generated (Bicep/Terraform/tfvars).
+  #   followUp 2 explicitly halts the agent at the Phase 6 IaC Gate
+  #   (see plugin/skills/azure-enterprise-infra-planner/references/phases/6-generate-iac.md).
+  - name: "Response - Jumpbox + NSGs + Internal LB (plan only)"
+    prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Approve the plan as-is. Do not generate any IaC."
+    constraints:
+      max_turns: 50
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # File paths use `**/...` globs because the agent non-deterministically
+      # writes plan files either at workspace root or in a skill-named subdir.
+      - type: file-exists
+        config:
+          path: "**/.azure/insights.json"
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      # Plan-level required fields (Jest: expect(plan.meta|inputs|plan).toHaveProperty)
+      - type: json-object-rules
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          rules:
+            - type: has-property
+              key: meta.planId
+            - type: has-property
+              key: meta.status
+            - type: has-property
+              key: meta.version
+            - type: has-property
+              key: inputs.userGoal
+            - type: has-property
+              key: inputs.insightsApplied
+            - type: has-property
+              key: plan.resources
+            - type: has-property
+              key: plan.overallReasoning
+            - type: has-property
+              key: plan.validation
+      # Per-resource required fields (Jest: for (const resource of plan.plan.resources) ...)
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"name"'
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"type"'
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"location"'
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: '(?s)"resources".*"reasoning"'
+      # hasNetworking + hasCompute (Jest: resourceTypes.some(...))
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualnetwork|networksecuritygroup|loadbalancer"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualmachine|compute"
+      # No IaC generated (Jest: listFilesRecursive filter for .bicep/.tf/.tfvars → expect [])
+      - type: file-not-exists
+        config:
+          path: "**/*.bicep"
+      - type: file-not-exists
+        config:
+          path: "**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "**/*.tfvars"
+
+  # ── response-sap-backup-bicep-generation ──
+  # Jest: integration.test.ts → response-quality "generates Bicep files from approved plan"
+  # Assertions: skill-invocation + file-exists(.azure/insights.json, infra/main.bicep).
+  #   3-step followUp ends with the Phase 6 IaC Gate's example phrasing
+  #   ("Yes, generate the Bicep ...") — see references/phases/6-generate-iac.md.
+  #   The agent creates infra/ + infra/modules/ itself per bicep-generation.md step 1.
+  - name: "Response - SAP Backup Bicep Generation"
+    prompt: "Provision the backup infrastructure for an SAP VM workload — a Recovery Services vault with a policy-driven, encrypted and compressed backup policy, Key Vault-managed encryption keys, and diagnostic audit logs for all recovery tests. Assume all defaults to make the plan."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+      followUp:
+        - "The resource list looks good, proceed with generating the plan."
+        - "Approve the plan as-is."
+        - "Yes, generate the Bicep IaC for the approved plan."
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      # File paths use `**/...` globs because the agent non-deterministically
+      # writes plan files either at workspace root or in a skill-named subdir.
+      - type: file-exists
+        config:
+          path: "**/.azure/insights.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.bicep"
+
+  # ── plan-hub-spoke-iot-001 ──
+  # Adapted from removed IoT Telemetry → hub-spoke ingestion network topology
+  - name: "Hub-Spoke IoT Ingestion Network"
+    prompt: |
+      Design a hub-spoke network for IoT ingestion with private endpoints to Event Hub, NSGs per spoke, a firewall in the hub, and segmented subnets for edge gateways. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "hub"
+      - type: output-contains
+        config:
+          substring: "firewall"
+      - type: output-contains
+        config:
+          substring: "subnet"
+      # Task grader: identifies_hub_spoke
+      - type: output-matches
+        config:
+          pattern: "(?i)hub.?spoke|hub|spoke|peering"
+      # Task grader: identifies_segmentation
+      - type: output-matches
+        config:
+          pattern: "(?i)firewall|nsg|private.?endpoint|subnet|segment"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualnetwork|firewall|privateendpoint"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── plan-multiregion-data-ingestion-001 ──
+  # Adapted from removed Data Pipeline → multi-region private-network ingestion topology
+  - name: "Multi-Region Data Ingestion Topology"
+    prompt: |
+      Plan a multi-region data ingestion pipeline for web analytics with VNet-integrated event hubs, private endpoints to storage, geo-redundant storage accounts, and cross-region failover. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 50
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "region"
+      - type: output-contains
+        config:
+          substring: "private endpoint"
+      - type: output-contains
+        config:
+          substring: "geo"
+      # Task grader: identifies_multiregion
+      - type: output-matches
+        config:
+          pattern: "(?i)multi.?region|cross.?region|geo|failover|paired"
+      # Task grader: identifies_network_integration
+      - type: output-matches
+        config:
+          pattern: "(?i)private.?endpoint|vnet|integration|grs|geo.?redundant"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      # Task grader: generates_infra_artifacts (file-exists + file-matches)
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)privateendpoint|storage|virtualnetwork"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+      # Skill invocation grader (P1-3)
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── plan-virtual-wan-global-transit-001 ──
+  # Global transit topology — Virtual WAN hubs + branch VPN + region routing
+  - name: "Virtual WAN Global Transit Topology"
+    prompt: |
+      Plan a global transit network using Azure Virtual WAN with two regional hubs, branch site-to-site VPN, and inter-region routing. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 50
+    graders:
+      - type: output-contains
+        config:
+          substring: "virtual wan"
+      - type: output-contains
+        config:
+          substring: "hub"
+      - type: output-contains
+        config:
+          substring: "vpn"
+      - type: output-matches
+        config:
+          pattern: "(?i)virtual.?wan|vwan|transit|hub"
+      - type: output-matches
+        config:
+          pattern: "(?i)vpn|branch|inter.?region|routing"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualwan|vpngateway|virtualhub"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── plan-dmz-perimeter-001 ──
+  # Perimeter/DMZ topology — App Gateway + Firewall front tier, segmented subnets
+  - name: "DMZ Perimeter Network Topology"
+    prompt: |
+      Design a perimeter (DMZ) network with Application Gateway and Azure Firewall in the front tier, segmented app and data subnets, NSGs per tier, and a Bastion for management. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 50
+    graders:
+      - type: output-contains
+        config:
+          substring: "firewall"
+      - type: output-contains
+        config:
+          substring: "subnet"
+      - type: output-contains
+        config:
+          substring: "perimeter"
+      - type: output-matches
+        config:
+          pattern: "(?i)dmz|perimeter|firewall|application.?gateway"
+      - type: output-matches
+        config:
+          pattern: "(?i)nsg|subnet|segment|bastion|tier"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)firewall|applicationgateway|networksecuritygroup"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── plan-full-mesh-vnet-001 ──
+  # Full-mesh topology — directly peered VNets across workloads
+  - name: "Full-Mesh VNet Peering Topology"
+    prompt: |
+      Plan a full-mesh network of four peered VNets across separate workloads with direct routing, NSGs per VNet, and shared DNS. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 50
+    graders:
+      - type: output-contains
+        config:
+          substring: "mesh"
+      - type: output-contains
+        config:
+          substring: "peering"
+      - type: output-contains
+        config:
+          substring: "vnet"
+      - type: output-matches
+        config:
+          pattern: "(?i)mesh|peering|peered|direct.?rout"
+      - type: output-matches
+        config:
+          pattern: "(?i)vnet|nsg|dns|subnet"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)virtualnetwork|virtualnetworkpeering|peering"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+
+  # ── plan-landing-zone-001 ──
+  # Landing zone topology — mgmt groups + policy + RBAC + shared connectivity
+  - name: "Subscription Landing Zone Topology"
+    prompt: |
+      Plan a subscription landing zone with management group hierarchy, Azure Policy assignments, RBAC role assignments, and a shared connectivity subscription. Assume all defaults to create the preliminary resource list, then approve the preliminary list and proceed to plan generation.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output-files
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 50
+    graders:
+      - type: output-contains
+        config:
+          substring: "landing zone"
+      - type: output-contains
+        config:
+          substring: "policy"
+      - type: output-contains
+        config:
+          substring: "rbac"
+      - type: output-matches
+        config:
+          pattern: "(?i)landing.?zone|management.?group|subscription"
+      - type: output-matches
+        config:
+          pattern: "(?i)policy|rbac|role|governance|compliance"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)managementgroup|policy|roleassignment"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)masterKey="
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]

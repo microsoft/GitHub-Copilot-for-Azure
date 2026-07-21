@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { apiUrl } from "../shared/apiUrl";
 
 interface FileViewerProps {
     blobPath: string;
@@ -19,7 +20,7 @@ function FileViewer({ blobPath }: FileViewerProps) {
         setError(null);
         setContent("");
 
-        fetch(`/api/msbench-download?path=${encodeURIComponent(blobPath)}`)
+        fetch(apiUrl(`/api/msbench-download?path=${encodeURIComponent(blobPath)}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load file: ${res.status}`);
                 return res.text();
@@ -30,7 +31,7 @@ function FileViewer({ blobPath }: FileViewerProps) {
     }, [blobPath]);
 
     const handleDownload = () => {
-        window.open(`/api/msbench-download?path=${encodeURIComponent(blobPath)}`, "_blank");
+        window.open(apiUrl(`/api/msbench-download?path=${encodeURIComponent(blobPath)}`), "_blank");
     };
 
     const handleBack = () => {

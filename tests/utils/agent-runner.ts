@@ -16,12 +16,14 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll } from "@github/copilot-sdk";
-import { redactSecrets } from "./redact";
-import { listSkills } from "./skill-loader";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
+import { redactSecrets } from "./redact.ts";
+import { listSkills } from "./skill-loader.ts";
+import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
+import { sanitizeTestName } from "../vally/utils.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
-export { getAllAssistantMessages } from "./evaluate";
+export { getAllAssistantMessages } from "./evaluate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,9 +35,39 @@ const __dirname = path.dirname(__filename);
  * is not available inside Jest's ESM VM context (even with
  * `--experimental-vm-modules`). We replicate the same path arithmetic here
  * using a plain `path.resolve` from `node_modules` so it works everywhere.
+ *
+ * Rather than hard-coding the entry filename, we read the package's `bin`
+ * field so we stay resilient to upstream renames (e.g. `index.js` →
+ * `npm-loader.js` in @github/copilot@1.0.67). We fall back to the known
+ * filenames if the manifest cannot be read.
  */
 function getBundledCliPath(): string {
-  return path.resolve(__dirname, "../node_modules/@github/copilot/index.js");
+  const pkgDir = path.resolve(__dirname, "../node_modules/@github/copilot");
+
+  const candidates: string[] = [];
+  try {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(pkgDir, "package.json"), "utf8")
+    ) as { bin?: string | Record<string, string> };
+    const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.copilot;
+    if (bin) {
+      candidates.push(bin);
+    }
+  } catch {
+    // Fall through to the well-known filenames below.
+  }
+  candidates.push("npm-loader.js", "index.js");
+
+  for (const candidate of candidates) {
+    const candidatePath = path.resolve(pkgDir, candidate);
+    if (fs.existsSync(candidatePath)) {
+      return candidatePath;
+    }
+  }
+
+  // Last resort: return the conventional path so the caller surfaces a clear
+  // spawn error instead of a silent undefined.
+  return path.resolve(pkgDir, "npm-loader.js");
 }
 
 interface TokenUsage {
@@ -81,6 +113,12 @@ export interface AgentMetadata {
   tokenUsage?: TokenUsage;
 
   /**
+   * Number of assistant turns that started during the run,
+   * counted from `assistant.turn_start` events.
+   */
+  turnCount: number;
+
+  /**
    * Map from tool name to the number of times that tool was invoked during the run.
    * Excludes the `skill` pseudo-tool; all other tools (including MCP tools) are included,
    * keyed by the raw `event.data.toolName`.
@@ -95,6 +133,55 @@ export interface AgentMetadata {
    * also include a synthesized `SKILL.md` entry for `skill` tool calls.
    */
   skillFiles: Record<string, string[]>;
+}
+
+/**
+ * A single tool invocation captured during an agent run, in emission order.
+ * Includes the `skill` pseudo-tool so the full sequence can be reconstructed.
+ */
+export interface ToolCall {
+  /** 0-based index over `tool.execution_start` events in emission order. */
+  order: number;
+  /** Raw `event.data.toolName` (e.g. "skill", "bash", an MCP tool name). */
+  toolName: string;
+  /** Correlates the start event to its `tool.execution_complete`. */
+  toolCallId: string;
+  /** Full tool arguments, secret-redacted on write, untruncated. */
+  arguments: unknown;
+  /**
+   * Success of the matching `tool.execution_complete`, or `null` when no
+   * completion event was observed for this call.
+   */
+  success: boolean | null;
+  /**
+   * Wall-clock duration in milliseconds, computed from the start and matching
+   * completion event timestamps, or `null` when no completion was observed.
+   */
+  durationMs: number | null;
+  /**
+   * UTF-8 byte size of the tool's full textual output (`detailedContent`,
+   * falling back to `content`, then to text/terminal result blocks). Binary
+   * blocks (image/audio) are excluded. `null` when no completion was observed.
+   */
+  outputBytes: number | null;
+}
+
+/**
+ * Structured, per-run record of the tools called during a single agent run.
+ * Written alongside (and named to match) that run's markdown report so the tool
+ * sequence for a specific run can be reconstructed even when the same stimulus
+ * runs multiple times in the same test-case directory.
+ */
+export interface ToolUsageRecord {
+  testName: string;
+  /** Basename of this run's `agent-metadata-<token>.md` report (1:1 correlation). */
+  reportFile: string;
+  /** Session id from the `session.start` event, if present. */
+  sessionId: string | null;
+  model: string | undefined;
+  /** ISO-8601 timestamp of when this file was written. */
+  timestamp: string;
+  toolCalls: ToolCall[];
 }
 
 /**
@@ -114,21 +201,34 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
+  env?: Record<string, string>;
+  model?: string;
   prompt: string;
   shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
   nonInteractive?: boolean;
   followUp?: string[];
-  systemPrompt?: {
-    mode: "append" | "replace",
-    content: string
-  };
+  systemPrompt?: SystemMessageConfig;
+
+  /**
+   * Optional. An absolute path to a directory.
+   * if not specified, the agent will create a temporary directory and use it as the workspace.
+   */
+  workspace?: string;
   preserveWorkspace?: boolean;
 
   /**
    * Skills to include for the agent run.
    * If undefined, all the skills in azure plugin will be included.
+   * If specified, only the skills in this array will be included. This option overrides the required skills specified in the {@link requiredSkills}.
    */
   includeSkills?: string[];
+
+  /**
+   * Maximum number of assistant turns allowed before the run is aborted.
+   * Each `assistant.turn_start` event counts as one turn.
+   * If undefined, there is no turn limit.
+   */
+  maxTurns?: number;
 
   /**
    * Number of milliseconds as timeout for follow ups.
@@ -143,6 +243,12 @@ export interface AgentRunConfig {
   takeScreenshot?: {
     predicate: (agentMetadata: AgentMetadata) => boolean
   };
+
+  /**
+   * Skills that must be present with full description.
+   * Skills other than the required ones will be randomly disabled until the estimated char count falls below the char count budget.
+   */
+  requiredSkills?: string[];
 }
 
 interface KeywordOptions {
@@ -285,6 +391,105 @@ function computeToolAndSkillStats(
 }
 
 /**
+ * Build the ordered list of tool calls for a single run from its session events.
+ *
+ * - One entry per `tool.execution_start` event, in emission order, including the
+ *   `skill` pseudo-tool.
+ * - `success` is resolved by joining each start to its `tool.execution_complete`
+ *   by `toolCallId`; `null` when no completion event exists.
+ */
+export function computeToolUsage(events: SessionEvent[]): ToolCall[] {
+  // First pass: success and completion timestamp by toolCallId from completion events.
+  const successById = new Map<string, boolean>();
+  const completeTimeById = new Map<string, string>();
+  const outputBytesById = new Map<string, number | null>();
+  for (const event of events) {
+    if (event.type !== "tool.execution_complete") continue;
+    const id = event.data.toolCallId as string | undefined;
+    if (id !== undefined) {
+      successById.set(id, Boolean(event.data.success));
+      completeTimeById.set(id, event.timestamp);
+      outputBytesById.set(id, computeOutputBytes(event.data.result));
+    }
+  }
+
+  const toolCalls: ToolCall[] = [];
+  for (const event of events) {
+    if (event.type !== "tool.execution_start") continue;
+    const toolName = event.data.toolName as string | undefined;
+    const toolCallId = event.data.toolCallId as string | undefined;
+    if (!toolName || toolCallId === undefined) continue;
+    toolCalls.push({
+      order: toolCalls.length,
+      toolName,
+      toolCallId,
+      arguments: event.data.arguments ?? null,
+      success: successById.has(toolCallId) ? successById.get(toolCallId)! : null,
+      durationMs: computeDurationMs(event.timestamp, completeTimeById.get(toolCallId)),
+      outputBytes: outputBytesById.has(toolCallId) ? outputBytesById.get(toolCallId)! : null,
+    });
+  }
+  return toolCalls;
+}
+
+/**
+ * UTF-8 byte size of a completion's full textual output. Prefers `detailedContent`,
+ * falls back to `content`, then to concatenated text from text/terminal result
+ * blocks. Binary blocks (image/audio) and resources are excluded. Returns `null`
+ * when no textual output is present.
+ */
+function computeOutputBytes(
+  result:
+    | { content?: string; detailedContent?: string; contents?: unknown[] }
+    | undefined,
+): number | null {
+  if (!result) return null;
+  let text: string | undefined;
+  if (typeof result.detailedContent === "string") {
+    text = result.detailedContent;
+  } else if (typeof result.content === "string") {
+    text = result.content;
+  } else if (Array.isArray(result.contents)) {
+    const parts: string[] = [];
+    for (const block of result.contents) {
+      const blockText = (block as { text?: unknown }).text;
+      if (typeof blockText === "string") parts.push(blockText);
+    }
+    text = parts.length > 0 ? parts.join("") : undefined;
+  }
+  if (text === undefined) return null;
+  return Buffer.byteLength(text, "utf8");
+}
+
+/**
+ * Wall-clock duration in milliseconds between a tool call's start and matching
+ * completion timestamp. Returns `null` when the completion is missing or either
+ * timestamp is unparseable, or when the result would be negative.
+ */
+function computeDurationMs(startTs: string, completeTs: string | undefined): number | null {
+  if (!completeTs) return null;
+  const start = Date.parse(startTs);
+  const end = Date.parse(completeTs);
+  if (Number.isNaN(start) || Number.isNaN(end)) return null;
+  const delta = end - start;
+  return delta >= 0 ? delta : null;
+}
+
+/**
+ * Derive the per-run tool-usage JSON path from a run's markdown report path,
+ * so the two share the same `<token>` and correlate 1:1.
+ * `.../agent-metadata-<token>.md` -> `.../tool-usage-<token>.json`
+ */
+export function deriveToolUsageFileName(reportFilePath: string): string {
+  const dir = path.dirname(reportFilePath);
+  const base = path
+    .basename(reportFilePath)
+    .replace(/^agent-metadata-/, "tool-usage-")
+    .replace(/\.md$/, ".json");
+  return path.join(dir, base);
+}
+
+/**
  * Generate a markdown report from agent metadata
  */
 function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadata): string {
@@ -378,6 +583,14 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   // Second pass: generate output in order
   for (const event of agentMetadata.events) {
     switch (event.type) {
+      case "user.message": {
+        const content = String(event.data.content ?? "");
+        lines.push("> User:");
+        lines.push("> " + content.split("\n").join("\n> "));
+        lines.push("");
+        break;
+      }
+
       case "assistant.message": {
         const content = event.data.content as string;
         if (content) {
@@ -417,22 +630,21 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
         break;
       }
 
+      case "skill.invoked": {
+        const skillName = event.data.name;
+        lines.push("```");
+        lines.push(`skill: ${skillName}`);
+        lines.push("```");
+        break;
+      }
+
       case "tool.execution_start": {
         const toolName = event.data.toolName as string;
         const toolCallId = event.data.toolCallId as string;
         const args = event.data.arguments;
 
-        // Check if this is a skill invocation
-        if (toolName === "skill") {
-          const argsStr = JSON.stringify(args);
-          // Extract skill name from arguments
-          const skillMatch = argsStr.match(/"skill"\s*:\s*"([^"]+)"/);
-          const skillName = skillMatch ? skillMatch[1] : "unknown";
-          lines.push("```");
-          lines.push(`skill: ${skillName}`);
-          lines.push("```");
-        } else {
-          // Regular tool call
+        // Exclude skill invocation call and log it on skill.invoked event.
+        if (toolName !== "skill") {
           let argsJson: string;
           try {
             argsJson = JSON.stringify(args, null, 2);
@@ -521,128 +733,40 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   return lines.join("\n");
 }
 
-/**
- * Write markdown report to file
- */
-function writeMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMetadata): void {
-  try {
-    const filePath = buildShareFilePath();
-    const dir = path.dirname(filePath);
+export type AgentRunnerConfig = {
+  /**
+   * If the runner is running for an integration test.
+   */
+  isTest: boolean;
+  /**
+   * If the runner is running in a jest environment.
+   * Used for backward compatibility.
+   * @todo: Remove this option after migrating all jest integration tests.
+   */
+  useJest: boolean;
 
-    // Ensure directory exists
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-
-    const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
-    // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
-    let reportTargetPath = filePath;
-    let suffix = 0;
-    while (true) {
-      try {
-        fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
-        break;
-      } catch (err: unknown) {
-        console.log("File exists", reportTargetPath);
-        if ((err as { code: string }).code === "EEXIST") {
-          suffix++;
-          reportTargetPath = filePath.replace(".md", `-${suffix}.md`);
-          continue;
-        }
-        throw err;
-      }
-    }
-
-    // Write structured agent-metadata.json for machine consumption
-    const jsonPath = path.join(dir, "agent-metadata.json");
-    const jsonData = {
-      prompt: config.prompt || "",
-      events: agentMetadata.events,
-      testComments: agentMetadata.testComments,
-      tokenUsage: agentMetadata.tokenUsage,
-      toolCounts: agentMetadata.toolCounts,
-      skillFiles: agentMetadata.skillFiles,
-    };
-    fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
-
-    if (process.env.DEBUG) {
-      console.log(`Markdown report written to: ${reportTargetPath}`);
-    }
-
-    // Write token usage JSON alongside the markdown report
-    if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
-      writeTokenUsageJson(config, agentMetadata, dir);
-    }
-  } catch (error) {
-    // Don't fail the test if report generation fails
-    if (process.env.DEBUG) {
-      console.error("Failed to write markdown report:", error);
-    }
-  }
-}
-
-/**
- * Write token usage data to a JSON file for dashboard consumption.
- * Also appends to a consolidated token-summary.json in the reports root.
- */
-function writeTokenUsageJson(config: AgentRunConfig, agentMetadata: AgentMetadata, reportDir: string): void {
-  try {
-    const usage = agentMetadata.tokenUsage!;
-    const testName = getTestName();
-    const record = {
-      testName,
-      prompt: config.prompt ? redactSecrets(config.prompt) : config.prompt,
-      timestamp: new Date().toISOString(),
-      model: usage.model,
-      inputTokens: usage.inputTokens,
-      outputTokens: usage.outputTokens,
-      cacheReadTokens: usage.cacheReadTokens,
-      cacheWriteTokens: usage.cacheWriteTokens,
-      totalApiDurationMs: usage.totalApiDurationMs,
-      apiCallCount: usage.apiCallCount,
-      perCallUsage: usage.perCallUsage,
-    };
-
-    // Write per-test token JSON
-    const tokenFile = path.join(reportDir, "token-usage.json");
-    fs.writeFileSync(tokenFile, JSON.stringify(record, null, 2), "utf-8");
-
-    // Append to consolidated summary at reports root (JSONL for safe concurrent writes)
-    const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-    const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.jsonl");
-    fs.appendFileSync(summaryFile, JSON.stringify(record) + "\n", "utf-8");
-
-    if (process.env.DEBUG) {
-      console.log(`Token usage written to: ${tokenFile}`);
-    }
-  } catch (error) {
-    if (process.env.DEBUG) {
-      console.error("Failed to write token usage JSON:", error);
-    }
-  }
-}
+  /**
+   * Name of the test.
+   * Only used when the runner is running for a test and isn't running in a jest environment.
+   * @todo: Make this parameter required after migrating all jest integration tests.
+   */
+  testName?: string;
+};
 
 /**
  * Sets up the agent runner with proper per-test cleanup via afterEach.
  * Call once inside each describe() block. Each describe() gets its own
  * isolated cleanup scope via closure, so parallel file execution is safe.
- *
- * Usage:
- *   describe("my suite", () => {
- *     const agent = useAgentRunner();
- *     it("test", async () => {
- *       const metadata = await agent.run({ prompt: "..." });
- *     });
- *   });
  */
-export function useAgentRunner() {
+export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
   let currentCleanups: RunnerCleanup[] = [];
+  const config = agentRunnerConfig;
 
   async function cleanup(): Promise<void> {
     for (const entry of currentCleanups) {
       try {
         if (entry.session) {
-          await entry.session.destroy();
+          await entry.session.disconnect();
         }
       } catch { /* ignore */ }
       try {
@@ -659,61 +783,111 @@ export function useAgentRunner() {
     currentCleanups = [];
   }
 
-  async function createMarkdownReport(): Promise<void> {
+  // @todo: Remove the code for jest tests.
+  function useJest(): boolean {
+    return config.useJest;
+  }
+
+  function isTest(): boolean {
+    return config.isTest;
+  }
+
+  function getTestName(): string {
+    // @todo: Remove the code for jest tests.
+    if (config.useJest) {
+      try {
+        // Jest provides expect.getState() with current test info
+        const state = expect.getState();
+        const testName = state.currentTestName ?? "unknown-test";
+        // Sanitize for use as filename
+        return sanitizeTestName(testName);
+      } catch {
+        // Fallback if not running in Jest context
+        return `test-${Date.now()}`;
+      }
+    } else {
+      return config.testName ?? "unknown";
+    }
+  }
+
+  /**
+   * @deprecated Migrate jest test cases to vally suites and stop using this function.
+   * @todo: Remove the code for jest tests.
+   */
+  async function createMarkdownReportInternal(): Promise<void> {
     for (const entry of currentCleanups) {
       try {
-        if (isTest() && entry.config && entry.agentMetadata) {
-          writeMarkdownReport(entry.config, entry.agentMetadata);
+        if (isTest() && useJest() && entry.config && entry.agentMetadata) {
+          writeMarkdownReport(getTestName(), entry.config, entry.agentMetadata);
         }
       } catch { /* ignore */ }
     }
   }
 
-  if (isTest()) {
+  // @todo: Remove the code for jest tests.
+  if (isTest() && useJest()) {
     // Guarantees cleanup even if it times out in a test.
     // No harm in running twice if the test also calls cleanup.
     afterEach(async () => {
-      await createMarkdownReport();
+      await createMarkdownReportInternal();
       await cleanup();
     });
   }
 
-  async function run(config: AgentRunConfig): Promise<AgentMetadata> {
-    const testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
-    const FOLLOW_UP_TIMEOUT = config.followUpTimeout ?? 1800000; // 30 minutes by default
+  async function run(runConfig: AgentRunConfig): Promise<AgentMetadata> {
+    let testWorkspace: string;
+    if (runConfig.workspace) {
+      testWorkspace = runConfig.workspace;
+    } else {
+      testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
+    }
+    const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
+    let isAborted = false;
 
-    const entry: RunnerCleanup = { config };
+    const entry: RunnerCleanup = { config: runConfig };
     currentCleanups.push(entry);
     entry.workspace = testWorkspace;
-    entry.preserveWorkspace = config.preserveWorkspace;
+    entry.preserveWorkspace = runConfig.preserveWorkspace;
 
-    const agentMetadata: AgentMetadata = { events: [], testComments: [], toolCounts: {}, skillFiles: {} };
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], turnCount: 0, toolCounts: {}, skillFiles: {} };
     entry.agentMetadata = agentMetadata;
 
     try {
       // Run optional setup
-      if (config.setup) {
-        await config.setup(testWorkspace);
+      if (runConfig.setup) {
+        await runConfig.setup(testWorkspace);
       }
 
       // Copilot client with yolo mode
-      const cliArgs: string[] = config.nonInteractive ? ["--yolo"] : [];
+      const cliArgs: string[] = runConfig.nonInteractive ? ["--yolo"] : [];
       if (process.env.DEBUG && isTest()) {
         cliArgs.push("--log-dir");
-        cliArgs.push(buildTestCaseDirPath());
+        cliArgs.push(buildTestCaseDirPath(getTestName()));
       }
+
+      // Copilot CLI emits lots of warnings about experimental features which clutters the console output so we suppress them.
+      const existingNodeOptions = process.env.NODE_OPTIONS;
+      const envVar: Record<string, string> = {
+        SKILLS_INSTRUCTIONS: "true",
+        SKILL_CHAR_BUDGET: `${DEFAULT_SKILL_CHAR_BUDGET}`,
+        NODE_OPTIONS: existingNodeOptions
+          ? `${existingNodeOptions} --disable-warning=ExperimentalWarning`
+          : "--disable-warning=ExperimentalWarning"
+      };
 
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
-        cwd: testWorkspace,
-        cliArgs: cliArgs,
-        cliPath: getBundledCliPath(),
+        workingDirectory: testWorkspace,
+        connection: RuntimeConnection.forStdio({
+          path: getBundledCliPath(),
+          args: cliArgs
+        }),
         env: {
           ...process.env,
-          SKILLS_INSTRUCTIONS: "true",
-          SKILL_CHAR_BUDGET: "20000"
+          ...envVar,
+          ...runConfig.env
         }
       }) as CopilotClient;
       entry.client = client;
@@ -721,31 +895,43 @@ export function useAgentRunner() {
       const skillDirectory = path.resolve(__dirname, "../../output/skills");
 
       let disabledSkills: string[] | undefined;
-      if (config.includeSkills) {
+      if (runConfig.includeSkills) {
         const skills = listSkills();
-        if (config.includeSkills.some((skillName) => !skills.includes(skillName))) {
-          const invalidSkills = config.includeSkills.filter((skillName) => !skills.includes(skillName));
+        if (runConfig.includeSkills.some((skillName) => !skills.includes(skillName))) {
+          const invalidSkills = runConfig.includeSkills.filter((skillName) => !skills.includes(skillName));
           throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
         }
-        disabledSkills = skills.filter((skillName) => !config.includeSkills?.includes(skillName));
+        disabledSkills = skills.filter((skillName) => !runConfig.includeSkills?.includes(skillName));
+      } else {
+        // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
+        // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
+        // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
+        if (runConfig.requiredSkills) {
+          disabledSkills = await truncateSkills(runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET);
+        }
       }
 
       const noSkills = process.env.NO_SKILLS === "true";
-      const model = modelOverride || "claude-sonnet-4.6";
+      const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
+      const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
         skillDirectories: noSkills ? [] : [skillDirectory],
         disabledSkills: disabledSkills,
-        mcpServers: {
-          azure: {
-            type: "stdio",
-            command: "npx",
-            args: ["-y", "@azure/mcp", "server", "start"],
-            tools: ["*"]
+        ...(disableAzureMcp ? {} : {
+          mcpServers: {
+            azure: {
+              type: "stdio",
+              command: "npx",
+              args: ["-y", "@azure/mcp", "server", "start"],
+              tools: ["*"]
+            }
           }
-        },
-        systemMessage: config.systemPrompt
+        }),
+        systemMessage: runConfig.systemPrompt,
+        // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
+        enableSessionTelemetry: false
       });
       entry.session = session;
 
@@ -765,21 +951,48 @@ export function useAgentRunner() {
 
           agentMetadata.events.push(event);
 
-          if (config.shouldEarlyTerminate?.(agentMetadata)) {
+          if (event.type === "assistant.turn_start") {
+            agentMetadata.turnCount++;
+            if (runConfig.maxTurns !== undefined && agentMetadata.turnCount > runConfig.maxTurns) {
+              agentMetadata.testComments.push(
+                `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
+              );
+              isComplete = true;
+              isAborted = true;
+              try {
+                await session.abort();
+              } catch (error) {
+                console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+              } finally {
+                resolve();
+              }
+              return;
+            }
+          }
+
+          if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
             isComplete = true;
-            resolve();
-            void session.abort();
+            isAborted = true;
+            try {
+              await session.abort();
+            } catch (error) {
+              console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+            } finally {
+              resolve();
+            }
             return;
           }
         });
       });
 
-      await session.send({ prompt: config.prompt });
+      await session.send({ prompt: runConfig.prompt });
       await done;
 
       // Send follow-up prompts before aggregating stats so tool/skill/token
       // counts include events emitted during follow-up turns.
-      for (const followUpPrompt of config.followUp ?? []) {
+      // Skip follow-ups when the run was aborted.
+      for (const followUpPrompt of (runConfig.followUp ?? [])) {
+        if (isAborted) break;
         isComplete = false;
         await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
       }
@@ -819,11 +1032,11 @@ export function useAgentRunner() {
             tokenUsage.model = model;
             // Prefer shutdown totals if usage events were missed
             if (tokenUsage.apiCallCount === 0) {
-              tokenUsage.inputTokens = metrics.usage.inputTokens;
-              tokenUsage.outputTokens = metrics.usage.outputTokens;
-              tokenUsage.cacheReadTokens = metrics.usage.cacheReadTokens;
-              tokenUsage.cacheWriteTokens = metrics.usage.cacheWriteTokens;
-              tokenUsage.apiCallCount = metrics.requests.count;
+              tokenUsage.inputTokens = metrics?.usage.inputTokens ?? 0;
+              tokenUsage.outputTokens = metrics?.usage.outputTokens ?? 0;
+              tokenUsage.cacheReadTokens = metrics?.usage.cacheReadTokens ?? 0;
+              tokenUsage.cacheWriteTokens = metrics?.usage.cacheWriteTokens ?? 0;
+              tokenUsage.apiCallCount = metrics?.requests.count ?? 0;
             }
           }
         }
@@ -836,20 +1049,11 @@ export function useAgentRunner() {
       agentMetadata.toolCounts = toolCounts;
       agentMetadata.skillFiles = skillFiles;
 
-      // Log token usage summary
-      if (tokenUsage.apiCallCount > 0) {
-        console.log(
-          `\n📊 Token Usage: ${tokenUsage.inputTokens.toLocaleString()} in / ${tokenUsage.outputTokens.toLocaleString()} out | ` +
-          `${tokenUsage.apiCallCount} API calls | ` +
-          `Duration: ${(tokenUsage.totalApiDurationMs / 1000).toFixed(1)}s\n`
-        );
-      }
-
-      if (config.takeScreenshot && config.takeScreenshot.predicate(agentMetadata)) {
+      if (runConfig.takeScreenshot && runConfig.takeScreenshot.predicate(agentMetadata)) {
         // Resume the session so it can take a different set of skills and mcp servers.
         // Use playwright mcp server to take a screenshot.
         const screenshotTimeout = 180000; // 3 minutes
-        const screenshotPath = path.join(buildTestCaseDirPath(), "app-snapshot.jpg");
+        const screenshotPath = path.join(buildTestCaseDirPath(getTestName()), "app-snapshot.jpg");
         const playwrightSession = await client.resumeSession(session.sessionId, {
           mcpServers: {
             playwright: {
@@ -860,7 +1064,9 @@ export function useAgentRunner() {
               tools: ["*"]
             }
           },
-          onPermissionRequest: approveAll
+          onPermissionRequest: approveAll,
+          // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
+          enableSessionTelemetry: false
         });
         await playwrightSession.sendAndWait({
           prompt: `Use playwright mcp tools to take a screenshot of the deployed app. Save the screenshot to this directory at this file location ${screenshotPath}`
@@ -884,13 +1090,157 @@ export function useAgentRunner() {
       console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
-      if (!isTest()) {
+      // Jest integration tests clean up in afterEach so reports can be written first.
+      // Non-Jest test runners such as Vally must clean up here; otherwise Copilot CLI
+      // child processes keep the Node process alive after results are written.
+      if (!isTest() || !useJest()) {
         await cleanup();
       }
     }
   }
 
-  return { run };
+  return { run, cleanup };
+}
+
+function buildTestCaseDirPath(testName: string): string {
+  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, testName);
+}
+
+function buildShareFilePath(testName: string): string {
+  const testCaseArtifactsDir = buildTestCaseDirPath(testName);
+  return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
+}
+
+export async function createMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): Promise<void> {
+  writeMarkdownReport(testName, config, agentMetadata);
+}
+
+/**
+ * Write token usage data to a JSON file for dashboard consumption.
+ * Also appends to a consolidated token-summary.json in the reports root.
+ */
+function writeTokenUsageJson(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata, reportDir: string): void {
+  try {
+    const usage = agentMetadata.tokenUsage!;
+    const record = {
+      testName,
+      prompt: config.prompt ? redactSecrets(config.prompt) : config.prompt,
+      timestamp: new Date().toISOString(),
+      model: usage.model,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      cacheReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      totalApiDurationMs: usage.totalApiDurationMs,
+      apiCallCount: usage.apiCallCount,
+      perCallUsage: usage.perCallUsage,
+    };
+
+    // Write per-test token JSON
+    const tokenFile = path.join(reportDir, "token-usage.json");
+    fs.writeFileSync(tokenFile, JSON.stringify(record, null, 2), "utf-8");
+
+    // Append to consolidated summary at reports root (JSONL for safe concurrent writes)
+    const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
+    const summaryFile = path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, "token-summary.jsonl");
+    fs.appendFileSync(summaryFile, JSON.stringify(record) + "\n", "utf-8");
+
+    if (process.env.DEBUG) {
+      console.log(`Token usage written to: ${tokenFile}`);
+    }
+  } catch (error) {
+    if (process.env.DEBUG) {
+      console.error("Failed to write token usage JSON:", error);
+    }
+  }
+}
+
+/**
+ * Write markdown report to file
+ */
+function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMetadata: AgentMetadata): void {
+  try {
+    const agentMetadataPath = buildShareFilePath(testName);
+    const dir = path.dirname(agentMetadataPath);
+
+    // Ensure directory exists
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const markdown = redactSecrets(generateMarkdownReport(config, agentMetadata));
+    // Use "wx" flag for atomic create-if-not-exists to prevent race conditions
+    let reportTargetPath = agentMetadataPath;
+    let suffix = 0;
+    while (true) {
+      try {
+        fs.writeFileSync(reportTargetPath, markdown, { encoding: "utf-8", flag: "wx" });
+        break;
+      } catch (err: unknown) {
+        console.log("File exists", reportTargetPath);
+        if ((err as { code: string }).code === "EEXIST") {
+          suffix++;
+          reportTargetPath = agentMetadataPath.replace(".md", `-${suffix}.md`);
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    // Write structured agent-metadata.json for machine consumption
+    const jsonPath = path.join(dir, "agent-metadata.json");
+    const jsonData = {
+      prompt: config.prompt || "",
+      events: agentMetadata.events,
+      testComments: agentMetadata.testComments,
+      tokenUsage: agentMetadata.tokenUsage,
+      toolCounts: agentMetadata.toolCounts,
+      skillFiles: agentMetadata.skillFiles,
+    };
+    fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
+
+    // Write per-run tool-usage JSON (Phase 1: capture for review). Named to match
+    // this run's markdown report so the tool sequence for a specific run can be
+    // reconstructed even when the same stimulus runs multiple times in one
+    // directory (where agent-metadata.json is overwritten). Best-effort: never
+    // fail a test because capture failed.
+    try {
+      const toolUsagePath = deriveToolUsageFileName(reportTargetPath);
+      const sessionId =
+        agentMetadata.events.find((e) => e.type === "session.start")?.id ?? null;
+      const toolUsage: ToolUsageRecord = {
+        testName,
+        reportFile: path.basename(reportTargetPath),
+        sessionId,
+        model: config.model ?? agentMetadata.tokenUsage?.model,
+        timestamp: new Date().toISOString(),
+        toolCalls: computeToolUsage(agentMetadata.events),
+      };
+      fs.writeFileSync(
+        toolUsagePath,
+        redactSecrets(JSON.stringify(toolUsage, null, 2)),
+        "utf-8",
+      );
+    } catch (error) {
+      if (process.env.DEBUG) {
+        console.error("Failed to write tool usage JSON:", error);
+      }
+    }
+
+    if (process.env.DEBUG) {
+      console.log(`Markdown report written to: ${reportTargetPath}`);
+    }
+
+    // Write token usage JSON alongside the markdown report
+    if (agentMetadata.tokenUsage && agentMetadata.tokenUsage.apiCallCount > 0) {
+      writeTokenUsageJson(testName, config, agentMetadata, dir);
+    }
+  } catch (error) {
+    // Don't fail the test if report generation fails
+    if (process.env.DEBUG) {
+      console.error("Failed to write markdown report:", error);
+    }
+  }
 }
 
 /**
@@ -990,47 +1340,3 @@ export function getIntegrationSkipReason(): string | undefined {
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");
 const TIME_STAMP = (process.env.START_TIMESTAMP || new Date().toISOString()).replace(/[:.]/g, "-");
 const testRunDirectoryName = `test-run-${testRunId || TIME_STAMP}`;
-
-function buildTestCaseDirPath(): string {
-  return path.join(DEFAULT_REPORT_DIR, testRunDirectoryName, getTestName());
-}
-
-function buildShareFilePath(): string {
-  const testCaseArtifactsDir = buildTestCaseDirPath();
-  return path.join(testCaseArtifactsDir, `agent-metadata-${new Date().toISOString().replace(/[:.]/g, "-")}.md`);
-}
-
-function isTest(): boolean {
-  try {
-    // Jest provides expect.getState() with current test info
-    const _state = expect.getState();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function getTestName(): string {
-  try {
-    // Jest provides expect.getState() with current test info
-    const state = expect.getState();
-    const testName = state.currentTestName ?? "unknown-test";
-    // Sanitize for use as filename
-    return sanitizeFileName(testName);
-  } catch {
-    // Fallback if not running in Jest context
-    return `test-${Date.now()}`;
-  }
-}
-
-/**
- * Sanitize a string for use as a filename
- */
-function sanitizeFileName(name: string): string {
-  return name
-    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
-    .replace(/\s+/g, "_")           // Replace spaces with underscores
-    .replace(/-+/g, "-")            // Collapse multiple dashes
-    .replace(/_+/g, "_")            // Collapse multiple underscores
-    .substring(0, 200);             // Limit length
-}

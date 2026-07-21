@@ -10,15 +10,19 @@ on:
         description: "GitHub Actions run ID or run URL to analyze"
         required: true
         type: string
-  workflow_run:
-    workflows: ["Integration Tests - all"]
-    types: [completed]
-    branches:
-      - main
+  # As of June 10th 2026, we keep getting 429 errors for the automated agentic workflow runs.
+  # Also due to flakiness of some of the tests, we are running out of resource for reviewing and addressing auto created issues.
+  # We may re-enable it when the tests are less flaky and the rate limiting allows them to do meaningful work. 
+  # workflow_run:
+  #   workflows: ["Integration Tests - all"]
+  #   types: [completed]
+  #   branches:
+  #     - main
 
 if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.event == 'schedule'
 
 permissions:
+  copilot-requests: write
   contents: read
   actions: read
   issues: read

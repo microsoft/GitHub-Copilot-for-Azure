@@ -16,7 +16,7 @@ import {
 } from "../utils/agent-runner";
 import { hasDeployLinks, softCheckDeploySkills, softCheckContainerDeployEnvVars, shouldEarlyTerminateForCompletedDeployment, shouldEarlyTerminateForAzdProvision } from "./utils";
 import { cloneRepo } from "../utils/git-clone";
-import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, arePatternsInSeparateFiles, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
+import { expectFiles, softCheckSkill, doesWorkspaceFileIncludePattern, doesBicepContainerAppUsePublicPlaceholderImage, doesTerraformContainerAppUsePublicPlaceholderImage, doesTerraformContainerAppIgnoreImageChanges, shouldEarlyTerminateForSkillInvocation, isSkillInvoked, withTestResult } from "../utils/evaluate";
 
 const SKILL_NAME = "azure-deploy";
 const RUNS_PER_PROMPT = 1;
@@ -42,7 +42,10 @@ const pseudoRandomResourceGroupNameSystemPromptModifier = {
 };
 
 describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
-  const agent = useAgentRunner();
+  const agent = useAgentRunner({
+    isTest: true,
+    useJest: true
+  });
   describe("skill-invocation", () => {
     const followUp = ["Continue with recommended options until complete."];
     test("invokes azure-deploy skill for deployment prompt", async () => {
@@ -367,7 +370,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
 
   // Azure Container Apps (ACA) - not custom IaC specification
   describe("vanilla-azure-container-apps-deploy", () => {
-    test("creates containerized web application", async () => {
+    test("creates containerized web application with Bicep", async () => {
       await withTestResult(async () => {
         let workspacePath: string | undefined;
 
@@ -395,11 +398,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Verify two-phase deployment pattern (three modules in main.bicep):
         // Phase 1: ACR module
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
-        // Phase 1: Container App with placeholder image and system-assigned managed identity
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com($|[^A-Za-z0-9.-])/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with public placeholder image and system-assigned managed identity
+        expect(doesBicepContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
-        // Phase 2: AcrPull role assignment in a separate module file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toEqual({ isSeparate: true });
+        // Phase 1: Registries block with system identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registries/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, bicepPattern)).toBe(true);
+        // AcrPull role assignment (GUID 7f951dda) ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -431,11 +437,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Verify two-phase deployment pattern (three modules in main.bicep):
         // Phase 1: ACR module
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
-        // Phase 1: Container App with placeholder image and system-assigned managed identity
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com([^A-Za-z0-9.-]|$)/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with public placeholder image and system-assigned managed identity
+        expect(doesBicepContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
-        // Phase 2: AcrPull role assignment in a separate module file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toEqual({ isSeparate: true });
+        // Phase 1: Registries block with system identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registries/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, bicepPattern)).toBe(true);
+        // AcrPull role assignment (GUID 7f951dda) ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -664,11 +673,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Phase 1: ACR resource
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
         // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com\//i, tfPattern)).toBe(true);
+        expect(doesTerraformContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
-        // Phase 2: AcrPull role assignment in a separate file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toEqual({ isSeparate: true });
+        expect(doesTerraformContainerAppIgnoreImageChanges(workspacePath!)).toBe(true);
+        // Phase 1: Registry block with managed identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
+        // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
+        // AcrPull role assignment ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -701,11 +715,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Phase 1: ACR resource
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
         // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com($|[^A-Za-z0-9.-])/i, tfPattern)).toBe(true);
+        expect(doesTerraformContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
-        // Phase 2: AcrPull role assignment in a separate file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toEqual({ isSeparate: true });
+        expect(doesTerraformContainerAppIgnoreImageChanges(workspacePath!)).toBe(true);
+        // Phase 1: Registry block with managed identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
+        // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
+        // AcrPull role assignment ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
 
@@ -738,11 +757,16 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Phase 1: ACR resource
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /azurerm_container_registry/i, tfPattern)).toBe(true);
         // Phase 1: Container App with placeholder image, system-assigned identity, and lifecycle ignore_changes
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com($|[^A-Za-z0-9.-])/i, tfPattern)).toBe(true);
+        expect(doesTerraformContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, tfPattern)).toBe(true);
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /ignore_changes/i, tfPattern)).toBe(true);
-        // Phase 2: AcrPull role assignment in a separate file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /azurerm_container_app[^_]/i, /AcrPull/i, tfPattern)).toEqual({ isSeparate: true });
+        expect(doesTerraformContainerAppIgnoreImageChanges(workspacePath!)).toBe(true);
+        // Phase 1: Registry block with managed identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
+        // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
+        // AcrPull role assignment ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
     }, deployTestTimeoutMs);
   });
@@ -782,11 +806,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys MvcMovie 90", async () => {
+    test("deploys MvcMovie 10", async () => {
       await withTestResult(async ({ expectScreenshot }) => {
         expectScreenshot();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/MvcMovie90";
+        const MVCMOVIE10_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed";
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
@@ -794,7 +818,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
               repoUrl: ASPNETCORE_DOCS_REPO,
               targetDir: workspace,
               depth: 1,
-              sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+              sparseCheckoutPath: MVCMOVIE10_SPARSE_PATH,
             });
           },
           prompt:
@@ -803,7 +827,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use my current subscription. " +
             "This is for a small scale production environment. " +
             "Use standard SKUs. " +
-            `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
+            `The app can be found under ${MVCMOVIE10_SPARSE_PATH}.`,
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,
@@ -931,11 +955,14 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         // Verify two-phase deployment pattern (three modules in main.bicep):
         // Phase 1: ACR module
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /Microsoft\.ContainerRegistry\/registries/i, bicepPattern)).toBe(true);
-        // Phase 1: Container App with placeholder image and system-assigned managed identity
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /(^|[^A-Za-z0-9.-])mcr\.microsoft\.com($|[^A-Za-z0-9.-])/i, bicepPattern)).toBe(true);
+        // Phase 1: Container App with public placeholder image and system-assigned managed identity
+        expect(doesBicepContainerAppUsePublicPlaceholderImage(workspacePath!)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /SystemAssigned/i, bicepPattern)).toBe(true);
-        // Phase 2: AcrPull role assignment in a separate module file from the Container App
-        expect(arePatternsInSeparateFiles(workspacePath!, /Microsoft\.App\/containerApps/i, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toEqual({ isSeparate: true });
+        // Phase 1: Registries block with system identity for ACR pull authentication
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /registries/i, bicepPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, bicepPattern)).toBe(true);
+        // AcrPull role assignment (GUID 7f951dda) ensures managed identity can pull from ACR
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /7f951dda-4ed3-4680-a7ca-43fe172d538d/i, bicepPattern)).toBe(true);
       });
     }, brownfieldTestTimeoutMs);
 

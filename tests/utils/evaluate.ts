@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
-import { type AgentMetadata } from "./agent-runner";
+import { type AgentMetadata } from "./agent-runner.ts";
 
 const SHELL_TOOL_NAMES = ["powershell", "bash"];
 
@@ -101,31 +101,208 @@ export function matchesCommand(metadata: AgentMetadata, pattern: RegExp): boolea
  * @returns True if any file contains content matching the value pattern
  */
 export function doesWorkspaceFileIncludePattern(workspace: string, valuePattern: RegExp, filePattern?: RegExp): boolean {
-  const scanDirectory = (dir: string): boolean => {
+  return readWorkspaceTextFiles(workspace, filePattern ?? /.*/).some(content => content.match(valuePattern));
+}
+
+function readWorkspaceTextFiles(workspace: string, filePattern: RegExp): string[] {
+  const contents: string[] = [];
+
+  const scanDirectory = (dir: string): void => {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory() && entry.name !== "node_modules") {
-        if (scanDirectory(fullPath)) return true;
-      } else if (entry.isFile()) {
-        // Skip if filePattern is provided and doesn't match
-        if (filePattern && !entry.name.match(filePattern)) {
-          continue;
-        }
+        scanDirectory(fullPath);
+      } else if (entry.isFile() && entry.name.match(filePattern)) {
         try {
-          const content = fs.readFileSync(fullPath, "utf-8");
-          if (content.match(valuePattern)) {
-            return true;
-          }
+          contents.push(fs.readFileSync(fullPath, "utf-8"));
         } catch {
           // Skip files that can't be read as text
         }
       }
     }
-    return false;
   };
 
-  return scanDirectory(workspace);
+  scanDirectory(workspace);
+  return contents;
+}
+
+function expressionContainsPublicPlaceholderImage(expression: string, symbolExpressions: Map<string, string>, seenSymbols = new Set<string>()): boolean {
+  if (/["']mcr\.microsoft\.com\//i.test(expression)) {
+    return true;
+  }
+
+  for (const symbolName of expression.matchAll(/\b[A-Za-z_]\w*\b/g)) {
+    const name = symbolName[0];
+    if (seenSymbols.has(name)) {
+      continue;
+    }
+
+    const symbolExpression = symbolExpressions.get(name);
+    if (!symbolExpression) {
+      continue;
+    }
+
+    seenSymbols.add(name);
+    if (expressionContainsPublicPlaceholderImage(symbolExpression, symbolExpressions, seenSymbols)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function extractBlocks(content: string, blockStartPattern: RegExp): string[] {
+  const blocks: string[] = [];
+
+  for (const match of content.matchAll(blockStartPattern)) {
+    const blockStart = match.index;
+    const openBraceIndex = content.indexOf("{", blockStart);
+    if (openBraceIndex === -1) {
+      continue;
+    }
+
+    let depth = 0;
+    for (let index = openBraceIndex; index < content.length; index++) {
+      if (content[index] === "{") {
+        depth += 1;
+      } else if (content[index] === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          blocks.push(content.slice(blockStart, index + 1));
+          break;
+        }
+      }
+    }
+  }
+
+  return blocks;
+}
+
+/**
+ * Extract the body of a terraform list assignment.
+ * @param block A text block that contains one list assignment.
+ * @param attributeName The attribute name of the list.
+ * @returns the body of the list, or the original text in the assignment if it's not a list.
+ * @example "ignore_changes = [ value[0], value[1] ]" => "[ value[0], value[2] ]"
+ */
+export function extractTerraformListAssignment(block: string, attributeName: string): string | undefined {
+  const escapedAttributeName = attributeName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const assignmentMatch = block.match(new RegExp(`(^|\\n)\\s*${escapedAttributeName}\\s*=\\s*`, "i"));
+  if (!assignmentMatch || assignmentMatch.index === undefined) {
+    return undefined;
+  }
+  const valueStart = assignmentMatch.index + assignmentMatch[0].length;
+  const valueText = block.slice(valueStart).trimStart();
+
+  if (!valueText.startsWith("[")) {
+    return valueText.match(/^[^\n]+/)?.[0]?.trim();
+  }
+
+  let depth = 0;
+  for (let index = 0; index < valueText.length; index++) {
+    if (valueText[index] === "[") {
+      depth += 1;
+    } else if (valueText[index] === "]") {
+      depth -= 1;
+      if (depth === 0) {
+        return valueText.slice(0, index + 1);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Checks that generated Bicep provisions Container Apps with a public MCR placeholder image.
+ * This verifies the deployment behavior instead of a specific parameter name/default spelling.
+ */
+export function doesBicepContainerAppUsePublicPlaceholderImage(workspace: string): boolean {
+  const bicepFiles = readWorkspaceTextFiles(workspace, /\.bicep$/i)
+    .filter(content => /Microsoft\.App\/containerApps/i.test(content));
+
+  for (const content of bicepFiles) {
+    const symbolExpressions = new Map<string, string>();
+
+    for (const match of content.matchAll(/^\s*param\s+([A-Za-z_]\w*)\s+string\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*var\s+([A-Za-z_]\w*)\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    const containerAppBlocks = extractBlocks(
+      content,
+      /^\s*resource\s+[A-Za-z_]\w*\s+'Microsoft\.App\/containerApps@[^']+'\s*=\s*{/gmi,
+    );
+
+    for (const block of containerAppBlocks) {
+      for (const match of block.matchAll(/^\s*image\s*:\s*(.+)$/gmi)) {
+        if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks that generated Terraform provisions Container Apps with a public MCR placeholder image.
+ * This verifies the container app image expression instead of any incidental MCR string in the workspace.
+ */
+export function doesTerraformContainerAppUsePublicPlaceholderImage(workspace: string): boolean {
+  const terraformFiles = readWorkspaceTextFiles(workspace, /\.tf$/i)
+    .filter(content => /azurerm_container_app\b/i.test(content));
+
+  for (const content of terraformFiles) {
+    const symbolExpressions = new Map<string, string>();
+
+    for (const match of content.matchAll(/variable\s+"([A-Za-z_]\w*)"\s*{[\s\S]*?default\s*=\s*(.+?)\s*(?:\n|})/gi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(/^\s*([A-Za-z_]\w*)\s*=\s*(.+)$/gmi)) {
+      symbolExpressions.set(match[1], match[2]);
+    }
+
+    const containerAppBlocks = extractBlocks(content, /resource\s+"azurerm_container_app"\s+"[^"]+"\s*{/gi);
+    for (const containerAppBlock of containerAppBlocks) {
+      for (const match of containerAppBlock.matchAll(/^\s*image\s*=\s*(.+)$/gmi)) {
+        if (expressionContainsPublicPlaceholderImage(match[1], symbolExpressions)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks that generated Terraform tells Container Apps to ignore externally deployed image changes.
+ */
+export function doesTerraformContainerAppIgnoreImageChanges(workspace: string): boolean {
+  const terraformFiles = readWorkspaceTextFiles(workspace, /\.tf$/i)
+    .filter(content => /azurerm_container_app\b/i.test(content));
+
+  for (const content of terraformFiles) {
+    const containerAppBlocks = extractBlocks(content, /resource\s+"azurerm_container_app"\s+"[^"]+"\s*{/gi);
+    for (const containerAppBlock of containerAppBlocks) {
+      const lifecycleBlocks = extractBlocks(containerAppBlock, /lifecycle\s*{/gi);
+      for (const lifecycleBlock of lifecycleBlocks) {
+        const ignoreChanges = extractTerraformListAssignment(lifecycleBlock, "ignore_changes");
+        if (ignoreChanges && /\b(image|all)\b/i.test(ignoreChanges)) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
 }
 
 export type SeparateFilesPatternResult =
@@ -272,12 +449,8 @@ export function expectFiles(
  */
 export function isSkillInvoked(metadata: AgentMetadata, skillName: string): boolean {
   return metadata.events
-    .filter(event => event.type === "tool.execution_start")
-    .filter(event => event.data.toolName === "skill")
-    .some(event => {
-      const args = event.data.arguments;
-      return JSON.stringify(args).includes(skillName);
-    });
+    .filter(event => event.type === "skill.invoked")
+    .some(event => event.data.name === skillName);
 }
 
 /**
@@ -370,7 +543,10 @@ export function getAllToolText(metadata: AgentMetadata): string {
   const parts: string[] = [];
   for (const event of metadata.events) {
     if (event.type === "tool.execution_start") {
-      parts.push(argsString(event));
+      // @todo: Use the actual type when copilot-sdk ships this fix
+      // https://github.com/github/copilot-sdk/issues/1156
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      parts.push(argsString(event as any));
     }
     if (event.type === "tool.execution_complete") {
       const result = event.data.result as { content?: string } | undefined;

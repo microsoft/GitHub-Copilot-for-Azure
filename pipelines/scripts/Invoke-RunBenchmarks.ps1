@@ -89,6 +89,7 @@
         $env:GITHUB_MCP_SERVER_TOKEN = $pat
         $env:CAPI_INTEGRATION_ID = $capiId
         $env:CAPI_HMAC_KEY = $capiHmac
+        $env:USE_COPILOT_CLI_VERSION = "latest"
         # Log the secrets as secret variables to avoid exposing them in logs
         if ($pipelineRun) {
             Write-Host "##vso[task.setsecret]$pat"
@@ -178,11 +179,16 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--env", "GITHUB_MCP_SERVER_TOKEN CAPI_INTEGRATION_ID CAPI_HMAC_KEY",
+            "--env", "GITHUB_MCP_SERVER_TOKEN CAPI_INTEGRATION_ID CAPI_HMAC_KEY USE_COPILOT_CLI_VERSION",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",
-            "--no-wait"
+            "--no-wait",
+            "--confirm"
         )
+
+        if ($env:SYSTEM_DEBUG -eq "true") {
+            $runArgs += "--verbose"
+        }
 
         Write-Host "Running: msbench-cli $($runArgs -join ' ')"
         $cmdOutput = & 'msbench-cli' @runArgs 2>&1

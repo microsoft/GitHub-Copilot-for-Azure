@@ -1,0 +1,204 @@
+/* ── Skills page ─────────────────────────────────────────────────────────── */
+/* Master–detail layout. Uses the shared color variables from assets/style.css. */
+
+.skills-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 1.5rem auto;
+    padding: 0 1.5rem;
+    align-items: start;
+}
+
+.skills-sidebar {
+    position: sticky;
+    top: 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1rem;
+}
+
+.skills-sidebar-title {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+}
+
+.skills-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.skills-list-item {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    color: var(--color-text);
+    cursor: pointer;
+}
+
+.skills-list-item:hover {
+    background: var(--color-border);
+}
+
+.skills-list-item.active {
+    background: var(--color-focus);
+    color: #fff;
+}
+
+.skills-list-item:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 1px;
+}
+
+.skills-detail {
+    min-width: 0;
+}
+
+.skills-detail-header h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+}
+
+.skills-description {
+    margin: 0 0 0.5rem;
+    color: var(--color-text);
+    line-height: 1.5;
+}
+
+.skills-desc-length {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.skills-source-link {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+}
+
+.skills-issues-link {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+}
+
+.skills-source-link a {
+    color: var(--color-focus, #3b82f6);
+    text-decoration: none;
+}
+
+.skills-source-link a:hover,
+.skills-source-link a:focus {
+    text-decoration: underline;
+}
+
+.skills-issues-link a {
+    color: var(--color-focus, #3b82f6);
+    text-decoration: none;
+}
+
+.skills-issues-link a:hover {
+    text-decoration: underline;
+}
+
+.skills-issues-link a:focus-visible {
+    outline: 2px solid var(--color-focus, #3b82f6);
+    outline-offset: 2px;
+    text-decoration: underline;
+    border-radius: 2px;
+}
+
+.skills-file-count {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.skills-telemetry {
+    margin: 0.5rem 0 0;
+}
+
+.skills-telemetry-link {
+    color: var(--color-focus);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.skills-telemetry-link:hover {
+    text-decoration: underline;
+}
+
+.skills-tests-heading {
+    margin: 1.5rem 0 0.75rem;
+    font-size: 1.15rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.4rem;
+}
+
+.skills-test {
+    margin-bottom: 1.5rem;
+}
+
+.skills-test-name {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.skills-graph-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+@media (max-width: 720px) {
+    .skills-layout {
+        grid-template-columns: 1fr;
+    }
+    .skills-graph-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.skills-graph {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 0.5rem 0.5rem 0.25rem;
+}
+
+.skills-graph-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.skills-spark-empty {
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+}
+
+.skills-muted {
+    color: var(--color-text-muted);
+}
+
+.skills-error {
+    color: var(--color-fail);
+}

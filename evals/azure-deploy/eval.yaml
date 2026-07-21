@@ -17,23 +17,19 @@ tags:
   type: integration
   skill: azure-deploy
 
-environment:
-  skills:
-    - ../../plugin/skills/azure-deploy
-
-config:
+defaults:
   runs: 3
   timeout: "7m"
-  executor: copilot-sdk
-  model: claude-sonnet-4.5
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
 
 scoring:
   threshold: 0.8
   weights:
-    output-contains: 0.5
-    output-matches: 0.5
-    output-not-matches: 2.0
-    completed: 1.0
+    output-contains: 0.125
+    output-matches: 0.125
+    output-not-matches: 0.5
+    completed: 0.25
 
 stimuli:
   # ── avm-order-bicep-001 ──
@@ -48,6 +44,7 @@ stimuli:
       type: integration
       skill: azure-deploy
       tier: full
+      cost: llm
       area: output
     graders:
       # Task: expected.output_contains
@@ -86,6 +83,7 @@ stimuli:
       type: integration
       skill: azure-deploy
       tier: full
+      cost: llm
       area: output
     graders:
       # Task: expected.output_contains

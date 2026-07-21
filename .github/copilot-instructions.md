@@ -19,6 +19,7 @@ plugin/                   # Plugin source (skills, hooks, MCP config, manifests)
 
 output/                   # Build output (git-ignored) — stamped, ready to deploy
 scripts/                  # Dev tooling: token analysis, frontmatter/reference validators
+evals/                    # Vally test suites
 tests/                    # Jest test suite (unit, trigger, integration)
 .github/
   instructions/           # Copilot instruction files for skill authoring
@@ -46,7 +47,7 @@ This repo uses **Nerdbank.GitVersioning (NBGV)**. Versions are computed automati
 - Source files must always use `"0.0.0-placeholder"` — the build stamps real versions
 - Each skill has its own `version.json` with `pathFilters: ["."]`; only commits touching that skill's directory increment its version
 - For skills outside `plugin/` (e.g., `.github/skills/`), set a real semver version and bump it in the same PR that modifies the skill
-- Use conventional commit-style PR titles (`feat:`, `fix:`, `feature:`) — the build generates `CHANGELOG.md` from these
+- Use conventional commit-style PR titles (e.g. `feat:`, `fix:`, `feature:`) — the build generates `CHANGELOG.md` from these
 
 ## Validating Changes
 
@@ -72,7 +73,6 @@ cd tests
 npm install
 npm test                                    # Run all tests
 npm test -- --testPathPatterns=<skill-name>  # Run tests for a single skill
-npm run test:unit                            # Unit tests only
 npm run typecheck                            # TypeScript type checking
 npm run lint                                 # ESLint
 ```
