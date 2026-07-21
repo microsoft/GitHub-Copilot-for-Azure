@@ -514,7 +514,7 @@ jobs:
           mkdir -p /tmp/gh-aw/safeoutputs
           mkdir -p /tmp/gh-aw/mcp-logs/safeoutputs
           cat > "${RUNNER_TEMP}/gh-aw/safeoutputs/config.json" << 'GH_AW_SAFE_OUTPUTS_CONFIG_756903dee0fce564_EOF'
-          {"add_comment":{"max":1},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{},"set_issue_field":{"allowed_fields":["Priority"],"max":1},"set_issue_type":{"allowed":["Bug","Feature","Task"],"max":1},"update_issue":{"allow_body":true,"max":1}}
+          {"add_comment":{"max":1},"create_report_incomplete_issue":{},"missing_data":{},"missing_tool":{},"noop":{"max":1,"report-as-issue":"true"},"report_incomplete":{},"set_issue_field":{"allowed_fields":["Priority"],"max":1},"set_issue_type":{"allowed":["Bug","Feature","Task"],"max":1},"update_issue":{"allow_body":true,"max":1,"target":"*"}}
           GH_AW_SAFE_OUTPUTS_CONFIG_756903dee0fce564_EOF
       - name: Generate Safe Outputs Tools
         env:
@@ -1683,7 +1683,7 @@ jobs:
           GH_AW_ALLOWED_DOMAINS: "api.business.githubcopilot.com,api.enterprise.githubcopilot.com,api.github.com,api.githubcopilot.com,api.individual.githubcopilot.com,github.com,host.docker.internal,raw.githubusercontent.com,registry.npmjs.org,telemetry.enterprise.githubcopilot.com"
           GITHUB_SERVER_URL: ${{ github.server_url }}
           GITHUB_API_URL: ${{ github.api_url }}
-          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"max\":1},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"report_incomplete\":{},\"set_issue_field\":{\"allowed_fields\":[\"Priority\"],\"max\":1},\"set_issue_type\":{\"allowed\":[\"Bug\",\"Feature\",\"Task\"],\"max\":1},\"update_issue\":{\"allow_body\":true,\"max\":1}}"
+          GH_AW_SAFE_OUTPUTS_HANDLER_CONFIG: "{\"add_comment\":{\"max\":1},\"create_report_incomplete_issue\":{},\"missing_data\":{},\"missing_tool\":{},\"noop\":{\"max\":1,\"report-as-issue\":\"true\"},\"report_incomplete\":{},\"set_issue_field\":{\"allowed_fields\":[\"Priority\"],\"max\":1},\"set_issue_type\":{\"allowed\":[\"Bug\",\"Feature\",\"Task\"],\"max\":1},\"update_issue\":{\"allow_body\":true,\"max\":1,\"target\":\"*\"}}"
         with:
           github-token: ${{ secrets.GH_AW_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
           script: |
