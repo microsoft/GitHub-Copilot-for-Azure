@@ -146,7 +146,7 @@ curl -sS -X POST "$ENDPOINT" -H "Authorization: Bearer $TOKEN" -H "Content-Type:
   -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"catfacts___getFact","arguments":{}}}' | python -m json.tool
 ```
 
-> Multiple `openapi` entries are allowed in one toolbox only if each spec defines a distinct `info.title`. See [toolbox.md § Multi-tool rule](../toolbox.md#multi-tool-rule).
+> Multiple `openapi` entries are allowed in one toolbox only if each spec defines a distinct `info.title`. See [toolbox-azd.md § Multi-tool rule](toolbox-azd.md#multi-tool-rule).
 
 ## References
 

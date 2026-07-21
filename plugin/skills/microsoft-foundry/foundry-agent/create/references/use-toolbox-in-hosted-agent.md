@@ -63,7 +63,7 @@ azd ai agent invoke "list the tools you have access to"
 | 400 missing `api-version` | Query string dropped | Append `?api-version=v1` to every toolbox URL |
 | Environment variable silently overwritten at runtime | Foundry reserves `FOUNDRY_`-prefixed env vars | Rename to a non-`FOUNDRY_` name (e.g. `TOOLBOX_ENDPOINT`) |
 
-For toolbox-composition / provisioning errors (`Multiple tools without identifiers`, `tools/list` returns zero, `403` on toolbox/connection writes), see [toolbox.md § Troubleshooting (create / provision)](../../toolbox/toolbox.md#troubleshooting-create--provision).
+For toolbox-composition / provisioning errors (`Multiple tools without identifiers`, `tools/list` returns zero, `403` on toolbox/connection writes), see [mcp-protocol.md § Troubleshooting (create / provision)](../../toolbox/references/mcp-protocol.md#troubleshooting-create--provision).
 
 ---
 

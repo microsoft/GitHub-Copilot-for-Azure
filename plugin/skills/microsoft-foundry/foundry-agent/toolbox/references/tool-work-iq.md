@@ -96,7 +96,7 @@ REDIR=$(az rest --method get --query "properties.redirectUrl" -o tsv \
 az ad app update --id "$BYO" --web-redirect-uris "$REDIR"
 ```
 
-The first `tools/list` returns a `-32006` consent URL; the user opens it once, then tools resolve. See [tool-mcp-custom-oauth.md § Set the connector redirect URI](tool-mcp-custom-oauth.md#set-the-connector-redirect-uri-after-the-connection-exists) and [§ Verify & the consent flow](tool-mcp-custom-oauth.md#verify--the-consent-flow).
+The first `tools/list` returns a `-32006` consent URL; the user opens it once, then tools resolve. See [tool-mcp-custom-oauth.md § Set the connector redirect URI](tool-mcp-custom-oauth.md#set-the-connector-redirect-uri-after-the-connection-exists) and [§ Verify](tool-mcp-custom-oauth.md#verify).
 
 ---
 
