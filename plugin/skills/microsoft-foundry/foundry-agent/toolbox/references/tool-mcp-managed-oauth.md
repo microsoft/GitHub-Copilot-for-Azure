@@ -31,29 +31,9 @@ Drop `--managed-only` / `-ManagedOnly` to see every match with a `managedOAuth: 
 - **User's connector is listed** → take its `connectorName`, `toolEntityId`, and `serverUrl` from the row and continue to [A. Imperative CLI](#a-imperative-cli).
 - **Not listed** → this reference does not apply. It's BYO-OAuth ([tool-mcp-custom-oauth.md](tool-mcp-custom-oauth.md)), key-auth ([tool-mcp-key-auth.md](tool-mcp-key-auth.md)), or no-auth ([tool-mcp-noauth.md](tool-mcp-noauth.md)) — switch references.
 
-The two connection inputs the row gives you: the **MCP server URL** (→ `--target`) and the **`toolEntityId`** (→ `--metadata`) — the same values the portal uses (`MCPToolConfigDialog.tsx`: `target ?? tool.remotes?.[0]?.url`; `metadata.toolEntityId = tool.id`).
+The two connection inputs the row gives you: the **MCP server URL** (→ `--target`) and the **`toolEntityId`** (→ `--metadata`). The script classifies managed OAuth for you (a connector qualifies only when Foundry can broker its OAuth app); each managed row also reports `identityProvider` + default `scopes`.
 
-### How managed OAuth is detected (mirrors the portal)
-
-A tile qualifies for **this** reference only if the connector exposes an OAuth app Foundry can broker. The portal decides this from `x-ms-connector-name` + the connector's security schemes, computed in `transformTools.tsx` (`deriveConnectorSecuritySchemes(connectionParameters)`) and gated in `toolConnectionConfig.ts` (`oAuthProvider = 'managed'` when `isCatalogTool && host === 'remotes' && connectorName`).
-
-The catch: the flat `asset-gallery/v1.0/tools` **search index is thin** — its `properties` carry only `updatedTime`/`creationContext`, **no** `x-ms-connector-name`, `x-ms-auth-schemas`, `remotes[]`, or `connectionParameters`. The portal reads those from a **different** endpoint (the cross-region index-entities API with a `selectFields` projection). The scripts take the simpler equivalent source the portal's `deriveConnectorSecuritySchemes` ultimately reflects — the **Logic Apps `managedApis` GET**:
-
-```
-GET .../providers/Microsoft.Web/locations/eastus/managedApis/{connectorName}?api-version=2016-06-01
-```
-
-A connector is **managed OAuth** when its `properties.connectionParameters` has an entry of `type: "oauthSetting"`. That entry's `oAuthSettings` also yields `identityProvider` and the default `scopes`. Connectors with only `securestring` params (e.g. `azureblob`) or empty params (e.g. `githubdata`) are **not** managed OAuth. See [foundry-tool-catalog.md → Catalog APIs §2](../../create/references/foundry-tool-catalog.md#2-logic-apps-managedapis--oauth-source-of-truth).
-
-> ⚠️ **`serverUrl` is often empty.** The asset-gallery search index is thin — `remotes[].url` is `null` for many tiles. When empty, supply the connector's **documented** MCP endpoint as `--target` (e.g. github Copilot → `https://api.githubcopilot.com/mcp`). The scripts still recover `toolEntityId` + `connectorName` reliably, which are the values you cannot guess.
-
-Or do it by hand:
-
-1. **Find the connector `entityId`** via the asset-gallery POST — see [foundry-tool-catalog.md → Catalog APIs §1](../../create/references/foundry-tool-catalog.md#1-asset-gallery-foundrys-index). The returned `entityId` (e.g. `azureml://location/eastus/apiCenter/connectors-registry-prod-bl/type/tools/objectId/github`) is your `toolEntityId`; its `objectId` segment (`github`) is the `connectorName`.
-2. **Confirm it's managed OAuth** — `GET .../managedApis/{connectorName}?api-version=2016-06-01` and check for a `connectionParameters.*.type == "oauthSetting"` entry (this is also where `scopes` / `identityProvider` come from).
-3. **Read the MCP server URL** — from the catalog row's `remotes[0].url` when present, else the connector's documented endpoint. When `connectors-registry-prod-bl` lacks it, also check the peer entry in `registry-prod-bl` (e.g. `github-mcp-server`). See [foundry-tool-catalog.md → Body shape — OAuth2 + catalog_MCP](../../create/references/foundry-tool-catalog.md#body-shape--oauth2--catalog_mcp-microsoft-managed-oauth).
-
-> The managed body the portal sends is `authType: OAuth2`, `category: RemoteTool`, `target: <remotes[0].url>`, `credentials: {}` (empty), `metadata: { type: "catalog_MCP", toolEntityId: <entityId> }`. The CLI below produces the same shape.
+> ⚠️ **`serverUrl` is often empty** — `remotes[].url` is `null` for many tiles. When empty, supply the connector's **documented** MCP endpoint as `--target` (e.g. github Copilot → `https://api.githubcopilot.com/mcp`). The script still recovers `toolEntityId` + `connectorName` reliably — the values you can't guess.
 
 ---
 
@@ -89,9 +69,7 @@ EOF
 azd ai toolbox create github-tools --from-file github-mcp.yaml --project-endpoint "$FOUNDRY_PROJECT_ENDPOINT"
 ```
 
-> `azd ai toolbox create` / `delete` require an **azd environment** (run inside an `azd init`'d directory), unlike `connection create` / `toolbox show` which work with just `--project-endpoint`.
->
-> Both `azd ai connection create` and `azd ai toolbox create` print a benign `no active azd environment ... run azd init` line even when they **succeed** — check for the `Connection "..." created` / `Created toolbox ...` success line, not the warning.
+> `azd ai toolbox create` / `delete` require an **azd environment** (run inside an `azd init`'d directory). Both `connection create` and `toolbox create` print a benign `no active azd environment` line even on success — check for the `Connection "..." created` / `Created toolbox ...` success line, not the warning.
 
 **Add to an existing toolbox** (new version — then promote):
 
@@ -115,70 +93,33 @@ connections:
 
 # B. Declarative `azure.yaml`
 
-Create the managed-OAuth connection first (section A, step 1), then reference it under `tools:` by its **name** via `project_connection_id`. `azd deploy` upserts the toolbox and auto-promotes the new version.
+Create the managed-OAuth connection first (section A, step 1), then reference it under `tools:` by name via `project_connection_id` and `azd deploy agent-tools` — the same `host: azure.ai.toolbox` service shape as every MCP variant. See [tool-mcp-noauth.md § B](tool-mcp-noauth.md#b-declarative-azureyaml) for the full `azure.yaml` skeleton (agent-tools + a hosted agent consuming it via `TOOLBOX_NAME`).
 
 ```yaml
-name: my-agent-project
-services:
-  agent-tools:
-    host: azure.ai.toolbox
     tools:
       - type: mcp
         server_label: github_mcp
         project_connection_id: github-mcp-managed   # the connection name from section A
         require_approval: never
-
-  # A hosted agent in the same project consumes the toolbox by name
-  my-agent:
-    host: azure.ai.agent
-    uses:
-      - agent-tools          # depend on the toolbox service
-    environmentVariables:
-      - name: TOOLBOX_NAME
-        value: agent-tools    # agent resolves the MCP endpoint at runtime
 ```
 
-```bash
-azd deploy agent-tools
-```
-
-**Requirements & gotchas:**
-
-- Set **`FOUNDRY_PROJECT_ENDPOINT` and `AZURE_SUBSCRIPTION_ID`** in the azd env (after it's created) before `azd deploy`, or it errors `infrastructure has not been provisioned`. No `azd provision` / `infra:` block is needed.
-- Managed-OAuth MCP uses `project_connection_id: <connection-name>` (not an inline `server_url` — that's the no-auth path).
-- The `-32006` consent gate below still applies — the declarative path deploys the connection reference, but the first `tools/list` triggers the same one-time consent.
-
-The agent references the toolbox **by name** (`TOOLBOX_NAME`), so the MCP endpoint resolves at runtime — no endpoint string is hard-coded. See [use-toolbox-in-hosted-agent.md](../../create/references/use-toolbox-in-hosted-agent.md).
+The `-32006` consent gate below still applies — the declarative path deploys the connection reference, but the first `tools/list` triggers the same one-time consent.
 
 ---
 
-## Verify & the consent flow end-to-end (2026-07-20)
+## Verify
 
-Call the toolbox endpoint directly with a bearer token + raw `tools/list` (see [test-endpoint.md](test-endpoint.md)). Unlike BYO, the managed flow does **not** call `listConsentLinks` up front — consent is lazy: the first `tools/list` for a user who has **not consented yet** returns the consent gate rather than the tool list:
-
-```jsonc
-{"jsonrpc":"2.0","id":2,"error":{"code":-32006,
- "message":"tools/list failed for 1 tool source(s)... {\"errors\":[{\"name\":\"<server_label>\",\"type\":\"mcp\",
-   \"error\":{\"code\":\"CONSENT_REQUIRED\",
-     \"message\":\"https://logic-apis-<region>.consent.azure-apim.net/login?data=...\"}}]}"}}
-```
-
-- The `message` is the **consent URL** (host `logic-apis-<region>.consent.azure-apim.net` — the Foundry connector consent endpoint). Open it in a browser and sign in to grant the connection. No callback-URL registration is needed (Foundry's managed app already allow-lists its own redirect).
-- After consent, the toolbox caches the token; the same `tools/list` then returns the MCP's tools, and `tools/call` works.
-- This `-32006` gate is the **expected** pre-consent behavior for OAuth2 (both managed and BYO) — not an error to debug.
-- **Consent is per-user, per-connection, per-project.** Each new caller hits `CONSENT_REQUIRED` once and must open the URL the toolbox returns.
+Call the toolbox endpoint directly with a bearer token + raw `tools/list` — see [test-endpoint.md](test-endpoint.md). Like BYO OAuth, the first `tools/list` for an un-consented user returns the `-32006` consent gate (managed differs only in that Foundry's app already allow-lists its own redirect — no callback registration). The consent flow and OAuth troubleshooting are in [test-endpoint.md § OAuth consent flow](test-endpoint.md#oauth-consent-flow--32006).
 
 MCP-sourced tools surface as `{server_label}___{tool_name}` (three underscores) — call them with the prefixed name in `tools/call`. See [toolbox.md § Tool naming](../toolbox.md#tool-naming).
 
-## Troubleshooting
+### Managed-connector troubleshooting
 
 | Symptom | Likely cause / fix |
 |---|---|
-| `tools/list` → `-32006 CONSENT_REQUIRED` | Expected on first use. Open the returned consent URL and sign in; retry. |
-| `tools/list` returns zero after consent | Wrong `--target` (not the MCP server URL) or the connector needs the `gateway_connector` two-PUT flow instead — see [foundry-tool-catalog.md](../../create/references/foundry-tool-catalog.md). |
+| `tools/list` returns zero after consent | Wrong `--target` (not the MCP server URL), or the connector needs the `gateway_connector` two-PUT flow instead — see [foundry-tool-catalog.md](../../create/references/foundry-tool-catalog.md). |
 | `invalid_payload: unsupported authType` | API version drift — re-check allowed `authType` for `RemoteTool` in the [projects REST API](https://learn.microsoft.com/rest/api/aiservices/). |
 | `403 Forbidden` on connection PUT / toolbox POST | Caller lacks **Foundry User** / **Azure AI Developer** on the project — grant at project scope. |
-| `tools/call` → `403 ... user may not be registered` | Connector backed by a dogfood OAuth app with a test-user allowlist — not fixable client-side. See [foundry-tool-catalog.md dogfood trap](../../create/references/foundry-tool-catalog.md#dogfood-oauth-app-runtime-allowlist-trap). |
 
 ## References
 

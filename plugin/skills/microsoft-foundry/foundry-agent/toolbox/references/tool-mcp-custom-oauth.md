@@ -42,70 +42,7 @@ Now create the connection (section A), then come back to [Set the connector redi
 
 ## Origin 2 — Azure-hosted MCP you build (starter)
 
-Deploy your own MCP on Azure Functions from the sample template, following [Build and register an MCP server](https://learn.microsoft.com/en-us/azure/foundry/mcp/build-your-own-mcp-server?view=foundry). The deploy creates the Function App **and** its Entra app registration, so four of the five connection inputs come straight from its outputs — you only add a client secret.
-
-Run the steps in order. They set env vars (`FUNC`, `RG`, `APPID`, `IDURI`) that later steps reuse.
-
-**Step 1 — Scaffold and provision the Function App + Entra app.**
-
-```bash
-azd init --template remote-mcp-functions-python -e mcpserver-python
-azd env set AZURE_SUBSCRIPTION_ID <sub-id>
-azd env set AZURE_LOCATION <region>       # e.g. eastus2
-azd env set VNET_ENABLED false            # public endpoint (simplest); true for private networking
-azd up --no-prompt
-```
-
-**Step 2 — Capture the outputs into shell vars** (used by every step below):
-
-```bash
-FUNC=$(azd env get-values  | grep AZURE_FUNCTION_NAME   | cut -d'"' -f2)
-APPID=$(azd env get-values | grep ENTRA_APPLICATION_ID  | cut -d'"' -f2)
-IDURI=$(azd env get-values | grep ENTRA_IDENTIFIER_URI  | cut -d'"' -f2)
-TENANT=$(azd env get-values | grep AZURE_TENANT_ID      | cut -d'"' -f2)
-RG="rg-$(azd env get-values | grep AZURE_ENV_NAME       | cut -d'"' -f2)"   # template puts resources in rg-<env-name>
-```
-
-**Step 3 — Deploy the MCP tool code.** `azd up` provisions infra only — the sample repo's `azure.yaml` has no `services:` mapping, so the Function App starts **empty** and `tools/list` would return `HTTP_404`. Publish one of the sample projects:
-
-```bash
-(cd src/FunctionsMcpTool && func azure functionapp publish "$FUNC")   # one of 4 sample projects
-```
-
-**Step 4 — Let the MCP's Easy Auth advertise its scope.** Without this the connector's token is rejected with `HTTP_403` even after consent:
-
-```bash
-az functionapp config appsettings set --name "$FUNC" --resource-group "$RG" \
-  --settings "WEBSITE_AUTH_PRM_DEFAULT_WITH_SCOPES=$IDURI/user_impersonation"
-```
-
-The template already sets the Function App's `allowedAudiences` to `$IDURI` and `allowedApplications` to `$APPID` — the same `client-id` the connection uses — so the token validates.
-
-**Step 5 — (optional) Confirm the scope** the server advertises matches what you'll pass as `--scopes`:
-
-```bash
-curl -s "https://$FUNC.azurewebsites.net/.well-known/oauth-protected-resource"
-# => {"resource":"...","scopes_supported":["api://<identifier-uri>/user_impersonation"]}
-```
-
-**Step 6 — Create a client secret** on the Entra app (it lives on the connection, not the toolbox):
-
-```bash
-SECRET=$(az ad app credential reset --id "$APPID" --display-name toolbox-oauth2 --years 1 --query password -o tsv)
-#   ⚠️ the command prints a WARNING line before the secret — take the LAST line if capturing text.
-```
-
-You now have all five connection inputs:
-
-| Connection input | Value |
-|---|---|
-| `--client-id` | `$APPID` |
-| `--client-secret` | `$SECRET` |
-| `--authorization-url` | `https://login.microsoftonline.com/$TENANT/oauth2/v2.0/authorize` |
-| `--token-url` | `https://login.microsoftonline.com/$TENANT/oauth2/v2.0/token` |
-| `--scopes` | `$IDURI/user_impersonation` |
-
-The connection **target** is `https://$FUNC.azurewebsites.net/runtime/webhooks/mcp`. Next: create the connection (section A), then [Set the connector redirect URI](#set-the-connector-redirect-uri-after-the-connection-exists). Tear down with `azd down --purge` (and `az ad app delete --id "$APPID"`) when done.
+Building your own MCP on Azure Functions? The sample template's `azd up` emits four of the five inputs (client-id, authorization-url, token-url, scopes) plus the target; you only add a client secret. Full 6-step recipe: [tool-mcp-custom-oauth-azure-starter.md](tool-mcp-custom-oauth-azure-starter.md). Come back here for section A once you have the inputs.
 
 ---
 
@@ -141,9 +78,7 @@ EOF
 azd ai toolbox create private-tools --from-file private-mcp.yaml --project-endpoint "$FOUNDRY_PROJECT_ENDPOINT"
 ```
 
-> `azd ai toolbox create` / `delete` require an **azd environment** (run inside an `azd init`'d directory), unlike `connection create` / `toolbox show` which work with just `--project-endpoint`.
->
-> Both `azd ai connection create` and `azd ai toolbox create` print a benign `no active azd environment ... run azd init` line even when they **succeed** — check for the `Connection "..." created` / `Created toolbox ...` success line, not the warning.
+> `azd ai toolbox create` / `delete` require an **azd environment** (run inside an `azd init`'d directory). Both `connection create` and `toolbox create` print a benign `no active azd environment` line even on success — check for the `Connection "..." created` / `Created toolbox ...` success line, not the warning.
 
 **Add to an existing toolbox** (new version — then promote):
 
@@ -215,37 +150,15 @@ azd deploy agent-tools
 
 - Set **`FOUNDRY_PROJECT_ENDPOINT` and `AZURE_SUBSCRIPTION_ID`** in the azd env (after it's created) before `azd deploy`, or it errors `infrastructure has not been provisioned`. No `azd provision` / `infra:` block is needed.
 - Authed MCP servers (static key, OAuth, agent identity, Entra passthrough) all use `project_connection_id: <connection-name>`; no-auth servers use inline `server_url`.
-- The `-32006` consent gate below still applies — the declarative path deploys the connection reference, but the first `tools/list` triggers the same one-time consent.
+- The `-32006` consent gate still applies — the declarative path deploys the connection reference, but the first `tools/list` triggers the same one-time consent (see [test-endpoint.md § OAuth consent flow](test-endpoint.md#oauth-consent-flow--32006)).
 
 The agent references the toolbox **by name** (`TOOLBOX_NAME`), so the MCP endpoint resolves at runtime — no endpoint string is hard-coded. See [use-toolbox-in-hosted-agent.md](../../create/references/use-toolbox-in-hosted-agent.md).
 
 ---
 
-## Verify & the consent flow end-to-end (2026-07-20)
+## Verify
 
-Call the toolbox endpoint directly with a bearer token + raw `tools/list` (see [test-endpoint.md](test-endpoint.md)). For a BYO OAuth2 connection whose user has **not consented yet**, `tools/list` returns the consent gate rather than the tool list:
-
-```jsonc
-{"jsonrpc":"2.0","id":2,"error":{"code":-32006,
- "message":"tools/list failed for 1 tool source(s)... {\"errors\":[{\"name\":\"<server_label>\",\"type\":\"mcp\",
-   \"error\":{\"code\":\"CONSENT_REQUIRED\",
-     \"message\":\"https://logic-apis-<region>.consent.azure-apim.net/login?data=...\"}}]}"}}
-```
-
-- The `message` is the **consent URL** (host `logic-apis-<region>.consent.azure-apim.net` — the Foundry connector consent endpoint, **not** a raw `login.microsoftonline.com` URL). Open it in a browser and sign in to grant the connection.
-- After consent, the toolbox caches the token; the same `tools/list` then returns the MCP's tools, and `tools/call` works.
-- This `-32006` gate is the **expected** pre-consent behavior for OAuth2 (both BYO and managed connector) — not an error to debug. If consent succeeds but `tools/list` then returns `-32007 HTTP_403` or `HTTP_404`, the MCP **server** needs config — see [Origin 2](#origin-2--azure-hosted-mcp-you-build-starter) and [Troubleshooting](#troubleshooting).
-
-## Troubleshooting
-
-| Symptom | Likely cause / fix |
-|---|---|
-| `tools/list` → `-32006 CONSENT_REQUIRED` | Expected on first use. Open the returned consent URL and sign in; retry. |
-| `tools/list` → `-32007 HTTP_403` after consenting | Consent succeeded, but the MCP server rejected the token. Its Easy Auth doesn't advertise the scope — set `WEBSITE_AUTH_PRM_DEFAULT_WITH_SCOPES=<ENTRA_IDENTIFIER_URI>/user_impersonation` on the Function App (see [Origin 2](#origin-2--azure-hosted-mcp-you-build-starter)). |
-| `tools/list` → `-32007 HTTP_404` | Auth passed but the server has no tools at `/runtime/webhooks/mcp` — the MCP code isn't deployed. Publish a sample with `func azure functionapp publish <app>` (see [Origin 2](#origin-2--azure-hosted-mcp-you-build-starter)). |
-| `AADSTS...redirect_uri` mismatch after clicking consent | The connection's reply URL isn't registered on your app. Read `properties.redirectUrl` from the connection (see [Set the connector redirect URI](#set-the-connector-redirect-uri-after-the-connection-exists)) and add it to the app's redirect URIs. |
-| `invalid_client` at the token step | Wrong `--client-secret` (expired/mistyped) or `--client-id`. Reset the secret and recreate the connection. |
-| `tools/list` returns zero after consent | Scope mismatch — `--scopes` must match the MCP's `scopes_supported` from `/.well-known/oauth-protected-resource`. |
+Call the toolbox endpoint directly with a bearer token + raw `tools/list` — see [test-endpoint.md](test-endpoint.md). For a BYO OAuth2 connection, the first `tools/list` for an un-consented user returns the `-32006` consent gate; the flow and the consent/redirect troubleshooting are in [test-endpoint.md § OAuth consent flow](test-endpoint.md#oauth-consent-flow--32006).
 
 ## References
 

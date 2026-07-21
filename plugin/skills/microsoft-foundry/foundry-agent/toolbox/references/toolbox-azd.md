@@ -66,6 +66,21 @@ Built-ins with no connection are declared directly under `tools:` (not `connecti
 
 > Client-side function calling (`FunctionTool`) is **not** a toolbox tool type — it's declared on the prompt agent directly.
 
+## Multi-tool rule
+
+**Across the whole toolbox, at most ONE tool may be unnamed.** Every other tool needs a unique identifier — `name` for built-ins/`openapi`, `server_label` for `mcp`. `toolbox_search_preview` **counts** as a tool here. Violating this returns `400 invalid_payload: Multiple tools without identifiers found. All tools except a single tool must have unique identifiers ('name' or 'server_label').`
+
+Valid combinations include:
+
+- `file_search` (unnamed) + one or more `mcp` (each with unique `server_label`)
+- `web_search` (unnamed) + one or more `mcp`
+- `azure_ai_search` (unnamed) + one or more `mcp`
+- `web_search` **named** (`name: web`) + `toolbox_search_preview` (the one unnamed tool)
+
+Multiple `openapi` entries are allowed in one toolbox **only if** each entry's spec defines a distinct `info.title` (the title is the implicit identifier).
+
+Connection-backed tools and connectionless built-ins can be bundled in one `--from-file` (built-ins go under a `tools:` block, **not** `azd ai toolbox connection add`) — one new version regardless of count.
+
 ## References
 
 - [toolbox.md](../toolbox.md) — concept, create flow, supported tool types, troubleshooting

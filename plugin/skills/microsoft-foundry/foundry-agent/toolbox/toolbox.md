@@ -6,9 +6,7 @@
 
 A **toolbox** is a managed Foundry resource: define a curated set of tools once, manage them centrally, and expose them through a **single MCP-compatible endpoint** that any agent can consume. The platform handles credential injection, token refresh, and enterprise policy enforcement at runtime.
 
-> ✅ **Recommended:** A toolbox is the **best way** to connect tools to a Foundry agent. Foundry recommends wiring every tool through a toolbox rather than attaching MCP servers or connections directly to the agent — the toolbox centralizes auth (bearer-token acquisition, refresh, OAuth consent, per-user passthrough), enforces policy, and lets you change tools without touching agent code. Prefer it over direct per-tool wiring in all new agents.
-
-Because the toolbox is a managed resource, you can add, remove, or reconfigure tools **without changing agent code** — the agent always connects to one endpoint and discovers every tool inside.
+> ✅ **Recommended:** A toolbox is the **best way** to connect tools to a Foundry agent — it centralizes auth (bearer-token acquisition, refresh, OAuth consent, per-user passthrough), enforces policy, and lets you add/remove/reconfigure tools **without changing agent code**. Prefer it over direct per-tool wiring in all new agents.
 
 - **Build** — select tools, configure authentication centrally, publish a reusable toolbox.
 - **Consume** — connect any MCP-compatible runtime (Microsoft Agent Framework, LangGraph, GitHub Copilot, Claude Code, Copilot Studio, custom code) to the endpoint to discover and invoke all tools.
@@ -75,31 +73,15 @@ The tool `type` values supported inside a toolbox version, with per-type connect
 
 ## Composition rules (multiple tools in one toolbox)
 
-### Multi-tool rule
+**At most ONE tool may be unnamed across the whole toolbox** — every other tool needs a `name` (built-ins/`openapi`) or `server_label` (`mcp`), and `toolbox_search_preview` counts as a tool. See [toolbox-azd.md § Multi-tool rule](references/toolbox-azd.md#multi-tool-rule) for valid combinations and the exact `400` error.
 
-**Across the whole toolbox, at most ONE tool may be unnamed.** Every other tool needs a unique identifier — `name` for built-ins/`openapi`, `server_label` for `mcp`. `toolbox_search_preview` **counts** as a tool here. Violating this returns `400 invalid_payload: Multiple tools without identifiers found. All tools except a single tool must have unique identifiers ('name' or 'server_label').` (verified 2026-07-20).
-
-Valid combinations include:
-
-- `file_search` (unnamed) + one or more `mcp` (each with unique `server_label`)
-- `web_search` (unnamed) + one or more `mcp`
-- `azure_ai_search` (unnamed) + one or more `mcp`
-- `web_search` **named** (`name: web`) + `toolbox_search_preview` (the one unnamed tool)
-
-Multiple `openapi` entries are allowed in one toolbox **only if** each entry's spec defines a distinct `info.title` (the title is the implicit identifier).
-
-Connection-backed tools and connectionless built-ins can be bundled in one `--from-file` (built-ins go under a `tools:` block, **not** `azd ai toolbox connection add`) — one new version regardless of count. Client-side function calling (`FunctionTool`) is **not** a toolbox type; it's declared on the prompt agent directly. See [toolbox-azd.md](references/toolbox-azd.md) for the combined YAML shape.
+Client-side function calling (`FunctionTool`) is **not** a toolbox type; it's declared on the prompt agent directly.
 
 ### Enable Tool Search
 
-**Before adding more than ~5 tools to a toolbox, add `{ "type": "toolbox_search_preview" }` to the toolbox.** This replaces the full `tools/list` shown to the model with two meta-tools — `tool_search` (natural-language discovery) and `call_tool` (invoke a discovered tool) — so context cost stays flat as the toolbox grows.
+**Before adding more than ~5 tools to a toolbox, add `{ "type": "toolbox_search_preview" }`.** This replaces the full `tools/list` shown to the model with two meta-tools — `tool_search` (natural-language discovery) and `call_tool` (invoke a discovered tool) — so context cost stays flat as the toolbox grows. It counts as the toolbox's one allowed unnamed tool (name every other tool).
 
-- The `toolbox_search_preview` entry **counts** as the toolbox's one allowed unnamed tool — give every other tool a `name` / `server_label` (see [Multi-tool rule](#multi-tool-rule)), or the create returns `400 invalid_payload`.
-- All other tools in the toolbox are hidden from the initial `tools/list` and surfaced only by `tool_search` (or by per-user auto-pinning of hot tools).
-- Pin specific high-traffic tools or add ranking-only keywords via `tool_configs.{tool_name}` (with `pin: true` and `additional_search_text`).
-- In the agent's system prompt, instruct the model to call `tool_search` whenever a needed capability isn't already visible.
-
-Full configuration recipe in [tool-tool-search.md](references/tool-tool-search.md) and the public [Tool Search (preview) docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search).
+Full behavior (hidden tools, pinning via `tool_configs`, ranking keywords, system-prompt guidance) and the create/deploy flow: [tool-tool-search.md](references/tool-tool-search.md). Public [Tool Search (preview) docs](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/tool-search).
 
 # Versioning, endpoints & MCP protocol
 
@@ -149,7 +131,7 @@ Before running the full agent, verify the MCP endpoint end-to-end with a bearer 
 | `TOOLBOX_ENDPOINT` not set | Run `azd ai toolbox show` + `azd env set`. |
 | Env var missing in deployed agent | Add to the agent service's `environmentVariables` in `azure.yaml`, `azd deploy`. |
 | `403 Forbidden` (incl. `POST /toolboxes`, `PUT .../connections/...`) | Caller lacks `Foundry User` (or `Azure AI Developer` / `Cognitive Services Contributor`) on the project — grant it at project scope. |
-| 400 `invalid_payload: Multiple tools without identifiers found` | Two unnamed tools of the same type (or duplicate `server_label`) in one toolbox — keep at most one unnamed tool per type; give each MCP tool a unique `server_label`. See [Multi-tool rule](#multi-tool-rule). |
+| 400 `invalid_payload: Multiple tools without identifiers found` | Two unnamed tools of the same type (or duplicate `server_label`) in one toolbox — keep at most one unnamed tool per type; give each MCP tool a unique `server_label`. See [toolbox-azd.md § Multi-tool rule](references/toolbox-azd.md#multi-tool-rule). |
 | `tools/list` returns zero | Toolbox version still provisioning, or tool type not available in the region — wait ~10s and retry, or try a different region. |
 | `tools/list` returns zero for MCP/A2A only | Invalid or missing connection credentials — verify `project_connection_id` exists and creds are correct; for MI auth, check RBAC on the target service. |
 | `tools/list` returns zero for OpenAPI only | Invalid OpenAPI spec (malformed paths, missing operationIds) — validate against OpenAPI 3.0/3.1; for MI auth, also verify RBAC. |
