@@ -216,7 +216,7 @@ Optionally add toolboxes (tools), guardrails (content safety), and skills (behav
 ### Step 7a -- Add tools (optional)
 
 **Recommend attaching tool through a toolbox**
-Preferred over wiring MCP servers/connections directly to the agent: it centralizes auth and policy and lets you change tools without touching agent code. Supported: MCP servers, Web Search, Bing Search, Azure AI Search, Code Interpreter, File Search, OpenAPI APIs, A2A, Work IQ, Fabric IQ, Browser Automation — see [toolbox.md § Supported tool types](../toolbox/toolbox.md#supported-tool-types) for per-type auth and setup guides.
+Preferred over wiring MCP servers/connections directly to the agent: it centralizes auth and policy and lets you change tools without touching agent code. Supported: MCP servers, Web Search, Bing Search, Azure AI Search, Code Interpreter, File Search, OpenAPI APIs, A2A, Work IQ, Fabric IQ, Browser Automation — see the toolbox sub-skill [toolbox.md § Supported tool types](../toolbox/toolbox.md#supported-tool-types) for per-type auth and setup guides.
 
 #### Toolbox creation boundary
 
@@ -230,7 +230,7 @@ Flow (only when the user asks you to create the toolbox):
 4. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
 5. `azd deploy`.
 
-For what a toolbox is and how to create one (concept, tool types, the create flow), see [toolbox.md](../toolbox/toolbox.md). For generating the agent code that consumes a toolbox, see [use-toolbox-in-hosted-agent.md](references/use-toolbox-in-hosted-agent.md).
+For what a toolbox is and how to create one (concept, tool types, the create flow), see the toolbox sub-skill [toolbox.md](../toolbox/toolbox.md). For generating the agent code that consumes a toolbox, see [use-toolbox-in-hosted-agent.md](references/use-toolbox-in-hosted-agent.md).
 
 ### Step 7b -- Add guardrails (optional)
 
