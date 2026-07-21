@@ -71,7 +71,7 @@ For toolbox-composition / provisioning errors (`Multiple tools without identifie
 
 Everything below is only needed when you **hand-write the MCP client** (generic frameworks, or the BYO samples) instead of using the Microsoft Agent Framework, which handles all of it for you.
 
-For the MCP protocol methods and tool-naming rules, see [toolbox.md § MCP protocol](../../toolbox/toolbox.md#mcp-protocol) and [§ Tool naming](../../toolbox/toolbox.md#tool-naming).
+For the MCP protocol methods and tool-naming rules, see [mcp-protocol.md § MCP protocol](../../toolbox/references/mcp-protocol.md#mcp-protocol) and [§ Tool naming](../../toolbox/references/mcp-protocol.md#tool-naming).
 
 ### Authentication
 
