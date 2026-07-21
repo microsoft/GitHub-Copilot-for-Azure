@@ -20,11 +20,27 @@ import {
 /** Number of trailing days shown in every graph. */
 const WINDOW_DAYS = 10;
 
+/**
+ * Build the Azure Data Explorer telemetry dashboard URL for a skill.
+ * The dashboard ID and item fragment are fixed; the skill name is passed
+ * through the `p-_selectedPluginSkill` parameter with a `v-` prefix.
+ */
+export function telemetryUrl(skillName: string): string {
+    const base = "https://dataexplorer.azure.com/dashboards/d1281268-c49e-4e82-bdc9-79e6c3c6cb43";
+    const params = new URLSearchParams({
+        "p-_startTime": "90days",
+        "p-_endTime": "now",
+        "p-_selectedPluginSkill": `v-${skillName}`,
+    });
+    return `${base}?${params}#e9eade80-7b12-49db-a865-a6d3365d03eb`;
+}
+
 /** A plugin skill with its description, as surfaced by the frontmatter collector. */
 interface Skill {
     name: string;
     description: string;
     descriptionLength: number;
+    fileCount: number;
 }
 
 /** Minimal shape of the health data returned by /api/static. */
@@ -50,7 +66,13 @@ function skillsFromHealthData(data: HealthData): Skill[] {
         // Only plugin skills; the frontmatter check also covers .github/skills.
         if (!isPluginSkillPath(path)) continue;
         const description = String(item.metadata?.description ?? "");
-        skills.push({ name: item.name, description, descriptionLength: description.length });
+        const fileCount = Number(item.metadata?.fileCount ?? 0);
+        skills.push({
+            name: item.name,
+            description,
+            descriptionLength: description.length,
+            fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+        });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -253,6 +275,19 @@ export default function App() {
                             </p>
                             <p className="skills-desc-length">
                                 Description length: {selectedSkill.descriptionLength} characters
+                            </p>
+                            <p className="skills-file-count">
+                                Files: {selectedSkill.fileCount}
+                            </p>
+                            <p className="skills-telemetry">
+                                <a
+                                    className="skills-telemetry-link"
+                                    href={telemetryUrl(selectedSkill.name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    View telemetry ↗
+                                </a>
                             </p>
                         </header>
 
