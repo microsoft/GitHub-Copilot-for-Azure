@@ -9,7 +9,7 @@ The full `azd ai toolbox` CLI surface — creating, editing, versioning, and tea
 | `azd extension install azure.ai.toolboxes` | Install the toolbox CLI extension (once). |
 | `azd ai toolbox create <name> --from-file <path>` | Create toolbox + its first version. File must list at least one connection, skill, or tool. |
 | `azd ai toolbox connection add <toolbox> <connection> [--index ...] [--instance-name ...]` | Attach one; creates a new version (default unchanged). |
-| `azd ai toolbox connection add <toolbox> --from-file <path>` | Attach many in one call; ONE new version (default unchanged). |
+| `azd ai toolbox connection add <toolbox> --from-file <path>` | Attach many **connections** in one call; ONE new version (default unchanged). Connectionless built-ins aren't supported here — see the note under [`--from-file` schema](#--from-file-schema). |
 | `azd ai toolbox connection remove <toolbox> <connection>` | Detach; creates a new version (default unchanged). Refuses to leave zero tools. |
 | `azd ai toolbox show <name> [--version <ver>]` | Show toolbox + MCP endpoint URL. |
 | `azd ai toolbox list` | List toolboxes. |
@@ -21,7 +21,9 @@ Every mutation publishes a new immutable version but does **not** change the def
 
 ## `--from-file` schema
 
-The YAML/JSON passed to `azd ai toolbox create --from-file` or `azd ai toolbox connection add --from-file` lists the connections to bundle, plus a `tools:` block for connectionless built-ins.
+The YAML/JSON passed to `azd ai toolbox create --from-file` lists the connections to bundle, plus an optional `tools:` block for connectionless built-ins.
+
+> Note: `azd ai toolbox connection add --from-file` attaches **connections** only. Connectionless built-ins (the `tools:` block — `web_search`, `code_interpreter`, `file_search`, `toolbox_search_preview`) can't be added to an existing toolbox; recreate it with `azd ai toolbox create --from-file` and the full desired tool set.
 
 ```yaml
 description: research toolbox    # only on `create`
@@ -68,7 +70,7 @@ Built-ins with no connection are declared directly under `tools:` (not `connecti
 
 ## Multi-tool rule
 
-**Across the whole toolbox, at most ONE tool may be unnamed.** Every other tool needs a unique identifier — `name` for built-ins/`openapi`, `server_label` for `mcp`. `toolbox_search_preview` **counts** as a tool here. Violating this returns `400 invalid_payload: Multiple tools without identifiers found. All tools except a single tool must have unique identifiers ('name' or 'server_label').`
+**Across the whole toolbox, at most ONE tool may be unnamed.** Every other tool needs a unique identifier — `name` for built-ins, `server_label` for `mcp` (and, for `openapi`, a distinct `info.title` in each spec — see below). `toolbox_search_preview` **counts** as a tool here. Violating this returns `400 invalid_payload: Multiple tools without identifiers found. All tools except a single tool must have unique identifiers ('name' or 'server_label').`
 
 Valid combinations include:
 

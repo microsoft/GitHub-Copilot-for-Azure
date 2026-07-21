@@ -131,7 +131,7 @@ Before running the full agent, verify the MCP endpoint end-to-end with a bearer 
 | `TOOLBOX_ENDPOINT` not set | Run `azd ai toolbox show` + `azd env set`. |
 | Env var missing in deployed agent | Add to the agent service's `environmentVariables` in `azure.yaml`, `azd deploy`. |
 | `403 Forbidden` (incl. `POST /toolboxes`, `PUT .../connections/...`) | Caller lacks `Foundry User` (or `Azure AI Developer` / `Cognitive Services Contributor`) on the project — grant it at project scope. |
-| 400 `invalid_payload: Multiple tools without identifiers found` | Two unnamed tools of the same type (or duplicate `server_label`) in one toolbox — keep at most one unnamed tool per type; give each MCP tool a unique `server_label`. See [toolbox-azd.md § Multi-tool rule](references/toolbox-azd.md#multi-tool-rule). |
+| 400 `invalid_payload: Multiple tools without identifiers found` | Two unnamed tools (or duplicate `server_label`) in one toolbox — keep **at most one unnamed tool across the entire toolbox**; give each other tool a `name` / `server_label`. See [toolbox-azd.md § Multi-tool rule](references/toolbox-azd.md#multi-tool-rule). |
 | `tools/list` returns zero | Toolbox version still provisioning, or tool type not available in the region — wait ~10s and retry, or try a different region. |
 | `tools/list` returns zero for MCP/A2A only | Invalid or missing connection credentials — verify `project_connection_id` exists and creds are correct; for MI auth, check RBAC on the target service. |
 | `tools/list` returns zero for OpenAPI only | Invalid OpenAPI spec (malformed paths, missing operationIds) — validate against OpenAPI 3.0/3.1; for MI auth, also verify RBAC. |
