@@ -33,16 +33,19 @@ No `mcp-session-id` header is returned, and none is needed on later calls.
 curl -sS -X POST "$TOOLBOX_URL" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | jq .
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | python -m json.tool
 ```
 
-**d. Call a tool (optional):**
+**d. Call a tool.** The argument shape is per-tool — read each tool's `inputSchema` from `tools/list`. Examples for the connectionless built-ins:
 
 ```bash
-curl -sS -X POST "$TOOLBOX_URL" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"<tool_name>","arguments":{"query":"test"}}}' | jq .
+# web_search — arg is `search_query` (returns live Bing results)
+curl -sS -X POST "$TOOLBOX_URL" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"<web_search_tool_name>","arguments":{"search_query":"latest Azure Foundry news"}}}' | python -m json.tool
+
+# code_interpreter — arg is `code` (spins up a sandbox container and runs it; isError=false)
+curl -sS -X POST "$TOOLBOX_URL" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"<code_interpreter_tool_name>","arguments":{"code":"print(6*7)"}}}' | python -m json.tool
 ```
 
 > ⚠️ **Agent-identity-authed tools won't work locally — that's expected, not a blocker.** The token above is your **user** identity, not the deployed agent's. Use section 2 to test those.
@@ -53,7 +56,7 @@ Wire the toolbox endpoint into the agent, deploy, and invoke it — this exercis
 
 ```bash
 # 1. Read the endpoint and set the env var
-azd env set TOOLBOX_ENDPOINT "$(azd ai toolbox show <toolbox-name> --output json | jq -r .endpoint)"
+azd env set TOOLBOX_ENDPOINT "$(azd ai toolbox show <toolbox-name> --output json | python -c "import sys,json; print(json.load(sys.stdin)['endpoint'])")"
 
 # 2. Reference TOOLBOX_ENDPOINT in the agent service's environmentVariables in azure.yaml, then deploy
 azd deploy

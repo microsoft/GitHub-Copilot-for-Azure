@@ -29,8 +29,6 @@ connections:
   - name: my-mcp                 # RemoteTool
   - name: my-search              # CognitiveSearch -- needs index
     index: products
-  - name: my-bing                # GroundingWithCustomSearch -- needs instance_name
-    instance_name: docs-config
   - name: my-a2a                 # RemoteA2A
 tools:                           # connectionless built-ins (optional)
   - type: web_search
@@ -38,12 +36,13 @@ tools:                           # connectionless built-ins (optional)
   - type: code_interpreter
     container: { type: auto }
   - type: file_search
-    file_search: { vector_store_ids: ["<vector-store-id>"] }
+    vector_store_ids: ["<vector-store-id>"]   # flat: sibling of type, NOT nested under file_search
   - type: toolbox_search_preview
 ```
 
 - `description` is honored only on `create` (it names the first version).
 - At least one of `connections`, `skills`, or `tools` must be non-empty.
+- The `connections:` block is a **CLI convenience alias** — the CLI expands each entry into the corresponding nested tool (e.g. `CognitiveSearch` → an `azure_ai_search` tool). The raw toolbox API accepts only the `tools:` array, so a hand-rolled API payload must use the tool shape directly.
 - Attaching many entries in one `--from-file` call produces **one** new version. `create` publishes it as the first (default) version; `connection add` leaves the default unchanged until you `publish`.
 
 ### Per-connection-kind fields
@@ -52,7 +51,6 @@ tools:                           # connectionless built-ins (optional)
 |-----------------|----------------|-------|
 | `RemoteTool` (MCP) | — | Just `name`. |
 | `CognitiveSearch` (Azure AI Search) | `index` | One entry per index; repeat with different `index` values for multiple indexes. |
-| `GroundingWithCustomSearch` (Bing Custom Search) | `instance_name` | Points at the Bing custom-search instance config. |
 | `RemoteA2A` (A2A peer) | — | Just `name`. |
 
 ### Connectionless built-in tools (`tools:` block)
@@ -63,8 +61,8 @@ Built-ins with no connection are declared directly under `tools:` (not `connecti
 |--------|----------------|-------|
 | `web_search` | — | Basic Bing. For Bing Custom Search, use a `GroundingWithCustomSearch` **connection** instead. |
 | `code_interpreter` | `container: { type: auto }` | Sandboxed Python. |
-| `file_search` | `file_search.vector_store_ids` | Requires an existing vector store ID. |
-| `toolbox_search_preview` | — | Tool Search directive; doesn't count toward the unnamed-tool-per-type limit. |
+| `file_search` | `vector_store_ids` | Flat: `vector_store_ids: ["vs_..."]` as a sibling of `type` (NOT nested under `file_search:`). Requires an existing vector store ID. |
+| `toolbox_search_preview` | — | Tool Search directive; **counts** as the toolbox's one allowed unnamed tool. |
 
 > Client-side function calling (`FunctionTool`) is **not** a toolbox tool type — it's declared on the prompt agent directly.
 

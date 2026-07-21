@@ -44,7 +44,7 @@ The flow, using the `azd ai` CLI:
 6. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
 7. `azd deploy`.
 
-Each tool type has its own end-to-end flow (connection command, attach, `--from-file` entry) — pick your tool in the [Supported tool types](#supported-tool-types) table and follow its **Setup guide** reference. For the full CLI + `--from-file` schema see [toolbox-azd.md](references/toolbox-azd.md).
+Each tool type has its own end-to-end flow (connection command, attach, `--from-file` entry) — pick your tool in the [Supported tool types](#supported-tool-types) table and follow its **Setup guide** reference. For the full `azd ai toolbox` CLI surface see [toolbox-azd.md](references/toolbox-azd.md).
 
 ## Supported tool types
 
@@ -52,12 +52,11 @@ The tool `type` values supported inside a toolbox version, with per-type connect
 
 | `type` | Tool | Auth mode | Connection required? | Setup guide |
 |---|---|---|---|---|
-| `mcp` | Remote MCP server — no auth (public) | None | No | [tool-mcp.md](references/tool-mcp.md) |
-| `mcp` | Remote MCP server — static key | `CustomKeys` | Yes (key connection; e.g. `github_pat` as Bearer) | [tool-mcp.md](references/tool-mcp.md) |
-| `mcp` | Remote MCP server — OAuth (managed connector) | `OAuth2` (Foundry-managed) | No (Foundry handles the app registration; consent flow, MCP code `-32006`) | [tool-mcp.md](references/tool-mcp.md) |
-| `mcp` | Remote MCP server — OAuth (custom app) | `OAuth2` (BYO) | Yes (your `client_id` / `client_secret`) | [tool-mcp.md](references/tool-mcp.md) |
-| `mcp` | Remote MCP server — agent identity | `AgenticIdentity` | Yes (project MI; assign RBAC role on target first) | [tool-mcp.md](references/tool-mcp.md) |
-| `mcp` | Remote MCP server — Entra passthrough | `UserEntraToken` | Yes (proxies the caller's Entra identity) | [tool-mcp.md](references/tool-mcp.md) |
+| `mcp` | Remote MCP server — no auth (public) | None | No | [tool-mcp-noauth.md](references/tool-mcp-noauth.md) |
+| `mcp` | Remote MCP server — static key | `CustomKeys` | Yes (key connection; e.g. `github_pat` as Bearer) | [tool-mcp-key-auth.md](references/tool-mcp-key-auth.md) |
+| `mcp` | Remote MCP server — OAuth (managed connector) | `OAuth2` (Foundry-managed) | No (Foundry handles the app registration; consent flow, MCP code `-32006`) | [tool-mcp-managed-oauth.md](references/tool-mcp-managed-oauth.md) |
+| `mcp` | Remote MCP server — OAuth (custom app) | `OAuth2` (BYO) | Yes (your `client_id` / `client_secret`) | [tool-mcp-custom-oauth.md](references/tool-mcp-custom-oauth.md) |
+| `mcp` | Remote MCP server — Entra passthrough | `UserEntraToken` | Yes (proxies the caller's Entra identity) | [tool-mcp-entra-passthrough.md](references/tool-mcp-entra-passthrough.md) |
 | `web_search` | Web search (basic Bing; optional `web_search.custom_search_configuration` for Bing Custom Search to scope grounding to specific domains) | — | No (basic); Yes for Custom Search | [tool-web-search.md](references/tool-web-search.md) |
 | `azure_ai_search` | Azure AI Search index | `ApiKey` | Yes (Search service connection) | [tool-azure-ai-search.md](references/tool-azure-ai-search.md) |
 | `code_interpreter` | Sandboxed Python execution | — | No | [tool-code-interpreter.md](references/tool-code-interpreter.md) |
@@ -78,24 +77,24 @@ The tool `type` values supported inside a toolbox version, with per-type connect
 
 ### Multi-tool rule
 
-Each built-in type (`web_search`, `azure_ai_search`, `code_interpreter`, `file_search`) may appear **at most once without a `name` field**. Add a unique `name` for multiple instances (and a unique `server_label` per MCP tool), or the API returns `400 invalid_payload: Multiple tools without identifiers found`.
+**Across the whole toolbox, at most ONE tool may be unnamed.** Every other tool needs a unique identifier — `name` for built-ins/`openapi`, `server_label` for `mcp`. `toolbox_search_preview` **counts** as a tool here. Violating this returns `400 invalid_payload: Multiple tools without identifiers found. All tools except a single tool must have unique identifiers ('name' or 'server_label').` (verified 2026-07-20).
 
 Valid combinations include:
 
-- `file_search` + one or more `mcp` (each with unique `server_label`)
-- `web_search` + one or more `mcp`
-- `azure_ai_search` + one or more `mcp`
-- `toolbox_search_preview` (the Tool Search directive — doesn't count toward the limit) + any other tools
+- `file_search` (unnamed) + one or more `mcp` (each with unique `server_label`)
+- `web_search` (unnamed) + one or more `mcp`
+- `azure_ai_search` (unnamed) + one or more `mcp`
+- `web_search` **named** (`name: web`) + `toolbox_search_preview` (the one unnamed tool)
 
 Multiple `openapi` entries are allowed in one toolbox **only if** each entry's spec defines a distinct `info.title` (the title is the implicit identifier).
 
-Connection-backed tools and connectionless built-ins can be bundled in one `--from-file` (built-ins go under a `tools:` block, **not** `azd ai toolbox connection add`) — one new version regardless of count. Client-side function calling (`FunctionTool`) is **not** a toolbox type; it's declared on the prompt agent directly. See [toolbox-azd.md § `--from-file` schema](references/toolbox-azd.md#--from-file-schema) for the combined YAML shape.
+Connection-backed tools and connectionless built-ins can be bundled in one `--from-file` (built-ins go under a `tools:` block, **not** `azd ai toolbox connection add`) — one new version regardless of count. Client-side function calling (`FunctionTool`) is **not** a toolbox type; it's declared on the prompt agent directly. See [toolbox-azd.md](references/toolbox-azd.md) for the combined YAML shape.
 
 ### Enable Tool Search
 
 **Before adding more than ~5 tools to a toolbox, add `{ "type": "toolbox_search_preview" }` to the toolbox.** This replaces the full `tools/list` shown to the model with two meta-tools — `tool_search` (natural-language discovery) and `call_tool` (invoke a discovered tool) — so context cost stays flat as the toolbox grows.
 
-- The `toolbox_search_preview` entry **doesn't count** toward the unnamed-tool-per-type limit.
+- The `toolbox_search_preview` entry **counts** as the toolbox's one allowed unnamed tool — give every other tool a `name` / `server_label` (see [Multi-tool rule](#multi-tool-rule)), or the create returns `400 invalid_payload`.
 - All other tools in the toolbox are hidden from the initial `tools/list` and surfaced only by `tool_search` (or by per-user auto-pinning of hot tools).
 - Pin specific high-traffic tools or add ranking-only keywords via `tool_configs.{tool_name}` (with `pin: true` and `additional_search_text`).
 - In the agent's system prompt, instruct the model to call `tool_search` whenever a needed capability isn't already visible.

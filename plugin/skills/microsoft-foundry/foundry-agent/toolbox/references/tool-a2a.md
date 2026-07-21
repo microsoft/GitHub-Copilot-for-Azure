@@ -57,8 +57,6 @@ connections:
   - name: peer-agent-conn      # RemoteA2A — just the name
 ```
 
-See [toolbox-azd.md § `--from-file` schema](toolbox-azd.md#--from-file-schema) for the full file shape.
-
 ## References
 
 - [A2A tool documentation](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/agent-to-agent)
