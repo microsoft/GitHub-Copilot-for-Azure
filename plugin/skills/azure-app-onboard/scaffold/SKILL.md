@@ -152,6 +152,14 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
 
 10a. **Format IaC (main thread)** — For each `.bicep` file in `infra/` (including `modules/`): call `mcp_bicep_format_bicep_file` (or `bicep-format_bicep_file`) with `{ filePath: "<absolute path>" }`.This enforces LF line endings via the `bicepconfig.json` written during IaC generation. Fallback: skip if unavailable.
 
+10a-conf. **Conformance gate (main thread — MANDATORY for Bicep)** — ⛔ **Skip this entire step when the scaffold emitted Terraform** (`infra/main.bicep` absent) — these checks are Bicep-only (Terraform is syntax-validated via `terraform validate` in the validate subagent). Otherwise run the conformance script from this skill's `scripts/` dir; it deterministically catches ARM-rejected values `az bicep build` can't (invalid Bicep values, wrong DB version, reserved DB login, `enablePurgeProtection`):
+   ```
+   {scaffoldDir}/scripts/scaffold-conformance.ps1 -SessionPath ".copilot-azure/sessions/{uuid}" -InfraPath infra   # pwsh (preferred)
+   bash {scaffoldDir}/scripts/scaffold-conformance.sh ".copilot-azure/sessions/{uuid}" infra                       # bash (only if pwsh unavailable; needs jq for the plan-dependent checks)
+   ```
+   ⛔ **Prefer the `.ps1` when `pwsh` is available** — it runs every check unconditionally. The `.sh` twin skips the plan-dependent checks (`DB-VERSION-MATCH`, `SERVICES-COMPLETE`, `DB-NAME-PRESENT`, `WARN-FIXED`) when `jq` is absent.
+   ⛔ Any BLOCK failure → fix the IaC, re-run (max 3); never present the deploy gate with an open BLOCK. Run it here in the main thread — do NOT delegate to the validate subagent or hand-judge the result when a shell exists. Pass the JSON to the validate subagent for `scaffold-manifest.json.conformance`.
+
 10b–12.5. **Validation + manifest** — ⛔ **You MUST dispatch [`subagent-validate.md`](references/subagent-validate.md) as a `task`.** ⛔ agent_type: `"task"` — NEVER `"general-purpose"`.
    ```
    <<<TEMPLATE_START>>>
@@ -169,6 +177,8 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
    {warnings array}
    ### prereq-output.json.healthEndpoint
    {detected health path string or null}
+   ### Conformance result
+   {JSON from Step 10a-conf}
    ### Session path
    {.copilot-azure/sessions/{uuid}/}
    ```

@@ -63,6 +63,21 @@ export interface ValidationResult {
   proof?: string;
 }
 
+/** One BLOCK failure emitted by scaffold-conformance.{ps1,sh} (Step 3c plan-conformance gate). */
+export interface ConformanceFailure {
+  id: string; // e.g. "TAGS-NO-CAMEL", "NO-PLAINTEXT-SECRET", "DB-TLS-ON"
+  detail: string;
+  file: string;
+}
+
+/** Result of the deterministic plan-conformance gate (subagent-validate.md Step 3c). */
+export interface ConformanceResult {
+  passed: boolean;
+  failures: ConformanceFailure[];
+  /** "script" when scaffold-conformance.{ps1,sh} ran; "manual" when the fallback assertion table was used. */
+  source: "script" | "manual";
+}
+
 export interface ScaffoldManifest {
   /** Session id this manifest belongs to. */
   sessionId: string;
@@ -87,4 +102,5 @@ export interface ScaffoldManifest {
     healingAttempts?: readonly ScaffoldHealingAttempt[];
   };
   validationResult?: ValidationResult;
+  conformance?: ConformanceResult;
 }

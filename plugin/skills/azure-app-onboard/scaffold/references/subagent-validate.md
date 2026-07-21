@@ -17,6 +17,7 @@ Validate IaC syntax, write `scaffold-manifest.json`, and generate deploy checkli
 | `prepare-plan.json` — services, naming, region, subscriptionId | YES |
 | `prereq-output.json.warnings[]` — prereq warnings with `fixPhase` | YES |
 | `prereq-output.json.healthEndpoint` — detected health path (or `null`) | YES |
+| Conformance result JSON (from main-thread Step 10a-conf) | YES |
 
 ## Output
 
@@ -67,13 +68,17 @@ For each App Service / Functions resource in the generated Bicep:
 
 FIXABLE errors: fix the Bicep → re-run `az bicep build` → proceed to Step 3c.
 
-**Do:** Filter `prereq-output.json.warnings[]` for entries with `fixPhase: "scaffold"`. For each, verify the generated IaC contains the corresponding fix (env var override, config change, probe path, etc.). Any unaddressed scaffold warning → FIXABLE error — fix the IaC before writing manifest.
+### Step 3c — Record plan conformance result
+
+The main thread (SKILL.md Step 10a-conf) already ran the conformance script and passed you its JSON. Record it in `scaffold-manifest.json.conformance` = `{ passed, failures, source: "script" }`. ⛔ Do NOT set `validationResult.status: "Passed"` while any BLOCK failure is unresolved.
+
+**Fallback** (only if the caller passed NO result AND `infra/main.bicep` exists — the gate is Bicep-only, skip for Terraform): run `{scaffoldDir}/scripts/scaffold-conformance.ps1 -SessionPath "{sessionPath}" -InfraPath infra` (or `.sh` on bash) yourself, then record with `source: "script"`. Never hand-judge when a shell is available.
 
 ### Step 4 — Write scaffold-manifest.json
 
 Read [scaffold-schemas.ts](scaffold-schemas.ts) for exact field names.
 
-**Do:** Write `scaffold-manifest.json` to the session folder with: `sessionId`, `scaffoldCompletedUtc`, `iacTool`, `targetScope`, `entryPoint`, `parametersFile`, `filesWritten[]`, `deployCommand`, `twoPhaseWiring` (if Container Apps), `phase1`/`phase2Steps` (if applicable), `selfReview` (from caller input), `validationResult` (from Steps 2–3).
+**Do:** Write `scaffold-manifest.json` to the session folder with: `sessionId`, `scaffoldCompletedUtc`, `iacFormat`, `targetScope`, `entryPoint`, `parametersFile`, `files[]`, `deployCommand`, `twoPhaseWiring` (if Container Apps), `phase2Steps` (if applicable), `selfReview` (from caller input), `validationResult` (from Steps 2–3). Use the exact field names from [scaffold-schemas.ts](scaffold-schemas.ts) § `ScaffoldManifest`.
 
 ### Step 5 — Handle failures (if any)
 

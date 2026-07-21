@@ -88,9 +88,15 @@ output sharedKey string = logAnalyticsWorkspace.listKeys().primarySharedKey
 
 // container-app-environment.bicep:
 param workspaceCustomerId string  // GUID, NOT resource ID
-logAnalyticsConfiguration: {
-  customerId: workspaceCustomerId
-  sharedKey: workspaceSharedKey
+// ⛔ MUST nest under appLogsConfiguration.destination='log-analytics' — a bare top-level logAnalyticsConfiguration fails deploy (ManagedEnvironmentInvalidSchema). This nesting is the ONLY valid location at EVERY API version (the flat shape was never valid — NOT version drift, so do not chase API-version pins). This is the CA's only log path (no diagnostic-settings module).
+properties: {
+  appLogsConfiguration: {
+    destination: 'log-analytics'
+    logAnalyticsConfiguration: {
+      customerId: workspaceCustomerId
+      sharedKey: workspaceSharedKey
+    }
+  }
 }
 // ❌ WRONG: customerId: split(workspaceId, '/')[8]
 ```
