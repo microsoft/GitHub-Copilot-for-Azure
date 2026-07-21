@@ -1,6 +1,0 @@
-{
-  "containerRegistries": "cr",
-  "containerApps": "ca",
-  "managedEnvironments": "cae",
-  "userAssignedIdentities": "id-"
-}

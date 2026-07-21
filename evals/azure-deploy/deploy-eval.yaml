@@ -50,19 +50,7 @@ stimuli:
   # Original problem: empty workspace, agent had to create app + deploy.
   # Fix: provide a prepared SWA fixture; agent only needs to deploy.
   - name: "Deploy SWA - Whiteboard App (Bicep)"
-    prompt: "My static whiteboard web app is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/swa-bicep/index.html
-          dest: index.html
-        - src: fixture/swa-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/swa-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/swa-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/swa-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a static whiteboard web app and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -80,6 +68,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -89,19 +78,7 @@ stimuli:
 
   # Jest: "creates static portfolio website with bicep"
   - name: "Deploy SWA - Portfolio Website (Bicep)"
-    prompt: "My static portfolio website is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/swa-bicep/index.html
-          dest: index.html
-        - src: fixture/swa-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/swa-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/swa-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/swa-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a static portfolio website and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -119,6 +96,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -133,21 +111,7 @@ stimuli:
 
   # Jest: "creates discussion board"
   - name: "Deploy App Service - Discussion Board (Bicep)"
-    prompt: "My Node.js web application (a discussion board) is prepared and ready. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/app-service-bicep/app.js
-          dest: app.js
-        - src: fixture/app-service-bicep/package.json
-          dest: package.json
-        - src: fixture/app-service-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/app-service-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/app-service-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/app-service-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a discussion board application and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -165,6 +129,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -174,21 +139,7 @@ stimuli:
 
   # Jest: "creates todo list with frontend and API"
   - name: "Deploy App Service - Todo List (Bicep)"
-    prompt: "My Node.js todo list application is prepared and ready. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/app-service-bicep/app.js
-          dest: app.js
-        - src: fixture/app-service-bicep/package.json
-          dest: package.json
-        - src: fixture/app-service-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/app-service-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/app-service-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/app-service-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a todo list with frontend and API and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -206,6 +157,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -220,21 +172,7 @@ stimuli:
 
   # Jest: "creates serverless HTTP API"
   - name: "Deploy Azure Functions - Serverless HTTP API (Bicep)"
-    prompt: "My Azure Functions serverless HTTP API is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/functions-bicep/host.json
-          dest: host.json
-        - src: fixture/functions-bicep/package.json
-          dest: package.json
-        - src: fixture/functions-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/functions-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/functions-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/functions-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -251,6 +189,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -260,21 +199,7 @@ stimuli:
 
   # Jest: "creates event-driven function app"
   - name: "Deploy Azure Functions - Event-Driven (Bicep)"
-    prompt: "My event-driven Azure Functions app is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/functions-bicep/host.json
-          dest: host.json
-        - src: fixture/functions-bicep/package.json
-          dest: package.json
-        - src: fixture/functions-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/functions-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/functions-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/functions-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create an event-driven function app to process messages and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -291,6 +216,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -300,21 +226,7 @@ stimuli:
 
   # Jest: "creates Python function app with Service Bus trigger"
   - name: "Deploy Azure Functions - Python Service Bus (Bicep)"
-    prompt: "My Python Azure Functions app with Service Bus trigger is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/functions-bicep/host.json
-          dest: host.json
-        - src: fixture/functions-bicep/package.json
-          dest: package.json
-        - src: fixture/functions-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/functions-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/functions-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/functions-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -331,6 +243,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -345,27 +258,7 @@ stimuli:
 
   # Jest: "creates and deploys workflow app with Durable Task Scheduler"
   - name: "Deploy DTS - Workflow App (Bicep)"
-    prompt: "My Durable Task Scheduler workflow application is prepared and ready. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/dts-bicep/host.json
-          dest: host.json
-        - src: fixture/dts-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/dts-bicep/package.json
-          dest: package.json
-        - src: fixture/dts-bicep/src/functions/orderOrchestrator.js
-          dest: src/functions/orderOrchestrator.js
-        - src: fixture/dts-bicep/src/functions/orderActivities.js
-          dest: src/functions/orderActivities.js
-        - src: fixture/dts-bicep/src/functions/startOrder.js
-          dest: src/functions/startOrder.js
-        - src: fixture/dts-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/dts-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/dts-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -382,13 +275,14 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
-      # Verify DTS infrastructure is present in the fixture
+      # Verify DTS infrastructure is present in the agent-generated workspace
       - type: file-matches
         config:
           path: "infra/resources.bicep"
@@ -405,25 +299,7 @@ stimuli:
 
   # Jest: "creates containerized web application with Bicep"
   - name: "Deploy Container Apps - Containerized Web App (Bicep)"
-    prompt: "My containerized web application is prepared and ready. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/container-apps-bicep/app.js
-          dest: app.js
-        - src: fixture/container-apps-bicep/package.json
-          dest: package.json
-        - src: fixture/container-apps-bicep/Dockerfile
-          dest: Dockerfile
-        - src: fixture/container-apps-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/container-apps-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/container-apps-bicep/infra/abbreviations.json
-          dest: infra/abbreviations.json
-        - src: fixture/container-apps-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/container-apps-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a containerized web application and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -440,6 +316,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -465,25 +342,7 @@ stimuli:
 
   # Jest: "creates simple containerized Node.js app"
   - name: "Deploy Container Apps - Node.js App (Bicep)"
-    prompt: "My containerized Node.js application is prepared and ready. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/container-apps-bicep/app.js
-          dest: app.js
-        - src: fixture/container-apps-bicep/package.json
-          dest: package.json
-        - src: fixture/container-apps-bicep/Dockerfile
-          dest: Dockerfile
-        - src: fixture/container-apps-bicep/azure.yaml
-          dest: azure.yaml
-        - src: fixture/container-apps-bicep/infra/main.bicep
-          dest: infra/main.bicep
-        - src: fixture/container-apps-bicep/infra/abbreviations.json
-          dest: infra/abbreviations.json
-        - src: fixture/container-apps-bicep/infra/resources.bicep
-          dest: infra/resources.bicep
-        - src: fixture/container-apps-bicep/infra/main.parameters.json
-          dest: infra/main.parameters.json
+    prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -500,6 +359,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -522,15 +382,7 @@ stimuli:
 
   # Jest: "creates whiteboard application with Terraform"
   - name: "Deploy SWA - Whiteboard App (Terraform)"
-    prompt: "My static whiteboard web app is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/swa-terraform/index.html
-          dest: index.html
-        - src: fixture/swa-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/swa-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a static whiteboard web app and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -548,6 +400,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -563,15 +416,7 @@ stimuli:
 
   # Jest: "creates static portfolio website with Terraform infrastructure"
   - name: "Deploy SWA - Portfolio Website (Terraform)"
-    prompt: "My static portfolio website is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/swa-terraform/index.html
-          dest: index.html
-        - src: fixture/swa-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/swa-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a static portfolio website and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -589,6 +434,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -609,17 +455,7 @@ stimuli:
 
   # Jest: "creates discussion board with Terraform"
   - name: "Deploy App Service - Discussion Board (Terraform)"
-    prompt: "My Node.js discussion board application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/app-service-terraform/app.js
-          dest: app.js
-        - src: fixture/app-service-terraform/package.json
-          dest: package.json
-        - src: fixture/app-service-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/app-service-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a discussion board application and deploy it to Azure App Service, prefer Terraform over Bicep, in my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -637,6 +473,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -652,17 +489,7 @@ stimuli:
 
   # Jest: "creates todo list with frontend and API using Terraform"
   - name: "Deploy App Service - Todo List (Terraform)"
-    prompt: "My Node.js todo list application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/app-service-terraform/app.js
-          dest: app.js
-        - src: fixture/app-service-terraform/package.json
-          dest: package.json
-        - src: fixture/app-service-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/app-service-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform in my current subscription in the westus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -680,6 +507,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -700,15 +528,7 @@ stimuli:
 
   # Jest: "creates serverless HTTP API with Terraform"
   - name: "Deploy Azure Functions - Serverless HTTP API (Terraform)"
-    prompt: "My Azure Functions serverless HTTP API is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/functions-terraform/host.json
-          dest: host.json
-        - src: fixture/functions-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/functions-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -725,6 +545,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -740,15 +561,7 @@ stimuli:
 
   # Jest: "creates event-driven function app with Terraform"
   - name: "Deploy Azure Functions - Event-Driven (Terraform)"
-    prompt: "My event-driven Azure Functions app is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/functions-terraform/host.json
-          dest: host.json
-        - src: fixture/functions-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/functions-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create an event-driven function app to process messages and deploy it to Azure Functions using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -765,6 +578,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -780,15 +594,7 @@ stimuli:
 
   # Jest: "creates URL shortener service with Terraform infrastructure"
   - name: "Deploy Azure Functions - URL Shortener (Terraform)"
-    prompt: "My Azure Functions URL shortener service is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/functions-terraform/host.json
-          dest: host.json
-        - src: fixture/functions-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/functions-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -805,6 +611,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -819,19 +626,7 @@ stimuli:
 
   # Jest: "creates containerized web application with Terraform"
   - name: "Deploy Container Apps - Containerized Web App (Terraform)"
-    prompt: "My containerized web application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/container-apps-terraform/app.js
-          dest: app.js
-        - src: fixture/container-apps-terraform/package.json
-          dest: package.json
-        - src: fixture/container-apps-terraform/Dockerfile
-          dest: Dockerfile
-        - src: fixture/container-apps-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/container-apps-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a containerized web application and deploy it to Azure Container Apps using terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -848,6 +643,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -877,19 +673,7 @@ stimuli:
 
   # Jest: "creates simple containerized Node.js app with Terraform"
   - name: "Deploy Container Apps - Node.js App (Terraform)"
-    prompt: "My containerized Node.js application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/container-apps-terraform/app.js
-          dest: app.js
-        - src: fixture/container-apps-terraform/package.json
-          dest: package.json
-        - src: fixture/container-apps-terraform/Dockerfile
-          dest: Dockerfile
-        - src: fixture/container-apps-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/container-apps-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -906,6 +690,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -923,19 +708,7 @@ stimuli:
 
   # Jest: "creates social media application with Terraform infrastructure"
   - name: "Deploy Container Apps - Social Media App (Terraform)"
-    prompt: "My containerized social media application is prepared with Terraform infrastructure and ready to deploy. Deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
-    environment:
-      files:
-        - src: fixture/container-apps-terraform/app.js
-          dest: app.js
-        - src: fixture/container-apps-terraform/package.json
-          dest: package.json
-        - src: fixture/container-apps-terraform/Dockerfile
-          dest: Dockerfile
-        - src: fixture/container-apps-terraform/azure.yaml
-          dest: azure.yaml
-        - src: fixture/container-apps-terraform/infra/main.tf
-          dest: infra/main.tf
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
     constraints:
       max_turns: 50
     tags:
@@ -952,6 +725,7 @@ stimuli:
       - type: skill-invocation
         config:
           required:
+            - azure-prepare
             - azure-deploy
       - type: tool-calls
         config:
@@ -1160,7 +934,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # Jest: "deploys aspire container build"
-  # Checks Container Apps two-phase Bicep pattern generated by azure-prepare.
+  # Checks Container Apps two-phase Bicep pattern in the agent-generated workspace.
   - name: "Brownfield .NET Aspire - Container Build"
     prompt: >-
       Please deploy this application to Azure.
@@ -1202,7 +976,7 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
-      # Verify Container Apps two-phase Bicep pattern (generated by azure-prepare)
+      # Verify Container Apps two-phase Bicep pattern in the agent-generated workspace
       - type: file-matches
         config:
           path: "**/*.bicep"
