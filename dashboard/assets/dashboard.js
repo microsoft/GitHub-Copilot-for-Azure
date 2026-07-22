@@ -7,6 +7,40 @@
 /** @type {Record<string, (section: HTMLElement, category: object) => void>} */
 const panelRenderers = {};
 
+const AVAILABLE_PLUGINS = ["azure-skills", "cat"];
+const PLUGIN_SESSION_STORAGE_KEY = "dashboard.selectedPlugin";
+
+function getPersistedPluginSelection() {
+  try {
+    const persisted = window.sessionStorage.getItem(PLUGIN_SESSION_STORAGE_KEY);
+    if (persisted && AVAILABLE_PLUGINS.includes(persisted)) {
+      return persisted;
+    }
+  } catch {
+    // Ignore unavailable sessionStorage and fall back to the default.
+  }
+  return AVAILABLE_PLUGINS[0];
+}
+
+function persistPluginSelection(plugin) {
+  if (!AVAILABLE_PLUGINS.includes(plugin)) return;
+  try {
+    window.sessionStorage.setItem(PLUGIN_SESSION_STORAGE_KEY, plugin);
+  } catch {
+    // Ignore unavailable sessionStorage; the UI can still function locally.
+  }
+}
+
+function initPluginSelector() {
+  const select = document.getElementById("plugin-select");
+  if (!select) return;
+
+  select.value = getPersistedPluginSelection();
+  select.addEventListener("change", function () {
+    persistPluginSelection(select.value);
+  });
+}
+
 // ── Thresholds ──────────────────────────────────────────────────────────────
 
 /** Minimum passing rate for skill invocation tests (0–1). */
@@ -1265,7 +1299,7 @@ function renderE2EPassRatePanel(
       barFill.setAttribute(
         "aria-label",
         skill.skillName + ": " + pct + "% e2e pass rate (" +
-          (status === "pass" ? "above" : "below") + " " + E2E_THRESHOLD_PCT + "% threshold)",
+        (status === "pass" ? "above" : "below") + " " + E2E_THRESHOLD_PCT + "% threshold)",
       );
 
       // Threshold marker — hidden from AT; sr-only sibling communicates the threshold
@@ -1420,7 +1454,7 @@ function renderConfidenceLevelPanel(
       barFill.setAttribute(
         "aria-label",
         skill.skillName + ": " + pct + "% confidence level (" +
-          (status === "pass" ? "above" : "below") + " " + CONFIDENCE_THRESHOLD_PCT + "% threshold)",
+        (status === "pass" ? "above" : "below") + " " + CONFIDENCE_THRESHOLD_PCT + "% threshold)",
       );
 
       const marker = el("div", "e2e-rate-threshold-marker");
@@ -1594,7 +1628,7 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
     ? "No data"
     : failing > 0
       ? failing + " scenario" + (failing !== 1 ? "s" : "") + " failed (\u22653 retries)"
-        + (warning > 0 ? ", " + warning + " warned" : "")
+      + (warning > 0 ? ", " + warning + " warned" : "")
       : withRetries > 0
         ? withRetries + " scenario" + (withRetries !== 1 ? "s" : "") + " needed retries"
         : "No retries \u2014 all scenarios passed first try";
@@ -1801,6 +1835,7 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  initPluginSelector();
   init();
   loadSkillInvocationRates();
   loadE2EPassRates();

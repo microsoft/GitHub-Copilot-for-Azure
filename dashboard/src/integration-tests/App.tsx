@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 import { apiUrl, pageUrl } from "../shared/apiUrl";
+import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
 
 interface TestCase {
     testName: string;
@@ -235,6 +236,7 @@ function formatTestName(name: string): string {
 }
 
 function App() {
+    const [selectedPlugin, setSelectedPlugin] = useState<string>(getPersistedPluginSelection);
     const [dates, setDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [testResults, setTestResults] = useState<SkillTestResults | null>(null);
@@ -296,6 +298,11 @@ function App() {
             <header className="it-header">
                 <h1>Integration Tests{selectedDate ? ` \u2014 ${selectedDate}` : ""}</h1>
             </header>
+
+            <PluginSelector
+                selectedPlugin={selectedPlugin}
+                onChange={setSelectedPlugin}
+            />
 
             <div className={`it-body${panelOpen ? " it-body-with-panel" : ""}`}>
                 {/* Left panel - date list */}

@@ -1,0 +1,58 @@
+.plugin-toolbar {
+    padding: 0.875rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+}
+
+.plugin-toolbar__content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.plugin-toolbar__field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.plugin-toolbar__label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.plugin-toolbar__select {
+    min-width: 220px;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-size: 0.9rem;
+}
+
+.plugin-toolbar__select:focus {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .plugin-toolbar {
+        padding: 0.875rem 1rem;
+    }
+
+    .plugin-toolbar__field {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.4rem;
+    }
+
+    .plugin-toolbar__select {
+        min-width: 0;
+        width: 100%;
+    }
+}
