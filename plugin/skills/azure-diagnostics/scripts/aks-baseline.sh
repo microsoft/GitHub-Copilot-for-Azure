@@ -30,22 +30,30 @@ SUBSCRIPTION=""
 
 usage() {
     echo "Usage: $0 -g <resource-group> -n <cluster> [--namespace <ns>] [--subscription <id>]" >&2
-    exit 1
+    exit "${1:-1}"
+}
+
+require_value() {
+    # require_value <option-name> <remaining-arg-count>
+    if [ "$2" -lt 2 ]; then
+        echo "Missing value for $1" >&2
+        usage 1
+    fi
 }
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        -g|--resource-group) RESOURCE_GROUP="${2:-}"; shift 2 ;;
-        -n|--cluster) CLUSTER="${2:-}"; shift 2 ;;
-        --namespace) NAMESPACE="${2:-}"; shift 2 ;;
-        --subscription) SUBSCRIPTION="${2:-}"; shift 2 ;;
-        -h|--help) usage ;;
-        *) echo "Unknown argument: $1" >&2; usage ;;
+        -g|--resource-group) require_value "$1" "$#"; RESOURCE_GROUP="$2"; shift 2 ;;
+        -n|--cluster) require_value "$1" "$#"; CLUSTER="$2"; shift 2 ;;
+        --namespace) require_value "$1" "$#"; NAMESPACE="$2"; shift 2 ;;
+        --subscription) require_value "$1" "$#"; SUBSCRIPTION="$2"; shift 2 ;;
+        -h|--help) usage 0 ;;
+        *) echo "Unknown argument: $1" >&2; usage 1 ;;
     esac
 done
 
-[ -z "$RESOURCE_GROUP" ] && { echo "Missing required -g/--resource-group" >&2; usage; }
-[ -z "$CLUSTER" ] && { echo "Missing required -n/--cluster" >&2; usage; }
+[ -z "$RESOURCE_GROUP" ] && { echo "Missing required -g/--resource-group" >&2; usage 1; }
+[ -z "$CLUSTER" ] && { echo "Missing required -n/--cluster" >&2; usage 1; }
 
 AZ_SUB_ARGS=()
 [ -n "$SUBSCRIPTION" ] && AZ_SUB_ARGS=(--subscription "$SUBSCRIPTION")
@@ -111,7 +119,7 @@ run "kube-system pods" kubectl get pods -n kube-system -o wide
 # 7. Recent warning events -----------------------------------------------------
 section "7. Recent warning events (last 40, sorted by time)"
 run "warning events" bash -c \
-    "kubectl get events -A --field-selector=type=Warning --sort-by=.lastTimestamp 2>/dev/null | tail -n 40"
+    "set -o pipefail; kubectl get events -A --field-selector=type=Warning --sort-by=.lastTimestamp 2>/dev/null | tail -n 40"
 
 # 8. Namespace pod overview (optional) ----------------------------------------
 if [ -n "$NAMESPACE" ]; then

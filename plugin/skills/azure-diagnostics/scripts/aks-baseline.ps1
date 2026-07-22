@@ -29,13 +29,25 @@
     .\aks-baseline.ps1 -ResourceGroup my-rg -Cluster my-cluster -Namespace payments
 #>
 param(
-    [Parameter(Mandatory)][Alias("g")][string]$ResourceGroup,
-    [Parameter(Mandatory)][Alias("n")][string]$Cluster,
+    [Alias("g")][string]$ResourceGroup,
+    [Alias("n")][string]$Cluster,
     [string]$Namespace,
     [string]$Subscription
 )
 
-$ErrorActionPreference = "Continue"
+function Show-Usage($exitCode) {
+    Write-Host "Usage: .\aks-baseline.ps1 -ResourceGroup <resource-group> -Cluster <cluster> [-Namespace <ns>] [-Subscription <id>]"
+    exit $exitCode
+}
+
+if (-not $ResourceGroup) {
+    Write-Error "Missing required -ResourceGroup. Provide the resource group containing the AKS cluster."
+    Show-Usage 1
+}
+if (-not $Cluster) {
+    Write-Error "Missing required -Cluster. Provide the AKS cluster name."
+    Show-Usage 1
+}
 
 $azSubArgs = @()
 if ($Subscription) { $azSubArgs = @("--subscription", $Subscription) }
