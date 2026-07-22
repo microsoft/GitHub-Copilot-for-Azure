@@ -8,6 +8,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../shared/apiUrl";
+import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
 import { issuesUrl } from "./issuesUrl";
 import {
     buildDaySeries,
@@ -194,6 +195,7 @@ function TestGraphs({ testName, rows }: { testName: string; rows: MetricsRow[] }
 }
 
 export default function App() {
+    const [selectedPlugin, setSelectedPlugin] = useState<string>(getPersistedPluginSelection);
     const [skills, setSkills] = useState<Skill[]>([]);
     const [selected, setSelected] = useState<string>("");
     const [rows, setRows] = useState<MetricsRow[]>([]);
@@ -267,96 +269,103 @@ export default function App() {
     };
 
     return (
-        <div className="skills-layout" id="main">
-            <aside className="skills-sidebar" aria-label="Skills">
-                <h2 className="skills-sidebar-title">Skills</h2>
-                {skillsLoading && <p className="skills-muted">Loading…</p>}
-                {skillsError && <p className="skills-error">{skillsError}</p>}
-                <ul className="skills-list">
-                    {skills.map((s) => (
-                        <li key={s.name}>
-                            <button
-                                type="button"
-                                className={
-                                    "skills-list-item" + (s.name === selected ? " active" : "")
-                                }
-                                aria-current={s.name === selected ? "true" : undefined}
-                                onClick={() => handleSelect(s.name)}
-                            >
-                                {s.name}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-                {!skillsLoading && !skillsError && skills.length === 0 && (
-                    <p className="skills-muted">No skills found.</p>
-                )}
-            </aside>
+        <div id="main">
+            <PluginSelector
+                selectedPlugin={selectedPlugin}
+                onChange={setSelectedPlugin}
+            />
 
-            <main className="skills-detail">
-                {!selectedSkill && !skillsLoading && (
-                    <p className="skills-muted">Select a skill to see details.</p>
-                )}
-                {selectedSkill && (
-                    <>
-                        <header className="skills-detail-header">
-                            <h1>{selectedSkill.name}</h1>
-                            <p className="skills-description">
-                                {selectedSkill.description || <em>No description.</em>}
-                            </p>
-                            <p className="skills-desc-length">
-                                Description length: {selectedSkill.descriptionLength} characters
-                            </p>
-                            <p className="skills-file-count">
-                                Files: {selectedSkill.fileCount}
-                            </p>
-                            {selectedSkillMdUrl && (
-                                <p className="skills-source-link">
+            <div className="skills-layout">
+                <aside className="skills-sidebar" aria-label="Skills">
+                    <h2 className="skills-sidebar-title">Skills</h2>
+                    {skillsLoading && <p className="skills-muted">Loading…</p>}
+                    {skillsError && <p className="skills-error">{skillsError}</p>}
+                    <ul className="skills-list">
+                        {skills.map((s) => (
+                            <li key={s.name}>
+                                <button
+                                    type="button"
+                                    className={
+                                        "skills-list-item" + (s.name === selected ? " active" : "")
+                                    }
+                                    aria-current={s.name === selected ? "true" : undefined}
+                                    onClick={() => handleSelect(s.name)}
+                                >
+                                    {s.name}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                    {!skillsLoading && !skillsError && skills.length === 0 && (
+                        <p className="skills-muted">No skills found.</p>
+                    )}
+                </aside>
+
+                <main className="skills-detail">
+                    {!selectedSkill && !skillsLoading && (
+                        <p className="skills-muted">Select a skill to see details.</p>
+                    )}
+                    {selectedSkill && (
+                        <>
+                            <header className="skills-detail-header">
+                                <h1>{selectedSkill.name}</h1>
+                                <p className="skills-description">
+                                    {selectedSkill.description || <em>No description.</em>}
+                                </p>
+                                <p className="skills-desc-length">
+                                    Description length: {selectedSkill.descriptionLength} characters
+                                </p>
+                                <p className="skills-file-count">
+                                    Files: {selectedSkill.fileCount}
+                                </p>
+                                {selectedSkillMdUrl && (
+                                    <p className="skills-source-link">
+                                        <a
+                                            href={selectedSkillMdUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            View SKILL.md
+                                        </a>
+                                    </p>
+                                )}
+                                <p className="skills-issues-link">
                                     <a
-                                        href={selectedSkillMdUrl}
+                                        href={issuesUrl(selectedSkill.name)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title={`Open issues for ${selectedSkill.name} in a new tab`}
+                                    >
+                                        View open issues for {selectedSkill.name} ↗
+                                    </a>
+                                </p>
+                                <p className="skills-telemetry">
+                                    <a
+                                        className="skills-telemetry-link"
+                                        href={telemetryUrl(selectedSkill.name)}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
-                                        View SKILL.md
+                                        View telemetry ↗
                                     </a>
                                 </p>
-                            )}
-                            <p className="skills-issues-link">
-                                <a
-                                    href={issuesUrl(selectedSkill.name)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    title={`Open issues for ${selectedSkill.name} in a new tab`}
-                                >
-                                    View open issues for {selectedSkill.name} ↗
-                                </a>
-                            </p>
-                            <p className="skills-telemetry">
-                                <a
-                                    className="skills-telemetry-link"
-                                    href={telemetryUrl(selectedSkill.name)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    View telemetry ↗
-                                </a>
-                            </p>
-                        </header>
+                            </header>
 
-                        <h2 className="skills-tests-heading">
-                            Tests — last {WINDOW_DAYS} days (main)
-                        </h2>
-                        {rowsLoading && <p className="skills-muted">Loading metrics…</p>}
-                        {rowsError && <p className="skills-error">{rowsError}</p>}
-                        {!rowsLoading && !rowsError && byTest.size === 0 && (
-                            <p className="skills-muted">No test runs found for this skill.</p>
-                        )}
-                        {[...byTest.entries()].map(([testName, testRows]) => (
-                            <TestGraphs key={testName} testName={testName} rows={testRows} />
-                        ))}
-                    </>
-                )}
-            </main>
+                            <h2 className="skills-tests-heading">
+                                Tests — last {WINDOW_DAYS} days (main)
+                            </h2>
+                            {rowsLoading && <p className="skills-muted">Loading metrics…</p>}
+                            {rowsError && <p className="skills-error">{rowsError}</p>}
+                            {!rowsLoading && !rowsError && byTest.size === 0 && (
+                                <p className="skills-muted">No test runs found for this skill.</p>
+                            )}
+                            {[...byTest.entries()].map(([testName, testRows]) => (
+                                <TestGraphs key={testName} testName={testName} rows={testRows} />
+                            ))}
+                        </>
+                    )}
+                </main>
+            </div>
         </div>
     );
 }
