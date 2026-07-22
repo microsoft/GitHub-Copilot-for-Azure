@@ -24,7 +24,7 @@ function getEvalTableClient(): TableClient {
 }
 
 /** Escape a value for use inside an OData string literal (single quotes are doubled). */
-function odataLiteral(value: string): string {
+function escapeOdataQuotes(value: string): string {
     return value.replace(/'/g, "''");
 }
 
@@ -44,8 +44,8 @@ async function getMsbenchEvalMetrics(request: HttpRequest, context: InvocationCo
         const tableClient = getEvalTableClient();
 
         const filters: string[] = [];
-        if (filterBenchmark) filters.push(`benchmark eq '${odataLiteral(filterBenchmark)}'`);
-        if (filterModel) filters.push(`model eq '${odataLiteral(filterModel)}'`);
+        if (filterBenchmark) filters.push(`benchmark eq '${escapeOdataQuotes(filterBenchmark)}'`);
+        if (filterModel) filters.push(`model eq '${escapeOdataQuotes(filterModel)}'`);
         if (filterResolved === "1" || filterResolved === "0") filters.push(`resolved eq ${Number(filterResolved)}`);
         const filter = filters.length > 0 ? filters.join(" and ") : undefined;
 
