@@ -6,40 +6,26 @@ For the variant where you own the OAuth app (BYO `client_id` / `client_secret`),
 
 > 🚦 Before creating a toolbox/connection, read [create-hosted.md → Toolbox creation boundary](../../create/create-hosted.md#toolbox-creation-boundary).
 
-**Flow at a glance:**
-
-1. **List the managed-OAuth connectors** — run the discovery script with `--managed-only` — [Getting the catalog inputs](#getting-the-catalog-inputs).
-2. **Check the user's connector is in that list.** If so, take its `connectorName` / `toolEntityId` / `serverUrl` from the row. If **not** listed, this reference doesn't apply — the connector is BYO-OAuth ([tool-mcp-custom-oauth.md](tool-mcp-custom-oauth.md)), key-auth ([tool-mcp-key-auth.md](tool-mcp-key-auth.md)), or no-auth ([tool-mcp-noauth.md](tool-mcp-noauth.md)); switch references.
-3. **Create the connection + toolbox** — no client id/secret; Foundry brokers the app — [A. Imperative CLI](#a-imperative-cli) (or [B. Declarative](#b-declarative-azureyaml)).
-4. **Verify** — the first `tools/list` returns a one-time consent URL (`-32006`); open it, sign in, retry — [Verify](#verify).
-
 There is **no redirect-URI round-trip** and **no `client_secret`** to manage — the two things the managed flow removes versus [tool-mcp-custom-oauth.md](tool-mcp-custom-oauth.md).
 
 ---
 
 # Getting the catalog inputs
 
-**Step 1 — list the connectors Foundry can broker OAuth for**, then **check the user's is in that list**. Run the discovery script with `--managed-only`; each row is a usable connector:
+**Only the MCP tiles this query returns support managed OAuth.** Run the discovery script with `--managed-oauth` — it lists exactly the tiles you can attach with this reference:
 
 ```bash
-../scripts/get-catalog-inputs.sh github --managed-only     # bash
-pwsh ../scripts/get-catalog-inputs.ps1 github -ManagedOnly  # PowerShell
+../scripts/get-catalog-inputs.sh --managed-oauth      # bash
+pwsh ../scripts/get-catalog-inputs.ps1 -ManagedOAuth  # PowerShell
 ```
 
-Drop `--managed-only` / `-ManagedOnly` to see every match with a `managedOAuth: true|false` column (to confirm *why* a wanted connector is excluded). Each managed row also reports `identityProvider` and default `scopes`.
-
-- **User's connector is listed** → take its `connectorName`, `toolEntityId`, and `serverUrl` and continue to [A. Imperative CLI](#a-imperative-cli).
-- **Not listed** → this reference doesn't apply — BYO-OAuth ([tool-mcp-custom-oauth.md](tool-mcp-custom-oauth.md)), key-auth ([tool-mcp-key-auth.md](tool-mcp-key-auth.md)), or no-auth ([tool-mcp-noauth.md](tool-mcp-noauth.md)); switch references.
-
-The two connection inputs the row gives you: the **MCP server URL** (→ `--target`) and **`toolEntityId`** (→ `--metadata`).
-
-> ⚠️ **`serverUrl` is often empty** — `remotes[].url` is `null` for many tiles. When empty, supply the connector's **documented** MCP endpoint as `--target` (e.g. github Copilot → `https://api.githubcopilot.com/mcp`). The script still recovers `toolEntityId` + `connectorName` reliably.
+Find the user's tile in the output and take the `connectorName`, `toolEntityId`, and `serverUrl` it prints for the CLI below. **If the tile is not in this list, managed OAuth does not apply to it** — it uses a different auth mode.
 
 ---
 
 # A. Imperative CLI
 
-Steps 1–3 of [toolbox.md § The flow](../toolbox.md#the-flow). Managed OAuth maps to `azd ai connection create --auth-type oauth2` **with `--connector-name` and `--metadata`, but NO `--client-id` / `--client-secret`** — omitting the client credentials selects the Foundry-managed app (leaving them off sends empty `credentials: {}`).
+Steps 1–3 of [toolbox.md § The flow](../toolbox.md#the-flow). Managed OAuth maps to `azd ai connection create --auth-type oauth2` **with `--connector-name` and `--metadata`, but NO `--client-id` / `--client-secret`** — omitting the client credentials selects the Foundry-managed app (sends empty `credentials: {}`).
 
 ```bash
 # 0. Install the CLI extension (once)
@@ -50,9 +36,9 @@ azd ai connection create github-mcp-managed \
   --kind remote-tool \
   --target https://api.githubcopilot.com/mcp \
   --auth-type oauth2 \
-  --connector-name github \
+  --connector-name foundrygithubmcp \
   --metadata type=catalog_MCP \
-  --metadata toolEntityId=azureml://location/eastus/apiCenter/connectors-registry-prod-bl/type/tools/objectId/github \
+  --metadata toolEntityId=azureml://location/eastus/apiCenter/registry-prod-bl/type/tools/objectId/github-mcp-server/version/1 \
   --project-endpoint "$FOUNDRY_PROJECT_ENDPOINT"
 
 # Write the toolbox spec to a file (create takes a --from-file PATH; stdin '-' not supported)

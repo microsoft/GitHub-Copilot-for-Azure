@@ -4,9 +4,20 @@ Attach a remote MCP server that authenticates with the **caller's own Entra iden
 
 Use this when the MCP server enforces per-user permissions off the caller's Entra identity (e.g. Microsoft 365 / Graph-backed services). [Work IQ](tool-work-iq.md) is a concrete, preview instance of this pattern.
 
-> Not supported when the agent is published to Teams. Each caller's token is scoped to the `--audience` you set (the upstream resource URI / app id).
-
 > 🚦 Before creating a toolbox/connection either way, read [create-hosted.md → Toolbox creation boundary](../../create/create-hosted.md#toolbox-creation-boundary).
+
+---
+
+# Getting the catalog inputs
+
+**Only the MCP tiles this query returns support user-entra-token.** Run the discovery script with `--user-entra-token` — it lists exactly the tiles you can attach with this reference, each with the **`audience`** its connection needs:
+
+```bash
+../scripts/get-catalog-inputs.sh --user-entra-token      # bash
+pwsh ../scripts/get-catalog-inputs.ps1 -UserEntraToken   # PowerShell
+```
+
+**If the tile is not in this list, user-entra-token does not apply to it** — it uses a different auth mode.
 
 ---
 
