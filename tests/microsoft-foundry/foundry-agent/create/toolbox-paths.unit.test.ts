@@ -80,7 +80,7 @@ describe("foundry-agent toolbox sub-skill", () => {
     }
   });
 
-  test("locks down the MCP endpoint and tool-naming facts", async () => {
+  test("locks down the MCP endpoint facts", async () => {
     const toolbox = await readSkillFile(TOOLBOX_ENTRY);
 
     expect(toolbox).toContain("?api-version=v1");
@@ -88,8 +88,15 @@ describe("foundry-agent toolbox sub-skill", () => {
     expect(toolbox).toContain(
       "/toolboxes/{toolbox_name}/versions/{version}/mcp?api-version=v1",
     );
-    expect(toolbox).toContain("{server_label}___{tool_name}");
-    expect(toolbox).toContain("three underscores");
     expect(toolbox).toContain("https://ai.azure.com/.default");
+  });
+
+  test("locks down the tool-naming facts in mcp-protocol.md", async () => {
+    const mcpProtocol = await readSkillFile(
+      "foundry-agent/toolbox/references/mcp-protocol.md",
+    );
+
+    expect(mcpProtocol).toContain("{server_label}___{tool_name}");
+    expect(mcpProtocol).toContain("three underscores");
   });
 });
