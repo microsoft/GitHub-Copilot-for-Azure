@@ -26,11 +26,14 @@
     # Also probes Event Hubs Kafka port 9093
 #>
 param(
-    [Parameter(Mandatory)][string]$Namespace,
+    [string]$Namespace,
     [switch]$Kafka
 )
 
-$ErrorActionPreference = "Stop"
+if ([string]::IsNullOrWhiteSpace($Namespace)) {
+    Write-Error "Namespace is required. Usage: test-messaging-connectivity.ps1 -Namespace <namespace> [-Kafka]"
+    exit 2
+}
 
 # Accept a bare namespace name or a full FQDN.
 $fqdn = if ($Namespace -like "*.*") { $Namespace } else { "$Namespace.servicebus.windows.net" }
