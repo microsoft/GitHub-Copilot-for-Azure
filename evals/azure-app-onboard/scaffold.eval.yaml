@@ -57,7 +57,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -127,7 +127,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -175,7 +175,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -225,7 +225,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -280,7 +280,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q
@@ -378,7 +378,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)?(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
         - git init -q

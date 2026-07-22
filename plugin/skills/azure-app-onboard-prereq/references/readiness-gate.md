@@ -37,7 +37,7 @@
 
 ⛔ **Verdict propagation cross-check** before computing `overallHealth`:
 1. Any finding with `verdict: "FAIL"` → axis verdict MUST be `"FAIL"`.
-2. Any finding with `verdict: "WARN"` + `fixPhase: "prereq"` → escalate to `"FAIL"` (prevents wasting a deploy cycle).
+2. Any finding with `verdict: "WARN"` + `fixPhase: "prereq"` → escalate to `"FAIL"` (prevents wasting a deploy cycle). ⛔ Escalate only WARNs that would actually break THIS deploy (build/startup failure, or a health probe wired to a route the app lacks). Issues that deploy and run fine — missing trust proxy, README, in-memory sessions — stay `fixPhase: "postdeploy"`/`"scaffold"`; `engines`/health-endpoint escalate only on a real version/probe mismatch (see [completeness-check.md](completeness-check.md) § Stack-Specific Checks).
 
 | Tiers | Reference file |
 |-------|---------------|

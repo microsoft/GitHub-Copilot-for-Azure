@@ -70,7 +70,7 @@ Scan source files for imports not in the dependency manifest. This catches pre-e
 
 **Dependency vintage check:** ALL pinned deps 5+ years old AND ecosystem has known breaking changes (e.g., `werkzeug.contrib.*` removed, `flask.ext.*` removed, `itsdangerous<1.0` API changed) → ❌ FAIL. Grep for imports from removed modules.
 
-**Transitive dependency check (post-migration):** After upgrading dependencies during 🔶 Major Migration, run install (user consent already granted) to catch transitive deps. Also run entry-point import to catch import-time validation errors (e.g., WTForms `Email()` requires `email-validator`).
+**Transitive dependency check (post-migration):** After upgrading dependencies during 🔶 Major Migration, run install **through the build-validation gate (Step 3) — the migration-intent choice does NOT authorize install; the user must answer that specific per-command consent prompt first** to catch transitive deps. Also run entry-point import to catch import-time validation errors (e.g., WTForms `Email()` requires `email-validator`).
 
 **F1 viability signal:** Check `f1Viable` per [dependency-compatibility.md § F1 Viability](dependency-compatibility.md). A vintage ❌ FAIL requiring 🔶 Major Migration (>5 files) → `f1Viable: false`.
 

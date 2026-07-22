@@ -116,7 +116,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -191,7 +191,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -260,7 +260,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -316,7 +316,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -433,7 +433,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:cloud sdk migration required|must be swapped before this app can deploy)"},{"type":"tool-call-match","toolPattern":"ask_user","argsPattern":"(?i:cloud sdk migration required|swap manually and re-run)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:cloud sdk migration required|must be swapped before this app can deploy)"},{"type":"tool-call-match","toolPattern":"ask_user","argsPattern":"(?i:cloud sdk migration required|swap manually and re-run)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -502,7 +502,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -533,9 +533,12 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)found|detected|discovered|scan"
+      # Service Mapping is a prepare-phase test — assert the stack surfaced in prepare-plan.json
+      # (the artifact this flow produces), not prereq-output.json (a prior phase a "which service?"
+      # prompt legitimately skips).
       - type: file-matches
         config:
-          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
           pattern: "(?i)django|python"
       - type: output-not-matches
         config:
@@ -563,7 +566,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q

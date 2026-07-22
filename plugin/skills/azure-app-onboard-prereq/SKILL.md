@@ -28,6 +28,7 @@ Phase 1 of 4 in AppOnboard pipeline. Session: `.copilot-azure/sessions/{session-
 
 > ⛔ **ABSOLUTE PROHIBITION — `npm install`, `npm test`, `npx jest`, `pytest`, and ALL install/build/test commands are NEVER allowed.**
 > Under NO circumstances may you run `npm install`, `npm test`, `npx jest`, `pip install`, `pytest`, `dotnet build`, `dotnet restore`, `dotnet test`, `go mod download`, `cargo build`, or ANY package-manager install, build, or test command during the prereq phase. Do NOT run test suites to verify code — check for test config files statically instead. The prereq phase is read-only evaluation + static-only verification.
+> **ONLY exception — two sanctioned contexts, both consent-gated:** (a) code the agent **modified** during migration/remediation (see [remediation-protocol.md](references/remediation-protocol.md) step 6), or (b) code the agent **wrote** from scratch on the zero-code path (see [zero-code-path.md](references/zero-code-path.md)). In either case, install/build/test runs ONLY via the user-confirmed build-validation gate ([build-check.md](references/build-check.md) Step 3), after the user answers that specific per-command consent prompt. General prior consent never counts.
 
 1. ⛔ **Full pipeline (Steps 1–8), no exceptions.** All prompts → Step 1 directly. Answer specific questions AS PART OF findings (Step 5), not before.
 2. ⛔ **No sub-agents for evaluation.** 3-axis evaluation is inline. **Exception**: zero-code-path scaffolding (Step 2).

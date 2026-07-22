@@ -89,6 +89,8 @@ Verify these patterns. Assess severity with tier definitions from [readiness-gat
 - **Any web app:** health endpoint (`/health`, `/healthz`), README documentation
 - **Static sites:** health endpoint is N/A (responds 200 on `/`)
 
+> ⛔ Default these to **⚠️ WARN / `fixPhase: "postdeploy"`** — an app that deploys and runs (missing trust proxy, README, in-memory sessions) is **not** `blocked`. Escalate to ❌ FAIL / `prereq` only when the case actually breaks THIS deploy: `engines` when the app needs a runtime the platform default won't provide, or a health endpoint when a probe is wired to a route the app lacks.
+
 > **Do not short-circuit.** Iterate ALL sub-checks (1–7 + stack-specific) per component.
 
 Severity tiers are defined in [readiness-gate.md](readiness-gate.md). Use the verdict tables in checks 1–7 above for deterministic outcomes. For judgment calls, assess based on deployment impact to this specific app.
