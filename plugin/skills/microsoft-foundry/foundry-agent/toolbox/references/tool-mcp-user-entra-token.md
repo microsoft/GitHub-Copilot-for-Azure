@@ -1,4 +1,4 @@
-# Tool — Remote MCP server, Entra passthrough (`type: mcp`)
+# Tool — Remote MCP server, user Entra token (`type: mcp`, auth `UserEntraToken`)
 
 Attach a remote MCP server that authenticates with the **caller's own Entra identity** — the platform forwards the signed-in user's Entra token to the MCP server (auth type `UserEntraToken`), so the server sees the **end user**, not a shared credential. No BYO app registration, client secret, or OAuth consent flow. Needs a **connection** (`--kind remote-tool --auth-type user-entra-token`) scoped to the upstream resource via `--audience`; the toolbox references it by name and the created tool carries a populated `project_connection_id`.
 
@@ -18,7 +18,7 @@ Steps 1–3 of [toolbox.md § The flow](../toolbox.md#the-flow). Write the toolb
 # 0. Install the CLI extension (once)
 azd extension install azure.ai.toolboxes
 
-# 1. Create the Entra-passthrough MCP connection (no secret; audience scopes the forwarded token)
+# 1. Create the user-entra-token MCP connection (no secret; audience scopes the forwarded token)
 azd ai connection create entra-mcp-conn \
   --kind remote-tool --target https://<mcp-host>/mcp \
   --auth-type user-entra-token \
@@ -27,7 +27,7 @@ azd ai connection create entra-mcp-conn \
 
 # Write the toolbox spec to a file
 cat > entra-mcp.yaml <<'EOF'
-description: entra-passthrough mcp toolbox
+description: user-entra-token mcp toolbox
 connections:
   - name: entra-mcp-conn
 EOF
@@ -61,7 +61,7 @@ connections:
 
 # B. Declarative `azure.yaml`
 
-Declare the toolbox as a `host: azure.ai.toolbox` service; `azd deploy` upserts it (and auto-promotes the new version). Create the Entra-passthrough connection first (section A, step 1), then reference it under `tools:` by its **name** via `project_connection_id`.
+Declare the toolbox as a `host: azure.ai.toolbox` service; `azd deploy` upserts it (and auto-promotes the new version). Create the user-entra-token connection first (section A, step 1), then reference it under `tools:` by its **name** via `project_connection_id`.
 
 ```yaml
 name: my-agent-project
@@ -102,6 +102,6 @@ After creating the toolbox either way, verify its MCP endpoint end-to-end (beare
 
 ## References
 
-- [tool-work-iq.md](tool-work-iq.md) — a concrete, verified Entra-passthrough MCP server (Microsoft 365 Work IQ)
+- [tool-work-iq.md](tool-work-iq.md) — a concrete, verified user-entra-token MCP server (Microsoft 365 Work IQ)
 - [MCP tool documentation](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/mcp)
 - [toolbox.md § Supported tool types](../toolbox.md#supported-tool-types)

@@ -1,5 +1,11 @@
 # Toolbox MCP protocol, tool naming & testing
 
+## Endpoint URL details
+- **Consumer** — `{project_endpoint}/toolboxes/{toolbox_name}/mcp?api-version=v1`. Always serves the `default_version`. Connect agents here so promoting a version needs no redeploy.
+- **Developer** — `{project_endpoint}/toolboxes/{toolbox_name}/versions/{version}/mcp?api-version=v1`. Test a specific version before promoting.
+- `?api-version=v1` is **required** — requests without it return HTTP 400.
+- Auth: bearer token with scope `https://ai.azure.com/.default`.
+
 ## MCP protocol
 
 Toolboxes use **Model Context Protocol (MCP)** — JSON-RPC 2.0 over HTTP POST:
