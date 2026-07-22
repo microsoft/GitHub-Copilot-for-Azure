@@ -316,4 +316,81 @@ describe("frontmatterCollector.collect", () => {
     expect(report.status).toBe("skip");
     expect(report.summary.total).toBe(0);
   });
+
+  it("populates metadata.fileCount from the built skill directory (recursive, incl. nested)", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "fm-filecount-"));
+    // Built skill: output/skills/skill-a with 2 own files + a nested sub-skill
+    // that contributes 2 more, so the recursive count is 4.
+    const skillDir = join(root, "output", "skills", "skill-a");
+    const nestedDir = join(skillDir, "nested");
+    mkdirSync(nestedDir, { recursive: true });
+    writeFileSync(join(skillDir, "SKILL.md"), "a");
+    writeFileSync(join(skillDir, "version.json"), "b");
+    writeFileSync(join(nestedDir, "SKILL.md"), "c");
+    writeFileSync(join(nestedDir, "notes.md"), "d");
+
+    const jsonOutput = makeFrontmatterJson({
+      skills: [
+        {
+          name: "skill-a",
+          path: "output/skills/skill-a/SKILL.md",
+          status: "pass",
+          errors: [],
+          warnings: [],
+          checks: {},
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, warnings: 0 },
+    });
+
+    vi.doMock("node:child_process", () => ({
+      execSync: () => jsonOutput,
+    }));
+
+    const { frontmatterCollector } = await import(
+      "../../collectors/frontmatter.js"
+    );
+
+    const report = await frontmatterCollector.collect({
+      cwd: root,
+      timeout: 5000,
+    });
+
+    expect(report.items[0].metadata?.fileCount).toBe(4);
+  });
+
+  it("sets fileCount to 0 when the skill directory is missing", async () => {
+    const jsonOutput = makeFrontmatterJson({
+      skills: [
+        {
+          name: "gone",
+          path: "output/skills/gone/SKILL.md",
+          status: "pass",
+          errors: [],
+          warnings: [],
+          checks: {},
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, warnings: 0 },
+    });
+
+    vi.doMock("node:child_process", () => ({
+      execSync: () => jsonOutput,
+    }));
+
+    const { frontmatterCollector } = await import(
+      "../../collectors/frontmatter.js"
+    );
+
+    const report = await frontmatterCollector.collect({
+      cwd: "/fake",
+      timeout: 5000,
+    });
+
+    expect(report.items[0].metadata?.fileCount).toBe(0);
+  });
 });

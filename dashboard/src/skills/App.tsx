@@ -8,6 +8,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../shared/apiUrl";
+import { issuesUrl } from "./issuesUrl";
 import {
     buildDaySeries,
     groupByTest,
@@ -20,11 +21,52 @@ import {
 /** Number of trailing days shown in every graph. */
 const WINDOW_DAYS = 10;
 
+/**
+ * Build the Azure Data Explorer telemetry dashboard URL for a skill.
+ * The dashboard ID and item fragment are fixed; the skill name is passed
+ * through the `p-_selectedPluginSkill` parameter with a `v-` prefix.
+ */
+export function telemetryUrl(skillName: string): string {
+    const base = "https://dataexplorer.azure.com/dashboards/d1281268-c49e-4e82-bdc9-79e6c3c6cb43";
+    const params = new URLSearchParams({
+        "p-_startTime": "90days",
+        "p-_endTime": "now",
+        "p-_selectedPluginSkill": `v-${skillName}`,
+    });
+    return `${base}?${params}#e9eade80-7b12-49db-a865-a6d3365d03eb`;
+}
+
 /** A plugin skill with its description, as surfaced by the frontmatter collector. */
 interface Skill {
     name: string;
     description: string;
     descriptionLength: number;
+    fileCount: number;
+    /** Repo-relative path to the skill's SKILL.md, as reported by the collector. */
+    path: string;
+}
+
+/**
+ * Base URL for linking to source files in the repository.
+ * Kept as a single constant so the repo/branch is easy to change.
+ */
+const REPO_BLOB_BASE =
+    "https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main";
+
+/**
+ * Build a link to a skill's SKILL.md source file on GitHub.
+ *
+ * The frontmatter collector validates the built `output/skills/` tree, so the
+ * reported path may be prefixed with `output/`. That directory is git-ignored,
+ * so we normalize it back to the `plugin/skills/` source path. Returns null
+ * when no usable SKILL.md path is available.
+ */
+export function skillMdUrl(path: string): string | null {
+    const normalized = path.replace(/\\/g, "/").trim();
+    if (!normalized.endsWith("/SKILL.md")) return null;
+    const sourcePath = normalized.replace(/^output\/skills\//, "plugin/skills/");
+    if (!sourcePath.startsWith("plugin/skills/")) return null;
+    return `${REPO_BLOB_BASE}/${sourcePath}`;
 }
 
 /** Minimal shape of the health data returned by /api/static. */
@@ -42,7 +84,7 @@ function isPluginSkillPath(pathValue: string): boolean {
 }
 
 /** Extract plugin skills (with descriptions) from the frontmatter category. */
-function skillsFromHealthData(data: HealthData): Skill[] {
+export function skillsFromHealthData(data: HealthData): Skill[] {
     const items = data.categories?.frontmatter?.items ?? [];
     const skills: Skill[] = [];
     for (const item of items) {
@@ -50,7 +92,14 @@ function skillsFromHealthData(data: HealthData): Skill[] {
         // Only plugin skills; the frontmatter check also covers .github/skills.
         if (!isPluginSkillPath(path)) continue;
         const description = String(item.metadata?.description ?? "");
-        skills.push({ name: item.name, description, descriptionLength: description.length });
+        const fileCount = Number(item.metadata?.fileCount ?? 0);
+        skills.push({
+            name: item.name,
+            description,
+            descriptionLength: description.length,
+            fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+            path,
+        });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -204,6 +253,10 @@ export default function App() {
         () => skills.find((s) => s.name === selected),
         [skills, selected],
     );
+    const selectedSkillMdUrl = useMemo(
+        () => (selectedSkill ? skillMdUrl(selectedSkill.path) : null),
+        [selectedSkill],
+    );
     const byTest = useMemo(() => groupByTest(rows), [rows]);
 
     const handleSelect = (name: string) => {
@@ -253,6 +306,40 @@ export default function App() {
                             </p>
                             <p className="skills-desc-length">
                                 Description length: {selectedSkill.descriptionLength} characters
+                            </p>
+                            <p className="skills-file-count">
+                                Files: {selectedSkill.fileCount}
+                            </p>
+                            {selectedSkillMdUrl && (
+                                <p className="skills-source-link">
+                                    <a
+                                        href={selectedSkillMdUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View SKILL.md
+                                    </a>
+                                </p>
+                            )}
+                            <p className="skills-issues-link">
+                                <a
+                                    href={issuesUrl(selectedSkill.name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title={`Open issues for ${selectedSkill.name} in a new tab`}
+                                >
+                                    View open issues for {selectedSkill.name} ↗
+                                </a>
+                            </p>
+                            <p className="skills-telemetry">
+                                <a
+                                    className="skills-telemetry-link"
+                                    href={telemetryUrl(selectedSkill.name)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    View telemetry ↗
+                                </a>
                             </p>
                         </header>
 
