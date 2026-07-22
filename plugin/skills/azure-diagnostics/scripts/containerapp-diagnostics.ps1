@@ -16,12 +16,17 @@
     # Collects revisions, registry/ingress config, and recent logs for my-app
 #>
 param(
-    [Parameter(Mandatory)][string]$Name,
-    [Parameter(Mandatory)][string]$ResourceGroup,
+    [string]$Name,
+    [string]$ResourceGroup,
     [string]$Subscription
 )
 
 $ErrorActionPreference = "Continue"
+
+if (-not $Name -or -not $ResourceGroup) {
+    Write-Error "Usage: .\containerapp-diagnostics.ps1 -Name <app> -ResourceGroup <rg> [-Subscription <id>]"
+    exit 1
+}
 
 $subArgs = @()
 if ($Subscription) { $subArgs = @("--subscription", $Subscription) }

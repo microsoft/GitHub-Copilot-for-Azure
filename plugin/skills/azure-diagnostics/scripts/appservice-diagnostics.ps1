@@ -16,12 +16,17 @@
     # Collects config, recent deployments, app settings, and custom domains for my-app
 #>
 param(
-    [Parameter(Mandatory)][string]$Name,
-    [Parameter(Mandatory)][string]$ResourceGroup,
+    [string]$Name,
+    [string]$ResourceGroup,
     [string]$Subscription
 )
 
 $ErrorActionPreference = "Continue"
+
+if (-not $Name -or -not $ResourceGroup) {
+    Write-Error "Usage: .\appservice-diagnostics.ps1 -Name <app> -ResourceGroup <rg> [-Subscription <id>]"
+    exit 1
+}
 
 $subArgs = @()
 if ($Subscription) { $subArgs = @("--subscription", $Subscription) }

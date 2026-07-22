@@ -19,13 +19,27 @@ APP=""
 RG=""
 SUBSCRIPTION=""
 
+usage() {
+    echo "Usage: $0 --name <app> --resource-group <rg> [--subscription <id>]" >&2
+}
+
+# Requires a value to follow the given flag; errors out otherwise.
+require_value() {
+    if [ "$2" -lt 2 ]; then
+        echo "Error: option '$1' requires a value." >&2
+        usage
+        exit 1
+    fi
+}
+
 # Support both --flag and positional styles.
 POSITIONAL=()
 while [ $# -gt 0 ]; do
     case "$1" in
-        --name|-n)             APP="$2"; shift 2 ;;
-        --resource-group|-g)   RG="$2"; shift 2 ;;
-        --subscription|-s)     SUBSCRIPTION="$2"; shift 2 ;;
+        --name|-n)             require_value "$1" "$#"; APP="$2"; shift 2 ;;
+        --resource-group|-g)   require_value "$1" "$#"; RG="$2"; shift 2 ;;
+        --subscription|-s)     require_value "$1" "$#"; SUBSCRIPTION="$2"; shift 2 ;;
+        --*|-?)                echo "Error: unknown option '$1'." >&2; usage; exit 1 ;;
         *)                     POSITIONAL+=("$1"); shift ;;
     esac
 done
@@ -35,7 +49,7 @@ if [ -z "$RG" ] && [ "${#POSITIONAL[@]}" -ge 2 ]; then RG="${POSITIONAL[1]}"; fi
 if [ -z "$SUBSCRIPTION" ] && [ "${#POSITIONAL[@]}" -ge 3 ]; then SUBSCRIPTION="${POSITIONAL[2]}"; fi
 
 if [ -z "$APP" ] || [ -z "$RG" ]; then
-    echo "Usage: $0 --name <app> --resource-group <rg> [--subscription <id>]" >&2
+    usage
     exit 1
 fi
 
