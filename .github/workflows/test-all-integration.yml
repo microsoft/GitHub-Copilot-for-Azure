@@ -102,7 +102,7 @@ jobs:
               const skillsList = skillsJson.plugins
                 .map(plugin => {
                   const entry = plugin.integrationTestSchedule?.[cron];
-                  return entry ? entry.split(",").map(s => `${plugin.dirname}/s.trim()`) : [];
+                  return entry ? entry.split(",").map(s => `${plugin.dirname}/${s.trim()}`) : [];
                 })
                 .flat();
 
