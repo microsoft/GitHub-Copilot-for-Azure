@@ -285,11 +285,11 @@ stimuli:
       # Verify DTS infrastructure is present in the agent-generated workspace
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "(?i)Microsoft\\.DurableTask/schedulers"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "0ad04412-c4d5-4796-b79c-f76d14c8d402"
 
   # ═══════════════════════════════════════════
@@ -325,19 +325,19 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "(?i)Microsoft\\.App/containerApps"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "(?i)Microsoft\\.ContainerRegistry/registries"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "(?i)SystemAssigned"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
 
   # Jest: "creates simple containerized Node.js app"
@@ -368,11 +368,11 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "(?i)Microsoft\\.App/containerApps"
       - type: file-matches
         config:
-          path: "infra/resources.bicep"
+          path: "infra/**/*.bicep"
           pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
 
   # ═══════════════════════════════════════════
@@ -409,10 +409,10 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-exists
         config:
-          path: "infra/*.tf"
+          path: "infra/**/*.tf"
       - type: file-not-exists
         config:
-          path: "infra/*.bicep"
+          path: "infra/**/*.bicep"
 
   # Jest: "creates static portfolio website with Terraform infrastructure"
   - name: "Deploy SWA - Portfolio Website (Terraform)"
@@ -443,10 +443,10 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-exists
         config:
-          path: "infra/*.tf"
+          path: "infra/**/*.tf"
       - type: file-not-exists
         config:
-          path: "infra/*.bicep"
+          path: "infra/**/*.bicep"
 
   # ═══════════════════════════════════════════
   # terraform-app-service-deploy
@@ -482,10 +482,10 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-exists
         config:
-          path: "infra/*.tf"
+          path: "infra/**/*.tf"
       - type: file-not-exists
         config:
-          path: "infra/*.bicep"
+          path: "infra/**/*.bicep"
 
   # Jest: "creates todo list with frontend and API using Terraform"
   - name: "Deploy App Service - Todo List (Terraform)"
@@ -516,10 +516,10 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-exists
         config:
-          path: "infra/*.tf"
+          path: "infra/**/*.tf"
       - type: file-not-exists
         config:
-          path: "infra/*.bicep"
+          path: "infra/**/*.bicep"
 
   # ═══════════════════════════════════════════
   # terraform-azure-functions-deploy
@@ -554,10 +554,10 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-exists
         config:
-          path: "infra/*.tf"
+          path: "infra/**/*.tf"
       - type: file-not-exists
         config:
-          path: "infra/*.bicep"
+          path: "infra/**/*.bicep"
 
   # Jest: "creates event-driven function app with Terraform"
   - name: "Deploy Azure Functions - Event-Driven (Terraform)"
@@ -587,10 +587,10 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-exists
         config:
-          path: "infra/*.tf"
+          path: "infra/**/*.tf"
       - type: file-not-exists
         config:
-          path: "infra/*.bicep"
+          path: "infra/**/*.bicep"
 
   # Jest: "creates URL shortener service with Terraform infrastructure"
   - name: "Deploy Azure Functions - URL Shortener (Terraform)"
@@ -652,23 +652,23 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)azurerm_container_app[^_]"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)azurerm_container_app_environment"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)azurerm_container_registry"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)SystemAssigned"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)AcrPull"
 
   # Jest: "creates simple containerized Node.js app with Terraform"
@@ -699,11 +699,11 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)azurerm_container_app[^_]"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)AcrPull"
 
   # Jest: "creates social media application with Terraform infrastructure"
@@ -734,11 +734,11 @@ stimuli:
               command: "(?i)azd\\s+(up|provision)\\b"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)azurerm_container_app[^_]"
       - type: file-matches
         config:
-          path: "infra/main.tf"
+          path: "infra/**/*.tf"
           pattern: "(?i)AcrPull"
 
   # ═══════════════════════════════════════════
