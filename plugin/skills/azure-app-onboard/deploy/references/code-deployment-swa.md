@@ -44,3 +44,11 @@ Pop-Location
 ```
 
 > ⛔ **Run from a PARENT directory** with a relative `--app` path. Running from inside the app directory causes `StaticSitesClient` to error with "Current directory cannot be identical to or contained within artifact folders."
+
+## Finalize deploy-result.json (after `swa deploy` succeeds)
+
+⛔ **`swa deploy` succeeding is NOT the end of the deploy phase.** SWA finalizes through the **generic Step 8** (see [`deploy-checklist-template.md`](deploy-checklist-template.md) §"Before handoff (Step 8)") — overwrite the `deploy-result.json` skeleton IN PLACE with the full `DeployResult` contract, not a `status`+`subscriptionId` stub. Only the values Step 8 can't derive on the SWA path are below:
+
+- **Hostname** — `swa deploy` produces no ARM endpoint output, so fetch it: `$swaHost = az staticwebapp show -n {swa} -g {rg} --query defaultHostname -o tsv`
+- `endpoints[]` — `[{ name, url: "https://$swaHost", healthStatus: "healthy" }]` (HTTP GET `https://$swaHost/` → 2xx confirms healthy)
+- `resourceIds[]` — include the `Microsoft.Web/staticSites` resource id
