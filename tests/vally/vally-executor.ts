@@ -4,8 +4,7 @@ import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { listSkills } from "../utils/skill-loader.ts";
-import { getEarlyTerminateCondition, getFollowUp, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition, getToolCallMatchTerminateConditions } from "./tag-helpers.ts";
-import { argsString } from "../utils/evaluate.ts";
+import { getEarlyTerminateCondition, getFollowUp, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
 
 export class IntegrationTestAgentRunner implements Executor {
@@ -57,8 +56,7 @@ export class IntegrationTestAgentRunner implements Executor {
 
     const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
     const completedAt = new Date();
-    const toolCallMatchConditions = getToolCallMatchTerminateConditions(tags);
-    const events = convertToTrajectoryEvents(agentMetadata, toolCallMatchConditions);
+    const events = convertToTrajectoryEvents(agentMetadata);
     const metrics = computeMetrics(events);
 
     const agentOutput = events
@@ -102,36 +100,18 @@ export class IntegrationTestAgentRunner implements Executor {
   }
 }
 
-function convertToTrajectoryEvents(
-  agentMetadata: AgentMetadata,
-  toolCallMatchConditions: Array<{ toolPattern: string; argsPattern: string }> = []
-): TrajectoryEvent[] {
+function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
   const result: TrajectoryEvent[] = [];
 
   // tool.execution_complete only carries `toolCallId`, not `toolName`. Build
   // a lookup so we can populate `tool_result.data.toolName` from the matching
-  // tool.execution_start event. Also track which calls completed so we can
-  // recognize a started-but-aborted call below.
+  // tool.execution_start event.
   const toolNameByCallId = new Map<string, string>();
-  const completedToolCallIds = new Set<string>();
   for (const e of agentMetadata.events) {
     if (e.type === "tool.execution_start") {
       toolNameByCallId.set(e.data.toolCallId, e.data.toolName);
-    } else if (e.type === "tool.execution_complete") {
-      completedToolCallIds.add(e.data.toolCallId);
     }
   }
-
-  // A `tool-call-match` early-terminate aborts the agent the instant the matching
-  // tool call starts, so that call never produces a tool.execution_complete event.
-  // The tool-calls grader keys on completed calls, so without help a *required*
-  // tool that is itself the terminate trigger looks "not called" (false failure).
-  // Mirror skill-call terminate semantics (skills are counted at start) by
-  // synthesizing a completed tool_result for that started-but-aborted call.
-  const terminateMatchers = toolCallMatchConditions.map((c) => ({
-    toolPattern: new RegExp(c.toolPattern),
-    argsPattern: new RegExp(c.argsPattern),
-  }));
 
   for (const e of agentMetadata.events) {
     const timestamp = e.timestamp ? new Date(e.timestamp) : undefined;
@@ -201,28 +181,6 @@ function convertToTrajectoryEvents(
           arguments: e.data.arguments,
         },
       });
-      // If this call was started but never completed (aborted) because it matched
-      // a tool-call-match early-terminate condition, count it as called by emitting
-      // a synthetic completed result — mirroring how skill-call terminates count.
-      if (!completedToolCallIds.has(e.data.toolCallId) && terminateMatchers.length > 0) {
-        const serializedArgs = argsString(e as unknown as { data: Record<string, unknown> });
-        const matchesTerminate = terminateMatchers.some(
-          (m) => m.toolPattern.test(e.data.toolName) && m.argsPattern.test(serializedArgs)
-        );
-        if (matchesTerminate) {
-          result.push({
-            type: "tool_result",
-            timestamp,
-            data: {
-              toolName: e.data.toolName,
-              toolCallId: e.data.toolCallId,
-              success: true,
-              result:
-                "Recorded as completed for grading: the agent run was early-terminated by a tool-call-match condition at this call.",
-            },
-          });
-        }
-      }
     } else if (e.type === "tool.execution_complete") {
       const toolName = toolNameByCallId.get(e.data.toolCallId) ?? "unknown";
       result.push({
