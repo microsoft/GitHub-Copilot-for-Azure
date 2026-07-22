@@ -4,8 +4,8 @@
 
 For **any** pod symptom below, run the **pod-evidence** script to collect the same
 read-only evidence bundle. Per pod it digests **STATUS**, **STATE** (exit code, reason,
-last state), **EVENTS**, current/previous **LOGS**, and **RESOURCES** (requests/limits
-vs `top`). It only gathers; interpret it with the tables.
+last state), **EVENTS**, current/previous **LOGS**, and **RESOURCES** (requests vs
+`top`). It only gathers; interpret with the tables.
 
 Bash [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) · PowerShell [`../../scripts/pod-evidence.ps1`](../../scripts/pod-evidence.ps1)
 
@@ -14,7 +14,7 @@ Bash [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) · PowerSh
 ../../scripts/pod-evidence.sh --all-failing               # all unhealthy pods
 ```
 
-PowerShell: `pod-evidence.ps1 <pod-name> -Namespace <namespace>` (`-AllFailing` scans all).
+PowerShell: `../../scripts/pod-evidence.ps1 <pod-name> -Namespace <namespace>` (`-AllFailing` scans all).
 
 ---
 

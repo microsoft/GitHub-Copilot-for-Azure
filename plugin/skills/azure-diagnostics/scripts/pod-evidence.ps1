@@ -58,7 +58,7 @@ function Digest-Pod {
 
     Write-Host "--- STATUS (ready / phase / restarts) ---"
     $status = kubectl get pod $Name -n $Ns -o wide 2>&1
-    if ($status) { $status | ForEach-Object { Write-Host "$_" } } else { Write-Host "(unable to get pod)" }
+    if ($LASTEXITCODE -eq 0 -and $status) { $status | ForEach-Object { Write-Host "$_" } } else { Write-Host "(unable to get pod)" }
     Write-Host ""
 
     Write-Host "--- STATE (exit code / reason / last state) ---"

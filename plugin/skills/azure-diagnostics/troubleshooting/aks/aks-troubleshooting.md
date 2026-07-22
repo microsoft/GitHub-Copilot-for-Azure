@@ -84,6 +84,10 @@ For unhealthy pods, gather the full read-only evidence bundle (describe, current
 ../../scripts/pod-evidence.sh <pod-name> -n <namespace>
 ../../scripts/pod-evidence.sh --all-failing
 ```
+```powershell
+../../scripts/pod-evidence.ps1 <pod-name> -Namespace <namespace>
+../../scripts/pod-evidence.ps1 -AllFailing
+```
 
 See [pod-failures.md](pod-failures.md) for how to interpret the digest.
 

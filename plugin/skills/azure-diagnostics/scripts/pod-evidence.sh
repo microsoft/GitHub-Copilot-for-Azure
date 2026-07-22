@@ -60,6 +60,11 @@ if ! command -v kubectl >/dev/null 2>&1; then
     exit 1
 fi
 
+case "$TAIL" in
+    ''|*[!0-9]*) echo "ERROR: --tail must be a positive integer (got '$TAIL')." >&2; exit 2 ;;
+    0)          echo "ERROR: --tail must be a positive integer (got '$TAIL')." >&2; exit 2 ;;
+esac
+
 # Digest a single pod. Args: <namespace> <pod>
 digest_pod() {
     local ns="$1" pod="$2"
@@ -108,11 +113,16 @@ digest_pod() {
 
 if [ "$ALL_FAILING" = true ]; then
     echo "pod-evidence: scanning for pods not in Running/Succeeded${NAMESPACE:+ in namespace '$NAMESPACE'}..."
+    # Portable row collection (avoids `mapfile`, which is unavailable in Bash 3.2 / macOS).
+    ROWS=()
     if [ -n "$NAMESPACE" ]; then
-        mapfile -t ROWS < <(kubectl get pods -n "$NAMESPACE" --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name 2>/dev/null)
+        SCAN_ARGS=(-n "$NAMESPACE")
     else
-        mapfile -t ROWS < <(kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name 2>/dev/null)
+        SCAN_ARGS=(-A)
     fi
+    while IFS= read -r line; do
+        [ -n "$line" ] && ROWS+=("$line")
+    done < <(kubectl get pods "${SCAN_ARGS[@]}" --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name 2>/dev/null)
 
     if [ "${#ROWS[@]}" -eq 0 ]; then
         echo "No unhealthy pods found (all pods are Running or Succeeded)."

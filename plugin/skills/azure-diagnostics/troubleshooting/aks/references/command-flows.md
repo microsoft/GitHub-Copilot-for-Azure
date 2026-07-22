@@ -36,6 +36,10 @@ For pod detail and logs, gather the read-only evidence bundle (describe, current
 ../../../scripts/pod-evidence.sh <pod-name> -n <namespace>
 ../../../scripts/pod-evidence.sh --all-failing
 ```
+```powershell
+../../../scripts/pod-evidence.ps1 <pod-name> -Namespace <namespace>
+../../../scripts/pod-evidence.ps1 -AllFailing
+```
 
 ## Connectivity Flow
 
