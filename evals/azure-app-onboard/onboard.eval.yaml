@@ -184,6 +184,7 @@ stimuli:
         - git remote add origin https://github.com/samcdonald-ms/bya-unsupported-web-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -239,6 +240,7 @@ stimuli:
         - git remote add origin https://github.com/samcdonald-ms/bya-broken-web-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -292,6 +294,7 @@ stimuli:
         - git remote add origin https://github.com/digininja/DVWA
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -358,6 +361,7 @@ stimuli:
         - git remote add origin https://github.com/samcdonald-ms/bya-broken-web-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 200
     graders:
@@ -424,6 +428,7 @@ stimuli:
         - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
         - "node -e \"const fs=require('fs');const d='.copilot-azure/sessions/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';fs.mkdirSync(d,{recursive:true});fs.writeFileSync(d+'/context.json',Buffer.from('eyJzZXNzaW9uSWQiOiJhMWIyYzNkNC1lNWY2LTRhN2ItOGM5ZC0wZTFmMmEzYjRjNWQiLCJjdXJyZW50UGhhc2UiOiJzY2FmZm9sZCIsImNvbXBsZXRlZFBoYXNlcyI6WyJwcmVyZXEiLCJwcmVwYXJlIl0sInN1YnNjcmlwdGlvbiI6eyJpZCI6IjAwMDAwMDAwLTAwMDAtMDAwMC0wMDAwLTAwMDAwMDAwMDAwMCIsIm5hbWUiOiJUZXN0IFN1YiJ9LCJjb21wb25lbnRzIjpbeyJuYW1lIjoid2ViIiwibGFuZ3VhZ2UiOiJqYXZhc2NyaXB0IiwiZnJhbWV3b3JrIjoiZXhwcmVzcyJ9XX0=','base64'));fs.writeFileSync(d+'/prereq-output.json',Buffer.from('eyJvdmVyYWxsSGVhbHRoIjoiaGVhbHRoeSIsImNvbXBvbmVudHMiOlt7Im5hbWUiOiJ3ZWIiLCJsYW5ndWFnZSI6ImphdmFzY3JpcHQiLCJmcmFtZXdvcmsiOiJleHByZXNzIiwicnVudGltZSI6Im5vZGUifV0sImJsb2NraW5nSXNzdWVzIjpbXX0=','base64'));fs.writeFileSync(d+'/prepare-plan.json',Buffer.from('eyJzZXJ2aWNlcyI6W3sidHlwZSI6IkFwcCBTZXJ2aWNlIiwic2t1IjoiQjEgTGludXgiLCJlc3RpbWF0ZWRNb250aGx5VXNkIjoxMi40MX1dLCJuYW1pbmciOnsicmVzb3VyY2VHcm91cE5hbWUiOiJyZy10ZXN0LWFwcC1hYmMxMjMifSwiY29zdEVzdGltYXRlIjp7InRvdGFsTW9udGhseVVzZCI6MTIuNDF9LCJpYWNGb3JtYXQiOiJiaWNlcCJ9','base64'));\""
     constraints:
       max_turns: 80
@@ -538,6 +543,7 @@ stimuli:
         - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 100
     graders:
@@ -604,6 +610,7 @@ stimuli:
         - git remote add origin https://github.com/Azure-Samples/microblog-ai-remix
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 90
     graders:
@@ -654,6 +661,7 @@ stimuli:
         - git remote add origin https://github.com/fastapi/full-stack-fastapi-template
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 100
     graders:

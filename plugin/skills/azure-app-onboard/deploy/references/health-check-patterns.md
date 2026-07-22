@@ -54,11 +54,19 @@ az resource show --ids {resourceId} --query "properties.provisioningState" -o ts
 |---------|---------------|
 | Container Apps | `latestReadyRevisionName` not empty + HTTP on ingress FQDN |
 | App Service | HTTP GET `https://{name}.azurewebsites.net/` + `/health` |
+| Static Web Apps | HTTP GET `https://{defaultHostname}/` → 2xx = `healthy` (hostname: `az staticwebapp show -n {swa} -g {rg} --query defaultHostname -o tsv`) |
 | Azure SQL | `provisioningState` + `az sql db show` |
 | Cosmos DB | `provisioningState` |
 | Storage | `provisioningState` + `statusOfPrimary` |
 | Key Vault | `provisioningState` |
 | Functions | HTTP trigger URL + HTTP check |
+
+> ⛔ **Container Apps — run an explicit live HTTP probe (the pipeline status is NOT sufficient).** After `latestReadyRevisionName` is set, run an observable request against the ingress FQDN and capture the result into `deploy-result.json.endpoints[].healthStatus`:
+> ```powershell
+> iwr "https://{ingressFqdn}/{probePath}" -UseBasicParsing   # PowerShell
+> curl -sSfL "https://{ingressFqdn}/{probePath}"             # bash
+> ```
+> This live HTTP call against `*.azurecontainerapps.io` IS the health verification — do NOT infer health from the revision's internal status alone.
 
 ## Output
 

@@ -45,13 +45,13 @@
 | ❌ 🔧 | [`completeness-check.md`](completeness-check.md) |
 | ❌ | [`build-check.md`](build-check.md) |
 
-**Post-evaluation HALT cross-check:** Verify intentionally vulnerable apps (≥2 code signals from dependency-compatibility.md) have `overallHealth: "blocked"`.
+**Post-evaluation HALT cross-check:** Intentionally vulnerable apps (≥2 code signals from dependency-compatibility.md) → `overallHealth: "blocked"` MUST be written to `prereq-output.json` on disk (Step 4) BEFORE any halt message. If the artifact is not on disk when you reach the halt, write it NOW via the `create` tool and read it back — do NOT present the halt until it exists.
 
 ---
 
 ## Batch-Then-Approve Flow
 
-⛔ **Artifacts before message.** Write AND read back all 3 artifacts (`prereq-output.json`, `context.json`, `readiness-report.md`) to confirm they exist on disk BEFORE presenting any findings or cloud-SDK stop prompt. Those messages can end the turn, so every artifact MUST already be persisted — NEVER batch artifact writes after the message.
+⛔ **Artifacts before message.** Write AND read back all 3 artifacts (`prereq-output.json`, `context.json`, `readiness-report.md`) to confirm they exist on disk BEFORE presenting any findings, cloud-SDK stop prompt, or 🛑 hard-halt message. Those messages can end the turn, so every artifact MUST already be persisted — NEVER batch artifact writes after the message.
 
 1. **Detect ALL issues first** — full 3-axis scan, all components.
 2. **Present ALL findings at once** — summary: "🔍 Readiness: 2 critical, 1 recommended fix, 3 warnings". Group: 🛑 → 🔶 → ❌ → 🔧 → ⚠️.

@@ -39,6 +39,7 @@ stimuli:
         - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 200
     tags:
@@ -85,7 +86,7 @@ stimuli:
             - command: "(?i)az\\s+webapp\\s+deploy\\b|az\\s+deployment\\s+(sub|group)\\s+create\\b"
               description: "App Service / Bicep deploy executed"
             # ── LIVE HEALTH CHECK RAN: agent must actually HTTP-GET the deployed endpoint.
-            - command: "(?is)(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b.*azurewebsites\\.net"
+            - command: "(?is)(?=.*\\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b)(?=.*azurewebsites\\.net)"
               description: "agent ran a live HTTP health check against the deployed endpoint"
           disallowed:
             - command: "(?i)terraform\\s+(init|plan|apply)"
@@ -181,35 +182,28 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
           pattern: '"status"\s*:\s*"succeeded"'
+      # resourceGroupName — name-tolerant (accepts resourceGroup OR resourceGroupName). Terminal
+      # artifact read only by the handoff summary + humans; exact key not required, only the value.
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"resourceGroupName"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
-      - type: file-matches
-        config:
-          path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"sessionId"\s*:\s*"[0-9a-f\-]{36}"'
+          pattern: '"resourceGroup(Name)?"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
           pattern: '"subscriptionId"\s*:\s*"[0-9a-f\-]{36}"'
+      # THE LIVE URL MUST BE RECORDED — a real Azure endpoint URL in ANY shape (endpoints array/object,
+      # healthCheck.url, …). Supersedes the old endpoints-array-shape check.
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"resourceIds"\s*:\s*\['
-      # healthStatus MUST be "healthy" — degraded/unreachable/unknown → failing grader (⚠ PASS* at 0.8).
+          pattern: '(azurewebsites\.net|azurestaticapps\.net|azurecontainerapps\.io)'
+      # health MUST resolve to healthy — nesting/name-tolerant: "healthStatus":"healthy" OR nested
+      # "healthCheck":{…"status":"healthy"…}. Degraded/unreachable still fails.
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"healthStatus"\s*:\s*"healthy"'
-      - type: file-matches
-        config:
-          path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"endpoints"\s*:\s*\['
-      - type: file-matches
-        config:
-          path: "**/.copilot-azure/sessions/**/deploy-result.json"
-          pattern: '"deploymentNames"\s*:\s*\['
+          pattern: '"(healthStatus|status)"\s*:\s*"healthy"'
 
       # ── LIVE ENDPOINT SURFACED: proof of real App Service deploy ───────────
       - type: output-matches

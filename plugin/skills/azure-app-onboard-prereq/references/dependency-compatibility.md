@@ -45,7 +45,7 @@ Detect via **code structure first**, metadata second. These apps are designed to
 
 **Verdict:** ≥2 code signals OR 1 code + 1 metadata → 🛑 HALT. Single metadata only → ⚠️ WARN (could be a disclosure).
 
-> ⛔ **🛑 HALT is a verdict, not an exit** — still write all 3 artifacts (Step 4, `overallHealth: "blocked"`) before presenting.
+> ⛔ **🛑 HALT is a verdict, not an exit.** On 🛑 HALT your NEXT action MUST be the Step-4 write — persist all 3 artifacts (`prereq-output.json`, `context.json`, `readiness-report.md`) with `overallHealth: "blocked"` via the `create` tool, then read them back, BEFORE printing any halt summary to the user. A halt message with no `prereq-output.json` on disk is a failure — the deterministic `blocked` verdict must be persisted first, because the halt message can end the turn.
 
 ## Non-Azure Cloud SDK Dependencies
 

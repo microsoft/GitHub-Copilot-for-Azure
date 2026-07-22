@@ -54,6 +54,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - KV secrets: `revision restart` does NOT refresh — must create new revision
 - ACR build failures count toward healing counter
 - Windows: append `--no-logs` to `az acr build` to avoid UnicodeEncodeError
+- ⛔ After the revision is ready, run an explicit live HTTP probe against the ingress FQDN (`curl -sSfL`/`iwr` on `*.azurecontainerapps.io`) — this call IS the health check; capture the result into `deploy-result.json.endpoints[].healthStatus`.
 
 ## Code deploy — Static Web Apps (delete if not using SWA)
 - ⛔ **Build before deploy (SPA only):** If the SWA component has a manifest (`package.json`) with a `build` script: detect the package manager from the lockfile, run install + build, then deploy the build output directory (not raw source). Plain HTML repos (no manifest): skip build, deploy source directly.

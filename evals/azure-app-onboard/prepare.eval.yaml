@@ -123,6 +123,7 @@ stimuli:
         - git remote add origin https://github.com/dev-arv13/demo-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -166,7 +167,10 @@ stimuli:
 
   # ── Plan schema + quota validation ──
   # test: prepare-plan.json has valid schema for broken-todo-demo Express app
-  # earlyTerminate: stops at the approval gate once the plan is presented.
+  # earlyTerminate: prepare-plan.json write — stops at prepare-phase exit (shortest valid stop).
+  # No readiness-message terminator: bare "ready to proceed" matched the quota-check summary
+  # ("Ready to proceed with App Service F1 provisioning") and killed the run before prepare
+  # wrote the plan. The plan-write terminator fires at the right point instead.
   - name: "Prepare Depth - Plan Schema For Express App"
     prompt: "I built a side project and want to get it live on Azure"
     tags:
@@ -187,13 +191,14 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep|\\.tf\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
         - git remote add origin https://github.com/Arun07AK/broken-todo-demo
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -262,6 +267,7 @@ stimuli:
         - git remote add origin https://github.com/rwieruch/node-express-server-rest-api
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -317,6 +323,7 @@ stimuli:
         - git remote add origin https://github.com/naeemaei/golang-clean-web-api
         - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -385,6 +392,7 @@ stimuli:
         - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -432,6 +440,7 @@ stimuli:
         - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -500,6 +509,7 @@ stimuli:
         - git remote add origin https://github.com/FuzzyGrim/Yamtrack
         - git fetch -q --depth 1 origin dev
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
@@ -560,6 +570,7 @@ stimuli:
         - git remote add origin https://github.com/eugene-khyst/postgresql-event-sourcing
         - git fetch -q --depth 1 origin main
         - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
     constraints:
       max_turns: 80
     graders:
