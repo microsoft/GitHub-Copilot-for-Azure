@@ -19,7 +19,9 @@ Symptom-to-Gadget Map) and interpret the output.
 .\scripts\run-ig.ps1 -Gadget trace_dns -Pod <pod> -Namespace <ns>
 ```
 
-**Options:** `--gadget` (required); target `--pod`/`--ns` **or** `--node`; `--container`;
+**Options** (bash flags below; PowerShell uses PascalCase equivalents: `-Gadget`, `-Pod`,
+`-Namespace`/`-Ns`, `-Node`, `-Container`, `-Timeout`, `-Filter`, `-Pf`, `-IgVersion`,
+`-DryRun`): `--gadget` (required); target `--pod`/`--ns` **or** `--node`; `--container`;
 `--timeout <s>` override; `--filter <arg>` (repeatable IG-flag passthrough, e.g.
 `--filter --max-entries --filter 20`); `--pf "<expr>"` (tcpdump only); `--ig-version <tag>`;
 `--dry-run`. Default timeout by gadget name: `snapshot_*`/`top_*` → 5s,
@@ -31,9 +33,8 @@ Symptom-to-Gadget Map) and interpret the output.
 
 ## Common Filters
 
-`--k8s-namespace`/`--k8s-podname`/`--k8s-containername` and `--timeout` are set by the script
-(from `--pod`/`--ns`/`--container`/`--timeout`). Pass any other IG flag below via the script's
-repeatable `--filter`, e.g. `--filter --max-entries --filter 20`.
+The k8s scope filters and `--timeout` are set by the script. Pass any other IG flag below via
+its repeatable `--filter`, e.g. `--filter --max-entries --filter 20`.
 
 | Filter | Description |
 |---|---|
@@ -42,9 +43,7 @@ repeatable `--filter`, e.g. `--filter --max-entries --filter 20`.
 | `--interval <dur>` | Reporting interval for `top_process` only (e.g. `5s`) |
 | `--syscall-filters <list>` | Comma-separated syscalls for `traceloop` (e.g. `open,connect,accept`). **Always specify** to limit data volume |
 
-> **Tip:** For top/profile, set `--map-fetch-interval` ≤ half of `--timeout` to collect at least one batch. E.g. `--timeout 2 --map-fetch-interval 1000ms --max-entries 20`.
->
-> **Note:** `top_process` uses `--interval` instead of `--map-fetch-interval`. E.g. `--timeout 10 --interval 5s --max-entries 20`.
+> **Tip:** For top/profile, keep `--map-fetch-interval` ≤ half of `--timeout` to collect ≥1 batch. `top_process` uses `--interval` instead of `--map-fetch-interval`.
 
 ## Gadget Catalog
 

@@ -51,7 +51,9 @@ DRY_RUN="false"
 EXTRA_FILTERS=()
 
 usage() {
-    sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'
+    # Print the leading comment block (from line 2) as help, stopping at the
+    # first non-comment line so script code is never echoed.
+    awk 'NR>1 && /^#/ { sub(/^# ?/, ""); print; next } NR>1 { exit }' "$0"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -152,7 +154,12 @@ quote_cmd() {
 }
 
 DISPLAY_CMD="$(quote_cmd "${FULL_CMD[@]}")"
-if [[ "$GADGET" == "tcpdump" ]]; then
+
+# The tcpdump gadget is only piped through `tcpdump` when that binary is present.
+# Reflect the real behavior in the displayed command so --dry-run does not mislead.
+TCPDUMP_AVAIL="false"
+if [[ "$GADGET" == "tcpdump" ]] && command -v tcpdump >/dev/null 2>&1; then
+    TCPDUMP_AVAIL="true"
     DISPLAY_CMD="$DISPLAY_CMD | tcpdump -nvr -"
 fi
 
@@ -161,6 +168,9 @@ echo "Node:    $NODE" >&2
 echo "Timeout: ${TIMEOUT}s" >&2
 echo "Image:   $IG_IMAGE" >&2
 echo "Command: $DISPLAY_CMD" >&2
+if [[ "$GADGET" == "tcpdump" && "$TCPDUMP_AVAIL" == "false" ]]; then
+    echo "Note:    tcpdump not found; emitting raw pcap-ng to stdout." >&2
+fi
 
 if [[ "$DRY_RUN" == "true" ]]; then
     echo "(dry-run: command not executed)" >&2
@@ -169,7 +179,7 @@ fi
 
 echo "Ran gadget $GADGET on node $NODE (timeout ${TIMEOUT}s)" >&2
 
-if [[ "$GADGET" == "tcpdump" ]] && command -v tcpdump >/dev/null 2>&1; then
+if [[ "$TCPDUMP_AVAIL" == "true" ]]; then
     "${FULL_CMD[@]}" | tcpdump -nvr -
 else
     "${FULL_CMD[@]}"

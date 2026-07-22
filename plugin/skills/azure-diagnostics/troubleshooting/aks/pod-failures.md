@@ -49,11 +49,11 @@ kubectl describe pod <pod-name> -n <namespace> | grep -A2 "Last State"
 
 Fix: increase `resources.limits.memory` or optimize application memory usage. Check `kubectl top pod <pod-name> -n <namespace>` for actual usage.
 
-**OOM kill tracing with Inspektor Gadget:** Run `trace_oomkill` for the pod to see which process was killed and memory at kill time: `run-ig --gadget trace_oomkill --pod <pod-name> --ns <namespace>`. See [references/inspektor-gadget.md](references/inspektor-gadget.md).
+**OOM kill tracing with Inspektor Gadget:** Run `trace_oomkill` for the pod to see which process was killed and memory at kill time: `scripts/run-ig.sh --gadget trace_oomkill --pod <pod-name> --ns <namespace>` (or `run-ig.ps1`). See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
 **Deep diagnostics with Inspektor Gadget** (when logs and describe are inconclusive):
 
-Use the [`run-ig` script](references/inspektor-gadget.md) with `--pod <pod-name> --ns <namespace>` and these gadgets:
+Use [`scripts/run-ig.sh`](references/inspektor-gadget.md) (or `run-ig.ps1`) with `--pod <pod-name> --ns <namespace>` and these gadgets:
 
 - `trace_exec` — see what the container executes at startup
 - `trace_open` — find missing configs/secrets (retval -2 = ENOENT, -13 = EACCES)

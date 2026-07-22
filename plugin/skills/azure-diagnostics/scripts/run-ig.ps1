@@ -60,7 +60,6 @@
 #>
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory = $true)]
     [string]$Gadget,
     [string]$Pod,
     [Alias('Ns')]
@@ -75,10 +74,12 @@ param(
     [switch]$DryRun
 )
 
-$ErrorActionPreference = 'Stop'
-
 $IgImageRepo = 'mcr.microsoft.com/oss/v2/inspektor-gadget/ig'
 
+if (-not $Gadget) {
+    Write-Error 'Provide -Gadget <name> (e.g. trace_dns, snapshot_socket, tcpdump).'
+    exit 2
+}
 if (-not $Node -and -not $Pod) {
     Write-Error 'Provide either -Node <node> or -Pod <pod> -Namespace <namespace>.'
     exit 2
@@ -112,7 +113,7 @@ if (-not $PSBoundParameters.ContainsKey('Timeout') -or $Timeout -le 0) {
 
 # Resolve the node name from the pod when not given directly.
 if (-not $Node) {
-    $Node = (& kubectl get pod $Pod -n $Namespace -o "jsonpath={.spec.nodeName}").Trim()
+    $Node = ((& kubectl get pod $Pod -n $Namespace -o "jsonpath={.spec.nodeName}" 2>$null) | Out-String).Trim()
     if (-not $Node) {
         Write-Error "Could not resolve node for pod '$Pod' in namespace '$Namespace'."
         exit 1
@@ -151,7 +152,11 @@ function Format-Cmd([string[]]$parts) {
 }
 
 $displayCmd = 'kubectl ' + (Format-Cmd $fullArgs)
-if ($Gadget -eq 'tcpdump') {
+
+# The tcpdump gadget is only piped through `tcpdump` when that binary is present.
+# Reflect the real behavior in the displayed command so -DryRun does not mislead.
+$tcpdumpAvail = $Gadget -eq 'tcpdump' -and [bool](Get-Command tcpdump -ErrorAction SilentlyContinue)
+if ($tcpdumpAvail) {
     $displayCmd = "$displayCmd | tcpdump -nvr -"
 }
 
@@ -160,6 +165,9 @@ Write-Host "Node:    $Node"
 Write-Host "Timeout: ${Timeout}s"
 Write-Host "Image:   $IgImage"
 Write-Host "Command: $displayCmd"
+if ($Gadget -eq 'tcpdump' -and -not $tcpdumpAvail) {
+    Write-Host 'Note:    tcpdump not found; emitting raw pcap-ng to stdout.'
+}
 
 if ($DryRun) {
     Write-Host '(dry-run: command not executed)'
@@ -168,7 +176,7 @@ if ($DryRun) {
 
 Write-Host "Ran gadget $Gadget on node $Node (timeout ${Timeout}s)"
 
-if ($Gadget -eq 'tcpdump' -and (Get-Command tcpdump -ErrorAction SilentlyContinue)) {
+if ($tcpdumpAvail) {
     & kubectl @fullArgs | & tcpdump -nvr -
 }
 else {
