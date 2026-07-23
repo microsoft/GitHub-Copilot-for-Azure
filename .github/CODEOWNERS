@@ -26,7 +26,6 @@
 /plugin/skills/azure-prepare/ @microsoft/github-copilot-for-azure-writers
 /plugin/skills/azure-quotas/ @rakal-dyh @RickWinter
 /plugin/skills/azure-reliability/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
-/plugin/skills/azure-resource-lookup/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-resource-visualizer/ @tmeschter @RickWinter
 /plugin/skills/azure-storage/ @JasonYeMSFT @RickWinter
 /plugin/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
