@@ -132,3 +132,39 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Script execution tests
+  # ═══════════════════════════════════════════
+
+  # ── aks-baseline-script-execution ──
+  # Verifies the skill actually runs the aks-baseline.sh/.ps1 script (issue #2506)
+  # rather than pasting the individual az/kubectl commands. Concrete cluster
+  # identity is supplied so the agent has arguments to pass. No real cluster is
+  # required: each step in the script is guarded, so az/kubectl failures are
+  # handled gracefully and the script still emits its labeled digest.
+  # No earlyTerminate here, so the run proceeds far enough to invoke the script.
+  - name: "AKS baseline runs aks-baseline script"
+    prompt: "Do a baseline health check of my AKS cluster and tell me what state it's in. The cluster is named aks-prod in resource group aks-rg."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)aks-baseline\\.(ps1|sh)"
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
