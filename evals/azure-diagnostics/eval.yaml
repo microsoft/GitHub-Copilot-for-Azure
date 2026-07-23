@@ -139,8 +139,12 @@ stimuli:
 
   # ── aks-baseline-script-execution ──
   # Verifies the skill invokes the aks-baseline.sh/.ps1 script (issue #2506)
-  # rather than pasting the individual az/kubectl commands. Concrete cluster
-  # identity is supplied so the agent has arguments to pass.
+  # rather than pasting the individual az/kubectl commands. The prompt asserts
+  # the cluster exists and that kubectl is already authenticated, and names the
+  # baseline sweep explicitly, so the agent routes straight to the script as its
+  # first shell action instead of first running `az aks get-credentials`/`az aks
+  # list` (which fail and detour into ad-hoc troubleshooting when no real cluster
+  # exists in the test subscription).
   # earlyTerminate on tool-call-match fires the moment the script's shell tool
   # call *starts*, aborting the run before the script actually executes — so no
   # real cluster is needed and no az/kubectl calls run. The triggering start
@@ -148,7 +152,7 @@ stimuli:
   # confirm the agent chose to run the script. (No `completed` grader here, per
   # the convention that early-terminated runs always fail `completed`.)
   - name: "AKS baseline runs aks-baseline script"
-    prompt: "Do a baseline health check of my AKS cluster and tell me what state it's in. The cluster is named aks-prod in resource group aks-rg."
+    prompt: "My AKS cluster aks-prod in resource group aks-rg is up and I'm already authenticated with kubectl pointed at it. Run the aks-baseline diagnostic sweep script now to gather its baseline health, then summarize the state. Don't run az aks get-credentials or list clusters first — go straight to the baseline script."
     config:
       runs: 1
     tags:
@@ -156,17 +160,21 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"(?i)^(bash|powershell|pwsh)$","argsPattern":"(?i)aks-baseline\\.(ps1|sh)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"aks-baseline\\.(ps1|sh)"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-diagnostics
-      - type: tool-calls
+      # Custom grader (tests/vally/tool-call-started-grader.ts): matches the
+      # tool-call *start* event, which is all that exists after earlyTerminate
+      # aborts the run. The built-in `tool-calls` grader can't be used here — it
+      # only counts a required tool once its `tool_result` arrives, which early
+      # termination prevents by design.
+      - type: tool-call-started
         config:
-          required:
-            - name: "(?i)^(bash|powershell|pwsh)$"
-              command: "(?i)aks-baseline\\.(ps1|sh)"
+          name: "(?i)^(bash|powershell|pwsh)$"
+          command: "(?i)aks-baseline\\.(ps1|sh)"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
