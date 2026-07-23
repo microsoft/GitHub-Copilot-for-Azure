@@ -5,21 +5,23 @@
 # (containerapp-diagnostics / appservice-diagnostics) rather than hand-rolling
 # a chain of `az` commands.
 #
-# These are response-quality checks (single run) that grade the trajectory's
-# tool calls. They do NOT require a live Azure resource: the `tool-calls` grader
-# is satisfied by the agent *invoking* the script (the shell tool call), whether
-# or not the underlying `az` calls succeed. No earlyTerminate is used so the run
-# proceeds far enough for the script invocation to appear in the trajectory.
+# We do NOT actually run the script. Each stimulus uses an earlyTerminate
+# `tool-call-match` on the script command: the moment the agent issues the tool
+# call to run the script, the run is aborted (session.abort) before the command
+# completes. The `tool-calls` grader still sees the tool_call event in the
+# trajectory, so it confirms the agent *tried* to run the script — no live Azure
+# resource is required, and nothing is executed.
 #
-# Global graders (evaluate#125 workaround): completed and no_runtime_failure
-# are duplicated into every stimulus block below.
+# Per repo convention, stimuli with an earlyTerminate tag MUST NOT use the
+# `completed` grader (early-terminated runs always fail it by design).
 
 name: azure-diagnostics-script-invocation-eval
 description: |
   Verifies the azure-diagnostics skill drives the agent to invoke its bundled
   diagnostic scripts (containerapp-diagnostics, appservice-diagnostics) when
   asked to collect all diagnostics for a Container App or App Service web app.
-  Grades routing plus the presence of a shell tool call running the script.
+  Grades routing plus the presence of a shell tool call running the script, and
+  terminates at that tool call so the script is never actually executed.
 
 tags:
   type: integration
@@ -36,7 +38,8 @@ scoring:
 
 stimuli:
   # ── containerapp-diagnostics-invocation ──
-  # Asserts: isSkillInvoked + tool call running containerapp-diagnostics.(sh|ps1)
+  # Asserts: isSkillInvoked + tool call running containerapp-diagnostics.(sh|ps1).
+  # Terminates at that tool call so the script is not executed.
   - name: "Container App diagnostics uses the bundled script"
     prompt: "Collect all the diagnostic info for my Azure Container App named my-app in resource group my-rg."
     config:
@@ -46,6 +49,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"containerapp-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
     graders:
       - type: skill-invocation
         config:
@@ -56,14 +60,14 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)containerapp-diagnostics\\.(sh|ps1)"
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── appservice-diagnostics-invocation ──
-  # Asserts: isSkillInvoked + tool call running appservice-diagnostics.(sh|ps1)
+  # Asserts: isSkillInvoked + tool call running appservice-diagnostics.(sh|ps1).
+  # Terminates at that tool call so the script is not executed.
   - name: "App Service diagnostics uses the bundled script"
     prompt: "Gather all the diagnostic info for my Azure App Service web app named my-app in resource group my-rg."
     config:
@@ -73,6 +77,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"appservice-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
     graders:
       - type: skill-invocation
         config:
@@ -83,7 +88,6 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)appservice-diagnostics\\.(sh|ps1)"
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
