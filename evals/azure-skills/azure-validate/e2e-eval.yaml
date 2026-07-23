@@ -204,7 +204,7 @@ stimuli:
       skill: azure-validate
       followUp:
         - "Continue with recommended options until complete."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"validate-deployment\\.(sh|ps1)"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"az\\s+deployment\\b.*\\b(create|up)\\b"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"validate-deployment\\.(sh|ps1)"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"az\\s+deployment\\b.*\\b(create|up)\\b"}]'
     graders:
       # azure-validate WAS invoked; azure-deploy was NOT
       - type: skill-invocation
