@@ -1,0 +1,605 @@
+  # azure-app-onboard — prepare-phase suite: planning depth (services, SKUs, cost, quota) and
+  # correctly mapping app dependencies to Azure services before anything is built.
+  #
+  # How to read this suite:
+  #   • `earlyTerminate` stops each run once the plan is presented (the approval gate, or a
+  #     prepare-plan.json write), and always OR's in a deploy-command guard, so no real deploy runs.
+  #     All runs are cost: llm+execute — no billed Azure resources.
+  #   • Graders check the plan surfaced to the user (services/SKUs/cost) plus the plan artifacts the
+  #     skill writes under .copilot-azure/sessions/….
+  #
+  # Stimuli: delegation to planning (2) · cost depth (1) · plan-schema depth (2) · service mapping (5).
+
+name: azure-app-onboard-prepare-eval
+description: |
+  Prepare-phase suite for the azure-app-onboard skill: planning depth (services, SKUs, cost,
+  quota) and correctly mapping app dependencies to Azure services before anything is built.
+  All stimuli stop at the approval gate (cost: llm+execute).
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+defaults:
+  runs: 1
+  timeout: "12m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── Delegation to planning ──
+  # test: parent delegates to prepare for architecture planning prompt
+  - name: "Delegation - Architecture Planning"
+    prompt: "Can you walk me through getting my first app on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      category: prepare-delegation-arch
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "It's a Node.js Express web API with a PostgreSQL database."
+        - "Yes, walk me through the recommended architecture and services."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    constraints:
+      max_turns: 60
+    graders:
+      # delegates to prepare → azure-app-onboard invoked
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # architecture / service planning content surfaced
+      - type: output-matches
+        config:
+          pattern: "(?i)app service|container apps|functions|static web apps|architecture|recommend"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: parent delegates to prepare for SKU selection prompt
+  - name: "Delegation - SKU Selection"
+    prompt: "I have no Azure experience but need to host my web app"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      category: prepare-delegation-sku
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "What do you recommend, and what will the plan cost?"
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    constraints:
+      max_turns: 60
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # SKU / tier / pricing recommendation content
+      - type: output-matches
+        config:
+          pattern: "(?i)sku|tier|plan|size|pricing|recommend|host"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Cost estimation depth ──
+  # test: cost estimation provides specific pricing — not just mentions cost
+  # earlyTerminate: approval gate (earlyTerminate).
+  - name: "Cost Depth - Dollar And SKU Signals"
+    prompt: "I need to deploy this app to Azure — but first tell me exactly what it will cost"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      category: prepare-cost-depth
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dev-arv13/demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # dollar amounts present
+      - type: output-matches
+        config:
+          pattern: "\\$\\d"
+      # a specific Azure service or SKU/tier
+      - type: output-matches
+        config:
+          pattern: "(?i)container apps|app service|static web apps|azure functions|\\bF1\\b|\\bB1\\b|\\bS1\\b|free|basic|standard|tier|sku"
+      # per-service breakdown → >=2 dollar amounts + a monthly qualifier
+      - type: output-matches
+        config:
+          pattern: "\\$\\d[\\s\\S]*\\$\\d"
+      - type: output-matches
+        config:
+          pattern: "(?i)per month|/month|monthly"
+      # cost assumptions stated (assumes / within limits|grant / free tier)
+      - type: output-matches
+        config:
+          pattern: "(?i)assum|within[\\s\\S]{0,40}(limit|grant)|free[\\s-]?tier"
+      # prereq artifacts produced before the gate
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      # prepare-plan cost estimate written
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '"costEstimate"\s*:'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Plan schema + quota validation ──
+  # test: prepare-plan.json has valid schema for broken-todo-demo Express app
+  # earlyTerminate: prepare-plan.json write — stops at prepare-phase exit (shortest valid stop).
+  # No readiness-message terminator: bare "ready to proceed" matched the quota-check summary
+  # ("Ready to proceed with App Service F1 provisioning") and killed the run before prepare
+  # wrote the plan. The plan-write terminator fires at the right point instead.
+  - name: "Prepare Depth - Plan Schema For Express App"
+    prompt: "I built a side project and want to get it live on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      category: prepare-depth-schema
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Arun07AK/broken-todo-demo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # prepare-plan.json exists
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+      # HARD: services[] non-empty, naming.resourcePrefix (len>=5),
+      # costEstimate, iacFormat present
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '"services"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '"resourcePrefix"\s*:\s*"[A-Za-z0-9][A-Za-z0-9-]{4,}"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '"costEstimate"\s*:'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: '"iacFormat"\s*:\s*"'
+      # phase progression
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: agent validates quota before recommending region
+  # earlyTerminate: approval gate.
+  - name: "Prepare Depth - Quota Validation Before Region"
+    prompt: "I want a one-click way to deploy my app to Azure."
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      category: prepare-depth-quota
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/rwieruch/node-express-server-rest-api
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+      # quota / capacity / usage validated
+      - type: output-matches
+        config:
+          pattern: "(?i)quota|capacity|usage"
+      # a specific region recommended
+      - type: output-matches
+        config:
+          pattern: "(?i)\\b(eastus2?|westus2?|centralus|northeurope|westeurope|southcentralus)\\b"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Service mapping: app dependencies → Azure services ──
+  # test: golang-clean-web-api (Go/Gin + PostgreSQL + Redis + Elasticsearch)
+  # earlyTerminate: prepare-plan.json write — stops at prepare-phase exit (shortest valid stop).
+  # No readiness-message terminator: bare "ready to deploy" matched the readiness summary and
+  # killed the run before prepare wrote the plan. The plan-write terminator fires earlier anyway.
+  - name: "Service Mapping - Go Gin Multi-Service"
+    prompt: "I built a side project and want to get it live on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      category: prepare-map-go
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/naeemaei/golang-clean-web-api
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # Go/Gin stack detected
+      - type: output-matches
+        config:
+          pattern: "(?i)\\bgo\\b|\\bgin\\b|golang"
+      # docker-compose services mapped to Azure — assert the mapping in the plan artifact rather
+      # than a specific read tool. The agent may parse compose via a file-read tool (view/read_file)
+      # OR a shell `cat` (compose lives in a docker/ subdir in this repo); keying on the tool name +
+      # `args.path` misses the shell read and produces false negatives. Mapping the compose-only
+      # postgres + redis services to their Azure PaaS equivalents proves it read and understood
+      # compose, regardless of how the file was opened. (Mirrors the Kafka test: earlyTerminate fires
+      # on the prepare-plan write, which precedes the gate, so the plan is present at grade time.)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: "(?i)azure database for postgresql|postgresql[\\s\\S]{0,40}flexible server"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: "(?i)azure cache for redis"
+      # framework detection persisted to prereq-output.json
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)\\bgo\\b|gin|golang"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: aws-bookstore-demo routes to azure-cloud-migrate after prereq
+  # earlyTerminate: route-to-migrate (custom — skill-call azure-cloud-migrate / context routeToSkill).
+  # NOTE: all skills are available, so an AWS workload can route to azure-cloud-migrate.
+  - name: "Migration Routing - AWS Workload To Cloud Migrate"
+    prompt: "We're running this app today. How do we bring it to Azure with minimal changes?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      category: prepare-map-aws-migrate
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Redirect to Azure Cloud Migrate"
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"(?i:routetoskill[^}]*azure-cloud-migrate)"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      # routed to azure-cloud-migrate
+      - type: skill-invocation
+        config:
+          required: ["azure-cloud-migrate"]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: aws-bookstore-demo — user picks "Continue evaluation anyway" at the cloud SDK gate (declines the
+  # redirect). Counterpart to the redirect test above. Functional cloud SDK deps mean the app can't deploy
+  # until the SDKs are swapped, so prereq MUST: (1) populate prereq-output.json.cloudSdkFindings[] and carry
+  # the AWS deps as 🔶 blockers, (2) NOT set context.json.routeToSkill (the user declined the redirect), and
+  # (3) finish the readiness eval then STOP at Step 8 — present the AWS→Azure swap mapping and the verbatim
+  # cloud-SDK stop prompt, and do NOT continue to prepare (no prepare-plan.json). skill-invocation (disallowed
+  # azure-cloud-migrate) proves it did not actually route away; the output graders anchor on the skill's stable
+  # Step 8 prompt ("Cloud SDK migration required … must be swapped before this app can deploy"). There is no
+  # negative-file grader, so earlyTerminate fires on that stop prompt (assistant-message + ask_user) before prepare runs.
+  # earlyTerminate: Step 8 cloud-SDK stop prompt — halts pre-prepare, no plan/deploy.
+  # NOTE: onboarding-flavored opener (not "migrate/minimal changes") so azure-app-onboard wins
+  # first-turn routing; the redirect counterpart above keeps the migration opener. Both use the
+  # same AWS repo, so prereq still detects the AWS SDK deps regardless of the opener wording.
+  - name: "Cloud SDK Continue - AWS Deps Carried Not Routed"
+    prompt: "Can you help me get my app running on Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      category: prereq-cloudsdk-continue
+      skill: azure-app-onboard
+      followUp:
+        - "Continue anyway"
+        - "Stop — swap manually and re-run"
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:cloud sdk migration required|must be swapped before this app can deploy)"},{"type":"tool-call-match","toolPattern":"ask_user","argsPattern":"(?i:cloud sdk migration required|swap manually and re-run)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      # stays in azure-app-onboard — does NOT actually route away to azure-cloud-migrate
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+          disallowed: ["azure-cloud-migrate"]
+      # AWS deps detected and surfaced
+      - type: output-matches
+        config:
+          pattern: "(?i)aws|lambda|dynamodb|amplify"
+      # deps carried as findings — prereq-output.json.cloudSdkFindings[] exists (structured check)
+      - type: json-object-rules
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          rules:
+            - type: has-property
+              key: cloudSdkFindings
+      # …and the findings array is non-empty (deps actually recorded, not just an empty stub)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"cloudSdkFindings"\s*:\s*\[\s*\{'
+      # STOP PROOF: prereq presents the Step 8 cloud-SDK stop prompt verbatim (a stable skill-defined
+      # phrase) and does NOT continue to prepare. No negative-file grader exists, so earlyTerminate fires
+      # on this stop prompt before prepare would run.
+      - type: output-matches
+        config:
+          pattern: "(?i)cloud sdk migration required|must be swapped before (?:this|the) app can deploy"
+      # the SDK→Azure equivalents are named in the mapping
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos|blob storage|entra|azure cache|event hubs|service bus"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: yamtrack-django (docker-compose + PostgreSQL + Redis PaaS mapping)
+  # earlyTerminate: plan-presented.
+  - name: "Service Mapping - Yamtrack Django Compose"
+    prompt: "Can you analyze my app and tell me which Azure service I should use?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      category: prepare-map-yamtrack
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/FuzzyGrim/Yamtrack
+        - git fetch -q --depth 1 origin dev
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # NOTE: no compose-read tool-call grader here. Yamtrack's PostgreSQL and Redis are declared in
+      # pyproject.toml + src/config/settings.py (and the default docker-compose.yml uses SQLite, not
+      # postgres), so a compose read is neither exclusive nor necessary to produce these mappings —
+      # asserting a specific read tool only added flakiness (false negative when the agent reads via a
+      # shell `cat` instead of a file-read tool). The substance is covered by the output mappings below.
+      # PostgreSQL → Azure Database for PostgreSQL
+      - type: output-matches
+        config:
+          pattern: "(?i)azure database for postgresql|flexible server|postgresql[\\s\\S]{0,60}azure"
+      # Redis → Azure Cache for Redis
+      - type: output-matches
+        config:
+          pattern: "(?i)azure cache for redis|redis[\\s\\S]{0,60}azure"
+      # workspace scan facts surfaced
+      - type: output-matches
+        config:
+          pattern: "(?i)found|detected|discovered|scan"
+      # Service Mapping is a prepare-phase test — assert the stack surfaced in prepare-plan.json
+      # (the artifact this flow produces), not prereq-output.json (a prior phase a "which service?"
+      # prompt legitimately skips).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: "(?i)django|python"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: postgresql-event-sourcing (Kafka → Event Hubs + Gradle/Spring Boot)
+  # earlyTerminate: plan-presented.
+  - name: "Service Mapping - Kafka To Event Hubs Spring"
+    prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      category: prepare-map-kafka
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/eugene-khyst/postgresql-event-sourcing
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # Java/Gradle/Spring Boot detected
+      - type: output-matches
+        config:
+          pattern: "(?i)gradle|build\\.gradle|spring boot|spring|java"
+      # Kafka → Azure Event Hubs — assert in the plan artifact, not spoken output.
+      # earlyTerminate fires on the prepare-plan write-result (which precedes the "ready to
+      # proceed" gate), so the plan is present at grade time; mapping lands here even when
+      # the chat summary doesn't name it.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+          pattern: "(?i)event\\s*hubs?|eventhubs?|microsoft\\.eventhub"
+      # PostgreSQL dependency detected
+      - type: output-matches
+        config:
+          pattern: "(?i)postgres|postgresql"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)java|spring|gradle"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
