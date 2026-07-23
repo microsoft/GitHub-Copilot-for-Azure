@@ -78,7 +78,6 @@ jobs:
           npm run test:vally -- \
             --suite smoke \
             --runs 1 \
-            --output jsonl \
             --junit \
             --threshold 0.8
         env:
@@ -90,16 +89,7 @@ jobs:
         run: |
           npm run test:vally -- \
             --suite ${{ steps.suite.outputs.name }} \
-            --output jsonl \
             --junit \
             --threshold 0.8
         env:
           COPILOT_GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: eval-results
-          path: tests/results/
-          retention-days: 30
