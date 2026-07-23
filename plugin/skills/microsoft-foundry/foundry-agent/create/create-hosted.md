@@ -1,6 +1,6 @@
 # Create Hosted Agent (azd ai)
 
-Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers greenfield (from a curated sample) and brownfield (lift existing code), then drops you into a local inner-loop so you can iterate before deploying.
+Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers new agents and continued development of existing agents, including re-hosting, then drops you into a local inner-loop so you can iterate before deploying.
 
 > **Creating a new agent end-to-end from scratch?** Use [quick-start-hosted.md](quick-start-hosted.md) instead -- an opinionated happy-path with safe defaults. Stay here for anything not covered by the quickstart.
 
@@ -12,7 +12,7 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 |----------|-------|
 | Agent type | Hosted (container or code) |
 | Primary CLI | `azd ai agent` (from extension `azure.ai.agents`) |
-| Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--src <dir>` for brownfield) |
+| Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--src <dir>` when onboarding existing code) |
 | Local run | `azd ai agent run --no-client` + `azd ai agent invoke --local "..."` |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
@@ -21,7 +21,7 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 ## When to Use This Skill
 
 - Create a new hosted agent from a curated Foundry sample.
-- Lift an existing agent project (Python, .NET) into a hosted Foundry agent.
+- Continue developing or re-host an existing agent project (Python, .NET).
 - Add tools (web search, AI Search, MCP, A2A) to a hosted agent.
 - Run and iterate on a hosted agent locally before deploying.
 
@@ -72,11 +72,11 @@ Act on the summary prefixes:
 Branch on the agent status reported by `verify-environment`:
 
 - `not_deployed` -> Step 2.
-- `active` / `deployed` -> already deployed. Skip to [deploy/deploy.md](../deploy/deploy.md) for redeploy or [tools](references/tools.md) to add a tool.
+- `active` / `deployed` -> for code changes, continue to Step 4b; for deploy-only requests, use [deploy/deploy.md](../deploy/deploy.md).
 
 ### Step 2 -- New or existing Foundry project?
 
-Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the prompt already says to use an existing project or supplies a Foundry project endpoint / project ARM resource ID.
+Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the workspace is already configured as a Foundry hosted agent, or when the prompt supplies an existing project endpoint / project ARM resource ID.
 
 - **New project** -- do NOT pass `--project-id`. `azd provision` (in deploy) will create it.
 - **Existing project with ARM resource ID** -- pass that exact ID to `azd ai agent init --project-id`.
@@ -91,16 +91,16 @@ Do not guess, derive, or construct the project ID from the endpoint. For `--proj
 
 > `azd ai agent init` initializes both the azd project and its environment. Run it directly in the target directory. For an existing Foundry project, also pass `--project-id <arm-id>`.
 
-### Step 3 -- Pick the scaffolding source
+### Step 3 -- Choose the starting point
 
 | User has ... | Use |
 |--------------|-----|
-| Empty workspace, or wants a starter | **Greenfield** -- Step 4a |
-| Hand-written agent code already in cwd | **Brownfield** -- Step 4b |
+| Empty workspace, or wants a starter | **New agent** -- Step 4a |
+| Existing agent project or source code | **Existing agent** -- Step 4b |
 
-If unsure, default to greenfield. Never guess a manifest URL by hand.
+If unsure, inspect the workspace and user intent. Never guess a manifest URL by hand.
 
-### Step 4a -- Greenfield: scaffold from a sample
+### Step 4a -- New agent: scaffold from a sample
 
 List the curated catalog (filter by language if known):
 
@@ -182,9 +182,29 @@ Check the scaffold before local run:
 4. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the `azure.yaml` service key AND its `name:` to the same value, preserving its `project:` path.
 5. If you change CPU or memory, set it in the agent service's `container.resources` in `azure.yaml`.
 
-### Step 4b -- Brownfield: lift existing code
+### Step 4b -- Existing agent: continue development
 
-Use ONLY when the workspace already contains hand-written agent source.
+Use when the workspace already contains an agent project or source code.
+
+First determine whether the workspace is already a Foundry hosted agent project.
+
+- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue.
+- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, follow the Re-host steps below.
+
+#### Re-host: collect information
+
+Resolve two independent choices before initialization or edits:
+
+1. **Model** -- keep the existing model or use a Foundry model.
+2. **Agent framework** -- keep the existing framework or migrate it.
+
+Infer these choices from the user's request and current code. Ask only for information that remains unclear; skip questions when the intent is explicit or evident, such as an existing Foundry model integration. Do not switch or deploy a model, or migrate the framework, without user intent.
+
+#### Re-host: adapt and initialize
+
+Use `azd ai agent sample list --language <language> --output json` to find the closest relevant sample for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications.
+
+After resolving the choices, run:
 
 ```bash
 azd ai agent init --no-prompt \
@@ -192,10 +212,12 @@ azd ai agent init --no-prompt \
   --agent-name my-agent \
   --deploy-mode code \
   --runtime python_3_13 \
-  --entry-point app.py
+  --entry-point <entry-point>
 ```
 
-`--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`. `--deploy-mode container` builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
+`--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Use the existing executable entry point, or a new adapter file only when one is intentionally added. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`. `--deploy-mode container` builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
+
+Once the agent is configured as a Foundry hosted agent, make the requested changes and continue to the shared flow in Steps 5-8.
 
 ### Step 5 -- Write the agent instruction file (required)
 
@@ -265,7 +287,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 
 ## Common Guidelines
 
-1. **Sample-first** -- always get `manifestUrl` from `azd ai agent sample list`.
+1. **Use the sample catalog** -- query `azd ai agent sample list` for new agents and when re-hosting a non-Foundry agent. Scaffold new agents from a manifest; use samples only as adapter references for existing code.
 2. **Prefer azd over az** -- fall back to `az` only as a last resort, with explicit consent.
 3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user and stop.
 4. **JSON output** -- add `--output json` only to read-only `azd ai agent` commands such as `show`. Do not add it to `azd ai agent invoke`; invoke supports `default` and `raw`, not `json`.
