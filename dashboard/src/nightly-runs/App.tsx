@@ -94,7 +94,7 @@ function Dashboard() {
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoadingDates(false));
-    }, []);
+    }, [selectedPlugin]);
 
     // Fetch data and reports when a date is selected
     useEffect(() => {
@@ -128,7 +128,7 @@ function Dashboard() {
             .then((md) => setReportMarkdown(md))
             .catch((err) => setReportMarkdown(`*Error loading reports: ${err.message}*`))
             .finally(() => setLoadingReport(false));
-    }, [selectedDate]);
+    }, [selectedDate, selectedPlugin]);
 
     const handleDownload = useCallback((blobName: string) => {
         const viewerUrl = pageUrl(`${window.location.pathname}?file=${encodeURIComponent(blobName)}`);

@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { enumerateBlobs, getBlobContent } from "../blobEnumerator";
+import { enumerateBlobs, getBlobContent, resolveSkillFilter } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
@@ -350,6 +350,9 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
         return { status: 404, body: `No data found for date: ${date}` };
     }
 
+    // When a plugin is specified, only retain skills belonging to that plugin.
+    const skillFilter = await resolveSkillFilter(request.query.get("plugin") || undefined);
+
     // Collect testResults.json paths organized by skill name.
     // Structure: date -> runId -> skillName -> (files | children with testResults.json)
     const pathsBySkill = new Map<string, string[]>();
@@ -360,6 +363,9 @@ async function getTestResults(request: HttpRequest, context: InvocationContext):
 
     for (const runNode of Object.values(dateNode.children)) {
         for (const [skillName, skillNode] of Object.entries(runNode.children)) {
+            if (skillFilter && !skillFilter.has(skillName)) {
+                continue;
+            }
             collectTestResultPaths(skillNode, skillName, pathsBySkill);
             collectSkillReportPaths(skillNode, skillName, reportPathsBySkill);
             collectTokenSummaryPaths(skillNode, skillName, tokenSummaryPathsBySkill);

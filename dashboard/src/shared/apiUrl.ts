@@ -1,13 +1,19 @@
+import { getPersistedPluginSelection } from "./PluginSelector";
+
 /**
  * Builds an API URL by merging the page's current query parameters into the
  * given path. Path-level params take precedence over page-level params, so
  * explicit caller values are never overwritten.
  *
+ * The persisted plugin selection is appended as `plugin` (unless the caller or
+ * page already specified one) so plugin-scoped endpoints filter their data to
+ * the selected plugin's skills.
+ *
  * Example: page URL is /?container=abc, path is /api/dates
- * → returns /api/dates?container=abc
+ * → returns /api/dates?container=abc&plugin=azure-skills
  *
  * Example: page URL is /?container=abc, path is /api/test-run-metrics?skill=foo
- * → returns /api/test-run-metrics?container=abc&skill=foo
+ * → returns /api/test-run-metrics?container=abc&skill=foo&plugin=azure-skills
  */
 export function apiUrl(path: string): string {
     const qIdx = path.indexOf("?");
@@ -20,6 +26,14 @@ export function apiUrl(path: string): string {
     if (existingSearch) {
         for (const [key, value] of new URLSearchParams(existingSearch)) {
             params.set(key, value);
+        }
+    }
+
+    // Scope requests to the selected plugin unless one was already specified.
+    if (!params.has("plugin")) {
+        const plugin = getPersistedPluginSelection();
+        if (plugin) {
+            params.set("plugin", plugin);
         }
     }
 

@@ -8,7 +8,10 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../shared/apiUrl";
-import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
+import PluginSelector, {
+    getPersistedPluginSelection,
+    fetchSkillsForPlugin,
+} from "../shared/PluginSelector";
 import { issuesUrl } from "./issuesUrl";
 import {
     buildDaySeries,
@@ -206,24 +209,40 @@ export default function App() {
 
     // Load the list of plugin skills and honour a ?skill= deep link.
     useEffect(() => {
-        fetch(apiUrl("/api/static"))
-            .then((res) => {
+        let cancelled = false;
+        Promise.all([
+            fetch(apiUrl("/api/static")).then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json() as Promise<HealthData>;
-            })
-            .then((data) => {
-                const list = skillsFromHealthData(data);
+            }),
+            fetchSkillsForPlugin(selectedPlugin),
+        ])
+            .then(([data, pluginSkills]) => {
+                if (cancelled) return;
+                const allowed = new Set(pluginSkills);
+                const list = skillsFromHealthData(data).filter((s) =>
+                    allowed.has(s.name),
+                );
                 setSkills(list);
                 const deepLink = new URLSearchParams(window.location.search).get("skill");
                 if (deepLink && list.some((s) => s.name === deepLink)) {
                     setSelected(deepLink);
                 } else if (list.length > 0) {
                     setSelected(list[0].name);
+                } else {
+                    setSelected("");
                 }
             })
-            .catch((err) => setSkillsError(err.message))
-            .finally(() => setSkillsLoading(false));
-    }, []);
+            .catch((err) => {
+                if (!cancelled) setSkillsError(err.message);
+            })
+            .finally(() => {
+                if (!cancelled) setSkillsLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedPlugin]);
 
     // Load per-test metrics for the selected skill (main branch only).
     useEffect(() => {
@@ -249,7 +268,7 @@ export default function App() {
                 if (!controller.signal.aborted) setRowsLoading(false);
             });
         return () => controller.abort();
-    }, [selected]);
+    }, [selected, selectedPlugin]);
 
     const selectedSkill = useMemo(
         () => skills.find((s) => s.name === selected),
