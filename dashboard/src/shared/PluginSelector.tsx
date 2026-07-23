@@ -3,34 +3,6 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { apiUrl } from "./apiUrl";
 
 export const PLUGIN_SESSION_STORAGE_KEY = "dashboard.selectedPlugin";
-export const PLUGIN_SKILLS_SESSION_STORAGE_KEY = "dashboard.pluginSkills";
-
-function getCachedPluginSkills(): PluginSkills | null {
-    if (typeof window === "undefined") {
-        return null;
-    }
-
-    try {
-        const raw = window.sessionStorage.getItem(PLUGIN_SKILLS_SESSION_STORAGE_KEY);
-        if (!raw) return null;
-        const parsed = JSON.parse(raw);
-        return parsed;
-    } catch {
-        return null;
-    }
-}
-
-function cachePluginSkills(data: PluginSkills): void {
-    if (typeof window === "undefined") {
-        return;
-    }
-
-    try {
-        window.sessionStorage.setItem(PLUGIN_SKILLS_SESSION_STORAGE_KEY, JSON.stringify(data));
-    } catch {
-        // Ignore unavailable sessionStorage; the map will simply be re-fetched.
-    }
-}
 
 /**
  * Concurrent callers (e.g. the selector and a skills view mounting together)
@@ -39,11 +11,6 @@ function cachePluginSkills(data: PluginSkills): void {
 let inFlightPluginSkills: Promise<PluginSkills | null> | null = null;
 
 async function fetchPluginSkills(): Promise<PluginSkills | null> {
-    const cached = getCachedPluginSkills();
-    if (cached) {
-        return cached;
-    }
-
     if (inFlightPluginSkills) {
         return inFlightPluginSkills;
     }
@@ -52,7 +19,6 @@ async function fetchPluginSkills(): Promise<PluginSkills | null> {
         const res = await fetch(apiUrl("/api/plugins"));
         if (!res.ok) throw new Error(`API error: ${res.status}`);
         const data = (await res.json()) as PluginSkills;
-        cachePluginSkills(data);
         return data;
     })();
 

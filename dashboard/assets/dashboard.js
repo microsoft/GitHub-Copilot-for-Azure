@@ -8,7 +8,6 @@
 const panelRenderers = {};
 
 const PLUGIN_SESSION_STORAGE_KEY = "dashboard.selectedPlugin";
-const PLUGIN_SKILLS_SESSION_STORAGE_KEY = "dashboard.pluginSkills";
 
 function getPersistedPluginSelection() {
   try {
@@ -28,17 +27,6 @@ function persistPluginSelection(plugin) {
   }
 }
 
-function getCachedPluginSkills() {
-  try {
-    const raw = window.sessionStorage.getItem(PLUGIN_SKILLS_SESSION_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Append the persisted plugin selection as a `plugin` query param so plugin-scoped
  * endpoints filter their data to the selected plugin's skills.
@@ -53,9 +41,6 @@ function withPlugin(path) {
 }
 
 async function fetchPluginSkills() {
-  const cached = getCachedPluginSkills();
-  if (cached) return cached;
-
   try {
     const res = await fetch("/api/plugins");
     if (!res.ok) return {};
