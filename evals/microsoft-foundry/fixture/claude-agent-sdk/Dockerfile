@@ -8,7 +8,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN python -m pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 agent
-COPY agent.py .
+COPY agent.py mcp_server.py ./
 
 USER agent
 EXPOSE 8080

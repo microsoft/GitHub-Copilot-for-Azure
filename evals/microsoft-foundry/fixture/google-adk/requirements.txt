@@ -1,3 +1,4 @@
-google-adk[db]==2.5.0
+google-adk==2.5.0
 fastapi==0.133.1
+mcp==1.28.1
 uvicorn==0.35.0

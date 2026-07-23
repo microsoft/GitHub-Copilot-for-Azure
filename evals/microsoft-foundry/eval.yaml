@@ -524,7 +524,7 @@ stimuli:
       cost: llm
       area: migrate
     prompt: |
-      This project is our existing Python customer-support agent built with the Claude Agent SDK and self-hosted as a container on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
+      This project is our existing Python order-support agent built using the Claude Agent SDK and self-hosted as a container. It uses a local MCP tool for order lookup. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
     graders:
       - type: skill-invocation
         config:
@@ -536,7 +536,7 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent inspected the existing Claude Agent SDK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the get_order_status behavior and named resumable-session semantics. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment, and used the same deployed conversation for both the A100 order-status question and the tracking-number follow-up. The second response must correctly use the first turn's context. Fail if the agent unnecessarily rewrote the application or if any required migration, validation, deployment, tool, or conversation-continuity behavior is missing or unsuccessful.
+            Verify that the coding agent inspected the existing Claude Agent SDK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the existing HTTP service, order-support behavior, and local get_order_status MCP tool. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment with an order-status request, and received a successful tool-grounded response. Fail if the SDK architecture was unnecessarily replaced, the MCP tool was removed or replaced with direct data access, or any required migration, validation, deployment, tool, or invocation behavior is missing or unsuccessful.
 
   - name: "Migration - OpenAI Agents SDK to Foundry"
     environment:
@@ -550,7 +550,7 @@ stimuli:
       cost: llm
       area: migrate
     prompt: |
-      This project is our existing Python customer-support agent built with the OpenAI Agents SDK. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
+      This project is our existing Python order-support agent built using the OpenAI Agents SDK and self-hosted as a container. It uses a local MCP tool for order lookup. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
     graders:
       - type: skill-invocation
         config:
@@ -562,7 +562,7 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent inspected the existing OpenAI Agents SDK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the get_order_status behavior and named-session checkpoint and resume continuity. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment, and used the same deployed conversation for both the A100 order-status question and the tracking-number follow-up. The second response must correctly use the first turn's context. Fail if the agent unnecessarily rewrote the application or if any required migration, validation, deployment, tool, or conversation-continuity behavior is missing or unsuccessful.
+            Verify that the coding agent inspected the existing OpenAI Agents SDK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the existing HTTP service, order-support behavior, and local get_order_status MCP tool. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment with an order-status request, and received a successful tool-grounded response. Fail if the SDK architecture was unnecessarily replaced, the MCP tool was removed or replaced with direct data access, or any required migration, validation, deployment, tool, or invocation behavior is missing or unsuccessful.
 
   - name: "Migration - Google ADK to Foundry"
     environment:
@@ -576,7 +576,7 @@ stimuli:
       cost: llm
       area: migrate
     prompt: |
-      This project is our existing Python customer-support agent built with Google ADK. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
+      This project is our existing Python order-support agent built using Google ADK and self-hosted as a container. It uses a local MCP tool for order lookup. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
     graders:
       - type: skill-invocation
         config:
@@ -588,4 +588,4 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent inspected the existing Google ADK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the get_order_status behavior and database-backed named-session checkpoint and resume continuity. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment, and used the same deployed conversation for both the A100 order-status question and the tracking-number follow-up. The second response must correctly use the first turn's context. Fail if the agent unnecessarily rewrote the application or if any required migration, validation, deployment, tool, or conversation-continuity behavior is missing or unsuccessful.
+            Verify that the coding agent inspected the existing Google ADK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the existing HTTP service, order-support behavior, and local get_order_status MCP tool. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment with an order-status request, and received a successful tool-grounded response. Fail if the SDK architecture was unnecessarily replaced, the MCP tool was removed or replaced with direct data access, or any required migration, validation, deployment, tool, or invocation behavior is missing or unsuccessful.
