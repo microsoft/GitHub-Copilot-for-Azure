@@ -110,8 +110,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-
-  # ── vm-ssh-troubleshooting-prompt ──
   # Migrated from azure-compute ownership: VM connectivity incidents now route to azure-diagnostics.
   - name: "VM SSH refused troubleshooting"
     prompt: "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues."
@@ -128,6 +126,46 @@ stimuli:
             - azure-diagnostics
           disallowed:
             - azure-compute
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── pod-evidence-script-invoked ──
+  # Response-quality check: for an AKS pod-failure prompt the skill should drive the
+  # agent to RUN the read-only pod-evidence evidence-bundle script rather than re-listing
+  # the raw kubectl describe/logs/top sequence (issue #2507). The `tool-calls` grader
+  # asserts the agent attempted to execute pod-evidence.{sh,ps1} via a shell tool.
+  #
+  # earlyTerminate fires the moment that shell call starts, so the agent is stopped right
+  # after the attempt (no follow-on turns). Note this is a guard/optimization, not a hard
+  # execution block: `tool-call-match` reacts to the `tool.execution_start` event, which
+  # the SDK emits only after the (auto-approved) tool has already launched. The script is
+  # read-only and, with no AKS cluster/kubectl context in CI, every kubectl call fails
+  # gracefully — so it is inert regardless. Because earlyTerminate is set, the `completed`
+  # grader is intentionally omitted (early-terminated runs always fail it by design).
+  - name: "Pod-evidence script invoked for CrashLoopBackOff"
+    prompt: "My AKS pod is stuck in CrashLoopBackOff. Gather the read-only failure evidence I need before I decide on a fix."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"(?i)pod-evidence\\.(sh|ps1)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: tool-calls
+        config:
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # and "bash" for executing scripts on other platforms.
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)pod-evidence\\.(sh|ps1)"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
