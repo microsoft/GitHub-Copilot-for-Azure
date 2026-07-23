@@ -114,27 +114,29 @@ stimuli:
   # ── messaging-namespace-connectivity-probe ──
   # Added with issue #2511: for the messaging "cannot connect at all" flow the
   # skill should drive the agent to *run* the test-messaging-connectivity probe
-  # script rather than emit raw curl/nslookup commands. This asserts the attempt
-  # (the tool call), not the script's result — no live namespace is required.
+  # script rather than emit raw curl/nslookup commands. Asserts the agent invokes
+  # the script (a completed shell tool call); no live namespace is required since
+  # the script completes even when the namespace does not exist.
   - name: "Service Bus namespace connectivity probe"
-    prompt: "My app can't connect to my Azure Service Bus namespace 'contoso' at all. Please run a connectivity check against it to see whether DNS resolves and which of the messaging ports are actually reachable."
+    prompt: "We've got a production incident: my app suddenly can't connect to Azure Service Bus namespace 'contoso' at all. Please help me troubleshoot and find the root cause — start by checking the namespace's resource health, then run a connectivity check that resolves DNS and probes the messaging ports (AMQP 5671/5672, HTTPS 443) to rule out an NSG or firewall block."
     tags:
       type: integration
       tier: full
       cost: llm
-      # area: behavior — asserts the agent attempts the probe tool call, not routing.
+      # area: behavior — asserts the agent runs the probe script, not routing.
       area: behavior
-      # Terminate as soon as the agent tries to run the probe script (the tool
-      # call starts). We only need to observe the attempt, not its result, so the
-      # script never has to run against a live resource. A tool-call-count cap is
-      # a cost fallback if the agent never attempts the script.
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"test-messaging-connectivity\\.(sh|ps1)"},{"type":"tool-call-count","count":10}]'
+      # Terminate as soon as the probe script has run (its tool call produces a
+      # result). The tool-calls grader below matches on completed tool calls, so
+      # we must let the call finish before terminating. The script completes fine
+      # without a live namespace (DNS fails / ports report BLOCKED). A
+      # tool-call-count cap is a cost fallback if the agent never runs the script.
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"test-messaging-connectivity\\.(sh|ps1)"},{"type":"tool-call-count","count":12}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-diagnostics
-      # The agent attempted to run the probe script (either variant).
+      # The agent ran the probe script (either variant).
       - type: tool-calls
         config:
           required:
