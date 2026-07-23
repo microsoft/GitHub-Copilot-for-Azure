@@ -7,23 +7,20 @@
 /** @type {Record<string, (section: HTMLElement, category: object) => void>} */
 const panelRenderers = {};
 
-const AVAILABLE_PLUGINS = ["azure-skills", "cat"];
 const PLUGIN_SESSION_STORAGE_KEY = "dashboard.selectedPlugin";
+const PLUGIN_SKILLS_SESSION_STORAGE_KEY = "dashboard.pluginSkills";
 
 function getPersistedPluginSelection() {
   try {
-    const persisted = window.sessionStorage.getItem(PLUGIN_SESSION_STORAGE_KEY);
-    if (persisted && AVAILABLE_PLUGINS.includes(persisted)) {
-      return persisted;
-    }
+    return window.sessionStorage.getItem(PLUGIN_SESSION_STORAGE_KEY) || "";
   } catch {
-    // Ignore unavailable sessionStorage and fall back to the default.
+    // Ignore unavailable sessionStorage and fall back to no selection.
+    return "";
   }
-  return AVAILABLE_PLUGINS[0];
 }
 
 function persistPluginSelection(plugin) {
-  if (!AVAILABLE_PLUGINS.includes(plugin)) return;
+  if (!plugin) return;
   try {
     window.sessionStorage.setItem(PLUGIN_SESSION_STORAGE_KEY, plugin);
   } catch {
@@ -31,13 +28,79 @@ function persistPluginSelection(plugin) {
   }
 }
 
-function initPluginSelector() {
+function getCachedPluginSkills() {
+  try {
+    const raw = window.sessionStorage.getItem(PLUGIN_SKILLS_SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Append the persisted plugin selection as a `plugin` query param so plugin-scoped
+ * endpoints filter their data to the selected plugin's skills.
+ * @param {string} path
+ * @returns {string}
+ */
+function withPlugin(path) {
+  const plugin = getPersistedPluginSelection();
+  if (!plugin) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return path + separator + "plugin=" + encodeURIComponent(plugin);
+}
+
+async function fetchPluginSkills() {
+  const cached = getCachedPluginSkills();
+  if (cached) return cached;
+
+  try {
+    const res = await fetch("/api/plugins");
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Fetch the sorted list of available plugin directory names.
+ * @returns {Promise<string[]>}
+ */
+async function fetchAvailablePlugins() {
+  const pluginSkills = await fetchPluginSkills();
+  return Object.keys(pluginSkills.plugins).sort();
+}
+
+async function initPluginSelector() {
   const select = document.getElementById("plugin-select");
   if (!select) return;
 
-  select.value = getPersistedPluginSelection();
+  const plugins = await fetchAvailablePlugins();
+
+  select.textContent = "";
+  for (const plugin of plugins) {
+    const option = document.createElement("option");
+    option.value = plugin;
+    option.textContent = plugin;
+    select.appendChild(option);
+  }
+
+  const persisted = getPersistedPluginSelection();
+  if (persisted && plugins.includes(persisted)) {
+    select.value = persisted;
+  } else if (plugins.length > 0) {
+    select.value = plugins[0];
+    persistPluginSelection(plugins[0]);
+  }
+
   select.addEventListener("change", function () {
     persistPluginSelection(select.value);
+    // Reload so every panel re-fetches its data for the newly selected plugin.
+    window.location.reload();
   });
 }
 
@@ -1032,7 +1095,7 @@ let _latestTestResultsPromise = null;
 function fetchLatestTestResults() {
   if (_latestTestResultsPromise) return _latestTestResultsPromise;
   _latestTestResultsPromise = (async () => {
-    const datesRes = await fetch("/api/dates");
+    const datesRes = await fetch(withPlugin("/api/dates"));
     if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
     const dates = await datesRes.json();
     if (!Array.isArray(dates) || dates.length === 0) {
@@ -1040,7 +1103,7 @@ function fetchLatestTestResults() {
     }
     const latestDate = dates[0];
     const resultsRes = await fetch(
-      "/api/test-results/" + encodeURIComponent(latestDate),
+      withPlugin("/api/test-results/" + encodeURIComponent(latestDate)),
     );
     if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
     const skillResults = await resultsRes.json();
@@ -1834,12 +1897,19 @@ async function init() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  initPluginSelector();
-  init();
-  loadSkillInvocationRates();
-  loadE2EPassRates();
-  loadConfidenceLevelPerSkill();
-  loadDeployScenarioRetries();
-  loadIntegrationTestTokenUsage();
+document.addEventListener("DOMContentLoaded", async function () {
+  // Populate the plugin selector (and cache the plugin-container map) before
+  // kicking off the data loads, so their API calls can include the selected
+  // plugin's container fallback on the very first page load.
+  try {
+    await initPluginSelector();
+  } catch { }
+  finally {
+    init();
+    loadSkillInvocationRates();
+    loadE2EPassRates();
+    loadConfidenceLevelPerSkill();
+    loadDeployScenarioRetries();
+    loadIntegrationTestTokenUsage();
+  }
 });

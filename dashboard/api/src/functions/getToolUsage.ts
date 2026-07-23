@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import { logRequestIdentity } from "../requestIdentity";
+import { resolveSkillFilter } from "../blobEnumerator";
 
 const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
 const TOOL_USAGE_TABLE_NAME = process.env.TOOL_USAGE_TABLE_NAME;
@@ -71,21 +72,39 @@ async function getToolUsage(request: HttpRequest, context: InvocationContext): P
         runDate: request.query.get("runDate") || undefined,
     });
 
+    // When a plugin is specified, restrict to its skills. An unknown plugin
+    // resolves to an empty set, which means no rows can match.
+    const skillFilter = await resolveSkillFilter(request.query.get("plugin") || undefined);
+    if (skillFilter && skillFilter.size === 0) {
+        return {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+            body: "[]",
+        };
+    }
+    const pluginClause = skillFilter
+        ? `(${[...skillFilter].map((s) => `skill eq '${odataLiteral(s)}'`).join(" or ")})`
+        : undefined;
+
+    // Combine the base filters with the plugin clause. A plugin selection alone
+    // is enough to satisfy the "at least one filter" requirement below.
+    const combinedFilter = [filter, pluginClause].filter(Boolean).join(" and ") || undefined;
+
     // Require at least one filter. An unfiltered scan of the one-row-per-tool-call
     // table can be very large and risks timeouts / excessive storage reads.
-    if (!filter) {
+    if (!combinedFilter) {
         return {
             status: 400,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                error: "At least one filter is required: skill, test, branch, runId, runToken, or runDate.",
+                error: "At least one filter is required: plugin, skill, test, branch, runId, runToken, or runDate.",
             }),
         };
     }
 
     try {
         const tableClient = getToolUsageTableClient();
-        const listOptions = { queryOptions: { filter } };
+        const listOptions = { queryOptions: { filter: combinedFilter } };
         const entities: Record<string, unknown>[] = [];
 
         for await (const entity of tableClient.listEntities(listOptions)) {

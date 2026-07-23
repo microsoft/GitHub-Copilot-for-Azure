@@ -260,7 +260,7 @@ function App() {
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoadingDates(false));
-    }, []);
+    }, [selectedPlugin]);
 
     // Fetch test results when a date is selected
     useEffect(() => {
@@ -279,7 +279,7 @@ function App() {
             .then((data: SkillTestResults) => setTestResults(data))
             .catch((err) => setError(err.message))
             .finally(() => setLoadingResults(false));
-    }, [selectedDate]);
+    }, [selectedDate, selectedPlugin]);
 
     if (loadingDates) {
         return <div className="it-app"><p className="it-loading">Loading&hellip;</p></div>;
