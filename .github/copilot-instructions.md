@@ -158,6 +158,59 @@ Token estimation: ~4 characters ≈ 1 token. Limits are configured in `.token-li
 - Descriptions over 200 chars in frontmatter must use folded YAML (`>-`)
 - Markdown links must not escape the skill directory (validated by `npm run references`)
 
+## Authoring Scripts in Skills
+
+Some skills ship helper scripts (under a skill's `scripts/` or `references/**/scripts/` directory) that replace fragile inline one-liners in the markdown. These guidelines are distilled from repeated PR review feedback — follow them so new or updated scripts don't repeat past mistakes.
+
+### Cross-Platform Parity
+
+- **Always ship both `.sh` (bash) and `.ps1` (PowerShell) versions** of a script. Keep their behavior, options, output format, and exit codes in sync.
+- **Document exit codes in a header comment** and keep it accurate: the convention is `0` = success/all passed, `1` = a check failed, `2` = usage/argument error. Update the comment whenever the code changes, and keep both scripts' headers consistent.
+- **Provide both bash and PowerShell invocation examples** wherever a script is referenced in docs — never show only one shell.
+- **Make `--dry-run`/preview output match what actually runs.** If a pipe or step is conditional (e.g. only pipe to `tcpdump` when it's installed), the previewed command must reflect the same condition.
+- **Don't double-report results.** Pick one source of truth (inline per-step lines *or* a final summary table), not both. Remove dead/unused variables and helpers.
+- **Treat errors as errors.** For critical checks (especially pre-provision scans), a read error, missing file, or failed CLI call must produce a non-zero exit — never silently fall through to a misleading "not applicable" / "already configured" / "fix required" verdict.
+
+### PowerShell Scripts
+
+- **Do not set `$ErrorActionPreference = 'Stop'` at script scope.** It makes `Write-Error` terminating and can bypass your explicit `exit` codes. Leave the default (`Continue`) and, where you need a hard stop, use `-ErrorAction Stop` on the specific call inside a `try/catch`. Also don't add a redundant `$ErrorActionPreference = 'Continue'` line — that's already the default.
+- **Check `$LASTEXITCODE` after native commands** (`az`, `kubectl`, `terraform`, etc.). Non-zero exits from native executables do *not* raise PowerShell errors, so capture output and test `$LASTEXITCODE` explicitly instead of assuming success.
+- **Avoid `[Parameter(Mandatory)]`.** In non-interactive scenarios PowerShell will block prompting for the value. Instead, check the parameter explicitly (e.g. `[string]::IsNullOrWhiteSpace(...)`) and exit `2` with a clear message.
+- **Stay compatible with Windows PowerShell 5.1**, not just PowerShell 7. Avoid 7-only features/parameters such as `Invoke-WebRequest -SkipHttpErrorCheck`; read HTTP status from the caught exception's `Response.StatusCode` instead.
+- Prefer `Write-Error` (stderr) over `Write-Host` for genuine error conditions so failures surface in CI/log collectors, while still exiting non-zero.
+
+### Bash Scripts
+
+- **Target Bash 3.2** (macOS default) — do not assume Bash 4+. Avoid `declare -A` (associative arrays), `mapfile`, and similar. Use portable alternatives like `while IFS= read -r` loops and small `grep`/`sed` helpers. Use `#!/usr/bin/env bash`.
+- **Never use `eval`** to run a command string (injection risk + brittle quoting). Pass the command as arguments and invoke via `"$@"`, or pass a function name.
+- **With `set -e`, capture command output via command substitution** (`OUT=$(cmd ...)`), not process substitution (`done < <(cmd ...)`), so a failing command reliably aborts instead of producing a misleading downstream error.
+- **Use fixed-string grep (`grep -F`/`-Fq`) for literal matches** and handle grep's read-error exit code (`2`) explicitly — don't let it be treated as "no match".
+- **Guard argument parsing.** For value-consuming options, verify a value is present before `shift 2` — otherwise, under `set -euo pipefail`, a missing value causes an unbound-variable/`shift count` error or an infinite loop. Reject unknown/mistyped `--options` with usage instead of silently treating them as positional args. Validate expected types (e.g. `--tail` must be a positive integer) and exit `2` with a clear message on bad input.
+- **`usage()`/`--help` should exit `0`** (asking for help is not an error); reserve non-zero exits for actual argument errors.
+- **`set -o pipefail` is not inherited by subshells** (e.g. a pipeline run inside `bash -c "..."`). Re-declare it inside the subshell so a failing command in the pipeline is still surfaced.
+- **Don't hold large command output in a variable on success** (e.g. `terraform plan`). Redirect to a temp file and only read it back on failure.
+- **Exclude the shebang from `--help` output.** A `usage()` that prints lines starting with `#` will echo `!/usr/bin/env bash`; filter it (e.g. `grep -v '^#!'`) or stop at the first non-comment line.
+- **Don't swallow failures of critical steps with `|| true`** (e.g. `az account set`). Record an explicit PASS/FAIL so a failed step fails the overall run.
+
+### Deterministic CLI Parsing
+
+- **Don't parse CLI JSON with `grep`/`sed`.** Use the tool's own query support (e.g. `az account show --query name -o tsv`) and key decisions off the command's exit code.
+- **Keep CLI install hints in the repo's standard call form**, e.g. `mcp_azure_mcp_extension_cli_install(cli-type: "az")`, so they match the rest of the skill and stay copy/pasteable.
+
+### Referencing Scripts from Markdown
+
+- **Use Markdown links** to the script files, not bare text or bare command names.
+- **Don't present a script as if it were on `PATH`** (e.g. `run-ig ...`). Reference the explicit path (`scripts/run-ig.sh` / `scripts/run-ig.ps1`).
+- **State the working directory** any relative path assumes. Prefer skill-root-relative paths (`./scripts/...`) and note that commands run from the skill root.
+- **Note that PowerShell parameter names differ** (PascalCase, e.g. `-Gadget`, `-Namespace`) so readers don't copy bash `--flag` syntax into `.ps1` calls.
+- Markdown links still must not escape the skill directory (enforced by `npm run references`).
+
+### Evals for Scripted Behavior
+
+- **Tag skill-invocation stimuli `area: routing`** — `tests/vally/tag-helpers.ts` only counts `routing` stimuli in skill-invocation reporting. Use `area: output` only for output-content assertions, and add a comment explaining the intent.
+- **Add an `earlyTerminate` condition** to integration stimuli so runs stop once the expected signal appears, keeping cost in line with sibling stimuli.
+- **Per-stimulus `runs` overrides don't currently take effect** (see microsoft/vally#430); set the file-level default `runs: 1` rather than relying on per-stimulus values.
+
 ## CI Checks on Pull Requests
 
 PRs against `main` must pass these checks — run the corresponding local commands before pushing:
