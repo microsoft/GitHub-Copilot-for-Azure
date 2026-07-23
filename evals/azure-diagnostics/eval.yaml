@@ -112,30 +112,34 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── messaging-namespace-connectivity-probe ──
-  # Added with issue #2511: the messaging "cannot connect at all" flow should
-  # surface the test-messaging-connectivity probe script rather than raw
-  # curl/nslookup commands.
+  # Added with issue #2511: for the messaging "cannot connect at all" flow the
+  # skill should drive the agent to *run* the test-messaging-connectivity probe
+  # script rather than emit raw curl/nslookup commands. This asserts the attempt
+  # (the tool call), not the script's result — no live namespace is required.
   - name: "Service Bus namespace connectivity probe"
-    prompt: "My app can't connect to my Azure Service Bus namespace 'contoso' at all. How can I check whether it's a network or firewall problem — like which of the messaging ports are actually reachable?"
+    prompt: "My app can't connect to my Azure Service Bus namespace 'contoso' at all. Please run a connectivity check against it to see whether DNS resolves and which of the messaging ports are actually reachable."
     tags:
       type: integration
       tier: full
       cost: llm
-      # area: output — this is an output-content assertion (does the skill surface
-      # the probe script?), not a routing test, so it is intentionally not counted
-      # in skill-invocation reporting.
-      area: output
-      # Cap cost: terminate as soon as the probe script is surfaced. The
-      # output-matches grader still sees it in the accumulated assistant messages.
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"test-messaging-connectivity"},{"type":"tool-call-count","count":3}]'
+      # area: behavior — asserts the agent attempts the probe tool call, not routing.
+      area: behavior
+      # Terminate as soon as the agent tries to run the probe script (the tool
+      # call starts). We only need to observe the attempt, not its result, so the
+      # script never has to run against a live resource. A tool-call-count cap is
+      # a cost fallback if the agent never attempts the script.
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"test-messaging-connectivity\\.(sh|ps1)"},{"type":"tool-call-count","count":10}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-diagnostics
-      - type: output-matches
+      # The agent attempted to run the probe script (either variant).
+      - type: tool-calls
         config:
-          pattern: "test-messaging-connectivity"
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)test-messaging-connectivity\\.(sh|ps1)"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
