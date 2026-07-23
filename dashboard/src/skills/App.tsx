@@ -210,14 +210,16 @@ export default function App() {
     // Load the list of plugin skills and honour a ?skill= deep link.
     useEffect(() => {
         let cancelled = false;
-        Promise.all([
-            fetch(apiUrl("/api/static")).then((res) => {
-                if (!res.ok) throw new Error(`API error: ${res.status}`);
-                return res.json() as Promise<HealthData>;
-            }),
-            fetchSkillsForPlugin(selectedPlugin),
-        ])
-            .then(([data, pluginSkills]) => {
+        let load = async () => {
+            try {
+                const [data, pluginSkills] = await Promise.all([
+                    fetch(apiUrl("/api/static")).then((res) => {
+                        if (!res.ok) throw new Error(`API error: ${res.status}`);
+                        return res.json() as Promise<HealthData>;
+                    }),
+                    fetchSkillsForPlugin(selectedPlugin),
+                ]);
+
                 if (cancelled) return;
                 const allowed = new Set(pluginSkills);
                 const list = skillsFromHealthData(data).filter((s) =>
@@ -232,13 +234,13 @@ export default function App() {
                 } else {
                     setSelected("");
                 }
-            })
-            .catch((err) => {
-                if (!cancelled) setSkillsError(err.message);
-            })
-            .finally(() => {
+            } catch (err) {
+                if (!cancelled) setSkillsError(err instanceof Error ? err.message : String(err));
+            } finally {
                 if (!cancelled) setSkillsLoading(false);
-            });
+            }
+        };
+        load();
         return () => {
             cancelled = true;
         };
