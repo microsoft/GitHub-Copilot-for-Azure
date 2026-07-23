@@ -13,8 +13,8 @@ async function getPluginsHandler(request: HttpRequest, context: InvocationContex
             jsonBody: pluginSkills,
         };
     } catch (err) {
-        context.error("Failed to read plugin containers:", err);
-        return { status: 500, body: "Failed to read plugin containers" };
+        context.error("Failed to read plugins:", err);
+        return { status: 500, body: "Failed to read plugins" };
     }
 }
 
