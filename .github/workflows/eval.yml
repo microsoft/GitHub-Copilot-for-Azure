@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: read
+  copilot-requests: write
 
 jobs:
   eval:
@@ -81,7 +82,7 @@ jobs:
             --junit \
             --threshold 0.8
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run evaluations
         if: github.event_name != 'pull_request'
@@ -93,7 +94,7 @@ jobs:
             --junit \
             --threshold 0.8
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ github.token }}
 
       - name: Upload results
         if: always()
