@@ -416,3 +416,128 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ────────────────────────────────────────────────────────────────────────────
+  # azure-kubernetes-app-deploy stimuli
+  # Sub-skill: deploy an existing app to an existing AKS cluster.
+  # Carried from closed PR #1827; grades on the parent skill name because
+  # nested sub-skills are not separately registered.
+  # ────────────────────────────────────────────────────────────────────────────
+
+  # ── routing: deploy a framework app to AKS ──
+  - name: "Routing: deploy Django app to existing AKS cluster"
+    prompt: "I have a Django app and an existing AKS cluster. Help me deploy it."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── routing: containerize + deploy ──
+  - name: "Routing: containerize Express app and deploy to AKS"
+    prompt: "Containerize my Express API and deploy it to my AKS cluster."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── boundary: cluster creation must NOT be treated as app deploy ──
+  - name: "Routing boundary: create cluster stays on provisioning"
+    prompt: "Create a new production-ready AKS cluster for me."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-matches
+        config:
+          pattern: "(?i)Automatic|Standard|networking|node pool|Day-0"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── output: manifest generation ──
+  - name: "Output: generate Kubernetes manifests for an app on AKS"
+    prompt: "Generate the Kubernetes manifests to run my web app on AKS."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)Dockerfile|deployment|manifest|kubectl"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── output: safeguard remediation ──
+  - name: "Output: AKS deployment failing safeguard checks"
+    prompt: "My AKS deployment is being rejected by Deployment Safeguards. How do I fix it?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)safeguard|resource requests|resource limits|probes|securityContext"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── fixture: deploy guidance from workspace app ──
+  - name: "Fixture: deploy a workspace app to AKS"
+    prompt: "I have a Node.js Express app in my workspace. Help me deploy it to my existing AKS cluster."
+    environment:
+      files:
+        - src: fixture/app/package.json
+          dest: package.json
+        - src: fixture/app/server.js
+          dest: server.js
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: workspace-fixture
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)Dockerfile|deployment|manifest|containeriz|ACR|kubectl"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
