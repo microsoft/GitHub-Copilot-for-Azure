@@ -524,7 +524,7 @@ stimuli:
       cost: llm
       area: migrate
     prompt: |
-      This project is our existing Python customer-support agent built using the Claude Agent SDK and self-hosted as a container. It uses a local MCP tool for order lookup. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
+      This project is our existing Python customer-support agent built using Claude Agent SDK and self-hosted as a container on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project with Foundry models and deploy the agent there, then invoke the deployed agent to make sure it works after deployment.
     graders:
       - type: skill-invocation
         config:
@@ -550,7 +550,7 @@ stimuli:
       cost: llm
       area: migrate
     prompt: |
-      This project is our existing Python customer-support agent built using the OpenAI Agents SDK and self-hosted as a container. It uses a local MCP tool for order lookup. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
+      This project is our existing Python customer-support agent built using OpenAI Agents SDK and self-hosted as a container on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project with Foundry models and deploy the agent there, then invoke the deployed agent to make sure it works after deployment.
     graders:
       - type: skill-invocation
         config:
@@ -576,7 +576,7 @@ stimuli:
       cost: llm
       area: migrate
     prompt: |
-      This project is our existing Python customer-support agent built using Google ADK and self-hosted as a container. It uses a local MCP tool for order lookup. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project and deploy it there, then invoke the deployed agent to make sure it works after deployment.
+      This project is our existing Python customer-support agent built using Google ADK and self-hosted as a container on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project with Foundry models and deploy the agent there, then invoke the deployed agent to make sure it works after deployment.
     graders:
       - type: skill-invocation
         config:
