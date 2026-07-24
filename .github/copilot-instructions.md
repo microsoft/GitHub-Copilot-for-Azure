@@ -160,9 +160,9 @@ Token estimation: ~4 characters ≈ 1 token. Limits are configured in `.token-li
 
 ## Authoring Scripts in Skills
 
-Some skills ship helper scripts (under a skill's `scripts/` or `references/**/scripts/` directory) that replace fragile inline one-liners in the markdown. These guidelines are distilled from repeated PR review feedback — follow them so new or updated scripts don't repeat past mistakes.
+Some skills ship helper scripts (under a skill's `scripts/` or `references/**/scripts/` directory). These guidelines help avoid common problems in the scripts.
 
-### Cross-Platform Parity
+### General Guidelines
 
 - **Always ship both `.sh` (bash) and `.ps1` (PowerShell) versions** of a script. Keep their behavior, options, output format, and exit codes in sync.
 - **Document exit codes in a header comment** and keep it accurate: the convention is `0` = success/all passed, `1` = a check failed, `2` = usage/argument error. Update the comment whenever the code changes, and keep both scripts' headers consistent.
@@ -187,9 +187,9 @@ Some skills ship helper scripts (under a skill's `scripts/` or `references/**/sc
 - **Use fixed-string grep (`grep -F`/`-Fq`) for literal matches** and handle grep's read-error exit code (`2`) explicitly — don't let it be treated as "no match".
 - **Guard argument parsing.** For value-consuming options, verify a value is present before `shift 2` — otherwise, under `set -euo pipefail`, a missing value causes an unbound-variable/`shift count` error or an infinite loop. Reject unknown/mistyped `--options` with usage instead of silently treating them as positional args. Validate expected types (e.g. `--tail` must be a positive integer) and exit `2` with a clear message on bad input.
 - **`usage()`/`--help` should exit `0`** (asking for help is not an error); reserve non-zero exits for actual argument errors.
-- **`set -o pipefail` is not inherited by subshells** (e.g. a pipeline run inside `bash -c "..."`). Re-declare it inside the subshell so a failing command in the pipeline is still surfaced.
+- **`set -o pipefail` is not inherited by a new Bash process** (e.g. a pipeline run inside `bash -c "..."`). Re-declare it inside that process so a failing command in the pipeline is still surfaced.
 - **Don't hold large command output in a variable on success** (e.g. `terraform plan`). Redirect to a temp file and only read it back on failure.
-- **Exclude the shebang from `--help` output.** A `usage()` that prints lines starting with `#` will echo `!/usr/bin/env bash`; filter it (e.g. `grep -v '^#!'`) or stop at the first non-comment line.
+- **Exclude the shebang from `--help` output.** A `usage()` that prints lines starting with `#` will echo `#!/usr/bin/env bash`; filter it (e.g. `grep -v '^#!'`) or stop at the first non-comment line.
 - **Don't swallow failures of critical steps with `|| true`** (e.g. `az account set`). Record an explicit PASS/FAIL so a failed step fails the overall run.
 
 ### Deterministic CLI Parsing
@@ -203,13 +203,7 @@ Some skills ship helper scripts (under a skill's `scripts/` or `references/**/sc
 - **Don't present a script as if it were on `PATH`** (e.g. `run-ig ...`). Reference the explicit path (`scripts/run-ig.sh` / `scripts/run-ig.ps1`).
 - **State the working directory** any relative path assumes. Prefer skill-root-relative paths (`./scripts/...`) and note that commands run from the skill root.
 - **Note that PowerShell parameter names differ** (PascalCase, e.g. `-Gadget`, `-Namespace`) so readers don't copy bash `--flag` syntax into `.ps1` calls.
-- Markdown links still must not escape the skill directory (enforced by `npm run references`).
-
-### Evals for Scripted Behavior
-
-- **Tag skill-invocation stimuli `area: routing`** — `tests/vally/tag-helpers.ts` only counts `routing` stimuli in skill-invocation reporting. Use `area: output` only for output-content assertions, and add a comment explaining the intent.
-- **Add an `earlyTerminate` condition** to integration stimuli so runs stop once the expected signal appears, keeping cost in line with sibling stimuli.
-- **Per-stimulus `runs` overrides don't currently take effect** (see microsoft/vally#430); set the file-level default `runs: 1` rather than relying on per-stimulus values.
+- Markdown links still must not escape the skill directory.
 
 ## CI Checks on Pull Requests
 
