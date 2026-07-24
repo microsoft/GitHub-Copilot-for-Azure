@@ -38,6 +38,7 @@
 /plugin/skills/microsoft-foundry/foundry-agent/create/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/deploy/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/invoke/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugin/skills/microsoft-foundry/foundry-agent/toolbox/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/troubleshoot/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/routine/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/invocations-ws/ @anchenyi @XiaofuHuang @swatDong @RickWinter
@@ -74,6 +75,7 @@
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/create/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/deploy/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/invoke/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/toolbox/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/troubleshoot/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/routine/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/invocations-ws/ @anchenyi @XiaofuHuang @swatDong @RickWinter

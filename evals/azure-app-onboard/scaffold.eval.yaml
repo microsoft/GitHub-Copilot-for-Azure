@@ -1,0 +1,444 @@
+# azure-app-onboard — scaffold-phase suite: generating infrastructure-as-code for a fresh app,
+# and correctly detecting (and not overwriting) infrastructure that a repo already ships.
+#
+# How to read this suite:
+#   • `earlyTerminate` stops each run at the first IaC write / scaffold-manifest write / existing-IaC
+#     decision point, and always OR's in a deploy-command guard, so a live `az deployment` / `azd up`
+#     / `terraform apply` can never run. All runs are cost: llm+execute — no billed Azure resources.
+#   • Scaffold IaC generation is done by a background sub-agent, so completion is checked by the
+#     artifacts left on disk (scaffold-manifest.json + its validationResult/selfReview, and the
+#     generated infra/*.bicep files) rather than by inspecting the transcript.
+#
+# Stimuli: Bicep generation for a fresh app (1) · existing-IaC detect-and-preserve (3) ·
+#          generated-IaC security baseline (1) · MySQL scaffold→deploy conformance gate (1).
+
+name: azure-app-onboard-scaffold-eval
+description: |
+  Scaffold-phase suite for the azure-app-onboard skill: generating infrastructure-as-code for a
+  fresh app, and correctly detecting (and not overwriting) infrastructure a repo already ships.
+  All stimuli stop before real provisioning (cost: llm+execute).
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+defaults:
+  runs: 1
+  timeout: "45m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── Test 1: scaffold generates Bicep for a simple app (broken-todo-demo) ──
+  # softCheckSkill · IaC content present · secure defaults · no deploy w/o approval.
+  # Runs to scaffold completion (earlyTerminate on the scaffold-manifest write, like the Security
+  # Baseline) so the background iac-gen subagent finishes flushing infra/*.bicep to disk before
+  # grading — then we assert the on-disk IaC + manifest. (Terminating on the first .bicep write
+  # raced the async subagent flush and left nothing on disk.)
+  - name: "Scaffold - Bicep Generation Simple App"
+    prompt: "I built a side project and want to get it live on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: scaffold
+      category: scaffold-bicep-gen
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Arun07AK/broken-todo-demo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 160
+    graders:
+      # routing gate — azure-app-onboard MUST be invoked
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # IaC content surfaced
+      - type: output-matches
+        config:
+          pattern: "(?i)main\\.bicep|\\bbicep\\b|infra/"
+      # Secure defaults mentioned
+      - type: output-matches
+        config:
+          pattern: "(?i)managed identity|managed-identity|key vault|keyvault|rbac|least privilege"
+      # On-disk IaC actually generated — the run completes scaffold (scaffold-manifest
+      # earlyTerminate), so the iac-gen subagent's writes are flushed before grading.
+      - type: file-exists
+        config:
+          path: "**/infra/**/*.bicep"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      # generated Bicep has real content (a resource/module declaration), not an empty stub
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?im)^\\s*(resource|module)\\s"
+      # No deploy without approval
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+            - command: "(?i)az\\s+deployment\\s+(sub|group)\\s+create\\b"
+            - command: "(?i)terraform\\s+apply\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Test 2: existing azd + Foundry (get-started-with-ai-agents) — detect, don't overwrite ──
+  # Verifies: the skill is invoked, surfaces the existing-IaC decision, routes to azure-prepare,
+  # and does not overwrite the repo's existing IaC. Halts at the decision point.
+  - name: "Scaffold - Existing Azd Foundry Detect No Overwrite"
+    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: scaffold
+      category: scaffold-existing-foundry
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/get-started-with-ai-agents
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      # routing gate — MUST route away to azure-prepare (existing azd template).
+      # This is the whole point of the test: detect the existing azd setup and delegate.
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard", "azure-prepare"]
+      # Existing IaC acknowledged
+      - type: output-matches
+        config:
+          pattern: "(?i)existing|found|detected|azure\\.yaml|azd"
+      # Must NOT overwrite existing IaC
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(create|create_file|write_file)$"
+              args:
+                path: "(?i)main\\.bicep|main\\.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Test 3: canonical azd template (todo-nodejs-mongo) — detect existing azd, route away, don't overwrite ──
+  # Verifies (mirrors integration-existing-iac.test.ts): the skill is invoked, detects the existing azd
+  # template, routes to azure-prepare, and does not overwrite the repo's existing IaC.
+  - name: "Scaffold - Existing Azd Template Mongo Detect No Overwrite"
+    prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: scaffold
+      category: scaffold-existing-mongo
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/todo-nodejs-mongo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 120
+    graders:
+      # routing gate — MUST route away to azure-prepare (existing azd template).
+      # This is the whole point of the test: detect the existing azd setup and delegate.
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard", "azure-prepare"]
+      # Existing IaC acknowledged
+      - type: output-matches
+        config:
+          pattern: "(?i)existing|found|detected|azure\\.yaml|azd"
+      # Must NOT overwrite existing IaC
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(create|create_file|write_file)$"
+              args:
+                path: "(?i)main\\.bicep|main\\.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Test 4: existing azd + Bicep (microblog-ai-remix) — must acknowledge & not overwrite ──
+  # Verifies: the skill is invoked, detects the repo's existing IaC, and does not overwrite it.
+  - name: "Scaffold - Existing Azd Bicep No Overwrite"
+    prompt: "I have a prototype ready — help me get it to production on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: scaffold
+      category: scaffold-existing-bicep
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Go with recommended options."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/microblog-ai-remix
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 80
+    graders:
+      # routing gate — MUST route away to azure-prepare (existing azd template)
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard", "azure-prepare"]
+      # Existing IaC detected
+      - type: output-matches
+        config:
+          pattern: "(?i)existing|already|found|detected|main\\.bicep|azure\\.yaml|\\bbicep\\b|infra/"
+      # Must NOT overwrite existing IaC
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(create|create_file|write_file)$"
+              args:
+                path: "(?i)main\\.bicep|main\\.tf"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Test 5: generated IaC meets the security baseline (node-express-server-rest-api) ──
+  # Verifies the generated Bicep + scaffold-manifest.json meet the security baseline: publishing-
+  # credential policies present · TLS version set · NO deterministic secrets · NO blanket firewall ·
+  # validation result and self-review recorded in the manifest.
+  # earlyTerminate = earlyTerminate (halts after the manifest write, so
+  # the manifest + validationResult + selfReview + IaC files all exist for the file graders).
+  - name: "Scaffold - IaC Security Baseline"
+    prompt: "I built a side project and want to get it live on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: scaffold
+      category: scaffold-security-baseline
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/rwieruch/node-express-server-rest-api
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 160
+    graders:
+      # routing gate
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # Publishing-credential policies present
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)basicPublishingCredentialsPolicies"
+      # TLS version explicitly set
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)minTlsVersion|minimumTlsVersion|min_tls_version|minimum_tls_version"
+      # NO deterministic secrets
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)change-me|change\\.me\\.in\\.production|uniquestring.*secret|uniquestring.*password"
+      # NO blanket firewall rule
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)allowAllWindowsAzureIps"
+      # scaffold-manifest.json written (canonical scaffold-completion signal)
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      # validationResult populated — azure-validate ran
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+          pattern: '"validationResult"\s*:\s*\{'
+      # selfReview populated
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+          pattern: '"selfReview"\s*:\s*\{'
+      # selfReview finding layers are string codes ("L1".."L4"), never a bare number.
+      # Passes for string layers AND for an empty findings[] (no "layer" key); fails only if a
+      # finding carries a numeric layer — the exact regression the number→string schema change fixed.
+      - type: file-not-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+          pattern: '"layer"\s*:\s*\d'
+      # Session start added .copilot-azure/ to the repo's .gitignore (secrets/artifacts never committed).
+      - type: file-matches
+        config:
+          path: "**/.gitignore"
+          pattern: "\\.copilot-azure"
+      # No azd
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\s+\\w+"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Test 6: MySQL app — generated IaC passes the scaffold→deploy conformance gate ──
+  # Regression guard for the nodejs-mysql failures (Run 23/23b/23c/23d): the generated Bicep must be
+  # deploy-ready BEFORE deploy — enforced by the Step 3c conformance gate (scaffold-conformance.ps1/.sh).
+  # Asserts on the on-disk IaC the exact defects the gate blocks:
+  #   DB-TLS-ON (require_secure_transport) · DB-FIREWALL-ALLOW-AZURE (0.0.0.0 all-Azure rule emitted,
+  #   module NOT skipped — the #23 objective) · DB-NAME-PRESENT (flexibleServers/databases) ·
+  #   TAGS-NO-CAMEL (hyphenated tag keys, never camelCase) · NO-PLAINTEXT-SECRET (no literal password
+  #   in main.parameters.json). These are checked directly on the generated files (outcome, not artifact).
+  # earlyTerminate halts after the manifest write so IaC + manifest exist for the file graders.
+  - name: "Scaffold - MySQL Conformance Gate"
+    prompt: "I built a side project and want to get it live on Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: scaffold
+      category: scaffold-mysql-conformance
+      skill: azure-app-onboard
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/bezkoder/docker-compose-nodejs-mysql
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 160
+    graders:
+      # routing gate
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+      # MySQL detected
+      - type: output-matches
+        config:
+          pattern: "(?i)mysql"
+      # On-disk IaC generated
+      - type: file-exists
+        config:
+          path: "**/infra/**/*.bicep"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      # DB-TLS-ON — MySQL module keeps require_secure_transport (client TLS is the fix, never disable it)
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "require_secure_transport"
+      # DB-FIREWALL-ALLOW-AZURE — MySQL module emits the 0.0.0.0 all-Azure firewall rule (the #23 objective:
+      # the module is generated with public Azure access, NOT skipped). Consent is obtained at the Scaffold Gate.
+      # Match the 0.0.0.0 start-IP sentinel (what actually grants all-Azure access), NOT the Portal rule NAME —
+      # the firewall-rule name is arbitrary; the 0.0.0.0-0.0.0.0 range is the real reachability signal.
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: 'startIpAddress:\s*.0\.0\.0\.0'
+      # DB-NAME-PRESENT — the app's schema DB exists in IaC before the container starts
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "flexibleServers/databases"
+      # TAGS-NO-CAMEL — tag keys are hyphenated, never camelCase (camelCase breaks tag-based cleanup)
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "appOnboard(Skill|SessionId)|createdAt:|deployedBy:"
+      # NO-PLAINTEXT-SECRET — no literal admin password in the params file (must be @secure, passed at deploy)
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/main.parameters.json"
+          pattern: "(?i)\"administratorLoginPassword\"\\s*:\\s*\\{\\s*\"value\"\\s*:\\s*\"[^\"]+\""
+      # No deploy without approval
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+            - command: "(?i)az\\s+deployment\\s+(sub|group)\\s+create\\b"
+            - command: "(?i)terraform\\s+apply\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
