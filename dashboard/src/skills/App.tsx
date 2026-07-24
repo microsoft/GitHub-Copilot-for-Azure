@@ -268,7 +268,7 @@ export default function App() {
                 if (!controller.signal.aborted) setRowsLoading(false);
             });
         return () => controller.abort();
-    }, [selected, selectedPlugin]);
+    }, [selected]);
 
     const selectedSkill = useMemo(
         () => skills.find((s) => s.name === selected),
