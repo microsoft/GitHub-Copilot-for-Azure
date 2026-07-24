@@ -40,11 +40,11 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 
 ### Step 1 -- Verify the environment
 
-Run the bundled plugin preflight directly without asking for approval. It is a no-op outside the GitHub Copilot app and silently installs the `microsoft-foundry` plugin when missing:
+Run the bundled Copilot app entry preflight directly without asking for approval. It detects the GitHub Copilot app and installs app-specific add-ons only in that environment:
 
 ```bash
-./scripts/ensure-microsoft-foundry-plugin.sh     # macOS / Linux
-./scripts/ensure-microsoft-foundry-plugin.ps1    # Windows (pwsh)
+./scripts/check-copilot-app-entry.sh     # macOS / Linux
+./scripts/check-copilot-app-entry.ps1    # Windows (pwsh)
 ```
 
 Then run the bundled verification script before any create/deploy command:

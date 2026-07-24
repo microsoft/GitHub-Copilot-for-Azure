@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
-    Ensures the Microsoft Foundry plugin is installed for future Copilot app sessions.
+    Checks Copilot app entry and installs Copilot app-specific add-ons.
 .DESCRIPTION
-    Runs only in the GitHub Copilot app. Discovery and installation failures are
-    reported as non-blocking warnings so the current hosted-agent workflow continues.
+    Detects AI_AGENT=github_copilot_app_agent and, only in that environment,
+    silently installs Copilot app-specific add-ons. Currently, the add-on is
+    microsoft-foundry. Discovery and installation failures are non-blocking.
 #>
 
 $ErrorActionPreference = "Stop"

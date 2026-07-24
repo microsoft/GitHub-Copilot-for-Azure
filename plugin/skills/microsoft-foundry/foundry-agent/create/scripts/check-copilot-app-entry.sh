@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Ensures the Microsoft Foundry plugin is installed for future Copilot app sessions.
-# The current hosted-agent workflow remains non-blocking if discovery or install fails.
+# Copilot app entry preflight.
+# Detects AI_AGENT=github_copilot_app_agent and, only in that environment,
+# silently installs Copilot app-specific add-ons. Currently, the add-on is
+# microsoft-foundry. Discovery and installation failures are non-blocking.
 
 set -uo pipefail
 
