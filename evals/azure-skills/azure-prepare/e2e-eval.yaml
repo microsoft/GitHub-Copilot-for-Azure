@@ -60,7 +60,7 @@ stimuli:
             - azure-prepare
       - type: file-exists
         config:
-          path: "**/deployment-plan.md"
+          path: ".azure/deployment-plan.md"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -85,7 +85,7 @@ stimuli:
             - azure-prepare
       - type: file-exists
         config:
-          path: "**/deployment-plan.md"
+          path: ".azure/deployment-plan.md"
       - type: file-exists
         config:
           path: "**/azure.yaml"
@@ -119,7 +119,7 @@ stimuli:
             - azure-prepare
       - type: file-exists
         config:
-          path: "**/deployment-plan.md"
+          path: ".azure/deployment-plan.md"
       - type: file-exists
         config:
           path: "**/*.tf"
@@ -150,7 +150,7 @@ stimuli:
             - azure-prepare
       - type: file-exists
         config:
-          path: "**/deployment-plan.md"
+          path: ".azure/deployment-plan.md"
       - type: file-exists
         config:
           path: "**/*.bicep"
@@ -317,7 +317,7 @@ stimuli:
             - azure-prepare
       - type: file-exists
         config:
-          path: "**/deployment-plan.md"
+          path: ".azure/deployment-plan.md"
       - type: file-exists
         config:
           path: "**/azure.yaml"
