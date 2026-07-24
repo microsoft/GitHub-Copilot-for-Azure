@@ -6,9 +6,6 @@
 #   - Functions app: assess reliability → deploy ZR fix → re-assess
 #   - App Service app: assess reliability → deploy ZR fix → re-assess
 #
-# Both tests use multi-turn follow-ups via the custom executor's followUp tag.
-# The systemPrompt tag injects a pseudo-random resource group name suffix.
-#
 # NOT TESTED (intentionally):
 #   - Storage redundancy upgrade (LRS/GRS → ZRS) — takes hours/days
 #   - Multi-region failover with Azure Front Door — high cost, long deploy
@@ -41,23 +38,22 @@ stimuli:
   # Jest: "assess function app, deploy ZR fix, verify ZR is now ON"
   # Multi-turn flow: assess → confirm IaC fix → deploy → decline storage → re-assess
   - name: "Functions app zone redundancy e2e"
-    prompt: |
-      I have an Azure Functions sample app in this workspace.
-      Use my current Azure subscription and the eastus2 region.
-      Assess and improve the reliability of my function app.
-      When you ask about storage migration, decline (no/later).
-      Multi-region is not needed.
+    turns:
+      - I have an Azure Functions sample app in this workspace.
+        Use my current Azure subscription and the eastus2 region.
+        Assess and improve the reliability of my function app.
+        When you ask about storage migration, decline (no/later).
+        Multi-region is not needed.
+      - "Yes, proceed with the quick-win zone-redundancy fix using IaC patches (Path B)."
+      - "Yes, deploy now."
+      - "No to storage migration — leave storage as-is."
+      - "Now re-run the reliability assessment and confirm zone redundancy is ON for the compute plan."
     tags:
       type: integration
       skill: azure-reliability
       tier: full
       cost: llm
       area: output
-      followUp:
-        - "Yes, proceed with the quick-win zone-redundancy fix using IaC patches (Path B)."
-        - "Yes, deploy now."
-        - "No to storage migration — leave storage as-is."
-        - "Now re-run the reliability assessment and confirm zone redundancy is ON for the compute plan."
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
     environment:
       commands:
@@ -89,21 +85,20 @@ stimuli:
   # Jest: "assess web app, deploy ZR fix, verify ZR is now ON"
   # Multi-turn flow: assess → confirm IaC fix → deploy → re-assess
   - name: "App Service zone redundancy e2e"
-    prompt: |
-      I have an Azure App Service sample app in this workspace.
-      Use my current Azure subscription and the eastus2 region.
-      Assess and improve the reliability of my Web app.
-      Multi-region is not needed.
+    turns:
+      - I have an Azure App Service sample app in this workspace.
+        Use my current Azure subscription and the eastus2 region.
+        Assess and improve the reliability of my Web app.
+        Multi-region is not needed.
+      - "Yes, proceed with the quick-win zone-redundancy fix using IaC patches (Path B)."
+      - "Yes, deploy now."
+      - "Now re-run the reliability assessment and confirm zone redundancy is ON for the App Service plan."
     tags:
       type: integration
       skill: azure-reliability
       tier: full
       cost: llm
       area: output
-      followUp:
-        - "Yes, proceed with the quick-win zone-redundancy fix using IaC patches (Path B)."
-        - "Yes, deploy now."
-        - "Now re-run the reliability assessment and confirm zone redundancy is ON for the App Service plan."
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
     environment:
       commands:

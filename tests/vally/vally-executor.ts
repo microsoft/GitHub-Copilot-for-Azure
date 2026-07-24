@@ -4,11 +4,13 @@ import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { listSkills } from "../utils/skill-loader.ts";
-import { getEarlyTerminateCondition, getFollowUp, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
+import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
 
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
+  supportsMultiTurn = true;
+  supportsPreparedWorkspace = true;
 
   async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
     const startedAt = new Date();
@@ -28,11 +30,21 @@ export class IntegrationTestAgentRunner implements Executor {
     const model = options.model ?? "claude-sonnet-4.6";
 
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
-    const followUp = getFollowUp(tags);
     const systemPrompt = getSystemPrompt(tags);
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
     const requiredSkills = getRequiredSkillsCondition(tags);
     const timeout = options.timeout;
+
+    let prompt: string;
+    if (stimulus.turns) {
+      prompt = stimulus.turns[0];
+    } else {
+      prompt = stimulus.prompt;
+    }
+    let followUps: string[] | undefined;
+    if (stimulus.turns) {
+      followUps = stimulus.turns.slice(1);
+    }
 
     const runConfig: AgentRunConfig = {
       workspace: workDir,
@@ -40,10 +52,10 @@ export class IntegrationTestAgentRunner implements Executor {
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
       },
       model: model,
-      prompt: stimulus.prompt,
+      prompt: prompt,
       shouldEarlyTerminate: shouldEarlyTerminate,
       nonInteractive: true,
-      followUp: followUp,
+      followUp: followUps,
       systemPrompt: systemPrompt,
       followUpTimeout: timeout,
       takeScreenshot: takeScreenshot,

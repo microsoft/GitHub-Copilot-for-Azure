@@ -27,7 +27,6 @@ type Stimuli = {
     cost?: string;
     area?: string;
     earlyTerminate?: string;
-    followUp?: string[];
     systemPrompt?: string;
     takeScreenshot?: string;
     requiredSkills?: string[];
@@ -325,29 +324,6 @@ function validateJavaUpgradeFileContentGrader(
   return valid;
 }
 
-function validateFollowUpTag(
-  displayPath: string,
-  stimulusIndex: number,
-  stimulusName: string | undefined,
-  value: string[] | string | undefined,
-): boolean {
-  if (value === undefined) {
-    return true;
-  }
-
-  if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
-    return true;
-  }
-
-  reportValidationError(
-    displayPath,
-    stimulusIndex,
-    stimulusName,
-    "tags.followUp must be a string array",
-  );
-  return false;
-}
-
 function validateRequiredSkillsTag(
   displayPath: string,
   stimulusIndex: number,
@@ -464,15 +440,6 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         typedStimulus.name,
         "earlyTerminate",
         typedStimulus.tags?.earlyTerminate,
-      )) {
-        fileHasErrors = true;
-      }
-
-      if (!validateFollowUpTag(
-        displayPath,
-        stimulusIndex,
-        typedStimulus.name,
-        typedStimulus.tags?.followUp,
       )) {
         fileHasErrors = true;
       }

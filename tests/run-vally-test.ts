@@ -30,7 +30,6 @@ type ResultJsonlEntry = {
         cost: string;
         area: string;
         earlyTerminate?: string;
-        followUp?: string[];
         systemPrompt?: string;
         takeScreenshot?: string;
       }
