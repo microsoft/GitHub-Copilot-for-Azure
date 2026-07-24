@@ -1,5 +1,3 @@
-import { getPersistedPluginSelection } from "./PluginSelector";
-
 /**
  * Builds an API URL by merging the page's current query parameters into the
  * given path. Path-level params take precedence over page-level params, so
@@ -59,4 +57,23 @@ export function pageUrl(path: string): string {
 
     const separator = pathWithoutFragment.includes("?") ? "&" : "?";
     return `${pathWithoutFragment}${separator}container=${encodeURIComponent(container)}${fragment}`;
+}
+
+export const PLUGIN_SESSION_STORAGE_KEY = "dashboard.selectedPlugin";
+
+export function getPersistedPluginSelection(): string {
+    try {
+        return window.sessionStorage.getItem(PLUGIN_SESSION_STORAGE_KEY) ?? "";
+    } catch {
+        // Ignore unavailable sessionStorage and fall back to no selection.
+        return "";
+    }
+}
+
+export function persistPluginSelection(plugin: string): void {
+    try {
+        window.sessionStorage.setItem(PLUGIN_SESSION_STORAGE_KEY, plugin);
+    } catch {
+        // Ignore unavailable sessionStorage; the UI can still function locally.
+    }
 }

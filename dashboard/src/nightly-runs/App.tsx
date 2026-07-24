@@ -3,8 +3,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
 import type { BlobEntry, BlobTree, BlobTreeNode } from "../shared/blobTree";
-import { apiUrl, pageUrl } from "../shared/apiUrl";
-import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
+import { apiUrl, getPersistedPluginSelection, pageUrl } from "../shared/apiUrl";
+import PluginSelector from "../shared/PluginSelector";
 
 interface FileSection {
     label: string;

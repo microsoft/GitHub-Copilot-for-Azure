@@ -7,11 +7,8 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { apiUrl } from "../shared/apiUrl";
-import PluginSelector, {
-    getPersistedPluginSelection,
-    fetchSkillsForPlugin,
-} from "../shared/PluginSelector";
+import { apiUrl, getPersistedPluginSelection } from "../shared/apiUrl";
+import PluginSelector from "../shared/PluginSelector";
 import { issuesUrl } from "./issuesUrl";
 import {
     buildDaySeries,
@@ -21,6 +18,7 @@ import {
     type MetricKey,
     type MetricsRow,
 } from "./metrics";
+import { fetchSkillsForPlugin } from "../shared/plugins";
 
 /** Number of trailing days shown in every graph. */
 const WINDOW_DAYS = 10;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
-import { apiUrl, pageUrl } from "../shared/apiUrl";
-import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
+import { apiUrl, getPersistedPluginSelection, pageUrl } from "../shared/apiUrl";
+import PluginSelector from "../shared/PluginSelector";
 
 interface TestCase {
     testName: string;

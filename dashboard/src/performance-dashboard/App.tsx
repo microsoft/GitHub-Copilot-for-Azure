@@ -8,8 +8,8 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-import { apiUrl } from "../shared/apiUrl";
-import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
+import { apiUrl, getPersistedPluginSelection } from "../shared/apiUrl";
+import PluginSelector from "../shared/PluginSelector";
 
 interface EvalMetricRow {
     date: string;
