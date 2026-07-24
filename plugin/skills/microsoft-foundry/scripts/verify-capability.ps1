@@ -14,7 +14,7 @@ try {
 }
 
 if ($listExitCode -ne 0) {
-    Write-Output "Detected: azd is installed, but its extensions could not be inspected. Always remember to run the verify-environment script in the create sub-skill to verify and install the Foundry agent local-development environment later."
+    Write-Output "Detected: azd is installed, but its extensions could not be inspected. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
     exit 0
 }
 
@@ -22,14 +22,14 @@ try {
     $extensions = $extensionList | ConvertFrom-Json -ErrorAction Stop
     $foundryInstalled = @($extensions) | Where-Object { $_.id -eq "microsoft.foundry" } | Select-Object -First 1
 } catch {
-    Write-Output "Detected: azd is installed, but its extensions could not be inspected. Always remember to run the verify-environment script in the create sub-skill to verify and install the Foundry agent local-development environment later."
+    Write-Output "Detected: azd is installed, but its extensions could not be inspected. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
     exit 0
 }
 
 if ($foundryInstalled) {
     Write-Output "Detected: azd and microsoft.foundry are installed. Basic Microsoft Foundry capability is ready."
 } else {
-    Write-Output "Detected: microsoft.foundry is not installed. Microsoft Foundry capability is not ready. Always remember to run the verify-environment script in the create sub-skill to verify and install the Foundry agent local-development environment later."
+    Write-Output "Detected: microsoft.foundry is not installed. Microsoft Foundry capability is not ready. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
 }
 
 exit 0
