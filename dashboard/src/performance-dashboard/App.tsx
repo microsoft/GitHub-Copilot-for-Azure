@@ -9,6 +9,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../shared/apiUrl";
+import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
 
 interface EvalMetricRow {
     date: string;
@@ -47,6 +48,7 @@ function shortLabel(key: string): string {
 }
 
 export default function App() {
+    const [selectedPlugin, setSelectedPlugin] = useState<string>(getPersistedPluginSelection);
     const [filters, setFilters] = useState<EvalFilters>({ benchmarks: [], models: [] });
     const [selectedBenchmark, setSelectedBenchmark] = useState<string>("");
     const [selectedModel, setSelectedModel] = useState<string>("");
@@ -194,6 +196,11 @@ export default function App() {
                 <h1>MSBench Performance Dashboard</h1>
             </header>
 
+            <PluginSelector
+                selectedPlugin={selectedPlugin}
+                onChange={setSelectedPlugin}
+            />
+
             {/* Filters */}
             <div className="pd-filters">
                 <label className="pd-filter">
@@ -299,9 +306,8 @@ export default function App() {
                             {seriesNames.map((name, i) => (
                                 <button
                                     key={name}
-                                    className={`pd-legend-item${
-                                        hiddenSeries.has(name) ? " pd-legend-item--hidden" : ""
-                                    }`}
+                                    className={`pd-legend-item${hiddenSeries.has(name) ? " pd-legend-item--hidden" : ""
+                                        }`}
                                     onClick={() => toggleSeries(name)}
                                     title={name}
                                 >

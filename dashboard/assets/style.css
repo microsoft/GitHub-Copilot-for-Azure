@@ -241,6 +241,48 @@ button.header-status-pill {
   font-weight: 800;
 }
 
+/* === Plugin Toolbar === */
+.plugin-toolbar {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.plugin-toolbar__content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.plugin-toolbar__field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plugin-toolbar__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.plugin-toolbar__select {
+  min-width: 220px;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+
+.plugin-toolbar__select:focus {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 /* === Main Content === */
 #main:has(.panel-grid) {
   padding: 24px 32px;
@@ -1028,6 +1070,22 @@ button.header-status-pill {
 
   .dashboard-header {
     padding: 16px;
+  }
+
+  .plugin-toolbar {
+    padding: 14px 16px;
+  }
+
+  .plugin-toolbar__field {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .plugin-toolbar__select {
+    min-width: 0;
+    width: 100%;
   }
 
   main {

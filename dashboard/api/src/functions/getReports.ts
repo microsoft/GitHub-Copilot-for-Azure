@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { enumerateBlobs, getBlobContent, } from "../blobEnumerator";
+import { enumerateBlobs, filterBlobTreeBySkills, getBlobContent, resolveSkillFilter } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
@@ -34,6 +34,12 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
 
     const container = request.query.get("container") || undefined;
     const tree: BlobTree = await enumerateBlobs(`${date}/`, container);
+
+    const skillFilter = await resolveSkillFilter(request.query.get("plugin") || undefined);
+    if (skillFilter) {
+        filterBlobTreeBySkills(tree, skillFilter);
+    }
+
     const dateNode = tree[date];
     if (!dateNode) {
         return { status: 404, body: `No reports found for date: ${date}` };

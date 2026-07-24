@@ -2,6 +2,7 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
 import { logRequestIdentity } from "../requestIdentity";
+import { resolveSkillFilter } from "../blobEnumerator";
 
 const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
 const TOKEN_USAGE_TABLE_NAME = process.env.TOKEN_USAGE_TABLE_NAME;
@@ -29,6 +30,17 @@ function odataLiteral(value: string): string {
 }
 
 /**
+ * Build an OData clause that matches any skill in the set, e.g.
+ * `(skill eq 'a' or skill eq 'b')`. Returns undefined for an empty set.
+ */
+function skillSetClause(skills: Set<string>): string | undefined {
+    if (skills.size === 0) {
+        return undefined;
+    }
+    return `(${[...skills].map((s) => `skill eq '${odataLiteral(s)}'`).join(" or ")})`;
+}
+
+/**
  * Returns integration-test run metrics rows from the table.
  * GET /api/test-run-metrics
  * Query params: skill (optional), test (optional), branch (optional)
@@ -42,14 +54,30 @@ async function getTestRunMetrics(request: HttpRequest, context: InvocationContex
     const filterSkill = request.query.get("skill") || undefined;
     const filterTest = request.query.get("test") || undefined;
     const filterBranch = request.query.get("branch") || undefined;
+    const filterPlugin = request.query.get("plugin") || undefined;
 
     try {
         const tableClient = getTestRunMetricsTableClient();
+
+        // When a plugin is specified, restrict to its skills. An unknown plugin
+        // resolves to an empty set, which means no rows can match.
+        const skillFilter = await resolveSkillFilter(filterPlugin);
+        if (skillFilter && skillFilter.size === 0) {
+            return {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+                body: "[]",
+            };
+        }
 
         const filters: string[] = [];
         if (filterSkill) filters.push(`skill eq '${odataLiteral(filterSkill)}'`);
         if (filterTest) filters.push(`testName eq '${odataLiteral(filterTest)}'`);
         if (filterBranch) filters.push(`branch eq '${odataLiteral(filterBranch)}'`);
+        if (skillFilter) {
+            const clause = skillSetClause(skillFilter);
+            if (clause) filters.push(clause);
+        }
         const filter = filters.length > 0 ? filters.join(" and ") : undefined;
 
         const listOptions = filter ? { queryOptions: { filter } } : {};
@@ -98,6 +126,8 @@ async function getTestRunMetricsFilters(request: HttpRequest, context: Invocatio
 
     try {
         const tableClient = getTestRunMetricsTableClient();
+        // When a plugin is specified, only surface filter values for its skills.
+        const skillFilter = await resolveSkillFilter(request.query.get("plugin") || undefined);
         const skills = new Set<string>();
         const tests = new Set<string>();
         const branches = new Set<string>();
@@ -106,6 +136,9 @@ async function getTestRunMetricsFilters(request: HttpRequest, context: Invocatio
         for await (const entity of tableClient.listEntities({
             queryOptions: { select: ["skill", "testName", "branch"] },
         })) {
+            if (skillFilter && (!entity.skill || !skillFilter.has(entity.skill as string))) {
+                continue;
+            }
             if (entity.skill) skills.add(entity.skill as string);
             if (entity.testName) tests.add(entity.testName as string);
             if (entity.branch) branches.add(entity.branch as string);

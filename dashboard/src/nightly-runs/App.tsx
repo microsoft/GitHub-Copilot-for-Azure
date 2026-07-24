@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import FileViewer from "./FileViewer";
 import type { BlobEntry, BlobTree, BlobTreeNode } from "../shared/blobTree";
 import { apiUrl, pageUrl } from "../shared/apiUrl";
+import PluginSelector, { getPersistedPluginSelection } from "../shared/PluginSelector";
 
 interface FileSection {
     label: string;
@@ -66,6 +67,7 @@ function App() {
 }
 
 function Dashboard() {
+    const [selectedPlugin, setSelectedPlugin] = useState<string>(getPersistedPluginSelection);
     const [dates, setDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [reportMarkdown, setReportMarkdown] = useState<string>("");
@@ -92,7 +94,7 @@ function Dashboard() {
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoadingDates(false));
-    }, []);
+    }, [selectedPlugin]);
 
     // Fetch data and reports when a date is selected
     useEffect(() => {
@@ -126,7 +128,7 @@ function Dashboard() {
             .then((md) => setReportMarkdown(md))
             .catch((err) => setReportMarkdown(`*Error loading reports: ${err.message}*`))
             .finally(() => setLoadingReport(false));
-    }, [selectedDate]);
+    }, [selectedDate, selectedPlugin]);
 
     const handleDownload = useCallback((blobName: string) => {
         const viewerUrl = pageUrl(`${window.location.pathname}?file=${encodeURIComponent(blobName)}`);
@@ -162,6 +164,11 @@ function Dashboard() {
             <header className="nr-header">
                 <h1>Nightly Runs{selectedDate ? ` \u2014 ${selectedDate}` : ""}</h1>
             </header>
+
+            <PluginSelector
+                selectedPlugin={selectedPlugin}
+                onChange={setSelectedPlugin}
+            />
 
             <div className="nr-body">
                 {/* Left panel - date list */}

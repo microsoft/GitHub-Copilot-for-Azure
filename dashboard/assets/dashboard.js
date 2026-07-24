@@ -7,6 +7,88 @@
 /** @type {Record<string, (section: HTMLElement, category: object) => void>} */
 const panelRenderers = {};
 
+const PLUGIN_SESSION_STORAGE_KEY = "dashboard.selectedPlugin";
+
+function getPersistedPluginSelection() {
+  try {
+    return window.sessionStorage.getItem(PLUGIN_SESSION_STORAGE_KEY) || "";
+  } catch {
+    // Ignore unavailable sessionStorage and fall back to no selection.
+    return "";
+  }
+}
+
+function persistPluginSelection(plugin) {
+  if (!plugin) return;
+  try {
+    window.sessionStorage.setItem(PLUGIN_SESSION_STORAGE_KEY, plugin);
+  } catch {
+    // Ignore unavailable sessionStorage; the UI can still function locally.
+  }
+}
+
+/**
+ * Append the persisted plugin selection as a `plugin` query param so plugin-scoped
+ * endpoints filter their data to the selected plugin's skills.
+ * @param {string} path
+ * @returns {string}
+ */
+function withPlugin(path) {
+  const plugin = getPersistedPluginSelection();
+  if (!plugin) return path;
+  const separator = path.includes("?") ? "&" : "?";
+  return path + separator + "plugin=" + encodeURIComponent(plugin);
+}
+
+async function fetchPluginSkills() {
+  try {
+    const res = await fetch("/api/plugins");
+    if (!res.ok) return {};
+    const data = await res.json();
+    return data;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Fetch the sorted list of available plugin directory names.
+ * @returns {Promise<string[]>}
+ */
+async function fetchAvailablePlugins() {
+  const pluginSkills = await fetchPluginSkills();
+  return Object.keys(pluginSkills.plugins).sort();
+}
+
+async function initPluginSelector() {
+  const select = document.getElementById("plugin-select");
+  if (!select) return;
+
+  const plugins = await fetchAvailablePlugins();
+
+  select.textContent = "";
+  for (const plugin of plugins) {
+    const option = document.createElement("option");
+    option.value = plugin;
+    option.textContent = plugin;
+    select.appendChild(option);
+  }
+
+  const persisted = getPersistedPluginSelection();
+  if (persisted && plugins.includes(persisted)) {
+    select.value = persisted;
+  } else if (plugins.length > 0) {
+    select.value = plugins[0];
+    persistPluginSelection(plugins[0]);
+  }
+
+  select.addEventListener("change", function () {
+    persistPluginSelection(select.value);
+    // Reload so every panel re-fetches its data for the newly selected plugin.
+    window.location.reload();
+  });
+}
+
 // ── Thresholds ──────────────────────────────────────────────────────────────
 
 /** Minimum passing rate for skill invocation tests (0–1). */
@@ -998,7 +1080,7 @@ let _latestTestResultsPromise = null;
 function fetchLatestTestResults() {
   if (_latestTestResultsPromise) return _latestTestResultsPromise;
   _latestTestResultsPromise = (async () => {
-    const datesRes = await fetch("/api/dates");
+    const datesRes = await fetch(withPlugin("/api/dates"));
     if (!datesRes.ok) throw new Error("HTTP " + datesRes.status);
     const dates = await datesRes.json();
     if (!Array.isArray(dates) || dates.length === 0) {
@@ -1006,7 +1088,7 @@ function fetchLatestTestResults() {
     }
     const latestDate = dates[0];
     const resultsRes = await fetch(
-      "/api/test-results/" + encodeURIComponent(latestDate),
+      withPlugin("/api/test-results/" + encodeURIComponent(latestDate)),
     );
     if (!resultsRes.ok) throw new Error("HTTP " + resultsRes.status);
     const skillResults = await resultsRes.json();
@@ -1265,7 +1347,7 @@ function renderE2EPassRatePanel(
       barFill.setAttribute(
         "aria-label",
         skill.skillName + ": " + pct + "% e2e pass rate (" +
-          (status === "pass" ? "above" : "below") + " " + E2E_THRESHOLD_PCT + "% threshold)",
+        (status === "pass" ? "above" : "below") + " " + E2E_THRESHOLD_PCT + "% threshold)",
       );
 
       // Threshold marker — hidden from AT; sr-only sibling communicates the threshold
@@ -1420,7 +1502,7 @@ function renderConfidenceLevelPanel(
       barFill.setAttribute(
         "aria-label",
         skill.skillName + ": " + pct + "% confidence level (" +
-          (status === "pass" ? "above" : "below") + " " + CONFIDENCE_THRESHOLD_PCT + "% threshold)",
+        (status === "pass" ? "above" : "below") + " " + CONFIDENCE_THRESHOLD_PCT + "% threshold)",
       );
 
       const marker = el("div", "e2e-rate-threshold-marker");
@@ -1594,7 +1676,7 @@ function renderDeployRetriesPanel(section, rows, overallStatus, dateLabel) {
     ? "No data"
     : failing > 0
       ? failing + " scenario" + (failing !== 1 ? "s" : "") + " failed (\u22653 retries)"
-        + (warning > 0 ? ", " + warning + " warned" : "")
+      + (warning > 0 ? ", " + warning + " warned" : "")
       : withRetries > 0
         ? withRetries + " scenario" + (withRetries !== 1 ? "s" : "") + " needed retries"
         : "No retries \u2014 all scenarios passed first try";
@@ -1800,11 +1882,19 @@ async function init() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  init();
-  loadSkillInvocationRates();
-  loadE2EPassRates();
-  loadConfidenceLevelPerSkill();
-  loadDeployScenarioRetries();
-  loadIntegrationTestTokenUsage();
+document.addEventListener("DOMContentLoaded", async function () {
+  // Populate the plugin selector (and cache the plugin-container map) before
+  // kicking off the data loads, so their API calls can include the selected
+  // plugin's container fallback on the very first page load.
+  try {
+    await initPluginSelector();
+  } catch { }
+  finally {
+    init();
+    loadSkillInvocationRates();
+    loadE2EPassRates();
+    loadConfidenceLevelPerSkill();
+    loadDeployScenarioRetries();
+    loadIntegrationTestTokenUsage();
+  }
 });
