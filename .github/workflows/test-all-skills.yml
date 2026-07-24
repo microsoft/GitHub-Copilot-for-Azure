@@ -22,12 +22,12 @@ on:
       - main
     paths:
       - "tests/**"
-      - "plugin/skills/**"
+      - "plugins/*/skills/**"
       - ".github/workflows/test-*.yml"
   pull_request:
     paths:
       - "tests/**"
-      - "plugin/skills/**"
+      - "plugins/*/skills/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

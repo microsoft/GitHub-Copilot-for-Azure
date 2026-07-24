@@ -18,7 +18,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
-import { listSkills } from "./skill-loader.ts";
+import { listSkills, type SkillRef } from "./skill-loader.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
 import { sanitizeTestName } from "../vally/utils.ts";
 
@@ -127,12 +127,17 @@ export interface AgentMetadata {
 
   /**
    * Map from skill name to the sorted, deduped list of files under that skill's
-   * directory (i.e., paths under `output/skills/<skillName>/`) that were referenced
+   * directory (i.e., paths under `output/<plugin-dir>/skills/<skillName>/`) that were referenced
    * by tool invocations during the run.
    * Populated from tool arguments that reference files in a skill directory, and may
    * also include a synthesized `SKILL.md` entry for `skill` tool calls.
    */
   skillFiles: Record<string, string[]>;
+
+  /**
+   * Loaded skills after applying the filters in the configuration and environment variable.
+   */
+  skillsLoaded: SkillRef[];
 }
 
 /**
@@ -221,7 +226,7 @@ export interface AgentRunConfig {
    * If undefined, all the skills in azure plugin will be included.
    * If specified, only the skills in this array will be included. This option overrides the required skills specified in the {@link requiredSkills}.
    */
-  includeSkills?: string[];
+  includeSkills?: SkillRef[];
 
   /**
    * Maximum number of assistant turns allowed before the run is aborted.
@@ -248,7 +253,7 @@ export interface AgentRunConfig {
    * Skills that must be present with full description.
    * Skills other than the required ones will be randomly disabled until the estimated char count falls below the char count budget.
    */
-  requiredSkills?: string[];
+  requiredSkills?: SkillRef[];
 }
 
 interface KeywordOptions {
@@ -267,61 +272,65 @@ interface RunnerCleanup {
 
 /**
  * Extract file-system paths from the serialized arguments of a tool call that
- * reference the given `skillDirectory`. Checks common argument keys
+ * reference any skill directory path in the given `skillDirectories`. Checks common argument keys
  * (`filePath`, `path`, `file`, `uri`) and also scans the full serialized args
  * for any substring rooted at the skill directory. Returned paths are
  * normalized to forward slashes.
  */
-function extractSkillDirPaths(args: unknown, skillDirectory: string): string[] {
-  const normalizedDir = skillDirectory.replace(/\\/g, "/").replace(/\/+$/, "");
+function extractSkillDirPaths(args: unknown, skillDirectories: string[]): string[] {
   const found = new Set<string>();
 
-  let obj: Record<string, unknown> | undefined;
-  if (args && typeof args === "object") {
-    obj = args as Record<string, unknown>;
-  } else if (typeof args === "string") {
-    try {
-      const parsed: unknown = JSON.parse(args);
-      if (parsed && typeof parsed === "object") {
-        obj = parsed as Record<string, unknown>;
-      }
-    } catch { /* ignore */ }
-  }
+  // A path can match exactly one skill directory in skillDirectories
+  skillDirectories.forEach(dir => {
+    const normalizedDir = dir.replace(/\\/g, "/").replace(/\/+$/, "");
 
-  if (obj) {
-    for (const key of ["filePath", "path", "file", "uri"]) {
-      const v = obj[key];
-      if (typeof v === "string" && v.length > 0) {
-        const normalized = v.replace(/\\/g, "/");
-        if (normalized.startsWith(normalizedDir + "/")) {
-          found.add(normalized);
+    let obj: Record<string, unknown> | undefined;
+    if (args && typeof args === "object") {
+      obj = args as Record<string, unknown>;
+    } else if (typeof args === "string") {
+      try {
+        const parsed: unknown = JSON.parse(args);
+        if (parsed && typeof parsed === "object") {
+          obj = parsed as Record<string, unknown>;
+        }
+      } catch { /* ignore */ }
+    }
+
+    if (obj) {
+      for (const key of ["filePath", "path", "file", "uri"]) {
+        const v = obj[key];
+        if (typeof v === "string" && v.length > 0) {
+          const normalized = v.replace(/\\/g, "/");
+          if (normalized.startsWith(normalizedDir + "/")) {
+            found.add(normalized);
+          }
         }
       }
     }
-  }
 
-  // Fallback: scan serialized args for any occurrence of the skill directory
-  let serialized: string;
-  if (typeof args === "string") {
-    serialized = args;
-  } else {
-    try {
-      serialized = JSON.stringify(args ?? "");
-    } catch {
-      serialized = String(args ?? "");
+    // Fallback: scan serialized args for any occurrence of the skill directory
+    let serialized: string;
+    if (typeof args === "string") {
+      serialized = args;
+    } else {
+      try {
+        serialized = JSON.stringify(args ?? "");
+      } catch {
+        serialized = String(args ?? "");
+      }
     }
-  }
-  const normalizedSerialized = serialized.replace(/\\\\/g, "/").replace(/\\/g, "/");
-  const needle = normalizedDir + "/";
-  let searchFrom = 0;
-  while (true) {
-    const idx = normalizedSerialized.indexOf(needle, searchFrom);
-    if (idx < 0) break;
-    const tail = normalizedSerialized.slice(idx);
-    const endMatch = tail.match(/^[^"',\s\\]+/);
-    if (endMatch) found.add(endMatch[0]);
-    searchFrom = idx + needle.length;
-  }
+    const normalizedSerialized = serialized.replace(/\\\\/g, "/").replace(/\\/g, "/");
+    const needle = normalizedDir + "/";
+    let searchFrom = 0;
+    while (true) {
+      const idx = normalizedSerialized.indexOf(needle, searchFrom);
+      if (idx < 0) break;
+      const tail = normalizedSerialized.slice(idx);
+      const endMatch = tail.match(/^[^"',\s\\]+/);
+      if (endMatch) found.add(endMatch[0]);
+      searchFrom = idx + needle.length;
+    }
+  });
 
   return Array.from(found);
 }
@@ -332,16 +341,16 @@ function extractSkillDirPaths(args: unknown, skillDirectory: string): string[] {
  *
  * - `toolCounts` keys are raw `event.data.toolName`, excluding the `skill` pseudo-tool.
  * - `skillFiles` is populated from any tool invocation whose arguments reference
- *   a path under the given skill directory (`output/skills/<skill>/...`).
+ *   a path under the given skill directory (`output/<plugin-dir>/skills/<skill>/...`).
  */
 function computeToolAndSkillStats(
   events: SessionEvent[],
-  skillDirectory: string
+  skillDirectories: string[]
 ): { toolCounts: Record<string, number>; skillFiles: Record<string, string[]> } {
   const toolCounts: Record<string, number> = {};
   const skillFilesSet: Record<string, Set<string>> = {};
 
-  const normalizedSkillDir = skillDirectory.replace(/\\/g, "/").replace(/\/+$/, "");
+  const normalizedSkillDirs = skillDirectories.map(dir => dir.replace(/\\/g, "/").replace(/\/+$/, ""));
 
   for (const event of events) {
     if (event.type !== "tool.execution_start") continue;
@@ -369,16 +378,22 @@ function computeToolAndSkillStats(
         }
       }
       if (skillName) {
+        const normalizedSkillDir = normalizedSkillDirs.filter(dir => dir.endsWith(`${skillName}/SKILLS.md`)).at(0);
         (skillFilesSet[skillName] ??= new Set()).add(`${normalizedSkillDir}/${skillName}/SKILL.md`);
       }
     }
 
-    for (const filePath of extractSkillDirPaths(event.data.arguments, skillDirectory)) {
-      const relative = filePath.slice(normalizedSkillDir.length + 1);
-      const slashIdx = relative.indexOf("/");
-      if (slashIdx <= 0) continue;
-      const skillName = relative.slice(0, slashIdx);
-      (skillFilesSet[skillName] ??= new Set()).add(filePath);
+    for (const filePath of extractSkillDirPaths(event.data.arguments, skillDirectories)) {
+      // filePath is <prefix>/output/<plugin-dir>/skills/<skill>/<relative-path>
+      // normalizedSkillDirs has paths like <prefix>/output/<plugin-dir>/skills/<skill>/<relative-path>
+      const matchingSkillDir = normalizedSkillDirs.filter(dir => filePath.startsWith(dir)).at(0);
+      if (matchingSkillDir) {
+        const relative = filePath.slice(matchingSkillDir.length + 1);
+        const slashIdx = relative.indexOf("/");
+        if (slashIdx <= 0) continue;
+        const skillName = relative.slice(0, slashIdx);
+        (skillFilesSet[skillName] ??= new Set()).add(filePath);
+      }
     }
   }
 
@@ -851,7 +866,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     entry.workspace = testWorkspace;
     entry.preserveWorkspace = runConfig.preserveWorkspace;
 
-    const agentMetadata: AgentMetadata = { events: [], testComments: [], turnCount: 0, toolCounts: {}, skillFiles: {} };
+    const agentMetadata: AgentMetadata = { events: [], testComments: [], turnCount: 0, toolCounts: {}, skillFiles: {}, skillsLoaded: [] };
     entry.agentMetadata = agentMetadata;
 
     try {
@@ -892,33 +907,46 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }) as CopilotClient;
       entry.client = client;
 
-      const skillDirectory = path.resolve(__dirname, "../../output/skills");
+      // The plugins to include are inferred by the requiredSkills.
+      // We include a plugin if and only if there is at least one required skill from it.
+      const pluginDirnames = new Set<string>();
+      runConfig.requiredSkills?.forEach(skillRef => {
+        pluginDirnames.add(skillRef.pluginDirname);
+      });
+      const pluginDirnamesList = [...pluginDirnames.values()];
+      const skillDirectories = pluginDirnamesList.map(pluginDir => {
+        return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
+      });
 
-      let disabledSkills: string[] | undefined;
+      let disabledSkills: SkillRef[] | undefined;
+      const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
       if (runConfig.includeSkills) {
-        const skills = listSkills();
-        if (runConfig.includeSkills.some((skillName) => !skills.includes(skillName))) {
-          const invalidSkills = runConfig.includeSkills.filter((skillName) => !skills.includes(skillName));
+        if (runConfig.includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
+          const invalidSkills = runConfig.includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
           throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
         }
-        disabledSkills = skills.filter((skillName) => !runConfig.includeSkills?.includes(skillName));
+        disabledSkills = skillRefs.filter((ref) => !runConfig.includeSkills
+          ?.some(includeSkillRef => ref.name === includeSkillRef.name));
       } else {
         // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
         // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
         // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
         if (runConfig.requiredSkills) {
-          disabledSkills = await truncateSkills(runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET);
+          disabledSkills = (await truncateSkills(pluginDirnamesList, runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
         }
       }
-
       const noSkills = process.env.NO_SKILLS === "true";
+      if (!noSkills) {
+        const skillsLoaded = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+        agentMetadata.skillsLoaded = skillsLoaded;
+      }
       const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
-        skillDirectories: noSkills ? [] : [skillDirectory],
-        disabledSkills: disabledSkills,
+        skillDirectories: noSkills ? [] : skillDirectories,
+        disabledSkills: disabledSkills?.map(s => s.name),
         ...(disableAzureMcp ? {} : {
           mcpServers: {
             azure: {
@@ -1045,7 +1073,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       agentMetadata.tokenUsage = tokenUsage;
 
       // Aggregate tool invocation counts and skill-file reads
-      const { toolCounts, skillFiles } = computeToolAndSkillStats(agentMetadata.events, skillDirectory);
+      const { toolCounts, skillFiles } = computeToolAndSkillStats(agentMetadata.events, skillDirectories);
       agentMetadata.toolCounts = toolCounts;
       agentMetadata.skillFiles = skillFiles;
 

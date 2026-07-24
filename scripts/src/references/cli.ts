@@ -12,7 +12,7 @@
  *
  * Usage:
  *   npm run references                       # Validate all skills
- *   npm run references <skill>               # Validate a single skill
+ *   npm run references <pluginDirname> <skill>      # Validate a single skill. Both <pluginDirname> and <skill> are optional, but <skill> can only be used if <pluginDirname> is provided. Note that pluginDirname is the name of the directory containing the plugin files, not the name of the plugin. For example, use "azure-skills" instead of "azure".
  *   npm run references -- --json             # Emit validation results as JSON
  *   npm run references -- --list             # Emit every discovered local
  *                                            # and remote link as JSON
@@ -23,21 +23,15 @@
  *   npm run --silent references -- --list > out.json
  */
 
-import { dirname, resolve, relative, normalize } from "node:path";
+import { resolve, relative, normalize, dirname } from "node:path";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { extractLocalLinks, extractRemoteLinks } from "./link-helpers.js";
-import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
+import { getRepoRoot, listPlugins, listSkills, SkillRef } from "../shared/skill-helper.js";
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
-function getRepoRoot(): string {
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(scriptDir, "../../..");
-}
-
 const REPO_ROOT = getRepoRoot();
-let SKILLS_DIR = resolve(REPO_ROOT, "plugin", "skills");
 
 const FILTERED_REMOTE_HOSTS = new Set<string>([]);
 const FILTERED_REMOTE_HOST_SUFFICES: string[] = [];
@@ -86,7 +80,7 @@ interface LocalLinkDetail {
 }
 
 interface ValidationResult {
-  skill: string;
+  skillRef: SkillRef;
   issues: LinkIssue[];
   orphanedFiles: OrphanedFile[];
   remoteLinks: RemoteLinkDetail[];
@@ -169,6 +163,8 @@ function validateFile(mdFile: string, skillDir: string): {
   remoteLinks: RemoteLinkDetail[];
   localLinks: LocalLinkDetail[];
 } {
+  const skillsDir = dirname(skillDir);
+
   // Local links
   const localLinks = extractLocalLinks(mdFile, skillDir);
   const remoteLinks = extractRemoteLinks(mdFile, skillDir);
@@ -208,7 +204,7 @@ function validateFile(mdFile: string, skillDir: string): {
       || normalizedResolved === normalizedSkillDir;
 
     if (!insideSkill) {
-      const rel = relative(SKILLS_DIR, item.absPath).replace(/\\/g, "/");
+      const rel = relative(skillsDir, item.absPath).replace(/\\/g, "/");
       return {
         file: mdFile,
         line: item.line,
@@ -247,8 +243,8 @@ function validateFile(mdFile: string, skillDir: string): {
   };
 }
 
-function validateSkill(skillName: string): ValidationResult {
-  const skillDir = resolve(SKILLS_DIR, skillName);
+function validateSkill(skillRef: SkillRef): ValidationResult {
+  const skillDir = resolve(REPO_ROOT, `plugins/${skillRef.pluginDirname}/skills/${skillRef.name}`);
   const mdFiles = findMarkdownFiles(skillDir);
   const issues: LinkIssue[] = [];
   const remoteLinks: RemoteLinkDetail[] = [];
@@ -307,7 +303,7 @@ function validateSkill(skillName: string): ValidationResult {
     }
   }
 
-  return { skill: skillName, issues, orphanedFiles, remoteLinks, localLinks };
+  return { skillRef: skillRef, issues, orphanedFiles, remoteLinks, localLinks };
 }
 
 // ── JSON output ──────────────────────────────────────────────────────────────
@@ -330,7 +326,7 @@ export interface ReferencesJsonResult {
 }
 
 function buildReferencesJson(
-  skills: string[],
+  skills: SkillRef[],
   results: ValidationResult[],
 ): ReferencesJsonResult {
   const references: ReferenceEntry[] = [];
@@ -361,7 +357,7 @@ function buildReferencesJson(
     for (const orphan of result.orphanedFiles) {
       references.push({
         source: formatPath(orphan.file),
-        target: result.skill + "/SKILL.md",
+        target: result.skillRef + "/SKILL.md",
         status: "warning",
         message: orphan.reason,
       });
@@ -400,7 +396,7 @@ export interface RemoteLinkListEntry extends LinkListEntry {
 }
 
 export interface SkillLinkList {
-  skill: string;
+  skill: SkillRef;
   localLinks: LocalLinkListEntry[];
   remoteLinks: RemoteLinkListEntry[];
 }
@@ -436,7 +432,7 @@ function buildListJson(results: ValidationResult[]): ReferencesListResult {
     }));
     totalLocal += localLinks.length;
     totalRemote += remoteLinks.length;
-    return { skill: result.skill, localLinks, remoteLinks };
+    return { skill: result.skillRef, localLinks, remoteLinks };
   });
 
   return {
@@ -451,15 +447,6 @@ function buildListJson(results: ValidationResult[]): ReferencesListResult {
 
 // ── CLI entry point ──────────────────────────────────────────────────────────
 
-function listSkills(): string[] {
-  return readdirSync(SKILLS_DIR)
-    .filter((name) => {
-      const full = resolve(SKILLS_DIR, name);
-      return statSync(full).isDirectory();
-    })
-    .sort();
-}
-
 function formatPath(absPath: string): string {
   return relative(REPO_ROOT, absPath).replace(/\\/g, "/");
 }
@@ -470,38 +457,30 @@ function main(): void {
     options: {
       json: { type: "boolean", default: false },
       list: { type: "boolean", default: false },
-      "skills-dir": { type: "string" },
     },
     strict: false,
     allowPositionals: true,
   });
 
-  if (values["skills-dir"] && typeof values["skills-dir"] === "string") {
-    const dir = resolve(values["skills-dir"]);
-    if (!existsSync(dir) || !statSync(dir).isDirectory()) {
-      console.error(`\n❌ Skills directory not found: ${dir}\n`);
-      process.exit(1);
-    }
-    SKILLS_DIR = dir;
-  }
-
   const jsonOutput = values.json ?? false;
   const listOutput = values.list ?? false;
-  const requestedSkill = positionals[0];
+  const requestedPluginDirname = positionals[0];
+  const requestedSkill = positionals[1];
 
-  const skills = requestedSkill ? [requestedSkill] : listSkills();
-
-  // Verify requested skill exists
-  if (requestedSkill) {
-    const skillDir = resolve(SKILLS_DIR, requestedSkill);
-    if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) {
-      console.error(`\n❌ Skill "${requestedSkill}" not found in ${formatPath(SKILLS_DIR)}\n`);
-      console.error("Available skills:");
-      for (const s of listSkills()) {
-        console.error(`  - ${s}`);
+  let skills: SkillRef[] = [];
+  if (requestedPluginDirname && requestedSkill) {
+    skills = [{
+      pluginDirname: requestedPluginDirname,
+      name: requestedSkill
+    }];
+  } else {
+    if (requestedPluginDirname) {
+      skills = listSkills(requestedPluginDirname);
+    } else {
+      const plugins = listPlugins();
+      for (const plugin of plugins) {
+        skills.push(...plugin.skills);
       }
-      process.exitCode = 1;
-      return;
     }
   }
 
@@ -542,14 +521,14 @@ function main(): void {
     const hasOrphanedFiles = result.orphanedFiles.length > 0;
 
     if (!hasLinkIssues && !hasOrphanedFiles) {
-      console.log(`  ✅ ${result.skill}`);
+      console.log(`  ✅ ${result.skillRef.pluginDirname} - ${result.skillRef.name}`);
     } else {
       skillsWithIssues++;
       const issueCount = result.issues.length + result.orphanedFiles.length;
       totalIssues += result.issues.length;
       totalOrphanedFiles += result.orphanedFiles.length;
 
-      console.log(`  ❌ ${result.skill} — ${issueCount} issue(s)`);
+      console.log(`  ❌ ${result.skillRef} — ${issueCount} issue(s)`);
 
       // Report link issues
       for (const issue of result.issues) {

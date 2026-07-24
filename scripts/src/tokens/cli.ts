@@ -12,20 +12,14 @@
  *   npm run tokens help               # Show help
  */
 
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { count } from "./commands/count.js";
 import { check } from "./commands/check.js";
 import { compare } from "./commands/compare.js";
 import { suggest } from "./commands/suggest.js";
+import { getRepoRoot } from "../shared/skill-helper.js";
 
 const COMMANDS = ["count", "check", "compare", "suggest", "help"] as const;
 type Command = typeof COMMANDS[number];
-
-function getRepoRoot(): string {
-  const scriptDir = dirname(fileURLToPath(import.meta.url));
-  return resolve(scriptDir, "../../..");
-}
 
 function printHelp(): void {
   console.log(`
@@ -43,7 +37,7 @@ Commands:
 Default Scope:
   All commands scan these directories by default:
   - .github/skills
-  - plugin/skills
+  - plugins/
   - .github/agents
 
 Options vary by command. Use --help with any command for details.

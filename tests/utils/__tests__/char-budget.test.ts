@@ -3,25 +3,26 @@
  */
 
 import { jest } from "@jest/globals";
+import { SkillRef } from "../skill-loader.ts";
 
 type CharBudgetModule = typeof import("../char-budget.ts");
 
 async function importCharBudgetWithMocks(
-  skills: string[],
+  skills: SkillRef[],
   descriptions: Record<string, string>
 ): Promise<CharBudgetModule> {
   jest.resetModules();
 
   jest.unstable_mockModule("../skill-loader.ts", () => ({
     listSkills: () => skills,
-    loadSkill: async (skillName: string) => {
-      const description = descriptions[skillName];
+    loadSkill: async (skillRef: SkillRef) => {
+      const description = descriptions[skillRef.name];
       if (description === undefined) {
-        throw new Error(`Missing mocked description for skill: ${skillName}`);
+        throw new Error(`Missing mocked description for skill: ${skillRef.name} in plugin ${skillRef.pluginDirname}`);
       }
       return {
         metadata: {
-          name: skillName,
+          name: skillRef.name,
           description,
         },
       };
@@ -39,27 +40,30 @@ describe("truncateSkills", () => {
 
   test("throws when requiredSkills contains an invalid skill", async () => {
     const { truncateSkills } = await importCharBudgetWithMocks(
-      ["azure-ai", "azure-storage"],
+      [
+        { pluginDirname: "azure-skills", name: "azure-ai" },
+        { pluginDirname: "azure-skills", name: "azure-storage" }
+      ],
       {
         "azure-ai": "Azure AI skill",
         "azure-storage": "Azure Storage skill",
       }
     );
 
-    await expect(truncateSkills(["azure-ai", "not-a-skill"], 20000)).rejects.toThrow(
+    await expect(truncateSkills(["azure-skills"], [{ pluginDirname: "azure-skills", name: "azure-ai" }, { pluginDirname: "azure-skills", name: "not-a-skill" }], 20000)).rejects.toThrow(
       "Invalid requiredSkills"
     );
   });
 
   test("throws when required skills alone exceed char budget", async () => {
     const { truncateSkills } = await importCharBudgetWithMocks(
-      ["azure-ai"],
+      [{ pluginDirname: "azure-skills", name: "azure-ai" }],
       {
         "azure-ai": "x".repeat(200),
       }
     );
 
-    await expect(truncateSkills(["azure-ai"], 20)).rejects.toThrow(
+    await expect(truncateSkills(["azure-skills"], [{ pluginDirname: "azure-skills", name: "azure-ai" }], 20)).rejects.toThrow(
       "requiredSkills exceed SKILL_CHAR_BUDGET (20)"
     );
   });
@@ -70,7 +74,10 @@ describe("truncateSkills", () => {
       edge: "edge desc",
     };
     const { truncateSkills, getFormattedSkillDescription } = await importCharBudgetWithMocks(
-      ["required", "edge"],
+      [
+        { pluginDirname: "plugin-dir", name: "required" },
+        { pluginDirname: "plugin-dir", name: "edge" }
+      ],
       descriptions
     );
 
@@ -78,8 +85,8 @@ describe("truncateSkills", () => {
     const edgeLen = (await getFormattedSkillDescription("edge", descriptions.edge)).length;
     const equalBudget = requiredLen + 1 + edgeLen + 1;
 
-    const disabled = await truncateSkills(["required"], equalBudget);
+    const disabled = await truncateSkills(["plugin-dir"], [{ pluginDirname: "plugin-dir", name: "required" }], equalBudget);
 
-    expect(disabled).toEqual(["edge"]);
+    expect(disabled).toEqual([{ pluginDirname: "plugin-dir", name: "edge" }]);
   });
 });
