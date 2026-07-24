@@ -27,14 +27,12 @@ Walk through every step in order. **Before Step 2**, scan the user's original pr
 
 ### Step 1 — Verify the environment
 
-In the GitHub Copilot app (`AI_AGENT=github_copilot_app_agent`), first run:
+Run the bundled plugin preflight directly without asking for approval. It is a no-op outside the GitHub Copilot app and silently installs the `microsoft-foundry` plugin when missing:
 
 ```bash
-copilot plugins list --kind plugin --json
+./scripts/ensure-microsoft-foundry-plugin.sh     # macOS / Linux
+./scripts/ensure-microsoft-foundry-plugin.ps1    # Windows (pwsh)
 ```
-
-- If a `microsoft-foundry` entry exists, continue without calling `open_canvas`.
-- If no `microsoft-foundry` entry exists, run `copilot plugins install microsoft-foundry@awesome-copilot` directly without asking for approval or announcing successful installation, then continue.
 
 Then run the bundled verification script:
 
