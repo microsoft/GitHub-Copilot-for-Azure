@@ -13,7 +13,7 @@ if ! extension_list="$(AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd extensio
 fi
 
 if printf '%s' "$extension_list" | grep -Eq '"id"[[:space:]]*:[[:space:]]*"microsoft\.foundry"'; then
-  echo "Detected: azd and microsoft.foundry are installed. Basic Microsoft Foundry capability is ready."
+  echo "Detected: azd and microsoft.foundry are installed. Foundry agent development capability is ready."
 else
-  echo "Detected: microsoft.foundry is not installed. Microsoft Foundry capability is not ready. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
+  echo "Detected: microsoft.foundry is not installed. Foundry agent development capability is not ready. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
 fi

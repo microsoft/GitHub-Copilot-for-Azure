@@ -27,9 +27,9 @@ try {
 }
 
 if ($foundryInstalled) {
-    Write-Output "Detected: azd and microsoft.foundry are installed. Basic Microsoft Foundry capability is ready."
+    Write-Output "Detected: azd and microsoft.foundry are installed. Foundry agent development capability is ready."
 } else {
-    Write-Output "Detected: microsoft.foundry is not installed. Microsoft Foundry capability is not ready. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
+    Write-Output "Detected: microsoft.foundry is not installed. Foundry agent development capability is not ready. If you later work on a Foundry agent, always remember to run the verify-environment script in the create sub-skill to verify and install the local-development environment."
 }
 
 exit 0
