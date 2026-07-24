@@ -70,7 +70,7 @@ Activate this skill when user wants to:
 |----------------|-------------|
 | Python + App Service (e.g., "deploy Python to App Service", "Flask on Azure App Service", "publish Python web app to App Service") | **python-appservice-deploy** |
 | Lambda, AWS Lambda, migrate AWS, migrate GCP, Lambda to Functions, migrate from AWS, migrate from GCP | **azure-cloud-migrate** |
-| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — prefer Azure Functions templates in Step 4 |
+| Azure Functions, function app, serverless function, timer trigger, HTTP trigger, func new | Stay in **azure-prepare** — Step 4; [plans](references/services/functions/hosting-plans.md), [cold starts](references/services/functions/cold-start.md) |
 | APIM, API Management, API gateway, deploy APIM | Stay in **azure-prepare** — see [APIM Deployment Guide](references/apim.md) |
 | AI gateway, AI gateway policy, AI gateway backend, AI gateway configuration | **azure-aigateway** |
 | workflow, orchestration, multi-step, pipeline, fan-out/fan-in, saga, long-running process, durable, order processing | Stay in **azure-prepare** — select **durable** recipe in Step 4. **MUST** load [durable.md](references/services/functions/durable.md), [DTS reference](references/services/durable-task-scheduler/README.md), and [DTS Bicep patterns](references/services/durable-task-scheduler/bicep.md). |
