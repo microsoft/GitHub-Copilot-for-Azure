@@ -1,0 +1,94 @@
+# Vally eval config — script-invocation checks for azure-diagnostics
+#
+# Purpose: verify that when asked to collect diagnostics, the agent routes to
+# the azure-diagnostics skill AND asks to run the bundled diagnostic script
+# (containerapp-diagnostics / appservice-diagnostics) rather than hand-rolling
+# a chain of `az` commands.
+#
+# We do NOT actually run the script. Each stimulus uses an earlyTerminate
+# `tool-call-match` on the script command: the moment the agent issues the tool
+# call to run the script, the run is aborted (session.abort) before the command
+# completes. The `tool-calls` grader still sees the tool_call event in the
+# trajectory, so it confirms the agent *tried* to run the script — no live Azure
+# resource is required, and nothing is executed.
+#
+# Per repo convention, stimuli with an earlyTerminate tag MUST NOT use the
+# `completed` grader (early-terminated runs always fail it by design).
+
+name: azure-diagnostics-script-invocation-eval
+description: |
+  Verifies the azure-diagnostics skill drives the agent to invoke its bundled
+  diagnostic scripts (containerapp-diagnostics, appservice-diagnostics) when
+  asked to collect all diagnostics for a Container App or App Service web app.
+  Grades routing plus the presence of a shell tool call running the script, and
+  terminates at that tool call so the script is never actually executed.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── containerapp-diagnostics-invocation ──
+  # Asserts: isSkillInvoked + tool call running containerapp-diagnostics.(sh|ps1).
+  # Terminates at that tool call so the script is not executed.
+  - name: "Container App diagnostics uses the bundled script"
+    prompt: "Collect all the diagnostic info for my Azure Container App named my-app in resource group my-rg."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"containerapp-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)containerapp-diagnostics\\.(sh|ps1)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── appservice-diagnostics-invocation ──
+  # Asserts: isSkillInvoked + tool call running appservice-diagnostics.(sh|ps1).
+  # Terminates at that tool call so the script is not executed.
+  - name: "App Service diagnostics uses the bundled script"
+    prompt: "Gather all the diagnostic info for my Azure App Service web app named my-app in resource group my-rg."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"appservice-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)appservice-diagnostics\\.(sh|ps1)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
