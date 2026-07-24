@@ -4,15 +4,11 @@
  *
  * Usage:
  *   npm run dashboard:collect
- *   npm run dashboard:collect -- --output path/to/report.json
- *   npm run dashboard:collect -- --only frontmatter,references
- *   npm run dashboard:collect -- --timeout 60000
  */
 
 import { execSync } from "node:child_process";
 import { writeFileSync, mkdirSync, statSync } from "node:fs";
 import { resolve, dirname, parse as parsePath } from "node:path";
-import { parseArgs } from "node:util";
 import type {
   Collector,
   CollectorOptions,
@@ -170,45 +166,17 @@ function makeSkipReport(collectorName: string, reason: string): CategoryReport {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { values } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      output: { type: "string" },
-      only: { type: "string" },
-      cwd: { type: "string" },
-      timeout: { type: "string" },
-    },
-    strict: true,
-  });
-
   // Resolve working directory
   const scriptDir = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"));
-  const cwd = values.cwd
-    ? resolve(values.cwd)
-    : findRepoRoot(scriptDir);
+  const cwd = findRepoRoot(scriptDir);
 
-  const timeout = values.timeout ? parseInt(values.timeout, 10) : 30_000;
+  const timeout = 30_000;
 
   // Default output path
-  const outputPath = values.output
-    ? resolve(values.output)
-    : resolve(cwd, "dashboard", "data", "latest.json");
+  const outputPath = resolve(cwd, "dashboard", "data", "latest.json");
 
   // Load collectors
-  let collectors = await loadCollectors();
-
-  // Filter by --only
-  if (values.only) {
-    const allowed = new Set(values.only.split(",").map((s) => s.trim()));
-    collectors = collectors.filter((c) => allowed.has(c.name));
-
-    if (collectors.length === 0) {
-      console.error(`[compose] no matching collectors for --only=${values.only}`);
-      console.error(`[compose] available: ${(await loadCollectors()).map((c) => c.name).join(", ")}`);
-      process.exitCode = 1;
-      return;
-    }
-  }
+  const collectors = await loadCollectors();
 
   console.error(`[compose] running ${collectors.length} collector(s): ${collectors.map((c) => c.name).join(", ")}`);
 
