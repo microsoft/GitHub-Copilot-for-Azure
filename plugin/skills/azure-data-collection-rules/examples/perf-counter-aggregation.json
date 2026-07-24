@@ -1,0 +1,72 @@
+{
+    "location": "eastus",
+    "properties": {
+        "streamDeclarations": {
+            "Custom-PerfSummary": {
+                "columns": [
+                    { "name": "TimeGenerated", "type": "datetime" },
+                    { "name": "Host", "type": "string" },
+                    { "name": "CounterName", "type": "string" },
+                    { "name": "AvgValue", "type": "real" },
+                    { "name": "MaxValue", "type": "real" },
+                    { "name": "RecordCount", "type": "int" }
+                ]
+            }
+        },
+        "dataSources": {
+            "performanceCounters": [
+                {
+                    "name": "perfCpu",
+                    "samplingFrequencyInSeconds": 10,
+                    "counterSpecifiers": [
+                        "\\Processor(_Total)\\% Processor Time",
+                        "\\Memory\\Available MBytes"
+                    ],
+                    "streams": ["Custom-PerfSummary"],
+                    "transform": "aggregate_perf"
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "name": "myWorkspace",
+                    "workspaceResourceId": "/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{ws}",
+                    "workspaceId": "{workspace-guid}"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": ["Custom-PerfSummary"],
+                "destinations": ["myWorkspace"],
+                "outputStream": "Custom-PerfSummary_CL"
+            }
+        ],
+        "transformations": [
+            {
+                "name": "aggregate_perf",
+                "headerProcessor": {
+                    "processor": "header.WindowsPerformanceCounters"
+                },
+                "processors": [
+                    {
+                        "processor": "aggregate.Basic",
+                        "configuration": {
+                            "batchingSettings": {
+                                "timeWindow": "5m",
+                                "maxBatchRows": 1000
+                            },
+                            "aggregates": [
+                                { "columnName": "CounterValue", "operator": "avg", "nameAs": "AvgValue" },
+                                { "columnName": "CounterValue", "operator": "max", "nameAs": "MaxValue" },
+                                { "operator": "count", "nameAs": "RecordCount" }
+                            ],
+                            "dimensionColumns": ["Host", "CounterName"]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}

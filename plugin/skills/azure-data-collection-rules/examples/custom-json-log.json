@@ -1,0 +1,75 @@
+{
+    "location": "eastus",
+    "properties": {
+        "streamDeclarations": {
+            "Custom-JsonAppLogs": {
+                "columns": [
+                    { "name": "TimeGenerated", "type": "datetime" },
+                    { "name": "Computer", "type": "string" },
+                    { "name": "Level", "type": "string" },
+                    { "name": "UserId", "type": "string" },
+                    { "name": "RequestId", "type": "string" },
+                    { "name": "Message", "type": "string" },
+                    { "name": "Duration", "type": "real" }
+                ]
+            }
+        },
+        "dataSources": {
+            "logFiles": [
+                {
+                    "name": "appJsonLogs",
+                    "filePatterns": ["/var/log/myapp/*.json"],
+                    "format": "json",
+                    "streams": ["Custom-JsonAppLogs"],
+                    "transform": "parse_app_json"
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "name": "myWorkspace",
+                    "workspaceResourceId": "/subscriptions/{sub}/resourceGroups/{rg}/providers/Microsoft.OperationalInsights/workspaces/{ws}",
+                    "workspaceId": "{workspace-guid}"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": ["Custom-JsonAppLogs"],
+                "destinations": ["myWorkspace"],
+                "outputStream": "Custom-AppLogs_CL",
+                "transformKql": "source | where Level != 'Debug' | project-away Duration"
+            }
+        ],
+        "transformations": [
+            {
+                "name": "parse_app_json",
+                "headerProcessor": {
+                    "processor": "header.TextLog"
+                },
+                "processors": [
+                    {
+                        "processor": "parse.JsonPath",
+                        "configuration": {
+                            "columnName": "RawData",
+                            "all": [
+                                { "path": "$.level", "nameAs": "Level", "typeAs": "string" },
+                                { "path": "$.userId", "nameAs": "UserId", "typeAs": "string" },
+                                { "path": "$.requestId", "nameAs": "RequestId", "typeAs": "string" },
+                                { "path": "$.message", "nameAs": "Message", "typeAs": "string" },
+                                { "path": "$.durationMs", "nameAs": "Duration", "typeAs": "real" }
+                            ]
+                        }
+                    },
+                    {
+                        "processor": "map.Drop",
+                        "configuration": {
+                            "columnNames": ["RawData", "FilePath"]
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
