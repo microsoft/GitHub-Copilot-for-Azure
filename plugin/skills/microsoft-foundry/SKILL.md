@@ -13,6 +13,21 @@ This skill helps developers work with Microsoft Foundry resources, covering mode
 
 ## Pre-Execution Requirements
 
+### Capability Verification
+
+**MANDATORY:** Before any other action, run the bundled capability check for this skill:
+
+```bash
+./scripts/verify-capability.sh     # macOS / Linux
+./scripts/verify-capability.ps1    # Windows (pwsh)
+```
+
+Use the script output as a reference for subsequent actions.
+
+This capability check is not equivalent to the environment verification in the `create` sub-skill.
+
+### Foundry MCP
+
 Before using Foundry MCP operations, call the Azure MCP `foundry` tool and inspect the available Foundry MCP tools and related parameters. Treat this as the discovery/help step for MCP-based workflows.
 
 ## Sub-Skills
