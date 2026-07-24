@@ -1,0 +1,389 @@
+  # azure-app-onboard — end-to-end deploy suite: from a scaffold-complete workspace, run the real
+  # deploy and hand off to the user. These stimuli DO provision real Azure resources (cost: azure).
+  #
+  # How to read this suite:
+  #   • Each run starts from a pre-built, deploy-ready workspace (app code + infra/ + prior-phase
+  #     session artifacts) fetched from a fixture branch, so the agent goes straight to deploy.
+  #   • `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished") —
+  #     the LAST handoff emit, after every grader's evidence. Long-running deploy commands (e.g.
+  #     `az acr build`) already finished by then; it just blocks post-handoff imperative mutation.
+  #   • Schema/outcome checks read the session artifacts the deploy writes (deploy-result.json,
+  #     context.json, deployment-summary.md, generated infra/*.bicep).
+  #   • Test 1 = App Service · Test 2 = Container Apps (which also covers the post-deploy handoff).
+
+name: azure-app-onboard-seeded-deploy-eval
+description: |
+  End-to-end deploy suite for the azure-app-onboard skill: from a scaffold-complete workspace,
+  run the real deploy and hand off to the user. These stimuli provision real Azure resources
+  (cost: azure).
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+defaults:
+  runs: 1
+  timeout: "120m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── Test 1: App Service deploy — safety, depth, imperative-CLI/Entra-auth, password ──
+  - name: "Deploy Verify - App Service Pipeline"
+    prompt: "Use the azure-app-onboard skill to deploy my code to Azure."
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: deployment
+      category: deploy-verify-appservice
+      skill: azure-app-onboard
+      # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+    environment:
+      commands:
+        - git init -q
+        - 'git remote add origin https://github.com/vaibbavis/GitHub-Copilot-for-Azure.git'
+        - git fetch -q --depth 1 origin fixtures/deploy-app-service
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 200
+    graders:
+      # routing gate — azure-app-onboard MUST be invoked
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+
+      # ── SHELL PIPELINE (consolidated, all-or-nothing): auth → what-if → Bicep deploy → SCM creds,
+      #    and NO unsafe fallbacks. One grader so any missing required step or any disallowed command
+      #    scores the shell check 0 — making a single safety violation decisive under scoring.weights.
+      #    Strips heredoc/comment bodies before matching, so a banned command that appears only as
+      #    text (e.g. documented in a checklist) can't false-fail the guard.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "(?i)az account show"
+              description: "auth/subscription check ran before deploy"
+            - command: "(?i)az\\s+deployment\\s+(sub|group)\\b.*what-if"
+              description: "what-if preview runs before deploy"
+            - command: "(?i)az\\s+deployment\\s+(sub|group)\\s+create\\b"
+              description: "Bicep deploy executed"
+            - command: "(?i)basicpublishingcredentialspolicies"
+              description: "SCM publishing-credential policy set during deploy"
+            - command: "(?is)(?=.*\\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b)(?=.*azurewebsites\\.net)"
+              description: "agent ran a live HTTP health check against the deployed endpoint"
+          disallowed:
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+              description: "no azd fallback"
+            - command: "(?i)terraform\\s+(init|plan|apply)"
+              description: "Bicep is default IaC — no Terraform"
+            - command: "(?i)az\\s+(webapp|functionapp)\\s+update"
+              description: "no imperative resource mutation (edit Bicep + redeploy)"
+            - command: "(?i)az\\s+appservice\\s+plan\\s+update"
+              description: "no imperative plan mutation"
+            - command: "(?i)config-zip"
+              description: "no config-zip (needs SCM basic auth; Entra-only)"
+            # zip must preserve directory structure — no Compress-Archive -FullName
+            - command: "(?i)compress-archive.*fullname|\\$files\\.fullname"
+              description: "zip must preserve directory structure"
+
+      # ── PORTAL LINK surfaced to the user ──
+      - type: output-matches
+        config:
+          pattern: "(?i)portal\\.azure\\.com"
+
+      # ── LIVE ENDPOINT surfaced — proof of a real App Service deploy ──
+      - type: output-matches
+        config:
+          pattern: "azurewebsites\\.net"
+
+      # ── BICEP TAG retained through deploy ──
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "app-onboard-skill"
+
+      # ── PHASE ARTIFACTS: every phase produced its output ──
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prepare-plan.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-checklist.md"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deployment-summary.md"
+
+      # ── SESSION SETUP: .copilot-azure/ is gitignored (session artifacts may hold deploy secrets).
+      #    Guards session-protocol's gitignore-ensure on the resume/adopt path — the seeded fixture
+      #    already carries session artifacts, so Step 1 adopts the session rather than creating one. ──
+      - type: file-matches
+        config:
+          path: "**/.gitignore"
+          pattern: '\.copilot-azure'
+
+      # ── NO azure.yaml — AppOnboard never generates it ──
+      - type: file-not-exists
+        config:
+          path: "**/azure.yaml"
+
+      # ── CONTEXT progression: deploy completed, currentPhase null ──
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"deploy"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"currentPhase"\s*:\s*null'
+
+      # ── DEPLOY-RESULT SCHEMA: real deploy vs skeleton ──
+      # deploy-result.json must carry real deploy fields: status, subscriptionId, resourceGroupName, sessionId.
+      # status MUST be "succeeded" — strongest single proof the deploy completed e2e.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"status"\s*:\s*"succeeded"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"subscriptionId"\s*:\s*"[0-9a-f\-]{36}"'
+      # resourceGroupName — name-tolerant (resourceGroup OR resourceGroupName); terminal artifact, value matters not the key.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceGroup(Name)?"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
+      # THE LIVE URL MUST BE RECORDED — a real Azure endpoint URL in ANY shape (App Service → azurewebsites,
+      # Container Apps → azurecontainerapps). Supersedes the old endpoints-array-shape check.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '(azurewebsites\.net|azurestaticapps\.net|azurecontainerapps\.io)'
+      # health MUST resolve to healthy — nesting/name-tolerant: "healthStatus":"healthy" OR nested healthCheck.status.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"(healthStatus|status)"\s*:\s*"healthy"'
+
+      # ── PASSWORD SAFETY: never ask the user for a password ──
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(enter|provide|type|input)[^.\\n]{0,20}(password|passphrase|secret)"
+
+      # ── Entra auth only — no Graph API calls ──
+      - type: output-not-matches
+        config:
+          pattern: '(?i)graph\.microsoft\.com'
+
+      # ── No manual "Next Steps" punt — agent must execute the deploy ──
+      - type: output-not-matches
+        config:
+          pattern: "(?i)next steps.{0,100}(az webapp deploy|zip.*deploy|deploy your code)"
+
+      # ── Bicep default IaC — no Terraform in output ──
+      - type: output-not-matches
+        config:
+          pattern: "(?i)terraform\\s+(init|plan|apply)|hashicorp/azurerm"
+
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Test 2: Container Apps deploy — depth + safety, managed identity, code deploy ──
+  # Container Apps fixture; `earlyTerminate` fires at the handoff (after `az acr build` + deploy),
+  # blocking the post-handoff imperative mutation (e.g. `az acr update --sku Premium`) this test caught.
+  - name: "Deploy Verify - Container Apps Pipeline"
+    prompt: "Use the azure-app-onboard skill to deploy my code to Azure."
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: deployment
+      category: deploy-verify-containerapps
+      skill: azure-app-onboard
+      # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+    environment:
+      commands:
+        - git init -q
+        - 'git remote add origin https://github.com/vaibbavis/GitHub-Copilot-for-Azure.git'
+        - git fetch -q --depth 1 origin fixtures/deploy-container-apps
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 200
+    graders:
+      # routing gate
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard"]
+
+      # ── SHELL PIPELINE (consolidated, all-or-nothing): auth → ACR build → Bicep deploy,
+      #    and NO unsafe fallbacks. One grader so a single safety violation is decisive under weights.
+      #    shell-command-invoked strips heredoc/comment bodies before matching.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "(?i)az account show"
+              description: "auth/subscription check ran before deploy"
+            - command: "(?i)az\\s+acr\\s+build\\b"
+              description: "container image built + pushed"
+            - command: "(?i)az\\s+deployment\\s+(sub|group)\\s+create\\b"
+              description: "Bicep deploy executed"
+            - command: "(?is)(?=.*\\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b)(?=.*azurecontainerapps\\.io)"
+              description: "agent ran a live HTTP health check against the deployed endpoint"
+          disallowed:
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+              description: "no azd fallback"
+            - command: "(?i)terraform\\s+(init|plan|apply)"
+              description: "Bicep is default IaC — no Terraform"
+            - command: "(?i)az\\s+(containerapp|acr)\\s+update"
+              description: "no imperative resource mutation"
+
+      # ── MANAGED IDENTITY: Container Apps IaC MUST use a managed identity ──
+      #
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)systemassigned|userassigned"
+
+      # ── BICEP TAG retained through deploy ──
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "app-onboard-skill"
+
+      # ── PHASE ARTIFACTS ──
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/scaffold-manifest.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-checklist.md"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deployment-summary.md"
+
+      # ── SESSION SETUP: .copilot-azure/ is gitignored (session artifacts may hold deploy secrets).
+      #    Guards session-protocol's gitignore-ensure on the resume/adopt path — the seeded fixture
+      #    already carries session artifacts, so Step 1 adopts the session rather than creating one. ──
+      - type: file-matches
+        config:
+          path: "**/.gitignore"
+          pattern: '\.copilot-azure'
+
+      # ── CONTEXT progression ──
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"deploy"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"currentPhase"\s*:\s*null'
+
+      # ── DEPLOY-RESULT SCHEMA ──
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"status"\s*:\s*"succeeded"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"subscriptionId"\s*:\s*"[0-9a-f\-]{36}"'
+      # resourceGroupName — name-tolerant (resourceGroup OR resourceGroupName); terminal artifact, value matters not the key.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceGroup(Name)?"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
+      # THE LIVE URL MUST BE RECORDED — a real Azure endpoint URL in ANY shape (Container Apps →
+      # azurecontainerapps.io). Supersedes the old endpoints-array-shape check.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '(azurewebsites\.net|azurestaticapps\.net|azurecontainerapps\.io)'
+      # health MUST resolve to healthy — nesting/name-tolerant: "healthStatus":"healthy" OR nested healthCheck.status.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"(healthStatus|status)"\s*:\s*"healthy"'
+
+      # ── LIVE ENDPOINT surfaced — Container Apps FQDN ──
+      - type: output-matches
+        config:
+          pattern: "azurecontainerapps\\.io"
+
+      # ── POST-DEPLOY HANDOFF: after the deploy completes, the skill hands off to the user ──
+      # handoff content: deploy identity / cleanup commands / next-step recommendations / redeploy
+      - type: output-matches
+        config:
+          pattern: "(?i)deployed by|signed in as|managed identity|service principal|subscription"
+      - type: output-matches
+        config:
+          pattern: "(?i)az group delete|clean up|remove the resource|delete the resource|tear down"
+      - type: output-matches
+        config:
+          pattern: "(?i)next step|recommend|consider|post-deploy|you should|suggestion"
+      - type: output-matches
+        config:
+          pattern: "(?i)redeploy|re-deploy|deploy again|push code"
+      # handoff artifact: deployment-summary.md contains the mandatory sections
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deployment-summary.md"
+          pattern: "(?i)az group delete"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deployment-summary.md"
+          pattern: "(?i)portal\\.azure\\.com"
+
+      # ── No manual "Next Steps" for code deploy ──
+      - type: output-not-matches
+        config:
+          pattern: "(?i)next steps.{0,100}(docker build|docker push|deploy your code|az containerapp update)"
+
+      # ── Bicep default IaC — no Terraform in output ──
+      - type: output-not-matches
+        config:
+          pattern: "(?i)terraform\\s+(init|plan|apply)|hashicorp/azurerm"
+
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

@@ -1,0 +1,197 @@
+# Vally eval config — azure-app-onboard Container Apps e2e
+# Source: tests/azure-app-onboard/deploy/integration-container-apps.test.ts
+#
+# Split from eval.yaml so it runs in parallel with e2e-appservice-free.eval.yaml and
+# e2e-appservice-depth.eval.yaml. Single stimulus: a real Azure deploy (cost: azure)
+# of the wetty Node/TypeScript app, built via ACR to Azure Container Apps.
+name: azure-app-onboard-wetty-eval
+description: |
+  Standalone e2e deploy eval for the azure-app-onboard Container Apps path:
+  the wetty Node/TypeScript app builds via ACR and deploys to Azure Container Apps.
+
+tags:
+  type: integration
+  skill: azure-app-onboard
+
+defaults:
+  runs: 1
+  timeout: "60m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── wetty-container-apps ──
+  # Test repo: butlerx/wetty (Node/TypeScript, Dockerized terminal-in-browser app).
+  # Deploy a Dockerized GitHub app to Azure Container Apps: ACR build + Container Apps
+  # via Bicep. Cost ~$5 (Container Apps + ACR). Filter: --tag debug=wetty-container-apps.
+  # `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished"); `az acr build`
+  # / `docker build` + ingress URL (azurecontainerapps.io) all complete before it.
+  - name: "Deploy - Wetty Code To Container Apps"
+    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/butlerx/wetty
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 200
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      category: wetty-container-apps
+      skill: azure-app-onboard
+      # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+      followUp:
+        - "Just go with defaults using my current subscription."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+        - "Yes."
+    graders:
+      # azure-app-onboard MUST be invoked
+      - type: skill-invocation
+        config:
+          required:
+            - azure-app-onboard
+      # Sub-agents MUST be dispatched via the `task` tool (delegation, not inlined).
+      # Vally emits no subagent.* events — the `task` tool call IS the dispatch signal
+      # (nothing else uses `task`). Mirrors Jest assertScaffoldSubagentsDispatched:
+      # basic dispatch + the iac-gen sub-agent specifically (verified description).
+      - type: tool-calls
+        config:
+          required:
+            - name: "^task$"
+            - name: "^task$"
+              args:
+                description: "(?i)bicep|iac"
+      # Container Apps MUST be the target compute
+      - type: output-matches
+        config:
+          pattern: "(?i)container.?apps"
+      # Bicep MUST be used — not Terraform, not azd
+      - type: output-matches
+        config:
+          pattern: "(?i)bicep|\\.bicep|az deployment (sub|group) create"
+      # ACR build MUST have been executed (code deploy, not just IaC);
+      # Terraform and azd up/provision/deploy MUST NOT have been executed.
+      # Uses shell-command-invoked (not the built-in tool-calls grader): it strips
+      # heredoc bodies before matching, so a plan/checklist file containing the
+      # literal text "azd up" cannot false-positive the disallowed rules.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "(?i)az\\s+acr\\s+build|docker\\s+(build|push)"
+              description: "ACR build / docker build executed"
+            # ── LIVE HEALTH CHECK RAN: agent must actually HTTP-GET the Container Apps ingress FQDN.
+            - command: "(?is)(?=.*\\b(curl|wget|invoke-webrequest|invoke-restmethod|iwr|irm)\\b)(?=.*azurecontainerapps\\.io)"
+              description: "agent ran a live HTTP health check against the deployed endpoint"
+          disallowed:
+            - command: "(?i)terraform\\s+(init|plan|apply)"
+              description: "no Terraform"
+            - command: "(?i)azd\\s+(up|provision|deploy)\\b"
+              description: "no azd fallback"
+            - command: "(?i)\\baz\\s+(group|webapp|appservice|containerapp)\\s+create\\b"
+              description: "no imperative resource create"
+      # Agent MUST NOT hand back manual "Next Steps" for code deploy instead of executing it
+      - type: output-not-matches
+        config:
+          pattern: "(?i)next steps.{0,100}(docker build|docker push|deploy your code|az containerapp update)"
+      # Bicep is the default IaC format — agent MUST NOT use Terraform
+      - type: output-not-matches
+        config:
+          pattern: "(?i)terraform\\s+(init|plan|apply)|hashicorp/azurerm"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Prereq artifacts MUST be written (folded from shallow duplicate)
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      # Prereq output schema shape (folded from shallow duplicate)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+          pattern: '(?is)(?=.*\bbuild\b)(?=.*\bcompleteness\b)(?=.*\bdeployability\b)(?=.*\b(PASS|WARN|FAIL|SKIPPED)\b)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      # Framework detection: wetty is a Node/TypeScript container app
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)node|typescript|docker"
+      # Dockerized app detected in output (migrated from prepare Service Mapping - Wetty)
+      - type: output-matches
+        config:
+          pattern: "(?i)dockerfile|docker-compose|docker compose|compose\\.y"
+      # Context MUST record completed phases (folded from shallow duplicate)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+
+      # ── DEPLOY-RESULT SCHEMA: real deploy vs skeleton placeholder ──────────
+      # (Matches Jest `assertDeployResultSchema` — required fields, enum values.)
+      # Without these, an unfinished Container Apps deploy (status "in-progress",
+      # empty endpoints/resourceIds) would silently pass. status MUST be
+      # "succeeded" — the strongest proof the deploy completed end-to-end.
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"status"\s*:\s*"succeeded"'
+      # resourceGroupName MUST be populated. Name-tolerant: accepts resourceGroup OR resourceGroupName —
+      # terminal artifact read only by the handoff summary + humans; exact key not required, only the value.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"resourceGroup(Name)?"\s*:\s*"[a-z][a-z0-9\-_]{2,}"'
+      # subscriptionId MUST be present (schema-required field per deploy-schemas.ts).
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"subscriptionId"\s*:\s*"[0-9a-f\-]{36}"'
+      # THE LIVE URL MUST BE RECORDED — a real Azure endpoint URL (Container Apps → azurecontainerapps.io)
+      # in ANY shape (endpoints array/object, healthCheck.url, …). Supersedes the old endpoints-array-shape check.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '(azurewebsites\.net|azurestaticapps\.net|azurecontainerapps\.io)'
+      # health MUST resolve to healthy — nesting/name-tolerant: "healthStatus":"healthy" OR nested
+      # "healthCheck":{…"status":"healthy"…}. Degraded/unreachable still fails.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/deploy-result.json"
+          pattern: '"(healthStatus|status)"\s*:\s*"healthy"'
+      # Container Apps ingress endpoint MUST be surfaced (proof of real deploy).
+      - type: output-matches
+        config:
+          pattern: "azurecontainerapps\\.io"
