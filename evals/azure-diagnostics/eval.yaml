@@ -132,3 +132,52 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Script execution tests
+  # ═══════════════════════════════════════════
+
+  # ── aks-baseline-script-execution ──
+  # Verifies the skill invokes the aks-baseline.sh/.ps1 script (issue #2506)
+  # rather than pasting the individual az/kubectl commands. The prompt asserts
+  # the cluster exists and that kubectl is already authenticated, and names the
+  # baseline sweep explicitly, so the agent routes straight to the script as its
+  # first shell action instead of first running `az aks get-credentials`/`az aks
+  # list` (which fail and detour into ad-hoc troubleshooting when no real cluster
+  # exists in the test subscription).
+  # earlyTerminate uses `tool-call-result`, which fires once the script's shell
+  # tool call has *completed*. The script is fully read-only and every step is
+  # guarded, so against a missing cluster each az/kubectl call fails fast and the
+  # sweep still exits cleanly in seconds — no real resources required. Because the
+  # call completes, its tool_result is recorded, so the built-in `tool-calls`
+  # grader can confirm the agent ran the script; termination then aborts the run
+  # before any follow-up turns (e.g. remediation). (No `completed` grader here,
+  # per the convention that early-terminated runs always fail `completed`.)
+  - name: "AKS baseline runs aks-baseline script"
+    prompt: "My AKS cluster aks-prod in resource group aks-rg is up and I'm already authenticated with kubectl pointed at it. Run the aks-baseline diagnostic sweep script now to gather its baseline health, then summarize the state. Don't run az aks get-credentials or list clusters first — go straight to the baseline script."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"aks-baseline\\.(ps1|sh)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # The script's shell tool call completes (earlyTerminate fires on its
+      # *result*), so the built-in `tool-calls` grader can match it via the
+      # tool_result. `required` matches on completion; this is the same shape the
+      # azure-validate e2e suite uses to confirm a script was run.
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)aks-baseline\\.(ps1|sh)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
