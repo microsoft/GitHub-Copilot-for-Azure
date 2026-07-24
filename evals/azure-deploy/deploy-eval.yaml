@@ -1,0 +1,1375 @@
+# Vally e2e eval suite for azure-deploy
+# Source: tests/azure-deploy/integration.test.ts
+# Covers: vanilla-static-web-apps-deploy, vanilla-app-service-deploy,
+#         vanilla-azure-functions-deploy, durable-task-scheduler-deploy,
+#         vanilla-azure-container-apps-deploy, terraform-static-web-apps-deploy,
+#         terraform-app-service-deploy, terraform-azure-functions-deploy,
+#         terraform-azure-container-apps-deploy
+#
+# These tests previously started from an empty workspace and asked the agent to
+# both CREATE and DEPLOY an application, which conflates azure-prepare and
+# azure-deploy responsibilities. Each stimulus below instead provides a
+# pre-built fixture (azure.yaml + infra/) so the agent only needs to deploy.
+#
+# earlyTerminate fires when the agent outputs a deploy link (azurewebsites.net,
+# azurestaticapps.net, azurecontainerapps.io, web.core.windows.net) — indicating
+# the deployment completed and the app is live.
+# NOTE: earlyTerminate tests must NOT use the `completed` grader.
+
+name: azure-deploy-e2e-eval
+description: |
+  End-to-end evaluation suite for the azure-deploy skill.
+  Tests deployment execution quality across:
+  - Static Web Apps (Bicep + Terraform)
+  - App Service (Bicep + Terraform)
+  - Azure Functions (Bicep + Terraform)
+  - Durable Task Scheduler (Bicep)
+  - Azure Container Apps (Bicep + Terraform)
+
+  Each scenario provides a fully prepared fixture (azure.yaml + infra/) so the
+  agent is only evaluated on its azure-deploy responsibilities, not azure-prepare.
+
+tags:
+  type: integration
+  skill: azure-deploy
+
+defaults:
+  runs: 1
+  timeout: "55m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+stimuli:
+
+  # ═══════════════════════════════════════════
+  # vanilla-static-web-apps-deploy (Bicep)
+  # Source: describe("vanilla-static-web-apps-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates whiteboard application with bicep"
+  # Original problem: empty workspace, agent had to create app + deploy.
+  # Fix: provide a prepared SWA fixture; agent only needs to deploy.
+  - name: "Deploy SWA - Whiteboard App (Bicep)"
+    prompt: "Create a static whiteboard web app and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-static-web-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # Jest: "creates static portfolio website with bicep"
+  - name: "Deploy SWA - Portfolio Website (Bicep)"
+    prompt: "Create a static portfolio website and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-static-web-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # ═══════════════════════════════════════════
+  # vanilla-app-service-deploy (Bicep)
+  # Source: describe("vanilla-app-service-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates discussion board"
+  - name: "Deploy App Service - Discussion Board (Bicep)"
+    prompt: "Create a discussion board application and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-app-service-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # Jest: "creates todo list with frontend and API"
+  - name: "Deploy App Service - Todo List (Bicep)"
+    prompt: "Create a todo list with frontend and API and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-app-service-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # ═══════════════════════════════════════════
+  # vanilla-azure-functions-deploy (Bicep)
+  # Source: describe("vanilla-azure-functions-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates serverless HTTP API"
+  - name: "Deploy Azure Functions - Serverless HTTP API (Bicep)"
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-azure-functions-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # Jest: "creates event-driven function app"
+  - name: "Deploy Azure Functions - Event-Driven (Bicep)"
+    prompt: "Create an event-driven function app to process messages and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-azure-functions-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # Jest: "creates Python function app with Service Bus trigger"
+  - name: "Deploy Azure Functions - Python Service Bus (Bicep)"
+    prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-azure-functions-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # ═══════════════════════════════════════════
+  # durable-task-scheduler-deploy (Bicep)
+  # Source: describe("durable-task-scheduler-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates and deploys workflow app with Durable Task Scheduler"
+  - name: "Deploy DTS - Workflow App (Bicep)"
+    prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline. Make the app as simple as possible for demonstration purposes only. Then deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: durable-task-scheduler-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      # Verify DTS infrastructure is present in the agent-generated workspace
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "(?i)Microsoft\\.DurableTask/schedulers"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "0ad04412-c4d5-4796-b79c-f76d14c8d402"
+
+  # ═══════════════════════════════════════════
+  # vanilla-azure-container-apps-deploy (Bicep)
+  # Source: describe("vanilla-azure-container-apps-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates containerized web application with Bicep"
+  - name: "Deploy Container Apps - Containerized Web App (Bicep)"
+    prompt: "Create a containerized web application and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-azure-container-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "(?i)Microsoft\\.App/containerApps"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "(?i)Microsoft\\.ContainerRegistry/registries"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "(?i)SystemAssigned"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+
+  # Jest: "creates simple containerized Node.js app"
+  - name: "Deploy Container Apps - Node.js App (Bicep)"
+    prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: vanilla-azure-container-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "(?i)Microsoft\\.App/containerApps"
+      - type: file-matches
+        config:
+          path: "infra/**/*.bicep"
+          pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+
+  # ═══════════════════════════════════════════
+  # terraform-static-web-apps-deploy
+  # Source: describe("terraform-static-web-apps-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates whiteboard application with Terraform"
+  - name: "Deploy SWA - Whiteboard App (Terraform)"
+    prompt: "Create a static whiteboard web app and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-static-web-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-exists
+        config:
+          path: "infra/**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "infra/**/*.bicep"
+
+  # Jest: "creates static portfolio website with Terraform infrastructure"
+  - name: "Deploy SWA - Portfolio Website (Terraform)"
+    prompt: "Create a static portfolio website and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-static-web-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-exists
+        config:
+          path: "infra/**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "infra/**/*.bicep"
+
+  # ═══════════════════════════════════════════
+  # terraform-app-service-deploy
+  # Source: describe("terraform-app-service-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates discussion board with Terraform"
+  - name: "Deploy App Service - Discussion Board (Terraform)"
+    prompt: "Create a discussion board application and deploy it to Azure App Service, prefer Terraform over Bicep, in my current subscription in the westus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-app-service-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-exists
+        config:
+          path: "infra/**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "infra/**/*.bicep"
+
+  # Jest: "creates todo list with frontend and API using Terraform"
+  - name: "Deploy App Service - Todo List (Terraform)"
+    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform in my current subscription in the westus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-app-service-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-exists
+        config:
+          path: "infra/**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "infra/**/*.bicep"
+
+  # ═══════════════════════════════════════════
+  # terraform-azure-functions-deploy
+  # Source: describe("terraform-azure-functions-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates serverless HTTP API with Terraform"
+  - name: "Deploy Azure Functions - Serverless HTTP API (Terraform)"
+    prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-azure-functions-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-exists
+        config:
+          path: "infra/**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "infra/**/*.bicep"
+
+  # Jest: "creates event-driven function app with Terraform"
+  - name: "Deploy Azure Functions - Event-Driven (Terraform)"
+    prompt: "Create an event-driven function app to process messages and deploy it to Azure Functions using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-azure-functions-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-exists
+        config:
+          path: "infra/**/*.tf"
+      - type: file-not-exists
+        config:
+          path: "infra/**/*.bicep"
+
+  # Jest: "creates URL shortener service with Terraform infrastructure"
+  - name: "Deploy Azure Functions - URL Shortener (Terraform)"
+    prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-azure-functions-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+
+  # ═══════════════════════════════════════════
+  # terraform-azure-container-apps-deploy
+  # Source: describe("terraform-azure-container-apps-deploy")
+  # ═══════════════════════════════════════════
+
+  # Jest: "creates containerized web application with Terraform"
+  - name: "Deploy Container Apps - Containerized Web App (Terraform)"
+    prompt: "Create a containerized web application and deploy it to Azure Container Apps using terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-azure-container-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)azurerm_container_app[^_]"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)azurerm_container_app_environment"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)azurerm_container_registry"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)SystemAssigned"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)AcrPull"
+
+  # Jest: "creates simple containerized Node.js app with Terraform"
+  - name: "Deploy Container Apps - Node.js App (Terraform)"
+    prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-azure-container-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)azurerm_container_app[^_]"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)AcrPull"
+
+  # Jest: "creates social media application with Terraform infrastructure"
+  - name: "Deploy Container Apps - Social Media App (Terraform)"
+    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: terraform-azure-container-apps-deploy
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)azurerm_container_app[^_]"
+      - type: file-matches
+        config:
+          path: "infra/**/*.tf"
+          pattern: "(?i)AcrPull"
+
+  # ═══════════════════════════════════════════
+  # brownfield-dotnet
+  # Source: describe("brownfield-dotnet")
+  # Brownfield tests clone real repos; the agent is expected to run the full
+  # azure-prepare → azure-validate → azure-deploy pipeline.
+  # earlyTerminate fires when azd up/provision is attempted (we don't run
+  # real Azure provisioning in evals).
+  # NOTE: earlyTerminate tests must NOT use the `completed` grader.
+  # ═══════════════════════════════════════════
+
+  # Jest: "deploys eShop"
+  - name: "Brownfield .NET - eShop"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git clone --depth 1 https://github.com/dotnet/eShop.git .
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys MvcMovie 10"
+  - name: "Brownfield .NET - MvcMovie 10"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the westus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/AspNetCore.Docs
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire azure functions"
+  - name: "Brownfield .NET Aspire - Azure Functions"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/aspire-with-azure-functions.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/aspire-with-azure-functions
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire client apps integration"
+  - name: "Brownfield .NET Aspire - Client Apps Integration"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/client-apps-integration.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/client-apps-integration
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire container build"
+  # Checks Container Apps two-phase Bicep pattern in the agent-generated workspace.
+  - name: "Brownfield .NET Aspire - Container Build"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/container-build.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/container-build
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      # Verify Container Apps two-phase Bicep pattern in the agent-generated workspace
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.App/containerApps"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)Microsoft\\.ContainerRegistry/registries"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "(?i)SystemAssigned"
+      - type: file-matches
+        config:
+          path: "**/*.bicep"
+          pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "does not deploy aspire custom resources"
+  # The agent MUST NOT attempt deployment — custom Aspire resources are unsupported.
+  # No earlyTerminate; let it run and verify azd up is never called.
+  - name: "Brownfield .NET Aspire - Custom Resources (No Deploy)"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/custom-resources.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/custom-resources
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Stop if there is no further work; otherwise go with recommended options."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      # Agent must NOT attempt actual deployment
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|deploy)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire database containers"
+  - name: "Brownfield .NET Aspire - Database Containers"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/database-containers.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/database-containers
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire orleans-voting"
+  # Also soft-checks container deploy env vars (AZURE_CONTAINER_REGISTRY_ENDPOINT, etc.).
+  - name: "Brownfield .NET Aspire - Orleans Voting"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/orleans-voting.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/orleans-voting
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-dotnet
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      # Soft-check: container deploy env vars expected in azure.yaml or bicep
+      - type: output-matches
+        config:
+          pattern: "(?i)AZURE_CONTAINER_REGISTRY_ENDPOINT|AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID|MANAGED_IDENTITY_CLIENT_ID"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # brownfield-javascript
+  # Source: describe("brownfield-javascript")
+  # ═══════════════════════════════════════════
+
+  # Jest: "deploys nodejs-demoapp"
+  - name: "Brownfield JavaScript - nodejs-demoapp"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git clone --depth 1 https://github.com/benc-uk/nodejs-demoapp.git .
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-javascript
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire with javascript"
+  - name: "Brownfield .NET Aspire - JavaScript"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/aspire-with-javascript.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/aspire-with-javascript
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-javascript
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire with node"
+  - name: "Brownfield .NET Aspire - Node"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/aspire-with-node.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/aspire-with-node
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-javascript
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # brownfield-python
+  # Source: describe("brownfield-python")
+  # ═══════════════════════════════════════════
+
+  # Jest: "deploys flask calculator"
+  - name: "Brownfield Python - Flask Calculator"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git clone --depth 1 https://github.com/UltiRequiem/flask-calculator.git .
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-python
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "deploys aspire with python"
+  - name: "Brownfield .NET Aspire - Python"
+    prompt: >-
+      Please deploy this application to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+      This is for a small scale production environment.
+      Use standard SKUs.
+      The app can be found under samples/aspire-with-python.
+      Use azd as the deployment tool.
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dotnet/aspire-samples
+        - git sparse-checkout init --cone
+        - git fetch -q --depth 1 origin main
+        - git sparse-checkout set samples/aspire-with-python
+        - git checkout -q FETCH_HEAD
+    constraints:
+      max_turns: 80
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-deploy
+      category: brownfield-python
+      systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
+      followUp:
+        - "Go with recommended options and proceed with Azure deployment."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+      takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+            - azure-deploy
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

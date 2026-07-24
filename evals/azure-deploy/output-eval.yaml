@@ -1,0 +1,156 @@
+# Vally eval config — migrated from Waza
+# Source: tests/azure-deploy/eval/eval.yaml + tasks/*.yaml
+# Migration: Waza → Vally (issue #1817, Phase 1)
+#
+# Global graders (evaluate#125 workaround): has_output and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-deploy-eval
+description: |
+  Evaluation suite for the azure-deploy skill.
+  Tests deployment guidance quality with emphasis on:
+  - AVM+AZD pattern-module preference
+  - AVM fallback when no pattern module exists
+  - deploy-only routing (not prepare/validate)
+
+tags:
+  type: integration
+  skill: azure-deploy
+
+defaults:
+  runs: 1
+  timeout: "7m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    output-contains: 0.125
+    output-matches: 0.125
+    output-not-matches: 0.5
+    completed: 0.25
+
+stimuli:
+  # ── avm-order-bicep-001 ──
+  # Waza source: tasks/avm-order-bicep.yaml
+  # Validates deploy guidance prefers AVM+AZD pattern modules first
+  - name: "AVM+AZD Priority - Bicep Deploy"
+    prompt: |
+      My app is already prepared and validated.
+      Give me deploy guidance and module preference order for Bicep.
+      Prefer AVM+AZD patterns where available, with fallback to AVM resource modules and AVM utility modules.
+      Use azd as the deployment tool.
+    tags:
+      type: integration
+      skill: azure-deploy
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "AVM"
+      - type: output-contains
+        config:
+          substring: "deploy"
+      - type: output-contains
+        config:
+          substring: "pattern"
+      # Task grader: avm_pattern_first
+      - type: output-matches
+        config:
+          pattern: "(?i)AVM\\+AZD|AZD pattern|pattern modules"
+      # Task grader: includes_resource_and_utility_fallback
+      - type: output-matches
+        config:
+          pattern: "(?is)(AVM\\+AZD|AZD pattern|pattern modules).*resource modules.*utility modules"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|exception occurred|crashed"
+
+  # ── avm-fallback-no-pattern-001 ──
+  # Waza source: tasks/avm-fallback-no-pattern.yaml
+  # Validates fallback order when no AVM+AZD pattern module exists
+  - name: "AVM Fallback When No AZD Pattern"
+    prompt: |
+      I'm deploying with Bicep and there is no AVM+AZD pattern module for my scenario.
+      What module order should I follow if no pattern module exists and fallback must stay AVM resource modules then AVM utility modules?
+      Use azd as the deployment tool.
+    tags:
+      type: integration
+      skill: azure-deploy
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "AVM"
+      - type: output-contains
+        config:
+          substring: "resource"
+      - type: output-contains
+        config:
+          substring: "utility"
+      # Task grader: explicit_no_pattern_fallback
+      - type: output-matches
+        config:
+          pattern: "(?is)(no .*pattern module|if no .*pattern).*AVM.*resource.*AVM.*utility"
+      # Task grader: avoids_non_avm_fallback
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fallback to non-AVM|use non-AVM modules"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|exception occurred|crashed"
+
+  # ── avm-azd-pattern-preference-001 ──
+  # Source: tests/azure-deploy/avm/integration.test.ts
+  #         describe("avm-azd-pattern-preference")
+  # Validates that AZD pattern modules are preferred over AVM resource modules
+  # when setting up azd infrastructure with Bicep for a container app.
+  - name: "AZD Pattern Module Priority - Container App"
+    prompt: |
+      Set up azd infrastructure with Bicep for a container app.
+      Use AVM modules and prefer AZD pattern modules over resource modules.
+      Use azd as the deployment tool.
+    tags:
+      type: integration
+      skill: azure-deploy
+      tier: full
+      cost: llm
+      area: output
+    graders:
+      - type: output-contains
+        config:
+          substring: "AZD"
+      - type: output-contains
+        config:
+          substring: "pattern"
+      # Task grader: avm_azd_pattern_preferred — matches "AZD pattern", "AVM+AZD", or "pattern modules"
+      - type: output-matches
+        config:
+          pattern: "(?i)AZD\\s+pattern|AVM\\+AZD|pattern modules?"
+      # Task grader: context_present — AVM/Bicep/container/module present
+      - type: output-matches
+        config:
+          pattern: "(?i)(container|bicep|module)"
+      # Task grader: pattern_before_resource — pattern modules discussed before resource modules
+      - type: output-matches
+        config:
+          pattern: "(?is)(AZD pattern|AVM\\+AZD|pattern modules?).*resource modules?"
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|exception occurred|crashed"
