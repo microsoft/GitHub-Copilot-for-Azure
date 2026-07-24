@@ -39,6 +39,25 @@ azd ai connection create $CONNECTION_NAME \
   --metadata "AgentCardPath=/agentCard/v1.0"
 ```
 
+## Attach to a toolbox
+
+Once the `remote-a2a` connection exists (peer must already expose an A2A endpoint):
+
+```bash
+azd ai toolbox connection add agent-tools peer-agent-conn
+azd ai toolbox publish agent-tools <new-version>
+```
+
+For Foundry peers, first enable incoming A2A on the target agent (see [enable-incoming-a2a.md](../../create/references/enable-incoming-a2a.md)) if it doesn't already return 200 on `/endpoint/protocols/a2a/agentCard/v1.0`. External A2A services: assume the peer owner has done this.
+
+## `--from-file` entry
+
+```yaml
+connections:
+  - name: peer-agent-conn      # RemoteA2A — just the name
+```
+
 ## References
 
 - [A2A tool documentation](https://learn.microsoft.com/azure/foundry/agents/how-to/tools/agent-to-agent)
+- [toolbox.md § Supported tool types](../toolbox.md#supported-tool-types)

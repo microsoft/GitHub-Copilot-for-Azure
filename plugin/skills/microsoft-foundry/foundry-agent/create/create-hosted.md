@@ -16,7 +16,7 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 | Local run | `azd ai agent run --no-client` + `azd ai agent invoke --local "..."` |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
-| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [tools](references/tools.md) |
+| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [toolbox.md](../toolbox/toolbox.md) |
 
 ## When to Use This Skill
 
@@ -72,7 +72,7 @@ Act on the summary prefixes:
 Branch on the agent status reported by `verify-environment`:
 
 - `not_deployed` -> Step 2.
-- `active` / `deployed` -> already deployed. Skip to [deploy/deploy.md](../deploy/deploy.md) for redeploy or [tools](references/tools.md) to add a tool.
+- `active` / `deployed` -> already deployed. Skip to [deploy/deploy.md](../deploy/deploy.md) for redeploy or [toolbox.md](../toolbox/toolbox.md) to add a tool.
 
 ### Step 2 -- New or existing Foundry project?
 
@@ -215,7 +215,8 @@ Optionally add toolboxes (tools), guardrails (content safety), and skills (behav
 
 ### Step 7a -- Add tools (optional)
 
-Tools attach through **toolboxes** -- bundled MCP-compatible endpoints.
+**Recommend attaching tool through a toolbox**
+Preferred over wiring MCP servers/connections directly to the agent: it centralizes auth and policy and lets you change tools without touching agent code. Supported: MCP servers, Web Search, Bing Search, Azure AI Search, Code Interpreter, File Search, OpenAPI APIs, A2A, Work IQ, Fabric IQ, Browser Automation — see the toolbox sub-skill [toolbox.md § Supported tool types](../toolbox/toolbox.md#supported-tool-types) for per-type auth and setup guides.
 
 #### Toolbox creation boundary
 
@@ -225,11 +226,11 @@ Flow (only when the user asks you to create the toolbox):
 
 1. Create the **connection** (`azd ai connection create ...`).
 2. Create or update the **toolbox** (`azd ai toolbox create` / `connection add`).
-3. Set the agent env var (`azd env set TOOLBOX_<NAME>_MCP_ENDPOINT ...`).
+3. Set the agent env var (`azd env set TOOLBOX_ENDPOINT ...`).
 4. Reference it in the agent service's `environmentVariables` in `azure.yaml`.
 5. `azd deploy`.
 
-Full recipes (GitHub MCP, Azure AI Search, A2A, Bing Custom) in [tools](references/tools.md).
+For what a toolbox is and how to create one (concept, tool types, the create flow), see the toolbox sub-skill [toolbox.md](../toolbox/toolbox.md). For generating the agent code that consumes a toolbox, see [use-toolbox-in-hosted-agent.md](references/use-toolbox-in-hosted-agent.md).
 
 ### Step 7b -- Add guardrails (optional)
 
@@ -302,7 +303,7 @@ Run `azd ai agent doctor --output json` to surface failing checks with `suggesti
 ## Next Steps
 
 - Deploy to Foundry -> [deploy/deploy.md](../deploy/deploy.md)
-- Add tools -> [tools](references/tools.md)
+- Add tools -> [toolbox.md](../toolbox/toolbox.md)
 - Invoke the deployed agent -> [invoke/invoke.md](../invoke/invoke.md)
 - Evaluate / optimize -> [observe/observe.md](../observe/observe.md)
 - Diagnose failures -> [troubleshoot/troubleshoot.md](../troubleshoot/troubleshoot.md)
