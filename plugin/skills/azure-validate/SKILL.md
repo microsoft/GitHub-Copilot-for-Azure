@@ -38,21 +38,18 @@ metadata:
 
 ## Steps
 
-Run the workflow script and follow its instructions. It walks you through each validation step one at a time.
+Run the workflow script and follow its instructions. It walks you through each validation step one at a time, recording progress in `.azure/validate-status.json`. Use [references/scripts/workflow.ps1](references/scripts/workflow.ps1) on Windows or [references/scripts/workflow.sh](references/scripts/workflow.sh) on macOS/Linux.
 
-Start the workflow by calling the script **without** `-CompletedStep`:
+Start by calling the script **without** the completed-step argument:
 
 ```bash
 pwsh references/scripts/workflow.ps1 -WorkspacePath <workspace-path>
+# macOS/Linux: bash references/scripts/workflow.sh --workspace-path <workspace-path>
 ```
 
-Each run prints the next action to take and the value to pass for `-CompletedStep`. Perform the action, then re-run the script passing that value:
+Each run prints the next action and the value to pass next. Perform the action, then re-run with that value (`-CompletedStep <value>` for pwsh, `--completed-step <value>` for bash). Repeat until it reports the azure-validate workflow is complete.
 
-```bash
-pwsh references/scripts/workflow.ps1 -WorkspacePath <workspace-path> -CompletedStep <value>
-```
-
-The script records progress itself in `.azure/validate-status.json`. Repeat until it reports that the azure-validate workflow is complete.
+The steps reference recipe details in [references/recipes/README.md](references/recipes/README.md) and role checks in [references/role-verification.md](references/role-verification.md).
 
 > **⛔ VALIDATION AUTHORITY**
 >
