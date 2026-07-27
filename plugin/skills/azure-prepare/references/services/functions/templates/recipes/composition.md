@@ -17,6 +17,7 @@ OUTPUT: Complete project ready for `azd up`
 3. SELECT TEMPLATES
    - Trigger template (REQUIRED) — base project with IaC
    - Binding templates (OPTIONAL) — extract patterns only
+   - If Table Storage SDK usage is detected (`TableServiceClient`, `TableClient`, `Azure.Data.Tables`, `@azure/data-tables`), use `http` base + `table-storage` recipe
 
 4. FETCH TEMPLATES
    - Single match: 1 call

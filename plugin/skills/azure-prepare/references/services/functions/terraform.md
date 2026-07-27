@@ -126,7 +126,8 @@ resource "azurerm_role_assignment" "function_storage_access" {
 > - Use `AzureWebJobsStorage__blobServiceUri` instead of connection string
 > - Set `shared_access_key_enabled = false` for enhanced security
 > - Use `storage_uses_managed_identity = true` for deployment authentication
-> - Grant `Storage Blob Data Owner` role for full access to blobs, queues, and tables
+> - Grant `Storage Blob Data Owner` for blob runtime/deployment access
+> - Add `Storage Table Data Contributor` role assignment when app code uses Table Storage
 > - Requires azurerm provider **v4.2 or later**
 
 ### Using Azure Verified Module
