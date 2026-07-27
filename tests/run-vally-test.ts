@@ -441,7 +441,7 @@ async function main(): Promise<void> {
         MODEL_OVERRIDE: compareOption.model
       };
       const exitCode = await runVallyCommand(forwardedArgs, extraEnvVar);
-      process.exitCode = Math.max(Number(process.exitCode) ?? 0, exitCode);
+      process.exitCode = Math.max(process.exitCode ? Number(process.exitCode) : 0, exitCode);
       await convertAllTestResult(passRateThreshold);
     }
   }
