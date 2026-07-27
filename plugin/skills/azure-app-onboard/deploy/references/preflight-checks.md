@@ -20,7 +20,7 @@ az account show
 
 ### 0b. Resource Name Availability
 
-Check globally-unique names before deploy: `az acr check-name`, `az storage account check-name`, `az webapp show`, `az keyvault show`. Name taken → suggest alternate from `prepare-plan.json.naming.suffix`: "Name `{name}` taken. Use `{altName}`?"
+Check globally-unique names before deploy: `az acr check-name`, `az storage account check-name`, `az webapp show`, `az keyvault show`. Name taken → suggest alternate from `prepare-plan.json.naming.suffix`: "Name `{name}` taken. Use `{altName}`?" ⛔ On acceptance, write `{altName}` to the affected `prepare-plan.json.naming.resources[]` entry BEFORE redeploying — scaffold/deploy read plan names verbatim, so an un-synced rename regenerates the same collision or fails the conformance gate.
 
 ### 0c. F1/Free Tier Warning
 
@@ -47,8 +47,7 @@ az deployment sub what-if \
   --location {location} \
   --template-file infra/main.bicep \
   --parameters @infra/main.parameters.json \
-  --subscription {subscriptionId} \
-  --what-if-result-format FullResourcePayloads
+  --subscription {subscriptionId}
 ```
 
 #### Bicep (resource-group scope)
@@ -59,8 +58,7 @@ az deployment group create \
   --template-file infra/main.bicep \
   --parameters @infra/main.parameters.json \
   --subscription {subscriptionId} \
-  --what-if \
-  --what-if-result-format FullResourcePayloads
+  --what-if
 ```
 
 - Review changes: `Create`, `Modify`, `Delete`, `NoChange`. Surface `Delete` as warnings — user must acknowledge.

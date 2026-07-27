@@ -127,7 +127,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy\\?|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy\\?|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
     constraints:
       max_turns: 80
     graders:
@@ -354,7 +354,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
     environment:
       commands:
         - git init -q
@@ -376,6 +376,18 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)re-evaluat|re-scan|re-check|scan again|checking again|re-running|resolved|verified|0 remaining"
+      # STATUS SWITCH (artifact proof): remediation flipped the component from needsFixes → fixesApplied.
+      # Per remediation-protocol.md, `fixesApplied` is only written AFTER re-evaluation evidence, so this
+      # proves the full detect → fix → re-eval cycle actually happened — not just that fixes were mentioned.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"status"\s*:\s*"fixesApplied"'
+      # …and overall health recovered from blocked to ready/readyWithCaveats after the fix (the "then ready" half)
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(ready|readyWithCaveats)"'
       # Express detected
       - type: output-matches
         config:
@@ -421,7 +433,7 @@ stimuli:
         - "Just go with defaults using my current subscription."
         - "Yes, proceed."
         - "Yes, continue."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy\\?|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy\\?|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
     environment:
       commands:
         - git init -q
@@ -603,7 +615,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy\\?|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy\\?|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply)"}]'
     environment:
       commands:
         - git init -q

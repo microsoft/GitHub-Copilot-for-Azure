@@ -2,10 +2,11 @@
  * Context + shared TypeScript interfaces for AppOnboard session artifacts:
  * context.json, active-session.json, and shared types used across all phases.
  *
- * Per-phase schemas (load only when entering that phase):
- * - prereq-schemas.ts (in azure-app-onboard-prereq) — prereq-output.json (PrereqOutput, BuildRequirements, CloudSdkFinding)
- * - session-schemas-prepare.ts — prepare-plan.json (PreparePlan, PlannedService, etc.)
- * - session-schemas-deploy.ts — scaffold-manifest.json, deploy-result.json
+ * Per-phase schemas (each sub-skill has its own in its references/ folder):
+ * - azure-app-onboard-prereq/references/prereq-schemas.ts — prereq-output.json
+ * - prepare/references/prepare-schemas.ts — prepare-plan.json
+ * - scaffold/references/scaffold-schemas.ts — scaffold-manifest.json
+ * - deploy/references/deploy-schemas.ts — deploy-result.json
  *
  * Source of truth for JSON artifacts in `.copilot-azure/sessions/{session-id}/`.
  */
@@ -45,7 +46,9 @@ export interface AppOnboardComponent {
   path: string;
   stack: AppOnboardComponentStack;
   readiness: AppOnboardComponentReadiness;
-  verdicts?: AppOnboardComponentVerdicts;
+  /** REQUIRED — every component MUST carry per-axis verdicts (build/completeness/deployability); the prepare phase reads these for readiness scoring. Never omit, even for multi-component repos. */
+  verdicts: AppOnboardComponentVerdicts;
+  /** Per-axis problems + fixes. Omit or leave empty when all verdicts PASS. ⛔ REQUIRED when any verdict is WARN or FAIL: every non-PASS axis MUST have a matching entry (same `category`) explaining the issue and its fix. */
   findings?: readonly AppOnboardComponentFinding[];
 }
 
@@ -56,10 +59,16 @@ export interface AppOnboardAzureTarget {
   subscriptionName: string;
   resourceGroup: string;
   region: string;
+  /** Entra tenant ID from `az account show --query tenantId`. */
+  tenantId: string;
+  /** Signed-in user's display name (`az ad signed-in-user show --query displayName`) — used for the `deployed-by` tag and handoff identity. */
+  userDisplayName?: string;
 }
 
 export interface AppOnboardRepoInfo {
   remote: string | null;
+  /** Full 40-char HEAD SHA at last prereq scan (`git rev-parse HEAD`). Prereq resume compares to HEAD to detect repo changes (staleness guard). */
+  lastScanCommit?: string;
 }
 
 export interface AppOnboardOverride {
@@ -100,7 +109,7 @@ export interface AppOnboardIntent {
   scanDiscoveredFacts?: string[];
 }
 
-export type AppOnboardPhase = "info" | "prereq" | "prepare" | "scaffold" | "deploy" | "cicd" | "observe";
+export type AppOnboardPhase = "info" | "prereq" | "prepare" | "scaffold" | "deploy";
 
 export interface AppOnboardContext {
   sessionId: string;
@@ -126,12 +135,11 @@ export interface AppOnboardContext {
   /** Service dependencies parsed from docker-compose, config files, or code imports */
   detectedServices: readonly DetectedService[];
   overrides: AppOnboardOverride[];
-  /** The skill to invoke next. Set by Step 2 (cloud SDK gate), Step 5 (specialized skill detection),
-   *  or Step 8 (normal routing based on health + infra). Examples: "azure-cloud-migrate",
-   *  "azure-hosted-copilot-sdk", "microsoft-foundry", "azure-app-onboard", "azure-prepare". */
+  /** The skill to invoke next. Set by the cloud-SDK gate, specialized-skill detection, or
+   *  normal health+infra routing. Examples: "azure-cloud-migrate", "microsoft-foundry", "azure-prepare".
+   *  Presence halts the greenfield pipeline; the resume path in session-protocol.md clears it and re-runs prereq. */
   routeToSkill?: string;
-  /** Why this route was chosen. Examples: "cloud-sdk-migration", "copilot-sdk-detected",
-   *  "foundry-agents-detected", "ready-no-infra", "ready-existing-infra". */
+  /** Why this route was chosen. Examples: "cloud-sdk-migration", "existing-azd-template", "foundry-agents-detected", "ready-no-infra", "ready-existing-infra". */
   routeReason?: string;
 }
 
