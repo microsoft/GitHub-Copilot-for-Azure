@@ -341,7 +341,7 @@ function printUsage(): void {
     "  --skill <name>            Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --compare                 Run multiple trials with different configurations for comparison",
-    "  --compare-options <model-1>/<w/o-skill>,..,<model-N>/<w/o-skill> The configurations to run for comparison. <model> is the model name recognizable by Copilot CLI. <w/o-skill> is 'true' or 'false'. If not provided, a default list of configurations will be used",
+    "  --compare-options <model-1>/<with-skill>,..,<model-N>/<with-skill> The configurations to run for comparison. <model> is the model name recognizable by Copilot CLI. <w/o-skill> is 'true' or 'false'. If not provided, a default list of configurations will be used",
     "  --help                    Show this help",
     "",
     "All unknown options are forwarded to the underlying vally command.",
@@ -437,10 +437,11 @@ async function main(): Promise<void> {
     const compareOptions = options.compareOptions ?? [];
     for (const compareOption of compareOptions) {
       const extraEnvVar = {
-        NO_SKILLS: compareOption.withSkill ? "true" : "false",
+        NO_SKILLS: !compareOption.withSkill ? "true" : "false",
         MODEL_OVERRIDE: compareOption.model
       };
-      await runVallyCommand(forwardedArgs, extraEnvVar);
+      const exitCode = await runVallyCommand(forwardedArgs, extraEnvVar);
+      process.exitCode = Math.max(Number(process.exitCode) ?? 0, exitCode);
       await convertAllTestResult(passRateThreshold);
     }
   }
