@@ -3,9 +3,15 @@
     Walks the agent through the azure-validate workflow, one step at a time.
 .PARAMETER WorkspacePath
     Path to the workspace being validated (required).
+.PARAMETER CompletedStep
+    The workflow step the agent just completed. Omit this on the first call to
+    start the workflow. The script records the value in
+    .azure/validate-status.json and returns the next action to take, along with
+    the value to pass as -CompletedStep on the next call.
 #>
 param(
-    [string]$WorkspacePath
+    [string]$WorkspacePath,
+    [string]$CompletedStep
 )
 
 enum ValidationStep {
@@ -18,7 +24,6 @@ enum ValidationStep {
     RecordProof
     ResolveErrors
     UpdateStatus
-    Deploy
 }
 
 if (-not $WorkspacePath) {
@@ -26,133 +31,93 @@ if (-not $WorkspacePath) {
     exit 2
 }
 
-# Step 0: Initialize status file
-# If .azure/validate-status.json doesn't exist, create it with completedStep = None.
-$validateStatusPath = Join-Path -Path $WorkspacePath -ChildPath ".azure/validate-status.json"
-if (-not (Test-Path -Path $validateStatusPath)) {
-    # Create the .azure directory if it doesn't exist
-    $azureDir = Join-Path -Path $WorkspacePath -ChildPath ".azure"
-    if (-not (Test-Path -Path $azureDir)) {
-        New-Item -ItemType Directory -Path $azureDir | Out-Null
-    }
-
-    # Create the validate-status.json file
-    $validateStatus = @{
-        completedStep = [ValidationStep]::None.ToString()
-    }
-    $validateStatus | ConvertTo-Json | Set-Content -Path $validateStatusPath
-
-    Write-Output "Created '.azure/validate-status.json' to track validation progress."
-} else {
-    # Load the existing validate-status.json
-    $validateStatus = Get-Content -Path $validateStatusPath | ConvertFrom-Json
-}
-
-$completedStep = [ValidationStep]::None
-$rawCompletedStep = $validateStatus.completedStep
-if (-not [string]::IsNullOrEmpty($rawCompletedStep)) {
-    if (-not [enum]::TryParse([ValidationStep], $rawCompletedStep, $true, [ref]$completedStep)) {
-        Write-Error "Error: The completedStep property in `.azure/validate-status.json` has an invalid value: '$rawCompletedStep'."
-        Write-Error "Action: Set completedStep to a valid value, or 'None' to start over."
+# Resolve the step the agent just completed.
+# Omitting -CompletedStep signals the start of the workflow (None).
+$step = [ValidationStep]::None
+if (-not [string]::IsNullOrEmpty($CompletedStep)) {
+    if (-not [enum]::TryParse([ValidationStep], $CompletedStep, $true, [ref]$step)) {
+        $validValues = ([enum]::GetNames([ValidationStep])) -join ", "
+        Write-Error "Error: '-CompletedStep $CompletedStep' is not a valid step. Valid values: $validValues"
         exit 2
     }
 }
 
+# Record progress in .azure/validate-status.json (creating it if needed).
+$azureDir = Join-Path -Path $WorkspacePath -ChildPath ".azure"
+if (-not (Test-Path -Path $azureDir)) {
+    New-Item -ItemType Directory -Path $azureDir | Out-Null
+}
+$validateStatusPath = Join-Path -Path $azureDir -ChildPath "validate-status.json"
+@{ completedStep = $step.ToString() } | ConvertTo-Json | Set-Content -Path $validateStatusPath
+
+# Emit the next action based on the step just completed.
+
 # Step 1: Load Plan
-# Instruct the agent to load the deployment plan, then advance completedStep to `LoadPlan` and re-run this script.
-if ($completedStep -eq [ValidationStep]::None) {
+if ($step -eq [ValidationStep]::None) {
     Write-Output "Action: Read `.azure/deployment-plan.md` for recipe and configuration. If missing, run azure-prepare first, then come back to workflow.ps1."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `LoadPlan`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep LoadPlan after completing the action."
     Write-Output "Reference: `.azure/deployment-plan.md"
     exit 0
 }
 
 # Step 2: Add Validation Steps
-# Once the plan is loaded, instruct the agent to copy the recipe's "Validation Steps" into the plan,
-# then advance completedStep to `AddValidationSteps` and re-run this script.
-if ($completedStep -eq [ValidationStep]::LoadPlan) {
+if ($step -eq [ValidationStep]::LoadPlan) {
     Write-Output "Action: Copy the recipe's `Validation Steps` into `.azure/deployment-plan.md` as children of `All validation checks pass`."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `AddValidationSteps`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep AddValidationSteps after completing the action."
     Write-Output "Reference: references/recipes/README.md, `.azure/deployment-plan.md"
     exit 0
 }
 
 # Step 3: Run Validation
-# With the validation steps recorded, instruct the agent to execute the recipe-specific validation commands,
-# then advance completedStep to `RunValidation` and re-run this script.
-if ($completedStep -eq [ValidationStep]::AddValidationSteps) {
+if ($step -eq [ValidationStep]::AddValidationSteps) {
     Write-Output "Action: Execute the recipe-specific validation commands."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `RunValidation`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep RunValidation after completing the action."
     Write-Output "Reference: references/recipes/README.md"
     exit 0
 }
 
 # Step 4: Build Verification
-# With validation run, instruct the agent to build the project and fix any errors,
-# then advance completedStep to `BuildVerification` and re-run this script.
-if ($completedStep -eq [ValidationStep]::RunValidation) {
+if ($step -eq [ValidationStep]::RunValidation) {
     Write-Output "Action: Build the project and fix any errors before proceeding."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `BuildVerification`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep BuildVerification after completing the action."
     Write-Output "Reference: See the recipe for build details."
     exit 0
 }
 
 # Step 5: Static Role Verification
-# With the build verified, instruct the agent to review the Bicep/Terraform for correct RBAC role assignments,
-# then advance completedStep to `StaticRoleVerification` and re-run this script.
-if ($completedStep -eq [ValidationStep]::BuildVerification) {
+if ($step -eq [ValidationStep]::BuildVerification) {
     Write-Output "Action: Review the Bicep/Terraform for correct RBAC role assignments in code."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `StaticRoleVerification`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep StaticRoleVerification after completing the action."
     Write-Output "Reference: references/role-verification.md"
     exit 0
 }
 
 # Step 6: Record Proof
-# With roles verified, instruct the agent to record validation proof in the plan,
-# then advance completedStep to `RecordProof` and re-run this script.
-if ($completedStep -eq [ValidationStep]::StaticRoleVerification) {
+if ($step -eq [ValidationStep]::StaticRoleVerification) {
     Write-Output "Action: Populate **Section 7: Validation Proof** in the plan with the commands run and their results."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `RecordProof`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep RecordProof after completing the action."
     Write-Output "Reference: `.azure/deployment-plan.md"
     exit 0
 }
 
 # Step 7: Resolve Errors
-# With proof recorded, instruct the agent to fix any failures before proceeding,
-# then advance completedStep to `ResolveErrors` and re-run this script.
-if ($completedStep -eq [ValidationStep]::RecordProof) {
+if ($step -eq [ValidationStep]::RecordProof) {
     Write-Output "Action: Fix any validation failures before proceeding."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `ResolveErrors`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep ResolveErrors after completing the action."
     Write-Output "Reference: See the recipe's errors.md."
     exit 0
 }
 
 # Step 8: Update Status
-# Only after ALL checks pass, instruct the agent to set the plan status to `Validated`,
-# then advance completedStep to `UpdateStatus` and re-run this script.
-if ($completedStep -eq [ValidationStep]::ResolveErrors) {
+if ($step -eq [ValidationStep]::ResolveErrors) {
     Write-Output "Action: Only after ALL checks pass, set the plan status to `Validated`."
-    Write-Output "Then set the completedStep property in `.azure/validate-status.json` to `UpdateStatus`, and re-run workflow.ps1."
+    Write-Output "Next: re-run workflow.ps1 with -CompletedStep UpdateStatus after completing the action."
     Write-Output "Reference: `.azure/deployment-plan.md"
     exit 0
 }
 
-# Step 9: Deploy
-# With status updated, deploy only if the user explicitly asked to deploy; otherwise stop and report results.
-# Then advance completedStep to `Deploy` and re-run this script.
-if ($completedStep -eq [ValidationStep]::UpdateStatus -or $completedStep -eq [ValidationStep]::Deploy) {
-    # Set the completedStep to Deploy 
-    $completedStep = [ValidationStep]::Deploy
-    $validateStatus.completedStep = $completedStep.ToString()
-    $validateStatus | ConvertTo-Json | Set-Content -Path $validateStatusPath
-    
+# Step 9: Deploy (workflow complete)
+if ($step -eq [ValidationStep]::UpdateStatus) {
     Write-Output "Action: The azure-validate workflow is complete. If the user explicitly requested deployment, invoke azure-deploy. Otherwise STOP and report the validation results."
-    
     exit 0
 }
-
-
-
-
-
-

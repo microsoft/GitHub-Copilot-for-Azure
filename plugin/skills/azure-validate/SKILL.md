@@ -38,13 +38,21 @@ metadata:
 
 ## Steps
 
-Run the workflow script and follow its instructions. It walks you through each validation step one at a time:
+Run the workflow script and follow its instructions. It walks you through each validation step one at a time.
+
+Start the workflow by calling the script **without** `-CompletedStep`:
 
 ```bash
 pwsh references/scripts/workflow.ps1 -WorkspacePath <workspace-path>
 ```
 
-Each run prints the next actions to take. Perform the actions, then re-run the script. Repeat until the script reports that the azure-validate workflow is complete.
+Each run prints the next action to take and the value to pass for `-CompletedStep`. Perform the action, then re-run the script passing that value:
+
+```bash
+pwsh references/scripts/workflow.ps1 -WorkspacePath <workspace-path> -CompletedStep <value>
+```
+
+The script records progress itself in `.azure/validate-status.json`. Repeat until it reports that the azure-validate workflow is complete.
 
 > **⛔ VALIDATION AUTHORITY**
 >
