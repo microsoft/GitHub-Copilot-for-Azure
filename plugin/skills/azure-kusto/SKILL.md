@@ -212,6 +212,28 @@ Switch to Azure CLI when:
 - Authentication failures with MCP tools
 - Empty response when database is known to have data
 
+## Local Kusto Emulator (Kustainer / Docker)
+
+Azure Data Explorer ships a Docker emulator (`mcr.microsoft.com/azuredataexplorer/kustainer-linux`) for offline/local development. It exposes the same REST endpoints (`/v1/rest/query`, `/v1/rest/mgmt`) as a real cluster, but has emulator-specific lifecycle behavior that differs from a managed ADX cluster.
+
+**Persisting a database across container restarts** - mount a host folder to `/kustodata` and create the database with an explicit persist path:
+
+```kusto
+.create database MyDb persist (@"/kustodata/dbs/MyDb/md", @"/kustodata/dbs/MyDb/data")
+```
+
+**⚠️ Reattaching after the container is recreated** - stopping/removing and recreating the container (e.g. to change `--memory`, upgrade the image, or move hosts) against the *same* `/kustodata` bind mount does **not** auto-reattach previously-persisted databases. Only an empty built-in `NetDefaultDB` is created on every engine start - this is normal emulator behavior, not data loss.
+
+- **Symptom**: `.show databases` shows only `NetDefaultDB`; querying the expected database returns `BadRequest_EntityNotFound` - even though `/kustodata/dbs/<name>/` is fully intact on disk.
+- **Do NOT** re-run `.create database ... persist(...)` against the existing path. That command creates a *new* database; against metadata that already exists it fails instantly with a generic, unhelpful `Internal service error` regardless of database size - this is not a resource, disk-space, or size problem, it is simply the wrong command.
+- **Do** use the dedicated reattach command instead:
+
+  ```kusto
+  .attach database MyDb from @"/kustodata/dbs/MyDb/md"
+  ```
+
+  This registers existing on-disk metadata with the running engine in milliseconds. It only reads metadata - it does not move, copy, or delete extent/data files - so it's safe to run whenever you're unsure if a database is attached. Run one `.attach database` per previously-existing database after every container stop/rm/recreate before concluding data was lost.
+
 ## Common Issues
 
 - **Access Denied**: Verify database permissions (Viewer role minimum for queries)
@@ -221,6 +243,7 @@ Switch to Azure CLI when:
 - **Cluster Not Found**: Check cluster name format (exclude ".kusto.windows.net" suffix)
 - **High CPU Usage**: Query too broad - add filters, reduce time range, limit aggregations
 - **Ingestion Lag**: Streaming data may have 1-30 second delay depending on ingestion method
+- **Database Missing After Emulator Container Restart**: See "Local Kusto Emulator" above - use `.attach database <name> from @"<md-path>"`, not `.create database ... persist(...)`, to reattach existing on-disk data.
 
 ## Use Cases
 
