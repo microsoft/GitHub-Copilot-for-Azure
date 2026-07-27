@@ -13,7 +13,7 @@ The deploying user/principal needs RBAC to write secrets (scaffold seeds initial
 
 If the app seeds data using a generated secret (admin password, API key), either display it to the user at deploy time OR ensure the deployer has read RBAC on the Key Vault.
 
-> ⛔ **Include a role assignment for the deploying user** (`context.json.azure.userObjectId`) with Key Vault Secrets Officer scoped to the Key Vault resource. Without this, `az keyvault secret set` fails with 403 during deploy secret seeding.
+> ⛔ **Include a role assignment for the deploying user** (the `deployerObjectId` parameter — deploy passes `az ad signed-in-user show --query id -o tsv`) with Key Vault Secrets Officer scoped to the Key Vault resource. Without this, `az keyvault secret set` fails with 403 during deploy secret seeding.
 
 ## Security Defaults
 

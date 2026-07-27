@@ -50,7 +50,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -74,9 +74,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -97,6 +94,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -125,7 +125,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -149,9 +149,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -172,6 +169,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -199,7 +199,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -223,9 +223,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -246,6 +243,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: output-matches
         config:
           pattern: "(?i)component|monorepo|frontend|backend|gcp|blocker|service"
@@ -267,7 +267,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -292,9 +292,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -315,6 +312,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -342,7 +342,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -366,9 +366,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -389,6 +386,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -413,7 +413,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -437,9 +437,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -460,6 +457,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -484,7 +484,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -508,9 +508,6 @@ stimuli:
       - type: file-exists
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
-      - type: file-exists
-        config:
-          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -531,6 +528,9 @@ stimuli:
         config:
           path: "**/.copilot-azure/sessions/**/context.json"
           pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prereq-output.json"
@@ -555,7 +555,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -646,7 +646,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -692,7 +692,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -740,7 +740,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -785,7 +785,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -834,7 +834,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -879,7 +879,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -965,7 +965,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -1014,7 +1014,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -1062,7 +1062,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*\\**\\s*readiness|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
         - git init -q
@@ -1110,8 +1110,11 @@ stimuli:
           required: ["azure-app-onboard-prereq"]
 
   # test: invocation rate — dockerfile prerequisite prompt
+  # Framed as a readiness ask ("is my app ready to deploy … or do I need a Dockerfile") rather than
+  # a bare factual question ("do I need a Dockerfile?"), which the base model answered directly
+  # without routing. The "ready to deploy / what I need" signal is what routes to prereq.
   - name: "Routing - Dockerfile Prerequisite"
-    prompt: "Do I need a Dockerfile before deploying to Azure?"
+    prompt: "Is my app ready to deploy to Azure, or do I need a Dockerfile first?"
     config:
       runs: 5
     tags:
