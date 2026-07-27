@@ -38,6 +38,12 @@ services:
 | Background Worker | None | 0 (scale to zero) | Queue-based |
 | Web Application | External | 1 | HTTP-based |
 
+## Templates & Recipes
+
+- **[Selection Guide](templates/selection.md)** — Start here: decision tree for base template + recipe
+- **[Composition Algorithm](templates/recipes/composition.md)** — How to fetch and compose templates
+- [AZD Templates](templates/recipes/README.md) — Recipe overview
+
 ## References
 
 - [Bicep Patterns](bicep.md)
