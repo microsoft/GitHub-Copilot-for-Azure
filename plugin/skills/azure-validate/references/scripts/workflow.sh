@@ -50,6 +50,11 @@ if [ -z "$WORKSPACE_PATH" ]; then
     exit 2
 fi
 
+if [ ! -d "$WORKSPACE_PATH" ]; then
+    echo "Error: --workspace-path '$WORKSPACE_PATH' does not exist or is not a directory." >&2
+    exit 2
+fi
+
 # Resolve the step the agent just completed (case-insensitive).
 # Omitting --completed-step signals the start of the workflow (None).
 STEP="None"
@@ -79,15 +84,15 @@ printf '{\n  "completedStep": "%s"\n}\n' "$STEP" > "$VALIDATE_STATUS_PATH"
 case "$STEP" in
     None)
         # Step 1: Load Plan
-        echo "Action: Read .azure/deployment-plan.md for recipe and configuration. If missing, run azure-prepare first, then come back to workflow.sh."
+        echo "Action: Read \`.azure/deployment-plan.md\` for recipe and configuration. If missing, run azure-prepare first, then come back to workflow.sh."
         echo "Next: re-run workflow.sh with --completed-step LoadPlan after completing the action."
-        echo "Reference: .azure/deployment-plan.md"
+        echo "Reference: \`.azure/deployment-plan.md"
         ;;
     LoadPlan)
         # Step 2: Add Validation Steps
-        echo "Action: Copy the recipe's Validation Steps into .azure/deployment-plan.md as children of All validation checks pass."
+        echo "Action: Copy the recipe's \`Validation Steps\` into \`.azure/deployment-plan.md\` as children of \`All validation checks pass\`."
         echo "Next: re-run workflow.sh with --completed-step AddValidationSteps after completing the action."
-        echo "Reference: references/recipes/README.md, .azure/deployment-plan.md"
+        echo "Reference: references/recipes/README.md, \`.azure/deployment-plan.md"
         ;;
     AddValidationSteps)
         # Step 3: Run Validation
@@ -111,7 +116,7 @@ case "$STEP" in
         # Step 6: Record Proof
         echo "Action: Populate **Section 7: Validation Proof** in the plan with the commands run and their results."
         echo "Next: re-run workflow.sh with --completed-step RecordProof after completing the action."
-        echo "Reference: .azure/deployment-plan.md"
+        echo "Reference: \`.azure/deployment-plan.md"
         ;;
     RecordProof)
         # Step 7: Resolve Errors
@@ -121,9 +126,9 @@ case "$STEP" in
         ;;
     ResolveErrors)
         # Step 8: Update Status
-        echo "Action: Only after ALL checks pass, set the plan status to Validated."
+        echo "Action: Only after ALL checks pass, set the plan status to \`Validated\`."
         echo "Next: re-run workflow.sh with --completed-step UpdateStatus after completing the action."
-        echo "Reference: .azure/deployment-plan.md"
+        echo "Reference: \`.azure/deployment-plan.md"
         ;;
     UpdateStatus)
         # Step 9: Deploy (workflow complete)

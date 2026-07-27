@@ -31,6 +31,11 @@ if (-not $WorkspacePath) {
     exit 2
 }
 
+if (-not (Test-Path -Path $WorkspacePath -PathType Container)) {
+    Write-Error "Error: WorkspacePath '$WorkspacePath' does not exist or is not a directory."
+    exit 2
+}
+
 # Resolve the step the agent just completed.
 # Omitting -CompletedStep signals the start of the workflow (None).
 $step = [ValidationStep]::None
@@ -48,23 +53,24 @@ if (-not (Test-Path -Path $azureDir)) {
     New-Item -ItemType Directory -Path $azureDir | Out-Null
 }
 $validateStatusPath = Join-Path -Path $azureDir -ChildPath "validate-status.json"
-@{ completedStep = $step.ToString() } | ConvertTo-Json | Set-Content -Path $validateStatusPath
+$validateStatusJson = @{ completedStep = $step.ToString() } | ConvertTo-Json
+[System.IO.File]::WriteAllText($validateStatusPath, $validateStatusJson + [Environment]::NewLine, (New-Object System.Text.UTF8Encoding($false)))
 
 # Emit the next action based on the step just completed.
 
 # Step 1: Load Plan
 if ($step -eq [ValidationStep]::None) {
-    Write-Output "Action: Read `.azure/deployment-plan.md` for recipe and configuration. If missing, run azure-prepare first, then come back to workflow.ps1."
+    Write-Output 'Action: Read `.azure/deployment-plan.md` for recipe and configuration. If missing, run azure-prepare first, then come back to workflow.ps1.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep LoadPlan after completing the action."
-    Write-Output "Reference: `.azure/deployment-plan.md"
+    Write-Output 'Reference: `.azure/deployment-plan.md'
     exit 0
 }
 
 # Step 2: Add Validation Steps
 if ($step -eq [ValidationStep]::LoadPlan) {
-    Write-Output "Action: Copy the recipe's `Validation Steps` into `.azure/deployment-plan.md` as children of `All validation checks pass`."
+    Write-Output 'Action: Copy the recipe''s `Validation Steps` into `.azure/deployment-plan.md` as children of `All validation checks pass`.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep AddValidationSteps after completing the action."
-    Write-Output "Reference: references/recipes/README.md, `.azure/deployment-plan.md"
+    Write-Output 'Reference: references/recipes/README.md, `.azure/deployment-plan.md'
     exit 0
 }
 
@@ -96,7 +102,7 @@ if ($step -eq [ValidationStep]::BuildVerification) {
 if ($step -eq [ValidationStep]::StaticRoleVerification) {
     Write-Output "Action: Populate **Section 7: Validation Proof** in the plan with the commands run and their results."
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep RecordProof after completing the action."
-    Write-Output "Reference: `.azure/deployment-plan.md"
+    Write-Output 'Reference: `.azure/deployment-plan.md'
     exit 0
 }
 
@@ -110,9 +116,9 @@ if ($step -eq [ValidationStep]::RecordProof) {
 
 # Step 8: Update Status
 if ($step -eq [ValidationStep]::ResolveErrors) {
-    Write-Output "Action: Only after ALL checks pass, set the plan status to `Validated`."
+    Write-Output 'Action: Only after ALL checks pass, set the plan status to `Validated`.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep UpdateStatus after completing the action."
-    Write-Output "Reference: `.azure/deployment-plan.md"
+    Write-Output 'Reference: `.azure/deployment-plan.md'
     exit 0
 }
 
