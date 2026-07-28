@@ -59,17 +59,23 @@ jobs:
       # 4. Sync files from source to target (mirror: add new, update existing, remove stale)
       - name: Sync files
         run: |
-          SOURCE_DIR="source-repo/output/"
-          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+          SOURCE_ROOT="source-repo/output"
+          TARGET_ROOT="target-repo/.github/plugins"
 
-          # Ensure target directory exists
-          mkdir -p "$TARGET_DIR"
+          # Scan immediate child directories under source-repo/output and sync each child
+          # to target-repo/.github/plugins/<child-dirname>/.
+          find "$SOURCE_ROOT" -mindepth 1 -maxdepth 1 -type d | while IFS= read -r child_dir; do
+            child_name=$(basename "$child_dir")
+            target_dir="$TARGET_ROOT/$child_name/"
 
-          # Use rsync to mirror source into target:
-          #   --archive   preserve permissions, timestamps, etc.
-          #   --delete    remove files in target that are no longer in source
-          #   --verbose   list changes
-          rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
+            mkdir -p "$target_dir"
+
+            # Use rsync to mirror each child directory into its corresponding target directory:
+            #   --archive   preserve permissions, timestamps, etc.
+            #   --delete    remove files in target that are no longer in source child dir
+            #   --verbose   list changes
+            rsync --archive --delete --verbose "$child_dir/" "$target_dir"
+          done
 
       # 5. Commit changes and create a PR
       - name: Commit and push changes
@@ -155,30 +161,45 @@ jobs:
       # 4. Sync files from source to target (mirror: add new, update existing, remove stale)
       - name: Sync files
         run: |
-          SOURCE_DIR="source-repo/output/"
-          TARGET_DIR="target-repo/.github/plugins/azure-skills/"
+          SOURCE_ROOT="source-repo/output"
+          TARGET_ROOT="target-repo/.github/plugins"
 
-          # Ensure target directory exists
-          mkdir -p "$TARGET_DIR"
+          # Scan immediate child directories under source-repo/output and sync each child
+          # to target-repo/.github/plugins/<child-dirname>/.
+          find "$SOURCE_ROOT" -mindepth 1 -maxdepth 1 -type d | while IFS= read -r child_dir; do
+            child_name=$(basename "$child_dir")
+            target_dir="$TARGET_ROOT/$child_name/"
 
-          # Use rsync to mirror source into target:
-          #   --archive   preserve permissions, timestamps, etc.
-          #   --delete    remove files in target that are no longer in source
-          #   --verbose   list changes
-          rsync --archive --delete --verbose "$SOURCE_DIR" "$TARGET_DIR"
+            mkdir -p "$target_dir"
 
-      # 5. Copy plugin.json, .mcp.json, .claude-plugin/plugin.json, skills/, hooks/, and gemini-extension.json to the repo root
-      - name: Copy plugin files to repo root
+            # Use rsync to mirror each child directory into its corresponding target directory:
+            #   --archive   preserve permissions, timestamps, etc.
+            #   --delete    remove files in target that are no longer in source child dir
+            #   --verbose   list changes
+            rsync --archive --delete --verbose "$child_dir/" "$target_dir"
+          done
+
+      # 5. Copy azure plugin to the repo root
+      # The way some agent client installs the azure plugin from 3rd party marketplace requires us to replicate it at the repo root.
+      # The azure plugin is added to the following 3rd party marketplaces.
+      # - claude-plugins-official: https://github.com/anthropics/claude-plugins-official/blob/main/.claude-plugin/marketplace.json#L429
+      # - awesome-copilot: https://github.com/github/awesome-copilot/blob/30472ecf0fe34cc561df958c08501ecc5ca80ea4/.github/plugin/marketplace.json#L121
+      # When Claude Code installs from claude-plugins-official, since the entry only configured the azure-skills repo in it,
+      # Claude Code will look for the .claude-plugin/plugin.json in the azure-skills repo to discover the plugin files.
+      # The relative paths for skills, mcpServers, and hooks are relative to the plugin root and in this case the plugin root is the repo root,
+      # which is different from the .github/plugins/azure-skills plugin root when installing it directly from the azure-skills marketplace.
+      # We workaround this difference by replicating the plugin files so the agent clients can still find them.
+      - name: Copy azure plugin files to repo root
         run: |
-          cp "source-repo/output/.plugin/plugin.json" "target-repo/plugin.json"
-          cp "source-repo/output/.mcp.json" "target-repo/.mcp.json"
+          cp "source-repo/output/azure-skills/.plugin/plugin.json" "target-repo/plugin.json"
+          cp "source-repo/output/azure-skills/.mcp.json" "target-repo/.mcp.json"
           mkdir -p "target-repo/.claude-plugin/"
-          cp "source-repo/output/.claude-plugin/plugin.json" "target-repo/.claude-plugin/plugin.json"
+          cp "source-repo/output/azure-skills/.claude-plugin/plugin.json" "target-repo/.claude-plugin/plugin.json"
           mkdir -p "target-repo/skills/"
-          rsync --archive --delete --verbose "source-repo/output/skills/" "target-repo/skills/"
+          rsync --archive --delete --verbose "source-repo/output/azure-skills/skills/" "target-repo/skills/"
           mkdir -p "target-repo/hooks/"
-          rsync --archive --delete --verbose "source-repo/output/hooks/" "target-repo/hooks/"
-          cp "source-repo/output/gemini-extension.json" "target-repo/gemini-extension.json"
+          rsync --archive --delete --verbose "source-repo/output/azure-skills/hooks/" "target-repo/hooks/"
+          cp "source-repo/output/azure-skills/gemini-extension.json" "target-repo/gemini-extension.json"
 
           # Clean up stale copilot-hooks.json from repo root (previously copied there, now lives under hooks/)
           rm -f "target-repo/copilot-hooks.json"
@@ -191,7 +212,7 @@ jobs:
           TARGET_DIRS=("target-repo/.github/plugins/azure-skills/" "target-repo/skills/" "target-repo/hooks/" "target-repo/plugin.json" "target-repo/.mcp.json" "target-repo/.claude-plugin/plugin.json" "target-repo/gemini-extension.json")
           for target in "${TARGET_DIRS[@]}"; do
             if [ -e "$target" ]; then
-              if matches=$(grep -rli --include='*.md' --include='*.json' --exclude='CHANGELOG.md' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
+              if matches=$(grep -rli --include='*.md' --include='*.json' --exclude='CHANGELOG.md' --exclude='changelog-*.md' 'https://github.com/microsoft/github-copilot-for-azure' "$target"); then
                 echo "$matches" | while IFS= read -r file; do
                   sed -i 's|https://github.com/microsoft/GitHub-Copilot-for-Azure|https://github.com/microsoft/azure-skills|g' "$file"
                   sed -i 's|https://github.com/microsoft/github-copilot-for-azure|https://github.com/microsoft/azure-skills|g' "$file"
@@ -232,4 +253,4 @@ jobs:
             --base "main" \
             --head "$BRANCH_NAME" \
             --title "Sync plugin files from GitHub-Copilot-for-Azure (run ${{ github.run_id }})" \
-            --body "Automated sync of \`plugin/\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
+            --body "Automated sync of \`plugins/\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
