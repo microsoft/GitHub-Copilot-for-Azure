@@ -23,6 +23,7 @@ describeIntegration(`${SKILL_NAME}_observe - Integration Tests`, () => {
 
   test("invokes skill for evaluate agent prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({
+      requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
       prompt: "Evaluate my Foundry agent and check its quality"
     });
 
@@ -32,6 +33,7 @@ describeIntegration(`${SKILL_NAME}_observe - Integration Tests`, () => {
 
   test("invokes skill for agent observability prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({
+      requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
       prompt: "Set up monitoring and evaluation for my Foundry agent"
     });
 

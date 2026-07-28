@@ -23,6 +23,7 @@ describeIntegration(`${SKILL_NAME}_trace - Integration Tests`, () => {
 
   test("invokes skill for trace analysis prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({
+      requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
       prompt: "Analyze traces for my Foundry agent in App Insights"
     });
 
@@ -32,6 +33,7 @@ describeIntegration(`${SKILL_NAME}_trace - Integration Tests`, () => {
 
   test("invokes skill for failing traces prompt", () => withTestResult(async () => {
     const agentMetadata = await agent.run({
+      requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
       prompt: "Find failing traces and errors for my Foundry agent"
     });
 

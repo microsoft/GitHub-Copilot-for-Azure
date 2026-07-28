@@ -39,6 +39,7 @@ describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
           prompt: "Deploy gpt-4o model to my Azure project",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -57,6 +58,7 @@ describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
           prompt: "Where can I deploy gpt-4o? Check capacity across regions",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -75,6 +77,7 @@ describeIntegration(`${SKILL_NAME}_deploy-model - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
           prompt: "Deploy gpt-4o with custom SKU and capacity settings",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });

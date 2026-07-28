@@ -39,6 +39,7 @@ describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
           prompt: "Find available capacity for gpt-4o across all Azure regions",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -57,6 +58,7 @@ describeIntegration(`${SKILL_NAME}_capacity - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
           prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
