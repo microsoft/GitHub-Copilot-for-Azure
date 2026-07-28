@@ -25,7 +25,7 @@ Scripts (paths below are relative to the skill root, `plugins/azure-skills/skill
 ```
 ```bash
 # from plugins/azure-skills/skills/azure-diagnostics
-./scripts/test-messaging-connectivity.sh <namespace>
+bash ./scripts/test-messaging-connectivity.sh <namespace>
 ```
 
 The namespace may be a full FQDN or a bare name (`.servicebus.windows.net` is appended automatically).
@@ -34,7 +34,7 @@ The namespace may be a full FQDN or a bare name (`.servicebus.windows.net` is ap
 
 ```bash
 # from plugins/azure-skills/skills/azure-diagnostics
-./scripts/test-messaging-connectivity.sh contoso.servicebus.windows.net --kafka
+bash ./scripts/test-messaging-connectivity.sh contoso.servicebus.windows.net --kafka
 ```
 
 ## Transient Connectivity Issues
