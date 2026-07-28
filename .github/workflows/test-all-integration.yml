@@ -320,7 +320,7 @@ jobs:
           fi
 
       - name: Generate quality report
-        if: always() && matrix.skill == 'microsoft-foundry'
+        if: always() && matrix.skill == 'azure-skills/microsoft-foundry'
         run: npm run quality-report || true
 
       # Note: The managed identity must have write permission to the target storage account
@@ -335,7 +335,8 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          SKILL_NAME="${SKILL##*/}"
+          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
           echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
@@ -358,7 +359,8 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          SKILL_NAME="${SKILL##*/}"
+          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
           echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
