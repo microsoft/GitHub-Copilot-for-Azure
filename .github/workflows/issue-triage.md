@@ -24,6 +24,7 @@ tools:
 safe-outputs:
   update-issue:
     max: 1
+    target: '*'
   set-issue-type:
     allowed: [Bug, Feature, Task]
     max: 1

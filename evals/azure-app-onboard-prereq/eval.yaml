@@ -1,0 +1,1146 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-app-onboard-prereq/**/*.test.ts
+# Migration goal: cover critical nightly paths for the prereq (repo-readiness) skill —
+# routing/invocation, per-stack readiness evaluation, dependency compatibility,
+# and negative/blocking behavior.
+#
+# Note on repo context:
+# Code-context stimuli clone a real sample repo into the agent workspace via
+# environment.commands, mirroring the JS integration tests' cloneRepo() setup.
+# We use git init + fetch --depth 1 + checkout (rather than a bare `git clone`)
+# so cloning is robust even when the workspace is pre-populated.
+  # Repos: bya-simple-web-app (healthy Express), DockerStaticSite (Dockerfile+static),
+  # postgresql-event-sourcing (Java/Spring+Kafka+Postgres),
+  # bya-unsupported-web-app (AWS/DynamoDB, unsupported), bya-broken-web-app (missing module).
+
+name: azure-app-onboard-prereq-eval
+description: |
+  Evaluation suite for the azure-app-onboard-prereq skill.
+  Focuses on high-value nightly coverage migrated from JavaScript integration tests:
+  - Skill routing/invocation for repo-readiness prompts
+  - Per-stack readiness evaluation (Node, Docker, Java, Go)
+  - Dependency compatibility assessment
+  - Negative/blocking behavior for unsupported or broken repos
+
+tags:
+  type: integration
+  skill: azure-app-onboard-prereq
+
+defaults:
+  runs: 1
+  timeout: "12m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── integration-diversity.test.ts ──────────────────────────────────
+  # test: e2e — postgresql-event-sourcing (Java/Spring Boot + Kafka)
+  - name: "Dependency Compat - Java Spring Boot"
+    prompt: "Can you check if my dependencies are compatible with Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/eugene-khyst/postgresql-event-sourcing
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(ready|readyWithCaveats|blocked)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)java|spring"
+      - type: output-matches
+        config:
+          pattern: "(?i)java|spring|gradle"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '(?i)postgres|kafka|event hub'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: e2e — yamtrack-django (Python/Django + PostgreSQL + Redis)
+  - name: "Dependency Compat - Django Local Database"
+    prompt: "My app uses a local database — check what I need to change before moving to Azure"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/FuzzyGrim/Yamtrack
+        - git fetch -q --depth 1 origin dev
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)django|python"
+      - type: output-matches
+        config:
+          pattern: "(?i)django|python|postgres"
+      - type: output-matches
+        config:
+          pattern: "(?i)local|database|managed|migrate|change|redis"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: e2e — fullstack-starter (4-component monorepo + GCP migration)
+  - name: "Diversity - Monorepo Multi-Component Blockers"
+    prompt: "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/first-fluke/fullstack-starter
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready|blocked)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: output-matches
+        config:
+          pattern: "(?i)component|monorepo|frontend|backend|gcp|blocker|service"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── integration-functional.test.ts ─────────────────────────────────
+  # test: e2e — bya-simple-web-app (happy path)
+  - name: "Readiness - Healthy Express App"
+    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      # Artifact checks: the readiness scan must write its session artifacts
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)express|node"
+      - type: output-matches
+        config:
+          pattern: "(?i)express|node|sqlite"
+      - type: output-matches
+        config:
+          pattern: "(?i)feasib|viable|readiness|ready|app service|container|hosting"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: e2e — docker-static-site (Dockerfile + static)
+  - name: "Readiness - Dockerfile Static Site"
+    prompt: "Is my app ready to deploy to Azure? Scan for any issues."
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/nishanttotla/DockerStaticSite
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)docker|static"
+      - type: output-matches
+        config:
+          pattern: "(?i)docker|dockerfile|static|container"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: e2e — wetty (completeness check: entry points, deps, config)
+  - name: "Readiness - Wetty Completeness Check"
+    prompt: "What do I need before I can deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/butlerx/wetty
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready|blocked)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)node|typescript"
+      - type: output-matches
+        config:
+          pattern: "(?i)docker|dependenc|entry|config|node|typescript"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: e2e — full-stack-fastapi-template (multi-component: React frontend + FastAPI backend)
+  - name: "Readiness - FastAPI Multi-Component"
+    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/fastapi/full-stack-fastapi-template
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/readiness-report.md"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"(build|completeness|deployability|verdict)"\s*:\s*"(PASS|WARN|FAIL|SKIPPED)"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"f1Viable"\s*:\s*(true|false)'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"completedPhases"\s*:\s*\[[^\]]*"prereq"'
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: "(?i)fastapi|python"
+      - type: output-matches
+        config:
+          pattern: "(?i)react|fastapi|frontend|backend|component"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: e2e — flasky-first-edition (Python 2 EOL + archived repo)
+  - name: "Readiness - Python 2 EOL Unsupported"
+    prompt: "Check what happens if my app uses something Azure doesn't support?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/miguelgrinberg/flasky-first-edition
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"blocked"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── integration-negative.test.ts ───────────────────────────────────
+  # test: negative — bya-unsupported-web-app (migration)
+  - name: "Negative - Unsupported Stack Migration"
+    prompt: "What do I need to do before I can deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Redirect to Azure Cloud Migrate"
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-unsupported-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"routeToSkill"\s*:\s*"azure-cloud-migrate"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: negative — bya-broken-web-app (detect + fix + re-evaluate)
+  - name: "Negative - Broken App Blockers"
+    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-broken-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"blocked"'
+      - type: output-matches
+        config:
+          pattern: "(?i)missing|fail|broken|error|crash|blocker|not found|issue"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: negative — dvwa (security-vulnerable)
+  - name: "Negative - DVWA Security Vulnerable"
+    prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/digininja/DVWA
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      # Security-detection signal read from the ARTIFACT, not the streamed output.
+      # An intentionally-vulnerable app is a hard halt, so the deterministic verdict
+      # `overallHealth: "blocked"` is always written to prereq-output.json — even when
+      # the agent's streamed summary is thin/truncated (its conclusion lives in reasoning
+      # + the written report, neither of which feed the graded `output`). Asserting on the
+      # artifact removes the streamed-output flake entirely.
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"blocked"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: negative — demo-app-broken-deps (unfixable)
+  - name: "Negative - Unfixable Broken Dependencies"
+    prompt: "Can you check if my app is ready to deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/dev-arv13/demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"blocked"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: negative — broken-todo-demo (fixable blocker)
+  - name: "Negative - Fixable Blocker Todo Demo"
+    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Arun07AK/broken-todo-demo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(blocked|readyWithCaveats|ready)"'
+      - type: output-matches
+        config:
+          pattern: "(?i)blocker|fix|fixable|missing|error|issue"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── integration-routing.test.ts ────────────────────────────────────
+  # test: routing — direct + ready + no infra → offers deploy (Go/Gin)
+  - name: "Routing - Go Gin Ready Offers Deploy"
+    prompt: "I want to make sure my project structure is right before deploying"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/naeemaei/golang-clean-web-api
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"(readyWithCaveats|ready|blocked)"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: routing — direct + ready + existing infra → start fresh vs use existing
+  - name: "Routing - Existing Infra Fresh Or Reuse"
+    prompt: "What prerequisites does my project need to meet for Azure deployment?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/todo-nodejs-mongo
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)existing|infra|azd|bicep|fresh|reuse|use existing|prerequisite"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: routing — cloud SDK gate → offers redirect to migrate (AWS bookstore)
+  - name: "Routing - AWS Cloud SDK Redirect To Migrate"
+    prompt: "Can you check if my dependencies are compatible with Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Redirect to Azure Cloud Migrate"
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/aws-bookstore-demo-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 16
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)aws|dynamo|lambda|migrate|cloud|redirect"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/context.json"
+          pattern: '"routeToSkill"\s*:\s*"azure-cloud-migrate"'
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: routing — direct + blocked → reports blockers (Python 2 EOL)
+  - name: "Routing - Python 2 EOL Reports Blockers"
+    prompt: "Is my app ready to deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: routing
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/miguelgrinberg/flasky-first-edition
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"overallHealth"\s*:\s*"blocked"'
+      - type: output-matches
+        config:
+          pattern: "(?i)python 2|python2|eol|end-of-life|blocked|not ready|upgrade|blocker"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── integration-session.test.ts ────────────────────────────────────
+  # test: session creation — full artifact structure validation
+  - name: "Session - Creation Artifact Structure"
+    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: file-exists
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+      - type: file-matches
+        config:
+          path: "**/.copilot-azure/sessions/**/prereq-output.json"
+          pattern: '"components"\s*:\s*\[\s*\{'
+      - type: output-matches
+        config:
+          pattern: "(?i)session|readiness|feasib|report|analysis|\\.copilot-azure"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # test: session resume — agent recognizes existing session
+  - name: "Session - Resume Existing Session"
+    prompt: "Is my app ready to deploy to Azure?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-app-onboard-prereq
+      followUp:
+        - "Yes."
+        - "Yes."
+        - "Yes."
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/samcdonald-ms/bya-simple-web-app
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    constraints:
+      max_turns: 40
+    graders:
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\b(npm|yarn|pnpm)\\s+(install|test)\\b|\\bpip\\s+install\\b|\\bdotnet\\s+(build|test)\\b|\\bcargo\\s+build\\b|\\bgo\\s+build\\b|\\bmvn\\s+(install|package)\\b|\\bgradle\\s+build\\b"
+            - name: "^(bash|powershell|pwsh)$"
+              command: "(?i:\\bazd\\s+(up|provision)\\b|\\baz\\s+deployment\\b|\\bterraform\\s+apply\\b)"
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+      - type: output-matches
+        config:
+          pattern: "(?i)session|resume|existing|continue|previous|recogniz|readiness"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── integration.test.ts ────────────────────────────────────────────
+  # test: invokes azure-app-onboard-prereq skill for repo-readiness prompt
+  - name: "Routing - Repo Readiness Invocation"
+    prompt: "Scan my repo and tell me if my project can be deployed to Azure"
+    config:
+      runs: 5
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+
+  # test: invocation rate — dockerfile prerequisite prompt
+  - name: "Routing - Dockerfile Prerequisite"
+    prompt: "Do I need a Dockerfile before deploying to Azure?"
+    config:
+      runs: 5
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]
+
+  # test: invocation rate — pre-deploy readiness check prompt
+  - name: "Routing - Pre-Deploy Readiness Check"
+    prompt: "What do I need to do before I can deploy to Azure?"
+    config:
+      runs: 5
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-app-onboard-prereq
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-app-onboard-prereq"]

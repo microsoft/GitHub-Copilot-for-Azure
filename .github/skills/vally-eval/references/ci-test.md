@@ -4,7 +4,7 @@ Follow these steps to add a skill's Vally suites to the CI test workflow so they
 
 ## Prerequisites
 
-- The skill's Vally suites are implemented under `evals/<skill-name>/eval.yaml` (or split across multiple YAML files).
+- The skill's Vally suites are implemented under `evals/<plugin-dirname>/<skill-name>/eval.yaml` (or split across multiple YAML files).
 - The Vally suites use the `integration-test-agent-runner` custom executor.
 - The test results can be made public.
 
@@ -14,9 +14,7 @@ The scheduled CI test workflow determines which skills to test by reading `tests
 
 ### Use shared job template
 
-Most skills use a shared job template to run eval suites. This template is defined as the `test` job in `.github/workflows/test-all-integration.yml`.
-
-If you use the shared job template, add the skill in the workflow’s `VALLY_SKILLS` list. Otherwise the job will run Jest-based integration tests instead of `npm run test:vally`. The CI workflow creates one job per skill from this template and runs all eval suites with `npm run test:vally`.
+Most skills use a shared job template to run eval suites. This template is defined as the `test` job in `.github/workflows/test-all-integration.yml`. The CI workflow creates one job per skill from this template and runs all eval suites with `npm run test:vally`.
 
 Reuse this template whenever possible. It provisions a test environment, installs common tools (for example, Azure CLI and Azure Developer CLI), connects to a test Azure subscription, and includes utility steps that collect and publish test results to a well-known storage location for downstream processing.
 
