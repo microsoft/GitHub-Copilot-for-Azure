@@ -114,7 +114,7 @@ describe("getLimitForFile", () => {
       defaults: {
         "*.md": 2000,
         "SKILL.md": 3500,
-        "plugin/skills/**/SKILL.md": 4000
+        "plugins/*/skills/**/SKILL.md": 4000
       },
       overrides: {}
     };

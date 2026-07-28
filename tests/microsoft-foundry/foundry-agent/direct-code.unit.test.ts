@@ -12,7 +12,7 @@ import path from "path";
 const SKILL_NAME = "microsoft-foundry";
 
 const readSkillFile = (relativePath: string) =>
-  readFile(path.join(SKILLS_PATH, SKILL_NAME, relativePath), "utf-8");
+  readFile(path.join(OUTPUT_PATH, "azure-skills", "skills", SKILL_NAME, relativePath), "utf-8");
 
 describe("foundry-agent direct-code workflow docs", () => {
   test("create and deploy workflows prefer azd direct-code deployment", async () => {

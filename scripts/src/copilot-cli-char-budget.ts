@@ -3,7 +3,7 @@
  * See https://github.com/github/copilot-agent-runtime/blob/0e43d66f7570421ba4b27a36a86ea908de188e59/src/skills/skillToolDescription.ts#L30
  */
 
-import { listSkills, loadSkill } from "./shared/skill-helper.js";
+import { listPlugins, listSkills, loadSkill, SkillRef } from "./shared/skill-helper.js";
 import { escapeXml } from "./shared/string-helpers.js";
 
 const SKILL_CHAR_BUDGET_ENV = "SKILL_CHAR_BUDGET";
@@ -23,8 +23,8 @@ function getSkillCharBudget() {
   return DEFAULT_SKILL_CHAR_BUDGET;
 }
 
-function formatSkillForToolDescription(skillName: string): string {
-  const skill = loadSkill(skillName);
+function formatSkillForToolDescription(skillRef: SkillRef): string {
+  const skill = loadSkill(skillRef);
 
   // azure plugin skills are loaded from "Custom" locations when they are installed via marketplace.
   // The formatted text may be different but the char count would be similar.
@@ -41,22 +41,17 @@ type CheckSkillCharBudgetResult = {
   actualCharCount: number;
 };
 
+type PluginCheckResult = CheckSkillCharBudgetResult & {
+  plugin: string;
+};
+
 /**
- * Checks if the formatted skill description of azure plugin skills can fit in Copilot CLI's skill char budget.
+ * Checks the char budget for a single plugin's skills.
  */
-function checkCopilotCliSkillsCharBudget(): CheckSkillCharBudgetResult {
-  const skills = listSkills();
-  const budget = getSkillCharBudget();
-  if (skills.length === 0) {
-    return {
-      canFitInBudget: true,
-      budget: budget,
-      actualCharCount: 0
-    }
-  }
+function checkPluginCharBudget(pluginName: string, budget: number): PluginCheckResult {
+  const skills = listSkills(pluginName);
 
   let charCount = 0;
-
   for (const skill of skills) {
     const skillXml = formatSkillForToolDescription(skill);
     // +1 for newline between skills
@@ -64,20 +59,45 @@ function checkCopilotCliSkillsCharBudget(): CheckSkillCharBudgetResult {
   }
 
   return {
+    plugin: pluginName,
     canFitInBudget: charCount <= budget,
-    budget: budget,
-    actualCharCount: charCount
+    budget,
+    actualCharCount: charCount,
+  };
+}
+
+/**
+ * Checks if the formatted skill description of all plugins' skills can fit in Copilot CLI's skill char budget.
+ * Iterates over every directory in plugins/ and checks each one independently.
+ */
+function checkCopilotCliSkillsCharBudget(): Record<string, PluginCheckResult> {
+  const pluginNames = listPlugins().map((p) => p.dirname);
+  const budget = getSkillCharBudget();
+
+  const result: Record<string, PluginCheckResult> = {};
+  if (pluginNames.length === 0) {
+    return result;
   }
+
+  for (const pluginName of pluginNames) {
+    const pluginResult = checkPluginCharBudget(pluginName, budget);
+    result[pluginName] = pluginResult;
+  }
+
+  return result;
 }
 
 function main() {
   const result = checkCopilotCliSkillsCharBudget();
-  if (!result.canFitInBudget) {
-    console.error(`Formatted skill description char count exceeds the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
-    process.exitCode = 1;
-    return;
-  } else {
-    console.log(`Formatted skill description char count fits within the Copilot CLI skill char budget. budget: ${result.budget}, actualCharCount: ${result.actualCharCount}`);
+  for (const pluginName in result) {
+    const pluginResult = result[pluginName];
+    if (!pluginResult.canFitInBudget) {
+      console.error(`plugin ${pluginName}: formatted skill description char count exceeds the Copilot CLI skill char budget. budget: ${pluginResult.budget}, actualCharCount: ${pluginResult.actualCharCount}`);
+      process.exitCode = 1;
+      return;
+    } else {
+      console.log(`plugin ${pluginName}: formatted skill description char count fits within the Copilot CLI skill char budget. budget: ${pluginResult.budget}, actualCharCount: ${pluginResult.actualCharCount}`);
+    }
   }
 }
 
