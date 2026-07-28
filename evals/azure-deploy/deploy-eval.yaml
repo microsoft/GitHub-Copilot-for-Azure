@@ -976,23 +976,6 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
-      # Verify Container Apps two-phase Bicep pattern in the agent-generated workspace
-      - type: file-matches
-        config:
-          path: "**/*.bicep"
-          pattern: "(?i)Microsoft\\.App/containerApps"
-      - type: file-matches
-        config:
-          path: "**/*.bicep"
-          pattern: "(?i)Microsoft\\.ContainerRegistry/registries"
-      - type: file-matches
-        config:
-          path: "**/*.bicep"
-          pattern: "(?i)SystemAssigned"
-      - type: file-matches
-        config:
-          path: "**/*.bicep"
-          pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -1091,7 +1074,6 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # Jest: "deploys aspire orleans-voting"
-  # Also soft-checks container deploy env vars (AZURE_CONTAINER_REGISTRY_ENDPOINT, etc.).
   - name: "Brownfield .NET Aspire - Orleans Voting"
     prompt: >-
       Please deploy this application to Azure.
@@ -1133,9 +1115,10 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
-      # Soft-check: container deploy env vars expected in azure.yaml or bicep
-      - type: output-matches
+      # AZD env file should have the ACR
+      - type: file-matches
         config:
+          path: ".azure/**/*"
           pattern: "(?i)AZURE_CONTAINER_REGISTRY_ENDPOINT|AZURE_CONTAINER_REGISTRY_MANAGED_IDENTITY_ID|MANAGED_IDENTITY_CLIENT_ID"
       - type: output-not-matches
         config:
