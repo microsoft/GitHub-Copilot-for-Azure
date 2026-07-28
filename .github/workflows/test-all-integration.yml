@@ -319,10 +319,6 @@ jobs:
             echo "No skill report found"
           fi
 
-      - name: Generate quality report
-        if: always() && matrix.skill == 'azure-skills/microsoft-foundry'
-        run: npm run quality-report || true
-
       # Note: The managed identity must have write permission to the target storage account
       - name: Publish report to Azure Storage
         if: always() && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
