@@ -42,6 +42,31 @@ interface Skill {
     description: string;
     descriptionLength: number;
     fileCount: number;
+    /** Repo-relative path to the skill's SKILL.md, as reported by the collector. */
+    path: string;
+}
+
+/**
+ * Base URL for linking to source files in the repository.
+ * Kept as a single constant so the repo/branch is easy to change.
+ */
+const REPO_BLOB_BASE =
+    "https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main";
+
+/**
+ * Build a link to a skill's SKILL.md source file on GitHub.
+ *
+ * The frontmatter collector validates the built `output/skills/` tree, so the
+ * reported path may be prefixed with `output/`. That directory is git-ignored,
+ * so we normalize it back to the `plugin/skills/` source path. Returns null
+ * when no usable SKILL.md path is available.
+ */
+export function skillMdUrl(path: string): string | null {
+    const normalized = path.replace(/\\/g, "/").trim();
+    if (!normalized.endsWith("/SKILL.md")) return null;
+    const sourcePath = normalized.replace(/^output\/skills\//, "plugin/skills/");
+    if (!sourcePath.startsWith("plugin/skills/")) return null;
+    return `${REPO_BLOB_BASE}/${sourcePath}`;
 }
 
 /** Minimal shape of the health data returned by /api/static. */
@@ -59,7 +84,7 @@ function isPluginSkillPath(pathValue: string): boolean {
 }
 
 /** Extract plugin skills (with descriptions) from the frontmatter category. */
-function skillsFromHealthData(data: HealthData): Skill[] {
+export function skillsFromHealthData(data: HealthData): Skill[] {
     const items = data.categories?.frontmatter?.items ?? [];
     const skills: Skill[] = [];
     for (const item of items) {
@@ -73,6 +98,7 @@ function skillsFromHealthData(data: HealthData): Skill[] {
             description,
             descriptionLength: description.length,
             fileCount: Number.isFinite(fileCount) ? fileCount : 0,
+            path,
         });
     }
     return skills.sort((a, b) => a.name.localeCompare(b.name));
@@ -227,6 +253,10 @@ export default function App() {
         () => skills.find((s) => s.name === selected),
         [skills, selected],
     );
+    const selectedSkillMdUrl = useMemo(
+        () => (selectedSkill ? skillMdUrl(selectedSkill.path) : null),
+        [selectedSkill],
+    );
     const byTest = useMemo(() => groupByTest(rows), [rows]);
 
     const handleSelect = (name: string) => {
@@ -280,6 +310,17 @@ export default function App() {
                             <p className="skills-file-count">
                                 Files: {selectedSkill.fileCount}
                             </p>
+                            {selectedSkillMdUrl && (
+                                <p className="skills-source-link">
+                                    <a
+                                        href={selectedSkillMdUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        View SKILL.md
+                                    </a>
+                                </p>
+                            )}
                             <p className="skills-issues-link">
                                 <a
                                     href={issuesUrl(selectedSkill.name)}
