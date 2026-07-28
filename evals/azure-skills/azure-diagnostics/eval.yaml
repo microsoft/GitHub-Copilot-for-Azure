@@ -125,6 +125,12 @@ stimuli:
       cost: llm
       # area: behavior — asserts the agent runs the probe script, not routing.
       area: behavior
+      # Guarantee the azure-diagnostics description survives char-budget
+      # truncation so this behavior test isn't gated on routing luck among the
+      # full plugin skill set (the post-multi-plugin skill-loading model loads
+      # every plugin skill unless requiredSkills pins the ones under test).
+      requiredSkills:
+        - azure-diagnostics
       # Terminate the moment the agent starts the probe script — we only need to
       # observe the attempt, not wait for the (network-timeout-laden) run to
       # finish. The shell-command-invoked grader below matches the same tool_call
