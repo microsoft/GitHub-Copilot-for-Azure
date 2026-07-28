@@ -28,7 +28,7 @@ tags:
   skill: azure-diagnostics
 
 defaults:
-  runs: 5
+  runs: 1
   timeout: "10m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6
@@ -42,8 +42,6 @@ stimuli:
   # Terminates at that tool call so the script is not executed.
   - name: "Container App diagnostics uses the bundled script"
     prompt: "Collect all the diagnostic info for my Azure Container App named my-app in resource group my-rg."
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -70,8 +68,6 @@ stimuli:
   # Terminates at that tool call so the script is not executed.
   - name: "App Service diagnostics uses the bundled script"
     prompt: "Gather all the diagnostic info for my Azure App Service web app named my-app in resource group my-rg."
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
