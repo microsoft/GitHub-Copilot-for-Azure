@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "plugin/.plugin/plugin.json"
-      - "plugin/.claude-plugin/plugin.json"
-      - "plugin/.cursor-plugin/plugin.json"
+      - "plugins/*/.plugin/plugin.json"
+      - "plugins/*/.claude-plugin/plugin.json"
+      - "plugins/*/.cursor-plugin/plugin.json"
 
 permissions:
   contents: read

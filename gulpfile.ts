@@ -4,7 +4,7 @@ import * as nbgv from "nerdbank-gitversioning";
 import * as path from "path";
 import log from "fancy-log";
 import { execSync } from "child_process";
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import Vinyl = require("vinyl");
 
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
@@ -18,7 +18,7 @@ const PLUGIN_JSON_RE = /^\.(?:plugin|cursor-plugin|claude-plugin)[\\/]plugin\.js
  * calls `nbgv.getVersion()` against that skill's source directory, which
  * contains its own `version.json` with `pathFilters: ["."]`.
  */
-function stampSkillVersions() {
+function stampSkillVersions(plugin: string) {
   return new Transform({
     objectMode: true,
     async transform(file: Vinyl, _encoding, callback) {
@@ -29,7 +29,7 @@ function stampSkillVersions() {
 
       try {
         const skillName = file.relative.split(/[/\\]/)[1];
-        const sourceSkillDir = path.resolve("plugin/skills", skillName);
+        const sourceSkillDir = path.resolve(`plugins/${plugin}/skills`, skillName);
         const versionInfo = await nbgv.getVersion(sourceSkillDir);
         const version = versionInfo.simpleVersion;
 
@@ -46,7 +46,7 @@ function stampSkillVersions() {
         file.contents = Buffer.from(
           content.replace(versionPlaceholderPattern, `$1${version}$2`)
         );
-        log(`setting skill version: skills/${skillName} ${version}`);
+        log(`setting skill version: plugins/${plugin}/skills/${skillName} ${version}`);
       } catch (err) {
         callback(err as Error);
         return;
@@ -59,21 +59,23 @@ function stampSkillVersions() {
 
 /**
  * Stamps the plugin.json files in `.plugin/`, `.cursor-plugin/`, and
- * `.claude-plugin/` with a shared NBGV version derived from `plugin/version.json`.
- * The version is fetched once on the first matching file and cached for the rest.
+ * `.claude-plugin/` with using git commit height.
  */
-function stampPluginVersions() {
+function stampPluginVersions(plugin: string, legacyChangelog?: LegacyChangelog) {
   const versionJson = JSON.parse(
-    readFileSync("plugin/version.json", "utf-8")
+    readFileSync(`plugins/${plugin}/version.json`, "utf-8")
   );
   const majorMinor = versionJson.version as string;
 
-  const commits = getVersionedCommits();
+  const commits = getVersionedCommits(plugin);
 
   // The last commit is the most recent commit
-  const patchNumber = commits.length > 0
+  let patchNumber = commits.length > 0
     ? commits[commits.length - 1].relativeHeight
     : 0;
+  if (legacyChangelog) {
+    patchNumber += legacyChangelog.patchOffset;
+  }
 
   const version = `${majorMinor}.${patchNumber}`;
 
@@ -110,25 +112,59 @@ function stampPluginVersions() {
   });
 }
 
-function build() {
-  rmSync("output", { recursive: true, force: true });
-  const pipeline = src(["plugin/**/*", "!plugin/**/version.json", "!plugin/CHANGELOG.md"], { dot: true, encoding: false })
-    .pipe(stampSkillVersions())
-    .pipe(stampPluginVersions())
-    .pipe(dest("output"));
+function getPluginDirnames(): string[] {
+  return readdirSync("plugins", { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort();
+}
 
-  pipeline.on("end", () => {
-    try {
-      generateChangelog();
-    } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error(String(err));
-      log.error("Failed to generate CHANGELOG.md after writing output/.", error);
-      throw error;
-    }
+function buildPlugin(pluginDirname: string): Promise<void> {
+  const legacyChangelog = getLegacyChangelog(pluginDirname);
+
+  return new Promise((resolve, reject) => {
+    const pluginSourceDir = path.join("plugins", pluginDirname);
+    const pluginOutputDir = path.join("output", pluginDirname);
+
+    const pipeline = src(
+      [
+        `${pluginSourceDir}/**/*`,
+        `!${pluginSourceDir}/**/version.json`,
+        `!${pluginSourceDir}/CHANGELOG.md`,
+        `!${pluginSourceDir}/changelog-*.md`, // legacy changelog
+      ],
+      { dot: true, encoding: false, base: pluginSourceDir }
+    )
+      .pipe(stampSkillVersions(pluginDirname))
+      .pipe(stampPluginVersions(pluginDirname, legacyChangelog))
+      .pipe(dest(pluginOutputDir));
+
+    pipeline.on("error", (err) => reject(err));
+    pipeline.on("end", () => {
+      try {
+        generateChangelog(pluginDirname, legacyChangelog);
+        resolve();
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        log.error(`Failed to generate CHANGELOG.md for plugins/${pluginDirname}.`, error);
+        reject(error);
+      }
+    });
   });
+}
 
-  return pipeline;
+async function build() {
+  rmSync("output", { recursive: true, force: true });
+
+  const plugins = getPluginDirnames();
+  if (plugins.length === 0) {
+    log.warn("No plugin directories found under plugins/; skipping build.");
+    return;
+  }
+
+  for (const plugin of plugins) {
+    await buildPlugin(plugin);
+  }
 }
 
 type Commit = {
@@ -151,8 +187,8 @@ type Commit = {
 /**
  * @returns Commits with their associated version numbers from oldest to newest.
  */
-function getVersionedCommits(): Commit[] {
-  const pluginDir = "plugin";
+function getVersionedCommits(plugin: string): Commit[] {
+  const pluginDir = `plugins/${plugin}`;
 
   // Find the commit that introduced plugin/version.json (the NBGV baseline).
   const baselineCommit = execSync(
@@ -245,14 +281,8 @@ function getVersionedCommits(): Commit[] {
   });
 }
 
-/**
- * Generates a CHANGELOG.md in the output directory based on merged PRs
- * that touch plugin/ and have titles starting with fix:, feat:, feature:, chore:, misc:, test:, or eval:.
- * Each version corresponds to a single first-parent commit touching plugin/
- * since the NBGV baseline commit (when plugin/version.json was introduced).
- */
-function generateChangelog(): void {
-  const versionedCommits = getVersionedCommits();
+function generateChangelog(plugin: string, legacyChangelog?: LegacyChangelog): void {
+  const versionedCommits = getVersionedCommits(plugin);
 
   if (versionedCommits.length === 0) {
     log.warn("No commit data available for changelog generation.");
@@ -272,9 +302,15 @@ function generateChangelog(): void {
   // Build changelog content (newest first).
   let content = "# Changelog\n";
 
+  let patchOffset = 0;
+  if (legacyChangelog) {
+    patchOffset = legacyChangelog.patchOffset;
+  }
+
   for (let i = versionedCommits.length - 1; i >= 0; i--) {
     const entry = versionedCommits[i];
-    const version = `${entry.majorMinor}.${entry.relativeHeight}`;
+
+    const version = `${entry.majorMinor}.${entry.relativeHeight + patchOffset}`;
 
     // Turn (#NNN) into a markdown link.
     const subject = entry.subject.replace(
@@ -284,9 +320,85 @@ function generateChangelog(): void {
     content += `\n## ${version}\n\n- ${subject}\n`;
   }
 
-  mkdirSync("output", { recursive: true });
-  writeFileSync("output/CHANGELOG.md", content, "utf-8");
-  log(`generated CHANGELOG.md with ${versionedCommits.length} entries`);
+  // Add all the legacy changelog entries
+  if (legacyChangelog) {
+    if (!content.endsWith("\n")) {
+      content += "\n";
+    }
+    content += "\n";
+    content += legacyChangelog.legacyChangelogContent;
+    if (!legacyChangelog.legacyChangelogContent.endsWith("\n")) {
+      content += "\n";
+    }
+  }
+
+  const outputDir = path.join("output", plugin);
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(path.join(outputDir, "CHANGELOG.md"), content, "utf-8");
+  log(`generated CHANGELOG.md for plugins/${plugin} with ${versionedCommits.length} entries`);
+}
+
+type LegacyChangelog = {
+  patchOffset: number;
+  legacyChangelogContent: string;
+};
+
+function getLegacyChangelog(plugin: string): LegacyChangelog | undefined {
+  const pluginDir = `plugins/${plugin}`;
+  // Moving files causes the git commit history to be lost and thus erases old changelog entries.
+  // To preserve old changelog entries after moving plugin files,
+  // we commit legacy changelog entries and compute a version offset so the
+  // new generated version numbers keep increasing.
+  // The file is named `changelog-<date-of-creation>.md` in `plugins/<plugin-dir>/`.
+  // Update the file if we ever need to move files again.
+  const legacyChangelogFile = readdirSync(pluginDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && /^changelog-.*\.md$/i.test(entry.name))
+    .map((entry) => entry.name)
+    .sort((a, b) => b.localeCompare(a))
+    .at(0);
+
+  if (!legacyChangelogFile) {
+    return undefined;
+  }
+
+  let firstLegacyVersionParts:
+    | { major: number; minor: number; patch: number }
+    | undefined;
+
+  const firstLegacyContent = readFileSync(
+    path.join(pluginDir, legacyChangelogFile),
+    "utf-8"
+  );
+  const firstVersionMatch = firstLegacyContent.match(/\b(\d+)\.(\d+)\.(\d+)\b/);
+  if (firstVersionMatch) {
+    firstLegacyVersionParts = {
+      major: Number(firstVersionMatch[1]),
+      minor: Number(firstVersionMatch[2]),
+      patch: Number(firstVersionMatch[3]),
+    };
+  }
+
+  const versionJson = JSON.parse(
+    readFileSync(path.join(pluginDir, "version.json"), "utf-8")
+  );
+  const majorMinor = versionJson.version as string;
+  const [major, minor] = majorMinor.split(".").map((s) => Number(s));
+
+  let patchOffset = 0;
+  if (firstLegacyVersionParts) {
+    // When major/minor version is higher than the most recent major/minor in the legacy changelog,
+    // the patch number must have been reset to 0 so we don't need an offset.
+    if (major === firstLegacyVersionParts.major && minor === firstLegacyVersionParts.minor) {
+      patchOffset = firstLegacyVersionParts.patch + 1;
+    }
+  }
+
+  const content = readFileSync(path.join(pluginDir, legacyChangelogFile), "utf-8");
+
+  return {
+    patchOffset,
+    legacyChangelogContent: content
+  };
 }
 
 export default build;

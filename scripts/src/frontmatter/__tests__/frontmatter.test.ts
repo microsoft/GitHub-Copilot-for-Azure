@@ -21,7 +21,7 @@ import {
   hasPreferOverClause,
   validateTriggerOverlapDisambiguation,
   validateSkillFile,
-} from "../cli.js";
+} from "../helpers.js";
 import { parseSkillContent } from "../../shared/skill-helper.js";
 
 const TEST_DIR = resolve(__dirname, "__test_frontmatter__");
