@@ -40,7 +40,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("View Quota Usage", () => {
     test("invokes skill for quota usage check", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Use the microsoft-foundry skill to show me my current quota usage for Microsoft Foundry resources"
       });
 
@@ -50,7 +50,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("response includes quota-related commands", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "How do I check my Azure AI Foundry quota limits?"
       });
 
@@ -66,7 +66,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("response mentions TPM (Tokens Per Minute)", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Explain quota in Microsoft Foundry"
       });
 
@@ -84,7 +84,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Quota Before Deployment", () => {
     test("provides guidance on checking quota before deployment", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Use the microsoft-foundry skill to check if I have enough quota to deploy GPT-4o to Microsoft Foundry"
       });
 
@@ -103,7 +103,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("suggests capacity calculation", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "How much quota do I need for a production Foundry deployment?"
       });
 
@@ -144,7 +144,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Request Quota Increase", () => {
     test("explains quota increase process", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Using the microsoft-foundry quota skill, how do I request a quota increase for Microsoft Foundry?"
       });
 
@@ -164,7 +164,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("mentions business justification", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Request more TPM quota for Azure AI Foundry and explain what justification is needed"
       });
 
@@ -189,7 +189,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Monitor Quota Across Deployments", () => {
     test("provides monitoring commands", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Use the microsoft-foundry quota skill to monitor quota usage across all my Microsoft Foundry deployments"
       });
 
@@ -211,7 +211,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("explains capacity by model tracking", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Show me quota allocation by model in Azure AI Foundry"
       });
 
@@ -235,7 +235,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Troubleshoot Quota Errors", () => {
     test("troubleshoots QuotaExceeded error", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "My Microsoft Foundry deployment failed with QuotaExceeded error. Help me fix it."
       });
 
@@ -254,7 +254,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("troubleshoots InsufficientQuota error", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "I'm getting an InsufficientQuota error when deploying gpt-4o to eastus in Azure AI Foundry. Use the microsoft-foundry skill to help me troubleshoot and fix this."
       });
 
@@ -264,7 +264,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("troubleshoots DeploymentLimitReached error", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "DeploymentLimitReached error in Microsoft Foundry, what should I do?"
       });
 
@@ -280,7 +280,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("addresses 429 rate limit errors", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Getting 429 rate limit errors from my Foundry deployment"
       });
 
@@ -298,7 +298,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Capacity Planning", () => {
     test("helps with production capacity planning", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Help me plan capacity for production Microsoft Foundry deployment with 1M requests per day"
       });
 
@@ -340,7 +340,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("provides best practices", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "What are best practices for quota management in Azure AI Foundry?"
       });
 
@@ -358,7 +358,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Deployment Listing", () => {
     test("lists deployments using MCP tools or CLI", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Use the microsoft-foundry skill to list all my Microsoft Foundry model deployments and their capacity"
       });
 
@@ -384,7 +384,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Regional Capacity", () => {
     test("explains regional quota distribution", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Using the microsoft-foundry quota skill, explain how quota works across different Azure regions for Foundry"
       });
 
@@ -400,7 +400,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("suggests deploying to different region when quota exhausted", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "I ran out of quota in East US for Microsoft Foundry. What are my options?"
       });
 
@@ -418,7 +418,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Quota Optimization", () => {
     test("provides optimization guidance", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "How can I optimize my Microsoft Foundry quota allocation?"
       });
 
@@ -437,7 +437,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("suggests deleting unused deployments", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "I need to free up quota in Azure AI Foundry"
       });
 
@@ -455,7 +455,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Command Output Explanation", () => {
     test("explains how to interpret quota usage output", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "What does the quota usage output mean in Microsoft Foundry?"
       });
 
@@ -471,7 +471,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("explains TPM concept", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "What is TPM in the context of Microsoft Foundry quotas?"
       });
 
@@ -489,7 +489,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
   describe("Error Resolution Steps", () => {
     test("provides step-by-step resolution for quota errors", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Walk me through fixing a quota error in Microsoft Foundry deployment"
       });
 
@@ -508,7 +508,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
 
     test("offers multiple resolution options", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
-        requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "What are my options when I hit quota limits in Azure AI Foundry?"
       });
 

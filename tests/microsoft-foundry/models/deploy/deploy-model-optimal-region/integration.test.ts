@@ -39,7 +39,7 @@ describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tes
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Deploy gpt-4o quickly to the optimal region",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -58,7 +58,7 @@ describeIntegration(`${SKILL_NAME}_deploy-model-optimal-region - Integration Tes
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
-          requiredSkills: [{ pluginDirname: "azure-skills", name: "microsoft-foundry" }],
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Deploy gpt-4o to the best available region with high availability",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
