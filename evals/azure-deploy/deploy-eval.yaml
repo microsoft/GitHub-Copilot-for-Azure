@@ -75,6 +75,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates static portfolio website with bicep"
   - name: "Deploy SWA - Portfolio Website (Bicep)"
@@ -103,6 +106,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # vanilla-app-service-deploy (Bicep)
@@ -136,6 +142,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates todo list with frontend and API"
   - name: "Deploy App Service - Todo List (Bicep)"
@@ -164,6 +173,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # vanilla-azure-functions-deploy (Bicep)
@@ -196,6 +208,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates event-driven function app"
   - name: "Deploy Azure Functions - Event-Driven (Bicep)"
@@ -223,6 +238,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates Python function app with Service Bus trigger"
   - name: "Deploy Azure Functions - Python Service Bus (Bicep)"
@@ -250,6 +268,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # durable-task-scheduler-deploy (Bicep)
@@ -291,6 +312,9 @@ stimuli:
         config:
           path: "infra/**/*.bicep"
           pattern: "0ad04412-c4d5-4796-b79c-f76d14c8d402"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # vanilla-azure-container-apps-deploy (Bicep)
@@ -339,6 +363,9 @@ stimuli:
         config:
           path: "infra/**/*.bicep"
           pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates simple containerized Node.js app"
   - name: "Deploy Container Apps - Node.js App (Bicep)"
@@ -374,6 +401,9 @@ stimuli:
         config:
           path: "infra/**/*.bicep"
           pattern: "7f951dda-4ed3-4680-a7ca-43fe172d538d"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # terraform-static-web-apps-deploy
@@ -413,6 +443,9 @@ stimuli:
       - type: file-not-exists
         config:
           path: "infra/**/*.bicep"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates static portfolio website with Terraform infrastructure"
   - name: "Deploy SWA - Portfolio Website (Terraform)"
@@ -447,6 +480,9 @@ stimuli:
       - type: file-not-exists
         config:
           path: "infra/**/*.bicep"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # terraform-app-service-deploy
@@ -486,6 +522,9 @@ stimuli:
       - type: file-not-exists
         config:
           path: "infra/**/*.bicep"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates todo list with frontend and API using Terraform"
   - name: "Deploy App Service - Todo List (Terraform)"
@@ -520,6 +559,9 @@ stimuli:
       - type: file-not-exists
         config:
           path: "infra/**/*.bicep"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # terraform-azure-functions-deploy
@@ -558,6 +600,9 @@ stimuli:
       - type: file-not-exists
         config:
           path: "infra/**/*.bicep"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates event-driven function app with Terraform"
   - name: "Deploy Azure Functions - Event-Driven (Terraform)"
@@ -591,6 +636,9 @@ stimuli:
       - type: file-not-exists
         config:
           path: "infra/**/*.bicep"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates URL shortener service with Terraform infrastructure"
   - name: "Deploy Azure Functions - URL Shortener (Terraform)"
@@ -618,6 +666,9 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh)$"
               command: "(?i)azd\\s+(up|provision)\\b"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # terraform-azure-container-apps-deploy
@@ -670,6 +721,9 @@ stimuli:
         config:
           path: "infra/**/*.tf"
           pattern: "(?i)AcrPull"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates simple containerized Node.js app with Terraform"
   - name: "Deploy Container Apps - Node.js App (Terraform)"
@@ -705,6 +759,9 @@ stimuli:
         config:
           path: "infra/**/*.tf"
           pattern: "(?i)AcrPull"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "creates social media application with Terraform infrastructure"
   - name: "Deploy Container Apps - Social Media App (Terraform)"
@@ -740,6 +797,9 @@ stimuli:
         config:
           path: "infra/**/*.tf"
           pattern: "(?i)AcrPull"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # brownfield-dotnet
@@ -791,6 +851,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys MvcMovie 10"
   - name: "Brownfield .NET - MvcMovie 10"
@@ -838,6 +901,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire azure functions"
   - name: "Brownfield .NET Aspire - Azure Functions"
@@ -885,6 +951,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire client apps integration"
   - name: "Brownfield .NET Aspire - Client Apps Integration"
@@ -932,6 +1001,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire container build"
   # Checks Container Apps two-phase Bicep pattern in the agent-generated workspace.
@@ -979,6 +1051,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "does not deploy aspire custom resources"
   # The agent MUST NOT attempt deployment — custom Aspire resources are unsupported.
@@ -1072,6 +1147,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire orleans-voting"
   - name: "Brownfield .NET Aspire - Orleans Voting"
@@ -1123,6 +1201,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # brownfield-javascript
@@ -1169,6 +1250,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire with javascript"
   - name: "Brownfield .NET Aspire - JavaScript"
@@ -1216,6 +1300,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire with node"
   - name: "Brownfield .NET Aspire - Node"
@@ -1263,6 +1350,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # ═══════════════════════════════════════════
   # brownfield-python
@@ -1309,6 +1399,9 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
 
   # Jest: "deploys aspire with python"
   - name: "Brownfield .NET Aspire - Python"
@@ -1356,3 +1449,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"
