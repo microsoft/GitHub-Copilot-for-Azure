@@ -7,7 +7,7 @@
 # Workflow files — explicit protection (changes require team review)
 /.github/workflows/ @microsoft/github-copilot-for-azure-writers
 
-# Plugin skills owners
+# Plugin skills owners (kept for reference)
 /plugin/skills/ @tmeschter @RickWinter
 /plugin/skills/airunway-aks-setup/ @tmeschter @RickWinter
 /plugin/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
@@ -43,3 +43,40 @@
 /plugin/skills/microsoft-foundry/foundry-agent/routine/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/microsoft-foundry/foundry-agent/invocations-ws/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugin/skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
+
+# Plugin skills owners (multi-plugin)
+/plugins/azure-skills/skills/ @tmeschter @RickWinter
+/plugins/azure-skills/skills/airunway-aks-setup/ @tmeschter @RickWinter
+/plugins/azure-skills/skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
+/plugins/azure-skills/skills/azure-ai/ @JasonYeMSFT @RickWinter
+/plugins/azure-skills/skills/azure-aigateway/ @azaslonov @RickWinter
+/plugins/azure-skills/skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT @RickWinter
+/plugins/azure-skills/skills/azure-compliance/ @saikoumudi @RickWinter
+/plugins/azure-skills/skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21 @RickWinter
+/plugins/azure-skills/skills/azure-cost/ @saikoumudi @RickWinter
+/plugins/azure-skills/skills/azure-deploy/ @microsoft/github-copilot-for-azure-writers @paulyuk
+/plugins/azure-skills/skills/azure-diagnostics/ @tmeschter @saikoumudi @RickWinter
+/plugins/azure-skills/skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @RickWinter
+/plugins/azure-skills/skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @RickWinter
+/plugins/azure-skills/skills/azure-kusto/ @saikoumudi @RickWinter
+/plugins/azure-skills/skills/azure-messaging/ @kashifkhan @RickWinter
+/plugins/azure-skills/skills/azure-prepare/ @microsoft/github-copilot-for-azure-writers
+/plugins/azure-skills/skills/azure-quotas/ @rakal-dyh @RickWinter
+/plugins/azure-skills/skills/azure-reliability/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
+/plugins/azure-skills/skills/azure-resource-lookup/ @JasonYeMSFT @RickWinter
+/plugins/azure-skills/skills/azure-resource-visualizer/ @tmeschter @RickWinter
+/plugins/azure-skills/skills/azure-storage/ @JasonYeMSFT @RickWinter
+/plugins/azure-skills/skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
+/plugins/azure-skills/skills/azure-validate/ @microsoft/github-copilot-for-azure-writers
+/plugins/azure-skills/skills/entra-agent-id/ @ArLucaID @RickWinter
+/plugins/azure-skills/skills/entra-app-registration/ @JasonYeMSFT @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/cicd/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/create/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/deploy/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/invoke/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/toolbox/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/troubleshoot/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/routine/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/microsoft-foundry/foundry-agent/invocations-ws/ @anchenyi @XiaofuHuang @swatDong @RickWinter
+/plugins/azure-skills/skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
