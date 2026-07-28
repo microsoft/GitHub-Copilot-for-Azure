@@ -84,7 +84,11 @@ digest_pod() {
 
     echo "--- EVENTS ---"
     if kubectl describe pod "$pod" -n "$ns" >/dev/null 2>&1; then
-        kubectl describe pod "$pod" -n "$ns" 2>/dev/null | sed -n '/^Events:/,$p' | head -n 25
+        # Read the whole describe output in a single awk pass (no `head` in the pipe:
+        # an early-exiting `head` would SIGPIPE the upstream kubectl and, under
+        # `set -o pipefail`, abort the script). awk consumes all input and prints only
+        # the first 25 lines of the Events section.
+        kubectl describe pod "$pod" -n "$ns" 2>/dev/null | awk '/^Events:/{f=1} f && n<25 {print; n++}'
     else
         echo "(unable to describe pod)"
     fi
@@ -113,16 +117,27 @@ digest_pod() {
 
 if [ "$ALL_FAILING" = true ]; then
     echo "pod-evidence: scanning for pods not in Running/Succeeded${NAMESPACE:+ in namespace '$NAMESPACE'}..."
-    # Portable row collection (avoids `mapfile`, which is unavailable in Bash 3.2 / macOS).
-    ROWS=()
+    # Portable, set -e-safe row collection: capture output + exit status via command
+    # substitution (not process substitution, whose failures don't propagate under set -e)
+    # so a failed scan is reported as an error instead of a misleading "no unhealthy pods".
+    # Avoids `mapfile`, which is unavailable in Bash 3.2 / macOS.
     if [ -n "$NAMESPACE" ]; then
         SCAN_ARGS=(-n "$NAMESPACE")
     else
         SCAN_ARGS=(-A)
     fi
+    set +e
+    SCAN_OUT=$(kubectl get pods "${SCAN_ARGS[@]}" --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name 2>/dev/null)
+    SCAN_RC=$?
+    set -e
+    if [ "$SCAN_RC" -ne 0 ]; then
+        echo "ERROR: unable to list pods (kubectl exited $SCAN_RC). Check your cluster context and credentials." >&2
+        exit 1
+    fi
+    ROWS=()
     while IFS= read -r line; do
         [ -n "$line" ] && ROWS+=("$line")
-    done < <(kubectl get pods "${SCAN_ARGS[@]}" --field-selector=status.phase!=Running,status.phase!=Succeeded --no-headers -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name 2>/dev/null)
+    done <<< "$SCAN_OUT"
 
     if [ "${#ROWS[@]}" -eq 0 ]; then
         echo "No unhealthy pods found (all pods are Running or Succeeded)."

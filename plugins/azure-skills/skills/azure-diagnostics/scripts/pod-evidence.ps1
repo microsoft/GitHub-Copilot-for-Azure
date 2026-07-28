@@ -40,13 +40,18 @@ param(
 )
 
 # Best-effort: individual kubectl reads may fail (unreachable cluster, missing
-# metrics-server, no previous logs). Keep the default "Continue" so a single failed
-# read is suppressed via 2>$null and the digest proceeds instead of aborting.
-$ErrorActionPreference = "Continue"
+# metrics-server, no previous logs). PowerShell's default $ErrorActionPreference is
+# "Continue", so a single failed read is suppressed via 2>$null and the digest proceeds
+# instead of aborting — no explicit assignment needed.
 
 if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
     Write-Error "kubectl not found on PATH."
     exit 1
+}
+
+if ($Tail -le 0) {
+    Write-Error "-Tail must be a positive integer (got '$Tail')."
+    exit 2
 }
 
 function Digest-Pod {
