@@ -8,7 +8,7 @@
       2. Node pool summary                   (az aks nodepool list)
       3. Recent Azure activity               (az monitor activity-log list)
       4. Node readiness                      (kubectl get nodes)
-      5. Unhealthy pods across namespaces    (kubectl get pods -A, non-Running/Succeeded)
+      5. Unhealthy pods across namespaces    (kubectl get pods -A; not Ready, bad status, or restarting)
       6. kube-system health                  (kubectl get pods -n kube-system)
       7. Recent warning events               (kubectl get events -A)
       8. Namespace pod overview (optional)   (kubectl get pods -n <namespace>)
@@ -105,13 +105,33 @@ Write-Section "4. Node readiness"
 Invoke-Step "node readiness" { kubectl get nodes -o wide }
 
 # 5. Unhealthy pods ------------------------------------------------------------
-Write-Section "5. Unhealthy pods (not Running/Succeeded)"
-Invoke-Step "unhealthy pods" {
-    $unhealthy = kubectl get pods -A --field-selector="status.phase!=Running,status.phase!=Succeeded" 2>$null
+# Filter on the READY and STATUS columns (not just pod phase) so container-level
+# failures such as CrashLoopBackOff / ImagePullBackOff — which stay in phase
+# "Running" — are caught. Terminal pods (Completed/Succeeded) are excluded so
+# finished jobs are not falsely flagged.
+Write-Section "5. Unhealthy pods (CrashLoopBackOff, not Ready, restarting, or bad status)"
+$allPods = @(kubectl get pods -A -o wide 2>$null)
+if (-not $allPods) {
+    Write-Host "  No pods reported (or cluster unreachable)."
+} else {
+    $header = $allPods[0]
+    $unhealthy = foreach ($line in ($allPods | Select-Object -Skip 1)) {
+        $cols = $line -split '\s+'
+        if ($cols.Count -lt 5) { continue }
+        $readyParts = $cols[2] -split '/'
+        $status = $cols[3]
+        $restarts = 0; [void][int]::TryParse($cols[4], [ref]$restarts)
+        $terminalOk = ($status -eq 'Completed' -or $status -eq 'Succeeded')
+        $notReady = ($status -eq 'Running' -and $readyParts.Count -eq 2 -and $readyParts[0] -ne $readyParts[1])
+        $badStatus = ($status -ne 'Running' -and -not $terminalOk)
+        $highRestarts = ((-not $terminalOk) -and $restarts -ge 5)
+        if ($notReady -or $badStatus -or $highRestarts) { $line }
+    }
     if ($unhealthy) {
+        $header
         $unhealthy
     } else {
-        Write-Host "  No unhealthy pods reported (or cluster unreachable)."
+        Write-Host "  All pods are Running/Succeeded and Ready with low restart counts."
     }
 }
 

@@ -6,7 +6,7 @@
 #   2. Node pool summary                   (az aks nodepool list)
 #   3. Recent Azure activity               (az monitor activity-log list)
 #   4. Node readiness                      (kubectl get nodes)
-#   5. Unhealthy pods across namespaces    (kubectl get pods -A, non-Running/Succeeded)
+#   5. Unhealthy pods across namespaces    (kubectl get pods -A; not Ready, bad status, or restarting)
 #   6. kube-system health                  (kubectl get pods -n kube-system)
 #   7. Recent warning events               (kubectl get events -A)
 #   8. Namespace pod overview (optional)   (kubectl get pods -n <namespace>)
@@ -105,11 +105,31 @@ section "4. Node readiness"
 run "node readiness" kubectl get nodes -o wide
 
 # 5. Unhealthy pods ------------------------------------------------------------
-section "5. Unhealthy pods (not Running/Succeeded)"
-if kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded 2>/dev/null | grep -q .; then
-    kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded
+# Filter on the READY and STATUS columns (not just pod phase) so container-level
+# failures such as CrashLoopBackOff / ImagePullBackOff — which stay in phase
+# "Running" — are caught. Terminal pods (Completed/Succeeded) are excluded so
+# finished jobs are not falsely flagged.
+section "5. Unhealthy pods (CrashLoopBackOff, not Ready, restarting, or bad status)"
+ALL_PODS="$(kubectl get pods -A -o wide 2>/dev/null)"
+if [ -z "$ALL_PODS" ]; then
+    echo "  No pods reported (or cluster unreachable)."
 else
-    echo "  No unhealthy pods reported (or cluster unreachable)."
+    UNHEALTHY="$(printf '%s\n' "$ALL_PODS" | awk 'NR>1 {
+        split($3, ready, "/");
+        status = $4;
+        restarts = $5 + 0;
+        terminalOk = (status == "Completed" || status == "Succeeded");
+        notReady = (status == "Running" && ready[1] != ready[2]);
+        badStatus = (status != "Running" && !terminalOk);
+        highRestarts = (!terminalOk && restarts >= 5);
+        if (notReady || badStatus || highRestarts) print
+    }')"
+    if [ -n "$UNHEALTHY" ]; then
+        printf '%s\n' "$ALL_PODS" | head -n 1
+        printf '%s\n' "$UNHEALTHY"
+    else
+        echo "  All pods are Running/Succeeded and Ready with low restart counts."
+    fi
 fi
 
 # 6. kube-system health --------------------------------------------------------
