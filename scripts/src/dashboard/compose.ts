@@ -21,6 +21,7 @@ import type {
 } from "./schema.js";
 import { validateDashboardReport } from "./schema.js";
 import { sanitizeDashboardReport } from "./sanitize.js";
+import { collectPluginSkills } from "./plugin-collect.js";
 
 // ---------------------------------------------------------------------------
 // Collector registry — dynamic imports with graceful fallback
@@ -260,6 +261,9 @@ async function main(): Promise<void> {
 
   console.error(`[compose] report written to ${outputPath}`);
   console.error(`[compose] categories: ${Object.keys(categories).join(", ")}`);
+
+  // Collect plugin/skill inventory
+  collectPluginSkills();
 
   // Summary
   const statuses = Object.entries(categories).map(
