@@ -12,16 +12,15 @@ This repository uses [Nerdbank.GitVersioning (NBGV)](https://github.com/dotnet/N
 ## Files Managed
 
 The following files have their versions automatically stamped at build time:
-- `plugin/.claude-plugin/plugin.json`
-- `plugin/.cursor-plugin/plugin.json`
-- `plugin/.plugin/plugin.json`
-- `plugin/skills/*/SKILL.md` (each skill gets its own version)
+- `plugins/<plugin>/.claude-plugin/plugin.json`
+- `plugins/<plugin>/.cursor-plugin/plugin.json`
+- `plugins/<plugin>/.plugin/plugin.json`
+- `plugins/<plugin>/skills/*/SKILL.md` (each skill gets its own version)
 
 ## Changelog Generation
 
 The `CHANGELOG.md` is automatically generated at build time by the Gulp pipeline. It includes merged PRs that:
-- Touch the `plugin/` directory
-- Have titles starting with `fix:`, `feat:`, or `feature:`, etc. See [gulpfile](../gulpfile.ts) for the exhaustive list of supported prefixes.
+- Touch the `plugins/<plugin>` directory
 
 Each entry is associated with the NBGV height-based version (`{major}.{minor}.{height}`) of the commit that introduced it.
 
@@ -38,6 +37,6 @@ The GitHub Actions workflow `publish-to-marketplace.yml` automatically:
 2. Syncs the output to `microsoft/skills` and `microsoft/azure-skills` marketplace repos
 
 ### Files That Trigger Version Updates:
-- ✅ Any file under `plugin/` folder (for plugin version)
+- ✅ Any file under `plugins/` folder (for plugin version)
 - ✅ Any file under a skill's directory (for that skill's version)
 - ❌ Files outside tracked paths don't affect versions
