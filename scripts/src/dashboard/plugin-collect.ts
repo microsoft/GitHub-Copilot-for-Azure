@@ -1,29 +1,8 @@
-import { readdirSync, writeFileSync, mkdirSync, statSync } from "node:fs";
-import { resolve, dirname, parse as parsePath } from "node:path";
+import { readdirSync, writeFileSync, mkdirSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-
-/**
- * Walk up from `startDir` looking for a `.git` directory — the first match
- * is the repo root.
- */
-function findRepoRoot(startDir: string): string {
-  let dir = resolve(startDir);
-  const { root } = parsePath(dir);
-
-  while (dir !== root) {
-    try {
-      const gitStat = statSync(resolve(dir, ".git"));
-      if (gitStat.isDirectory() || gitStat.isFile()) return dir;
-    } catch {
-      // keep walking
-    }
-    dir = dirname(dir);
-  }
-
-  return startDir;
-}
 
 function listDirectories(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true })
@@ -33,8 +12,7 @@ function listDirectories(dir: string): string[] {
 }
 
 export function collectPluginSkills() {
-  const scriptDir = __dirname;
-  const repoRoot = findRepoRoot(scriptDir);
+  const repoRoot = resolve(__dirname, "../../..");
   const pluginsDir = resolve(repoRoot, "plugins");
 
   const plugins: Record<string, string[]> = {};
