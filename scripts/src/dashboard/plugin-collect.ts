@@ -41,13 +41,11 @@ export function collectPluginSkills() {
 
   for (const pluginName of listDirectories(pluginsDir)) {
     const skillsDir = resolve(pluginsDir, pluginName, "skills");
-    let skills: string[] = [];
     try {
-      skills = listDirectories(skillsDir);
+      plugins[pluginName] = listDirectories(skillsDir);
     } catch {
-      skills = [];
+      plugins[pluginName] = [];
     }
-    plugins[pluginName] = skills;
   }
 
   const output = { plugins };
