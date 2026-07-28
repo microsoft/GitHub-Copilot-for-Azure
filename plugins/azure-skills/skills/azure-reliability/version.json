@@ -1,1 +1,6 @@
-{"version":"1.0","pathFilters":["."]}
+{
+    "version": "1.1",
+    "pathFilters": [
+        "."
+    ]
+}
