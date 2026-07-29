@@ -89,12 +89,15 @@ module resources './modules/resources.bicep' = {
 
 The prepare phase pre-computes every resource name (with a unique 4-char suffix) in `prepare-plan.json.naming.resources[]`. ⛔ **Use those names verbatim** as Bicep parameters — do NOT derive, `take()`, `substring()`, `uniqueString()`, or otherwise transform them. The plan is the source of truth; self-review L3 and the conformance gate assert names match the plan exactly.
 
-**Fallback only** — if `naming.resources[]` is absent, synthesize a unique suffix for globally unique resources (App Service, Key Vault, Storage, ACR):
+**Fallback only** — if `naming.resources[]` is absent, synthesize a unique suffix for **every** globally unique resource (App Service, Key Vault, Storage, ACR, and any other resource with a global namespace). Apply the same `${resourcePrefix}-${take(nameSuffix, 4)}` pattern to each — the examples below are illustrative, not exhaustive:
 
 ```bicep
-// main.bicep — FALLBACK when the plan omits names
+// main.bicep — FALLBACK when the plan omits names.
+// Compute nameSuffix once, then apply to EVERY globally unique resource below.
 var nameSuffix = uniqueString(resourceGroup().id)
+param webAppName string = 'app-${resourcePrefix}-${take(nameSuffix, 4)}'
 param kvName string = 'kv-${resourcePrefix}-${take(nameSuffix, 4)}'
+param storageName string = 'st${replace(resourcePrefix, '-', '')}${take(nameSuffix, 4)}'
 param acrName string = 'cr${replace(resourcePrefix, '-', '')}${take(nameSuffix, 4)}'
 ```
 

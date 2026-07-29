@@ -106,7 +106,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
    <<<TEMPLATE_START>>>
    You are a deploy-checklist generator. Do NOT invoke any skills.
 
-   1. Read the deploy-checklist-template at: plugin/skills/azure-app-onboard/deploy/references/deploy-checklist-template.md
+   1. Read the deploy-checklist-template at: ../deploy/references/deploy-checklist-template.md
    2. Fill in {placeholders} with real values from prepare-plan.json (appName, rgName, subscriptionId, sessionId).
    3. Delete sections that don't apply to this deployment's compute target (e.g., remove App Service section for Container Apps deploys). The template section headers indicate which to delete.
    4. Write the result to the session folder using the `create` tool. This file survives conversation compaction — deploy re-reads it after every long-running command.
