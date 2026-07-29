@@ -53,6 +53,9 @@ function main() {
   // skills
   fs.mkdirSync(path.join(pluginRoot, "skills"));
 
+  // MCP server declaration
+  fs.writeFileSync(path.join(pluginRoot, ".mcp.json"), JSON.stringify({ mcpServers: {} }, null, 2));
+
   // License
   fs.copyFileSync(path.join(azureSkillsPluginRoot, "LICENSE"), path.join(pluginRoot, "LICENSE"));
 
