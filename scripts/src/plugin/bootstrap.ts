@@ -22,7 +22,8 @@ function main() {
       "azure",
       "cloud"
     ],
-    skills: "./skills/"
+    skills: "./skills/",
+    mcpServers: "./.mcp.json"
   };
   const copilotPluginManifest = {
     ...pluginManifestBase
@@ -73,7 +74,7 @@ function main() {
   // Hooks
   fs.cpSync(path.join(azureSkillsPluginRoot, "hooks"), path.join(pluginRoot, "hooks"), { recursive: true });
 
-  console.log("Bootstrapped new-plugin at plugins/new-plugin");
+  console.log(`Bootstrapped ${pluginName} at plugins/${pluginName}`);
 }
 
 main();
