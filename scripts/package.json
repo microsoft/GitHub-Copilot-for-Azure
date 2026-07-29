@@ -18,7 +18,8 @@
     "lint:fix": "eslint --fix",
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
     "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts",
-    "vally": "node --import tsx src/vally/cli.ts"
+    "vally": "node --import tsx src/vally/cli.ts",
+    "plugin:new": "node --import tsx src/plugin/bootstrap.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
