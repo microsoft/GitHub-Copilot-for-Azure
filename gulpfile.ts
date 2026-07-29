@@ -4,7 +4,7 @@ import * as nbgv from "nerdbank-gitversioning";
 import * as path from "path";
 import log from "fancy-log";
 import { execSync } from "child_process";
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, cpSync } from "fs";
 import Vinyl = require("vinyl");
 
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
@@ -119,6 +119,12 @@ function getPluginDirnames(): string[] {
     .sort();
 }
 
+function copyHookScript(pluginDirname: string) {
+  const src = path.join(__dirname, "hooks");
+  const dst = path.join(__dirname, `output/${pluginDirname}/hooks`);
+  cpSync(src, dst, { recursive: true });
+}
+
 function buildPlugin(pluginDirname: string): Promise<void> {
   const legacyChangelog = getLegacyChangelog(pluginDirname);
 
@@ -143,6 +149,7 @@ function buildPlugin(pluginDirname: string): Promise<void> {
     pipeline.on("end", () => {
       try {
         generateChangelog(pluginDirname, legacyChangelog);
+        copyHookScript(pluginDirname);
         resolve();
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
