@@ -40,6 +40,7 @@ describeIntegration(`${SKILL_NAME}_foundry-agent - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Create a new prompt agent with gpt-4o model in Foundry",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -58,6 +59,7 @@ describeIntegration(`${SKILL_NAME}_foundry-agent - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Troubleshoot my Foundry agent that is returning errors",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
