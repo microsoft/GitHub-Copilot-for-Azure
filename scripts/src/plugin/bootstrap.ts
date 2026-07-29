@@ -36,7 +36,7 @@ function main() {
     hooks: "./hooks/cursor-hooks.json"
   };
   const repoRoot = path.resolve(__dirname, "../../..");
-  const azureSkillsPluginRoot = path.join(repoRoot, `plugins/azure-skills`);
+  const azureSkillsPluginRoot = path.join(repoRoot, "plugins/azure-skills");
   const pluginRoot = path.join(repoRoot, `plugins/${pluginName}`);
 
   // Plugin root
