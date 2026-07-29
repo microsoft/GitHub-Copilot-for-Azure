@@ -9,7 +9,7 @@ function main() {
   const pluginName = "new-plugin";
   const pluginManifestBase = {
     name: pluginName,
-    description: "<Provider a description>",
+    description: "<Provide a description>",
     version: "0.0.0-placeholder",
     author: {
       name: "Microsoft",
