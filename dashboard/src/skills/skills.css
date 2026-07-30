@@ -83,6 +83,62 @@
     font-size: 0.9rem;
 }
 
+.skills-source-link {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+}
+
+.skills-issues-link {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+}
+
+.skills-source-link a {
+    color: var(--color-focus, #3b82f6);
+    text-decoration: none;
+}
+
+.skills-source-link a:hover,
+.skills-source-link a:focus {
+    text-decoration: underline;
+}
+
+.skills-issues-link a {
+    color: var(--color-focus, #3b82f6);
+    text-decoration: none;
+}
+
+.skills-issues-link a:hover {
+    text-decoration: underline;
+}
+
+.skills-issues-link a:focus-visible {
+    outline: 2px solid var(--color-focus, #3b82f6);
+    outline-offset: 2px;
+    text-decoration: underline;
+    border-radius: 2px;
+}
+
+.skills-file-count {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+}
+
+.skills-telemetry {
+    margin: 0.5rem 0 0;
+}
+
+.skills-telemetry-link {
+    color: var(--color-focus);
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+.skills-telemetry-link:hover {
+    text-decoration: underline;
+}
+
 .skills-tests-heading {
     margin: 1.5rem 0 0.75rem;
     font-size: 1.15rem;

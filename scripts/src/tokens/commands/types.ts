@@ -122,7 +122,7 @@ export const TOKENS_PER_TABLE_ROW = 12;
 export const EXCLUDED_DIRS = ["node_modules", ".git", "dist", "coverage"] as const;
 
 /** Default directories to scan for skills/agents */
-export const DEFAULT_SCAN_DIRS = [".github/skills", "plugin/skills", ".github/agents"] as const;
+export const DEFAULT_SCAN_DIRS = [".github/skills", "plugins", ".github/agents"] as const;
 
 /** Supported markdown extensions */
 export const MARKDOWN_EXTENSIONS = [".md", ".mdx"] as const;
@@ -139,7 +139,7 @@ export const DEFAULT_LIMITS: TokenLimitsConfig = {
   overrides: {
     "README.md": 3000,
     "CONTRIBUTING.md": 2500,
-    "plugin/README.md": 3000
+    "plugins/**/README.md": 3000
   }
 };
 

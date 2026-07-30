@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { enumerateBlobs } from "../blobEnumerator";
+import { enumerateBlobs, filterBlobTreeBySkills, resolveSkillFilter } from "../blobEnumerator";
 import { logRequestIdentity } from "../requestIdentity";
 
 /**
@@ -45,6 +45,11 @@ async function getData(request: HttpRequest, context: InvocationContext): Promis
 
     const container = request.query.get("container") || undefined;
     const root = await enumerateBlobs(`${date}/`, container);
+
+    const skillFilter = await resolveSkillFilter(request.query.get("plugin") || undefined);
+    if (skillFilter) {
+        filterBlobTreeBySkills(root, skillFilter);
+    }
 
     return {
         status: 200,

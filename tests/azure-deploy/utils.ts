@@ -9,10 +9,29 @@ const CONTAINER_DEPLOY_ENV_PATTERNS: readonly RegExp[] = [
 ];
 
 /**
+ * The azure-validate Aspire recipe replaces the inline `azd env set` commands with a helper
+ * script (set-aspire-aca-env.sh/.ps1). When the agent runs the script, the env-var names
+ * appear inside the script file rather than on the command line, so treat invoking it as
+ * satisfying the env-var expectations below.
+ *
+ * Anchored to the start of a command (line start or after a shell separator), optionally via
+ * an interpreter (bash/sh/pwsh/powershell) and a relative path, so that non-execution
+ * references such as `cat ./scripts/set-aspire-aca-env.sh` or `chmod +x .../set-aspire-aca-env.sh`
+ * do not count as running it.
+ */
+const ASPIRE_ACA_ENV_SCRIPT_PATTERN =
+  /(?:^|[;&|]\s*)(?:(?:bash|sh|pwsh|powershell)\s+)?[.\w/\\-]*set-aspire-aca-env\.(?:sh|ps1)\b/im;
+
+/**
  * Soft-check that the agent set the expected container deploy env vars.
  * Emits warnings (testComments) instead of failing the test.
  */
 export function softCheckContainerDeployEnvVars(agentMetadata: AgentMetadata): void {
+  // Running the helper script sets all of the expected env vars, so the check is satisfied.
+  if (matchesCommand(agentMetadata, ASPIRE_ACA_ENV_SCRIPT_PATTERN)) {
+    return;
+  }
+
   for (const pattern of CONTAINER_DEPLOY_ENV_PATTERNS) {
     if (!matchesCommand(agentMetadata, pattern)) {
       agentMetadata.testComments.push(

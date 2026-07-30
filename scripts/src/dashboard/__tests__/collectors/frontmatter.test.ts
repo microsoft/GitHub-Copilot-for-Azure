@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { resolve } from "node:path";
 import type { CategoryReport } from "../../schema.js";
 import { parseFrontmatterJson } from "../../collectors/frontmatter.js";
 
@@ -25,7 +26,7 @@ function makeFrontmatterJson(overrides?: {
     skills: [
       {
         name: "skill-a",
-        path: "plugin/skills/skill-a/SKILL.md",
+        path: "plugins/plugin-a/skills/skill-a/SKILL.md",
         status: "pass" as const,
         errors: [],
         warnings: [],
@@ -33,7 +34,7 @@ function makeFrontmatterJson(overrides?: {
       },
       {
         name: "skill-b",
-        path: "plugin/skills/skill-b/SKILL.md",
+        path: "plugins/plugin-b/skills/skill-b/SKILL.md",
         status: "pass" as const,
         errors: [],
         warnings: [],
@@ -211,9 +212,11 @@ describe("frontmatterCollector.collect", () => {
 
   it("returns a valid CategoryReport from CLI output", async () => {
     const jsonOutput = makeFrontmatterJson();
+    const execSync = vi.fn(() => jsonOutput);
+    const fakeRoot = "/fake";
 
     vi.doMock("node:child_process", () => ({
-      execSync: () => jsonOutput,
+      execSync,
     }));
 
     const { frontmatterCollector } = await import(
@@ -221,12 +224,19 @@ describe("frontmatterCollector.collect", () => {
     );
 
     const report: CategoryReport = await frontmatterCollector.collect({
-      cwd: "/fake",
+      cwd: fakeRoot,
       timeout: 5000,
     });
 
     expect(report.status).toBe("pass");
     expect(report.items).toHaveLength(2);
+    expect(execSync).toHaveBeenCalledWith(
+      expect.stringContaining(`--json "${resolve(fakeRoot, "output")}"`),
+      expect.objectContaining({
+        cwd: resolve(fakeRoot, "scripts"),
+        timeout: 5000,
+      }),
+    );
   });
 
   it("handles non-zero exit with valid JSON stdout", async () => {
@@ -283,5 +293,104 @@ describe("frontmatterCollector.collect", () => {
 
     expect(report.status).toBe("skip");
     expect(report.summary.total).toBe(0);
+  });
+
+  it("returns skip when non-zero exit stdout is not valid JSON", async () => {
+    vi.doMock("node:child_process", () => ({
+      execSync: () => {
+        const err = new Error("exit code 1") as Error & { stdout: string };
+        err.stdout = "npm ERR! something broke";
+        throw err;
+      },
+    }));
+
+    const { frontmatterCollector } = await import(
+      "../../collectors/frontmatter.js"
+    );
+
+    const report = await frontmatterCollector.collect({
+      cwd: "/fake",
+      timeout: 5000,
+    });
+
+    expect(report.status).toBe("skip");
+    expect(report.summary.total).toBe(0);
+  });
+
+  it("populates metadata.fileCount from the built skill directory (recursive, incl. nested)", async () => {
+    const { mkdtempSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { join } = await import("node:path");
+
+    const root = mkdtempSync(join(tmpdir(), "fm-filecount-"));
+    // Built skill: output/skills/skill-a with 2 own files + a nested sub-skill
+    // that contributes 2 more, so the recursive count is 4.
+    const skillDir = join(root, "output", "skills", "skill-a");
+    const nestedDir = join(skillDir, "nested");
+    mkdirSync(nestedDir, { recursive: true });
+    writeFileSync(join(skillDir, "SKILL.md"), "a");
+    writeFileSync(join(skillDir, "version.json"), "b");
+    writeFileSync(join(nestedDir, "SKILL.md"), "c");
+    writeFileSync(join(nestedDir, "notes.md"), "d");
+
+    const jsonOutput = makeFrontmatterJson({
+      skills: [
+        {
+          name: "skill-a",
+          path: "output/skills/skill-a/SKILL.md",
+          status: "pass",
+          errors: [],
+          warnings: [],
+          checks: {},
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, warnings: 0 },
+    });
+
+    vi.doMock("node:child_process", () => ({
+      execSync: () => jsonOutput,
+    }));
+
+    const { frontmatterCollector } = await import(
+      "../../collectors/frontmatter.js"
+    );
+
+    const report = await frontmatterCollector.collect({
+      cwd: root,
+      timeout: 5000,
+    });
+
+    expect(report.items[0].metadata?.fileCount).toBe(4);
+  });
+
+  it("sets fileCount to 0 when the skill directory is missing", async () => {
+    const jsonOutput = makeFrontmatterJson({
+      skills: [
+        {
+          name: "gone",
+          path: "output/skills/gone/SKILL.md",
+          status: "pass",
+          errors: [],
+          warnings: [],
+          checks: {},
+        },
+      ],
+      summary: { total: 1, passed: 1, failed: 0, warnings: 0 },
+    });
+
+    vi.doMock("node:child_process", () => ({
+      execSync: () => jsonOutput,
+    }));
+
+    const { frontmatterCollector } = await import(
+      "../../collectors/frontmatter.js"
+    );
+
+    const report = await frontmatterCollector.collect({
+      cwd: "/fake",
+      timeout: 5000,
+    });
+
+    expect(report.items[0].metadata?.fileCount).toBe(0);
   });
 });

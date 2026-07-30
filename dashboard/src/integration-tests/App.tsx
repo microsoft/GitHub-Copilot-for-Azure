@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
-import { apiUrl, pageUrl } from "../shared/apiUrl";
+import { apiUrl, getPersistedPluginSelection, pageUrl } from "../shared/apiUrl";
+import PluginSelector from "../shared/PluginSelector";
 
 interface TestCase {
     testName: string;
@@ -226,10 +227,16 @@ function formatRate(rate: number | null): string {
 }
 
 function formatTestName(name: string): string {
-    return name.replace(/\s+/g, "_");
+    return name
+        .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
+        .replace(/\s+/g, "_")           // Replace spaces with underscores
+        .replace(/-+/g, "-")            // Collapse multiple dashes
+        .replace(/_+/g, "_")            // Collapse multiple underscores
+        .substring(0, 200);             // Limit length
 }
 
 function App() {
+    const [selectedPlugin, setSelectedPlugin] = useState<string>(getPersistedPluginSelection);
     const [dates, setDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [testResults, setTestResults] = useState<SkillTestResults | null>(null);
@@ -253,7 +260,7 @@ function App() {
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoadingDates(false));
-    }, []);
+    }, [selectedPlugin]);
 
     // Fetch test results when a date is selected
     useEffect(() => {
@@ -272,7 +279,7 @@ function App() {
             .then((data: SkillTestResults) => setTestResults(data))
             .catch((err) => setError(err.message))
             .finally(() => setLoadingResults(false));
-    }, [selectedDate]);
+    }, [selectedDate, selectedPlugin]);
 
     if (loadingDates) {
         return <div className="it-app"><p className="it-loading">Loading&hellip;</p></div>;
@@ -291,6 +298,11 @@ function App() {
             <header className="it-header">
                 <h1>Integration Tests{selectedDate ? ` \u2014 ${selectedDate}` : ""}</h1>
             </header>
+
+            <PluginSelector
+                selectedPlugin={selectedPlugin}
+                onChange={setSelectedPlugin}
+            />
 
             <div className={`it-body${panelOpen ? " it-body-with-panel" : ""}`}>
                 {/* Left panel - date list */}
@@ -656,8 +668,8 @@ function ToolCallItem({ date, runToken, call }: { date: string; runToken: string
         call.successState === "true"
             ? "it-tool-ok"
             : call.successState === "false"
-              ? "it-tool-fail"
-              : "it-tool-unknown";
+                ? "it-tool-fail"
+                : "it-tool-unknown";
 
     return (
         <li className="it-tool-call">

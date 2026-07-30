@@ -21,6 +21,7 @@ import type {
 } from "./schema.js";
 import { validateDashboardReport } from "./schema.js";
 import { sanitizeDashboardReport } from "./sanitize.js";
+import { collectPluginSkills } from "./plugin-collect.js";
 
 // ---------------------------------------------------------------------------
 // Collector registry — dynamic imports with graceful fallback
@@ -133,7 +134,8 @@ function findRepoRoot(startDir: string): string {
     try {
       const gitDir = resolve(dir, ".git");
       const gitStat = statSync(gitDir);
-      if (gitStat.isDirectory()) return dir;
+      // .git is a directory in a normal clone, a file (gitfile) in a worktree
+      if (gitStat.isDirectory() || gitStat.isFile()) return dir;
     } catch {
       // keep walking
     }
@@ -259,6 +261,9 @@ async function main(): Promise<void> {
 
   console.error(`[compose] report written to ${outputPath}`);
   console.error(`[compose] categories: ${Object.keys(categories).join(", ")}`);
+
+  // Collect plugin/skill inventory
+  collectPluginSkills();
 
   // Summary
   const statuses = Object.entries(categories).map(

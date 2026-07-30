@@ -15,7 +15,6 @@
 | azure-kubernetes, kubernetes, aks | `azure-kubernetes` |
 | azure-kusto, kusto | `azure-kusto` |
 | azure-storage, storage | `azure-storage` |
-| azure-rbac, rbac | `azure-rbac` |
 | (any other name) | use as-is |
 
 ## Blob Path Layout

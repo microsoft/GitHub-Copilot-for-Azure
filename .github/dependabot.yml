@@ -1,5 +1,7 @@
 updates:
 - directory: /
+  cooldown:
+    default-days: 7
   groups:
     minor:
       update-types:
@@ -15,6 +17,8 @@ updates:
     day: monday
     interval: weekly
 - directory: /scripts
+  cooldown:
+    default-days: 7
   groups:
     minor:
       update-types:
@@ -30,6 +34,8 @@ updates:
     day: monday
     interval: weekly
 - directory: /tests
+  cooldown:
+    default-days: 7
   groups:
     minor:
       update-types:
