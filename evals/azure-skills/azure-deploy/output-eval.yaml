@@ -5,7 +5,7 @@
 # Global graders (evaluate#125 workaround): has_output and no_runtime_failure
 # are duplicated into every stimulus block below.
 
-name: azure-deploy-eval
+name: azure-deploy-output-eval
 description: |
   Evaluation suite for the azure-deploy skill.
   Tests deployment guidance quality with emphasis on:

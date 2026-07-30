@@ -16,7 +16,7 @@
 # the deployment completed and the app is live.
 # NOTE: earlyTerminate tests must NOT use the `completed` grader.
 
-name: azure-deploy-e2e-eval
+name: azure-deploy-deploy-eval
 description: |
   End-to-end evaluation suite for the azure-deploy skill.
   Tests deployment execution quality across:
