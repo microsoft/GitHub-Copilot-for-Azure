@@ -39,7 +39,7 @@ cd GitHub-Copilot-for-Azure
 
 ### Plugin Structure
 
-Each plugin has the following files under the `plugins/<plugin>` directory.
+Each plugin has the following files under the `plugins/<plugin>` directory:
 
 ```text
 <repo-root>/
@@ -58,21 +58,23 @@ Each plugin has the following files under the `plugins/<plugin>` directory.
 ├──   version.json          (base version file)
 ```
 
-Each plugin has all its files stored under `plugins/<your-plugin-name>/`, called the plugin root. `plugins/azure-skills/` is a well established plugin you can use as an example.
+Each plugin has all its files stored under `plugins/<your-plugin-name>/`, which is called the plugin root. `plugins/azure-skills/` is a well-established plugin you can use as an example.
 
-`.calude-plugin/` contains the plugin manifest for Claude Code. `.cursor-plugin/` contains the plugin manifest for Cursor. `.plugin/` contains the plugin manifest for Copilot CLI and VS Code. We have to maintain separate plugin manifests because clients use them in different ways. See [plugin-manifest.md](./plugin-manifest.md) for more explanation. Every new plugin should at least provide these manifests to make sure it works for these clients.
+`.claude-plugin/` contains the plugin manifest for Claude Code. `.cursor-plugin/` contains the plugin manifest for Cursor. `.plugin/` contains the plugin manifest for Copilot CLI and VS Code. We have to maintain separate plugin manifests because clients use them in different ways. See [plugin-manifest.md](./plugin-manifest.md) for more information. Every new plugin should provide at least these manifests to make sure it works for these clients.
 
-`hooks/` contains the hooks manifest. Since clients also use hooks manifest in different ways, we have to maintain separate hooks manifests for different clients. See [hooks.md](./hooks.md) for more explanation. Our existing hooks for tracking telemetry are reusable so you can reuse them. If you don't want our hook to collect telemetry for your skill or if you want to do something differently, you can implement your own. If you do so, please make sure to read [hooks.md](./hooks.md) to help make your hook work for the clients.
+`hooks/` contains the hooks manifest. Since clients also use hook manifests in different ways, we have to maintain separate hook manifests for different clients. See [hooks.md](./hooks.md) for more information. Our existing hooks for tracking telemetry are reusable. If you do not want our hook to collect telemetry for your skill, or if you want to do something differently, you can implement your own. If you do so, please read [hooks.md](./hooks.md) to help make your hook work for the clients.
 
-`skills/` contains the skill files. `.mcp.json` file contains the MCP server configuration you want to add to the agent. They are the bread-and-butter that gets added to the agent context to help the agent solve problems. `LICENSE` is the software license of your plugin. We only accept MIT License in this repo. `README.md` is a user facing documentation for users of the plugin. `version.json` sets the base major-minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
+`skills/` contains the skill files. The `.mcp.json` file contains the MCP server configuration you want to add to the agent. Skills and MCP configuration are the bread and butter added to the agent context to help the agent solve problems. `LICENSE` is the software license for your plugin. `README.md` is user-facing documentation for users of the plugin. `version.json` sets the base major and minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
 
 Unless there is an urgent need to extend an existing plugin, new skills should be contributed as new plugins so they can work independently from existing ones.
 
-You run this command at the repository root and scaffold a new plugin following the instructions.
+Run this command at the repository root to scaffold a new plugin, then add your files to it.
 
 ```bash
 npm run plugin:new
 ```
+
+Skills should be contributed as new plugins unless it's a good fit for an existing plugin and the plugin still has capacity.
 
 ### Skill Structure
 
