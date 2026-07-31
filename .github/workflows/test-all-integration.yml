@@ -305,7 +305,9 @@ jobs:
         id: generate-skill-report
         env:
           SKILL: ${{ matrix.skill }}
-        run: npm run report -- --skill "$SKILL" || true
+        run: |
+          SKILL_NAME="${SKILL##*/}"
+          npm run report -- --skill "$SKILL_NAME" || true
 
       - name: Show skill report
         if: always()
