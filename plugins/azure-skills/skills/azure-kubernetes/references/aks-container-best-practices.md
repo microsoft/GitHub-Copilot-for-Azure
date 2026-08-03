@@ -28,7 +28,7 @@ The existing checklist matrix validates many controls at a high level (e.g., "wo
 
 | Check ID | Category | Checklist Item | Validation Commands | Reference |
 | --- | --- | --- | --- | --- |
-| CTR-IMG-01 | Image Hygiene | Container images do not use the `:latest` tag or omit a tag entirely | `kubectl get pods -A -o jsonpath="{range .items[*]}{range .spec.containers[*]}{.image}{'\n'}{end}{end}" --context <kubeContext> \| findstr /i ":latest"` | <https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-container-image-management#use-meaningful-image-tags> |
+| CTR-IMG-01 | Image Hygiene | Container images do not use the `:latest` tag or omit a tag entirely | `kubectl get pods -A -o jsonpath="{range .items[*]}{range .spec.containers[*]}{.image}{'\n'}{end}{end}" --context <kubeContext> \| grep -i ":latest"` (Windows: use ``kubectl get pods -A -o jsonpath="{range .items[*]}{range .spec.containers[*]}{.image}{'\n'}{end}{end}" --context <kubeContext> \| findstr /i ":latest"``) | <https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-container-image-management#use-meaningful-image-tags> |
 | CTR-IMG-02 | Image Hygiene | Images use immutable tags or digests for production workloads | `kubectl get pods -A -o jsonpath="{range .items[*]}{.metadata.namespace}/{.metadata.name}{': '}{range .spec.containers[*]}{.image}{', '}{end}{'\n'}{end}" --context <kubeContext>` — check for digest references (`@sha256:`) vs mutable tags | <https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-container-image-management> |
 | CTR-IMG-03 | Image Hygiene | ImagePullPolicy is set explicitly and appropriately (Always for mutable tags, IfNotPresent for immutable/digest) | `kubectl get pods -A -o jsonpath="{range .items[*]}{.metadata.namespace}/{.metadata.name}{': '}{range .spec.containers[*]}{.name}{'='}{.imagePullPolicy}{', '}{end}{'\n'}{end}" --context <kubeContext>` | <https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy> |
 | CTR-IMG-04 | Image Hygiene | Image pull secrets are configured for private registry access | `kubectl get serviceaccount -A -o jsonpath="{range .items[*]}{.metadata.namespace}/{.metadata.name}{': imagePullSecrets='}{.imagePullSecrets}{'\n'}{end}" --context <kubeContext>`; `kubectl get pods -A -o jsonpath="{range .items[*]}{.metadata.namespace}/{.metadata.name}{': pullSecrets='}{.spec.imagePullSecrets}{'\n'}{end}" --context <kubeContext>` | <https://learn.microsoft.com/en-us/azure/aks/concepts-security#kubernetes-secrets> |
@@ -116,7 +116,8 @@ To produce the cluster-wide summary for the report, run these aggregation comman
 ### Total Container Count
 
 ```bash
-kubectl get pods -A -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'1\n'}{end}{end}" --context <kubeContext> | find /c "1"
+kubectl get pods -A -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'1\n'}{end}{end}" --context <kubeContext> | wc -l
+(Windows: use `kubectl get pods -A -o jsonpath="{range .items[*]}{range .spec.containers[*]}{'1\n'}{end}{end}" --context <kubeContext> | find /c "1"`)
 ```
 
 ### Containers Without Resource Requests
