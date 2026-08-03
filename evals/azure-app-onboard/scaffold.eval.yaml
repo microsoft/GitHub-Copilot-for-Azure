@@ -39,7 +39,17 @@ stimuli:
   # grading — then we assert the on-disk IaC + manifest. (Terminating on the first .bicep write
   # raced the async subagent flush and left nothing on disk.)
   - name: "Scaffold - Bicep Generation Simple App"
-    prompt: "I built a side project and want to get it live on Azure"
+    turns:
+      - "I built a side project and want to get it live on Azure"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
@@ -47,16 +57,6 @@ stimuli:
       area: scaffold
       category: scaffold-bicep-gen
       skill: azure-app-onboard
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
@@ -108,7 +108,18 @@ stimuli:
   # Verifies: the skill is invoked, surfaces the existing-IaC decision, routes to azure-prepare,
   # and does not overwrite the repo's existing IaC. Halts at the decision point.
   - name: "Scaffold - Existing Azd Foundry Detect No Overwrite"
-    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    turns:
+      - "I have an app in GitHub — can you deploy it to Azure for me?"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
@@ -116,17 +127,6 @@ stimuli:
       area: scaffold
       category: scaffold-existing-foundry
       skill: azure-app-onboard
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
@@ -162,7 +162,12 @@ stimuli:
   # Verifies (mirrors integration-existing-iac.test.ts): the skill is invoked, detects the existing azd
   # template, routes to azure-prepare, and does not overwrite the repo's existing IaC.
   - name: "Scaffold - Existing Azd Template Mongo Detect No Overwrite"
-    prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
+    turns:
+      - "I just signed up for Azure. What's the fastest way to bring my app over?"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
@@ -170,11 +175,6 @@ stimuli:
       area: scaffold
       category: scaffold-existing-mongo
       skill: azure-app-onboard
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
@@ -209,7 +209,15 @@ stimuli:
   # ── Test 4: existing azd + Bicep (microblog-ai-remix) — must acknowledge & not overwrite ──
   # Verifies: the skill is invoked, detects the repo's existing IaC, and does not overwrite it.
   - name: "Scaffold - Existing Azd Bicep No Overwrite"
-    prompt: "I have a prototype ready — help me get it to production on Azure"
+    turns:
+      - "I have a prototype ready — help me get it to production on Azure"
+      - "Just go with defaults using my current subscription."
+      - "Go with recommended options."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
@@ -217,14 +225,6 @@ stimuli:
       area: scaffold
       category: scaffold-existing-bicep
       skill: azure-app-onboard
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Go with recommended options."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
@@ -262,7 +262,17 @@ stimuli:
   # earlyTerminate = earlyTerminate (halts after the manifest write, so
   # the manifest + validationResult + selfReview + IaC files all exist for the file graders).
   - name: "Scaffold - IaC Security Baseline"
-    prompt: "I built a side project and want to get it live on Azure"
+    turns:
+      - "I built a side project and want to get it live on Azure"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
@@ -270,16 +280,6 @@ stimuli:
       area: scaffold
       category: scaffold-security-baseline
       skill: azure-app-onboard
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:
@@ -360,7 +360,17 @@ stimuli:
   #   in main.parameters.json). These are checked directly on the generated files (outcome, not artifact).
   # earlyTerminate halts after the manifest write so IaC + manifest exist for the file graders.
   - name: "Scaffold - MySQL Conformance Gate"
-    prompt: "I built a side project and want to get it live on Azure"
+    turns:
+      - "I built a side project and want to get it live on Azure"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
@@ -368,16 +378,6 @@ stimuli:
       area: scaffold
       category: scaffold-mysql-conformance
       skill: azure-app-onboard
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file|edit|bash|powershell","argsPattern":"(scaffold-manifest\\.json\"|>\\s*\\S*scaffold-manifest\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"(?i:\"command\":\"(?:[^\"&]*&&\\s*)*(?:azd\\s+(?:up|provision)|az\\s+deployment\\s+\\S+\\s+(?:create|what-if)|terraform\\s+apply))"}]'
     environment:
       commands:

@@ -3,7 +3,6 @@ import { computeMetrics } from "@microsoft/vally";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
-import { listSkills } from "../utils/skill-loader.ts";
 import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
 import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";

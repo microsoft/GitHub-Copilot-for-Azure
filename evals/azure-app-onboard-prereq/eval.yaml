@@ -39,17 +39,17 @@ stimuli:
   # ── integration-diversity.test.ts ──────────────────────────────────
   # test: e2e — postgresql-event-sourcing (Java/Spring Boot + Kafka)
   - name: "Dependency Compat - Java Spring Boot"
-    prompt: "Can you check if my dependencies are compatible with Azure?"
+    turns:
+      - "Can you check if my dependencies are compatible with Azure?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -114,17 +114,17 @@ stimuli:
 
   # test: e2e — yamtrack-django (Python/Django + PostgreSQL + Redis)
   - name: "Dependency Compat - Django Local Database"
-    prompt: "My app uses a local database — check what I need to change before moving to Azure"
+    turns:
+      - "My app uses a local database — check what I need to change before moving to Azure"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -188,17 +188,17 @@ stimuli:
 
   # test: e2e — fullstack-starter (4-component monorepo + GCP migration)
   - name: "Diversity - Monorepo Multi-Component Blockers"
-    prompt: "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
+    turns:
+      - "Before I deploy to Azure, scan my repo and tell me what prerequisites or blockers I need to resolve."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -256,17 +256,17 @@ stimuli:
   # ── integration-functional.test.ts ─────────────────────────────────
   # test: e2e — bya-simple-web-app (happy path)
   - name: "Readiness - Healthy Express App"
-    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
+    turns:
+      - "Is my app ready to deploy to Azure? Check for any issues first."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -331,17 +331,17 @@ stimuli:
 
   # test: e2e — docker-static-site (Dockerfile + static)
   - name: "Readiness - Dockerfile Static Site"
-    prompt: "Is my app ready to deploy to Azure? Scan for any issues."
+    turns:
+      - "Is my app ready to deploy to Azure? Scan for any issues."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -402,17 +402,17 @@ stimuli:
 
   # test: e2e — wetty (completeness check: entry points, deps, config)
   - name: "Readiness - Wetty Completeness Check"
-    prompt: "What do I need before I can deploy to Azure?"
+    turns:
+      - "What do I need before I can deploy to Azure?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -473,17 +473,17 @@ stimuli:
 
   # test: e2e — full-stack-fastapi-template (multi-component: React frontend + FastAPI backend)
   - name: "Readiness - FastAPI Multi-Component"
-    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    turns:
+      - "Can you scan my repo and tell me if there are any blockers for deployment?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -544,17 +544,17 @@ stimuli:
 
   # test: e2e — flasky-first-edition (Python 2 EOL + archived repo)
   - name: "Readiness - Python 2 EOL Unsupported"
-    prompt: "Check what happens if my app uses something Azure doesn't support?"
+    turns:
+      - "Check what happens if my app uses something Azure doesn't support?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -590,17 +590,17 @@ stimuli:
   # ── integration-negative.test.ts ───────────────────────────────────
   # test: negative — bya-unsupported-web-app (migration)
   - name: "Negative - Unsupported Stack Migration"
-    prompt: "What do I need to do before I can deploy to Azure?"
+    turns:
+      - "What do I need to do before I can deploy to Azure?"
+      - "Redirect to Azure Cloud Migrate"
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Redirect to Azure Cloud Migrate"
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -635,17 +635,17 @@ stimuli:
 
   # test: negative — bya-broken-web-app (detect + fix + re-evaluate)
   - name: "Negative - Broken App Blockers"
-    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    turns:
+      - "Can you scan my repo and tell me if there are any blockers for deployment?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -681,17 +681,17 @@ stimuli:
 
   # test: negative — dvwa (security-vulnerable)
   - name: "Negative - DVWA Security Vulnerable"
-    prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
+    turns:
+      - "I just signed up for Azure. What's the fastest way to bring my app over?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -729,17 +729,17 @@ stimuli:
 
   # test: negative — demo-app-broken-deps (unfixable)
   - name: "Negative - Unfixable Broken Dependencies"
-    prompt: "Can you check if my app is ready to deploy to Azure?"
+    turns:
+      - "Can you check if my app is ready to deploy to Azure?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -774,17 +774,17 @@ stimuli:
 
   # test: negative — broken-todo-demo (fixable blocker)
   - name: "Negative - Fixable Blocker Todo Demo"
-    prompt: "Can you scan my repo and tell me if there are any blockers for deployment?"
+    turns:
+      - "Can you scan my repo and tell me if there are any blockers for deployment?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -823,17 +823,17 @@ stimuli:
   # ── integration-routing.test.ts ────────────────────────────────────
   # test: routing — direct + ready + no infra → offers deploy (Go/Gin)
   - name: "Routing - Go Gin Ready Offers Deploy"
-    prompt: "I want to make sure my project structure is right before deploying"
+    turns:
+      - "I want to make sure my project structure is right before deploying"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -868,17 +868,17 @@ stimuli:
 
   # test: routing — direct + ready + existing infra → start fresh vs use existing
   - name: "Routing - Existing Infra Fresh Or Reuse"
-    prompt: "What prerequisites does my project need to meet for Azure deployment?"
+    turns:
+      - "What prerequisites does my project need to meet for Azure deployment?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -909,17 +909,17 @@ stimuli:
 
   # test: routing — cloud SDK gate → offers redirect to migrate (AWS bookstore)
   - name: "Routing - AWS Cloud SDK Redirect To Migrate"
-    prompt: "Can you check if my dependencies are compatible with Azure?"
+    turns:
+      - "Can you check if my dependencies are compatible with Azure?"
+      - "Redirect to Azure Cloud Migrate"
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Redirect to Azure Cloud Migrate"
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -954,17 +954,17 @@ stimuli:
 
   # test: routing — direct + blocked → reports blockers (Python 2 EOL)
   - name: "Routing - Python 2 EOL Reports Blockers"
-    prompt: "Is my app ready to deploy to Azure?"
+    turns:
+      - "Is my app ready to deploy to Azure?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: routing
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -1003,17 +1003,17 @@ stimuli:
   # ── integration-session.test.ts ────────────────────────────────────
   # test: session creation — full artifact structure validation
   - name: "Session - Creation Artifact Structure"
-    prompt: "Is my app ready to deploy to Azure? Check for any issues first."
+    turns:
+      - "Is my app ready to deploy to Azure? Check for any issues first."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:
@@ -1051,17 +1051,17 @@ stimuli:
 
   # test: session resume — agent recognizes existing session
   - name: "Session - Resume Existing Session"
-    prompt: "Is my app ready to deploy to Azure?"
+    turns:
+      - "Is my app ready to deploy to Azure?"
+      - "Yes."
+      - "Yes."
+      - "Yes."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-app-onboard-prereq
-      followUp:
-        - "Yes."
-        - "Yes."
-        - "Yes."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:🔍\\s*readiness:|all \\d+ artifacts written|pipeline stops|fix and re-run|blocker summary|not ready to deploy|cloud sdk migration required|swap manually and re-run|redirect to|use existing|start fresh)"},{"type":"tool-call-count","count":150}]'
     environment:
       commands:

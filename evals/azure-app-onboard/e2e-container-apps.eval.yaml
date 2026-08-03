@@ -30,7 +30,18 @@ stimuli:
   # `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished"); `az acr build`
   # / `docker build` + ingress URL (azurecontainerapps.io) all complete before it.
   - name: "Deploy - Wetty Code To Container Apps"
-    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    turns:
+      - "I have an app in GitHub — can you deploy it to Azure for me?"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     environment:
       commands:
         - git init -q
@@ -50,17 +61,6 @@ stimuli:
       # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
     graders:
       # azure-app-onboard MUST be invoked
       - type: skill-invocation
