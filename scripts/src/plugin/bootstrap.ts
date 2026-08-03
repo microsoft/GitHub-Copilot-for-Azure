@@ -71,8 +71,7 @@ function main() {
   };
   fs.writeFileSync(path.join(pluginRoot, "version.json"), JSON.stringify(versionManifest, null, 2));
 
-  // Hooks
-  fs.cpSync(path.join(azureSkillsPluginRoot, "hooks"), path.join(pluginRoot, "hooks"), { recursive: true });
+  // Hooks will be copied at build time
 
   console.log(`Bootstrapped ${pluginName} at plugins/${pluginName}`);
 }
