@@ -37,12 +37,51 @@ git clone https://github.com/YOUR-USERNAME/GitHub-Copilot-for-Azure.git
 cd GitHub-Copilot-for-Azure
 ```
 
+### Plugin Structure
+
+Each plugin has the following files under the `plugins/<plugin>` directory:
+
+```text
+<repo-root>/
+├── plugins/
+├── azure-skills/           (existing plugin)
+├── <your-plugin-name>/     (your new plugin)
+├──   .claude-plugin/       (claude code plugin manifest)
+├──   .cursor-plugin/       (cursor plugin manifest)
+├──   .plugin/              (Copilot CLI and VS Code plugin manifest)
+├──   assets/               (assets, referenced by Cursor plugin manifest)
+├──   hooks/                (hook files)
+├──   skills/               (skill files)
+├──   .mcp.json             (mcp definition)
+├──   LICENSE               (your plugin LICENSE)
+├──   README.md             (user facing README.md for your plugin)
+├──   version.json          (base version file)
+```
+
+Each plugin has all its files stored under `plugins/<your-plugin-name>/`, which is called the plugin root. `plugins/azure-skills/` is a well-established plugin you can use as an example.
+
+`.claude-plugin/` contains the plugin manifest for Claude Code. `.cursor-plugin/` contains the plugin manifest for Cursor. `.plugin/` contains the plugin manifest for Copilot CLI and VS Code. We have to maintain separate plugin manifests because clients use them in different ways. See [plugin-manifest.md](./plugin-manifest.md) for more information. Every new plugin should provide at least these manifests to make sure it works for these clients.
+
+`hooks/` contains the hooks manifest. Since clients also use hook manifests in different ways, we have to maintain separate hook manifests for different clients. See [hooks.md](./hooks.md) for more information. Our existing hooks for tracking telemetry are reusable. If you do not want our hook to collect telemetry for your skill, or if you want to do something differently, you can implement your own. If you do so, please read [hooks.md](./hooks.md) to help make your hook work for the clients.
+
+`skills/` contains the skill files. The `.mcp.json` file contains the MCP server configuration you want to add to the agent. Skills and MCP configuration are the bread and butter added to the agent context to help the agent solve problems. `LICENSE` is the software license for your plugin. `README.md` is user-facing documentation for users of the plugin. `version.json` sets the base major and minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
+
+Unless there is an urgent need to extend an existing plugin, new skills should be contributed as new plugins so they can work independently from existing ones.
+
+Run this command at the repository root to scaffold a new plugin, then add your files to it.
+
+```bash
+npm run plugin:new
+```
+
+Skills should be contributed as new plugins unless it's a good fit for an existing plugin and the plugin still has capacity.
+
 ### Skill Structure
 
-Skills in this repo are organized in an agent plugin. Pre-built skills are located under `plugin/skills/`. Each skill folder contains:
+Skills in this repo are organized in agent plugins. Pre-built skills are located under `plugins/<plugin>/skills`. Each skill folder contains:
 
 ```
-plugin/skills/your-skill-name/
+plugins/<plugin>/skills/your-skill-name/
 ├── SKILL.md              # Main skill definition (required)
 ├── LICENSE.txt           # License file (if applicable)
 ├── references/           # Additional reference documentation
@@ -53,7 +92,7 @@ plugin/skills/your-skill-name/
 
 You should add your new skill as one of the pre-built skills. You may use existing skills as examples on what the file structure look like.
 
-1. **Create your skill folder** under `plugin/skills/your-skill-name/`
+1. **Create your skill folder** under `plugins/<plugin>/skills/your-skill-name/`
 2. **Write your SKILL.md** following the existing patterns
     - Use [sensei](/.github/skills/sensei/SKILL.md) to assist with writing the frontmatter
     - Use [skill-authoring](/.github/skills/skill-authoring/SKILL.md) to assist with writing the SKILL.md and references.
@@ -102,14 +141,14 @@ Use [sensei](/.github/skills/sensei/SKILL.md) to refine the frontmatter to pass 
 Use the `--plugin-dir` flag to point Copilot CLI at your build output:
 
 ```bash
-copilot --plugin-dir ./output
+copilot --plugin-dir ./output/<plugin>
 ```
 
 This loads the locally built plugin instead of any marketplace-installed version. Then prompt the Copilot CLI agent to perform a task and see how the skill is used.
 
-After making changes to skill files under `plugin/`:
+After making changes to skill files under `plugins/<plugin>/skills`:
 
-1. **Rebuild** the plugin to update the `output/` directory:
+1. **Rebuild** the plugin to update the `output/<plugin>` directory:
    ```bash
    npm run build
    ```
@@ -126,7 +165,7 @@ Before submitting a PR for adding the new skill, run the vally eval suites of th
 
 ```bash
 # in repo root
-npx --yes @microsoft/vally-cli@^0.7.0 lint plugin/skills/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
+npx --yes @microsoft/vally-cli@^0.7.0 lint plugins/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
 
 # in tests/
 npm run typecheck
