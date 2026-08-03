@@ -116,7 +116,7 @@ stimuli:
       commands:
         - git init -q
         - git remote add origin https://github.com/aws-samples/lambda-refarch-webapp
-        - git fetch -q --depth 1 origin main
+        - git fetch -q --depth 1 origin master
         - git checkout -q FETCH_HEAD -- .
         - git reset -q --soft FETCH_HEAD
     graders:

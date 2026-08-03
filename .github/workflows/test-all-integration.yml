@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Skills that should be tested using vally in a JSON array
-      JEST_SKILLS: '["azure-skills/azure-cloud-migrate","azure-skills/microsoft-foundry"]'
+      JEST_SKILLS: '["azure-skills/microsoft-foundry"]'
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
