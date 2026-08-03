@@ -71,7 +71,7 @@ export default function App() {
     const [filtersReady, setFiltersReady] = useState(false);
 
     const loadFilters = () =>
-        fetch(apiUrl("/api/token-usage/filters"))
+        fetch(apiUrl("/api/test-run-metrics/filters"))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();
@@ -92,7 +92,7 @@ export default function App() {
         if (selectedTest) params.set("test", selectedTest);
         if (selectedBranch) params.set("branch", selectedBranch);
 
-        return fetch(apiUrl(`/api/token-usage?${params}`))
+        return fetch(apiUrl(`/api/test-run-metrics?${params}`))
             .then((res) => {
                 if (!res.ok) throw new Error(`API error: ${res.status}`);
                 return res.json();

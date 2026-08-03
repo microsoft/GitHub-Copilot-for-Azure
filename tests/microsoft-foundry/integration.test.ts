@@ -41,6 +41,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -59,6 +60,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -77,6 +79,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Grant a user the Foundry User role on my Foundry project",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -95,6 +98,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Create a service principal for my Foundry CI/CD pipeline",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -113,6 +117,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Set up managed identity roles for my Foundry project to access Azure Storage",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -131,6 +136,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Who has access to my Foundry project? List all role assignments",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -149,6 +155,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Make Bob a project manager in my Azure AI Foundry",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -167,6 +174,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Can I deploy models to my Foundry project? Check my permissions",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -185,6 +193,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Help me build and deploy a Foundry agent",
           shouldEarlyTerminate: (metadata) =>
             isSkillInvoked(metadata, SKILL_NAME),
@@ -204,6 +213,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Create an evaluation dataset from my Foundry agent traces",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });
@@ -222,6 +232,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       let invocationCount = 0;
       for (let i = 0; i < RUNS_PER_PROMPT; i++) {
         const agentMetadata = await agent.run({
+          requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
           prompt: "Version my Foundry evaluation dataset and compare regressions",
           shouldEarlyTerminate: (metadata) => shouldEarlyTerminateForSkillInvocation(metadata, SKILL_NAME)
         });

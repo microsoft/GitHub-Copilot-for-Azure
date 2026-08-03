@@ -1,0 +1,269 @@
+# Vally eval config for python-appservice-deploy
+#
+# Coverage:
+# - Flask e2e: full end-to-end deployment against a real Azure subscription
+#   (migrated from tests/python-appservice-deploy/integration.test.ts).
+#   Seeds a minimal Flask app fixture, lets the agent run to completion, and
+#   uses the `tool-calls` grader to assert the agent issued a supported
+#   deploy command (`az webapp deploy` or `azd deploy/up`) and never ran
+#   the deprecated `az webapp up`. Cleanup of leaked resource groups is
+#   handled by the scheduled job in eng/test-subscription-cleanup/.
+# - Routing (Django/FastAPI/generic Python): cheap, early-terminated checks
+#   that prompts route to this skill.
+# - Negative routing (Java, Container Apps, Functions, Terraform/Bicep):
+#   cheap, early-terminated checks that prompts route to azure-prepare.
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: python-appservice-deploy-eval
+description: |
+  Evaluation suite for the python-appservice-deploy skill.
+  Covers a full Flask end-to-end deployment plus routing for other Python
+  web frameworks (Django, FastAPI, generic), and negative routing
+  boundaries that must fall through to azure-prepare (Java, Container Apps,
+  Functions, Terraform/Bicep).
+
+tags:
+  type: integration
+  skill: python-appservice-deploy
+
+defaults:
+  runs: 3
+  # 35m global timeout accommodates the Flask e2e stimulus, which runs a
+  # real Azure deployment. All other stimuli terminate early via the
+  # `earlyTerminate` tag, so the higher timeout is just a safety net.
+  timeout: "35m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── flask-e2e ──
+  # Full end-to-end Flask deployment against a real Azure subscription.
+  # Migrated from tests/python-appservice-deploy/integration.test.ts.
+  #
+  # Seeds a minimal Flask app fixture and lets the agent run to completion
+  # (no `earlyTerminate`). `runs: 1` keeps Azure cost bounded — we do one
+  # real deploy per nightly integration run. The `systemPrompt` tag adds
+  # the same "use a pseudo-random resource group" hint the Jest test used,
+  # so concurrent runs don't collide on RG names. Leaked resource groups
+  # are reaped by the scheduled job in eng/test-subscription-cleanup/.
+  - name: "Flask app end-to-end deployment"
+    prompt: |
+      I have a Flask sample app in this workspace.
+      Use my current Azure subscription and the eastus2 region.
+      Deploy this Flask app to Azure App Service.
+    config:
+      runs: 1
+    environment:
+      files:
+        - src: fixture/flask-app/app.py
+          dest: app.py
+        - src: fixture/flask-app/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: e2e-deployment
+      framework: flask
+      systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
+    graders:
+      # 1. Skill must be invoked (Jest: isSkillInvoked + softCheckSkill)
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      # 2. Agent must EXECUTE a supported deploy command — either
+      #    `az webapp deploy` or `azd deploy`/`azd up`. This is the Vally
+      #    equivalent of the Jest `matchesCommand` assertion, but operates
+      #    on the actually-executed shell tool calls (not assistant text).
+      - type: tool-calls
+        config:
+          required:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+webapp\\s+deploy\\b|\\bazd\\s+(deploy|up)\\b"
+      # 3. Agent must NOT execute the deprecated `az webapp up`. The
+      #    negative lookahead avoids matching `az webapp update`.
+      #    Asserted against executed tool-call args (not assistant text) —
+      #    SKILL.md legitimately mentions `az webapp up` in its
+      #    "deprecated, do not run" explanation.
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "^(bash|powershell|pwsh)$"
+              command: "\\baz\\s+webapp\\s+up(?!date)\\b"
+      # 4. Post-deploy message must surface the app URL
+      #    (Jest: doesAssistantMessageIncludeKeyword("azurewebsites.net"))
+      - type: output-matches
+        config:
+          pattern: "azurewebsites\\.net"
+      # 5. Skill rule: do NOT probe the deployed endpoint
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Invoke-WebRequest|\\bcurl\\s+http|\\bwget\\s+http"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── django-routing ──
+  # Routing-only: validates Django prompts route to this skill. Full e2e
+  # coverage is provided by the Flask stimulus above.
+  - name: "Django app deployment routing"
+    prompt: "Deploy this Django app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: django
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── fastapi-routing ──
+  # Routing-only: validates FastAPI prompts route to this skill.
+  - name: "FastAPI app deployment routing"
+    prompt: "Deploy this FastAPI app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: fastapi
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── generic-python-routing ──
+  # Routing-only: validates generic Python (non-Flask/Django/FastAPI)
+  # prompts route to the skill.
+  - name: "Generic Python app deployment routing"
+    prompt: "Deploy my Python app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      framework: generic
+      earlyTerminate: '[{"type":"skill-call","skill":"python-appservice-deploy"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - python-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|crashed"
+
+  # ── negative: Java on App Service must NOT route here ──
+  # Routing boundary: this skill is Python-only. Java/Spring Boot belongs
+  # to azure-prepare. Terminates as soon as azure-prepare is invoked so no
+  # actual deployment runs.
+  - name: "Java App Service prompt does not trigger python skill"
+    prompt: "Deploy my Java Spring Boot app to Azure App Service"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+
+  # ── negative: Python on Container Apps must NOT route here ──
+  # Routing boundary: this skill is App Service only. Container Apps
+  # belongs to azure-prepare.
+  - name: "Python Container Apps prompt does not trigger python skill"
+    prompt: "Deploy my Python app to Azure Container Apps"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+
+  # ── negative: Python on Functions must NOT route here ──
+  # Routing boundary: this skill is App Service only. Azure Functions
+  # belongs to azure-prepare.
+  - name: "Python Functions prompt does not trigger python skill"
+    prompt: "Deploy my Python app to Azure Functions"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+
+  # ── negative: Python + App Service + Terraform must NOT route here ──
+  # Routing boundary: IaC keyword (Terraform) escalates to azure-prepare
+  # even with App Service.
+  - name: "Python App Service Terraform prompt routes to azure-prepare"
+    prompt: "Deploy my Flask app to Azure App Service using Terraform"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare
+
+  # ── negative: Python + App Service + Bicep must NOT route here ──
+  # Routing boundary: IaC keyword (Bicep) escalates to azure-prepare even
+  # with App Service.
+  - name: "Python App Service Bicep prompt routes to azure-prepare"
+    prompt: "Deploy my Flask app to Azure App Service using Bicep"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing-negative
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - python-appservice-deploy
+          required:
+            - azure-prepare

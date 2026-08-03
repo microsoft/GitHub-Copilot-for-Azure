@@ -134,8 +134,8 @@ For more details, see [Connect to sovereign clouds](https://learn.microsoft.com/
 
 | Client | Skills | MCP Servers | Hooks | Marketplace | Manifest | Status |
 |--------|:------:|:-----------:|:-----:|:-----------:|----------|--------|
-| **Copilot CLI** | ✅ | ✅ | ✅ Custom (`plugin/hooks/copilot-hooks.json`) | ✅ `.plugin/` | `.plugin/plugin.json` | ✅ Onboarded |
-| **Claude Code** | ✅ | ✅ | ✅ `hooks/hooks.json` (no custom hooks) | `.claude-plugin/marketplace.json` (exists only in azure-skills repo)| ✅ `plugin/.claude-plugin/plugin.json` | ✅ Onboarded |
+| **Copilot CLI** | ✅ | ✅ | ✅ (`hooks/hooks.json`) | ✅ `.plugin/` | `.plugin/plugin.json` | ✅ Onboarded |
+| **Claude Code** | ✅ | ✅ | ✅ (`hooks/claude-hooks.json`) | `.claude-plugin/marketplace.json` (exists only in azure-skills repo)| ✅ `plugin/.claude-plugin/plugin.json` | ✅ Onboarded |
 | **VS Code Extension** | ✅ (`.agents` folder) | ✅ | ✅ `hooks/hooks.json` (`.agents` folder) | Extension-based | Extension-based | ✅ Onboarded |
 | **IntelliJ** | ✅ (`.agents` folder) | ✅ | ❌ Not supported by client | Extension-based | Extension-based | ✅ Skills Onboarded 🔜 Hooks Support ETA - End of April 2026 |
 | **Gemini CLI** | ✅ | ✅ | ❌ Not supported by us | No marketplace | `gemini-extension.json` | ✅ Onboarded|

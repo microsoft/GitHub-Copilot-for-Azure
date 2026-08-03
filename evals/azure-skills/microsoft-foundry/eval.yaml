@@ -1,0 +1,512 @@
+name: microsoft-foundry-integration-eval
+description: |
+  Integration and E2E evaluation for microsoft-foundry skill.
+  Tests skill routing for Foundry model deployment, RAG apps, RBAC, CI/CD,
+  managed identity, agent lifecycle, and dataset operations using invocation
+  rate measurement (5 runs, 80% threshold). Also includes Azure-authenticated
+  E2E checks tagged as type foundry-e2e.
+
+tags:
+  skill: microsoft-foundry
+
+defaults:
+  runs: 5
+  timeout: "30m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── ai-model-deployment-prompt ──
+  # Jest: "invokes microsoft-foundry skill for AI model deployment prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "AI model deployment from Foundry catalog"
+    prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── rag-application-prompt ──
+  # Jest: "invokes microsoft-foundry skill for RAG application prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "RAG application with knowledge indexes"
+    prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── rbac-role-assignment-prompt ──
+  # Jest: "invokes microsoft-foundry skill for RBAC role assignment prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "RBAC role assignment on Foundry project"
+    prompt: "Grant a user the Foundry User role on my Foundry project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── service-principal-cicd-prompt ──
+  # Jest: "invokes microsoft-foundry skill for service principal CI/CD prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Service principal for Foundry CI/CD"
+    prompt: "Create a service principal for my Foundry CI/CD pipeline"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── managed-identity-roles-prompt ──
+  # Jest: "invokes microsoft-foundry skill for managed identity roles prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Managed identity roles for Foundry project"
+    prompt: "Set up managed identity roles for my Foundry project to access Azure Storage"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── audit-role-assignments-prompt ──
+  # Jest: "invokes microsoft-foundry skill for audit role assignments prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Audit Foundry project role assignments"
+    prompt: "Who has access to my Foundry project? List all role assignments"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── developer-permissions-prompt ──
+  # Jest: "invokes microsoft-foundry skill for developer permissions prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Assign project manager role in Foundry"
+    prompt: "Make Bob a project manager in my Azure AI Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── validate-permissions-prompt ──
+  # Jest: "invokes microsoft-foundry skill for validate permissions prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Validate model deployment permissions"
+    prompt: "Can I deploy models to my Foundry project? Check my permissions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── agent-lifecycle-prompt ──
+  # Jest: "invokes microsoft-foundry skill for agent lifecycle prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Build and deploy a Foundry agent"
+    prompt: "Help me build and deploy a Foundry agent"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── trace-to-dataset-prompt ──
+  # Jest: "invokes microsoft-foundry skill for trace-to-dataset prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Create eval dataset from agent traces"
+    prompt: "Create an evaluation dataset from my Foundry agent traces"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── dataset-versioning-prompt ──
+  # Jest: "invokes microsoft-foundry skill for dataset versioning prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Version eval dataset and compare regressions"
+    prompt: "Version my Foundry evaluation dataset and compare regressions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      # Global: has_output
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── agent-optimizer-prompt ──
+  - name: "Generate evals for Agent Optimizer"
+    prompt: |
+      I have an azd Python hosted agent that is already wired for Foundry Agent Optimizer.
+      Help me create the optimizer eval.yaml from eval/travel_approval_golden.jsonl,
+      generate adaptive evaluators with azd, and run optimization with an allowed
+      optimizer model. Show the current eval.yaml fields I should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Scaffold Python agent for Agent Optimizer"
+    prompt: |
+      Make my existing azd Python hosted Foundry agent optimizer-ready. Explain the
+      files and code changes you would make, including SDK wiring, baseline config,
+      safe optimization targets, and when to stop for review before deployment.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Apply Agent Optimizer candidate locally"
+    prompt: |
+      Agent Optimizer finished and gave me candidate cand-123. How should I apply
+      that candidate to my azd hosted agent project so the source changes are
+      reviewable before deployment?
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ── agent-observe-prompts ──
+  - name: "Evaluate deployed Foundry agent"
+    prompt: |
+      Evaluate my deployed Foundry agent using the evaluation suite in its
+      .foundry metadata. Explain the setup checks and the batch evaluation call
+      you should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Analyze eval failures and optimize prompt"
+    prompt: |
+      My latest Foundry agent evaluation failed several rows. Help me download the
+      detailed eval results, cluster root causes, optimize the agent prompt, and
+      compare the new version against the baseline.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Enable continuous evaluation monitoring"
+    prompt: |
+      Set up continuous evaluation monitoring for my Foundry agent in production.
+      Include how to check existing config, choose evaluators, and enable or update
+      monitoring safely.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Create
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Create Python hosted Foundry agent"
+    prompt: "Create a new hosted agent for Foundry using Python."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Create LangGraph hosted Foundry agent"
+    prompt: "Create a LangGraph hosted agent for Foundry in Python."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Deploy Foundry agent routing"
+    prompt: "Deploy my agent to Azure AI Foundry"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Containerize Foundry agent routing"
+    prompt: "Containerize my agent project for Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Invoke
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Invoke Foundry agent routing"
+    prompt: "Send a test message to my Foundry agent"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Troubleshoot
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Troubleshoot Foundry agent routing"
+    prompt: "Troubleshoot my Foundry agent that is returning errors"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── Foundry E2E checks ──
+  - name: "Golden Path - Create and deploy hosted agent"
+    tags:
+      id: golden-path-create-and-deploy-hosted-agent
+      type: foundry-e2e
+      tier: full
+      cost: llm
+      area: create
+    prompt: |
+      Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Verify that the coding agent generated hosted-agent code, created a new Foundry project and model deployment, ran local testing, deployed the agent
+            successfully to Microsoft Foundry using direct code deploy, invoked the deployed agent after deployment,
+            and received a successful response from that deployed agent. Fail if
+            code was not generated, no new Foundry project or model deployment was created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
+            actually invoked after deployment, or the deployed agent invocation failed.

@@ -1,6 +1,6 @@
 {
   "source": "npx -y @azure/mcp server start (initialize + tools/list)",
-  "azureMcpVersion": "3.0.0-beta.17+b2bea04888804af0016b766b3b6a4f8b46e1a9d6",
+  "azureMcpVersion": "3.0.0-beta.26+043b8decd3a0cd57c1fdb79b4c62915b297e9734",
   "toolNames": [
     "acr",
     "advisor",
@@ -40,6 +40,7 @@
     "grafana",
     "group_list",
     "group_resource_list",
+    "insights",
     "keyvault",
     "kusto",
     "loadtesting",
@@ -52,6 +53,7 @@
     "pricing",
     "quota",
     "redis",
+    "resilience",
     "resourcehealth",
     "role",
     "search",

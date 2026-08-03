@@ -79,9 +79,8 @@ export class JsonGrader implements Grader {
   metadata: GraderMetadata = {
     name: "json-object-rules",
     description: "Checks whether a JSON file satisfies the given rules",
-    behavior: { execution: "single" },
+    behavior: { requiresLlmClient: false, requiresWorkspace: true },
     costProfile: "free",
-    portability: "t1-universal",
     reference: "reference-free",
     temporalScope: "trajectory-level",
     determinism: "static"
@@ -104,10 +103,6 @@ export class JsonGrader implements Grader {
     }
     if (rawRules === undefined || rawRules === null) {
       throw new Error(`Invalid ${this.metadata.name} grader config. rules is not a JSON string.`);
-    }
-
-    if (input.trajectory.workspaceStatus === "remote") {
-      throw new Error("Workspace not materialized");
     }
 
     const workDir = input.trajectory.workDir;

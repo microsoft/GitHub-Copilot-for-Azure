@@ -21,6 +21,9 @@ param storageAccountName string
 @description('Name of the Azure Table that stores integration-test token usage history.')
 param tokenUsageTableName string
 
+@description('Name of the Azure Table that stores integration-test per-run tool usage history.')
+param toolUsageTableName string
+
 @description('Application Insights connection string for monitoring.')
 param appInsightsConnectionString string
 
@@ -118,6 +121,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
         { name: 'STORAGE_ACCOUNT_NAME', value: storageAccountName }
         { name: 'TOKEN_USAGE_TABLE_NAME', value: tokenUsageTableName }
+        { name: 'TOOL_USAGE_TABLE_NAME', value: toolUsageTableName }
         { name: 'MSBENCH_STORAGE_ACCOUNT', value: msbenchStorageAccountName }
         { name: 'MSBENCH_REPORTS_CONTAINER', value: msbenchReportsContainerName }
         { name: 'MSBENCH_EVAL_TABLE_NAME', value: msbenchEvalTableName }

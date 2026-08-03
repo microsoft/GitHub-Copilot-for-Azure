@@ -1,0 +1,391 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-upgrade/integration.test.ts
+# Migration: Jest → Vally (Full migration — skill-invocation tests)
+#
+# NOTE: azure-upgrade has NO invocation rate (no RUNS_PER_PROMPT).
+# Jest tests use single-run expect(isSkillInvoked(...)).toBe(true).
+# Mapped to runs: 1, threshold: 1.0 (must pass every time).
+#
+# The java-sdk-migration-e2e tests (3 tests) are included below using
+# environment.commands for workspace setup and the java-upgrade-file-content
+# custom grader for post-migration file assertions.
+#
+# Global graders (evaluate#125 workaround): no_runtime_failure is duplicated
+# into every stimulus block below.
+
+name: azure-upgrade-integration-eval
+description: |
+  Integration evaluation for azure-upgrade skill — migrated from Jest integration tests.
+  Tests skill routing for Azure Functions Consumption-to-Flex migration,
+  Java SDK migration, and Azure Cache for Redis to Azure Managed Redis migration prompts.
+  Single-run evaluation (no invocation rate) — skill must be invoked on every run.
+
+tags:
+  type: integration
+  skill: azure-upgrade
+
+defaults:
+  runs: 1
+  timeout: "20m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  # ── consumption-to-flex-migration-prompt ──
+  # Jest: "invokes azure-upgrade skill for Functions Consumption to Flex migration prompt"
+  # Assertions: softCheckSkill + isSkillInvoked + negative routing (no Redis skills)
+  - name: "Functions Consumption to Flex migration"
+    prompt: "Migrate my Azure Functions app from Consumption to Flex Consumption plan"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Negative routing: Redis migration skills must NOT be surfaced
+      - type: output-not-matches
+        config:
+          pattern: "amr-migration-skill|acre-to-amr-migration-skill"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── upgrade-hosting-plan-prompt ──
+  # Jest: "invokes azure-upgrade skill for upgrading Functions plan prompt"
+  # Assertions: softCheckSkill + isSkillInvoked
+  - name: "Upgrade Functions hosting plan to Flex"
+    prompt: "Upgrade my Azure Functions hosting plan to Flex Consumption"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── legacy-java-sdk-migration-prompt ──
+  # Jest: "invokes azure-upgrade skill for legacy Azure Java SDK migration prompt (Flow B)"
+  # Assertions: softCheckSkill + isSkillInvoked
+  - name: "Legacy Azure Java SDK migration"
+    prompt: "Migrate my Java project from legacy Azure SDK (com.microsoft.azure) to modern Azure SDK (com.azure)"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── upgrade-legacy-java-libraries-prompt ──
+  # Jest: "invokes azure-upgrade skill for upgrading legacy Azure Java libraries prompt (Flow B)"
+  # Assertions: softCheckSkill + isSkillInvoked
+  - name: "Upgrade legacy Azure Java libraries"
+    prompt: "Upgrade legacy Azure SDKs for Java to the latest modern Azure SDK packages"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-upgrade"},{"type":"tool-call-count","count":10}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-acr-oss-to-amr-prompt ──
+  # Jest: "invokes azure-upgrade skill for Azure Cache for Redis (ACR/OSS) to Azure Managed Redis migration prompt"
+  # Assertions: isSkillInvoked + tool text matches redis-to-amr.md + surfaces amr-migration-skill
+  - name: "Azure Cache for Redis OSS to Azure Managed Redis"
+    prompt: "Migrate my Azure Cache for Redis Premium P2 cache to Azure Managed Redis (AMR)"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Agent must navigate to Redis routing reference doc
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "redis-to-amr\\.md"
+      - type: output-matches
+        config:
+          pattern: "amr-migration-skill"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-acre-to-amr-prompt ──
+  # Jest: "invokes azure-upgrade skill for Azure Cache for Redis Enterprise (ACRE) to Azure Managed Redis migration prompt"
+  # Assertions: isSkillInvoked + tool text matches redis-to-amr.md + surfaces acre-to-amr-migration-skill
+  - name: "Azure Cache for Redis Enterprise to Azure Managed Redis"
+    prompt: "Migrate my Azure Cache for Redis Enterprise (Enterprise_E10) cache to Azure Managed Redis"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Agent must navigate to Redis routing reference doc
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "redis-to-amr\\.md"
+      # Agent must surface the ACRE-specific dedicated skill
+      - type: output-matches
+        config:
+          pattern: "acre-to-amr-migration-skill"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── redis-ambiguous-disambiguation-prompt ──
+  # Jest: "invokes azure-upgrade skill and disambiguates Redis tier for ambiguous Redis migration prompt"
+  # Assertions: isSkillInvoked + assistant asks about tier/SKU (disambiguation)
+  - name: "Ambiguous Redis migration triggers disambiguation"
+    prompt: "I want to migrate my Redis cache to Azure Managed Redis"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      earlyTerminate: '[{"type":"tool-call-count","count":30}]'
+      followUp:
+        - "Continue with recommended options until complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Agent should ask about the source tier/SKU or reference disambiguation signals
+      - type: output-matches
+        config:
+          pattern: "(?i)enterprise|premium|standard|basic|tier|sku|acre|\\bacr\\b"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════════════════════════════
+  # Java SDK Migration E2E Tests
+  # ═══════════════════════════════════════════════════════════════════
+  #
+  # These tests use environment.commands for workspace setup and the
+  # java-upgrade-file-content custom grader for post-migration assertions.
+
+  # ── java-sdk-client-init-migration ──
+  # Jest: "migrates legacy file-based Azure auth (client init) to DefaultAzureCredential"
+  # Setup: sparse checkout "azure-legacy-sdk-update-azure-client-initialization"
+  # Assertions (post-migration file inspection):
+  #   1. pom.xml: no <dependency> with groupId com.microsoft.azure
+  #   2. pom.xml: azure-sdk-bom artifact present under com.azure groupId
+  #   3. pom.xml: at least one com.azure.resourcemanager dependency
+  #   4. All .java files: no AZURE_AUTH_LOCATION references (comments stripped)
+  - name: "Java SDK migration - client init to DefaultAzureCredential"
+    prompt: >-
+      Migrate my Java project from legacy Azure SDK to modern Azure SDK.
+      The project can be found under java-update-examples/azure-legacy-sdk-update-azure-client-initialization.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+    environment:
+      commands:
+        - git clone --depth 1 --sparse https://github.com/weidongxu-microsoft/java-update-examples.git
+        - cd java-update-examples && git sparse-checkout set azure-legacy-sdk-update-azure-client-initialization
+        - cd java-update-examples && git fetch --depth 1 origin 6d071296df8929482b0903241a23713a0bb952a4 && git checkout 6d071296df8929482b0903241a23713a0bb952a4
+    config:
+      timeout: "45m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Post-migration file assertions
+      - type: java-upgrade-file-content
+        config:
+          rules:
+            - glob: "**/pom.xml"
+              stripComments: xml
+              scope: dependency
+              not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
+            - glob: "**/*.java"
+              stripComments: java
+              not-matches: "AZURE_AUTH_LOCATION"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── java-sdk-eventhubs-migration ──
+  # Jest: "migrates EventProcessorHost InMemory managers to BlobCheckpointStore"
+  # Setup: sparse checkout "azure-legacy-sdk-update-eventhubs-v3"
+  # Assertions (post-migration file inspection):
+  #   1. pom.xml: no <dependency> with groupId com.microsoft.azure
+  #   2. pom.xml: azure-sdk-bom artifact present under com.azure groupId
+  #   3. All .java files: no InMemory* checkpoint/lease types (comments stripped)
+  #   4. At least one .java file: BlobCheckpointStore is used
+  - name: "Java SDK migration - EventProcessorHost to BlobCheckpointStore"
+    prompt: >-
+      Migrate my Java project from legacy Azure SDK to modern Azure SDK.
+      The project can be found under java-update-examples/azure-legacy-sdk-update-eventhubs-v3.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+    environment:
+      commands:
+        - git clone --depth 1 --sparse https://github.com/weidongxu-microsoft/java-update-examples.git
+        - cd java-update-examples && git sparse-checkout set azure-legacy-sdk-update-eventhubs-v3
+        - cd java-update-examples && git fetch --depth 1 origin 6d071296df8929482b0903241a23713a0bb952a4 && git checkout 6d071296df8929482b0903241a23713a0bb952a4
+    config:
+      timeout: "45m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Post-migration file assertions
+      - type: java-upgrade-file-content
+        config:
+          rules:
+            - glob: "**/pom.xml"
+              stripComments: xml
+              scope: dependency
+              not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<artifactId>\\s*azure-sdk-bom\\s*</artifactId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\s*</groupId>"
+            - glob: "**/*.java"
+              stripComments: java
+              not-matches: "\\bInMemory[A-Z]\\w*"
+            - glob: "**/*.java"
+              stripComments: java
+              any-matches: "\\bBlobCheckpointStore\\b"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── java-sdk-batch-migration ──
+  # Jest: "migrates Batch defineNewApplicationPackage chain to applicationPackages().define()"
+  # Setup: sparse checkout "azure-legacy-sdk-update-batch-java-manage-batch-accounts"
+  # Assertions (post-migration file inspection):
+  #   1. pom.xml: no <dependency> with groupId com.microsoft.azure
+  #   2. pom.xml: at least one com.azure.resourcemanager dependency
+  #   3. At least one .java file: applicationPackages().define( pattern present
+  - name: "Java SDK migration - Batch applicationPackages define"
+    prompt: >-
+      Migrate my Java project from legacy Azure SDK to modern Azure SDK.
+      The project can be found under java-update-examples/azure-legacy-sdk-update-batch-java-manage-batch-accounts.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      followUp:
+        - "Continue with recommended options until complete."
+    environment:
+      commands:
+        - git clone --depth 1 --sparse https://github.com/weidongxu-microsoft/java-update-examples.git
+        - cd java-update-examples && git sparse-checkout set azure-legacy-sdk-update-batch-java-manage-batch-accounts
+        - cd java-update-examples && git fetch --depth 1 origin 6d071296df8929482b0903241a23713a0bb952a4 && git checkout 6d071296df8929482b0903241a23713a0bb952a4
+    config:
+      timeout: "45m"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      # Post-migration file assertions
+      - type: java-upgrade-file-content
+        config:
+          rules:
+            - glob: "**/pom.xml"
+              stripComments: xml
+              scope: dependency
+              not-matches: "<groupId>\\s*com\\.microsoft\\.azure\\s*</groupId>"
+            - glob: "**/pom.xml"
+              stripComments: xml
+              matches: "<groupId>\\s*com\\.azure\\.resourcemanager\\s*</groupId>"
+            - glob: "**/*.java"
+              stripComments: java
+              any-matches: "applicationPackages\\(\\s*\\)\\s*\\.define\\s*\\("
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

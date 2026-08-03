@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Whiteboard</title><style>
+  body { margin: 0; }
+  canvas { display: block; cursor: crosshair; }
+</style></head>
+<body>
+<canvas id="board"></canvas>
+<script>
+  const canvas = document.getElementById("board");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  let drawing = false;
+  canvas.addEventListener("mousedown", e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.clientX, e.clientY); });
+  canvas.addEventListener("mousemove", e => { if (!drawing) return; ctx.lineTo(e.clientX, e.clientY); ctx.stroke(); });
+  canvas.addEventListener("mouseup", () => drawing = false);
+</script>
+</body>
+</html>

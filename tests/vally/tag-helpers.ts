@@ -30,6 +30,9 @@ export type EarlyTerminateCondition = {
    */
   contentPattern: string;
 } | {
+  /**
+   * Terminates when a tool call matching toolPattern and argsPattern is started.
+   */
   type: "tool-call-match";
   /**
    * A regex pattern matching the tool name.
@@ -39,6 +42,19 @@ export type EarlyTerminateCondition = {
    * A regex pattern matching the serialized tool argument.
    */
   argsPattern: string;
+} | {
+  /**
+   * Terminates when a tool call matching toolPattern and argsPattern has completed (produced a result).
+   */
+  type: "tool-call-result";
+  /**
+   * A regex pattern matching the tool name.
+   */
+  toolPattern: string;
+  /**
+   * An optional regex pattern matching the serialized tool argument.
+   */
+  argsPattern?: string;
 };
 
 export type TakeScreenshotCondition = {
@@ -104,12 +120,30 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
           } else if (condition.type === "tool-call-match") {
             const toolPattern = new RegExp(condition.toolPattern);
             const argsPattern = new RegExp(condition.argsPattern);
-            const matched = getToolCalls(agentMetadata).some((event) =>
-              toolPattern.test(event.data.toolName)
-              && argsPattern.test(argsString(event))
-            );
+            const matched = getToolCalls(agentMetadata).some((event) => {
+              return toolPattern.test(event.data.toolName)
+                && argsPattern.test(argsString(event));
+            });
             if (matched) {
               agentMetadata.testComments.push(`Early terminate due to tool call matching pattern: tool ${condition.toolPattern}, args ${condition.argsPattern}`);
+              return true;
+            }
+          } else if (condition.type === "tool-call-result") {
+            const toolPattern = new RegExp(condition.toolPattern);
+            const argsPattern = condition.argsPattern ? new RegExp(condition.argsPattern) : undefined;
+            const completedIds = new Set(
+              agentMetadata.events
+                .filter((event) => event.type === "tool.execution_complete")
+                .map((event) => event.data.toolCallId)
+                .filter((id) => id !== undefined)
+            );
+            const matched = getToolCalls(agentMetadata).some((event) => {
+              return toolPattern.test(event.data.toolName)
+                && (argsPattern === undefined || argsPattern.test(argsString(event)))
+                && completedIds.has(event.data.toolCallId);
+            });
+            if (matched) {
+              agentMetadata.testComments.push(`Early terminate due to tool call result matching pattern: tool ${condition.toolPattern}, args ${condition.argsPattern ?? "*"}`);
               return true;
             }
           }

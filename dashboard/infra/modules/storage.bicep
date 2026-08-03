@@ -15,6 +15,9 @@ param principalId string
 @description('Name of the Azure Table that stores integration-test token usage history.')
 param tokenUsageTableName string = 'integrationtokenusage'
 
+@description('Name of the Azure Table that stores integration-test per-run tool usage history.')
+param toolUsageTableName string = 'integrationtoolusage'
+
 @description('Principal (object) ID of the user-assigned managed identity used by the integration test pipeline to write token usage rows (skillcitestidentity in the skillcitest resource group, GithubCopilotForAzure-Testing subscription).')
 param ciTestIdentityPrincipalId string = '531282f7-49cb-4149-af74-6c84a5270e87'
 
@@ -97,6 +100,11 @@ resource tokenUsageTable 'Microsoft.Storage/storageAccounts/tableServices/tables
   name: tokenUsageTableName
 }
 
+resource toolUsageTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2023-05-01' = {
+  parent: tableServices
+  name: toolUsageTableName
+}
+
 resource storageBlobDataReaderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, principalId, storageBlobDataReaderRoleId)
   scope: storageAccount
@@ -107,7 +115,7 @@ resource storageBlobDataReaderRole 'Microsoft.Authorization/roleAssignments@2022
   }
 }
 
-// Allows the dashboard Function App identity to read token-usage entities from the table.
+// Allows the dashboard Function App identity to read token-usage and tool-usage entities from the tables.
 resource storageTableDataReaderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, principalId, storageTableDataReaderRoleId)
   scope: storageAccount
@@ -118,7 +126,7 @@ resource storageTableDataReaderRole 'Microsoft.Authorization/roleAssignments@202
   }
 }
 
-// Allows the integration test pipeline identity to write token-usage entities to the table.
+// Allows the integration test pipeline identity to write token-usage and tool-usage entities to the tables.
 resource storageTableDataContributorRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storageAccount.id, ciTestIdentityPrincipalId, storageTableDataContributorRoleId)
   scope: storageAccount
@@ -131,3 +139,4 @@ resource storageTableDataContributorRole 'Microsoft.Authorization/roleAssignment
 
 output storageAccountName string = storageAccount.name
 output tokenUsageTableName string = tokenUsageTable.name
+output toolUsageTableName string = toolUsageTable.name

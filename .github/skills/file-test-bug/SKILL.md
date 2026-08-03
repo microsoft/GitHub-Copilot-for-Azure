@@ -13,7 +13,7 @@ Creates a GitHub issue in `microsoft/github-copilot-for-azure` for integration t
 
 ## Input
 
-- **Skill name** (required): e.g., `azure-rbac`, `appinsights-instrumentation`
+- **Skill name** (required): e.g., `azure-ai`, `appinsights-instrumentation`
 - **Test run** (optional): Timestamp of test run. Defaults to most recent with logs for the skill.
 
 ## Steps

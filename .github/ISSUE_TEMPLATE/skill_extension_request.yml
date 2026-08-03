@@ -1,0 +1,71 @@
+name: Add Capability to an Existing Skill
+description: Partner teams - request adding new capability to an existing skill in the Azure Skills Plugin.
+title: "[Add Capability]: "
+labels:
+  - "onboarding"
+  - "skills"
+  - "needs-triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the **Azure Skills Plugin**!
+
+        This repo packages [agent skills](https://agentskills.io/specification) (markdown-based knowledge packages) that teach Copilot how to help customers with Azure services. Use this template to request **extending the capability of an existing skill** (new scenarios, additional MCP tools, broader coverage, etc.).
+
+        > 💡 Extending an existing skill is usually preferred over adding a new one — the char-count budget for skill descriptions is close to the Copilot CLI limit, so adding new skills risks truncation. If you instead need a brand new standalone skill, use the [New Skill Onboarding](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/new?template=skill_onboarding_request.yml) template.
+        >
+        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skill onboarding guide](https://aka.ms/azure-skills/onboarding).
+
+  - type: input
+    id: existing-skill
+    attributes:
+      label: Existing Skill to Extend
+      description: Which skill do you want to extend? (See `plugin/skills/`.)
+      placeholder: ex. azure-prepare
+    validations:
+      required: true
+
+  - type: input
+    id: contacts
+    attributes:
+      label: Contacts
+      description: List of contacts who own the requested extension.
+      placeholder: ex. Bob Dylan (bdylan)
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior / Gap
+      description: What does the skill do today, and what capability is missing or insufficient?
+      placeholder: Describe the current behavior and the gap you want to close.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Intended Agent Scenarios
+      description: What new customer scenarios should the extended skill solve? Describe the tasks a user would ask Copilot to do and the value delivered.
+      placeholder: |
+        ex. "Add Redis caching to my existing app and deploy it to Azure"
+        ex. "Configure managed identity for an already-provisioned Container App"
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      description: Your desired delivery timeline (e.g., Q3 2026, Q4 2026, TBD).
+      placeholder: TBD
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Anything else that helps us understand the request - related skills, dependencies, regional considerations, etc.

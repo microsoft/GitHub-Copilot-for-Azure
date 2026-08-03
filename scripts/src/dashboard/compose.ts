@@ -4,15 +4,11 @@
  *
  * Usage:
  *   npm run dashboard:collect
- *   npm run dashboard:collect -- --output path/to/report.json
- *   npm run dashboard:collect -- --only frontmatter,references
- *   npm run dashboard:collect -- --timeout 60000
  */
 
 import { execSync } from "node:child_process";
 import { writeFileSync, mkdirSync, statSync } from "node:fs";
 import { resolve, dirname, parse as parsePath } from "node:path";
-import { parseArgs } from "node:util";
 import type {
   Collector,
   CollectorOptions,
@@ -21,6 +17,7 @@ import type {
 } from "./schema.js";
 import { validateDashboardReport } from "./schema.js";
 import { sanitizeDashboardReport } from "./sanitize.js";
+import { collectPluginSkills } from "./plugin-collect.js";
 
 // ---------------------------------------------------------------------------
 // Collector registry — dynamic imports with graceful fallback
@@ -133,7 +130,8 @@ function findRepoRoot(startDir: string): string {
     try {
       const gitDir = resolve(dir, ".git");
       const gitStat = statSync(gitDir);
-      if (gitStat.isDirectory()) return dir;
+      // .git is a directory in a normal clone, a file (gitfile) in a worktree
+      if (gitStat.isDirectory() || gitStat.isFile()) return dir;
     } catch {
       // keep walking
     }
@@ -169,45 +167,17 @@ function makeSkipReport(collectorName: string, reason: string): CategoryReport {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { values } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      output: { type: "string" },
-      only: { type: "string" },
-      cwd: { type: "string" },
-      timeout: { type: "string" },
-    },
-    strict: true,
-  });
-
   // Resolve working directory
   const scriptDir = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"));
-  const cwd = values.cwd
-    ? resolve(values.cwd)
-    : findRepoRoot(scriptDir);
+  const cwd = findRepoRoot(scriptDir);
 
-  const timeout = values.timeout ? parseInt(values.timeout, 10) : 30_000;
+  const timeout = 30_000;
 
   // Default output path
-  const outputPath = values.output
-    ? resolve(values.output)
-    : resolve(cwd, "dashboard", "data", "latest.json");
+  const outputPath = resolve(cwd, "dashboard", "data", "latest.json");
 
   // Load collectors
-  let collectors = await loadCollectors();
-
-  // Filter by --only
-  if (values.only) {
-    const allowed = new Set(values.only.split(",").map((s) => s.trim()));
-    collectors = collectors.filter((c) => allowed.has(c.name));
-
-    if (collectors.length === 0) {
-      console.error(`[compose] no matching collectors for --only=${values.only}`);
-      console.error(`[compose] available: ${(await loadCollectors()).map((c) => c.name).join(", ")}`);
-      process.exitCode = 1;
-      return;
-    }
-  }
+  const collectors = await loadCollectors();
 
   console.error(`[compose] running ${collectors.length} collector(s): ${collectors.map((c) => c.name).join(", ")}`);
 
@@ -259,6 +229,9 @@ async function main(): Promise<void> {
 
   console.error(`[compose] report written to ${outputPath}`);
   console.error(`[compose] categories: ${Object.keys(categories).join(", ")}`);
+
+  // Collect plugin/skill inventory
+  collectPluginSkills();
 
   // Summary
   const statuses = Object.entries(categories).map(

@@ -1,0 +1,289 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-resource-lookup/integration.test.ts
+# Migration: Jest → Vally
+#
+# The original Jest tests were single-run and checked:
+# 1. Keyword presence in assistant output (6 tests)
+# 2. Skill routing via isSkillInvoked (1 test — "List the websites" prompt only)
+#
+# In the Vally migration:
+# - Routing stimuli add invocation-rate coverage (5 runs, 80% threshold) beyond
+#   the single isSkillInvoked check in the original Jest suite.
+# - Response-quality stimuli preserve the original keyword-presence checks (1 run).
+# - Stimuli with earlyTerminate tags must NOT use the `completed` grader.
+
+name: azure-resource-lookup-integration-eval
+description: |
+  Integration evaluation for azure-resource-lookup skill — migrated from Jest integration tests.
+  Tests skill routing for cross-subscription resource queries, orphaned resource discovery,
+  tag compliance, App Service listing, and resource health prompts
+  using invocation rate measurement (5 runs, 80% threshold), plus response quality checks
+  for keyword presence in assistant output.
+
+tags:
+  type: integration
+  skill: azure-resource-lookup
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Skill routing prompts
+  # ═══════════════════════════════════════════
+
+  # ── cross-subscription-resource-inventory ──
+  # Jest: "handles cross-subscription resource inventory"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Cross-subscription resource inventory"
+    prompt: "How many resources do I have by type across all subscriptions?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resources-by-location ──
+  # Jest: "finds resources by location"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Resources by location across subscriptions"
+    prompt: "Show me resources by location across subscriptions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── orphaned-disks ──
+  # Jest: "finds orphaned disks"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Find orphaned or unattached disks"
+    prompt: "Find orphaned or unattached disks in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resources-missing-tags ──
+  # Jest: "finds resources missing tags"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Find resources missing required tags"
+    prompt: "Find resources missing required tags in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── list-websites ──
+  # Jest: "lists websites in subscription" + "skill should be invoked for resource listing prompts"
+  # Vally: checks skill invocation (preserves original Jest isSkillInvoked assertion)
+  - name: "List websites in subscription"
+    prompt: "List the websites in my subscription"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-health-status ──
+  # Jest: "checks resource health status"
+  # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
+  - name: "Find unhealthy or degraded resources"
+    prompt: "Find resources in unhealthy or degraded state"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Response quality tests
+  # ═══════════════════════════════════════════
+
+  # ── cross-subscription-resource-quality ──
+  # Jest: "handles cross-subscription resource inventory"
+  # Assertions: assistant output mentions "resource"
+  - name: "Cross-subscription inventory mentions resources"
+    prompt: "How many resources do I have by type across all subscriptions?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)resource"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resources-by-location-quality ──
+  # Jest: "finds resources by location"
+  # Assertions: assistant output mentions "location"
+  - name: "Resources by location mentions location"
+    prompt: "Show me resources by location across subscriptions"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)location"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── orphaned-disks-quality ──
+  # Jest: "finds orphaned disks"
+  # Assertions: assistant output mentions "disk"
+  - name: "Orphaned disks response mentions disk"
+    prompt: "Find orphaned or unattached disks in my subscription"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)disk"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── missing-tags-quality ──
+  # Jest: "finds resources missing tags"
+  # Assertions: assistant output mentions "tag"
+  - name: "Missing tags response mentions tag"
+    prompt: "Find resources missing required tags in my subscription"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)tag"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── list-websites-quality ──
+  # Jest: "lists websites in subscription"
+  # Assertions: assistant output mentions "web", "app", or "site"
+  - name: "List websites response mentions web/app/site"
+    prompt: "List the websites in my subscription"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)web|app|site"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── resource-health-quality ──
+  # Jest: "checks resource health status"
+  # Assertions: assistant output mentions "health", "available", or "resource"
+  - name: "Resource health response mentions health/available/resource"
+    prompt: "Find resources in unhealthy or degraded state"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)health|available|resource"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

@@ -23,7 +23,7 @@ permissions: {}
 jobs:
   eval:
     name: Run Microsoft Foundry E2E evals
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
       id-token: write
       contents: read
@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
 
@@ -60,7 +60,7 @@ jobs:
           git status --short plugin/skills/microsoft-foundry
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
           cache: "npm"
@@ -70,7 +70,7 @@ jobs:
             tests/package-lock.json
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
@@ -130,11 +130,26 @@ jobs:
       - name: Build plugin output
         run: npm run build
 
+      - name: Remove unrelated skills
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          skills_dir="output/skills"
+          if [[ ! -d "${skills_dir}/microsoft-foundry" ]]; then
+            echo "::error::${skills_dir}/microsoft-foundry not found."
+            exit 1
+          fi
+
+          find "${skills_dir}" -mindepth 1 -maxdepth 1 -type d ! -name "microsoft-foundry" -exec rm -rf -- {} +
+
       - name: Run Microsoft Foundry Vally evals
         working-directory: tests
+        shell: bash
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           VALLY_RUNS: ${{ inputs.runs }}
+          VALLY_RUNNER_DISABLE_AZURE_MCP: "true"
         run: |
           set -euo pipefail
 
@@ -146,7 +161,7 @@ jobs:
           npm run test:vally -- \
             --suite foundry-e2e \
             --runs "${VALLY_RUNS}" \
-            --output jsonl \
+            --workers 1 \
             --junit \
             --threshold 0.8
 
