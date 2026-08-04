@@ -27,7 +27,7 @@ Flag files that exceed limits. For large files, recommend splitting by category 
 
 ## 3. Required SKILL.md Sections
 
-### Service skills (`plugin/skills/`)
+### Service skills (`plugins/{plugin}/skills/`)
 
 Every service skill SKILL.md must contain:
 

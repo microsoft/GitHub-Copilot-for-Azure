@@ -60,14 +60,14 @@ const REPO_BLOB_BASE =
  *
  * The frontmatter collector validates the built `output/skills/` tree, so the
  * reported path may be prefixed with `output/`. That directory is git-ignored,
- * so we normalize it back to the `plugin/skills/` source path. Returns null
+ * so we normalize it back to the `plugins/{plugin}/skills/` source path. Returns null
  * when no usable SKILL.md path is available.
  */
 export function skillMdUrl(path: string): string | null {
     const normalized = path.replace(/\\/g, "/").trim();
     if (!normalized.endsWith("/SKILL.md")) return null;
-    const sourcePath = normalized.replace(/^output\/skills\//, "plugin/skills/");
-    if (!sourcePath.startsWith("plugin/skills/")) return null;
+    const sourcePath = normalized.replace(/^output\/([a-zA-Z-]+)\/skills\//, "plugins/$1/skills/");
+    if (!sourcePath.startsWith("plugins/")) return null;
     return `${REPO_BLOB_BASE}/${sourcePath}`;
 }
 
@@ -82,7 +82,7 @@ interface HealthData {
 
 function isPluginSkillPath(pathValue: string): boolean {
     const normalized = pathValue.replace(/\\/g, "/");
-    return normalized.startsWith("output/skills/") || normalized.startsWith("plugin/skills/");
+    return /output\/[a-zA-Z-]+\/skills/.test(normalized) || /plugins\/[a-zA-Z-]+\/skills/.test(normalized);
 }
 
 /** Extract plugin skills (with descriptions) from the frontmatter category. */

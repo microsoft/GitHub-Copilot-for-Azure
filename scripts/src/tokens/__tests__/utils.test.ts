@@ -76,18 +76,18 @@ describe("getLimitForFile", () => {
       "references/**/*.md": 1500
     },
     overrides: {
-      "plugin/skills/special/SKILL.md": 5000
+      "plugins/azure-skills/skills/special/SKILL.md": 5000
     }
   };
 
   it("returns override limit for exact match", () => {
-    const result = getLimitForFile("plugin/skills/special/SKILL.md", mockConfig, "/root");
+    const result = getLimitForFile("plugins/azure-skills/skills/special/SKILL.md", mockConfig, "/root");
     expect(result.limit).toBe(5000);
-    expect(result.pattern).toBe("plugin/skills/special/SKILL.md");
+    expect(result.pattern).toBe("plugins/azure-skills/skills/special/SKILL.md");
   });
 
   it("returns specific pattern limit for SKILL.md files", () => {
-    const result = getLimitForFile("plugin/skills/my-skill/SKILL.md", mockConfig, "/root");
+    const result = getLimitForFile("plugins/azure-skills/skills/my-skill/SKILL.md", mockConfig, "/root");
     expect(result.limit).toBe(3500);
     expect(result.pattern).toBe("SKILL.md");
   });
@@ -119,7 +119,7 @@ describe("getLimitForFile", () => {
       overrides: {}
     };
 
-    const result = getLimitForFile("plugin/skills/my-skill/SKILL.md", configWithMultiplePatterns, "/root");
+    const result = getLimitForFile("plugins/azure-skills/skills/my-skill/SKILL.md", configWithMultiplePatterns, "/root");
     // SKILL.md exact filename match wins over globstar pattern due to specificity scoring
     // (no wildcards = +10000 points)
     expect(result.limit).toBe(3500);

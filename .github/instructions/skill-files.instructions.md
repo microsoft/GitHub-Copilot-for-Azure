@@ -1,5 +1,5 @@
 ---
-applyTo: plugin/skills/**/SKILL.md
+applyTo: plugins/*/skills/**/SKILL.md
 ---
 
 # Skill File Authoring Guidelines

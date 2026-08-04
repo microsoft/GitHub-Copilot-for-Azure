@@ -71,7 +71,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "bad-skill",
-          path: "plugin/skills/bad-skill/SKILL.md",
+          path: "plugins/azure-skills/skills/bad-skill/SKILL.md",
           status: "fail",
           errors: ["[name-format] name uses uppercase"],
           warnings: [],
@@ -95,7 +95,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "warn-skill",
-          path: "plugin/skills/warn-skill/SKILL.md",
+          path: "plugins/azure-skills/skills/warn-skill/SKILL.md",
           status: "warn",
           errors: [],
           warnings: ["[description-length] description is very long"],
@@ -118,7 +118,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "multi-issue",
-          path: "plugin/skills/multi-issue/SKILL.md",
+          path: "plugins/azure-skills/skills/multi-issue/SKILL.md",
           status: "fail",
           errors: ["[name-format] bad name", "[no-xml-tags] has XML"],
           warnings: ["[description-length] too long"],
@@ -140,7 +140,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "counted",
-          path: "plugin/skills/counted/SKILL.md",
+          path: "plugins/azure-skills/skills/counted/SKILL.md",
           status: "fail",
           errors: ["err1", "err2"],
           warnings: ["warn1"],
@@ -169,7 +169,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "verbatim",
-          path: "plugin/skills/verbatim/SKILL.md",
+          path: "plugins/azure-skills/skills/verbatim/SKILL.md",
           status: "pass",
           errors: [],
           warnings: [],
@@ -244,7 +244,7 @@ describe("frontmatterCollector.collect", () => {
       skills: [
         {
           name: "fail-skill",
-          path: "plugin/skills/fail-skill/SKILL.md",
+          path: "plugins/azure-skills/skills/fail-skill/SKILL.md",
           status: "fail",
           errors: ["problem"],
           warnings: [],
