@@ -137,13 +137,15 @@ stimuli:
   # the raw kubectl describe/logs/top sequence (issue #2507). The `tool-calls` grader
   # asserts the agent attempted to execute pod-evidence.{sh,ps1} via a shell tool.
   #
-  # earlyTerminate fires the moment that shell call starts, so the agent is stopped right
-  # after the attempt (no follow-on turns). Note this is a guard/optimization, not a hard
-  # execution block: `tool-call-match` reacts to the `tool.execution_start` event, which
-  # the SDK emits only after the (auto-approved) tool has already launched. The script is
-  # read-only and, with no AKS cluster/kubectl context in CI, every kubectl call fails
-  # gracefully — so it is inert regardless. Because earlyTerminate is set, the `completed`
-  # grader is intentionally omitted (early-terminated runs always fail it by design).
+  # earlyTerminate stops the agent as soon as the pod-evidence call is observed, so there
+  # are no follow-on turns. It uses `tool-call-result`, which reacts to the matching call's
+  # `tool.execution_complete` event — i.e. the invocation is confirmed to have actually run
+  # and produced a result, which is the reliable signal (execution_start alone can be raced
+  # by termination before the result is recorded). This is a guard/optimization, not a hard
+  # execution block: the script is read-only and, with no AKS cluster/kubectl context in CI,
+  # every kubectl call fails gracefully — so it is inert regardless. Because earlyTerminate
+  # is set, the `completed` grader is intentionally omitted (early-terminated runs always
+  # fail it by design).
   - name: "Pod-evidence script invoked for CrashLoopBackOff"
     prompt: "My AKS pod is stuck in CrashLoopBackOff. Gather the read-only failure evidence I need before I decide on a fix."
     config:
@@ -153,7 +155,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"(?i)pod-evidence\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"(?i)pod-evidence\\.(sh|ps1)"}]'
     graders:
       - type: skill-invocation
         config:
