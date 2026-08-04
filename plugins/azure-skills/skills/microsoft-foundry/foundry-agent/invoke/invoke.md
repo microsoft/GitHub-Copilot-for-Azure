@@ -64,7 +64,7 @@ Remote invocation can incur model usage charges. Run it only when it is within t
 
 `azd ai agent invoke` does not support the Activity protocol. For local invocation, use `azd ai agent run` and Microsoft 365 Agents Playground. For a deployed service, follow its generated `TEAMS_APP_SETUP.md` and invoke through Teams or the configured channel.
 
-If the Activity protocol coexists with the Responses or Invocations protocol, the commands above may invoke that other protocol, but a successful CLI response does not validate the Activity protocol channel path.
+If Activity coexists with Responses or Invocations, pass `--protocol responses` or `--protocol invocations` explicitly to test that non-Activity protocol. A successful CLI response does not validate the Activity protocol path.
 
 ### Step 3: Let azd Manage Session State
 

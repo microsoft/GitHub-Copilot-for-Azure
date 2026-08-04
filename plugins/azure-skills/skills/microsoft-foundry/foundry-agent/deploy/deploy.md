@@ -133,6 +133,8 @@ For the Responses or Invocations protocol, smoke-test with azd:
 azd ai agent invoke "hello, are you up?"
 ```
 
+For a multi-protocol service, pass `--protocol` explicitly.
+
 > Remote invocation can incur model usage charges. Run it only as part of the requested deployment or test.
 
 For the Activity protocol, `azd ai agent invoke` won't work; follow [invoke](../invoke/invoke.md) to invoke the agent.
