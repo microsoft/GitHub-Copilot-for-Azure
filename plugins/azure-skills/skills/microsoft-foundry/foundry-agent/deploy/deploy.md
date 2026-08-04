@@ -113,6 +113,8 @@ What deploy does:
 
 After deploy, azd writes `AGENT_<SVC>_NAME`, `AGENT_<SVC>_VERSION`, and `AGENT_<SVC>_<PROTO>_ENDPOINT` (one per protocol) into the active env.
 
+For agents with Activity protocol, `azd deploy` also generates `<service-dir>/TEAMS_APP_SETUP.md`; read it and explain the remaining post-deployment steps to the user.
+
 Re-deploying an identical build still creates a new version; `azd` prints `Agent version <n> is already active.` and skips the poll.
 
 If deploy reports `Done` for the service and then fails only in `postdeploy` with `Agent <service-name> with version <n> not found`, the `azure.yaml` service key and the service's `name:` were mismatched. Rename the `azure.yaml services` key to the deployed agent name and rerun `azd deploy --no-prompt`; do not switch deployment method.
