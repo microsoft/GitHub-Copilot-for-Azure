@@ -13,7 +13,7 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 | Agent type | Hosted (container or code) |
 | Primary CLI | `azd ai agent` (from extension `azure.ai.agents`) |
 | Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--src <dir>` when onboarding existing code) |
-| Local run | `azd ai agent run --no-client` + `azd ai agent invoke --local "..."` |
+| Local run | Follow [local-run](references/local-run.md) for the service's protocol-specific invocation path |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --featured-only --output json` |
 | Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [toolbox.md](../toolbox/toolbox.md) |

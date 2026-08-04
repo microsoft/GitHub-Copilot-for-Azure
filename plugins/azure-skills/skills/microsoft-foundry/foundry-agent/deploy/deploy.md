@@ -10,7 +10,7 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 | Property | Value |
 |----------|-------|
-| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), `azd ai agent invoke` |
+| Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker/Podman + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
@@ -123,13 +123,17 @@ If deploy reports `Done` for the service and then fails only in `postdeploy` wit
 azd ai agent show --output json
 ```
 
-Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Smoke-test:
+Expect `"status": "active"` (or `"deployed"`) and an `agent_endpoints` map. Inspect the selected service protocols in `azure.yaml`, then smoke-test:
+
+For the Responses or Invocations protocol, smoke-test with azd:
 
 ```bash
 azd ai agent invoke "hello, are you up?"
 ```
 
 > Remote invocation can incur model usage charges. Run it only as part of the requested deployment or test.
+
+For the Activity protocol, verify that the Activity endpoint is present, then follow [invoke](../invoke/invoke.md) to invoke through the configured Microsoft 365 channel.
 
 Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 
