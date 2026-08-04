@@ -105,7 +105,7 @@ Each entry has a `manifestUrl` and an `initCommand`. Prefer code deployment. `az
 
 For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
 
-If `azd ai agent sample list` does not return a suitable sample, you can find more samples in the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples). After finding the sample you want, construct a manifest URL that points to the sample's `azure.yaml` file, then follow the `azd ai agent init` flow below.
+If `azd ai agent sample list --featured-only` does not return a suitable sample, first try removing the `--featured-only` and rerun `azd ai agent sample list`. If still no suitable, you can find more samples in the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples). After choosing a sample you want from the repo, construct a manifest URL that points to the sample's `azure.yaml` file, then follow the `azd ai agent init` flow below.
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
