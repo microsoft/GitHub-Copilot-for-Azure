@@ -5,12 +5,18 @@
 # (containerapp-diagnostics / appservice-diagnostics) rather than hand-rolling
 # a chain of `az` commands.
 #
-# We do NOT actually run the script. Each stimulus uses an earlyTerminate
-# `tool-call-match` on the script command: the moment the agent issues the tool
-# call to run the script, the run is aborted (session.abort) before the command
-# completes. The `tool-calls` grader still sees the tool_call event in the
-# trajectory, so it confirms the agent *tried* to run the script — no live Azure
-# resource is required, and nothing is executed.
+# We do not let the agent proceed past the diagnostic script. Each stimulus uses
+# an earlyTerminate `tool-call-result` condition on the script command: as soon as
+# the script tool call *completes*, the run is aborted (session.abort) so no
+# follow-on turns or commands run. The bundled scripts are read-only `az` queries
+# that no-op (emit labeled "(failed to ...)" scaffolding) when there is no Azure
+# auth or matching resource, so running them once in the eval is harmless and
+# needs no live Azure resource.
+#
+# We terminate on `tool-call-result` (completion) rather than `tool-call-match`
+# (start) on purpose: the built-in `tool-calls` grader only counts a `required`
+# match when it sees the tool_result, so aborting before completion would leave a
+# dangling tool_call the grader can't match. See microsoft/vally graders.
 #
 # Per repo convention, stimuli with an earlyTerminate tag MUST NOT use the
 # `completed` grader (early-terminated runs always fail it by design).
@@ -21,7 +27,7 @@ description: |
   diagnostic scripts (containerapp-diagnostics, appservice-diagnostics) when
   asked to collect all diagnostics for a Container App or App Service web app.
   Grades routing plus the presence of a shell tool call running the script, and
-  terminates at that tool call so the script is never actually executed.
+  terminates as soon as that script tool call completes so no further work runs.
 
 tags:
   type: integration
@@ -39,7 +45,7 @@ scoring:
 stimuli:
   # ── containerapp-diagnostics-invocation ──
   # Asserts: isSkillInvoked + tool call running containerapp-diagnostics.(sh|ps1).
-  # Terminates at that tool call so the script is not executed.
+  # Terminates as soon as that script tool call completes.
   - name: "Container App diagnostics uses the bundled script"
     prompt: "Collect all the diagnostic info for my Azure Container App named my-app in resource group my-rg."
     tags:
@@ -47,7 +53,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"containerapp-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"containerapp-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
     graders:
       - type: skill-invocation
         config:
@@ -65,7 +71,7 @@ stimuli:
 
   # ── appservice-diagnostics-invocation ──
   # Asserts: isSkillInvoked + tool call running appservice-diagnostics.(sh|ps1).
-  # Terminates at that tool call so the script is not executed.
+  # Terminates as soon as that script tool call completes.
   - name: "App Service diagnostics uses the bundled script"
     prompt: "Gather all the diagnostic info for my Azure App Service web app named my-app in resource group my-rg."
     tags:
@@ -73,7 +79,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"appservice-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"appservice-diagnostics\\.(sh|ps1)"},{"type":"tool-call-count","count":6}]'
     graders:
       - type: skill-invocation
         config:
