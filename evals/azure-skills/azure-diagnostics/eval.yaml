@@ -135,11 +135,11 @@ stimuli:
 
   # ── inspektor-gadget-run-ig-script ──
   # Exercises the run-ig helper script for Inspektor Gadget without a live
-  # cluster: earlyTerminate fires on the tool-call-match the instant the agent
-  # tries to run scripts/run-ig.sh|.ps1, so the privileged `kubectl debug` never
-  # actually executes. The recorded execution_start still lets the tool-calls
-  # grader confirm the attempt. NOTE: early-terminated runs must NOT use the
-  # `completed` grader.
+  # cluster. earlyTerminate uses tool-call-result so the run stops once the
+  # run-ig invocation completes: with no kubectl/cluster in CI the underlying
+  # `kubectl debug` fails instantly and harmlessly, and the completed tool call
+  # is fully recorded for the grader to confirm the script was invoked.
+  # NOTE: early-terminated runs must NOT use the `completed` grader.
   - name: "Inspektor Gadget run-ig script invocation"
     prompt: "I'm troubleshooting DNS failures on AKS node aks-nodepool1-12345678-vmss000000. Use the azure-diagnostics Inspektor Gadget helper script to run a trace_dns gadget on that node."
     config:
@@ -149,14 +149,13 @@ stimuli:
       tier: full
       cost: llm
       area: behavior
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh","argsPattern":"run-ig\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh","argsPattern":"run-ig\\.(sh|ps1)"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-diagnostics
-      # The agent actually invoked the run-ig helper script (recorded at
-      # execution_start before earlyTerminate aborted the run).
+      # The agent actually invoked the run-ig helper script.
       - type: tool-calls
         config:
           required:
