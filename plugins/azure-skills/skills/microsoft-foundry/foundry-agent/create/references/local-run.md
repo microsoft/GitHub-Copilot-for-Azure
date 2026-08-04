@@ -65,7 +65,7 @@ To invoke Activity locally through Microsoft 365 Agents Playground, omit `--no-c
 azd ai agent run
 ```
 
-azd opens Microsoft 365 Agents Playground for Activity traffic. Use `--channel <channel>` only when the user requests a channel other than the default emulator. If Activity coexists with another protocol, invoke each requested protocol through its own client path.
+azd opens Microsoft 365 Agents Playground for Activity traffic. If Activity coexists with another protocol, invoke each requested protocol through its own client path.
 
 ## Useful flags
 
@@ -74,7 +74,6 @@ azd opens Microsoft 365 Agents Playground for Activity traffic. Use `--channel <
 | `--port <n>` / `-p <n>` | Override the listen port. Useful when 8088 is taken. |
 | `--start-command "<cmd>"` / `-c "<cmd>"` | Override `azure.yaml` and auto-detect. Example: `--start-command "python app.py"`. |
 | `--no-client` | Skip the local client UI. Use by default unless the user requests a client UI. |
-| `--channel <channel>` | Select the Activity Playground channel. The default is `emulator`. |
 
 Pass the service name when there are multiple `ai.agent` services:
 
