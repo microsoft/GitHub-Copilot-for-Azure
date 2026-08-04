@@ -323,9 +323,9 @@ describe("frontmatterCollector.collect", () => {
     const { join } = await import("node:path");
 
     const root = mkdtempSync(join(tmpdir(), "fm-filecount-"));
-    // Built skill: output/skills/skill-a with 2 own files + a nested sub-skill
+    // Built skill: output/{plugin}/skills/skill-a with 2 own files + a nested sub-skill
     // that contributes 2 more, so the recursive count is 4.
-    const skillDir = join(root, "output", "skills", "skill-a");
+    const skillDir = join(root, "output", "azure-skills", "skills", "skill-a");
     const nestedDir = join(skillDir, "nested");
     mkdirSync(nestedDir, { recursive: true });
     writeFileSync(join(skillDir, "SKILL.md"), "a");
@@ -337,7 +337,7 @@ describe("frontmatterCollector.collect", () => {
       skills: [
         {
           name: "skill-a",
-          path: "output/skills/skill-a/SKILL.md",
+          path: "output/azure-skills/skills/skill-a/SKILL.md",
           status: "pass",
           errors: [],
           warnings: [],
@@ -368,7 +368,7 @@ describe("frontmatterCollector.collect", () => {
       skills: [
         {
           name: "gone",
-          path: "output/skills/gone/SKILL.md",
+          path: "output/azure-skills/skills/gone/SKILL.md",
           status: "pass",
           errors: [],
           warnings: [],

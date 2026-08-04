@@ -58,7 +58,7 @@ const REPO_BLOB_BASE =
 /**
  * Build a link to a skill's SKILL.md source file on GitHub.
  *
- * The frontmatter collector validates the built `output/skills/` tree, so the
+ * The frontmatter collector validates the built `output/{plugin}/skills/` tree, so the
  * reported path may be prefixed with `output/`. That directory is git-ignored,
  * so we normalize it back to the `plugins/{plugin}/skills/` source path. Returns null
  * when no usable SKILL.md path is available.
