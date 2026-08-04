@@ -1,7 +1,7 @@
 /**
  * Skill Loader Utility
  * 
- * Loads and parses SKILL.md files from the output/skills directory.
+ * Loads and parses SKILL.md files from the output/{plugin}/skills directory.
  * Extracts frontmatter metadata and content.
  */
 

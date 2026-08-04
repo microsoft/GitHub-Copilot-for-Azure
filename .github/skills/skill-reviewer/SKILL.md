@@ -13,11 +13,11 @@ Performs thorough, structured code reviews of skill PRs — severity-classified 
 
 ## When to Use
 
-- Reviewing a PR that adds or modifies a skill under `plugin/skills/` or `.github/skills/`
+- Reviewing a PR that adds or modifies a skill under `plugins/{plugin}/skills/` or `.github/skills/`
 - Checking skill compliance before submitting a PR
 - Auditing an existing skill for quality issues
 
-> 💡 **Note:** `.github/skills/` meta-skills have different conventions — checklist sections 8-9 apply only to `plugin/skills/` service skills.
+> 💡 **Note:** `.github/skills/` meta-skills have different conventions — checklist sections 8-9 apply only to `plugins/{plugin}/skills/` service skills.
 
 ## Review Workflow
 

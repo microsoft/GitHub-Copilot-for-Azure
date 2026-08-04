@@ -71,7 +71,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "bad-skill",
-          path: "plugin/skills/bad-skill/SKILL.md",
+          path: "plugins/azure-skills/skills/bad-skill/SKILL.md",
           status: "fail",
           errors: ["[name-format] name uses uppercase"],
           warnings: [],
@@ -95,7 +95,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "warn-skill",
-          path: "plugin/skills/warn-skill/SKILL.md",
+          path: "plugins/azure-skills/skills/warn-skill/SKILL.md",
           status: "warn",
           errors: [],
           warnings: ["[description-length] description is very long"],
@@ -118,7 +118,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "multi-issue",
-          path: "plugin/skills/multi-issue/SKILL.md",
+          path: "plugins/azure-skills/skills/multi-issue/SKILL.md",
           status: "fail",
           errors: ["[name-format] bad name", "[no-xml-tags] has XML"],
           warnings: ["[description-length] too long"],
@@ -140,7 +140,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "counted",
-          path: "plugin/skills/counted/SKILL.md",
+          path: "plugins/azure-skills/skills/counted/SKILL.md",
           status: "fail",
           errors: ["err1", "err2"],
           warnings: ["warn1"],
@@ -169,7 +169,7 @@ describe("parseFrontmatterJson", () => {
       skills: [
         {
           name: "verbatim",
-          path: "plugin/skills/verbatim/SKILL.md",
+          path: "plugins/azure-skills/skills/verbatim/SKILL.md",
           status: "pass",
           errors: [],
           warnings: [],
@@ -244,7 +244,7 @@ describe("frontmatterCollector.collect", () => {
       skills: [
         {
           name: "fail-skill",
-          path: "plugin/skills/fail-skill/SKILL.md",
+          path: "plugins/azure-skills/skills/fail-skill/SKILL.md",
           status: "fail",
           errors: ["problem"],
           warnings: [],
@@ -323,9 +323,9 @@ describe("frontmatterCollector.collect", () => {
     const { join } = await import("node:path");
 
     const root = mkdtempSync(join(tmpdir(), "fm-filecount-"));
-    // Built skill: output/skills/skill-a with 2 own files + a nested sub-skill
+    // Built skill: output/{plugin}/skills/skill-a with 2 own files + a nested sub-skill
     // that contributes 2 more, so the recursive count is 4.
-    const skillDir = join(root, "output", "skills", "skill-a");
+    const skillDir = join(root, "output", "azure-skills", "skills", "skill-a");
     const nestedDir = join(skillDir, "nested");
     mkdirSync(nestedDir, { recursive: true });
     writeFileSync(join(skillDir, "SKILL.md"), "a");
@@ -337,7 +337,7 @@ describe("frontmatterCollector.collect", () => {
       skills: [
         {
           name: "skill-a",
-          path: "output/skills/skill-a/SKILL.md",
+          path: "output/azure-skills/skills/skill-a/SKILL.md",
           status: "pass",
           errors: [],
           warnings: [],
@@ -368,7 +368,7 @@ describe("frontmatterCollector.collect", () => {
       skills: [
         {
           name: "gone",
-          path: "output/skills/gone/SKILL.md",
+          path: "output/azure-skills/skills/gone/SKILL.md",
           status: "pass",
           errors: [],
           warnings: [],
