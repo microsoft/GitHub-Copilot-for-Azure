@@ -135,7 +135,7 @@ azd ai agent invoke "hello, are you up?"
 
 > Remote invocation can incur model usage charges. Run it only as part of the requested deployment or test.
 
-For the Activity protocol, verify that the Activity endpoint is present, then follow [invoke](../invoke/invoke.md) to invoke through the configured Microsoft 365 channel.
+For the Activity protocol, `azd ai agent invoke` won't work; follow [invoke](../invoke/invoke.md) to invoke the agent.
 
 Run one remote invocation only unless the user explicitly asked to test multi-turn/session behavior. A single successful response is enough for the deployment smoke test. Anything other than a completed/successful response -> run `azd ai agent doctor --output json`, then follow [troubleshoot](../troubleshoot/troubleshoot.md).
 
