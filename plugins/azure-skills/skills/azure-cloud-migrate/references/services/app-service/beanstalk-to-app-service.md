@@ -41,7 +41,7 @@ Detailed guidance for migrating AWS Elastic Beanstalk applications to Azure App 
 | Node.js 22 | Node 22 LTS |
 | Node.js 24 | Node 24 LTS |
 | Python 3.13 | Python 3.13 |
-| Python 3.15 | Python 3.15 |
+| Python 3.14 | Python 3.14 |
 | Java 21 (Corretto) | Java 21 (Microsoft Build of OpenJDK) |
 | Java 24 (Corretto) | Java 24 (Microsoft Build of OpenJDK) |
 | .NET 10 on Linux | .NET 10 |

@@ -37,7 +37,7 @@ services:
 |----------|----------------|
 | Node.js 24 | `NODE\|24-lts` |
 | Node.js 22 | `NODE\|22-lts` |
-| Python 3.15 | `PYTHON\|3.15` |
+| Python 3.14 | `PYTHON\|3.14` |
 | .NET 10 | `DOTNETCORE\|10.0` |
 | Java 21 | `JAVA\|21-java21` |
 
