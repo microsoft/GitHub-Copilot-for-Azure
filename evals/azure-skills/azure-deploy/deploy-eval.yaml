@@ -50,7 +50,9 @@ stimuli:
   # Original problem: empty workspace, agent had to create app + deploy.
   # Fix: provide a prepared SWA fixture; agent only needs to deploy.
   - name: "Deploy SWA - Whiteboard App (Bicep)"
-    prompt: "Create a static whiteboard web app and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a static whiteboard web app and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -60,8 +62,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-static-web-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -81,7 +81,9 @@ stimuli:
 
   # Jest: "creates static portfolio website with bicep"
   - name: "Deploy SWA - Portfolio Website (Bicep)"
-    prompt: "Create a static portfolio website and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a static portfolio website and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -91,8 +93,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-static-web-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -117,7 +117,9 @@ stimuli:
 
   # Jest: "creates discussion board"
   - name: "Deploy App Service - Discussion Board (Bicep)"
-    prompt: "Create a discussion board application and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a discussion board application and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -127,8 +129,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-app-service-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -148,7 +148,9 @@ stimuli:
 
   # Jest: "creates todo list with frontend and API"
   - name: "Deploy App Service - Todo List (Bicep)"
-    prompt: "Create a todo list with frontend and API and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a todo list with frontend and API and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -158,8 +160,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-app-service-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -184,7 +184,9 @@ stimuli:
 
   # Jest: "creates serverless HTTP API"
   - name: "Deploy Azure Functions - Serverless HTTP API (Bicep)"
-    prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a serverless HTTP API using Azure Functions and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -194,8 +196,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-azure-functions-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -214,7 +214,9 @@ stimuli:
 
   # Jest: "creates event-driven function app"
   - name: "Deploy Azure Functions - Event-Driven (Bicep)"
-    prompt: "Create an event-driven function app to process messages and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create an event-driven function app to process messages and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -224,8 +226,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-azure-functions-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -244,7 +244,9 @@ stimuli:
 
   # Jest: "creates Python function app with Service Bus trigger"
   - name: "Deploy Azure Functions - Python Service Bus (Bicep)"
-    prompt: "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -254,8 +256,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-azure-functions-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -279,7 +279,9 @@ stimuli:
 
   # Jest: "creates and deploys workflow app with Durable Task Scheduler"
   - name: "Deploy DTS - Workflow App (Bicep)"
-    prompt: "Create a workflow app that orchestrates a multi-step order processing pipeline. Make the app as simple as possible for demonstration purposes only. Then deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a workflow app that orchestrates a multi-step order processing pipeline. Make the app as simple as possible for demonstration purposes only. Then deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -289,8 +291,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: durable-task-scheduler-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -323,7 +323,9 @@ stimuli:
 
   # Jest: "creates containerized web application with Bicep"
   - name: "Deploy Container Apps - Containerized Web App (Bicep)"
-    prompt: "Create a containerized web application and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
+    turns:
+      - "Create a containerized web application and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -333,8 +335,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-azure-container-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -369,7 +369,9 @@ stimuli:
 
   # Jest: "creates simple containerized Node.js app"
   - name: "Deploy Container Apps - Node.js App (Bicep)"
-    prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
+    turns:
+      - "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -379,8 +381,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: vanilla-azure-container-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -412,7 +412,9 @@ stimuli:
 
   # Jest: "creates whiteboard application with Terraform"
   - name: "Deploy SWA - Whiteboard App (Terraform)"
-    prompt: "Create a static whiteboard web app and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a static whiteboard web app and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -422,8 +424,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-static-web-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -449,7 +449,9 @@ stimuli:
 
   # Jest: "creates static portfolio website with Terraform infrastructure"
   - name: "Deploy SWA - Portfolio Website (Terraform)"
-    prompt: "Create a static portfolio website and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a static portfolio website and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -459,8 +461,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-static-web-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -491,7 +491,9 @@ stimuli:
 
   # Jest: "creates discussion board with Terraform"
   - name: "Deploy App Service - Discussion Board (Terraform)"
-    prompt: "Create a discussion board application and deploy it to Azure App Service, prefer Terraform over Bicep, in my current subscription in the westus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a discussion board application and deploy it to Azure App Service, prefer Terraform over Bicep, in my current subscription in the westus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -501,8 +503,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-app-service-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -528,7 +528,9 @@ stimuli:
 
   # Jest: "creates todo list with frontend and API using Terraform"
   - name: "Deploy App Service - Todo List (Terraform)"
-    prompt: "Create a todo list with frontend and API and deploy to Azure App Service using Terraform in my current subscription in the westus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a todo list with frontend and API and deploy to Azure App Service using Terraform in my current subscription in the westus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -538,8 +540,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-app-service-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -570,7 +570,9 @@ stimuli:
 
   # Jest: "creates serverless HTTP API with Terraform"
   - name: "Deploy Azure Functions - Serverless HTTP API (Terraform)"
-    prompt: "Create a serverless HTTP API using Azure Functions and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a serverless HTTP API using Azure Functions and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -580,8 +582,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-azure-functions-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -606,7 +606,9 @@ stimuli:
 
   # Jest: "creates event-driven function app with Terraform"
   - name: "Deploy Azure Functions - Event-Driven (Terraform)"
-    prompt: "Create an event-driven function app to process messages and deploy it to Azure Functions using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create an event-driven function app to process messages and deploy it to Azure Functions using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -616,8 +618,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-azure-functions-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -642,7 +642,9 @@ stimuli:
 
   # Jest: "creates URL shortener service with Terraform infrastructure"
   - name: "Deploy Azure Functions - URL Shortener (Terraform)"
-    prompt: "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+    turns:
+      - "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -652,8 +654,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-azure-functions-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -677,7 +677,9 @@ stimuli:
 
   # Jest: "creates containerized web application with Terraform"
   - name: "Deploy Container Apps - Containerized Web App (Terraform)"
-    prompt: "Create a containerized web application and deploy it to Azure Container Apps using terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+    turns:
+      - "Create a containerized web application and deploy it to Azure Container Apps using terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -687,8 +689,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-azure-container-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -727,7 +727,9 @@ stimuli:
 
   # Jest: "creates simple containerized Node.js app with Terraform"
   - name: "Deploy Container Apps - Node.js App (Terraform)"
-    prompt: "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+    turns:
+      - "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -737,8 +739,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-azure-container-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -765,7 +765,9 @@ stimuli:
 
   # Jest: "creates social media application with Terraform infrastructure"
   - name: "Deploy Container Apps - Social Media App (Terraform)"
-    prompt: "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+    turns:
+      - "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     constraints:
       max_turns: 80
     tags:
@@ -775,8 +777,6 @@ stimuli:
       area: behavior
       skill: azure-deploy
       category: terraform-azure-container-apps-deploy
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -813,13 +813,9 @@ stimuli:
 
   # Jest: "deploys eShop"
   - name: "Brownfield .NET - eShop"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git clone --depth 1 https://github.com/dotnet/eShop.git .
@@ -833,8 +829,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -857,14 +851,9 @@ stimuli:
 
   # Jest: "deploys MvcMovie 10"
   - name: "Brownfield .NET - MvcMovie 10"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the westus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the westus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -883,8 +872,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -907,14 +894,9 @@ stimuli:
 
   # Jest: "deploys aspire azure functions"
   - name: "Brownfield .NET Aspire - Azure Functions"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/aspire-with-azure-functions.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -933,8 +915,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -957,14 +937,9 @@ stimuli:
 
   # Jest: "deploys aspire client apps integration"
   - name: "Brownfield .NET Aspire - Client Apps Integration"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/client-apps-integration.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -983,8 +958,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -1008,14 +981,9 @@ stimuli:
   # Jest: "deploys aspire container build"
   # Checks Container Apps two-phase Bicep pattern in the agent-generated workspace.
   - name: "Brownfield .NET Aspire - Container Build"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/container-build.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -1034,8 +1002,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -1059,14 +1025,9 @@ stimuli:
   # The agent MUST NOT attempt deployment — custom Aspire resources are unsupported.
   # No earlyTerminate; let it run and verify azd up is never called.
   - name: "Brownfield .NET Aspire - Custom Resources (No Deploy)"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/custom-resources.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/custom-resources. Use azd as the deployment tool."
+      - "Stop if there is no further work; otherwise go with recommended options."
     environment:
       commands:
         - git init -q
@@ -1085,8 +1046,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Stop if there is no further work; otherwise go with recommended options."
     graders:
       - type: skill-invocation
         config:
@@ -1104,14 +1063,9 @@ stimuli:
 
   # Jest: "deploys aspire database containers"
   - name: "Brownfield .NET Aspire - Database Containers"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/database-containers.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/database-containers. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -1130,8 +1084,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -1153,14 +1105,9 @@ stimuli:
 
   # Jest: "deploys aspire orleans-voting"
   - name: "Brownfield .NET Aspire - Orleans Voting"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/orleans-voting.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/orleans-voting. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -1179,8 +1126,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-dotnet
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
       - type: skill-invocation
@@ -1212,13 +1157,9 @@ stimuli:
 
   # Jest: "deploys nodejs-demoapp"
   - name: "Brownfield JavaScript - nodejs-demoapp"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git clone --depth 1 https://github.com/benc-uk/nodejs-demoapp.git .
@@ -1232,8 +1173,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-javascript
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -1256,14 +1195,9 @@ stimuli:
 
   # Jest: "deploys aspire with javascript"
   - name: "Brownfield .NET Aspire - JavaScript"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/aspire-with-javascript.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-javascript. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -1282,8 +1216,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-javascript
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -1306,14 +1238,9 @@ stimuli:
 
   # Jest: "deploys aspire with node"
   - name: "Brownfield .NET Aspire - Node"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/aspire-with-node.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-node. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -1332,8 +1259,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-javascript
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -1361,13 +1286,9 @@ stimuli:
 
   # Jest: "deploys flask calculator"
   - name: "Brownfield Python - Flask Calculator"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git clone --depth 1 https://github.com/UltiRequiem/flask-calculator.git .
@@ -1381,8 +1302,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-python
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
@@ -1405,14 +1324,9 @@ stimuli:
 
   # Jest: "deploys aspire with python"
   - name: "Brownfield .NET Aspire - Python"
-    prompt: >-
-      Please deploy this application to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
-      This is for a small scale production environment.
-      Use standard SKUs.
-      The app can be found under samples/aspire-with-python.
-      Use azd as the deployment tool.
+    turns:
+      - "Please deploy this application to Azure. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-python. Use azd as the deployment tool."
+      - "Go with recommended options and proceed with Azure deployment."
     environment:
       commands:
         - git init -q
@@ -1431,8 +1345,6 @@ stimuli:
       skill: azure-deploy
       category: brownfield-python
       systemPrompt: '{"mode":"append","content":"Use pseudo random name resource group name such that it is less likely to have collision with existing ones."}'
-      followUp:
-        - "Go with recommended options and proceed with Azure deployment."
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
       takeScreenshot: '[{"type":"has-deployment-url","urlPattern":"https?://[\\w.-]+(\\.azurewebsites\\.net|\\.azurestaticapps\\.net|\\.azurecontainerapps\\.io|\\.web\\.core\\.windows\\.net)"}]'
     graders:
