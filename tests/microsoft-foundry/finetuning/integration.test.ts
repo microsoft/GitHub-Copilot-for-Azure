@@ -32,6 +32,7 @@ describeIntegration(`${SKILL_NAME}_finetuning - Integration Tests`, () => {
   test("invokes skill for fine-tuning prompt", () =>
     withTestResult(async () => {
       const agentMetadata = await agent.run({
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Help me fine-tune gpt-4.1-mini on my dataset",
         shouldEarlyTerminate: (metadata) =>
           isSkillInvoked(metadata, SKILL_NAME) ||
@@ -49,6 +50,7 @@ describeIntegration(`${SKILL_NAME}_finetuning - Integration Tests`, () => {
   test("response mentions fine-tuning concepts", () =>
     withTestResult(async () => {
       const agentMetadata = await agent.run({
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Help me fine-tune gpt-4.1-mini on my dataset",
         shouldEarlyTerminate: (metadata) =>
           isSkillInvoked(metadata, SKILL_NAME) &&
@@ -63,6 +65,7 @@ describeIntegration(`${SKILL_NAME}_finetuning - Integration Tests`, () => {
   test("invokes skill for RFT grader prompt", () =>
     withTestResult(async () => {
       const agentMetadata = await agent.run({
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt:
           "Submit a reinforcement fine-tuning job with a Python grader",
         shouldEarlyTerminate: (metadata) =>
@@ -75,6 +78,7 @@ describeIntegration(`${SKILL_NAME}_finetuning - Integration Tests`, () => {
   test("invokes skill for SFT distillation prompt", () =>
     withTestResult(async () => {
       const agentMetadata = await agent.run({
+        requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
         prompt: "Distill gpt-4.1-mini into nano using supervised fine-tuning",
         shouldEarlyTerminate: (metadata) =>
           isSkillInvoked(metadata, SKILL_NAME),

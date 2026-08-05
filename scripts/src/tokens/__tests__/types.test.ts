@@ -169,6 +169,6 @@ describe("matchesPattern", () => {
 
   it("handles paths without leading slash", () => {
     expect(matchesPattern("SKILL.md", "SKILL.md")).toBe(true);
-    expect(matchesPattern("plugin/skills/SKILL.md", "SKILL.md")).toBe(true);
+    expect(matchesPattern("plugins/azure-skills/skills/SKILL.md", "SKILL.md")).toBe(true);
   });
 });

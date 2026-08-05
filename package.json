@@ -12,7 +12,8 @@
     "test:skills:integration": "cd tests && npm run test:integration --",
     "postinstall": "cd scripts && npm install",
     "dashboard:collect": "cd scripts && npm run dashboard:collect",
-    "dashboard": "cd scripts && npm run dashboard"
+    "dashboard": "cd scripts && npm run dashboard",
+    "plugin:new": "cd scripts && npm run plugin:new"
   },
   "engines": {
     "node": ">=22.14.0"

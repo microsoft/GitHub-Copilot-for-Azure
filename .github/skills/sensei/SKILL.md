@@ -41,7 +41,7 @@ When user says "sensei help" or asks how to use sensei, show this:
 
 For each skill, execute this loop until the frontmatter aligns with convention, have thorough routing tests AND routing tests pass:
 
-1. **READ** - Load `plugin/skills/{skill-name}/SKILL.md`, and vally eval suites in `evals/{skill-name}/*.yaml`.
+1. **READ** - Load `plugins/{plugin}/skills/{skill-name}/SKILL.md`, and vally eval suites in `evals/{skill-name}/*.yaml`.
 2. **VERIFY** - Compare the skill frontmatter with conventions in [CONVENTIONS](references/CONVENTIONS.md). If the skill's frontmatter violates any written convention, notify the user and propose a fix to align the frontmatter with the convention.
 3. **SCAFFOLD** - If `evals/{skill-name}/` doesn't exist, follow instructions in `vally-eval` skill to scaffold a set of routing tests. The routing tests test if the skill can be invoked for target user prompts. Generate user prompts that match the target scenario of the skill's description.
 4. **IMPROVE** - If the skill description doesn't already have WHEN: triggers, add them.
@@ -52,7 +52,7 @@ For each skill, execute this loop until the frontmatter aligns with convention, 
 
 ## Constraints
 
-- Only modify `plugin/skills/` - these are the Azure skills used by Copilot
+- Only modify `plugins/{plugin}/skills/` - these are the Azure skills used by Copilot
 - Files in `.github/skills/` should be left as is
 - Max 5 iterations per skill before moving on
 

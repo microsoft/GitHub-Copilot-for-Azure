@@ -1,0 +1,195 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-diagnostics/integration.test.ts
+# Migration: Jest → Vally (Batch 1 — Simple)
+#
+# Global graders (evaluate#125 workaround): completed and no_runtime_failure
+# are duplicated into every stimulus block below.
+
+name: azure-diagnostics-integration-eval
+description: |
+  Integration evaluation for azure-diagnostics skill — migrated from Jest integration tests.
+  Tests skill routing for Container Apps troubleshooting, image pull failures,
+  AKS cluster diagnostics, and Azure VM connectivity troubleshooting prompts
+  using invocation rate measurement (5 runs, 80% threshold).
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ── container-apps-troubleshooting-prompt ──
+  # Jest: "invokes azure-diagnostics skill for Container Apps troubleshooting prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Container App restart troubleshooting"
+    prompt: "My Azure Container App keeps restarting, how do I troubleshoot it?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── image-pull-failure-prompt ──
+  # Jest: "invokes azure-diagnostics skill for image pull failure prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Image pull failure in Container App"
+    prompt: "I'm getting an image pull failure error in my Azure Container App deployment"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── aks-troubleshooting-prompt ──
+  # Jest: "invokes azure-diagnostics skill for AKS troubleshooting prompt"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "AKS pending pods and NotReady node"
+    prompt: "My AKS cluster has pods stuck in Pending and one node is NotReady. Can you troubleshoot it?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── vm-rdp-troubleshooting-prompt ──
+  # Migrated from azure-compute ownership: VM connectivity incidents now route to azure-diagnostics.
+  - name: "VM RDP timeout troubleshooting"
+    prompt: "I can't RDP into my Azure Windows VM. The connection times out on port 3389. Help me troubleshoot it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - azure-compute
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── vm-ssh-troubleshooting-prompt ──
+  # Migrated from azure-compute ownership: VM connectivity incidents now route to azure-diagnostics.
+  - name: "VM SSH refused troubleshooting"
+    prompt: "I can't SSH into my Azure Linux VM. SSH says connection refused and I need help checking NSG or firewall issues."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - azure-compute
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ═══════════════════════════════════════════
+  # Script execution tests
+  # ═══════════════════════════════════════════
+
+  # ── aks-baseline-script-execution ──
+  # Verifies the skill invokes the aks-baseline.sh/.ps1 script (issue #2506)
+  # rather than pasting the individual az/kubectl commands. The prompt asserts
+  # the cluster exists and that kubectl is already authenticated, and names the
+  # baseline sweep explicitly, so the agent routes straight to the script as its
+  # first shell action instead of first running `az aks get-credentials`/`az aks
+  # list` (which fail and detour into ad-hoc troubleshooting when no real cluster
+  # exists in the test subscription).
+  # earlyTerminate uses `tool-call-result`, which fires once the script's shell
+  # tool call has *completed*. The script is fully read-only and every step is
+  # guarded, so against a missing cluster each az/kubectl call fails fast and the
+  # sweep still exits cleanly in seconds — no real resources required. Because the
+  # call completes, its tool_result is recorded, so the built-in `tool-calls`
+  # grader can confirm the agent ran the script; termination then aborts the run
+  # before any follow-up turns (e.g. remediation). (No `completed` grader here,
+  # per the convention that early-terminated runs always fail `completed`.)
+  - name: "AKS baseline runs aks-baseline script"
+    prompt: "My AKS cluster aks-prod in resource group aks-rg is up and I'm already authenticated with kubectl pointed at it. Run the aks-baseline diagnostic sweep script now to gather its baseline health, then summarize the state. Don't run az aks get-credentials or list clusters first — go straight to the baseline script."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"aks-baseline\\.(ps1|sh)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # The script's shell tool call completes (earlyTerminate fires on its
+      # *result*), so the built-in `tool-calls` grader can match it via the
+      # tool_result. `required` matches on completion; this is the same shape the
+      # azure-validate e2e suite uses to confirm a script was run.
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)aks-baseline\\.(ps1|sh)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

@@ -56,7 +56,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Upload latest.json to Azure Storage
+      - name: Upload dashboard data to Azure Storage
         env:
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           STORAGE_CONTAINER: ${{ vars.NON_INTEGRATION_STORAGE_CONTAINER }}
@@ -66,5 +66,12 @@ jobs:
             --container-name "$STORAGE_CONTAINER" \
             --name "data/latest.json" \
             --file dashboard/data/latest.json \
+            --auth-mode login \
+            --overwrite
+          az storage blob upload \
+            --account-name "$STORAGE_ACCOUNT" \
+            --container-name "$STORAGE_CONTAINER" \
+            --name "data/plugin-skills.json" \
+            --file dashboard/data/plugin-skills.json \
             --auth-mode login \
             --overwrite

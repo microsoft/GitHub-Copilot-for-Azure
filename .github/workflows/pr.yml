@@ -116,6 +116,9 @@ jobs:
         working-directory: ./scripts
         run: npm ci --ignore-scripts
 
+      - name: Build output
+        run: npm ci --ignore-scripts && npm run build
+
       - name: Check Copilot CLI skill char budget
         working-directory: ./scripts
         run: npm run checkCopilotCliCharBudget
@@ -212,7 +215,7 @@ jobs:
         uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
-            plugin/skills/*/SKILL.md
+            plugins/*/skills/*/SKILL.md
             .github/skills/*/SKILL.md
 
       - name: Check all changed plugin skill files
@@ -220,7 +223,7 @@ jobs:
         uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
-            plugin/skills/**
+            plugins/*/skills/**
             .github/skills/**
 
       - name: Setup Node.js
@@ -256,12 +259,12 @@ jobs:
           echo "## Skill Validation" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Map changed plugin/skills paths to built output/skills paths so we
+          # Map changed plugins/<plugin-dir>/skills paths to built output/<plugin-dir>/skills paths so we
           # validate the version-stamped copies. .github/skills are unchanged.
           SKILL_FILES=""
           for file in $CHANGED_FILES; do
-            if echo "$file" | grep -q '^plugin/skills/'; then
-              mapped=$(echo "$file" | sed 's|^plugin/skills/|output/skills/|')
+            if echo "$file" | grep -Eq '^plugins/[^/]+/skills/'; then
+              mapped=$(echo "$file" | sed -E 's|^plugins/([^/]+)/skills/|output/\1/skills/|')
               SKILL_FILES="$SKILL_FILES ../$mapped"
             else
               SKILL_FILES="$SKILL_FILES ../$file"
@@ -290,15 +293,33 @@ jobs:
             const fs = require('fs');
             const path = require('path');
 
-            // Get all skill directories from the built output
-            const skillsDir = 'output/skills';
-            const skillDirs = fs.readdirSync(skillsDir)
-                .filter(f => fs.statSync(path.join(skillsDir, f)).isDirectory())
-                .sort();
+            // Get all skill directories from output/<plugin-dir>/skills/
+            const outputDir = "output";
+            const pluginDirs = fs.readdirSync(outputDir)
+              .filter(f => fs.statSync(path.join(outputDir, f)).isDirectory());
+
+            const pluginSkillDirPathsMap = pluginDirs.reduce((acc, pluginDir) => {
+              const pluginSkillsDir = path.join(outputDir, pluginDir, "skills");
+              if (!fs.existsSync(pluginSkillsDir) || !fs.statSync(pluginSkillsDir).isDirectory()) {
+                acc[pluginDir] = [];
+                return acc;
+              }
+
+              acc[pluginDir] = fs.readdirSync(pluginSkillsDir)
+                .filter(f => fs.statSync(path.join(pluginSkillsDir, f)).isDirectory())
+                .map(skillDir => path.join(pluginSkillsDir, skillDir));
+              return acc;
+            }, {});
+
+            const skillDirs = Object.values(pluginSkillDirPathsMap)
+              .flat()
+              .map(skillPath => path.basename(skillPath))
+              .sort();
 
             // Read skills.json
             const skillsJson = JSON.parse(fs.readFileSync('tests/skills.json', 'utf8'));
-            const jsonSkills = [...skillsJson.skills].sort();
+            const jsonPlugins = [...skillsJson.plugins].sort();
+            const jsonSkills = jsonPlugins.map(p => p.skills).flat().sort();
 
             let hasError = false;
 
@@ -306,38 +327,40 @@ jobs:
             const skillDirsStr = JSON.stringify(skillDirs);
             const jsonSkillsStr = JSON.stringify(jsonSkills);
             if (skillDirsStr !== jsonSkillsStr) {
-                console.log();
-                console.log("skills in skills.json doesn't match available skills in output/skills/");
-                hasError = true;
+              console.log();
+              console.log("skills in skills.json doesn't match available skills in output/<plugin-dir>/skills/");
+              hasError = true;
             }
 
             // 2. Integration test schedule coverages all skills
             // Only consider the active cron schedules from .github/workflows/integration-tests.yml
             const activeCronSchedules = [
-                '0 5 * * 2-6',
-                '0 8 * * 2-6',
-                '0 12 * * 2-6',
+              '0 5 * * 2-6',
+              '0 8 * * 2-6',
+              '0 12 * * 2-6',
             ];
             let scheduledSkills = [];
-            activeCronSchedules.forEach(cron => {
-                const value = skillsJson.integrationTestSchedule[cron];
+            jsonPlugins.forEach(p => {
+              activeCronSchedules.forEach(cron => {
+                const value = p.integrationTestSchedule[cron];
                 if (value) {
-                    value.split(',').forEach(s => scheduledSkills.push(s));
+                  value.split(',').forEach(s => scheduledSkills.push(s));
                 }
+              });
             });
 
             scheduledSkills = scheduledSkills.sort();
 
             const scheduledSkillsStr = JSON.stringify(scheduledSkills);
             if (skillDirsStr !== scheduledSkillsStr) {
-                console.log("skillDirs", JSON.stringify(skillDirs));
-                console.log("scheduledSkills", JSON.stringify(scheduledSkills));
-                console.log("integrationTestSchedule in skills.json doesn't match available skills in output/skills/");
-                hasError = true;
+              console.log("skillDirs", JSON.stringify(skillDirs));
+              console.log("scheduledSkills", JSON.stringify(scheduledSkills));
+              console.log("integrationTestSchedule in skills.json doesn't match available skills in output/<plugin-dir>/skills/");
+              hasError = true;
             }
 
             if (hasError) {
-                core.setFailed('tests/skills.json validation failed');
+              core.setFailed('tests/skills.json validation failed');
             }
 
       - name: Skip message
@@ -362,7 +385,7 @@ jobs:
         uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
           files: |
-            plugin/skills/**/*.md
+            plugins/*/skills/**/*.md
 
       - name: Setup Node.js
         if: steps.changed-markdown.outputs.any_changed == 'true'
@@ -393,13 +416,13 @@ jobs:
           VALIDATION_FAILED=0
 
           # Validate built plugin skill output so version-stamped files are checked
-          echo "Validating references in ../output/skills"
-          if OUTPUT=$(npm run references -- --skills-dir ../output/skills 2>&1); then
+          echo "Validating references in ../output/<plugin-dir>/skills"
+          if OUTPUT=$(npm run references 2>&1); then
             echo "$OUTPUT"
-            echo "✅ output/skills references are valid" >> $GITHUB_STEP_SUMMARY
+            echo "✅ output/<plugin-dir>/skills references are valid" >> $GITHUB_STEP_SUMMARY
           else
             echo "$OUTPUT"
-            echo "❌ output/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
+            echo "❌ output/<plugin-dir>/skills contains broken or escaped markdown references" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "$OUTPUT" >> $GITHUB_STEP_SUMMARY
