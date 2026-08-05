@@ -155,7 +155,7 @@ stimuli:
   # Jest: "invokes microsoft-foundry skill for developer permissions prompt"
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
   - name: "Assign project manager role in Foundry"
-    prompt: "Make Bob a project manager in my Azure AI Foundry"
+    prompt: "Make Bob a project manager in my Microsoft Foundry"
     tags:
       type: integration
       tier: full
@@ -409,7 +409,7 @@ stimuli:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: "Deploy Foundry agent routing"
-    prompt: "Deploy my agent to Azure AI Foundry"
+    prompt: "Deploy my agent to Microsoft Foundry"
     tags:
       type: integration
       tier: smoke

@@ -30,7 +30,7 @@ describe("microsoft-foundry:resource/create - Trigger Tests", () => {
       "Register Cognitive Services provider",
       "Create Azure Cognitive Services multi-service",
       "Provision AI Services with CLI",
-      "Create new Azure AI Foundry resource",
+      "Create new Microsoft Foundry resource",
       "Set up multi-service Cognitive Services resource",
       "Create a Foundry project with azd ai starter basic",
       "Set up hosted-agent deployment with ENABLE_HOSTED_AGENTS",

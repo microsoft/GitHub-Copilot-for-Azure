@@ -22,7 +22,7 @@ describe("observe - Trigger Tests", () => {
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
       "Evaluate my Foundry agent",
-      "Run an eval on my agent in Azure AI Foundry",
+      "Run an eval on my agent in Microsoft Foundry",
       "Test my agent quality in Foundry",
       "Check agent quality metrics in Foundry",
       "Why did my agent eval fail in Foundry",
