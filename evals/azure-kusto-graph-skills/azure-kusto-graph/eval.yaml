@@ -1,0 +1,100 @@
+name: azure-kusto-graph-integration-eval
+description: |
+  Integration evaluation for azure-kusto-graph skill.
+  Tests skill routing for Kusto graph construction, pattern matching,
+  shortest paths, and connected components prompts.
+
+tags:
+  type: integration
+  skill: azure-kusto-graph
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Build graph from authentication events"
+    prompt: "Given AuthenticationEvents | project username, hostname, result, build a user-to-host graph using make-graph"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Find shortest path in graph"
+    prompt: "Find the shortest path from IP 10.0.0.1 to the database server using Kusto graph-shortest-paths"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Find connected components"
+    prompt: "Use graph-mark-components to find isolated network clusters in my connection data"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Graph pattern matching"
+    prompt: "Use graph-match to find all paths where a user authenticated to a host that connected to an external IP"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative: plain KQL query without graph"
+    prompt: "Write a KQL query to count events by hour in my Kusto database"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          forbidden:
+            - azure-kusto-graph
