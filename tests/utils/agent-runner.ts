@@ -18,8 +18,8 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
-import { listSkills, type SkillRef } from "./skill-loader.ts";
-import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget.ts";
+import { getSkillsForTest, type SkillRef } from "./skill-loader.ts";
+import { DEFAULT_SKILL_CHAR_BUDGET } from "./char-budget.ts";
 import { sanitizeTestName } from "../vally/utils.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
@@ -907,45 +907,18 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       }) as CopilotClient;
       entry.client = client;
 
-      // The plugins to include are inferred by the requiredSkills.
-      // We include a plugin if and only if there is at least one required skill from it.
-      const pluginDirnames = new Set<string>();
-      runConfig.requiredSkills?.forEach(skillRef => {
-        pluginDirnames.add(skillRef.pluginDirname);
-      });
-      const pluginDirnamesList = [...pluginDirnames.values()];
-      const skillDirectories = pluginDirnamesList.map(pluginDir => {
-        return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
-      });
+      const { skillsLoaded, skillDirectories, disabledSkills } = await getSkillsForTest(
+        runConfig.requiredSkills,
+        runConfig.includeSkills
+      );
+      agentMetadata.skillsLoaded = skillsLoaded;
 
-      let disabledSkills: SkillRef[] | undefined;
-      const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
-      if (runConfig.includeSkills) {
-        if (runConfig.includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
-          const invalidSkills = runConfig.includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
-          throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
-        }
-        disabledSkills = skillRefs.filter((ref) => !runConfig.includeSkills
-          ?.some(includeSkillRef => ref.name === includeSkillRef.name));
-      } else {
-        // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
-        // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
-        // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
-        if (runConfig.requiredSkills) {
-          disabledSkills = (await truncateSkills(pluginDirnamesList, runConfig.requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
-        }
-      }
-      const noSkills = process.env.NO_SKILLS === "true";
-      if (!noSkills) {
-        const skillsLoaded = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
-        agentMetadata.skillsLoaded = skillsLoaded;
-      }
       const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
       const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
-        skillDirectories: noSkills ? [] : skillDirectories,
+        skillDirectories: skillDirectories,
         disabledSkills: disabledSkills?.map(s => s.name),
         ...(disableAzureMcp ? {} : {
           mcpServers: {

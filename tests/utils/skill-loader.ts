@@ -9,6 +9,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
+import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -146,4 +147,64 @@ export function listPlugins(): Plugin[] {
         skills: listSkills(item.name)
       }
     });
+}
+
+/**
+ * Get the skills to load for a test run.
+ * @param requiredSkills Optional. Skills that must be loaded into the context.
+ * @param includeSkills Optional. An exact list of skills to load into the context.
+ * 
+ * @returns Skills to be loaded into the context and the directories for these skills.
+ */
+export async function getSkillsForTest(
+  requiredSkills?: SkillRef[],
+  includeSkills?: SkillRef[],
+): Promise<{
+  skillsLoaded: SkillRef[],
+  skillDirectories: string[],
+  disabledSkills?: SkillRef[]
+}> {
+  // By default, we infer the plugins to include from the requiredSkills.
+  // A plugin is included if and only if there is at least one required skill from it.
+  // We load all the skills of an included plugin into the context.
+  const pluginDirnames = new Set<string>();
+  requiredSkills?.forEach(skillRef => {
+    pluginDirnames.add(skillRef.pluginDirname);
+  });
+  const pluginDirnamesList = [...pluginDirnames.values()];
+  const skillDirectories = pluginDirnamesList.map(pluginDir => {
+    return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
+  });
+
+  // When includeSkills is defined, we load the exact skills present in the list from plugins inferred from required skills.
+  // This is achieved by disabling skills that aren't in the list because skillDirectories don't give us this granular control.
+  let disabledSkills: SkillRef[] | undefined;
+  const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
+  if (includeSkills) {
+    if (includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
+      // At least one skill to explicitly include doesn't exist within the inferred plugins.
+      const invalidSkills = includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
+      throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
+    }
+    disabledSkills = skillRefs.filter((ref) => !includeSkills
+      ?.some(includeSkillRef => ref.name === includeSkillRef.name));
+  } else {
+    // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
+    // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
+    // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
+    if (requiredSkills) {
+      disabledSkills = (await truncateSkills(pluginDirnamesList, requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
+    }
+  }
+  const noSkills = process.env.NO_SKILLS === "true";
+  let skillsLoaded: SkillRef[] = [];
+  if (!noSkills) {
+    skillsLoaded = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+  }
+
+  return {
+    skillsLoaded,
+    skillDirectories,
+    disabledSkills
+  }
 }
