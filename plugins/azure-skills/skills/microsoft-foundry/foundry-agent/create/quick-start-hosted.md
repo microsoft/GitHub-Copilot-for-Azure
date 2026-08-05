@@ -247,6 +247,8 @@ Stop the local server via the managed session's stop primitive before continuing
 
 ### Step 12 — Deploy
 
+Once local invocation succeeds, if the user does not explicitly ask to deploy, tell them the agent is ready and ask if they want to deploy. To deploy:
+
 ```bash
 azd deploy --no-prompt
 ```
