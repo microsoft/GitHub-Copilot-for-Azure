@@ -77,8 +77,6 @@ azd ai agent sample list --featured-only --language <lang> --output json
 
 > `--language` here takes the short form (`python`, `dotnetCsharp`) — not the runtime token (`python_3_13` fails with `unknown language`). The runtime tokens are only used in Step 5's `azd ai agent init --runtime ...`.
 
-Pick the basic starter (e.g. `azd-ai-starter-basic` for Python — avoid samples with `parameters:` blocks requiring secrets). Capture the `manifestUrl`.
-
 Step 5 needs `--runtime` and `--entry-point` values. These are CLI args, **not** fields in the manifest — use these standard defaults for the chosen language:
 
 | Language | `--runtime` | `--entry-point` |
