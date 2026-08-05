@@ -265,6 +265,10 @@ Treat an `azure.yaml` service with `host: azure.ai.agent` as Hosted. Use `agent_
 - [Foundry Hosted Agents](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/hosted-agents?view=foundry)
 - [Foundry Agent Runtime Components](https://learn.microsoft.com/azure/ai-foundry/agents/concepts/runtime-components?view=foundry)
 
+## SDK Quick Reference
+
+- [Python](references/sdk/foundry-sdk-py.md)
+
 ## Network Isolation Errors
 
 Applies to **any** call against a Foundry project or its parent Foundry account — Foundry MCP tools, `azd`, `az` CLI, `curl`, REST, or SDK.
