@@ -60,6 +60,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: scripts/package.json
+
+      - name: Install scripts dependencies
+        working-directory: ./scripts
+        run: npm ci --ignore-scripts
+
       - name: Validate shebang shell scripts are executable
         run: npm run check:shell-scripts
 
