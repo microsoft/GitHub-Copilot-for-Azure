@@ -1,0 +1,242 @@
+name: azure-cloud-migrate-eval
+description: |
+  Evaluation suite for the azure-cloud-migrate skill.
+  Covers:
+  - Brownfield Lambda → Azure migration with real sample repos (face-blur, webapp)
+  - Spring Boot to Azure Container Apps routing
+  - AWS Fargate / ECS to Azure Container Apps routing
+  - Kubernetes to Azure Container Apps routing
+
+tags:
+  type: integration
+  skill: azure-cloud-migrate
+
+defaults:
+  timeout: "45m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Brownfield Lambda - Face Blur Service Migration"
+    prompt: |
+      Migrate this Lambda to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      followUp:
+        - "Go with recommended options and test it locally."
+    runs: 1
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/serverless-face-blur-service
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: completed
+      - type: file-exists
+        config:
+          path: "**/migration-status.md"
+      - type: file-exists
+        config:
+          path: "**/migration-assessment-report.md"
+      - type: file-exists
+        config:
+          path: "**/src/app.js"
+      - type: file-exists
+        config:
+          path: "**/src/detectFaces.js"
+      - type: file-exists
+        config:
+          path: "**/src/blurFaces.js"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Brownfield Lambda - Webapp Migration"
+    prompt: |
+      Migrate this Lambda to Azure.
+      Use the eastus2 region.
+      Use my current subscription.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      followUp:
+        - "Go with recommended options and test it locally."
+    runs: 1
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/aws-samples/lambda-refarch-webapp
+        - git fetch -q --depth 1 origin master
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: completed
+      - type: file-exists
+        config:
+          path: "**/migration-status.md"
+      - type: file-exists
+        config:
+          path: "**/migration-assessment-report.md"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Spring Boot to ACA - Compatibility and Migration Plan"
+    prompt: |
+      I want to migrate my Spring Boot application from Azure Spring Apps to Azure Container Apps.
+      Can you help me assess compatibility and create a migration plan?
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":3}]'
+    runs: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Spring Boot Containerization to ACA"
+    prompt: "How do I containerize my Spring Boot JAR and deploy it to Azure Container Apps?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":3}]'
+    runs: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "AWS Fargate to ACA - Compatibility Assessment"
+    prompt: |
+      I want to migrate my AWS Fargate ECS tasks to Azure Container Apps.
+      Can you help me assess compatibility and create a migration plan?
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":3}]'
+    runs: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "ECS Fargate Containers to ACA"
+    prompt: |
+      Migrate my ECS Fargate containers to Azure Container Apps.
+      I need to move from AWS to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":3}]'
+    runs: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "GKE Kubernetes Workloads to ACA"
+    prompt: |
+      I want to migrate my Kubernetes workloads from GKE to Azure Container Apps.
+      Can you help me assess compatibility and create a migration plan?
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":3}]'
+    runs: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Kubernetes Manifests to ACA Config"
+    prompt: "How do I convert my Kubernetes deployment manifests to Azure Container Apps configuration?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-cloud-migrate
+      requiredSkills:
+        - azure-cloud-migrate
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-cloud-migrate"},{"type":"tool-call-count","count":3}]'
+    runs: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cloud-migrate
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
