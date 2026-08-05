@@ -180,7 +180,7 @@ jobs:
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           TEST_GROUP: ${{ matrix.test-group }}
         run: |
-          npm run test:integration -- azure-deploy "$TEST_GROUP"
+          npm run test:vally -- --plugin azure-skills --skill azure-deploy --tag "category=$TEST_GROUP"
         continue-on-error: true
 
       - name: Generate report

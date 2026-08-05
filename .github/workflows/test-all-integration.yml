@@ -156,7 +156,7 @@ jobs:
             core.setOutput("has_azure_deploy", hasAzureDeploy.toString());
 
             // Build matrix excluding azure-deploy
-            const matrix = skills.filter(s => s !== "azure-deploy");
+            const matrix = skills.filter(s => s !== "azure-skills/azure-deploy");
             core.setOutput("matrix", JSON.stringify(matrix));
 
   # Call the azure-deploy workflow when azure-deploy is in the skills list
