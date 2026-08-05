@@ -47,7 +47,7 @@ describe("parseReferencesJson", () => {
     const raw = makeReferencesJson({
       references: [
         {
-          source: "plugin/skills/foo/SKILL.md",
+          source: "plugins/azure-skills/skills/foo/SKILL.md",
           target: "./missing.md",
           status: "broken",
           message: "Target does not exist: ./missing.md",
@@ -61,7 +61,7 @@ describe("parseReferencesJson", () => {
     expect(report.status).toBe("fail");
     expect(report.summary.failed).toBe(1);
     expect(report.items).toHaveLength(1);
-    expect(report.items[0].name).toBe("plugin/skills/foo/SKILL.md");
+    expect(report.items[0].name).toBe("plugins/azure-skills/skills/foo/SKILL.md");
     expect(report.items[0].status).toBe("fail");
     expect(report.items[0].message).toContain("missing.md");
   });
@@ -70,7 +70,7 @@ describe("parseReferencesJson", () => {
     const raw = makeReferencesJson({
       references: [
         {
-          source: "plugin/skills/bar/references/orphan.md",
+          source: "plugins/azure-skills/skills/bar/references/orphan.md",
           target: "bar/SKILL.md",
           status: "warning",
           message: "File exists in references directory but is not linked",

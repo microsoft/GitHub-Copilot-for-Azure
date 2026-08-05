@@ -578,11 +578,6 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── response-jumpbox-nsgs-internal-lb ──
-  # Jest: integration.test.ts → response-quality "generates infrastructure-plan.json with expected resources"
-  # Assertions: skill-invocation + file-exists(.azure/insights.json, infrastructure-plan.json) + JSON schema markers
-  #   + networking+compute resource types in plan + no IaC files generated (Bicep/Terraform/tfvars).
-  #   followUp 2 explicitly halts the agent at the Phase 6 IaC Gate
-  #   (see plugin/skills/azure-enterprise-infra-planner/references/phases/6-generate-iac.md).
   - name: "Response - Jumpbox + NSGs + Internal LB (plan only)"
     prompt: "Provision a jumpbox VM for secure management, establish NSGs for each tier, and connect tiers using internal Azure Load Balancer. Assume all defaults to make the plan."
     tags:
