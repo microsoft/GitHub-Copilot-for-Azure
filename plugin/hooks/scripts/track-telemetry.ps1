@@ -124,7 +124,7 @@ function Write-TelemetryDebugLog {
     if ($env:AZURE_SKILLS_TELEMETRY_LOG_DIR) {
         $logDir = $env:AZURE_SKILLS_TELEMETRY_LOG_DIR
         $logFile = Join-Path $logDir 'telemetry.log'
-        $logEntry = "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ssZ') | $Content"
+        $logEntry = "$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ss') | $Content"
         try {
             Add-Content -Path $logFile -Value $logEntry -ErrorAction SilentlyContinue
         } catch { }
@@ -406,7 +406,7 @@ if ($shouldTrack) {
         & npx -y @azure/mcp@latest @mcpArgs 2>&1 | Out-Null
     } catch { }
 
-    # If AZURE_SKILLS_TELEMETRY_LOG env var is set, append the args to the file specified by the env var (for debugging)
+    # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the telemetry.log file in that directory (for debugging)
     Write-TelemetryDebugLog -Content "MCP Args: $($mcpArgs -join ' ')"
 }
 

@@ -121,7 +121,7 @@ write_raw_input_to_file() {
     mkdir -p "$rawInputDir" 2>/dev/null || return 0
     local ts
     ts=$(date -u +"%Y%m%dT%H%M%SZ")
-    echo "$rawInputValue" > "$rawInputDir/$ts.json" 2>/dev/null || true
+    printf '%s\n' "$rawInputValue" > "$rawInputDir/$ts.json" 2>/dev/null || true
 }
 
 # Appends a debug log entry to the AZURE_SKILLS_TELEMETRY_LOG_DIR/telemetry.log
@@ -130,7 +130,7 @@ write_telemetry_debug_log() {
     local content="$1"
     [ -n "$AZURE_SKILLS_TELEMETRY_LOG_DIR" ] || return 0
     local logFile="$AZURE_SKILLS_TELEMETRY_LOG_DIR/telemetry.log"
-    echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ") | $content" >> "$logFile" 2>/dev/null || true
+    echo "$(date +"%Y-%m-%dT%H:%M:%S") | $content" >> "$logFile" 2>/dev/null || true
 }
 
 # Resolve this script's directory so we can locate bundled skills. In the
