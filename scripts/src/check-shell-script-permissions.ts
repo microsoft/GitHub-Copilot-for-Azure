@@ -10,7 +10,7 @@ function runGit(args: string[]): string {
 /** Verifies tracked shebang-bearing shell scripts have executable Git modes. */
 function checkShellScriptPermissions(): boolean {
   const repositoryRoot = runGit(["rev-parse", "--show-toplevel"]).trim();
-  const entries = runGit(["ls-files", "--stage", "-z", "--", "*.sh"])
+  const entries = runGit(["ls-files", "--stage", "-z", "--", ":(glob)**/*.sh"])
     .split("\0")
     .filter(Boolean);
   const invalidFiles: string[] = [];
