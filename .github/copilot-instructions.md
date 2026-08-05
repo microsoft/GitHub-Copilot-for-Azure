@@ -182,6 +182,7 @@ Some skills ship helper scripts (under a skill's `scripts/` or `references/**/sc
 ### Bash Scripts
 
 - **Target Bash 3.2** (macOS default) — do not assume Bash 4+. Avoid `declare -A` (associative arrays), `mapfile`, and similar. Use portable alternatives like `while IFS= read -r` loops and small `grep`/`sed` helpers. Use `#!/usr/bin/env bash`.
+- **Mark every shebang-bearing `.sh` script executable in Git** with `git update-index --chmod=+x <path-to-script>`; verify the mode with `git ls-files --stage`.
 - **Never use `eval`** to run a command string (injection risk + brittle quoting). Pass the command as arguments and invoke via `"$@"`, or pass a function name.
 - **With `set -e`, capture command output via command substitution** (`OUT=$(cmd ...)`), not process substitution (`done < <(cmd ...)`), so a failing command reliably aborts instead of producing a misleading downstream error.
 - **Use fixed-string grep (`grep -F`/`-Fq`) for literal matches** and handle grep's read-error exit code (`2`) explicitly — don't let it be treated as "no match".
@@ -215,6 +216,7 @@ PRs against `main` must pass these checks — run the corresponding local comman
 | Token Analysis | Token counts and limits for markdown files | `npm run tokens check` |
 | Skill Structure | Frontmatter, `tests/skills.json` sync, markdown references | `npm run build && cd scripts && npm run frontmatter && npm run references` |
 | Plugin Version Check | `plugin.json` versions remain `0.0.0-placeholder` | Ensure you never edit version fields |
+| Shell Script Permissions | Tracked shebang-bearing `.sh` files have executable Git mode | `npm run check:shell-scripts` |
 | Skill Tests | Unit and trigger tests for changed skills | `cd tests && npm test` |
 
 ## Commit and PR Conventions

@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "checkCopilotCliCharBudget": "node --import tsx src/copilot-cli-char-budget.ts",
+    "checkShellScriptPermissions": "node --import tsx src/check-shell-script-permissions.ts",
     "checkPluginVersionPr": "node --import tsx src/check-plugin-version-pr.ts",
     "verifyBuildOutputVersions": "node --import tsx src/verify-build-output-versions.ts",
     "tokens": "node --import tsx src/tokens/cli.ts",

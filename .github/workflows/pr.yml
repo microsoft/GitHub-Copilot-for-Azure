@@ -48,6 +48,21 @@ jobs:
               }
             }
 
+  shell-script-permissions:
+    name: Shell Script Permissions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate shebang shell scripts are executable
+        run: npm run check:shell-scripts
+
   eslint:
     name: ESLint
     runs-on: ubuntu-latest
