@@ -153,8 +153,6 @@ export function listPlugins(): Plugin[] {
  * Get the skills to load for a test run.
  * @param requiredSkills Optional. Skills that must be loaded into the context.
  * @param includeSkills Optional. An exact list of skills to load into the context.
- * 
- * @returns Skills to be loaded into the context and the directories for these skills.
  */
 export async function getSkillsForTest(
   requiredSkills?: SkillRef[],
