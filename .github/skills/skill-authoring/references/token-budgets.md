@@ -31,7 +31,7 @@ Update links: `[guide](references/large-guide.md)` → `[guide](references/large
 
 ```bash
 cd scripts
-npm run tokens -- check plugin/skills/my-skill/SKILL.md
+npm run tokens -- check plugins/{plugin}/skills/my-skill/SKILL.md
 ```
 
 ## Why Token Limits Matter

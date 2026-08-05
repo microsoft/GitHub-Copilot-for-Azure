@@ -37,12 +37,12 @@ export class IntegrationTestAgentRunner implements Executor {
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
     const requiredSkillRefs: SkillRef[] = [];
-    requiredSkills?.forEach(skillName => {
-      const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === skillName)).at(0);
+    (requiredSkills ?? [skillName]).forEach(s => {
+      const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === s)).at(0);
       if (owningPlugin) {
         requiredSkillRefs.push({
           pluginDirname: owningPlugin.dirname,
-          name: skillName
+          name: s
         });
       }
     });

@@ -305,7 +305,9 @@ jobs:
         id: generate-skill-report
         env:
           SKILL: ${{ matrix.skill }}
-        run: npm run report -- --skill "$SKILL" || true
+        run: |
+          SKILL_NAME="${SKILL##*/}"
+          npm run report -- --skill "$SKILL_NAME" || true
 
       - name: Show skill report
         if: always()
@@ -319,10 +321,6 @@ jobs:
             echo "No skill report found"
           fi
 
-      - name: Generate quality report
-        if: always() && matrix.skill == 'microsoft-foundry'
-        run: npm run quality-report || true
-
       # Note: The managed identity must have write permission to the target storage account
       - name: Publish report to Azure Storage
         if: always() && github.event_name == 'schedule' && vars.REPORT_STORAGE_ACCOUNT != ''
@@ -335,7 +333,8 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          SKILL_NAME="${SKILL##*/}"
+          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
           echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
@@ -358,7 +357,8 @@ jobs:
           SKILL: ${{ matrix.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
-          PREFIX="${DATE}/${RUN_ID}/${SKILL}/"
+          SKILL_NAME="${SKILL##*/}"
+          PREFIX="${DATE}/${RUN_ID}/${SKILL_NAME}/"
           echo "Uploading reports to ${STORAGE_ACCOUNT}/${STORAGE_CONTAINER}/${PREFIX}"
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
@@ -376,10 +376,12 @@ jobs:
         env:
           TOKEN_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           TOKEN_USAGE_TABLE_NAME: ${{ vars.TOKEN_USAGE_TABLE || 'integrationtokenusage' }}
-          SKILL: ${{ matrix.skill }}
+          SKILL_INPUT: ${{ matrix.skill }}
           BRANCH: ${{ github.ref_name }}
           RUN_ID: ${{ github.run_id }}
-        run: npm run upload:token-usage
+        run: |
+          export SKILL="${SKILL_INPUT##*/}"
+          npm run upload:token-usage
 
       # Upload per-run tool usage (one row per tool call) to the Azure Table that
       # powers the dashboard's per-run tool review. Runs for both scheduled and manual runs.
@@ -389,7 +391,9 @@ jobs:
         env:
           TOOL_USAGE_STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
           TOOL_USAGE_TABLE_NAME: ${{ vars.TOOL_USAGE_TABLE || 'integrationtoolusage' }}
-          SKILL: ${{ matrix.skill }}
+          SKILL_INPUT: ${{ matrix.skill }}
           BRANCH: ${{ github.ref_name }}
           RUN_ID: ${{ github.run_id }}
-        run: npm run upload:tool-usage
+        run: |
+          export SKILL="${SKILL_INPUT##*/}"
+          npm run upload:tool-usage

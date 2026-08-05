@@ -42,7 +42,7 @@ jobs:
           PLUGIN_PATHS=()
           for plugin_dir in ../plugins/*; do
             if [ -d "$plugin_dir" ]; then
-              PLUGIN_PATHS+=("$plugin_dir")
+              PLUGIN_PATHS+=("$plugin_dir/skills")
             fi
           done
 

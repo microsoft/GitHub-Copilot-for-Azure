@@ -2,7 +2,7 @@
  * Skill Utility
  *
  * Shared helpers for loading, listing, and parsing SKILL.md files from the
- * plugin/skills directory.  All frontmatter parsing goes through
+ * plugins/<plugin>/skills/ directory.  All frontmatter parsing goes through
  * `parseSkillContent` which normalises line endings, validates `---`
  * delimiters, and exposes the raw YAML source.
  */
@@ -144,7 +144,7 @@ const pluginDirnameMap = new Map<string, string>([
 /**
  * Load a skill by name.
  *
- * Reads the SKILL.md file from `plugin/skills/<skillName>` and parses it
+ * Reads the SKILL.md file from `plugins/<plugin>/skills/<skillName>` and parses it
  * via `parseSkillContent`.  Throws when the file is missing or contains
  * no valid frontmatter.
  */

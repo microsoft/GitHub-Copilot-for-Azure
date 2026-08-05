@@ -97,7 +97,7 @@ SKIP_INTEGRATION_TESTS=true npm test -- --testPathPatterns=<skill-name>
 
 ### Steps
 
-1. **Create the skill directory**: `plugin/skills/<your-skill-name>/`
+1. **Create the skill directory**: `plugins/<plugin-name>/skills/<your-skill-name>/`
 
 2. **Add `version.json`**:
    ```json

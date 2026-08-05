@@ -21,7 +21,7 @@ body:
     id: existing-skill
     attributes:
       label: Existing Skill to Extend
-      description: Which skill do you want to extend? (See `plugin/skills/`.)
+      description: Which skill do you want to extend? (See `plugins/*/skills/`.)
       placeholder: ex. azure-prepare
     validations:
       required: true
