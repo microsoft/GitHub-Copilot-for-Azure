@@ -1,0 +1,6 @@
+{
+    "managedIdentities": "id-",
+    "containerRegistries": "cr",
+    "managedEnvironments": "env-",
+    "containerApps": "ca-"
+}
