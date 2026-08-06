@@ -80,3 +80,9 @@
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/routine/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/microsoft-foundry/foundry-agent/invocations-ws/ @anchenyi @XiaofuHuang @swatDong @RickWinter
 /plugins/azure-skills/skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
+
+# Plugin skills tests owners (multi-plugin)
+/tests/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
+
+# Plugin skills evals owners (multi-plugin)
+/evals/azure-skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter

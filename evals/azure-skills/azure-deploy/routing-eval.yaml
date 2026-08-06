@@ -1,0 +1,153 @@
+# Vally eval config — migrated from Jest integration tests
+# Source: tests/azure-deploy/integration.test.ts describe("skill-invocation")
+# Migration: Jest skill-invocation tests → Vally routing stimuli
+#
+# Each stimulus provides a minimal prepared project (azure.yaml + infra/) so
+# the agent has concrete context to route against.
+# Stimuli with earlyTerminate tags do not use the completed grader.
+
+name: azure-deploy-routing-eval
+description: |
+  Integration evaluation for azure-deploy skill — migrated from Jest skill-invocation tests.
+  Tests routing for Azure Deploy prompts using invocation rate measurement.
+
+tags:
+  type: integration
+  skill: azure-deploy
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Skill routing prompts
+  # Source: describe("skill-invocation")
+  # ═══════════════════════════════════════════
+
+  # Jest: "invokes azure-deploy skill for deployment prompt"
+  - name: "Deployment Prompt"
+    prompt: "Run azd up to deploy my already-prepared app to Azure. Use azd as the deployment tool."
+    environment:
+      files:
+        - src: fixture/swa-bicep/azure.yaml
+          dest: azure.yaml
+        - src: fixture/swa-bicep/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/swa-bicep/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/swa-bicep/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-deploy skill for publish to Azure prompt"
+  - name: "Publish to Azure Prompt"
+    prompt: "My app already has azure.yaml and infra/ configured. Publish it to Azure now. Use azd as the deployment tool."
+    environment:
+      files:
+        - src: fixture/swa-bicep/azure.yaml
+          dest: azure.yaml
+        - src: fixture/swa-bicep/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/swa-bicep/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/swa-bicep/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-deploy skill for Azure Functions deployment prompt"
+  - name: "Azure Functions Deployment Prompt"
+    prompt: "Deploy my existing Azure Functions project to the cloud. The infrastructure and azure.yaml are already set up. Use azd as the deployment tool."
+    environment:
+      files:
+        - src: fixture/functions-bicep/azure.yaml
+          dest: azure.yaml
+        - src: fixture/functions-bicep/host.json
+          dest: host.json
+        - src: fixture/functions-bicep/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/functions-bicep/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/functions-bicep/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-deploy skill for post-deployment role assignment check prompt"
+  - name: "Post-Deployment Role Assignment Prompt"
+    prompt: "Deploy my already-prepared Azure app and confirm the managed identity roles are properly assigned Use azd as the deployment tool."
+    environment:
+      files:
+        - src: fixture/container-apps-bicep/azure.yaml
+          dest: azure.yaml
+        - src: fixture/container-apps-bicep/Dockerfile
+          dest: Dockerfile
+        - src: fixture/container-apps-bicep/infra/main.bicep
+          dest: infra/main.bicep
+        - src: fixture/container-apps-bicep/infra/abbreviations.json
+          dest: infra/abbreviations.json
+        - src: fixture/container-apps-bicep/infra/resources.bicep
+          dest: infra/resources.bicep
+        - src: fixture/container-apps-bicep/infra/main.parameters.json
+          dest: infra/main.parameters.json
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
