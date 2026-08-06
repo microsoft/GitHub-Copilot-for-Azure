@@ -434,7 +434,17 @@ See [references/SCENARIOS.md](references/SCENARIOS.md) for full worked examples 
 
 ### Default: Output KQL in Chat
 
-Always output the complete KQL query in the chat response so the user can copy-paste it into their preferred tool.
+Always output the complete KQL in the chat response with two clearly labeled steps:
+
+```
+// Step 1 — Run this line first to connect
+#connect cluster('<CLUSTER>').database('<DATABASE>')
+
+// Step 2 — Run the query after connection is established
+<KQL_QUERY>
+```
+
+Replace `<CLUSTER>` and `<DATABASE>` with the user's target (default: `kc7001.eastus.kusto.windows.net` / `ValdyTimes` for KC7 examples). The user must run Step 1 first because Kusto Explorer processes `#connect` as a separate connection-creation command.
 
 ### Optional: Save and Launch
 

@@ -215,7 +215,15 @@ Get_Event_Authentication_All
 
 > **Optional convenience feature.** The default workflow is to output the KQL in chat and let the user copy it into Kusto Explorer or the VS Code Kusto extension manually. Auto-launch is opt-in only.
 
-Always output the complete KQL query in the chat response. If the user asks to save or open in Kusto Explorer, follow the procedure in [references/KUSTO_EXPLORER_LAUNCH.md](references/KUSTO_EXPLORER_LAUNCH.md). Key rules:
+Always output the complete KQL query in the chat response with a `#connect` directive above it so the user knows which cluster and database to target:
+
+```
+#connect cluster('<CLUSTER>').database('<DATABASE>')
+
+<KQL_QUERY>
+```
+
+If the user asks to save or open in Kusto Explorer, follow the procedure in [references/KUSTO_EXPLORER_LAUNCH.md](references/KUSTO_EXPLORER_LAUNCH.md). Key rules:
 
 - Use `ask_user` to confirm before writing files or launching executables
 - Display file contents in chat so the user can review before opening
