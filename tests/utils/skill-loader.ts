@@ -189,7 +189,7 @@ export async function getSkillsForTest(
       if (includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
         // At least one skill to explicitly include doesn't exist within the inferred plugins.
         const invalidSkills = includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
-        throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
+        throw new Error(`Invalid includeSkills. ${JSON.stringify(invalidSkills)} are not valid skills.`);
       }
       disabledSkills = skillRefs.filter((ref) => !includeSkills
         ?.some(includeSkillRef => ref.name === includeSkillRef.name));
