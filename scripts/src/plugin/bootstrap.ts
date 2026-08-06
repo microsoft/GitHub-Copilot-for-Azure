@@ -26,7 +26,8 @@ function main() {
     mcpServers: "./.mcp.json"
   };
   const copilotPluginManifest = {
-    ...pluginManifestBase
+    ...pluginManifestBase,
+    hooks: "./hooks/copilot-hooks.json"
   };
   const claudeCodePluginManifest = {
     ...pluginManifestBase,
