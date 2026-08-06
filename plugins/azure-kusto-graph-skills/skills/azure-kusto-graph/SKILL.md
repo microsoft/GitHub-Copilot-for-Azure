@@ -434,17 +434,24 @@ See [references/SCENARIOS.md](references/SCENARIOS.md) for full worked examples 
 
 ### Default: Output KQL in Chat
 
-Always output the complete KQL in the chat response with two clearly labeled steps:
+Always output the complete KQL with a commented-out `#connect` line at the top:
 
 ```
-// Step 1 — Run this line first to connect
-#connect cluster('<CLUSTER>').database('<DATABASE>')
+// If not already connected to your cluster, uncomment and run the line below first:
+// #connect cluster('<YOUR_CLUSTER>').database('<YOUR_DATABASE>')
 
-// Step 2 — Run the query after connection is established
-<KQL_QUERY>
+<KQL_QUERY ending at make-graph>
 ```
 
-Replace `<CLUSTER>` and `<DATABASE>` with the user's target (default: `kc7001.eastus.kusto.windows.net` / `ValdyTimes` for KC7 examples). The user must run Step 1 first because Kusto Explorer processes `#connect` as a separate connection-creation command.
+Then immediately below, output an **ADX Web Explorer version** that appends `| graph-to-table nodes as N, edges as E` since ADX Web Explorer cannot render `make-graph` directly:
+
+```
+// ADX Web Explorer version (tabular output):
+<SAME_QUERY>
+| graph-to-table nodes as N, edges as E
+```
+
+This ensures the output works in both Kusto Explorer (graph visualization) and ADX Web Explorer (tabular results) without the user having to modify anything.
 
 ### Optional: Save and Launch
 
