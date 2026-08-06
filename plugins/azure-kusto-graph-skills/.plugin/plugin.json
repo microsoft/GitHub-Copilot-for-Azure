@@ -18,6 +18,5 @@
     "kql"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
-  "hooks": "./hooks/copilot-hooks.json"
+  "mcpServers": "./.mcp.json"
 }
