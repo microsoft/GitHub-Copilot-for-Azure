@@ -434,12 +434,16 @@ See [references/SCENARIOS.md](references/SCENARIOS.md) for full worked examples 
 
 ### Default: Output KQL in Chat
 
-Always output the complete KQL with a commented-out `#connect` line at the top:
+Always output the complete KQL with Step 1 (connect) and Step 2 (query) clearly labeled:
 
 ```
-// If not already connected to your cluster, uncomment and run the line below first:
+// Step 1: Connect to your cluster (skip if already connected)
+// Example: uncomment to connect to the KC7 training cluster
+// #connect cluster('kc7001.eastus.kusto.windows.net').database('ValdyTimes')
+// Or replace with your own cluster:
 // #connect cluster('<YOUR_CLUSTER>').database('<YOUR_DATABASE>')
 
+// Step 2: Run the query below
 <KQL_QUERY ending at make-graph>
 ```
 
