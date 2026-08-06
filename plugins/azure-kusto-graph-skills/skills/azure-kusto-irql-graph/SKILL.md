@@ -240,7 +240,7 @@ Get_Event_NetworkOutbound
 | where DomainName has_any ("raisinkanes.com", "nothing-to-see-here.net", "totally-legit-domain.com")
 | invoke Lift_To_Graph(suspicious_domain_mapping)
 | invoke Enrich_Node_Ip_Employee("Name")
-| invoke Graph_Fold_By_Property("Url", "DomainName")
+| invoke Graph_Fold_By_Property("Domain", "DomainName")
 | invoke Graph_Render_View()
 ```
 

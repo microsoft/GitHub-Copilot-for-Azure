@@ -167,7 +167,7 @@ For large-scale, reusable graphs. Stored in database metadata. Support snapshots
 ### Step 1: Create a graph model
 
 ```kql
-.create-or-alter graph_model SecurityGraph ```
+.create-or-alter graph_model SecurityGraph
 {
   "Schema": {
     "Nodes": {
@@ -422,7 +422,7 @@ See [references/SCENARIOS.md](references/SCENARIOS.md) for full worked examples 
 ## MCP Tools Used
 
 | Tool | Purpose |
-|------|---------||
+|------|---------|
 | `kusto_query` | Execute KQL queries including `make-graph`, `graph-match`, and management commands |
 | `kusto_table_schema_get` | Discover table columns before building edge/node projections |
 | `kusto_cluster_list` | List available ADX clusters |

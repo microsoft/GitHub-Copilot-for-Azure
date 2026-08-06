@@ -18,9 +18,9 @@ Cluster: `https://kc7001.eastus.kusto.windows.net`
 | 7 | "A file called Raisin_Kane appeared on some hosts. What processes ran on those hosts?" | `Get_Event_FileCreation_All` -> victim hosts -> `Get_Event_Process` |
 | 8 | "Which users are logging in from the most distinct IPs?" | `Get_Event_Authentication_All` -> `summarize dcount(ClientIp) by Username` |
 
-## AzureCrest (raw KQL -- no IRQL)
+## AzureCrest (raw KQL — no IRQL)
 
-AzureCrest has no IRQL functions. The skill falls back to raw KQL equivalents.
+AzureCrest has no IRQL functions. In this environment, route to the `azure-kusto` skill to author raw KQL equivalents (do not use `azure-kusto-irql`).
 
 | # | Ask This | What It Does |
 |---|----------|--------------|

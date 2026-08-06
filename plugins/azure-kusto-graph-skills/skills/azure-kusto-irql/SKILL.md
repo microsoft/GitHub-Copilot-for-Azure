@@ -205,7 +205,7 @@ Get_Event_Authentication_All
 ## MCP Tools Used
 
 | Tool | Purpose |
-|------|---------||
+|------|---------|
 | `kusto_query` | Execute IRQL pipelines against a Kusto database |
 | `kusto_table_schema_get` | Discover available tables and columns |
 | `kusto_cluster_list` | List available ADX clusters |

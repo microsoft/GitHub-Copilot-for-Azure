@@ -72,7 +72,7 @@ Create a persistent graph model so analysts can query without rebuilding:
 
 ```kql
 // Step 1: Define the model (run once, requires Database Admin)
-.create-or-alter graph_model SOC_Graph ```
+.create-or-alter graph_model SOC_Graph
 {
   "Schema": {
     "Nodes": {
