@@ -21,10 +21,12 @@ scoring:
 
 stimuli:
   - name: "Brownfield Lambda - Face Blur Service Migration"
-    prompt: |
-      Migrate this Lambda to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
+    turns:
+      - |
+        Migrate this Lambda to Azure.
+        Use the eastus2 region.
+        Use my current subscription.
+      - "Go with recommended options and test it locally."
     tags:
       type: integration
       tier: full
@@ -33,8 +35,6 @@ stimuli:
       skill: azure-cloud-migrate
       requiredSkills:
         - azure-cloud-migrate
-      followUp:
-        - "Go with recommended options and test it locally."
     runs: 1
     environment:
       commands:
@@ -69,20 +69,21 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Brownfield Lambda - Webapp Migration"
-    prompt: |
-      Migrate this Lambda to Azure.
-      Use the eastus2 region.
-      Use my current subscription.
+    turns:
+      - |
+        Migrate this Lambda to Azure.
+        Use the eastus2 region.
+        Use my current subscription.
+      - "Go with recommended options and test it locally."
     tags:
       type: integration
       tier: full
       cost: llm+execute
       area: output
       skill: azure-cloud-migrate
+      debug: yes
       requiredSkills:
         - azure-cloud-migrate
-      followUp:
-        - "Go with recommended options and test it locally."
     runs: 1
     environment:
       commands:

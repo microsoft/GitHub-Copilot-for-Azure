@@ -40,7 +40,9 @@ stimuli:
 
   # Jest: "terminates at validation for static whiteboard web app"
   - name: "Terminates at Validation - Whiteboard App"
-    prompt: "My static whiteboard web app is ready. Please validate and prepare it for Azure deployment using azd."
+    turns:
+      - "My static whiteboard web app is ready. Please validate and prepare it for Azure deployment using azd."
+      - "Continue with recommended options until complete."
     environment:
       files:
         - src: fixture/whiteboard/index.html
@@ -61,8 +63,6 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-validate
-      followUp:
-        - "Continue with recommended options until complete."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
     graders:
       # azure-validate WAS invoked
@@ -86,7 +86,9 @@ stimuli:
 
   # Jest: "terminates at validation for static portfolio website"
   - name: "Terminates at Validation - Portfolio Website"
-    prompt: "My static portfolio website is ready. Please validate and prepare it for Azure deployment using azd."
+    turns:
+      - "My static portfolio website is ready. Please validate and prepare it for Azure deployment using azd."
+      - "Continue with recommended options until complete."
     environment:
       files:
         - src: fixture/portfolio/index.html
@@ -107,8 +109,6 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-validate
-      followUp:
-        - "Continue with recommended options until complete."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
     graders:
       - type: skill-invocation
@@ -130,7 +130,9 @@ stimuli:
 
   # Jest: "terminates at validation for containerized web app on Container Apps"
   - name: "Terminates at Validation - Containerized App on Container Apps"
-    prompt: "My containerized web application is ready. Please validate and prepare it for deployment to Azure Container Apps using azd."
+    turns:
+      - "My containerized web application is ready. Please validate and prepare it for deployment to Azure Container Apps using azd."
+      - "Continue with recommended options until complete."
     environment:
       files:
         - src: fixture/containerized-app/app.js
@@ -157,8 +159,6 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-validate
-      followUp:
-        - "Continue with recommended options until complete."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(up|deploy)\\b"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd provision --no-prompt"}]'
     graders:
       - type: skill-invocation
@@ -183,7 +183,9 @@ stimuli:
   # shared validate-deployment.{sh,ps1} helper. The agent must RUN that script (not azd,
   # not raw az deployment create).
   - name: "Runs validate-deployment Script - Standalone Bicep (az CLI)"
-    prompt: "My static status page is ready. I deploy it directly with the Azure CLI (az deployment) using my Bicep templates in ./infra — I do NOT use azd. Please prepare and validate it for deployment to my current subscription in eastus2."
+    turns:
+      - "My static status page is ready. I deploy it directly with the Azure CLI (az deployment) using my Bicep templates in ./infra — I do NOT use azd. Please prepare and validate it for deployment to my current subscription in eastus2."
+      - "Continue with recommended options until complete."
     environment:
       files:
         - src: fixture/bicep-cli/index.html
@@ -202,8 +204,6 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-validate
-      followUp:
-        - "Continue with recommended options until complete."
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"validate-deployment\\.(sh|ps1)"},{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"az\\s+deployment\\b.*\\b(create|up)\\b"}]'
     graders:
       # azure-validate WAS invoked; azure-deploy was NOT
@@ -232,7 +232,9 @@ stimuli:
 
   # Jest: "passes --environment on azd init and sets subscription before provision"
   - name: "Brownfield - azd init with --environment and subscription"
-    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+    turns:
+      - "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/client-apps-integration."
+      - "Continue with recommended options until complete."
     environment:
       commands:
         - git init -q
@@ -249,8 +251,6 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-validate
-      followUp:
-        - "Continue with recommended options until complete."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(provision|up|deploy)\\b"}]'
     graders:
       - type: skill-invocation
@@ -273,7 +273,9 @@ stimuli:
 
   # Jest: "sets AzureWebJobsSecretStorageType for aspire-with-azure-functions"
   - name: "Brownfield - AzureWebJobsSecretStorageType for Aspire Functions"
-    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    turns:
+      - "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+      - "Continue with recommended options until complete."
     environment:
       commands:
         - git init -q
@@ -290,8 +292,6 @@ stimuli:
       cost: llm
       area: behavior
       skill: azure-validate
-      followUp:
-        - "Continue with recommended options until complete."
       earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal","argsPattern":"azd\\s+(provision|up|deploy)\\b"}]'
     graders:
       - type: skill-invocation

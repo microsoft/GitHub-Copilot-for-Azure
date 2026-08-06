@@ -32,7 +32,18 @@ stimuli:
   # `earlyTerminate` fires at the deploy completion line ("the onboarding pipeline is finished"); deploy
   # commands + deploy-audit.log + schema-valid deploy-result.json (status "succeeded") all complete by then.
   - name: "Deploy Depth - Audit Log And Result Schema"
-    prompt: "I'm new to Azure. Can you get my existing app running without me setting up infrastructure?"
+    turns:
+      - "I'm new to Azure. Can you get my existing app running without me setting up infrastructure?"
+      - "Just go with defaults, cheapest option, using my current subscription."
+      - "Yes, proceed with scaffolding."
+      - "Yes, deploy to Azure now."
+      - "Yes, confirm the deployment."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     environment:
       commands:
         - git init -q
@@ -52,17 +63,6 @@ stimuli:
       # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
-      followUp:
-        - "Just go with defaults, cheapest option, using my current subscription."
-        - "Yes, proceed with scaffolding."
-        - "Yes, deploy to Azure now."
-        - "Yes, confirm the deployment."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
     graders:
       # azure-app-onboard MUST be invoked
       - type: skill-invocation
