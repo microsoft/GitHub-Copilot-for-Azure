@@ -53,7 +53,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
 1. **Read `prepare-plan.json`** — verify `services[]` exists, read `naming` config (especially `naming.resourcePrefix`, `naming.suffix`, `naming.resources[]`). Read resource group name from `context.json.azure.resourceGroup`. ⛔ **Use EXACTLY these names in generated IaC — do NOT invent names, derive them from `environmentName`, or append your own suffixes.** ⛔ **Use EXACTLY the names from `prepare-plan.json.naming.resources[]` as Bicep parameters. Do NOT derive names with `take()`, `substring()`, or string manipulation. The plan is the source of truth.** Missing → trigger prepare backfill via `azure-app-onboard` orchestrator.
 2. **Read `context.json`** — check `overrides[]` for `iacFormat` preference, `detectedInfra[]` for existing `.tf`, `detectedInfraProvider` for cloud provider classification.
 3. **Check workspace for existing IaC** — ⛔ **Skip** if `context.json.overrides[]` contains `ignoreExistingInfra: true`. Otherwise:
-   - **Azure IaC** (`.bicep`, `azure.yaml`, `.tf` with `azurerm`): `ask_user` → "Start fresh" (rename `infra/` to `infra.bak/`) or "Use existing" (route to `azure-prepare`, stop pipeline).
+   - **Azure IaC** (`.bicep`, `azure.yaml`, `.tf` with `azurerm`): `ask_user` → "Start fresh" (rename `infra/` → `infra.bak/` and `azure.yaml` → `azure.yaml.bak`, then tell the user their originals are preserved at those `.bak` paths) or "Use existing" (route to `azure-prepare`, stop pipeline).
    - **Non-Azure IaC** (`.tf` with GCP/AWS): respect `context.json.overrides[].iacFormat` from prepare. Default: Bicep alongside existing TF.
    - **Unknown TF** (`detectedInfraProvider.terraform` == `"unknown"`): ask user which provider before routing.
    - **No IaC**: continue.
@@ -106,7 +106,7 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 3 when `prepare-plan.js
    <<<TEMPLATE_START>>>
    You are a deploy-checklist generator. Do NOT invoke any skills.
 
-   1. Read the deploy-checklist-template at: plugin/skills/azure-app-onboard/deploy/references/deploy-checklist-template.md
+   1. Read the deploy-checklist-template at: ../deploy/references/deploy-checklist-template.md
    2. Fill in {placeholders} with real values from prepare-plan.json (appName, rgName, subscriptionId, sessionId).
    3. Delete sections that don't apply to this deployment's compute target (e.g., remove App Service section for Container Apps deploys). The template section headers indicate which to delete.
    4. Write the result to the session folder using the `create` tool. This file survives conversation compaction — deploy re-reads it after every long-running command.
@@ -187,4 +187,6 @@ On validation failure → read [`scaffold-healing-rules.md`](references/scaffold
 - **Missing `prepare-plan.json`:** trigger backfill via orchestrator.
 - **Existing IaC:** handled in DETECT Step 3.
 - **MCP unavailable:** fall back to reference patterns, flag as "unverified."
+- **Schema summary exceeds token limit:** compress each schema to ≤500 tokens via the sub-agent pattern.
+- **`context.json` malformed:** halt — report "Session state corrupted — consider starting a fresh session."
 - FLAGGED findings and healing exhaustion: see [scaffold-healing-rules.md](references/scaffold-healing-rules.md).

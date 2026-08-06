@@ -17,9 +17,13 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 - Auto-generate ALL `@secure()` params before first `az deployment sub create` — NEVER `ask_user`
 - ⛔ On ANY retry OR redeploy (incl. after a conversation compaction): read the SAME `@secure()` value back from Key Vault (source of truth) or `deploy-audit.log` — NEVER regenerate. A secret that's both applied to a resource AND stored in KV desyncs if regenerated: e.g. a DB module re-applying `administratorLoginPassword` re-sets the server admin but not the KV secret the app reads → auth 500s while provisioning still reports success.
 
+## ⛔ Warnings are NOT a stop signal
+- Pre-deploy warnings (empty `deployerObjectId`, health-probe path, RBAC) do NOT end the pipeline — resolve them and run `az deployment sub create`. `deployerObjectId` empty → `az ad signed-in-user show --query id -o tsv`, pass `--parameters deployerObjectId=$oid`.
+- ⛔ NEVER say "pipeline finished/complete/done" while `deploy-result.json.status == "in-progress"` — only after it flips to `succeeded`/`failed`.
+
 ## ⛔ Read deploy/SKILL.md
 - You MUST `view` deploy/SKILL.md BEFORE running any `az deployment` command
-- Path: `plugin/skills/azure-app-onboard/deploy/SKILL.md`
+- Path: `../SKILL.md`
 - If you have not read it in this conversation (or since the last compaction), read it NOW
 - It covers preflight checks, portal links, what-if, SCM lifecycle, deploy-result.json schema, audit logging, and health checks — skip it and none of these happen
 

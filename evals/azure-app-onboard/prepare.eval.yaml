@@ -45,7 +45,7 @@ stimuli:
         - "Just go with defaults using my current subscription."
         - "It's a Node.js Express web API with a PostgreSQL database."
         - "Yes, walk me through the recommended architecture and services."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     constraints:
       max_turns: 60
     graders:
@@ -78,7 +78,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     constraints:
       max_turns: 60
     graders:
@@ -95,7 +95,9 @@ stimuli:
 
   # ── Cost estimation depth ──
   # test: cost estimation provides specific pricing — not just mentions cost
-  # earlyTerminate: approval gate (earlyTerminate).
+  # earlyTerminate: prepare-plan.json write — bare "ready to proceed" matched the cost summary
+  # and killed the run before prepare wrote the plan. The plan-write terminator fires at the
+  # right point instead.
   - name: "Cost Depth - Dollar And SKU Signals"
     prompt: "I need to deploy this app to Azure — but first tell me exactly what it will cost"
     tags:
@@ -116,7 +118,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -191,7 +193,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -240,9 +242,18 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # test: agent validates quota before recommending region
-  # earlyTerminate: approval gate.
+  # earlyTerminate: prepare-plan.json write — stops at prepare-phase exit (shortest valid stop).
+  # No readiness-message terminator: bare "ready to proceed" matched the quota-check summary
+  # ("Ready to proceed with App Service F1 provisioning") and killed the run before prepare
+  # wrote the plan (and before quota/region text was graded). The plan-write terminator fires
+  # at the right point instead.
   - name: "Prepare Depth - Quota Validation Before Region"
-    prompt: "I want a one-click way to deploy my app to Azure."
+    # prompt: solid app-onboard trigger (existing app + deploy intent). The old
+    # "one-click way to deploy my app" phrasing was ambiguous and routed to
+    # azure-prepare/azure-quotas ~2/5 runs, failing the depth graders for a routing
+    # reason and masking the quota-before-region signal this test is meant to measure.
+    # Routing of that ambiguous phrasing belongs in a dedicated routing stimulus.
+    prompt: "I built a REST API and I want to get it running on Azure."
     tags:
       type: integration
       tier: full
@@ -260,7 +271,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -316,7 +327,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -433,7 +444,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:cloud sdk migration required|must be swapped before this app can deploy)"},{"type":"tool-call-match","toolPattern":"ask_user","argsPattern":"(?i:cloud sdk migration required|swap manually and re-run)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:cloud sdk migration required|must be swapped before this app can deploy)"},{"type":"tool-call-match","toolPattern":"ask_user","argsPattern":"(?i:cloud sdk migration required|swap manually and re-run)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -502,7 +513,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -545,7 +556,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # test: postgresql-event-sourcing (Kafka → Event Hubs + Gradle/Spring Boot)
-  # earlyTerminate: plan-presented.
+  # earlyTerminate: prepare-plan.json write.
   - name: "Service Mapping - Kafka To Event Hubs Spring"
     prompt: "I just signed up for Azure. What's the fastest way to bring my app over?"
     tags:
@@ -566,7 +577,7 @@ stimuli:
         - "Yes."
         - "Yes."
         - "Yes."
-      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:ready to proceed|ready to deploy|shall i proceed)"},{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"prepare-plan|scaffold-manifest"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"create|create_file|write_file","argsPattern":"((?:prepare-plan|scaffold-manifest)\\.json\"|>\\s*\\S*(?:prepare-plan|scaffold-manifest)\\.json)"},{"type":"tool-call-match","toolPattern":"create|create_file|write_file|edit","argsPattern":"\\.bicep\"|\\.tf\""},{"type":"tool-call-match","toolPattern":"bash|powershell","argsPattern":"azd\\s+(up|provision)|az\\s+deployment|terraform\\s+apply"}]'
     environment:
       commands:
         - git init -q
@@ -585,9 +596,8 @@ stimuli:
         config:
           pattern: "(?i)gradle|build\\.gradle|spring boot|spring|java"
       # Kafka → Azure Event Hubs — assert in the plan artifact, not spoken output.
-      # earlyTerminate fires on the prepare-plan write-result (which precedes the "ready to
-      # proceed" gate), so the plan is present at grade time; mapping lands here even when
-      # the chat summary doesn't name it.
+      # earlyTerminate fires on the prepare-plan write-result, so the plan is present at
+      # grade time; mapping lands here even when the chat summary doesn't name it.
       - type: file-matches
         config:
           path: "**/.copilot-azure/sessions/**/prepare-plan.json"

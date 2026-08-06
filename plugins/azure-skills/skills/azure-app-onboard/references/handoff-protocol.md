@@ -1,4 +1,4 @@
-# Handoff Protocol — Step 9
+# Handoff Protocol — Step 10
 
 Offer next steps: CI/CD setup, monitoring, domain config, **🗑️ resource cleanup**, skill-based suggestions. Session artifacts remain for deferred pickup.
 
