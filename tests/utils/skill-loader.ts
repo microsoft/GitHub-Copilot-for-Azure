@@ -9,10 +9,11 @@ import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import matter from "gray-matter";
-import { DEFAULT_SKILL_CHAR_BUDGET, truncateSkills } from "./char-budget";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
 
 export type SkillMetadata = {
   /**
@@ -162,47 +163,126 @@ export async function getSkillsForTest(
   skillDirectories: string[],
   disabledSkills?: SkillRef[]
 }> {
-  // By default, we infer the plugins to include from the requiredSkills.
-  // A plugin is included if and only if there is at least one required skill from it.
-  // We load all the skills of an included plugin into the context.
-  const pluginDirnames = new Set<string>();
-  requiredSkills?.forEach(skillRef => {
-    pluginDirnames.add(skillRef.pluginDirname);
-  });
-  const pluginDirnamesList = [...pluginDirnames.values()];
-  const skillDirectories = pluginDirnamesList.map(pluginDir => {
-    return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
-  });
-
-  // When includeSkills is defined, we load the exact skills present in the list from plugins inferred from required skills.
-  // This is achieved by disabling skills that aren't in the list because skillDirectories don't give us this granular control.
-  let disabledSkills: SkillRef[] | undefined;
-  const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
-  if (includeSkills) {
-    if (includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
-      // At least one skill to explicitly include doesn't exist within the inferred plugins.
-      const invalidSkills = includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
-      throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
-    }
-    disabledSkills = skillRefs.filter((ref) => !includeSkills
-      ?.some(includeSkillRef => ref.name === includeSkillRef.name));
-  } else {
-    // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
-    // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
-    // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
-    if (requiredSkills) {
-      disabledSkills = (await truncateSkills(pluginDirnamesList, requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
-    }
-  }
   const noSkills = process.env.NO_SKILLS === "true";
-  let skillsLoaded: SkillRef[] = [];
-  if (!noSkills) {
-    skillsLoaded = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+  if (noSkills) {
+    return {
+      skillsLoaded: [],
+      skillDirectories: []
+    };
+  } else {
+    // We infer the plugins to include from the requiredSkills.
+    // A plugin is included if and only if there is at least one required skill from it.
+    const pluginDirnames = new Set<string>();
+    requiredSkills?.forEach(skillRef => {
+      pluginDirnames.add(skillRef.pluginDirname);
+    });
+    const pluginDirnamesList = [...pluginDirnames.values()];
+    let skillDirectories = pluginDirnamesList.map(pluginDir => {
+      return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
+    });
+
+    // When includeSkills is defined, we load the exact skills present in the list from plugins inferred from required skills.
+    // This is achieved by disabling skills that aren't in the list because skillDirectories don't give us this granular control.
+    let disabledSkills: SkillRef[] | undefined;
+    const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
+    if (includeSkills) {
+      if (includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
+        // At least one skill to explicitly include doesn't exist within the inferred plugins.
+        const invalidSkills = includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
+        throw new Error(`Invalid includeSkills. ${invalidSkills} are not valid skills.`);
+      }
+      disabledSkills = skillRefs.filter((ref) => !includeSkills
+        ?.some(includeSkillRef => ref.name === includeSkillRef.name));
+    } else {
+      // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
+      // Copilot CLI effectively randomly truncates skills after exceeding the char count budget.
+      // We emulate Copilot CLI's behavior by preserving the required skills and randomly disable the rest of the skills.
+      if (requiredSkills) {
+        disabledSkills = (await truncateSkills(pluginDirnamesList, requiredSkills, DEFAULT_SKILL_CHAR_BUDGET));
+      }
+    }
+
+    let skillsLoaded: SkillRef[] = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+    return {
+      skillsLoaded,
+      skillDirectories,
+      disabledSkills
+    };
+  }
+}
+
+/**
+ * Load all skills from azure-skills plugin, preserve the required ones and randomly drop the rest of the skills until the estimated char usage falls below the budget.
+ * @param requiredSkills skills that cannot be truncated.
+ * @returns the skills to disable to emulate truncation.
+ */
+export async function truncateSkills(
+  pluginDirnames: string[],
+  requiredSkills: SkillRef[],
+  charBudget: number
+): Promise<SkillRef[] | undefined> {
+  const skillRefs = pluginDirnames.map(p => listSkills(p)).flat();
+  const invalidSkills = requiredSkills.filter((s) => !skillRefs.some(ref => ref.name === s.name));
+  if (invalidSkills.length > 0) {
+    throw new Error(`Invalid requiredSkills. ${invalidSkills} do not exist in azure-skills plugin.`);
+  }
+  const nonRequiredSkills = skillRefs.filter((s) => !requiredSkills.some(rs => rs.name === s.name));
+  let charCount = 0;
+
+  for (const skillRef of requiredSkills) {
+    const skillObject = await loadSkill(skillRef);
+    const skillXml = await getFormattedSkillDescription(skillObject.metadata.name, skillObject.metadata.description);
+    // +1 for newline between skills
+    charCount += skillXml.length + 1;
   }
 
-  return {
-    skillsLoaded,
-    skillDirectories,
-    disabledSkills
+  if (charCount > charBudget) {
+    throw new Error(
+      `requiredSkills exceed SKILL_CHAR_BUDGET (${charBudget}). Required skills consume ${charCount} chars; cannot guarantee required skill descriptions will be preserved.`,
+    );
   }
+
+  // Fisher-Yates shuffle
+  for (let i = nonRequiredSkills.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [nonRequiredSkills[i], nonRequiredSkills[j]] = [nonRequiredSkills[j], nonRequiredSkills[i]];
+  }
+
+  for (let i = 0; i < nonRequiredSkills.length; i++) {
+    const skillRef = nonRequiredSkills[i];
+    const skillObject = await loadSkill(skillRef);
+    const skillXml = await getFormattedSkillDescription(skillObject.metadata.name, skillObject.metadata.description);
+    if (charCount + skillXml.length + 1 >= charBudget) {
+      // Return a list of skills including and after the current one
+      return nonRequiredSkills.slice(i);
+    } else {
+      charCount += skillXml.length + 1;
+    }
+  }
+
+  return [];
+}
+
+export async function getFormattedSkillDescription(skillName: string, description: string): Promise<string> {
+  // azure plugin skills are loaded from "Custom" locations when they are installed via marketplace.
+  // The formatted text may be different but the char count would be similar.
+  return `<skill>
+  <name>${escapeXml(skillName)}</name>
+  <description>${escapeXml(description)}</description>
+  <location>Custom</location>
+</skill>`;
+}
+
+/**
+ * Escapes special XML characters in a string.
+ * @param str - The string to escape
+ * @returns The escaped string
+ */
+function escapeXml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }

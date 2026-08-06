@@ -18,8 +18,7 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
-import { getSkillsForTest, type SkillRef } from "./skill-loader.ts";
-import { DEFAULT_SKILL_CHAR_BUDGET } from "./char-budget.ts";
+import { DEFAULT_SKILL_CHAR_BUDGET, getSkillsForTest, type SkillRef } from "./skill-loader.ts";
 import { sanitizeTestName } from "../vally/utils.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
