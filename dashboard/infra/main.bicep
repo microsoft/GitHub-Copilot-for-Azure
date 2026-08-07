@@ -101,6 +101,7 @@ module functionApp './modules/function-app.bicep' = {
     environmentName: environmentName
     userAssignedIdentityId: identity.outputs.identityId
     userAssignedIdentityClientId: identity.outputs.identityClientId
+    userAssignedIdentityPrincipalId: identity.outputs.identityPrincipalId
     storageAccountName: storage.outputs.storageAccountName
     tokenUsageTableName: storage.outputs.tokenUsageTableName
     toolUsageTableName: storage.outputs.toolUsageTableName
@@ -119,6 +120,7 @@ module syncFunctionApp './modules/sync-function-app.bicep' = {
     environmentName: environmentName
     userAssignedIdentityId: syncIdentity.outputs.identityId
     userAssignedIdentityClientId: syncIdentity.outputs.identityClientId
+    userAssignedIdentityPrincipalId: syncIdentity.outputs.identityPrincipalId
     msbenchStorageAccountName: msbenchStorageAccountName
     msbenchEvalTableName: msbenchEvalTableName
     msbenchReportsContainerName: msbenchReportsContainerName
