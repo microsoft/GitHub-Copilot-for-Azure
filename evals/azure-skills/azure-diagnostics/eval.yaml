@@ -188,6 +188,42 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── inspektor-gadget-run-ig-script ──
+  # Exercises the run-ig helper script for Inspektor Gadget without a live
+  # cluster. earlyTerminate uses tool-call-result so the run stops once the
+  # run-ig invocation completes: with no kubectl/cluster in CI the underlying
+  # `kubectl debug` fails instantly and harmlessly, and the completed tool call
+  # is fully recorded for the grader to confirm the script was invoked.
+  # NOTE: early-terminated runs must NOT use the `completed` grader.
+  - name: "Inspektor Gadget run-ig script invocation"
+    prompt: "I'm troubleshooting DNS failures on AKS node aks-nodepool1-12345678-vmss000000. Use the azure-diagnostics Inspektor Gadget helper script to run a trace_dns gadget on that node."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"bash|powershell|pwsh","argsPattern":"run-ig\\.(sh|ps1)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      # The agent actually invoked the run-ig helper script.
+      - type: tool-calls
+        config:
+          required:
+            # Copilot CLI uses "powershell" on Windows, "bash" on other platforms.
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)run-ig\\.(sh|ps1)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ═══════════════════════════════════════════
   # Script execution tests
   # ═══════════════════════════════════════════
