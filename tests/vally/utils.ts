@@ -1,9 +1,24 @@
 export function normalizeTestName(skillName: string, testName: string) {
   // Downstream data processing uses the test name as an Azure Storage blob name.
   // Replace unsupported characters with supported ones.
-  testName = testName.replace(/\s+/g, "_").replace(/[:<>|*?]/g, "_");
-  if (!testName.startsWith(`${skillName}_`)) {
-    testName = `${skillName}_${testName}`;
+  const sanitizedTestName = sanitizeTestName(testName);
+  let normalizedTestName = sanitizedTestName;
+  if (!normalizedTestName.startsWith(`${skillName}_`)) {
+    normalizedTestName = `${skillName}_${sanitizedTestName}`;
   }
-  return testName;
+  return normalizedTestName;
+}
+
+/**
+ * Sanitize a string for use as the filename from a given test name.
+ * 
+ * Note: keep this in sync with the sanitizeTestName function in tests/utils.ts.
+ */
+export function sanitizeTestName(testName: string): string {
+  return testName
+    .replace(/[<>:"/\\|?*]/g, "-") // Replace invalid chars
+    .replace(/\s+/g, "_")           // Replace spaces with underscores
+    .replace(/-+/g, "-")            // Collapse multiple dashes
+    .replace(/_+/g, "_")            // Collapse multiple underscores
+    .substring(0, 200);             // Limit length
 }

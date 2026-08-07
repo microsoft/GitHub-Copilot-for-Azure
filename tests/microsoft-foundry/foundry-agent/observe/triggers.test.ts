@@ -15,14 +15,14 @@ describe("observe - Trigger Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    skill = await loadSkill({ pluginDirname: "azure-skills", name: SKILL_NAME });;
     triggerMatcher = new TriggerMatcher(skill);
   });
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
       "Evaluate my Foundry agent",
-      "Run an eval on my agent in Azure AI Foundry",
+      "Run an eval on my agent in Microsoft Foundry",
       "Test my agent quality in Foundry",
       "Check agent quality metrics in Foundry",
       "Why did my agent eval fail in Foundry",

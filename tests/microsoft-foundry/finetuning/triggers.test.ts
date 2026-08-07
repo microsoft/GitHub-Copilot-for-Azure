@@ -15,14 +15,14 @@ describe("finetuning - Trigger Tests", () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    skill = await loadSkill({ pluginDirname: "azure-skills", name: SKILL_NAME });;
     triggerMatcher = new TriggerMatcher(skill);
   });
 
   describe("Should Trigger", () => {
     const shouldTriggerPrompts: string[] = [
       "Fine-tune gpt-4.1-mini on my dataset",
-      "I want to do supervised fine-tuning on Azure AI Foundry",
+      "I want to do supervised fine-tuning on Microsoft Foundry",
       "How do I create training data for fine-tuning?",
       "Submit a reinforcement fine-tuning job with a Python grader",
       "I need to calibrate my RFT grader for fine-tuning",

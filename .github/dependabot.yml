@@ -8,6 +8,7 @@ updates:
   - dependency-name: "*"
     update-types:
     - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 10
   package-ecosystem: npm
   schedule:
@@ -22,6 +23,7 @@ updates:
   - dependency-name: "*"
     update-types:
     - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 5
   package-ecosystem: npm
   schedule:
@@ -36,6 +38,7 @@ updates:
   - dependency-name: "*"
     update-types:
     - version-update:semver-patch
+  - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 5
   package-ecosystem: npm
   schedule:
@@ -59,6 +62,14 @@ updates:
   - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
   open-pull-requests-limit: 0
   package-ecosystem: pip
+  schedule:
+    interval: weekly
+- directories:
+  - "/evals/**"
+  ignore:
+  - dependency-name: "*" # evals/ contains test fixtures only; suppress all dependency updates
+  open-pull-requests-limit: 0
+  package-ecosystem: npm
   schedule:
     interval: weekly
 version: 2

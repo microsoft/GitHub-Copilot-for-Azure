@@ -1,0 +1,1330 @@
+# Vally eval config — migrated from Waza
+# Source: tests/azure-prepare/eval/eval.yaml + tasks/*.yaml
+# Migration: Waza → Vally (issue #1817, Phase 1)
+#
+# Global graders (evaluate#125 workaround): has_output, plan_first,
+# security_posture, and nodejs_entry_point are duplicated into every
+# stimulus block below.
+# Global efficiency constraint (max_tool_calls: 40) → constraints.max_turns: 40.
+#
+# NOTE on nodejs_entry_point: Waza used skip_if_no_match: true to make this
+# informational for non-Node tasks.  Vally has no equivalent — the grader is
+# included only in Node.js/TypeScript stimuli (http-typescript, cosmosdb-ts,
+# mcp-typescript, plan-first-enforcement[TS context]).
+
+name: azure-prepare-routing-eval
+description: |
+  Evaluation suite for the azure-prepare skill.
+  Tests across dimensions:
+  - Template selection accuracy (HTTP base, Cosmos DB, Service Bus, Timer, Durable)
+  - Plan-first workflow compliance (creates .azure/deployment-plan.md before code)
+  - IaC generation quality (Bicep and Terraform)
+  - Language coverage (C#, TypeScript, Python, Java, PowerShell)
+  - Security posture (managed identity, RBAC, no connection strings)
+
+tags:
+  type: integration
+  skill: azure-prepare
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+  weights:
+    output-contains: 0.5
+    output-matches: 0.5
+    output-not-matches: 2.0
+    completed: 1.0
+
+stimuli:
+  # ── cosmosdb-dotnet-bicep-001 ──
+  # Waza source: tasks/cosmosdb-dotnet-bicep.yaml
+  # Cosmos DB change feed trigger — C#/.NET + Bicep, composable recipe
+  - name: "Cosmos DB Functions - C# Bicep"
+    prompt: |
+      Create a C# Azure Functions app that processes Cosmos DB change feed events.
+      Use Bicep for infrastructure. Set up managed identity with proper RBAC roles.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "deployment-plan.md"
+      - type: output-contains
+        config:
+          substring: "cosmos"
+      # Task grader: selects_http_base_plus_recipe (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos"
+      # Task grader: selects_http_base_plus_recipe (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)functions-quickstart-dotnet-azd-cosmosdb"
+      # Task grader: uses_rbac_not_keys (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)RBAC|role.?assignment|managed.?identity"
+      # Task grader: uses_rbac_not_keys (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)AccountKey=|masterKey|connection.?string.*key"
+      # Task grader: cosmos_app_settings
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos.*(connection|endpoint)|CosmosDb.*accountEndpoint|COSMOS_CONNECTION"
+      # Task grader: plan_before_code
+      - type: output-matches
+        config:
+          pattern: "(?i)plan"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── cosmosdb-typescript-terraform-001 ──
+  # Waza source: tasks/cosmosdb-typescript-terraform.yaml
+  # Cosmos DB change feed — TypeScript + Terraform IaC
+  - name: "Cosmos DB Functions - TypeScript Terraform"
+    prompt: |
+      Build a TypeScript Azure Functions app that reads from Cosmos DB change feed.
+      I want to use Terraform for the infrastructure, not Bicep.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "terraform"
+      - type: output-contains
+        config:
+          substring: "cosmos"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_terraform_base
+      - type: output-matches
+        config:
+          pattern: "(?i)terraform|[.]tf|infrastructure.?as.?code"
+      # Task grader: uses_cosmos_recipe
+      - type: output-matches
+        config:
+          pattern: "(?i)cosmos"
+      # Task grader: managed_identity_auth (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|RBAC|identity"
+      # Task grader: managed_identity_auth (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)AccountKey=|SharedAccessKey"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (TypeScript task — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── durable-dotnet-001 ──
+  # Waza source: tasks/durable-dotnet.yaml
+  # Durable Functions — C#, source-only recipe (no IaC delta)
+  - name: "Durable Functions - C# .NET"
+    prompt: |
+      Create a C# Azure Durable Functions app with a fan-out/fan-in orchestration
+      pattern. Deploy to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "durable"
+      - type: output-contains
+        config:
+          substring: "orchestrat"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: uses_http_base_for_durable
+      - type: output-matches
+        config:
+          pattern: "(?i)durable|orchestrat|fan.?out|activity"
+      # Task grader: no_extra_infra
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmos\\.bicep|servicebus\\.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── http-dotnet-001 ──
+  # Waza source: tasks/http-dotnet.yaml
+  # HTTP-only Azure Functions — C#/.NET base template, no recipe overlay
+  - name: "HTTP Functions - C# .NET"
+    prompt: |
+      Create a simple Azure Functions HTTP API in C# that returns hello world.
+      Deploy to Azure using Bicep infrastructure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "functions-quickstart-dotnet-azd"
+      - type: output-contains
+        config:
+          substring: "deployment-plan.md"
+      # Task grader: selects_http_base (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)http|function|azure.?function|api"
+      # Task grader: selects_http_base (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
+      # Task grader: uses_managed_identity
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|RBAC|role|identity|secure|HTTPS|TLS"
+      # Task grader: plan_created
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|structure|step|created|deploy"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── http-python-001 ──
+  # Waza source: tasks/http-python.yaml
+  # HTTP-only Azure Functions — Python base template
+  - name: "HTTP Functions - Python"
+    prompt: |
+      Create a Python Azure Functions app with an HTTP trigger that returns JSON.
+      Use Bicep for infrastructure as code.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "functions-quickstart-python"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_python_base
+      - type: output-matches
+        config:
+          pattern: "(?i)python|http|function|api"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── http-typescript-001 ──
+  # Waza source: tasks/http-typescript.yaml
+  # HTTP-only Azure Functions — TypeScript base template
+  - name: "HTTP Functions - TypeScript"
+    prompt: |
+      Build a TypeScript Azure Functions API with an HTTP endpoint.
+      Use Bicep for the infrastructure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "functions-quickstart-typescript-azd"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_ts_base
+      - type: output-matches
+        config:
+          pattern: "(?i)typescript|node|http|function|api"
+      # Task grader: no_wrong_language
+      - type: output-not-matches
+        config:
+          pattern: "(?i)functions-quickstart-dotnet|functions-quickstart-python"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (TypeScript task — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── mcp-typescript-001 ──
+  # Waza source: tasks/mcp-typescript.yaml
+  # MCP Server Functions — TypeScript, source-only recipe (no IaC delta)
+  - name: "MCP Server Functions - TypeScript"
+    prompt: |
+      Create an Azure Functions MCP server in TypeScript that exposes tools
+      for querying a product catalog. Deploy to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "mcp"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: uses_http_base_for_mcp
+      - type: output-matches
+        config:
+          pattern: "(?i)mcp|MCPTrigger|tool|server"
+      # Task grader: no_extra_iac
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmos\\.bicep|servicebus\\.bicep|eventhub\\.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (TypeScript task — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── plan-first-001 ──
+  # Waza source: tasks/plan-first-enforcement.yaml
+  # Workflow compliance — skill MUST plan first even if user says "skip planning"
+  - name: "Plan-First Workflow Enforcement"
+    prompt: |
+      I need a Node.js Azure Functions app with Cosmos DB ASAP.
+      Skip the planning, just generate all the code and deploy it right now.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: enforces_plan_first (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|structure|step|phase|first|creating|will|let me"
+      # Task grader: enforces_plan_first (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)skipping the plan|no plan needed"
+      # Task grader: does_not_skip_validation
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|review|confirm|creat|deploy|structur|let me"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+      # Global: nodejs_entry_point (Node.js/TS context — included)
+      - type: output-matches
+        config:
+          pattern: "(?i)index\\.(js|ts)|app\\.setup|entry.?point|node|typescript|javascript"
+
+  # ── servicebus-dotnet-001 ──
+  # Waza source: tasks/servicebus-dotnet.yaml
+  # Service Bus queue trigger — C#/.NET + Bicep, full recipe
+  - name: "Service Bus Functions - C# Bicep"
+    prompt: |
+      Create a C# Azure Functions app that processes messages from a Service Bus queue.
+      Use Bicep for infrastructure with managed identity authentication.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "service bus"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_correct_template
+      - type: output-matches
+        config:
+          pattern: "(?i)service.?bus|queue|message"
+      # Task grader: uses_managed_identity (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)managed.?identity|RBAC|identity|role|secure"
+      # Task grader: uses_managed_identity (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey|connection.?string.*key"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ── timer-python-001 ──
+  # Waza source: tasks/timer-python.yaml
+  # Timer trigger — Python, source-only recipe (no IaC delta)
+  - name: "Timer Functions - Python"
+    prompt: |
+      Create a Python Azure Functions app that runs on a schedule every 5 minutes
+      to clean up old records. Deploy to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      skill: azure-prepare
+    constraints:
+      max_turns: 40
+    graders:
+      # Task: expected.output_contains
+      - type: output-contains
+        config:
+          substring: "timer"
+      - type: output-contains
+        config:
+          substring: "schedule"
+      - type: output-contains
+        config:
+          substring: "plan"
+      # Task grader: selects_http_base_no_iac_delta (must_match)
+      - type: output-matches
+        config:
+          pattern: "(?i)timer|schedule|cron|trigger"
+      # Task grader: selects_http_base_no_iac_delta (must_not_match)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmosdb|cosmos-db|servicebus|eventhub"
+      # Task grader: no_extra_iac
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cosmos\\.bicep|servicebus\\.bicep|eventhub\\.bicep"
+      # Global: has_output
+      - type: completed
+      # Global: plan_first (positive)
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|planning|structure|step|phase|first|will create|creating"
+      # Global: plan_first (negative)
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|exception occurred"
+      # Global: security_posture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)connection.?string.*=.*Account(Key|Name)="
+      - type: output-not-matches
+        config:
+          pattern: "(?i)SharedAccessKey="
+
+  # ═══════════════════════════════════════════
+  # Skill routing prompts migrated from Jest skill-invocation tests
+  # Source: tests/azure-prepare/integration.test.ts
+  # Stimuli with earlyTerminate tags do not use the completed grader.
+  # ═══════════════════════════════════════════
+
+  # Jest: "invokes azure-prepare skill for new Azure application preparation prompt"
+  - name: "New Azure Application Preparation"
+    prompt: "Prepare my application for Azure deployment and set up the infrastructure using azd"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for modernizing application for Azure prompt"
+  - name: "Modernizing Application For Azure"
+    prompt: "Modernize my existing application for Azure hosting and generate the required infrastructure files using azd"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for functional verification before deployment prompt"
+  - name: "Functional Verification Before Deployment"
+    prompt: "Prepare my web app for Azure using azd and verify it works locally before deploying"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for subscription policy compliance prompt"
+  - name: "Subscription Policy Compliance"
+    prompt: "Prepare my application for Azure deployment using azd and check subscription policies for compliance"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Key Vault secrets integration prompt"
+  - name: "Key Vault Secrets Integration"
+    prompt: "Prepare my Azure application to use Key Vault for storing secrets and credentials using azd"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Azure Identity authentication prompt"
+  - name: "Azure Identity Authentication"
+    prompt: "Set up my Azure application with managed identity authentication for accessing Azure services using azd"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Azure deployment with Terraform prompt"
+  - name: "Azure Deployment With Terraform"
+    prompt: "My social media app with likes and comments is ready. Deploy it to Azure using Terraform infrastructure and azd."
+    environment:
+      files:
+        - src: fixture/social-media/app.js
+          dest: app.js
+        - src: fixture/social-media/package.json
+          dest: package.json
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for create serverless HTTP API and deploy prompt"
+  - name: "Create Serverless HTTP API And Deploy"
+    prompt: "My Python Azure Functions HTTP API is ready. Deploy it to Azure with azd."
+    environment:
+      files:
+        - src: fixture/functions-http/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-http/host.json
+          dest: host.json
+        - src: fixture/functions-http/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for create event-driven function app and deploy prompt"
+  - name: "Create Event-Driven Function App And Deploy"
+    prompt: "My event-driven Python Azure Functions app is ready. Deploy it to Azure Functions with azd."
+    environment:
+      files:
+        - src: fixture/functions-event/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-event/host.json
+          dest: host.json
+        - src: fixture/functions-event/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for create Azure Functions app with timer trigger prompt"
+  - name: "Create Azure Functions App With Timer Trigger"
+    prompt: "My Python Azure Functions app with a timer trigger is ready. Deploy it to Azure with azd."
+    environment:
+      files:
+        - src: fixture/functions-timer/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-timer/host.json
+          dest: host.json
+        - src: fixture/functions-timer/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static whiteboard web app deploy prompt"
+  - name: "Static Whiteboard Web App Deploy"
+    prompt: "My static whiteboard web app is ready. Deploy it to Azure using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/whiteboard/index.html
+          dest: index.html
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static portfolio website deploy prompt"
+  - name: "Static Portfolio Website Deploy"
+    prompt: "My static portfolio website is ready. Deploy it to Azure using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/portfolio/index.html
+          dest: index.html
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for discussion board App Service deploy prompt"
+  - name: "Discussion Board App Service Deploy"
+    prompt: "My discussion board application is ready. Deploy it to Azure App Service using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/discussion-board/app.js
+          dest: app.js
+        - src: fixture/discussion-board/package.json
+          dest: package.json
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for todo list App Service deploy prompt"
+  - name: "Todo List App Service Deploy"
+    prompt: "My todo app with a frontend and API is ready. Deploy it to Azure App Service using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/todo/api/server.js
+          dest: api/server.js
+        - src: fixture/todo/api/package.json
+          dest: api/package.json
+        - src: fixture/todo/frontend/index.html
+          dest: frontend/index.html
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for serverless HTTP API Functions deploy prompt"
+  - name: "Serverless HTTP API Functions Deploy"
+    prompt: "My Python Azure Functions HTTP API is ready. Deploy it to Azure using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/functions-http/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-http/host.json
+          dest: host.json
+        - src: fixture/functions-http/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for event-driven function app deploy prompt"
+  - name: "Event-Driven Function App Deploy"
+    prompt: "My event-driven Python Azure Functions app is ready. Deploy it to Azure Functions using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/functions-event/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-event/host.json
+          dest: host.json
+        - src: fixture/functions-event/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Python function app Service Bus trigger deploy prompt"
+  - name: "Python Function App Service Bus Trigger Deploy"
+    prompt: "My Python Azure Functions app with a Service Bus trigger for message processing is ready. Deploy it to Azure using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/functions-servicebus/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-servicebus/host.json
+          dest: host.json
+        - src: fixture/functions-servicebus/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for containerized web app Container Apps deploy prompt"
+  - name: "Containerized Web App Container Apps Deploy"
+    prompt: "My containerized web application is ready. Deploy it to Azure Container Apps using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/containerized-web/app.js
+          dest: app.js
+        - src: fixture/containerized-web/package.json
+          dest: package.json
+        - src: fixture/containerized-web/Dockerfile
+          dest: Dockerfile
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Node.js Container Apps deploy prompt"
+  - name: "Node.Js Container Apps Deploy"
+    prompt: "My containerized Node.js hello world app is ready. Deploy it to Azure Container Apps using my current subscription in eastus2 region with azd."
+    environment:
+      files:
+        - src: fixture/nodejs-hello/app.js
+          dest: app.js
+        - src: fixture/nodejs-hello/package.json
+          dest: package.json
+        - src: fixture/nodejs-hello/Dockerfile
+          dest: Dockerfile
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static whiteboard Terraform deploy prompt"
+  - name: "Static Whiteboard Terraform Deploy"
+    prompt: "My static whiteboard web app is ready. Deploy it to Azure using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/whiteboard/index.html
+          dest: index.html
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for static portfolio Terraform deploy prompt"
+  - name: "Static Portfolio Terraform Deploy"
+    prompt: "My static portfolio website is ready. Deploy it to Azure using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/portfolio/index.html
+          dest: index.html
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for discussion board Terraform App Service deploy prompt"
+  - name: "Discussion Board Terraform App Service Deploy"
+    prompt: "My discussion board application is ready. Deploy it to Azure App Service using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/discussion-board/app.js
+          dest: app.js
+        - src: fixture/discussion-board/package.json
+          dest: package.json
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for todo list Terraform App Service deploy prompt"
+  - name: "Todo List Terraform App Service Deploy"
+    prompt: "My todo app with a frontend and API is ready. Deploy it to Azure App Service using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/todo/api/server.js
+          dest: api/server.js
+        - src: fixture/todo/api/package.json
+          dest: api/package.json
+        - src: fixture/todo/frontend/index.html
+          dest: frontend/index.html
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for serverless HTTP API Terraform Functions deploy prompt"
+  - name: "Serverless HTTP API Terraform Functions Deploy"
+    prompt: "My Python Azure Functions HTTP API is ready. Deploy it to Azure using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/functions-http/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-http/host.json
+          dest: host.json
+        - src: fixture/functions-http/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for event-driven function app Terraform deploy prompt"
+  - name: "Event-Driven Function App Terraform Deploy"
+    prompt: "My event-driven Python Azure Functions app is ready. Deploy it to Azure Functions using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/functions-event/function_app.py
+          dest: function_app.py
+        - src: fixture/functions-event/host.json
+          dest: host.json
+        - src: fixture/functions-event/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for URL shortener Terraform Functions deploy prompt"
+  - name: "URL Shortener Terraform Functions Deploy"
+    prompt: "My Azure Functions URL shortener service is ready. Deploy it to Azure using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/url-shortener/function_app.py
+          dest: function_app.py
+        - src: fixture/url-shortener/host.json
+          dest: host.json
+        - src: fixture/url-shortener/requirements.txt
+          dest: requirements.txt
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for containerized web app Terraform Container Apps deploy prompt"
+  - name: "Containerized Web App Terraform Container Apps Deploy"
+    prompt: "My containerized web application is ready. Deploy it to Azure Container Apps using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/containerized-web/app.js
+          dest: app.js
+        - src: fixture/containerized-web/package.json
+          dest: package.json
+        - src: fixture/containerized-web/Dockerfile
+          dest: Dockerfile
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for Node.js Terraform Container Apps deploy prompt"
+  - name: "Node.Js Terraform Container Apps Deploy"
+    prompt: "My containerized Node.js hello world app is ready. Deploy it to Azure Container Apps using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/nodejs-hello/app.js
+          dest: app.js
+        - src: fixture/nodejs-hello/package.json
+          dest: package.json
+        - src: fixture/nodejs-hello/Dockerfile
+          dest: Dockerfile
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for social media app Terraform deploy prompt"
+  - name: "Social Media App Terraform Deploy"
+    prompt: "My social media app with likes and comments is ready. Deploy it to Azure using Terraform infrastructure and azd in my current subscription in eastus2 region."
+    environment:
+      files:
+        - src: fixture/social-media/app.js
+          dest: app.js
+        - src: fixture/social-media/package.json
+          dest: package.json
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-prepare skill for APIM deployment prompt"
+  - name: "APIM Deployment"
+    prompt: "Deploy a new Azure API Management instance for my application using azd"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-prepare"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

@@ -680,7 +680,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
         // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /container_image|image_name/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
         // AcrPull role assignment ensures managed identity can pull from ACR
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
@@ -722,7 +722,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
         // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /container_image|image_name/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
         // AcrPull role assignment ensures managed identity can pull from ACR
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
@@ -764,7 +764,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /registry/i, tfPattern)).toBe(true);
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /identity.*system|system.*identity/i, tfPattern)).toBe(true);
         // Phase 1: Image variable defaults to empty so placeholder is used during provisioning
-        expect(doesWorkspaceFileIncludePattern(workspacePath!, /container_image|image_name/i, tfPattern)).toBe(true);
+        expect(doesWorkspaceFileIncludePattern(workspacePath!, /image\s*=/i, tfPattern)).toBe(true);
         // AcrPull role assignment ensures managed identity can pull from ACR
         expect(doesWorkspaceFileIncludePattern(workspacePath!, /AcrPull/i, tfPattern)).toBe(true);
       });
@@ -806,11 +806,11 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
       });
     }, brownfieldTestTimeoutMs);
 
-    test("deploys MvcMovie 90", async () => {
+    test("deploys MvcMovie 10", async () => {
       await withTestResult(async ({ expectScreenshot }) => {
         expectScreenshot();
         const ASPNETCORE_DOCS_REPO = "https://github.com/dotnet/AspNetCore.Docs.git";
-        const MVCMOVIE90_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/9.0-completed";
+        const MVCMOVIE10_SPARSE_PATH = "aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed";
 
         const agentMetadata = await agent.run({
           setup: async (workspace: string) => {
@@ -818,7 +818,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
               repoUrl: ASPNETCORE_DOCS_REPO,
               targetDir: workspace,
               depth: 1,
-              sparseCheckoutPath: MVCMOVIE90_SPARSE_PATH,
+              sparseCheckoutPath: MVCMOVIE10_SPARSE_PATH,
             });
           },
           prompt:
@@ -827,7 +827,7 @@ describeIntegration(`${SKILL_NAME}_ - Integration Tests`, () => {
             "Use my current subscription. " +
             "This is for a small scale production environment. " +
             "Use standard SKUs. " +
-            `The app can be found under ${MVCMOVIE90_SPARSE_PATH}.`,
+            `The app can be found under ${MVCMOVIE10_SPARSE_PATH}.`,
           systemPrompt: pseudoRandomResourceGroupNameSystemPromptModifier,
           nonInteractive: true,
           followUp: FOLLOW_UP_PROMPT,

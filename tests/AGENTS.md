@@ -11,7 +11,7 @@ When a user asks to scaffold, create, or add tests for a skill, follow these ste
 Skills in azure-skills plugin use [vally](https://microsoft.github.io/vally/get-started/) to run integration tests that run prompts against an LLM Agent and evaluate the outcome. The vally-eval skill provides the knowledge on where to add the test code, how to run the tests and where to collect the test results. Combine the instructions in vally-eval skill, the official documentation of vally and the rest of the instructions in this file to learn how to write vally eval suites for azure-skills plugin. 
 
 ### Step 2: Read the skill's SKILL.md
-Load the file at `plugin/skills/{skill-name}/SKILL.md` to understand:
+Load the file at `plugins/{plugin}/skills/{skill-name}/SKILL.md` to understand:
 - The skill's name and description (from frontmatter)
 - What the skill does (from content)
 - What Azure services/tools it references

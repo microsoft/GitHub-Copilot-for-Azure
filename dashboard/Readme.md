@@ -105,8 +105,9 @@ Data flow:
   `test-all-integration.yml` and `test-azure-deploy.yml` on scheduled and manual
   runs alike (whenever `REPORT_STORAGE_ACCOUNT` is configured).
 - The frontend never reads the table directly. It calls the Function App API:
-  - `GET /api/token-usage` — rows, with optional `skill`, `test`, `branch` filters.
-  - `GET /api/token-usage/filters` — distinct skills / tests / branches.
+  - `GET /api/test-run-metrics` — rows (token usage, duration, turns), with
+    optional `skill`, `test`, `branch` filters.
+  - `GET /api/test-run-metrics/filters` — distinct skills / tests / branches.
 
 Configuration:
 

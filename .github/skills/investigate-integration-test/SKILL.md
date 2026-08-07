@@ -22,5 +22,5 @@ Investigates a failing integration test given a GitHub issue in `microsoft/GitHu
 1. Read the GitHub issue.
 2. Download the test logs and artifacts from the linked run.
 3. Look through the logs/artifacts and analyze the test with the prompt specified in the issue to diagnose the failure.
-4. Examine the relevant skills under `plugin/skills` for context.
+4. Examine the relevant skills under `plugins/*/skills` for context.
 5. Offer a suggested fix for each identified problem. Do not implement any fixes without the user's approval.

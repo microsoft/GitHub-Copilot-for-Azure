@@ -15,7 +15,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
   let skill: LoadedSkill;
 
   beforeAll(async () => {
-    skill = await loadSkill(SKILL_NAME);
+    skill = await loadSkill({ pluginDirname: "azure-skills", name: SKILL_NAME });;
     triggerMatcher = new TriggerMatcher(skill);
   });
 
@@ -23,17 +23,18 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     // Prompts that SHOULD trigger this skill based on frontmatter USE FOR
     const shouldTriggerPrompts: string[] = [
       "How do I deploy an AI model from Microsoft Foundry catalog?",
-      "Build a RAG application with Azure AI Foundry knowledge index",
+      "Build a RAG application with Microsoft Foundry knowledge index",
       "Create an AI agent in Microsoft Foundry with web search",
       "Add a tool to my Foundry agent",
       "Evaluate agent performance using Foundry evaluators",
       "Optimize my prompt for a Microsoft Foundry agent",
-      "Improve my agent instructions in Azure AI Foundry",
+      "Improve my agent instructions in Microsoft Foundry",
       "Use a prompt optimizer on my Foundry system prompt",
       "Set up agent monitoring and continuous evaluation in Foundry",
+      "Set up a CI/CD deployment pipeline for my Foundry agent",
       "Help me with Microsoft Foundry model deployment",
-      "How to use knowledge index for RAG in Azure AI Foundry?",
-      "Create a new Azure AI Foundry project",
+      "How to use knowledge index for RAG in Microsoft Foundry?",
+      "Create a new Microsoft Foundry project",
       "Set up a Foundry project for my AI agents",
       "How do I onboard to Microsoft Foundry and create a project?",
       "Provision Foundry infrastructure with azd",
@@ -58,7 +59,7 @@ describe(`${SKILL_NAME} - Trigger Tests`, () => {
     const rbacTriggerPrompts: string[] = [
       "Grant Alice role assignment access to my Microsoft Foundry project",
       "Assign Foundry User role to a user in Foundry",
-      "Make Bob a project manager in Azure AI Foundry",
+      "Make Bob a project manager in Microsoft Foundry",
       "Who has role assignment access to my Microsoft Foundry resource?",
       "Audit role assignments on my Foundry account",
       "Can I deploy models to Foundry? Check my permissions",

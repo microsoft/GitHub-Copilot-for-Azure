@@ -101,9 +101,8 @@ export class JavaUpgradeFileContentGrader implements Grader {
   metadata: GraderMetadata = {
     name: "java-upgrade-file-content",
     description: "Checks whether workspace files satisfy content rules (regex match/not-match with optional comment stripping)",
-    behavior: { execution: "single" },
+    behavior: { requiresLlmClient: false, requiresWorkspace: true },
     costProfile: "free",
-    portability: "t1-universal",
     reference: "reference-free",
     temporalScope: "trajectory-level",
     determinism: "static"
@@ -115,9 +114,6 @@ export class JavaUpgradeFileContentGrader implements Grader {
     }
     if (!input.config || typeof input.config !== "object") {
       throw new Error(`Invalid ${this.metadata.name} grader config`);
-    }
-    if (input.trajectory.workspaceStatus === "remote") {
-      throw new Error("Workspace not materialized");
     }
 
     const workDir = input.trajectory.workDir;

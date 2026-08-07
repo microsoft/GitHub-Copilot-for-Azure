@@ -199,6 +199,7 @@ export function getPerSkillReports(root: BlobTree, date: string): Record<string,
 
 const NON_INTEGRATION_CONTAINER = "non-integration";
 const HEALTH_BLOB_PATH = "data/latest.json";
+const PLUGIN_SKILLS_BLOB_PATH = "data/plugin-skills.json";
 
 /**
  * Read the non-integration health dashboard blob (data/latest.json)
@@ -210,4 +211,57 @@ export async function getHealthData(): Promise<unknown> {
         HEALTH_BLOB_PATH
     );
     return raw ? JSON.parse(raw) : null;
+}
+
+export type PluginSkills = {
+    plugins: Record<string, string[]>;
+};
+
+export async function getPluginSkills(): Promise<PluginSkills | null> {
+    const raw = await downloadBlobContent(
+        getContainerClient(NON_INTEGRATION_CONTAINER),
+        PLUGIN_SKILLS_BLOB_PATH
+    );
+    const data = raw ? (JSON.parse(raw) as PluginSkills) : null;
+    return data;
+}
+
+/**
+ * Resolve a plugin name to the set of skill names it contains, using the
+ * plugin-skills map. Returns null when the plugin is unknown (or the map is
+ * unavailable), letting callers decide how to handle it.
+ */
+async function getSkillsForPlugin(plugin: string): Promise<Set<string> | null> {
+    const data = await getPluginSkills();
+    const skills = data?.plugins?.[plugin];
+    return skills ? new Set(skills) : null;
+}
+
+/**
+ * Resolve the optional `plugin` query parameter into a skill filter:
+ * - `undefined`/empty plugin → `null` (no filtering; retain all skills).
+ * - known plugin → the set of skills belonging to it.
+ * - unknown plugin → an empty set (filters everything out).
+ */
+export async function resolveSkillFilter(plugin?: string): Promise<Set<string> | null> {
+    if (!plugin) {
+        return null;
+    }
+    return (await getSkillsForPlugin(plugin)) ?? new Set<string>();
+}
+
+/**
+ * Remove skill subtrees not in the given set from a blob tree, in place.
+ * Tree shape: date -> runId -> skill -> ...
+ */
+export function filterBlobTreeBySkills(tree: BlobTree, skills: Set<string>): void {
+    for (const dateNode of Object.values(tree)) {
+        for (const runNode of Object.values(dateNode.children)) {
+            for (const skillName of Object.keys(runNode.children)) {
+                if (!skills.has(skillName)) {
+                    delete runNode.children[skillName];
+                }
+            }
+        }
+    }
 }
