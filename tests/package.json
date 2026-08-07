@@ -21,7 +21,9 @@
     "update:snapshots": "node scripts/update-snapshots.js",
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "compare": "npx tsx ./run-compare.ts",
+    "analyze": "npx tsx ./run-analyze.ts"
   },
   "engines": {
     "node": "^22.14.0 || >=24"
