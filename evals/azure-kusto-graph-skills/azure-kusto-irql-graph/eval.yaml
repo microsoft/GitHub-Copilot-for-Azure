@@ -1,0 +1,100 @@
+name: azure-kusto-irql-graph-integration-eval
+description: |
+  Integration evaluation for azure-kusto-irql-graph skill.
+  Tests skill routing for IRQL graph visualization prompts
+  using Lift_To_Graph, Graph_Render_View, and Graph_Fold_By_Property.
+
+tags:
+  type: integration
+  skill: azure-kusto-irql-graph
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Lift authentication results to graph"
+    prompt: "Given Get_Event_Authentication_All | take 200, generate a Lift_To_Graph mapping to visualize users authenticating to hosts"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Graph Render View with icons"
+    prompt: "Given Get_Email_All | take 400, create Graph_Render_View to visualize email flow with sender and recipient nodes and icon decorations"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Fold graph nodes by property"
+    prompt: "Given my authentication query results, use Graph_Fold_By_Property to collapse nodes by department"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Graph enrichment with Extract_Node"
+    prompt: "Apply Extract_Node_IP and Enrich_Node_GeoIP to the graph from my network connections query"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql-graph"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql-graph
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative: native graph operators without visualization"
+    prompt: "Use make-graph and graph-match to find shortest paths between nodes in my Kusto data"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          forbidden:
+            - azure-kusto-irql-graph
