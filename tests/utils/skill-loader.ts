@@ -177,7 +177,7 @@ export async function getSkillsForTest(
       pluginDirnames.add(skillRef.pluginDirname);
     });
     const pluginDirnamesList = [...pluginDirnames.values()];
-    let skillDirectories = pluginDirnamesList.map(pluginDir => {
+    const skillDirectories = pluginDirnamesList.map(pluginDir => {
       return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
     });
 
@@ -202,7 +202,7 @@ export async function getSkillsForTest(
       }
     }
 
-    let skillsLoaded: SkillRef[] = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+    const skillsLoaded: SkillRef[] = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
     return {
       skillsLoaded,
       skillDirectories,
