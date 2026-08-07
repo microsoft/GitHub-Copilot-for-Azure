@@ -5,6 +5,7 @@
   "description": "GitHub Copilot plugin for Azure",
   "scripts": {
     "build": "gulp",
+    "check:shell-scripts": "cd scripts && npm run checkShellScriptPermissions",
     "tokens": "cd scripts && npm run tokens --",
     "verify-local": "echo 'Removed: use npm run build + copilot --plugin-dir ./output instead' && exit 1",
     "test": "cd scripts && npm test",
