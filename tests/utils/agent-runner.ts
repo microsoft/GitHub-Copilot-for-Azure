@@ -939,9 +939,11 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       if (!noSkills) {
         const skillsLoaded = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
         agentMetadata.skillsLoaded = skillsLoaded;
+      } else {
+        agentMetadata.testComments.push("NO_SKILLS=true, no skills are loaded");
       }
       const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
-      const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
+      const model = modelOverride ?? runConfig.model ?? "claude-sonnet-4.6";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,

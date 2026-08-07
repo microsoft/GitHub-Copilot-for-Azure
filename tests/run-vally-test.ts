@@ -162,10 +162,17 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
   );
 }
 
+type CompareOption = {
+  model: string;
+  withSkill: boolean;
+};
+
 type CliOptions = {
   plugin?: string;
   skill?: string;
   passRate?: number;
+  compare?: boolean;
+  compareOptions?: CompareOption[];
   forwardedArgs: string[];
 };
 
@@ -174,6 +181,22 @@ function parseCliOptions(argv: string[]): CliOptions {
   let plugin: string | undefined;
   let skill: string | undefined;
   let passRate: number | undefined;
+  let compare: boolean | undefined;
+  let compareOptions: CompareOption[] = [
+    // Anthropic
+    { model: "claude-sonnet-5", withSkill: true },
+    { model: "claude-sonnet-5", withSkill: false },
+    { model: "claude-opus-4.8", withSkill: true },
+    { model: "claude-opus-4.8", withSkill: false },
+    // OpenAI
+    { model: "gpt-5.6-sol", withSkill: true },
+    { model: "gpt-5.6-sol", withSkill: false },
+    { model: "gpt-5.6-terra", withSkill: true },
+    { model: "gpt-5.6-terra", withSkill: false },
+    // Google
+    { model: "gemini-3.1-pro-preview", withSkill: true },
+    { model: "gemini-3.1-pro-preview", withSkill: false },
+  ];
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -243,6 +266,45 @@ function parseCliOptions(argv: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--compare") {
+      compare = true;
+      continue;
+    }
+
+    if (arg === "--compare-options") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --compare-options");
+      }
+      const parsedOptions: CompareOption[] = value.split(",").map(v => {
+        const [model, withSkill] = v.split("/");
+        return {
+          model: model,
+          withSkill: withSkill === "true"
+        };
+      });
+
+      compareOptions = parsedOptions;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--compare-options=")) {
+      const value = arg.slice("--compare-options=".length);
+      if (!value) {
+        throw new Error("Missing value for --compare-options");
+      }
+      const parsedOptions: CompareOption[] = value.split(",").map(v => {
+        const [model, withSkill] = v.split("/");
+        return {
+          model: model,
+          withSkill: withSkill === "true"
+        };
+      });
+      compareOptions = parsedOptions;
+      continue;
+    }
+
     if (arg === "--output-dir") {
       console.warn("Ignoring user-provided --output-dir; this wrapper manages output directory.");
       const next = argv[i + 1];
@@ -265,6 +327,8 @@ function parseCliOptions(argv: string[]): CliOptions {
     skill,
     passRate,
     forwardedArgs,
+    compare,
+    compareOptions
   };
 }
 
@@ -276,13 +340,18 @@ function printUsage(): void {
     "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: azure-skills). Note that a plugin's dirname may be different from its name.",
     "  --skill <name>            Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
+    "  --compare                 Run multiple trials with different configurations for comparison",
+    "  --compare-options <model-1>/<with-skill>,..,<model-N>/<with-skill> The configurations to run for comparison. <model> is the model name recognizable by Copilot CLI. <w/o-skill> is 'true' or 'false'. If not provided, a default list of configurations will be used",
     "  --help                    Show this help",
     "",
     "All unknown options are forwarded to the underlying vally command.",
   ].join("\n"));
 }
 
-async function runVallyCommand(args: string[]): Promise<number> {
+/**
+ * @param envVars Additional environment variables to add to the process executing the vally tests. Environment variables from the current process will be inherited.
+ */
+async function runVallyCommand(args: string[], envVars?: NodeJS.ProcessEnv): Promise<number> {
   return await new Promise<number>((resolve, reject) => {
     let child: ChildProcess;
     // On windows, directly spawning a child process with "npx" as the command results in ENOENT error for "npx". This behavior is different from other platforms such as macOS or Linux.
@@ -292,10 +361,12 @@ async function runVallyCommand(args: string[]): Promise<number> {
     if (os.platform() === "win32") {
       child = spawn("cmd", ["/c", "npx", "-y", "@microsoft/vally-cli", "eval", ...args], {
         stdio: ["inherit", "pipe", "pipe"],
+        env: { ...process.env, ...envVars }
       });
     } else {
       child = spawn("npx", ["-y", "@microsoft/vally-cli", "eval", ...args], {
         stdio: ["inherit", "pipe", "pipe"],
+        env: { ...process.env, ...envVars }
       });
     }
 
@@ -329,6 +400,7 @@ async function main(): Promise<void> {
   const options = parseCliOptions(rawArgs);
   const pluginDirname = options.plugin ?? "azure-skills";
   const passRateThreshold = options.passRate ?? 0.75;
+  const runCompare = rawArgs.includes("--compare");
 
   // Wrapper-specific args are parsed above; all other args are preserved here.
   const forwardedArgs = [...options.forwardedArgs];
@@ -354,11 +426,24 @@ async function main(): Promise<void> {
     forwardedArgs.splice(0, 0, ...evalSpecPaths.map(v => ["--eval-spec", v]).flat());
   }
 
-  const exitCode = await runVallyCommand(forwardedArgs);
-  await convertAllTestResult(passRateThreshold);
-
-  if (exitCode !== 0) {
-    process.exitCode = exitCode;
+  if (!runCompare) {
+    const exitCode = await runVallyCommand(forwardedArgs);
+    await convertAllTestResult(passRateThreshold);
+    if (exitCode !== 0) {
+      process.exitCode = exitCode;
+      return;
+    }
+  } else {
+    const compareOptions = options.compareOptions ?? [];
+    for (const compareOption of compareOptions) {
+      const extraEnvVar = {
+        NO_SKILLS: !compareOption.withSkill ? "true" : "false",
+        MODEL_OVERRIDE: compareOption.model
+      };
+      const exitCode = await runVallyCommand(forwardedArgs, extraEnvVar);
+      process.exitCode = Math.max(process.exitCode ? Number(process.exitCode) : 0, exitCode);
+      await convertAllTestResult(passRateThreshold);
+    }
   }
 }
 
