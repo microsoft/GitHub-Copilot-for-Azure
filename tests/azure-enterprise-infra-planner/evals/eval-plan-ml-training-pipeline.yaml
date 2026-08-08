@@ -1,0 +1,57 @@
+name: azure-enterprise-infra-planner-eval-plan-ml-training-pipeline
+description: |
+  ML training pipeline with GPU.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-ml-training-pipeline
+    prompt: >
+      Provision an Azure ML workspace for distributed deep learning, scale GPU
+      clusters dynamically, and version datasets with Azure ML Data. Assume all
+      defaults to create the preliminary resource list, then approve the
+      preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)ml.?workspace|machine.?learning|azure.?ml"
+      - type: output-matches
+        config:
+          pattern: "(?i)gpu|compute|cluster|training|deep.?learning"
+      - type: output-matches
+        config:
+          pattern: "(?i)data|dataset|version|storage"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'ml|machinelearning|workspace' .azure/infrastructure-plan.json"
+
+  - name: trigger-should-ml-training
+    prompt: "Provision ML training infrastructure with GPU clusters"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner

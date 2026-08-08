@@ -1,0 +1,49 @@
+name: azure-enterprise-infra-planner-eval-plan-ml-inference
+description: |
+  ML inference endpoint.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-ml-inference
+    prompt: >
+      Launch an ML model scoring endpoint using Azure ML online endpoint, load
+      model from registry, enforce JWT authentication, and log predictions to
+      Azure Monitor. Assume all defaults to create the preliminary resource list,
+      then approve the preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)ml.?endpoint|online.?endpoint|scoring|inference|model"
+      - type: output-matches
+        config:
+          pattern: "(?i)jwt|auth|identity|token|secure"
+      - type: output-matches
+        config:
+          pattern: "(?i)monitor|log|prediction|telemetry|insight"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'ml|machinelearning|endpoint' .azure/infrastructure-plan.json"

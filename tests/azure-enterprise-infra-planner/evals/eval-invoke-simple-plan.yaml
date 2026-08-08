@@ -1,0 +1,37 @@
+name: azure-enterprise-infra-planner-eval-invoke-simple-plan
+description: |
+  Simple plan: web app + database + cache.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: invoke-simple-plan
+    prompt: >
+      Plan Azure infrastructure for a web app with a database and a Redis cache.
+      Assume all defaults to create the preliminary resource list, then approve
+      the preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
