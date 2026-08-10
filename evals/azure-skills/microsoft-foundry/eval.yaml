@@ -543,7 +543,7 @@ stimuli:
           threshold: 1
           prompt: |
             Verify that the coding agent inspected the existing OpenAI Agents SDK project and re-hosted it as a Microsoft Foundry hosted agent
-            while preserving its core agent behavior and local get_order_status MCP tool. Changes to the HTTP server or protocol adapter are acceptable
-            when needed for the Foundry runtime and should not be treated as replacing the underlying agent architecture.
+            while preserving its underlying OpenAI Agents SDK architecture, core agent behavior, and local get_order_status MCP tool.
+            Replacing or adapting only the HTTP server or protocol adapter for the Foundry runtime is acceptable and does not count as replacing the underlying SDK architecture.
             Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy,
             invoked the deployed agent with an order-status request, and received a successful tool-grounded response.
