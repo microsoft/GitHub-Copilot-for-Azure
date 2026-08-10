@@ -495,7 +495,8 @@ stimuli:
     prompt: |
       Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly.
 
-      For Foundry model, select gpt-5.4-nano
+      Foundry model: gpt-5.4-nano
+      Region: North Central US
     graders:
       - type: skill-invocation
         config:
@@ -528,7 +529,8 @@ stimuli:
     prompt: |
       This project is our existing Python customer-support agent built using OpenAI Agents SDK and self-hosted as a container on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project with Foundry models and deploy the agent there, then invoke the deployed agent to make sure it works after deployment.
       
-      For Foundry model, select gpt-5.4-nano
+      Foundry model: gpt-5.4-nano
+      Region: North Central US
     graders:
       - type: skill-invocation
         config:
@@ -540,4 +542,8 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent inspected the existing OpenAI Agents SDK project and re-hosted it as a Microsoft Foundry hosted agent with only the changes required by the Foundry runtime, without unnecessarily redesigning or replacing its architecture. The migrated code must preserve the existing HTTP service, order-support behavior, and local get_order_status MCP tool. Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy, invoked the deployed agent after deployment with an order-status request, and received a successful tool-grounded response. Fail if the SDK architecture was unnecessarily replaced, the MCP tool was removed or replaced with direct data access, or any required migration, validation, deployment, tool, or invocation behavior is missing or unsuccessful.
+            Verify that the coding agent inspected the existing OpenAI Agents SDK project and re-hosted it as a Microsoft Foundry hosted agent
+            while preserving its core agent behavior and local get_order_status MCP tool. Changes to the HTTP server or protocol adapter are acceptable
+            when needed for the Foundry runtime and should not be treated as replacing the underlying agent architecture.
+            Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy,
+            invoked the deployed agent with an order-status request, and received a successful tool-grounded response.
