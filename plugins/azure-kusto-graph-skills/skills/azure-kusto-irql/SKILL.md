@@ -134,6 +134,8 @@ Always pipe (`|`) between steps. Extractors and Enrichers use `| invoke Function
 
 ## Examples
 
+For additional prompts and worked examples, see [references/EXAMPLES.md](references/EXAMPLES.md).
+
 ### Brute-force detection
 ```kql
 Get_Event_Authentication

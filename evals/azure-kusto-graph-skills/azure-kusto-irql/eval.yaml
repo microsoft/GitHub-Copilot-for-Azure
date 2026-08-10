@@ -96,5 +96,5 @@ stimuli:
     graders:
       - type: skill-invocation
         config:
-          forbidden:
+          disallowed:
             - azure-kusto-irql

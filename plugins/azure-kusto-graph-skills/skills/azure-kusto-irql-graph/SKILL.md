@@ -195,6 +195,8 @@ Given the supplied query columns and the user's graph description, generate the 
 
 ## Examples
 
+For additional prompts and worked examples, see [references/EXAMPLES.md](references/EXAMPLES.md).
+
 ### Authentication graph: IP -> AuthEvent -> User -> Host
 
 **Input query**: `Get_Event_Authentication_All | where Result == "Failed Login" | take 200`
