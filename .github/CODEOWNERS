@@ -87,5 +87,29 @@
 /tests/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
 
 # Plugin skills evals owners (multi-plugin)
+/evals/azure-skills/airunway-aks-setup/ @tmeschter @RickWinter
+/evals/azure-skills/appinsights-instrumentation/ @JasonYeMSFT @RickWinter
+/evals/azure-skills/azure-ai/ @JasonYeMSFT @RickWinter
+/evals/azure-skills/azure-aigateway/ @azaslonov @RickWinter
+/evals/azure-skills/azure-cloud-migrate/ @saikoumudi @MadhuraBharadwaj-MSFT @RickWinter
+/evals/azure-skills/azure-compliance/ @saikoumudi @RickWinter
+/evals/azure-skills/azure-compute/ @alex-thompson @rakal-dyh @joybb @rmmue21 @RickWinter
+/evals/azure-skills/azure-cost/ @saikoumudi @RickWinter
+/evals/azure-skills/azure-deploy/ @microsoft/github-copilot-for-azure-writers @paulyuk
+/evals/azure-skills/azure-diagnostics/ @tmeschter @saikoumudi @RickWinter
+/evals/azure-skills/azure-enterprise-infra-planner/ @Jbrocket @micha31r @arunrab @RickWinter
 /evals/azure-skills/azure-kubernetes/ @saikoumudi @chandraneel @gambtho @RickWinter
+/evals/azure-skills/azure-kusto/ @saikoumudi @RickWinter
+/evals/azure-skills/azure-messaging/ @kashifkhan @RickWinter
+/evals/azure-skills/azure-prepare/ @microsoft/github-copilot-for-azure-writers
+/evals/azure-skills/azure-quotas/ @rakal-dyh @RickWinter
+/evals/azure-skills/azure-reliability/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
+/evals/azure-skills/azure-resource-lookup/ @JasonYeMSFT @RickWinter
+/evals/azure-skills/azure-resource-visualizer/ @tmeschter @RickWinter
+/evals/azure-skills/azure-storage/ @JasonYeMSFT @RickWinter
+/evals/azure-skills/azure-upgrade/ @MadhuraBharadwaj-MSFT @saikoumudi @RickWinter
+/evals/azure-skills/azure-validate/ @microsoft/github-copilot-for-azure-writers
+/evals/azure-skills/entra-agent-id/ @ArLucaID @RickWinter
+/evals/azure-skills/entra-app-registration/ @JasonYeMSFT @RickWinter
 /evals/azure-skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
+/evals/azure-skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
