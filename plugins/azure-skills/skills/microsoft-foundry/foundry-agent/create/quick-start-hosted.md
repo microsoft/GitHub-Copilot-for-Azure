@@ -97,6 +97,8 @@ cd <project-name>
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
+Pass `--deploy-mode code` by default to use the direct code deployment.
+
 ```bash
 azd ai agent init --no-prompt \
   -m "<manifestUrl>" \

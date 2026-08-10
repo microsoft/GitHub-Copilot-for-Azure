@@ -111,6 +111,8 @@ Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry
 
 Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
 
+Pass `--deploy-mode code` by default to use the direct code deployment.
+
 ```bash
 azd ai agent init --no-prompt \
   -m "<manifestUrl>" \
