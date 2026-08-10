@@ -96,7 +96,6 @@ stimuli:
       tier: full
       cost: llm
       area: output
-      debug: yes
       skill: discover-azure-skills
     graders:
       - type: skill-invocation

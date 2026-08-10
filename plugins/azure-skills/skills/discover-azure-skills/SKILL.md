@@ -31,7 +31,7 @@ Use the descriptions to further eliminate skills that aren't relevant.
 
 For each relevant skill, discover their plugin name by reading the `plugin.json` from the GitHub Contents API: https://raw.githubusercontent.com/microsoft/azure-skills/main/.github/plugins/{plugin-dirname}/.plugin/plugin.json
 
-This is important because a plugin's name may be different from its directory name. The installation commands depends on the plugin's name.
+This is important because a plugin's name may be different from its directory name. The installation commands depend on the plugin's name.
 
 5. Report the matched skills
 
