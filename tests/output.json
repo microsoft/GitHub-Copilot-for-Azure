@@ -1,0 +1,19 @@
+{
+  "stimuliName": "Azure Speech text-to-speech",
+  "skill": {
+    "pluginDirname": "azure-skills",
+    "name": "azure-ai"
+  },
+  "runs": [
+    {
+      "model": "gpt-5.6-terra",
+      "withSkill": true,
+      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31221413568"
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "withSkill": false,
+      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31221415582"
+    }
+  ]
+}

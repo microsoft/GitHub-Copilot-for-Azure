@@ -1,0 +1,8 @@
+{
+    "stimuliName": "Azure Speech text-to-speech",
+    "skill": {
+        "pluginDirname": "azure-skills",
+        "name": "azure-ai"
+    },
+    "branch": "main"
+}

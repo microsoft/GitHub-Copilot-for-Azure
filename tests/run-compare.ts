@@ -9,14 +9,19 @@ const __dirname = path.dirname(__filename);
 
 type CompareInput = {
     /**
-     * The stimuli to run
+     * The stimuli to run.
      */
     stimuliName: string;
 
     /**
-     * The skill the stimuli belongs to
+     * The skill the stimuli is for.
      */
     skill: SkillRef;
+
+    /**
+     * The branch to run the tests on.
+     */
+    branch?: string;
 
     /**
      * Environmental variations.
@@ -38,7 +43,6 @@ type CompareOption = {
     withSkill: boolean;
 };
 
-// Some options that can be used
 const defaultCompareOptions: CompareOption[] = [
     // Anthropic
     // { model: "claude-sonnet-5" },
@@ -54,12 +58,11 @@ const defaultCompareOptions: CompareOption[] = [
     // { model: "gemini-3.1-pro-preview" },
 ];
 
-// Id of the Integration Tests - all workflow
 const repo = "microsoft/GitHub-Copilot-for-Azure";
+// Id of the "Integration Tests - all" workflow
 const integrationTestWorkflowId = "233698760";
-const branch = "chuye/no-skill-compare-2";
 
-async function queueComparisonRun(skill: SkillRef, option: CompareOption): Promise<string> {
+async function queueComparisonRun(branch: string, skill: SkillRef, option: CompareOption): Promise<string> {
     const skillsInput = `${skill.pluginDirname}/${skill.name}`;
     const args = ["workflow", "run", integrationTestWorkflowId, "--repo", repo, "--ref", branch, "--json"];
     const inputs = JSON.stringify({
@@ -100,6 +103,12 @@ function readCompareInput(filePath: string): CompareInput {
     return input;
 }
 
+/**
+ * Run a matrix of comparison runs.
+ * Each comparison test will feature one variation of environment, such as the model and whether skills are included.
+ * Each comparison test run will be scheduled to run in GitHub Actions and persist its artifacts in the manual-integration-reports blob container.
+ * An output file will be written to map each comparison test to its scheduled run for locating its published artifacts.
+ */
 async function main() {
     const inputPath = process.argv[2];
     if (!inputPath) {
@@ -109,19 +118,26 @@ async function main() {
     const input = readCompareInput(inputPath);
     const options = input.compareOptions ?? defaultCompareOptions;
     const results = [];
+    const branch = input.branch ?? "main";
+    const skill = input.skill;
     for (const option of options) {
         // Each output is a url to the queued run
         // e.g. https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31218229738
-        const output = await queueComparisonRun(input.skill, option);
+        const output = await queueComparisonRun(branch, skill, option);
         const entry = {
             model: option.model,
-            skill: input.skill,
             withSkill: option.withSkill,
             run: output
         };
         results.push(entry);
     }
-    writeFileSync(path.resolve(__dirname, "results.json"), JSON.stringify(results, null, 2));
+    const output = {
+        stimuliName: input.stimuliName,
+        skill: input.skill,
+        runs: results
+    };
+    const outputFilename = `comparison-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    writeFileSync(path.resolve(__dirname, outputFilename), JSON.stringify(output, null, 2));
 }
 
 main();
