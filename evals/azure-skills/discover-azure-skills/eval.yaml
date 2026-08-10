@@ -1,0 +1,90 @@
+name: discover-azure-skills-routing-eval
+description: |
+  Integration evaluation for discover-azure-skills routing.
+  Tests skill invocation for Azure skill discovery and plugin recommendation prompts.
+
+tags:
+  type: integration
+  skill: discover-azure-skills
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Find an Azure skill for a task"
+    prompt: "Find an Azure agent skill that can help me troubleshoot an AKS cluster."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: discover-azure-skills
+      earlyTerminate: '[{"type":"skill-call","skill":"discover-azure-skills"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - discover-azure-skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Recommend Azure skills"
+    prompt: "Recommend Azure skills for reviewing cloud costs and finding savings opportunities."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: discover-azure-skills
+      earlyTerminate: '[{"type":"skill-call","skill":"discover-azure-skills"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - discover-azure-skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Choose an Azure plugin"
+    prompt: "Search the Azure skills catalog and tell me which plugin contains a skill for configuring Azure Load Testing."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: discover-azure-skills
+      earlyTerminate: '[{"type":"skill-call","skill":"discover-azure-skills"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - discover-azure-skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Discover skills for an Azure workflow"
+    prompt: "Discover skills that could help with my Azure migration workflow."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: discover-azure-skills
+      earlyTerminate: '[{"type":"skill-call","skill":"discover-azure-skills"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - discover-azure-skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
