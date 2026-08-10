@@ -238,4 +238,3 @@ The repo includes agent skills under `.github/skills/` that can help with develo
 | `sensei` | Iteratively improving skill frontmatter compliance |
 | `analyze-test-run` | Investigating GitHub Actions test run failures |
 | `file-test-bug` | Filing GitHub issues for test failures |
-| `submit-skill-fix-pr` | Submitting PRs with validated skill fixes |
