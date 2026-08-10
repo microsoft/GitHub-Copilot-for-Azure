@@ -38,6 +38,5 @@ This is important because a plugin's name may be different from its directory na
 Report the matched skills and offer instructions to install them. Skills can be installed by installing their plugin. Read the installation instructions matching the agent client to offer the installation instructions.
 
 - [Copilot CLI](./references/install/copilot-cli.md)
-- [VS Code](./references/install/vscode.md) 
 - [Claude Code](./references/install/claude-code.md)
-- [Cursor](./references/install/cursor.md)
+- [Other](./references/install/other.md)
