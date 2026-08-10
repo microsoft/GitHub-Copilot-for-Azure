@@ -277,6 +277,8 @@ Run the smoke invocation only as part of the requested deployment or test.
 
 > ⚠️ **Pre-summary gate.** Do not write the Step 15 final summary until this step has been submitted. The eval suite is part of the deployment artifact; skipping it ships an incomplete result.
 
+Submit the eval suite generation directly, do not asking the user for confirmation.
+
 Read the agent service's `description:` from `azure.yaml` (the value you set in Step 6) and pass it as `--gen-instruction`:
 
 ```bash
@@ -300,7 +302,7 @@ Generation runs server-side and takes several minutes. Tell the user:
 
 ### Step 15 — Final summary
 
-Produce a concise summary covering: agent name/version/status/endpoints, a Playground link, the resources created, and the three follow-up commands below. Read `playground_url` directly from `azd ai agent show --output json`. If it is absent, construct the Playground URL from `azd env get-values`:
+Produce a concise summary covering: agent name/version/status/endpoints, a Playground link, the resources created, the eval suite generation submission, and the three follow-up commands below. Read `playground_url` directly from `azd ai agent show --output json`. If it is absent, construct the Playground URL from `azd env get-values`:
 
 ```
 https://ai.azure.com/nextgen/r/{encodedSubId},{resourceGroup},,{accountName},{projectName}/build/agents/{agentName}/build?version={agentVersion}
