@@ -16,4 +16,4 @@ Run this slash command in Claude Code
 /plugin install {plugin-name}@azure-skills
 ```
 
-> Note: {plug-name} is the discovered plugin's name, not its directory name.
+> Note: {plugin-name} is the discovered plugin's name, not its directory name.
