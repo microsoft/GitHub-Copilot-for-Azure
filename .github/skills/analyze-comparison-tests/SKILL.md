@@ -31,14 +31,20 @@ The downloaded artifacts will have the following folder structure:
 
 ```text
 comparison-artifacts/
-├── <model>-with-skill/
-├──   agent-metadata-<date-string-1>.md       (trajectory of 1st trial)
-├──   agent-metadata-<date-string-2>.md       (trajectory of 2nd trial)
-├──   ...
-├── <model>-without-skill/
-├──   agent-metadata-<date-string-1>.md       (trajectory of 1st trial)
-├──   agent-metadata-<date-string-2>.md       (trajectory of 2nd trial)
-├──   ...
+├── <stimulus-name-1>/
+│   ├── <model>-with-skill/
+│   │   ├── agent-metadata-<date-string-1>.md
+│   │   ├── agent-metadata-<date-string-2>.md
+│   │   └── ...
+│   └── <model>-without-skill/
+│       ├── agent-metadata-<date-string-1>.md
+│       ├── agent-metadata-<date-string-2>.md
+│       └── ...
+└── <stimulus-name-2>/
+    ├── <model>-with-skill/
+    │   └── agent-metadata-*.md
+    └── <model>-without-skill/
+        └── agent-metadata-*.md
 ```
 
-Each `<model>-with-skill` or `<model>-without-skill` directory contains the test run trajectories using the specified model with or without skills. Each trajectory is a markdown file that records user prompts, tool call requests, tool execution results, assistant responses that happened during the run. It also contains statistics such as token usage and turns. Based on the trajectories, answer the user's questions for each test run. Generate a report following the [report-template](./references/report-template.md) to show your answers.
+Each `<stimulus-name>/<model>-with-skill` or `<stimulus-name>/<model>-without-skill` directory contains the test run trajectories for that stimulus using the specified model with or without skills. Each trajectory is a markdown file that records user prompts, tool call requests, tool execution results, assistant responses that happened during the run. It also contains statistics such as token usage and turns. Based on the trajectories, answer the user's questions for each test run. Generate a report following the [report-template](./references/report-template.md) to show your answers.
