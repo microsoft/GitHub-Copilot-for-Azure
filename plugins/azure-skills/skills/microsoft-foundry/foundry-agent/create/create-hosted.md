@@ -36,6 +36,20 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 | Local debugging | `azd ai agent run --no-client` | Limited |
 | Output | New immutable agent version per `azd deploy` | `agent_update` via MCP / SDK |
 
+## azd Sample Selection Guidance
+
+Use this azd sample selection guidance when the workflow refers to azd sample selection guidance.
+
+List the curated catalog (filter by language if known):
+
+```bash
+azd ai agent sample list --language python --output json
+```
+
+Capture the selected sample's `manifestUrl`.
+
+> **Important:** Always select the best-matching sample from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
+
 ## Workflow
 
 ### Step 1 -- Verify the environment
@@ -95,15 +109,7 @@ If unsure, inspect the workspace and user intent. Do not invent a manifest URL o
 
 ### Step 4a -- New agent: scaffold from a sample
 
-List the curated catalog (filter by language if known):
-
-```bash
-azd ai agent sample list --language python --output json
-```
-
-Each entry has a `manifestUrl` and an `initCommand`. Capture the `manifestUrl`
-
-> **Important:** Always select the best-matching sample from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
+Follow [azd Sample Selection Guidance](#azd-sample-selection-guidance) and use the captured `manifestUrl` to scaffold the agent.
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
@@ -183,7 +189,7 @@ Use when the workspace already contains an agent project or source code.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
-- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, run `azd ai agent sample list` to browse available samples for code reference.
+- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
 - **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, follow the Re-host steps below.
 
 #### Re-host: collect information
@@ -197,7 +203,7 @@ Infer these choices from the user's request and current code. Ask only for infor
 
 #### Re-host: adapt and initialize
 
-Use `azd ai agent sample list --language <language> --output json` to find the closest relevant sample for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications.
+Use `azd ai agent sample list --language <language> --output json` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to find the closest relevant sample for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications.
 
 After resolving the choices, run:
 
@@ -283,7 +289,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 
 ## Common Guidelines
 
-1. **Sample-first** -- always get `manifestUrl` from `azd ai agent sample list`.
+1. **Sample-first** -- select the sample and capture its `manifestUrl` according to the [azd Sample Selection Guidance](#azd-sample-selection-guidance).
 2. **Prefer azd over az** -- fall back to `az` only as a last resort, with explicit consent.
 3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user and stop.
 4. **JSON output** -- add `--output json` only to read-only `azd ai agent` commands such as `show`. Do not add it to `azd ai agent invoke`; invoke supports `default` and `raw`, not `json`.
