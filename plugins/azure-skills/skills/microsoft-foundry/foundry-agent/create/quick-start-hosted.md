@@ -13,7 +13,7 @@ Use this when the request is to create a new hosted Foundry agent end-to-end —
 | Property | Default (when user is silent) | Override |
 |----------|-------------------------------|----------|
 | Language / runtime | Python 3.13 (`python_3_13`) | Any of `python_3_13`, `python_3_14`, `dotnet_10` |
-| Sample | Featured basic starter for the chosen language (`azd ai agent sample list --featured-only --language <lang> --output json`) | User may name a different featured sample |
+| Sample | Featured basic starter for the chosen language (`azd ai agent sample list --language <lang> --output json`) | User may name a different featured sample |
 | Subscription | `az account show` | User may supply |
 | Region | `northcentralus` | Ask user to confirm or pick another |
 | Foundry project | Ask if the user doesn't mention one | create new → no `--project-id`; existing → pass `--project-id` (ARM ID / endpoint); no mention → stop and ask (existing vs new) |
@@ -72,7 +72,7 @@ Use the returned `id` value. Never guess or construct the ARM ID from the endpoi
 ### Step 3 — Pick the sample
 
 ```bash
-azd ai agent sample list --featured-only --language <lang> --output json
+azd ai agent sample list --language <lang> --output json
 ```
 
 > `--language` here takes the short form (`python`, `dotnetCsharp`) — not the runtime token (`python_3_13` fails with `unknown language`). The runtime tokens are only used in Step 5's `azd ai agent init --runtime ...`.
