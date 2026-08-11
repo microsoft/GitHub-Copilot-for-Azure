@@ -103,7 +103,7 @@ azd ai agent init --no-prompt \
   --agent-name <project>
 ```
 
-Immediately after init, write the subscription and region collected in Step 2 to the active azd environment:
+After the `azd ai agent init` completes, go to the project folder and write the subscription and region collected in Step 2 to the active azd environment:
 
 ```bash
 azd env set \
