@@ -523,7 +523,7 @@ stimuli:
         - src: fixture/openai-agents-sdk
           dest: .
     constraints:
-      max_turns: 50
+      max_turns: 70
     tags:
       id: migration-openai-agents-sdk-to-foundry
       type: foundry-e2e
