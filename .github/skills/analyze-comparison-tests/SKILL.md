@@ -14,13 +14,11 @@ metadata:
 
 Execute the collect-artifacts script to download the test run artifacts.
 
-- bash: [collect-artifacts.sh](./scripts/collect-artifacts.sh)
-- powershell: [collect-artifacts.ps1](./scripts/collect-artifacts.ps1)
-
-The user must provide an JSON file to correlate each comparison test run with the GitHub Actions run. The script expects one input argument as the path to this JSON file.
+The user must provide an JSON file to correlate each comparison test run with the GitHub Actions run. The script expects one input argument as the path to this JSON file. The JSON input is supposed to be the JSON output when queuing the comparison test runs using the `npm run compare` command.
 
 ```bash
-collect-artifacts.sh input.json
+cd tests/
+tsx collect-artifacts.ts input.json
 ```
 
 The collect-artifacts script will download the test run artifacts to a directory named `comparison-artifacts` in the current working directory. Before executing the script, check if there is already such an directory. If so, skip executing the script and proceed to step 2.

@@ -1,7 +1,5 @@
 # Comparison Report
 
-Stimuli name: {stimuli name}
-
 Skill: {plugin dirname/skill name}
 
 ## Answers
