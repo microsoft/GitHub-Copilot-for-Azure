@@ -134,6 +134,7 @@ async function main() {
     const output = {
         stimuliName: input.stimuliName,
         skill: input.skill,
+        date: new Date().toISOString().slice(0, 10), // Get yyyy-mm-dd date string
         runs: results
     };
     const outputFilename = `comparison-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;

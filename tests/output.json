@@ -4,6 +4,7 @@
     "pluginDirname": "azure-skills",
     "name": "azure-ai"
   },
+  "date": "2026-08-07",
   "runs": [
     {
       "model": "gpt-5.6-terra",
