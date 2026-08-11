@@ -272,7 +272,7 @@ Run the smoke invocation only as part of the requested deployment or test.
 
 > ⚠️ **Pre-summary gate.** Do not write the Step 14 final summary until this step has been submitted. The eval suite is part of the deployment artifact; skipping it ships an incomplete result.
 
-Submit the eval suite generation directly, do not asking the user for confirmation.
+Submit the eval suite generation directly, do not ask the user for confirmation.
 
 Read the agent service's `description:` from `azure.yaml` (the value you set in Step 5) and pass it as `--gen-instruction`:
 
