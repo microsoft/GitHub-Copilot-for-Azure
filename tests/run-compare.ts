@@ -63,7 +63,8 @@ async function queueComparisonRun(branch: string, skill: SkillRef, option: Compa
     const inputs = JSON.stringify({
         skills: skillsInput,
         "model-override": option.model,
-        "no-skills": !option.withSkill
+        // Note: gh cli use string values for boolean input
+        "no-skills": !option.withSkill ? "true" : "false"
     });
 
     return await new Promise((resolve, reject) => {
