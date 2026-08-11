@@ -49,6 +49,7 @@ stimuli:
       cost: llm
       area: routing
       skill: azure-deploy
+      category: skill-invocation
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
     graders:
       - type: skill-invocation
@@ -78,6 +79,7 @@ stimuli:
       cost: llm
       area: routing
       skill: azure-deploy
+      category: skill-invocation
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
     graders:
       - type: skill-invocation
@@ -109,6 +111,7 @@ stimuli:
       cost: llm
       area: routing
       skill: azure-deploy
+      category: skill-invocation
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
     graders:
       - type: skill-invocation
@@ -142,6 +145,7 @@ stimuli:
       cost: llm
       area: routing
       skill: azure-deploy
+      category: skill-invocation
       earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
     graders:
       - type: skill-invocation
