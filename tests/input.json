@@ -1,8 +1,7 @@
 {
-    "stimuliName": "Azure Speech text-to-speech",
     "skill": {
         "pluginDirname": "azure-skills",
-        "name": "azure-ai"
+        "name": "azure-resource-lookup"
     },
-    "branch": "main"
+    "branch": "chuye/no-skill-compare-2"
 }

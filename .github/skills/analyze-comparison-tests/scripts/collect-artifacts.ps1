@@ -16,15 +16,6 @@ $StorageAccount = "strdashboarddevveobvk"
 $Container = "manual-integration-reports"
 $OutputRoot = "comparison-artifacts"
 
-# Mirrors sanitizeTestName() used by the test harness when writing blob paths.
-function Get-SanitizedTestName {
-    param([string]$Name)
-
-    $sanitized = $Name -replace '[<>:"/\\|?*]', "-" -replace "\s+", "_" -replace "-+", "-" -replace "_+", "_"
-    if ($sanitized.Length -gt 200) { $sanitized = $sanitized.Substring(0, 200) }
-    return $sanitized
-}
-
 if ([string]::IsNullOrWhiteSpace($InputFile)) {
     Write-Error "Error: expected the -InputFile parameter (path to the input JSON file)."
     exit 2
@@ -50,14 +41,11 @@ catch {
 
 $date = $config.date
 $skillName = $config.skill.name
-$stimuliName = $config.stimuliName
 
-if ([string]::IsNullOrWhiteSpace($date) -or [string]::IsNullOrWhiteSpace($skillName) -or [string]::IsNullOrWhiteSpace($stimuliName)) {
-    Write-Error "Error: input JSON must define 'date', 'skill.name', and 'stimuliName'."
+if ([string]::IsNullOrWhiteSpace($date) -or [string]::IsNullOrWhiteSpace($skillName)) {
+    Write-Error "Error: input JSON must define 'date' and 'skill.name'."
     exit 2
 }
-
-$sanitizedStimuliName = Get-SanitizedTestName -Name $stimuliName
 
 if (-not $config.runs -or $config.runs.Count -eq 0) {
     Write-Error "Error: input JSON contains no runs."
@@ -77,48 +65,82 @@ foreach ($run in $config.runs) {
     }
 
     $suffix = if ($run.withSkill) { "with-skill" } else { "without-skill" }
-    $destDir = Join-Path $OutputRoot "$($run.model)-$suffix"
 
-    $prefix = "$date/$runId/$skillName/${skillName}_$sanitizedStimuliName/agent-metadata-"
-
-    Write-Host "Listing blobs under $Container/$prefix ..."
-    $blobs = az storage blob list `
+    # Discover stimuli for this run by listing blobs under {date}/{runId}/{skill-name}_ prefix.
+    Write-Host "Discovering stimuli for run $runId under $Container/$date/$runId/$skillName/${skillName}_ ..."
+    $discoveryResult = az storage blob list `
         --account-name $StorageAccount `
         --container-name $Container `
-        --prefix $prefix `
+        --prefix "$date/$runId/$skillName/${skillName}_" `
         --auth-mode login `
         --query "[?ends_with(name, '.md')].name" `
         -o tsv
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Error: failed to list blobs for run $runId."
+        Write-Error "Error: failed to discover blobs for run $runId."
         $failed = $true
         continue
     }
 
-    $blobNames = @($blobs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    if ($blobNames.Count -eq 0) {
-        Write-Error "Error: no trajectory blobs found under $prefix"
-        $failed = $true
+    # Extract unique stimuli names from blob paths.
+    # Blob path: {date}/{runId}/{skill}/{skill}_{stimuli}/agent-metadata-*.md
+    $discoveredStimuli = @{}
+    foreach ($blob in @($discoveryResult | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+        if ($blob -match "/$skillName/([^/]+)/") {
+            $stimuliPart = $blob -replace ".*/$skillName/([^/]+)/.*", '$1'
+            $discoveredStimuli[$stimuliPart] = $true
+        }
+    }
+
+    if ($discoveredStimuli.Count -eq 0) {
+        Write-Host "Warning: no stimuli directories discovered for run $runId"
         continue
     }
 
-    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+    Write-Host "Discovered stimuli for run $runId`: $($discoveredStimuli.Keys -join ', ')"
 
-    foreach ($blob in $blobNames) {
-        $fileName = ($blob -split "/")[-1]
-        Write-Host "  downloading $fileName -> $destDir"
-        az storage blob download `
+    foreach ($stimuliPart in $discoveredStimuli.Keys) {
+        $stimuliOutputDir = Join-Path $OutputRoot "$stimuliPart" "$($run.model)-$suffix"
+
+        $prefix = "$date/$runId/$skillName/${skillName}_$stimuliPart/agent-metadata-"
+
+        Write-Host "Listing blobs for stimuli '$stimuliPart' in run $runId ..."
+        $blobs = az storage blob list `
             --account-name $StorageAccount `
             --container-name $Container `
-            --name $blob `
-            --file (Join-Path $destDir $fileName) `
+            --prefix $prefix `
             --auth-mode login `
-            --overwrite `
-            --no-progress `
-            -o none
+            --query "[?ends_with(name, '.md')].name" `
+            -o tsv
         if ($LASTEXITCODE -ne 0) {
-            Write-Error "Error: failed to download blob $blob"
+            Write-Error "Error: failed to list blobs for run $runId, stimuli $stimuliPart."
             $failed = $true
+            continue
+        }
+
+        $blobNames = @($blobs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        if ($blobNames.Count -eq 0) {
+            Write-Host "Warning: no trajectory blobs found for run $runId, stimuli $stimuliPart."
+            continue
+        }
+
+        New-Item -ItemType Directory -Force -Path $stimuliOutputDir | Out-Null
+
+        foreach ($blob in $blobNames) {
+            $fileName = ($blob -split "/")[-1]
+            Write-Host "  downloading $fileName -> $stimuliOutputDir"
+            az storage blob download `
+                --account-name $StorageAccount `
+                --container-name $Container `
+                --name $blob `
+                --file (Join-Path $stimuliOutputDir $fileName) `
+                --auth-mode login `
+                --overwrite `
+                --no-progress `
+                -o none
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Error: failed to download blob $blob"
+                $failed = $true
+            }
         }
     }
 }

@@ -25,14 +25,6 @@ Exit codes:
 EOF
 }
 
-# Mirrors sanitizeTestName() used by the test harness when writing blob paths.
-sanitize_test_name() {
-  printf '%s' "$1" \
-    | tr '<>:"/\\|?*' '---------' \
-    | sed -E 's/[[:space:]]+/_/g; s/-+/-/g; s/_+/_/g' \
-    | cut -c1-200
-}
-
 if [[ $# -eq 1 && ( "$1" == "-h" || "$1" == "--help" ) ]]; then
   usage
   exit 0
@@ -60,14 +52,11 @@ done
 
 DATE=$(jq -r '.date // empty' "$INPUT_FILE")
 SKILL_NAME=$(jq -r '.skill.name // empty' "$INPUT_FILE")
-STIMULI_NAME=$(jq -r '.stimuliName // empty' "$INPUT_FILE")
 
-if [[ -z "$DATE" || -z "$SKILL_NAME" || -z "$STIMULI_NAME" ]]; then
-  echo "Error: input JSON must define 'date', 'skill.name', and 'stimuliName'." >&2
+if [[ -z "$DATE" || -z "$SKILL_NAME" ]]; then
+  echo "Error: input JSON must define 'date' and 'skill.name'." >&2
   exit 2
 fi
-
-SANITIZED_STIMULI_NAME=$(sanitize_test_name "$STIMULI_NAME")
 
 RUNS=$(jq -r '.runs[] | [.model, (.withSkill | tostring), .run] | @tsv' "$INPUT_FILE")
 
@@ -91,51 +80,81 @@ while IFS=$'\t' read -r MODEL WITH_SKILL RUN_URL; do
   fi
 
   if [[ "$WITH_SKILL" == "true" ]]; then
-    DEST_DIR="$OUTPUT_ROOT/$MODEL-with-skill"
+    SKILL_SUFFIX="with-skill"
   else
-    DEST_DIR="$OUTPUT_ROOT/$MODEL-without-skill"
+    SKILL_SUFFIX="without-skill"
   fi
 
-  PREFIX="$DATE/$RUN_ID/$SKILL_NAME/${SKILL_NAME}_$SANITIZED_STIMULI_NAME/agent-metadata-"
-
-  echo "Listing blobs under $CONTAINER/$PREFIX ..."
-  if ! BLOBS=$(az storage blob list \
+  # Discover stimuli for this run by listing blobs under {date}/{runId}/{skill-name}_ prefix.
+  echo "Discovering stimuli for run $RUN_ID under $CONTAINER/$DATE/$RUN_ID/$SKILL_NAME/${SKILL_NAME}_ ..."
+  if ! DISCOVERY_RESULT=$(az storage blob list \
     --account-name "$STORAGE_ACCOUNT" \
     --container-name "$CONTAINER" \
-    --prefix "$PREFIX" \
+    --prefix "$DATE/$RUN_ID/$SKILL_NAME/${SKILL_NAME}_" \
     --auth-mode login \
     --query "[?ends_with(name, '.md')].name" \
     -o tsv); then
-    echo "Error: failed to list blobs for run $RUN_ID." >&2
+    echo "Error: failed to discover blobs for run $RUN_ID." >&2
     FAILED=1
     continue
   fi
 
-  if [[ -z "$BLOBS" ]]; then
-    echo "Error: no trajectory blobs found under $PREFIX" >&2
-    FAILED=1
+  # Extract unique stimuli names from blob paths.
+  # Blob path: {date}/{runId}/{skill}/{skill}_{stimuli}/agent-metadata-*.md
+  DISCOVERED_STIMULI=$(echo "$DISCOVERY_RESULT" | grep -o "/${SKILL_NAME}_[^/]*/" | sed "s|/||g; s|${SKILL_NAME}_||" | sort -u)
+
+  if [[ -z "$DISCOVERED_STIMULI" ]]; then
+    echo "Warning: no stimuli directories discovered for run $RUN_ID" >&2
     continue
   fi
 
-  mkdir -p "$DEST_DIR"
+  echo "Discovered stimuli for run $RUN_ID: $DISCOVERED_STIMULI"
 
-  while IFS= read -r BLOB; do
-    [[ -z "$BLOB" ]] && continue
-    FILE_NAME="${BLOB##*/}"
-    echo "  downloading $FILE_NAME -> $DEST_DIR"
-    if ! az storage blob download \
+  while IFS= read -r STIMULI_PART; do
+    [[ -z "$STIMULI_PART" ]] && continue
+    # Organize output by discovered stimuli name.
+    STIMULI_OUTPUT_DIR="$OUTPUT_ROOT/$STIMULI_PART/$MODEL-$SKILL_SUFFIX"
+
+    PREFIX="$DATE/$RUN_ID/$SKILL_NAME/${SKILL_NAME}_$STIMULI_PART/agent-metadata-"
+
+    echo "Listing blobs for stimuli '$STIMULI_PART' in run $RUN_ID ..."
+    if ! BLOBS=$(az storage blob list \
       --account-name "$STORAGE_ACCOUNT" \
       --container-name "$CONTAINER" \
-      --name "$BLOB" \
-      --file "$DEST_DIR/$FILE_NAME" \
+      --prefix "$PREFIX" \
       --auth-mode login \
-      --overwrite \
-      --no-progress \
-      -o none; then
-      echo "Error: failed to download blob $BLOB" >&2
+      --query "[?ends_with(name, '.md')].name" \
+      -o tsv); then
+      echo "Error: failed to list blobs for run $RUN_ID, stimuli $STIMULI_PART." >&2
       FAILED=1
+      continue
     fi
-  done <<< "$BLOBS"
+
+    if [[ -z "$BLOBS" ]]; then
+      echo "Warning: no trajectory blobs found for run $RUN_ID, stimuli $STIMULI_PART." >&2
+      continue
+    fi
+
+    mkdir -p "$STIMULI_OUTPUT_DIR"
+
+    while IFS= read -r BLOB; do
+      [[ -z "$BLOB" ]] && continue
+      FILE_NAME="${BLOB##*/}"
+      echo "  downloading $FILE_NAME -> $STIMULI_OUTPUT_DIR"
+      if ! az storage blob download \
+        --account-name "$STORAGE_ACCOUNT" \
+        --container-name "$CONTAINER" \
+        --name "$BLOB" \
+        --file "$STIMULI_OUTPUT_DIR/$FILE_NAME" \
+        --auth-mode login \
+        --overwrite \
+        --no-progress \
+        -o none; then
+        echo "Error: failed to download blob $BLOB" >&2
+        FAILED=1
+      fi
+    done <<< "$BLOBS"
+  done <<< "$DISCOVERED_STIMULI"
 done <<< "$RUNS"
 
 if [[ "$FAILED" -ne 0 ]]; then

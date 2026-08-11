@@ -9,11 +9,6 @@ const __dirname = path.dirname(__filename);
 
 type CompareInput = {
     /**
-     * The stimuli to run.
-     */
-    stimuliName: string;
-
-    /**
      * The skill the stimuli is for.
      */
     skill: SkillRef;
@@ -32,8 +27,7 @@ type CompareInput = {
 
 type CompareOption = {
     /**
-     * The base model to run the stimuli with.
-     * The base model may run subagents with different models and unfortunately that's beyond our control.
+     * The base model to run the test with.
      */
     model: string;
 
@@ -47,11 +41,12 @@ const defaultCompareOptions: CompareOption[] = [
     // Anthropic
     // { model: "claude-sonnet-5" },
     // { model: "claude-opus-4.8" },
-    // { model: "claude-sonnet-4.6", withSkill: true },
-    // { model: "claude-sonnet-4.6", withSkill: false },
+    { model: "claude-sonnet-4.6", withSkill: true },
+    { model: "claude-sonnet-4.6", withSkill: false },
     // { model: "claude-opus-4.6" },
     // OpenAI
-    // { model: "gpt-5.6-sol" },
+    { model: "gpt-5.6-sol", withSkill: true },
+    { model: "gpt-5.6-sol", withSkill: false },
     { model: "gpt-5.6-terra", withSkill: true },
     { model: "gpt-5.6-terra", withSkill: false },
     // // Google
@@ -68,6 +63,7 @@ async function queueComparisonRun(branch: string, skill: SkillRef, option: Compa
     const inputs = JSON.stringify({
         skills: skillsInput,
         "model-override": option.model,
+        "no-skills": !option.withSkill
     });
 
     return await new Promise((resolve, reject) => {
@@ -96,8 +92,8 @@ async function queueComparisonRun(branch: string, skill: SkillRef, option: Compa
 function readCompareInput(filePath: string): CompareInput {
     const input = JSON.parse(readFileSync(filePath, "utf8")) as CompareInput;
 
-    if (!input.stimuliName || !input.skill) {
-        throw new Error("The input JSON must contain stimuliName and skill.");
+    if (!input.skill) {
+        throw new Error("The input JSON must contain skill.");
     }
 
     return input;
@@ -132,7 +128,6 @@ async function main() {
         results.push(entry);
     }
     const output = {
-        stimuliName: input.stimuliName,
         skill: input.skill,
         date: new Date().toISOString().slice(0, 10), // Get yyyy-mm-dd date string
         runs: results
