@@ -125,7 +125,7 @@ azd ai agent init --no-prompt \
   --entry-point main.py
 ```
 
-Immediately after init, set the collected subscription and location on the active azd environment:
+After the `azd ai agent init` completes, go to the project folder and set the collected subscription and location on the active azd environment:
 
 ```bash
 azd env set \
