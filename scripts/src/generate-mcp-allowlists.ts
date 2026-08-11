@@ -43,42 +43,50 @@ function walkDir(dir: string): string[] {
   return results;
 }
 
-function generateAllowlists(skillsDir: string, outputDir: string): void {
-  if (!fs.existsSync(skillsDir) || !fs.statSync(skillsDir).isDirectory()) {
-    console.error(`ERROR: skills directory not found: ${skillsDir}`);
-    process.exit(1);
-  }
-
-  // Get sorted list of skill directory names (exclude hidden directories)
-  const skillNames = fs
-    .readdirSync(skillsDir, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && !e.name.startsWith("."))
-    .map((e) => e.name)
-    .sort();
-
-  if (skillNames.length === 0) {
-    console.error(
-      `ERROR: No skills found in ${skillsDir} - aborting to prevent empty sync`
-    );
-    process.exit(1);
-  }
-
-  // Collect all reference file paths (Windows-style backslash separators).
-  // Exclude SKILL.md, version.json, and license files.
+function generateAllowlists(skillsDirs: string[], outputDir: string): void {
+  const allSkillNames: string[] = [];
   const referenceFiles: string[] = [];
-  for (const skill of skillNames) {
-    const skillPath = path.join(skillsDir, skill);
-    for (const filePath of walkDir(skillPath)) {
-      const filename = path.basename(filePath);
-      if (EXCLUDED_FILENAMES.has(filename)) {
-        continue;
+
+  for (const skillsDir of skillsDirs) {
+    if (!fs.existsSync(skillsDir) || !fs.statSync(skillsDir).isDirectory()) {
+      console.error(`ERROR: skills directory not found: ${skillsDir}`);
+      process.exit(1);
+    }
+
+    // Get sorted list of skill directory names (exclude hidden directories)
+    const skillNames = fs
+      .readdirSync(skillsDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && !e.name.startsWith("."))
+      .map((e) => e.name)
+      .sort();
+
+    if (skillNames.length === 0) {
+      console.error(
+        `ERROR: No skills found in ${skillsDir} - aborting to prevent empty sync`
+      );
+      process.exit(1);
+    }
+
+    allSkillNames.push(...skillNames);
+
+    // Collect all reference file paths (Windows-style backslash separators).
+    // Exclude SKILL.md, version.json, and license files.
+    for (const skill of skillNames) {
+      const skillPath = path.join(skillsDir, skill);
+      for (const filePath of walkDir(skillPath)) {
+        const filename = path.basename(filePath);
+        if (EXCLUDED_FILENAMES.has(filename)) {
+          continue;
+        }
+        const relPath = path
+          .relative(skillsDir, filePath)
+          .replace(/\//g, "\\");
+        referenceFiles.push(relPath);
       }
-      const relPath = path
-        .relative(skillsDir, filePath)
-        .replace(/\//g, "\\");
-      referenceFiles.push(relPath);
     }
   }
+
+  const skillNames = [...new Set(allSkillNames)].sort();
 
   // Sort globally to guarantee stable lexicographic ordering
   referenceFiles.sort();
@@ -101,17 +109,17 @@ function generateAllowlists(skillsDir: string, outputDir: string): void {
 
 function main(): void {
   const args = process.argv.slice(2);
-  if (args.length < 1 || args.length > 2) {
+  if (args.length < 2) {
     console.error(
-      "Usage: node generate-mcp-allowlists.ts <skills_dir> [output_dir]"
+      "Usage: node generate-mcp-allowlists.ts <skills_dir_1> ... <skills_dir_N> <output_dir>"
     );
     process.exit(1);
   }
 
-  const skillsDir = path.resolve(args[0]);
-  const outputDir = args[1] ? path.resolve(args[1]) : process.cwd();
+  const outputDir = path.resolve(args[args.length - 1]);
+  const skillsDirs = args.slice(0, -1).map((dir) => path.resolve(dir));
 
-  generateAllowlists(skillsDir, outputDir);
+  generateAllowlists(skillsDirs, outputDir);
 }
 
 main();
