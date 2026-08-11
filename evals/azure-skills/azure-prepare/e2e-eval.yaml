@@ -42,7 +42,9 @@ stimuli:
 
   # Jest: "creates project files for static whiteboard web app before validation"
   - name: "Whiteboard App Plan Ready"
-    prompt: "Create a static whiteboard web app and deploy it to Azure using azd."
+    turns:
+      - "Create a static whiteboard web app and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: smoke
@@ -51,8 +53,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -67,7 +67,9 @@ stimuli:
 
   # Jest: "creates correct files for AZD with Bicep recipe"
   - name: "AZD Bicep Recipe"
-    prompt: "Create a simple todo web app and deploy it to Azure using azd."
+    turns:
+      - "Create a simple todo web app and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -76,8 +78,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -101,7 +101,9 @@ stimuli:
 
   # Jest: "creates correct files for Terraform recipe"
   - name: "Terraform Recipe"
-    prompt: "Create a simple todo web app and deploy it to Azure using azd with Terraform as the infrastructure provider."
+    turns:
+      - "Create a simple todo web app and deploy it to Azure using azd with Terraform as the infrastructure provider."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -110,8 +112,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -132,7 +132,9 @@ stimuli:
 
   # Jest: "creates correct files for standalone Bicep recipe"
   - name: "Standalone Bicep Recipe"
-    prompt: "Create a simple todo web app and deploy it to Azure using azd with standalone Bicep templates."
+    turns:
+      - "Create a simple todo web app and deploy it to Azure using azd with standalone Bicep templates."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -141,8 +143,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -171,7 +171,9 @@ stimuli:
 
   # Jest: "generates azure.yaml with services section for Aspire projects"
   - name: "Aspire With Azure Functions - Services Section"
-    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+    turns:
+      - "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/aspire-with-azure-functions."
+      - "Continue with recommended options until complete."
     environment:
       commands:
         - git init -q
@@ -187,8 +189,6 @@ stimuli:
       area: output
       skill: azure-prepare
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -213,7 +213,9 @@ stimuli:
 
   # Jest: "sets correct docker context for Aspire container-build sample"
   - name: "Aspire Container Build - Services Section"
-    prompt: "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
+    turns:
+      - "Please deploy this application to Azure using azd. Use the eastus2 region. Use my current subscription. This is for a small scale production environment. Use standard SKUs. The app can be found under samples/container-build."
+      - "Continue with recommended options until complete."
     environment:
       commands:
         - git init -q
@@ -229,8 +231,6 @@ stimuli:
       area: output
       skill: azure-prepare
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -256,7 +256,9 @@ stimuli:
 
   # Jest: "generates Entra-only SQL auth for ASP.NET Core EF Core app (not SQL admin password)"
   - name: "Entra-Only SQL Auth"
-    prompt: "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment using azd. Use the eastus2 region and my current subscription."
+    turns:
+      - "Create an ASP.NET Core 8 web API with a Todo model using Entity Framework Core and SQL Server. Then prepare it for Azure deployment using azd. Use the eastus2 region and my current subscription."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -265,8 +267,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -300,7 +300,9 @@ stimuli:
 
   # Jest: "generates Durable Task Scheduler infrastructure and workflow code for a workflow app"
   - name: "Durable Task Scheduler Infrastructure"
-    prompt: "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Use azd with Bicep — generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
+    turns:
+      - "Prepare the Azure deployment infrastructure for a new workflow app that will orchestrate a multi-step order processing pipeline. Use azd with Bicep — generate the Bicep templates, RBAC assignments, and azure.yaml. Use the eastus2 region and my current subscription."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -308,8 +310,6 @@ stimuli:
       area: output
       skill: azure-prepare
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -363,7 +363,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for HTTP trigger (base)"
   - name: "Functions MCP - HTTP Trigger (Python)"
-    prompt: "Create a Python Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -372,8 +374,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -392,7 +392,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Timer trigger"
   - name: "Functions MCP - Timer Trigger (Python)"
-    prompt: "Create a Python Azure Functions app with a timer trigger that runs every 5 minutes and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions app with a timer trigger that runs every 5 minutes and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -401,8 +403,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -421,7 +421,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Cosmos DB trigger"
   - name: "Functions MCP - Cosmos DB Trigger (Python)"
-    prompt: "Create a Python Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -430,8 +432,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -454,7 +454,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for SQL trigger"
   - name: "Functions MCP - SQL Trigger (Python)"
-    prompt: "Create a Python Azure Functions app with a SQL database trigger and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions app with a SQL database trigger and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -463,8 +465,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -487,7 +487,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Blob Storage / Event Grid trigger"
   - name: "Functions MCP - Blob Storage Event Grid Trigger (Python)"
-    prompt: "Create a Python Azure Functions app with Blob storage trigger using Event Grid and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions app with Blob storage trigger using Event Grid and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -496,8 +498,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -520,7 +520,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Service Bus trigger"
   - name: "Functions MCP - Service Bus Trigger (Python)"
-    prompt: "Create a Python Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -528,9 +530,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'      
     graders:
       - type: skill-invocation
         config:
@@ -553,7 +553,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Event Hubs trigger"
   - name: "Functions MCP - Event Hubs Trigger (Python)"
-    prompt: "Create a Python Azure Functions app with an Event Hub trigger for streaming events and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions app with an Event Hub trigger for streaming events and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -562,8 +564,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -586,7 +586,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Durable Functions"
   - name: "Functions MCP - Durable Functions (Python)"
-    prompt: "Create a Python Azure Durable Functions app with an orchestrator pattern and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Durable Functions app with an orchestrator pattern and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -595,8 +597,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -619,7 +619,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for MCP server on Functions"
   - name: "Functions MCP - MCP Server (Python)"
-    prompt: "Create a Python Azure Functions MCP server that exposes tools over HTTP and deploy it to Azure using azd."
+    turns:
+      - "Create a Python Azure Functions MCP server that exposes tools over HTTP and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -628,8 +630,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -648,7 +648,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for HTTP trigger with Terraform"
   - name: "Functions MCP - HTTP Trigger Terraform (Python)"
-    prompt: "Create a Python Azure Functions HTTP API and deploy it to Azure using azd with Terraform infrastructure."
+    turns:
+      - "Create a Python Azure Functions HTTP API and deploy it to Azure using azd with Terraform infrastructure."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -657,8 +659,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -677,7 +677,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Cosmos DB trigger with Terraform"
   - name: "Functions MCP - Cosmos DB Trigger Terraform (Python)"
-    prompt: "Create a Python Azure Functions app with Cosmos DB change feed trigger and deploy it to Azure using azd with Terraform."
+    turns:
+      - "Create a Python Azure Functions app with Cosmos DB change feed trigger and deploy it to Azure using azd with Terraform."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -686,8 +688,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -710,7 +710,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for HTTP trigger (TypeScript)"
   - name: "Functions MCP - HTTP Trigger (TypeScript)"
-    prompt: "Create a TypeScript Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
+    turns:
+      - "Create a TypeScript Azure Functions HTTP API with a health endpoint and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -719,8 +721,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -739,7 +739,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Service Bus trigger (TypeScript)"
   - name: "Functions MCP - Service Bus Trigger (TypeScript)"
-    prompt: "Create a TypeScript Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
+    turns:
+      - "Create a TypeScript Azure Functions app with a Service Bus queue trigger for message processing and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -748,8 +750,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:
@@ -772,7 +772,9 @@ stimuli:
 
   # Jest: "calls functions_template_get for Cosmos DB trigger (TypeScript)"
   - name: "Functions MCP - Cosmos DB Trigger (TypeScript)"
-    prompt: "Create a TypeScript Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
+    turns:
+      - "Create a TypeScript Azure Functions app with a Cosmos DB change feed trigger and deploy it to Azure using azd."
+      - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: full
@@ -781,8 +783,6 @@ stimuli:
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
       earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
-      followUp:
-        - "Continue with recommended options until complete."
     graders:
       - type: skill-invocation
         config:

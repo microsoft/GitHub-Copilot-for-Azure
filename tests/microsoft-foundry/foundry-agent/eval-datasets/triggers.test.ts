@@ -22,7 +22,7 @@ describe("eval-datasets - Trigger Tests", () => {
       "Refresh my local Foundry dataset cache",
       "Version my evaluation dataset for a Foundry agent",
       "Detect regressions using my Foundry test datasets",
-      "Curate trace candidates into a dataset for Azure AI Foundry",
+      "Curate trace candidates into a dataset for Microsoft Foundry",
     ];
 
     test.each(shouldTriggerPrompts)('triggers on: "%s"', (prompt) => {

@@ -1,0 +1,100 @@
+name: azure-kusto-irql-integration-eval
+description: |
+  Integration evaluation for azure-kusto-irql skill.
+  Tests skill routing for IRQL composable pipeline prompts
+  using Get_*, Extract_*, and Enrich_* functions.
+
+tags:
+  type: integration
+  skill: azure-kusto-irql
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Compose IRQL authentication pipeline"
+    prompt: "Use IRQL to find users with more than 20 failed logins using Get_Event_Authentication_All"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "IRQL email investigation"
+    prompt: "Write an IRQL query to find which sender domains are emailing executives using Get_Email_All"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "IRQL process execution hunt"
+    prompt: "Use IRQL Get_Event_Process_All to find powershell execution across all hosts and enrich with user details"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "IRQL Extract and Enrich pipeline"
+    prompt: "Compose an IRQL pipeline using Extract_Domain on email sender addresses and Enrich_User to get department info"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kusto-irql"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kusto-irql
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative: generic security query without IRQL"
+    prompt: "Find failed logins in my Azure Data Explorer database"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-kusto-irql

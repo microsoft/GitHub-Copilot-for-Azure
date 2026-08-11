@@ -51,7 +51,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("response includes quota-related commands", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "How do I check my Azure AI Foundry quota limits?"
+        prompt: "How do I check my Microsoft Foundry quota limits?"
       });
 
       const hasQuotaCommand = doesAssistantMessageIncludeKeyword(
@@ -165,7 +165,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("mentions business justification", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "Request more TPM quota for Azure AI Foundry and explain what justification is needed"
+        prompt: "Request more TPM quota for Microsoft Foundry and explain what justification is needed"
       });
 
       // Check in both responses and tool execution data (e.g., file writes)
@@ -212,7 +212,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("explains capacity by model tracking", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "Show me quota allocation by model in Azure AI Foundry"
+        prompt: "Show me quota allocation by model in Microsoft Foundry"
       });
 
       const hasModelTracking = doesAssistantMessageIncludeKeyword(
@@ -255,7 +255,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("troubleshoots InsufficientQuota error", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "I'm getting an InsufficientQuota error when deploying gpt-4o to eastus in Azure AI Foundry. Use the microsoft-foundry skill to help me troubleshoot and fix this."
+        prompt: "I'm getting an InsufficientQuota error when deploying gpt-4o to eastus in Microsoft Foundry. Use the microsoft-foundry skill to help me troubleshoot and fix this."
       });
 
       const isSkillUsed = isSkillInvoked(agentMetadata, SKILL_NAME);
@@ -341,7 +341,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("provides best practices", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "What are best practices for quota management in Azure AI Foundry?"
+        prompt: "What are best practices for quota management in Microsoft Foundry?"
       });
 
       const hasBestPractices = doesAssistantMessageIncludeKeyword(
@@ -438,7 +438,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("suggests deleting unused deployments", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "I need to free up quota in Azure AI Foundry"
+        prompt: "I need to free up quota in Microsoft Foundry"
       });
 
       const suggestsDelete = doesAssistantMessageIncludeKeyword(
@@ -509,7 +509,7 @@ describeIntegration(`${SKILL_NAME}_quota - Integration Tests`, () => {
     test("offers multiple resolution options", () => withTestResult(async () => {
       const agentMetadata = await agent.run({
         requiredSkills: [{ pluginDirname: "azure-skills", name: SKILL_NAME }],
-        prompt: "What are my options when I hit quota limits in Azure AI Foundry?"
+        prompt: "What are my options when I hit quota limits in Microsoft Foundry?"
       });
 
       const hasOptions = doesAssistantMessageIncludeKeyword(

@@ -31,7 +31,18 @@ stimuli:
   # LAST handoff emit, so no false-positive on scaffold/checklist text. All deploy commands + artifacts
   # complete by then; it blocks post-handoff drift.
   - name: "Fast Track - HTML Site Free Tier"
-    prompt: "I have an app in GitHub — can you deploy it to Azure for me?"
+    turns:
+      - "I have an app in GitHub — can you deploy it to Azure for me?"
+      - "Just go with defaults using my current subscription."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
+      - "Yes."
     environment:
       commands:
         - git init -q
@@ -51,17 +62,6 @@ stimuli:
       # Halt at the deploy completion line — blocks post-handoff mutation, after every handoff grader.
       earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"(?i:onboarding pipeline is\\s+(finished|complete|done))"}]'
       systemPrompt: '{"mode":"append","content":"Use a pseudo-random resource group name (suffix with random characters) to avoid collisions with existing resource groups."}'
-      followUp:
-        - "Just go with defaults using my current subscription."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
-        - "Yes."
     graders:
       # azure-app-onboard MUST be invoked
       - type: skill-invocation
