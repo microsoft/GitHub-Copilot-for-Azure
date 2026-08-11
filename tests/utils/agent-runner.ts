@@ -377,7 +377,10 @@ function computeToolAndSkillStats(
         }
       }
       if (skillName) {
-        const normalizedSkillDir = normalizedSkillDirs.filter(dir => dir.endsWith(`${skillName}/SKILLS.md`)).at(0);
+        const normalizedSkillDir = normalizedSkillDirs.filter(dir => {
+          const skillMdPath = path.resolve(dir, `${skillName}/SKILL.md`);
+          return fs.existsSync(skillMdPath);
+        }).at(0);
         (skillFilesSet[skillName] ??= new Set()).add(`${normalizedSkillDir}/${skillName}/SKILL.md`);
       }
     }
