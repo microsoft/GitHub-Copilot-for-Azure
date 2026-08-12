@@ -14,7 +14,7 @@ PLUGIN_SPEC="microsoft-foundry@awesome-copilot"
 COPILOT_CLI=""
 
 note_ok()     { echo "[OK] $1"; }
-note_warn()   { echo "[WARN] $1" >&2; }
+note_warn()   { echo "[WARN] $1"; }
 note_action() { echo "[ACTION] $1"; }
 
 # Pick the highest semantic version under github-copilot-sdk/cli/<version>/.
@@ -47,7 +47,7 @@ pick_highest_cli() {
     fi
 
     candidate="$dir/$executable"
-    [ -f "$candidate" ] || continue
+    [ -x "$candidate" ] || continue
 
     if (( major > best_major ||
           (major == best_major && minor > best_minor) ||
@@ -74,7 +74,7 @@ locate_copilot_cli() {
     return 0
   fi
 
-  if [ -n "${COPILOT_CLI_PATH:-}" ] && [ -f "$COPILOT_CLI_PATH" ]; then
+  if [ -n "${COPILOT_CLI_PATH:-}" ] && [ -x "$COPILOT_CLI_PATH" ]; then
     COPILOT_CLI="$COPILOT_CLI_PATH"
     return 0
   fi
@@ -99,7 +99,7 @@ locate_copilot_cli() {
     return 0
   fi
 
-  if [ -n "${COPILOT_CLI_EXTRACT_DIR:-}" ] && [ -f "$COPILOT_CLI_EXTRACT_DIR/copilot" ]; then
+  if [ -n "${COPILOT_CLI_EXTRACT_DIR:-}" ] && [ -x "$COPILOT_CLI_EXTRACT_DIR/copilot" ]; then
     COPILOT_CLI="$COPILOT_CLI_EXTRACT_DIR/copilot"
     return 0
   fi
