@@ -40,7 +40,7 @@ Act on the summary prefixes:
 - `[WARN]` -- non-blocking; continue.
 - `[ACTION]` -- try to resolve by using the exact plugin install command emitted by the preflight; ask before installing in interactive mode, and install directly in non-interactive mode.
   - **On successful installation, you MUST print:** "The `microsoft-foundry` canvas extension is installed and will be available in a new session." Then rerun the preflight.
-  - If installation is declined or fails, report a `[WARN]` and continue to environment verification; do not retry or block the workflow.
+  - If installation is declined or fails, warn and continue; do not retry.
 
 Then run the bundled verification script:
 
