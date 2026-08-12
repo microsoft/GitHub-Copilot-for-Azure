@@ -20,7 +20,7 @@ describe("foundry-agent direct-code workflow docs", () => {
     const quickStart = await readSkillFile("foundry-agent/create/quick-start-hosted.md");
     const deploy = await readSkillFile("foundry-agent/deploy/deploy.md");
 
-    expect(createHosted).toContain("Prefer code deployment. `azd ai agent init` defaults to code deployment.");
+    expect(createHosted).toContain("Pass `--deploy-mode code` by default to use the direct code deployment.");
     expect(createHosted).toContain("--deploy-mode code");
     expect(createHosted).toContain("--runtime python_3_13");
     expect(createHosted).toContain("--entry-point main.py");
