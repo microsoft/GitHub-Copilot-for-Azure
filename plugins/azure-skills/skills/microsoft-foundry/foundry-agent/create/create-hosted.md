@@ -76,7 +76,7 @@ Then run the bundled verification script before any create/deploy command:
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Do not continue past Step 1 while any `[ACTION]` from environment verification remains. A declined or failed Copilot canvas extension installation is non-blocking as described above. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
+Do not continue past Step 1 while any `[ACTION]` from environment verification remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
 
 Act on the summary prefixes:
 
