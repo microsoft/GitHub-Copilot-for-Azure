@@ -30,9 +30,9 @@ stages:
         versionSpec: '3.12'
 
     - task: PipAuthenticate@1
-      displayName: 'Authenticate pip with MicrosoftSweBenchMirror feed'
+      displayName: 'Authenticate pip with MicrosoftSweBench feed'
       inputs:
-        artifactFeeds: 'internal/MicrosoftSweBenchMirror'
+        artifactFeeds: 'internal/MicrosoftSweBench'
 
     - task: AzureCLI@2
       name: RunBenchmarks
