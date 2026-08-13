@@ -5,7 +5,7 @@
 .DESCRIPTION
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
-    PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBenchMirror feed.
+    PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
     The run requires both a GitHub PAT retrieved from KeyVault and the CAPI integration
     credentials/environment variables expected by MSBench for the selected agent. The script
     clones the msbench-benchmarks repo, installs MSBench CLI, and invokes for each model:
@@ -102,7 +102,7 @@
     }
 
     # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
-    # PipAuthenticate sets PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBenchMirror feed.
+    # PipAuthenticate sets PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
     if ($env:PIP_EXTRA_INDEX_URL) {
         Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task)"
     } else {
