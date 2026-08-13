@@ -11,7 +11,7 @@ Infer these choices from the user's request and current code. Ask only for infor
 
 ## Step 2: Initialize and adapt
 
-To scaffold a foundry agent project with existing agent codes, run:
+To scaffold a Foundry agent project with existing agent codes, run:
 
 ```bash
 azd ai agent init --no-prompt \
