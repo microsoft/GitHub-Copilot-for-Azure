@@ -165,7 +165,7 @@ Before submitting a PR for adding the new skill, run the vally eval suites of th
 
 ```bash
 # in repo root
-npx --yes @microsoft/vally-cli@^0.7.0 lint plugins/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
+npx --yes @microsoft/vally-cli@^0.12.0 lint plugins/ --eval-spec evals/ --strict --grader-plugin ./tests/vally/vally-graders.ts
 
 # in tests/
 npm run typecheck
