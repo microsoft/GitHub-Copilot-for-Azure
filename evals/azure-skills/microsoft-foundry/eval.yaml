@@ -367,8 +367,6 @@ stimuli:
 
   - name: "Evaluate Foundry agent quality"
     prompt: "Evaluate my Foundry agent and check its quality"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -383,8 +381,6 @@ stimuli:
 
   - name: "Set up Foundry agent observability"
     prompt: "Set up monitoring and evaluation for my Foundry agent"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -521,8 +517,6 @@ stimuli:
 
   - name: "Analyze Foundry agent traces"
     prompt: "Analyze traces for my Foundry agent in App Insights"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -537,8 +531,6 @@ stimuli:
 
   - name: "Find failing Foundry agent traces"
     prompt: "Find failing traces and errors for my Foundry agent"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -557,8 +549,6 @@ stimuli:
 
   - name: "Fine-tuning guidance"
     prompt: "Help me fine-tune gpt-4.1-mini on my dataset"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -576,8 +566,6 @@ stimuli:
 
   - name: "RFT with a Python grader"
     prompt: "Submit a reinforcement fine-tuning job with a Python grader"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -592,8 +580,6 @@ stimuli:
 
   - name: "SFT model distillation"
     prompt: "Distill gpt-4.1-mini into nano using supervised fine-tuning"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -754,8 +740,6 @@ stimuli:
 
   - name: "Check current quota usage"
     prompt: "Use the microsoft-foundry skill to show me my current quota usage for Microsoft Foundry resources"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -770,8 +754,6 @@ stimuli:
 
   - name: "Show quota-related commands"
     prompt: "How do I check my Microsoft Foundry quota limits?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -785,8 +767,6 @@ stimuli:
 
   - name: "Explain quota and TPM"
     prompt: "Explain quota in Microsoft Foundry"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -800,8 +780,6 @@ stimuli:
 
   - name: "Check quota before model deployment"
     prompt: "Use the microsoft-foundry skill to check if I have enough quota to deploy GPT-4o to Microsoft Foundry"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -819,8 +797,6 @@ stimuli:
 
   - name: "Calculate production quota requirements"
     prompt: "How much quota do I need for a production Foundry deployment?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -837,8 +813,6 @@ stimuli:
 
   - name: "Request a quota increase"
     prompt: "Using the microsoft-foundry quota skill, how do I request a quota increase for Microsoft Foundry?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -856,8 +830,6 @@ stimuli:
 
   - name: "Explain quota increase justification"
     prompt: "Request more TPM quota for Microsoft Foundry and explain what justification is needed"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -871,8 +843,6 @@ stimuli:
 
   - name: "Monitor quota across deployments"
     prompt: "Use the microsoft-foundry quota skill to monitor quota usage across all my Microsoft Foundry deployments"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -890,8 +860,6 @@ stimuli:
 
   - name: "Track quota allocation by model"
     prompt: "Show me quota allocation by model in Microsoft Foundry"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -908,8 +876,6 @@ stimuli:
 
   - name: "Troubleshoot QuotaExceeded"
     prompt: "My Microsoft Foundry deployment failed with QuotaExceeded error. Help me fix it."
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -927,8 +893,6 @@ stimuli:
 
   - name: "Troubleshoot InsufficientQuota"
     prompt: "I'm getting an InsufficientQuota error when deploying gpt-4o to eastus in Microsoft Foundry. Use the microsoft-foundry skill to help me troubleshoot and fix this."
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -943,8 +907,6 @@ stimuli:
 
   - name: "Troubleshoot DeploymentLimitReached"
     prompt: "DeploymentLimitReached error in Microsoft Foundry, what should I do?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -958,8 +920,6 @@ stimuli:
 
   - name: "Address 429 rate limiting"
     prompt: "Getting 429 rate limit errors from my Foundry deployment"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -973,8 +933,6 @@ stimuli:
 
   - name: "Plan production deployment capacity"
     prompt: "Help me plan capacity for production Microsoft Foundry deployment with 1M requests per day"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -995,8 +953,6 @@ stimuli:
 
   - name: "Explain quota management best practices"
     prompt: "What are best practices for quota management in Microsoft Foundry?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1010,8 +966,6 @@ stimuli:
 
   - name: "List model deployments and capacity"
     prompt: "Use the microsoft-foundry skill to list all my Microsoft Foundry model deployments and their capacity"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1028,8 +982,6 @@ stimuli:
 
   - name: "Explain regional quota distribution"
     prompt: "Using the microsoft-foundry quota skill, explain how quota works across different Azure regions for Foundry"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1047,8 +999,6 @@ stimuli:
 
   - name: "Offer another region when quota is exhausted"
     prompt: "I ran out of quota in East US for Microsoft Foundry. What are my options?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1062,8 +1012,6 @@ stimuli:
 
   - name: "Optimize quota allocation"
     prompt: "How can I optimize my Microsoft Foundry quota allocation?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1081,8 +1029,6 @@ stimuli:
 
   - name: "Free quota from unused deployments"
     prompt: "I need to free up quota in Microsoft Foundry"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1096,8 +1042,6 @@ stimuli:
 
   - name: "Interpret quota usage output"
     prompt: "What does the quota usage output mean in Microsoft Foundry?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1111,8 +1055,6 @@ stimuli:
 
   - name: "Explain the TPM quota concept"
     prompt: "What is TPM in the context of Microsoft Foundry quotas?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1126,8 +1068,6 @@ stimuli:
 
   - name: "Provide quota error resolution steps"
     prompt: "Walk me through fixing a quota error in Microsoft Foundry deployment"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -1145,8 +1085,6 @@ stimuli:
 
   - name: "Offer multiple quota resolution options"
     prompt: "What are my options when I hit quota limits in Microsoft Foundry?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
