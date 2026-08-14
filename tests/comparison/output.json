@@ -1,39 +1,19 @@
 {
   "skill": {
     "pluginDirname": "azure-skills",
-    "name": "azure-resource-lookup"
+    "name": "azure-ai"
   },
-  "date": "2026-08-11",
-  "runs": [
+  "date": "2026-08-14",
+  "results": [
     {
-      "model": "claude-sonnet-4.6",
-      "withSkill": true,
-      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31520693117"
-    },
-    {
-      "model": "claude-sonnet-4.6",
-      "withSkill": false,
-      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31520695538"
-    },
-    {
-      "model": "gpt-5.6-sol",
-      "withSkill": true,
-      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31520697927"
-    },
-    {
-      "model": "gpt-5.6-sol",
-      "withSkill": false,
-      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31520700901"
-    },
-    {
-      "model": "gpt-5.6-terra",
-      "withSkill": true,
-      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31520703652"
-    },
-    {
-      "model": "gpt-5.6-terra",
-      "withSkill": false,
-      "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31520706736"
+      "branch": "chuye/no-skill-compare-2",
+      "runs": [
+        {
+          "model": "gpt-5.6-terra",
+          "withSkill": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31829695051"
+        }
+      ]
     }
   ]
 }

@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
-    "compare": "npx tsx ./comparison/run-compare.ts"
+    "compare:run": "npx tsx ./comparison/run-compare.ts",
+    "compare:collect": "npx tsx ./comparison/collect-artifacts"
   },
   "engines": {
     "node": "^22.14.0 || >=24"

@@ -27,6 +27,10 @@ Exit codes:
   2 = usage/argument error`);
 }
 
+function encodeBranchName(branch: string) {
+  return branch.replaceAll("/", "_");
+}
+
 function run(): void {
   const args = process.argv.slice(2);
 
@@ -157,7 +161,7 @@ function run(): void {
       for (const stimuliPart of stimuliSet) {
         const stimuliOutputDir = path.join(
           OUTPUT_ROOT,
-          branch,
+          encodeBranchName(branch),
           stimuliPart,
           `${model}-${skillSuffix}`
         );
