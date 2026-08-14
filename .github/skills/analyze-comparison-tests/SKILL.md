@@ -29,20 +29,23 @@ The downloaded artifacts will have the following folder structure:
 
 ```text
 comparison-artifacts/
-├── <stimulus-name-1>/
-│   ├── <model>-with-skill/
-│   │   ├── agent-metadata-<date-string-1>.md
-│   │   ├── agent-metadata-<date-string-2>.md
-│   │   └── ...
-│   └── <model>-without-skill/
-│       ├── agent-metadata-<date-string-1>.md
-│       ├── agent-metadata-<date-string-2>.md
-│       └── ...
-└── <stimulus-name-2>/
-    ├── <model>-with-skill/
-    │   └── agent-metadata-*.md
-    └── <model>-without-skill/
-        └── agent-metadata-*.md
+├── <branch-name>/
+│   ├── <stimulus-name-1>/
+│   │   ├── <model>-with-skill/
+│   │   │   ├── agent-metadata-<date-string-1>.md
+│   │   │   ├── agent-metadata-<date-string-2>.md
+│   │   │   └── ...
+│   │   └── <model>-without-skill/
+│   │       ├── agent-metadata-<date-string-1>.md
+│   │       ├── agent-metadata-<date-string-2>.md
+│   │       └── ...
+│   └── <stimulus-name-2>/
+│       ├── <model>-with-skill/
+│       │   └── agent-metadata-*.md
+│       └── <model>-without-skill/
+│           └── agent-metadata-*.md
+└── <branch-name-2>/
+    └── ...
 ```
 
-Each `<stimulus-name>/<model>-with-skill` or `<stimulus-name>/<model>-without-skill` directory contains the test run trajectories for that stimulus using the specified model with or without skills. Each trajectory is a markdown file that records user prompts, tool call requests, tool execution results, assistant responses that happened during the run. It also contains statistics such as token usage and turns. Based on the trajectories, answer the user's questions for each test run. Generate a report following the [report-template](./references/report-template.md) to show your answers.
+Each `<branch-name>/<stimulus-name>/<model>-with-skill` or `<branch-name>/<stimulus-name>/<model>-without-skill` directory contains the test run trajectories for that stimulus and model on that branch, with or without skills. Each trajectory is a markdown file that records user prompts, tool call requests, tool execution results, assistant responses that happened during the run. It also contains statistics such as token usage and turns. Based on the trajectories, answer the user's questions for each test run. Generate a report following the [report-template](./references/report-template.md) to show your answers.
