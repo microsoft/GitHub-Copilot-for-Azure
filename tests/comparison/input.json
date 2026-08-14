@@ -1,7 +1,9 @@
 {
     "skill": {
         "pluginDirname": "azure-skills",
-        "name": "azure-resource-lookup"
+        "name": "azure-ai"
     },
-    "branch": "chuye/no-skill-compare-2"
+    "branches": [
+        "chuye/no-skill-compare-2"
+    ]
 }

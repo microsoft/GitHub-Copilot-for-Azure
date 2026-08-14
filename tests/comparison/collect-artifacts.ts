@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * collect-artifacts.ts — download comparison test trajectories from Azure Storage.
  *
@@ -13,22 +12,11 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import type { CompareRunOutput as CompareRunOutput } from "./run-compare";
 
 const STORAGE_ACCOUNT = "strdashboarddevveobvk";
 const CONTAINER = "manual-integration-reports";
 const OUTPUT_ROOT = "comparison-artifacts";
-
-interface InputConfig {
-  date: string;
-  skill: {
-    name: string;
-  };
-  runs: Array<{
-    model: string;
-    withSkill: boolean;
-    run: string;
-  }>;
-}
 
 function usage(): void {
   console.log(`Usage: collect-artifacts.ts <input.json>
@@ -67,7 +55,6 @@ function run(): void {
     try {
       execSync(`command -v ${cmd}`, {
         stdio: "ignore",
-        shell: "/bin/bash",
       });
     } catch (err: unknown) {
       console.error(`Error: required command '${cmd}' is not installed.`);
@@ -75,7 +62,7 @@ function run(): void {
     }
   }
 
-  let input: InputConfig;
+  let input: CompareRunOutput;
   try {
     const content = fs.readFileSync(inputFile, "utf-8");
     input = JSON.parse(content);
@@ -93,7 +80,7 @@ function run(): void {
     process.exit(2);
   }
 
-  if (!input.runs || input.runs.length === 0) {
+  if (!input.results || input.results.length === 0) {
     console.error("Error: input JSON contains no runs.");
     process.exit(2);
   }
@@ -105,118 +92,121 @@ function run(): void {
 
   let failed = 0;
 
-  for (const run of input.runs) {
-    const model: string = run.model;
-    const withSkill: boolean = run.withSkill;
-    const runUrl: string = run.run;
+  for (const result of input.results) {
+    const branch = result.branch;
+    const runs = result.runs;
+    for (const run of runs) {
+      const model: string = run.model;
+      const withSkill: boolean = run.withSkill;
+      const runUrl: string = run.run;
 
-    if (!model) continue;
+      if (!model) continue;
 
-    // Extract run ID from GitHub Actions URL
-    const runId = runUrl.split("/").pop();
-    if (!runId) {
-      console.error(`Error: could not extract run id from URL: ${runUrl}`);
-      failed = 1;
-      continue;
-    }
-
-    const skillSuffix = withSkill ? "with-skill" : "without-skill";
-
-    // Discover stimuli for this run
-    const prefix = `${date}/${runId}/${skillName}/${skillName}_`;
-    console.log(
-      `Discovering stimuli for run ${runId} under ${CONTAINER}/${prefix} ...`
-    );
-
-    let discoveryResult: string;
-    try {
-      const cmd = `az storage blob list --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --prefix "${prefix}" --auth-mode login --query "[?ends_with(name, '.md')].name" -o tsv`;
-      discoveryResult = execSync(cmd, {
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "ignore"],
-        shell: "/bin/bash",
-      }) as string;
-    } catch (err: unknown) {
-      console.error(`Error: failed to discover blobs for run ${runId}.`);
-      failed = 1;
-      continue;
-    }
-
-    // Extract unique stimuli names from blob paths
-    const blobLines = discoveryResult.trim().split("\n").filter((line: string) => line);
-    const stimuliSet: Set<string> = new Set();
-
-    for (const blob of blobLines) {
-      const regexPattern = new RegExp(`/${skillName}_([^/]+)/`);
-      const match = blob.match(regexPattern);
-      if (match) {
-        stimuliSet.add(match[1]);
-      }
-    }
-
-    if (stimuliSet.size === 0) {
-      console.error(
-        `Warning: no stimuli directories discovered for run ${runId}`
-      );
-      continue;
-    }
-
-    console.log(
-      `Discovered stimuli for run ${runId}: ${Array.from(stimuliSet).join(", ")}`
-    );
-
-    for (const stimuliPart of stimuliSet) {
-      const stimuliOutputDir = path.join(
-        OUTPUT_ROOT,
-        stimuliPart,
-        `${model}-${skillSuffix}`
-      );
-      const blobPrefix = `${date}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
-
-      console.log(
-        `Listing blobs for stimuli '${stimuliPart}' in run ${runId} ...`
-      );
-
-      let blobs: string;
-      try {
-        const cmd = `az storage blob list --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --prefix "${blobPrefix}" --auth-mode login --query "[?ends_with(name, '.md')].name" -o tsv`;
-        blobs = execSync(cmd, {
-          encoding: "utf-8",
-          stdio: ["pipe", "pipe", "ignore"],
-          shell: "/bin/bash",
-        }) as string;
-      } catch (err: unknown) {
-        console.error(
-          `Error: failed to list blobs for run ${runId}, stimuli ${stimuliPart}.`
-        );
+      // Extract run ID from GitHub Actions URL
+      const runId = runUrl.split("/").pop();
+      if (!runId) {
+        console.error(`Error: could not extract run id from URL: ${runUrl}`);
         failed = 1;
         continue;
       }
 
-      const blobList = blobs.trim().split("\n").filter((line: string) => line);
-      if (blobList.length === 0) {
+      const skillSuffix = withSkill ? "with-skill" : "without-skill";
+
+      // Discover stimuli for this run
+      const prefix = `${date}/${runId}/${skillName}/${skillName}_`;
+      console.log(
+        `Discovering stimuli for run ${runId} under ${CONTAINER}/${prefix} ...`
+      );
+
+      let discoveryResult: string;
+      try {
+        const cmd = `az storage blob list --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --prefix "${prefix}" --auth-mode login --query "[?ends_with(name, '.md')].name" -o tsv`;
+        discoveryResult = execSync(cmd, {
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "ignore"]
+        }) as string;
+      } catch (err: unknown) {
+        console.error(`Error: failed to discover blobs for run ${runId}.`);
+        failed = 1;
+        continue;
+      }
+
+      // Extract unique stimuli names from blob paths
+      const blobLines = discoveryResult.trim().split("\n").filter((line: string) => line);
+      const stimuliSet: Set<string> = new Set();
+
+      for (const blob of blobLines) {
+        const regexPattern = new RegExp(`/${skillName}_([^/]+)/`);
+        const match = blob.match(regexPattern);
+        if (match) {
+          stimuliSet.add(match[1]);
+        }
+      }
+
+      if (stimuliSet.size === 0) {
         console.error(
-          `Warning: no trajectory blobs found for run ${runId}, stimuli ${stimuliPart}.`
+          `Warning: no stimuli directories discovered for run ${runId}`
         );
         continue;
       }
 
-      // Create output directory
-      if (!fs.existsSync(stimuliOutputDir)) {
-        fs.mkdirSync(stimuliOutputDir, { recursive: true });
-      }
+      console.log(
+        `Discovered stimuli for run ${runId}: ${Array.from(stimuliSet).join(", ")}`
+      );
 
-      for (const blob of blobList) {
-        const fileName = path.basename(blob);
-        console.log(`  downloading ${fileName} -> ${stimuliOutputDir}`);
+      for (const stimuliPart of stimuliSet) {
+        const stimuliOutputDir = path.join(
+          OUTPUT_ROOT,
+          branch,
+          stimuliPart,
+          `${model}-${skillSuffix}`
+        );
+        const blobPrefix = `${date}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
 
+        console.log(
+          `Listing blobs for stimuli '${stimuliPart}' in run ${runId} ...`
+        );
+
+        let blobs: string;
         try {
-          const outputPath = path.join(stimuliOutputDir, fileName);
-          const cmd = `az storage blob download --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --name "${blob}" --file "${outputPath}" --auth-mode login --overwrite --no-progress -o none`;
-          execSync(cmd, { stdio: "ignore", shell: "/bin/bash" });
+          const cmd = `az storage blob list --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --prefix "${blobPrefix}" --auth-mode login --query "[?ends_with(name, '.md')].name" -o tsv`;
+          blobs = execSync(cmd, {
+            encoding: "utf-8",
+            stdio: ["pipe", "pipe", "ignore"]
+          }) as string;
         } catch (err: unknown) {
-          console.error(`Error: failed to download blob ${blob}`);
+          console.error(
+            `Error: failed to list blobs for run ${runId}, stimuli ${stimuliPart}.`
+          );
           failed = 1;
+          continue;
+        }
+
+        const blobList = blobs.trim().split("\n").filter((line: string) => line);
+        if (blobList.length === 0) {
+          console.error(
+            `Warning: no trajectory blobs found for run ${runId}, stimuli ${stimuliPart}.`
+          );
+          continue;
+        }
+
+        // Create output directory
+        if (!fs.existsSync(stimuliOutputDir)) {
+          fs.mkdirSync(stimuliOutputDir, { recursive: true });
+        }
+
+        for (const blob of blobList) {
+          const fileName = path.basename(blob);
+          console.log(`  downloading ${fileName} -> ${stimuliOutputDir}`);
+
+          try {
+            const outputPath = path.join(stimuliOutputDir, fileName);
+            const cmd = `az storage blob download --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --name "${blob}" --file "${outputPath}" --auth-mode login --overwrite --no-progress -o none`;
+            execSync(cmd, { stdio: "ignore" });
+          } catch (err: unknown) {
+            console.error(`Error: failed to download blob ${blob}`);
+            failed = 1;
+          }
         }
       }
     }
