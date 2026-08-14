@@ -578,7 +578,6 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   lines.push("");
 
   // Track message deltas to reconstruct full messages
-  const messageDeltas: Record<string, string> = {};
   const reasoningDeltas: Record<string, string> = {};
   const toolResults: Record<string, { success: boolean; timestamp: string; content?: string; error?: string; }> = {};
 
