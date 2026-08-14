@@ -577,8 +577,6 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   lines.push("# Assistant");
   lines.push("");
 
-  // Track message deltas to reconstruct full messages
-  const messageDeltas: Record<string, string> = {};
   const reasoningDeltas: Record<string, string> = {};
   const toolResults: Record<string, { success: boolean; timestamp: string; content?: string; error?: string; }> = {};
 
@@ -613,16 +611,6 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
         if (content) {
           lines.push(content);
           lines.push("");
-        }
-        break;
-      }
-
-      case "assistant.message_delta": {
-        // Accumulate deltas for streaming - we'll use the final message instead
-        const messageId = event.data.messageId as string;
-        const deltaContent = event.data.deltaContent as string;
-        if (messageId && deltaContent) {
-          messageDeltas[messageId] = (messageDeltas[messageId] || "") + deltaContent;
         }
         break;
       }
@@ -1277,19 +1265,13 @@ export function doesAssistantMessageIncludeKeyword(
   keyword: string,
   options: KeywordOptions = {}
 ): boolean {
-  // Merge all messages and message deltas
+  // Merge all messages
+  // message_delta events are skipped since the assistant.message events contain combined content of their corresponding assistant.message_delta events.
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
     if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
-    }
-    if (event.type === "assistant.message_delta" && event.data.messageId) {
-      if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
-      } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
-      }
     }
   });
 
