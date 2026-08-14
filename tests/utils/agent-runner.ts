@@ -577,7 +577,6 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
   lines.push("# Assistant");
   lines.push("");
 
-  // Track message deltas to reconstruct full messages
   const reasoningDeltas: Record<string, string> = {};
   const toolResults: Record<string, { success: boolean; timestamp: string; content?: string; error?: string; }> = {};
 
@@ -1266,7 +1265,8 @@ export function doesAssistantMessageIncludeKeyword(
   keyword: string,
   options: KeywordOptions = {}
 ): boolean {
-  // Merge all messages and message deltas
+  // Merge all messages
+  // message_delta events are skipped since the assistant.message events contain combined content of their corresponding assistant.message_delta events.
   const allMessages: Record<string, string> = {};
 
   agentMetadata.events.forEach(event => {
