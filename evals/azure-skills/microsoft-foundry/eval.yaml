@@ -19,6 +19,10 @@ scoring:
   threshold: 0.8
 
 stimuli:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Microsoft Foundry Routing
+  # ═══════════════════════════════════════════════════════════════════════════
+
   # ── ai-model-deployment-prompt ──
   # Jest: "invokes microsoft-foundry skill for AI model deployment prompt"
   # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
@@ -29,13 +33,12 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -51,13 +54,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -73,13 +75,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -95,13 +96,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -117,13 +117,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -139,13 +138,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -161,13 +159,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -183,13 +180,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -205,13 +201,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -227,13 +222,12 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -249,19 +243,21 @@ stimuli:
       tier: full
       cost: llm
       area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - microsoft-foundry
-      # Global: has_output
-      - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  # ── agent-optimizer-prompt ──
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Optimizer
+  # ═══════════════════════════════════════════════════════════════════════════
+
   - name: "Generate evals for Agent Optimizer"
     prompt: |
       I have an azd Python hosted agent that is already wired for Foundry Agent Optimizer.
@@ -314,7 +310,10 @@ stimuli:
           required:
             - microsoft-foundry
 
-  # ── agent-observe-prompts ──
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Observe
+  # ═══════════════════════════════════════════════════════════════════════════
+
   - name: "Evaluate deployed Foundry agent"
     prompt: |
       Evaluate my deployed Foundry agent using the evaluation suite in its
@@ -365,6 +364,38 @@ stimuli:
         config:
           required:
             - microsoft-foundry
+
+  - name: "Evaluate Foundry agent quality"
+    prompt: "Evaluate my Foundry agent and check its quality"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+
+  - name: "Set up Foundry agent observability"
+    prompt: "Set up monitoring and evaluation for my Foundry agent"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Agent Create
@@ -484,7 +515,653 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  # ── Foundry E2E checks ──
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Trace
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Analyze Foundry agent traces"
+    prompt: "Analyze traces for my Foundry agent in App Insights"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+
+  - name: "Find failing Foundry agent traces"
+    prompt: "Find failing traces and errors for my Foundry agent"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Fine-tuning
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Fine-tuning guidance"
+    prompt: "Help me fine-tune gpt-4.1-mini on my dataset"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      earlyTerminate: '[{"type":"assistant-message-match","contentPattern":"[Tt]raining"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)training"
+
+  - name: "RFT with a Python grader"
+    prompt: "Submit a reinforcement fine-tuning job with a Python grader"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "SFT model distillation"
+    prompt: "Distill gpt-4.1-mini into nano using supervised fine-tuning"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Capacity
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Discover model capacity across regions"
+    prompt: "Find available capacity for gpt-4o across all Azure regions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Compare regional TPM capacity"
+    prompt: "Which Azure regions have gpt-4o available with enough TPM capacity?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Customize
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Configure a custom model deployment"
+    prompt: "Deploy gpt-4o with custom SKU and capacity configuration"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Deploy with provisioned throughput"
+    prompt: "Deploy gpt-4o with provisioned throughput PTU in my Foundry project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Router
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Deploy a model to an Azure project"
+    prompt: "Deploy gpt-4o model to my Azure project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Route model deployment to capacity discovery"
+    prompt: "Where can I deploy gpt-4o? Check capacity across regions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Route model deployment to customization"
+    prompt: "Deploy gpt-4o with custom SKU and capacity settings"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Optimal Region
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Deploy quickly to the optimal region"
+    prompt: "Deploy gpt-4o quickly to the optimal region"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  - name: "Deploy to the best highly available region"
+    prompt: "Deploy gpt-4o to the best available region with high availability"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Quota
+  # ═══════════════════════════════════════════════════════════════════════════
+
+  - name: "Check current quota usage"
+    prompt: "Use the microsoft-foundry skill to show me my current quota usage for Microsoft Foundry resources"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+
+  - name: "Show quota-related commands"
+    prompt: "How do I check my Microsoft Foundry quota limits?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)az cognitiveservices|quota"
+      - type: completed
+
+  - name: "Explain quota and TPM"
+    prompt: "Explain quota in Microsoft Foundry"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)TPM|Tokens Per Minute"
+      - type: completed
+
+  - name: "Check quota before model deployment"
+    prompt: "Use the microsoft-foundry skill to check if I have enough quota to deploy GPT-4o to Microsoft Foundry"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)capacity|quota"
+      - type: completed
+
+  - name: "Calculate production quota requirements"
+    prompt: "How much quota do I need for a production Foundry deployment?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)TPM|PTU|capacity|tokens per minute"
+      - type: output-matches
+        config:
+          pattern: "(?i)calculate|estimate|calculation|quantify"
+      - type: completed
+
+  - name: "Request a quota increase"
+    prompt: "Using the microsoft-foundry quota skill, how do I request a quota increase for Microsoft Foundry?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure Portal|portal"
+      - type: completed
+
+  - name: "Explain quota increase justification"
+    prompt: "Request more TPM quota for Microsoft Foundry and explain what justification is needed"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)justification|business|reason|rationale"
+      - type: completed
+
+  - name: "Monitor quota across deployments"
+    prompt: "Use the microsoft-foundry quota skill to monitor quota usage across all my Microsoft Foundry deployments"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)deployment|usage|quota"
+      - type: completed
+
+  - name: "Track quota allocation by model"
+    prompt: "Show me quota allocation by model in Microsoft Foundry"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)model"
+      - type: output-matches
+        config:
+          pattern: "(?i)capacity|quota|allocation"
+      - type: completed
+
+  - name: "Troubleshoot QuotaExceeded"
+    prompt: "My Microsoft Foundry deployment failed with QuotaExceeded error. Help me fix it."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)QuotaExceeded|quota"
+      - type: completed
+
+  - name: "Troubleshoot InsufficientQuota"
+    prompt: "I'm getting an InsufficientQuota error when deploying gpt-4o to eastus in Microsoft Foundry. Use the microsoft-foundry skill to help me troubleshoot and fix this."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: completed
+
+  - name: "Troubleshoot DeploymentLimitReached"
+    prompt: "DeploymentLimitReached error in Microsoft Foundry, what should I do?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)delete|deployment"
+      - type: completed
+
+  - name: "Address 429 rate limiting"
+    prompt: "Getting 429 rate limit errors from my Foundry deployment"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)429|rate limit"
+      - type: completed
+
+  - name: "Plan production deployment capacity"
+    prompt: "Help me plan capacity for production Microsoft Foundry deployment with 1M requests per day"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)TPM|PTU|capacity|tokens per minute"
+      - type: output-matches
+        config:
+          pattern: "(?i)calculate|estimate|calculation|quantify"
+      - type: completed
+
+  - name: "Explain quota management best practices"
+    prompt: "What are best practices for quota management in Microsoft Foundry?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)best practice|optimize"
+      - type: completed
+
+  - name: "List model deployments and capacity"
+    prompt: "Use the microsoft-foundry skill to list all my Microsoft Foundry model deployments and their capacity"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass if the trajectory does at least one of the following: calls an Azure MCP model deployment tool, runs an Azure CLI command concerning deployments, models, capacity, or quota, or mentions an applicable `az cognitiveservices`, `az rest`, or `az ai` command. Otherwise fail.
+      - type: completed
+
+  - name: "Explain regional quota distribution"
+    prompt: "Using the microsoft-foundry quota skill, explain how quota works across different Azure regions for Foundry"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)region"
+      - type: completed
+
+  - name: "Offer another region when quota is exhausted"
+    prompt: "I ran out of quota in East US for Microsoft Foundry. What are my options?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)region|location"
+      - type: completed
+
+  - name: "Optimize quota allocation"
+    prompt: "How can I optimize my Microsoft Foundry quota allocation?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)optimize|consolidate"
+      - type: completed
+
+  - name: "Free quota from unused deployments"
+    prompt: "I need to free up quota in Microsoft Foundry"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)delete|unused"
+      - type: completed
+
+  - name: "Interpret quota usage output"
+    prompt: "What does the quota usage output mean in Microsoft Foundry?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)currentValue|limit"
+      - type: completed
+
+  - name: "Explain the TPM quota concept"
+    prompt: "What is TPM in the context of Microsoft Foundry quotas?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Tokens Per Minute|TPM"
+      - type: completed
+
+  - name: "Provide quota error resolution steps"
+    prompt: "Walk me through fixing a quota error in Microsoft Foundry deployment"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - microsoft-foundry
+      - type: output-matches
+        config:
+          pattern: "(?i)step|check"
+      - type: completed
+
+  - name: "Offer multiple quota resolution options"
+    prompt: "What are my options when I hit quota limits in Microsoft Foundry?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)option|reduce|increase"
+      - type: completed
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry E2E Checks
+  # ═══════════════════════════════════════════════════════════════════════════
+
   - name: "Golden Path - Create and deploy hosted agent"
     constraints:
       max_turns: 50
@@ -516,7 +1193,6 @@ stimuli:
             code was not generated, no new Foundry project or model deployment was created, local testing was not run, deployment did not succeed, deployment did not use direct code deploy, the deployed agent was not
             actually invoked after deployment, or the deployed agent invocation failed.
 
-  # ── Foundry migration and re-host checks ──
   - name: "Migration - OpenAI Agents SDK to Foundry"
     environment:
       files:
@@ -532,7 +1208,7 @@ stimuli:
       area: migrate
     prompt: |
       This project is our existing Python customer-support agent built using OpenAI Agents SDK and self-hosted as a container on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project with Foundry models and deploy the agent there, then invoke the deployed agent to make sure it works after deployment.
-      
+
       Foundry model: gpt-5.4-nano
       Region: eastus
     graders:
