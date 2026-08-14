@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type SkillRef } from "./utils/skill-loader";
+import { type SkillRef } from "../utils/skill-loader";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,12 +41,12 @@ const defaultCompareOptions: CompareOption[] = [
     // Anthropic
     // { model: "claude-sonnet-5" },
     // { model: "claude-opus-4.8" },
-    { model: "claude-sonnet-4.6", withSkill: true },
-    { model: "claude-sonnet-4.6", withSkill: false },
+    // { model: "claude-sonnet-4.6", withSkill: true },
+    // { model: "claude-sonnet-4.6", withSkill: false },
     // { model: "claude-opus-4.6" },
     // OpenAI
-    { model: "gpt-5.6-sol", withSkill: true },
-    { model: "gpt-5.6-sol", withSkill: false },
+    // { model: "gpt-5.6-sol", withSkill: true },
+    // { model: "gpt-5.6-sol", withSkill: false },
     { model: "gpt-5.6-terra", withSkill: true },
     { model: "gpt-5.6-terra", withSkill: false },
     // // Google
