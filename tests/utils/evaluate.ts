@@ -490,13 +490,6 @@ export function getAllAssistantMessages(agentMetadata: AgentMetadata): string {
     if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
     }
-    if (event.type === "assistant.message_delta" && event.data.messageId) {
-      if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
-      } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
-      }
-    }
   });
 
   return Object.values(allMessages).join("\n");

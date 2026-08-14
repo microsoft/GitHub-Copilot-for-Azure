@@ -617,16 +617,6 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
         break;
       }
 
-      case "assistant.message_delta": {
-        // Accumulate deltas for streaming - we'll use the final message instead
-        const messageId = event.data.messageId as string;
-        const deltaContent = event.data.deltaContent as string;
-        if (messageId && deltaContent) {
-          messageDeltas[messageId] = (messageDeltas[messageId] || "") + deltaContent;
-        }
-        break;
-      }
-
       case "assistant.reasoning": {
         const content = event.data.content as string;
         if (content) {
@@ -1283,13 +1273,6 @@ export function doesAssistantMessageIncludeKeyword(
   agentMetadata.events.forEach(event => {
     if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
       allMessages[event.data.messageId] = event.data.content;
-    }
-    if (event.type === "assistant.message_delta" && event.data.messageId) {
-      if (allMessages[event.data.messageId]) {
-        allMessages[event.data.messageId] += event.data.deltaContent ?? "";
-      } else {
-        allMessages[event.data.messageId] = event.data.deltaContent ?? "";
-      }
     }
   });
 

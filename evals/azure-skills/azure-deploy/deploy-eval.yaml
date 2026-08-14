@@ -54,7 +54,7 @@ stimuli:
       - "Create a static whiteboard web app and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -85,7 +85,7 @@ stimuli:
       - "Create a static portfolio website and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -121,7 +121,7 @@ stimuli:
       - "Create a discussion board application and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -152,7 +152,7 @@ stimuli:
       - "Create a todo list with frontend and API and deploy it to Azure App Service using my current subscription in the westus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -188,7 +188,7 @@ stimuli:
       - "Create a serverless HTTP API using Azure Functions and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -218,7 +218,7 @@ stimuli:
       - "Create an event-driven function app to process messages and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -248,7 +248,7 @@ stimuli:
       - "Create an azure python function app that takes input from a service bus trigger and does message processing and deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -283,7 +283,7 @@ stimuli:
       - "Create a workflow app that orchestrates a multi-step order processing pipeline. Make the app as simple as possible for demonstration purposes only. Then deploy it to Azure using my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -327,7 +327,7 @@ stimuli:
       - "Create a containerized web application and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -373,7 +373,7 @@ stimuli:
       - "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using my current subscription in the swedencentral region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -416,7 +416,7 @@ stimuli:
       - "Create a static whiteboard web app and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -453,7 +453,7 @@ stimuli:
       - "Create a static portfolio website and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -495,7 +495,7 @@ stimuli:
       - "Create a discussion board application and deploy it to Azure App Service, prefer Terraform over Bicep, in my current subscription in the westus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -532,7 +532,7 @@ stimuli:
       - "Create a todo list with frontend and API and deploy to Azure App Service using Terraform in my current subscription in the westus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -574,7 +574,7 @@ stimuli:
       - "Create a serverless HTTP API using Azure Functions and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -610,7 +610,7 @@ stimuli:
       - "Create an event-driven function app to process messages and deploy it to Azure Functions using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -646,7 +646,7 @@ stimuli:
       - "Create a URL shortener service using Azure Functions that creates short links and redirects users to the original URL and deploy it to Azure using Terraform infrastructure in my current subscription in the eastus2 region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -681,7 +681,7 @@ stimuli:
       - "Create a containerized web application and deploy it to Azure Container Apps using terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -731,7 +731,7 @@ stimuli:
       - "Create a simple containerized Node.js hello world app and deploy it to Azure Container Apps using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -769,7 +769,7 @@ stimuli:
       - "Create a simple social media application with likes and comments and deploy to Azure using Terraform infrastructure in my current subscription in the swedencentral region. Use azd as the deployment tool."
       - "Go with recommended options and proceed with Azure deployment."
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -820,7 +820,7 @@ stimuli:
       commands:
         - git clone --depth 1 https://github.com/dotnet/eShop.git .
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -863,7 +863,7 @@ stimuli:
         - git sparse-checkout set aspnetcore/tutorials/first-mvc-app/start-mvc/sample/10.0-completed
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -906,7 +906,7 @@ stimuli:
         - git sparse-checkout set samples/aspire-with-azure-functions
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -949,7 +949,7 @@ stimuli:
         - git sparse-checkout set samples/client-apps-integration
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -993,7 +993,7 @@ stimuli:
         - git sparse-checkout set samples/container-build
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1037,7 +1037,7 @@ stimuli:
         - git sparse-checkout set samples/custom-resources
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1075,7 +1075,7 @@ stimuli:
         - git sparse-checkout set samples/database-containers
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1117,7 +1117,7 @@ stimuli:
         - git sparse-checkout set samples/orleans-voting
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1164,7 +1164,7 @@ stimuli:
       commands:
         - git clone --depth 1 https://github.com/benc-uk/nodejs-demoapp.git .
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1207,7 +1207,7 @@ stimuli:
         - git sparse-checkout set samples/aspire-with-javascript
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1250,7 +1250,7 @@ stimuli:
         - git sparse-checkout set samples/aspire-with-node
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1293,7 +1293,7 @@ stimuli:
       commands:
         - git clone --depth 1 https://github.com/UltiRequiem/flask-calculator.git .
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
@@ -1336,7 +1336,7 @@ stimuli:
         - git sparse-checkout set samples/aspire-with-python
         - git checkout -q FETCH_HEAD
     constraints:
-      max_turns: 80
+      max_turns: 100
     tags:
       type: integration
       tier: full
