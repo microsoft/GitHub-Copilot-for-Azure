@@ -16,7 +16,7 @@ tags:
   skill: azure-ai
 
 defaults:
-  runs: 1
+  runs: 5
   timeout: "10m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6
