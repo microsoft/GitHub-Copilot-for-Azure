@@ -33,7 +33,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -54,7 +54,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -75,7 +75,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -96,7 +96,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -117,7 +117,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -138,7 +138,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -159,7 +159,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -180,7 +180,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -201,7 +201,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -222,7 +222,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -243,7 +243,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -269,7 +269,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -286,7 +286,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -303,7 +303,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -324,7 +324,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -341,7 +341,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -358,7 +358,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -404,7 +404,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -421,7 +421,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -442,7 +442,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -459,7 +459,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -480,7 +480,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -501,7 +501,7 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -571,7 +571,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -585,7 +585,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -603,7 +603,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -617,7 +617,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -635,7 +635,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -649,7 +649,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -667,7 +667,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -681,7 +681,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -695,7 +695,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -713,7 +713,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
@@ -727,7 +727,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"microsoft-foundry"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
