@@ -43,15 +43,38 @@ function walkDir(dir: string): string[] {
   return results;
 }
 
+/**
+ * JSON schema of the allowed-skill-names.json output
+ */
+type AllowedSkillNames = {
+  /**
+   * Plugin dirname to its skill names
+   */
+  skills: Record<string, string[]>;
+};
+
+/**
+ * JSON schema of the allowed-plugin-file-references.json output
+ */
+type AllowedPluginFileReferences = {
+  /**
+   * Plugin dirname to its reference file names
+   */
+  references: Record<string, string[]>;
+};
+
 function generateAllowlists(skillsDirs: string[], outputDir: string): void {
-  const allSkillNames: string[] = [];
-  const referenceFiles: string[] = [];
+  const allSkillNames: AllowedSkillNames = { skills: {} };
+  const allReferenceFiles: AllowedPluginFileReferences = { references: {} };
 
   for (const skillsDir of skillsDirs) {
     if (!fs.existsSync(skillsDir) || !fs.statSync(skillsDir).isDirectory()) {
       console.error(`ERROR: skills directory not found: ${skillsDir}`);
       process.exit(1);
     }
+
+    // skillsDir ends with <plugin-dirname>/skills
+    const pluginDirname = skillsDir.split(/\/|\\/).at(-2) as string;
 
     // Get sorted list of skill directory names (exclude hidden directories)
     const skillNames = fs
@@ -67,8 +90,9 @@ function generateAllowlists(skillsDirs: string[], outputDir: string): void {
       process.exit(1);
     }
 
-    allSkillNames.push(...skillNames);
+    allSkillNames.skills[pluginDirname] = skillNames;
 
+    const referenceFiles: string[] = [];
     // Collect all reference file paths (Windows-style backslash separators).
     // Exclude SKILL.md, version.json, and license files.
     for (const skill of skillNames) {
@@ -84,26 +108,23 @@ function generateAllowlists(skillsDirs: string[], outputDir: string): void {
         referenceFiles.push(relPath);
       }
     }
+
+    allReferenceFiles.references[pluginDirname] = referenceFiles.sort();
   }
-
-  const skillNames = [...new Set(allSkillNames)].sort();
-
-  // Sort globally to guarantee stable lexicographic ordering
-  referenceFiles.sort();
 
   // Write allowed-skill-names.json
   const skillNamesPath = path.join(outputDir, "allowed-skill-names.json");
-  fs.writeFileSync(skillNamesPath, JSON.stringify(skillNames, null, 2) + "\n");
+  fs.writeFileSync(skillNamesPath, JSON.stringify(allSkillNames, null, 2) + "\n");
 
   // Write allowed-plugin-file-references.json
   const referencesPath = path.join(
     outputDir,
     "allowed-plugin-file-references.json"
   );
-  fs.writeFileSync(referencesPath, JSON.stringify(referenceFiles, null, 2) + "\n");
+  fs.writeFileSync(referencesPath, JSON.stringify(allReferenceFiles, null, 2) + "\n");
 
   console.log(
-    `Generated ${skillNames.length} skill names and ${referenceFiles.length} reference file paths.`
+    `Generated mcp allowlist for ${Object.keys(allSkillNames.skills).length} plugins.`
   );
 }
 
