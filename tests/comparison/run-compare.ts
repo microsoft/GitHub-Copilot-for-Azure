@@ -128,7 +128,7 @@ function readCompareInput(filePath: string): CompareInput {
 async function main() {
   const inputPath = process.argv[2];
   if (!inputPath) {
-    throw new Error("Usage: npm run compare -- <input.json>");
+    throw new Error("Usage: npm run compare:run -- <input.json>");
   }
 
   const input = readCompareInput(inputPath);
@@ -160,9 +160,9 @@ async function main() {
     }
     branchEntry.runs = results;
     output.results.push(branchEntry);
-    const outputFilename = `comparison-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-    writeFileSync(path.resolve(__dirname, outputFilename), JSON.stringify(output, null, 2));
   }
+  const outputFilename = `comparison-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+  writeFileSync(path.resolve(__dirname, outputFilename), JSON.stringify(output, null, 2));
 }
 
 void main();

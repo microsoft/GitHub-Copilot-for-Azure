@@ -29,6 +29,7 @@ on:
         description: "Model to use for testing"
         required: false
         type: string
+        default: claude-sonnet-4.6
       no-skills:
         description: "Optional: whether to override the run to load no skills"
         required: false

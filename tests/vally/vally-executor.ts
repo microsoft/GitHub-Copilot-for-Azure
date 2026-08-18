@@ -10,7 +10,7 @@ import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
 /**
  * The model to use for the agent run.
  */
-const modelOverride = process.env.MODEL_OVERRIDE?.trim();
+const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";

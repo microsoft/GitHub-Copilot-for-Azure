@@ -12,7 +12,7 @@
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import type { CompareRunOutput as CompareRunOutput } from "./run-compare";
+import type { CompareRunOutput } from "./run-compare";
 
 const STORAGE_ACCOUNT = "strdashboarddevveobvk";
 const CONTAINER = "manual-integration-reports";
@@ -52,18 +52,6 @@ function run(): void {
   if (!fs.existsSync(inputFile)) {
     console.error(`Error: input file not found: ${inputFile}`);
     process.exit(2);
-  }
-
-  // Check for required commands
-  for (const cmd of ["jq", "az"]) {
-    try {
-      execSync(`command -v ${cmd}`, {
-        stdio: "ignore",
-      });
-    } catch {
-      console.error(`Error: required command '${cmd}' is not installed.`);
-      process.exit(1);
-    }
   }
 
   let input: CompareRunOutput;
@@ -148,7 +136,7 @@ function run(): void {
       }
 
       if (stimuliSet.size === 0) {
-        console.error(
+        console.warn(
           `Warning: no stimuli directories discovered for run ${runId}`
         );
         continue;

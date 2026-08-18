@@ -1,7 +1,6 @@
 ---
 name: analyze-comparison-tests
-description: "Collects comparison test run artifacts and answer user's questions based on the trajectories of each run."
-disable-model-invocation: true
+description: "Collects comparison test run artifacts and answer user's questions based on the trajectories of each run. WHEN TO USE: collect comparison test artifacts"
 license: MIT
 metadata:
   author: Microsoft
@@ -14,11 +13,11 @@ metadata:
 
 Execute the collect-artifacts script to download the test run artifacts.
 
-The user must provide an JSON file to correlate each comparison test run with the GitHub Actions run. The script expects one input argument as the path to this JSON file. The JSON input is supposed to be the JSON output when queuing the comparison test runs using the `npm run compare` command.
+The user must provide an JSON file to correlate each comparison test run with the GitHub Actions run. The script expects one input argument as the path to this JSON file. The JSON input is supposed to be the JSON output when queuing the comparison test runs using the `npm run compare:run` command.
 
 ```bash
 cd tests/
-tsx collect-artifacts.ts input.json
+npm run compare:collect -- input.json
 ```
 
 The collect-artifacts script will download the test run artifacts to a directory named `comparison-artifacts` in the current working directory. Before executing the script, check if there is already such an directory. If so, skip executing the script and proceed to step 2.
