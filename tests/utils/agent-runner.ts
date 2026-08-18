@@ -930,8 +930,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const startTime = new Date().getTime();
       const done = new Promise<void>((resolve) => {
         // Global timeout for the entire run, including all turns
-        if (runConfig.timeout) {
-          setTimeout(async () => {
+        if (runConfig.timeout !== undefined) {
+          const timeoutTimer = setTimeout(async () => {
             if (!isComplete) {
               isComplete = true;
               isAborted = true;
@@ -948,6 +948,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               }
             }
           }, runConfig.timeout);
+          timeoutTimer.unref();
         }
         session.on(async (event: SessionEvent) => {
           if (isComplete) return;
