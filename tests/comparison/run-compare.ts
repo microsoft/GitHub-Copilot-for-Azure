@@ -54,18 +54,22 @@ type BranchOutput = {
 
 const defaultCompareOptions: CompareOption[] = [
   // Anthropic
-  // { model: "claude-sonnet-5" },
-  // { model: "claude-opus-4.8" },
-  // { model: "claude-sonnet-4.6", withSkill: true },
-  // { model: "claude-sonnet-4.6", withSkill: false },
-  // { model: "claude-opus-4.6" },
+  { model: "claude-sonnet-5", withSkill: true },
+  { model: "claude-sonnet-5", withSkill: false },
+  { model: "claude-opus-4.8", withSkill: true },
+  { model: "claude-opus-4.8", withSkill: false },
+  { model: "claude-sonnet-4.6", withSkill: true },
+  { model: "claude-sonnet-4.6", withSkill: false },
+  { model: "claude-opus-4.6", withSkill: true },
+  { model: "claude-opus-4.6", withSkill: false },
   // OpenAI
-  // { model: "gpt-5.6-sol", withSkill: true },
-  // { model: "gpt-5.6-sol", withSkill: false },
-  // { model: "gpt-5.6-terra", withSkill: true },
+  { model: "gpt-5.6-sol", withSkill: true },
+  { model: "gpt-5.6-sol", withSkill: false },
+  { model: "gpt-5.6-terra", withSkill: true },
   { model: "gpt-5.6-terra", withSkill: false },
   // // Google
-  // { model: "gemini-3.1-pro-preview" },
+  { model: "gemini-3.1-pro-preview", withSkill: true },
+  { model: "gemini-3.1-pro-preview", withSkill: false },
 ];
 
 const repo = "microsoft/GitHub-Copilot-for-Azure";
