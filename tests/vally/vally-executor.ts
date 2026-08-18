@@ -70,7 +70,7 @@ export class IntegrationTestAgentRunner implements Executor {
       nonInteractive: true,
       followUp: followUps,
       systemPrompt: systemPrompt,
-      followUpTimeout: timeout,
+      timeout: timeout,
       takeScreenshot: takeScreenshot,
       requiredSkills: requiredSkillRefs.length > 0 ? requiredSkillRefs : undefined,
       maxTurns: stimulus.constraints?.max_turns,

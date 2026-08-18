@@ -203,6 +203,8 @@ const testRunId = process.env.TEST_RUN_ID;
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
+const PER_TURN_TIMEOUT = 1800000; // 30 minutes
+
 export interface AgentRunConfig {
   setup?: (workspace: string) => Promise<void>;
   env?: Record<string, string>;
@@ -235,9 +237,9 @@ export interface AgentRunConfig {
   maxTurns?: number;
 
   /**
-   * Number of milliseconds as timeout for follow ups.
+   * Number of milliseconds as timeout for the entire run.
    */
-  followUpTimeout?: number;
+  timeout?: number;
 
   /**
    * Whether to take a screenshot of the application after the agent work.
@@ -846,7 +848,6 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     } else {
       testWorkspace = fs.mkdtempSync(path.join(os.tmpdir(), "skill-test-"));
     }
-    const FOLLOW_UP_TIMEOUT = runConfig.followUpTimeout ?? 1800000; // 30 minutes by default
 
     let isComplete = false;
     let isAborted = false;
@@ -926,7 +927,29 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       });
       entry.session = session;
 
+
+      const startTime = new Date().getTime();
       const done = new Promise<void>((resolve) => {
+        // Global timeout for the entire run, including all turns
+        if (runConfig.timeout) {
+          setTimeout(async () => {
+            if (!isComplete) {
+              isComplete = true;
+              isAborted = true;
+              const currentTime = new Date().getTime();
+              agentMetadata.testComments.push(
+                `⚠️ Run aborted: run time (${currentTime - startTime} ms) exceeded timeout (${runConfig.timeout} ms).`
+              );
+              try {
+                await session.abort();
+              } catch (error) {
+                console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+              } finally {
+                resolve();
+              }
+            }
+          }, runConfig.timeout);
+        }
         session.on(async (event: SessionEvent) => {
           if (isComplete) return;
 
@@ -985,7 +1008,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       for (const followUpPrompt of (runConfig.followUp ?? [])) {
         if (isAborted) break;
         isComplete = false;
-        await session.sendAndWait({ prompt: followUpPrompt }, FOLLOW_UP_TIMEOUT);
+        await session.sendAndWait({ prompt: followUpPrompt }, PER_TURN_TIMEOUT);
       }
 
       // Extract token usage from assistant.usage events
