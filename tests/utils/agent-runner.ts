@@ -927,7 +927,6 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       });
       entry.session = session;
 
-
       const startTime = new Date().getTime();
       const done = new Promise<void>((resolve) => {
         // Global timeout for the entire run, including all turns
