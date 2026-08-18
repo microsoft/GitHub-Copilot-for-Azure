@@ -118,6 +118,47 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # ── pod-evidence-script-invoked ──
+  # Response-quality check: for an AKS pod-failure prompt the skill should drive the
+  # agent to RUN the read-only pod-evidence evidence-bundle script rather than re-listing
+  # the raw kubectl describe/logs/top sequence (issue #2507). The `tool-calls` grader
+  # asserts the agent attempted to execute pod-evidence.{sh,ps1} via a shell tool.
+  #
+  # earlyTerminate stops the agent as soon as the pod-evidence call is observed, so there
+  # are no follow-on turns. It uses `tool-call-result`, which reacts to the matching call's
+  # `tool.execution_complete` event — i.e. the invocation is confirmed to have actually run
+  # and produced a result, which is the reliable signal (execution_start alone can be raced
+  # by termination before the result is recorded). This is a guard/optimization, not a hard
+  # execution block: the script is read-only and, with no AKS cluster/kubectl context in CI,
+  # every kubectl call fails gracefully — so it is inert regardless. Because earlyTerminate
+  # is set, the `completed` grader is intentionally omitted (early-terminated runs always
+  # fail it by design).
+  - name: "Pod-evidence script invoked for CrashLoopBackOff"
+    prompt: "My AKS pod is stuck in CrashLoopBackOff. Gather the read-only failure evidence I need before I decide on a fix."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"(?i)pod-evidence\\.(sh|ps1)"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: tool-calls
+        config:
+          required:
+            # Copilot CLI uses "powershell" tool for executing scripts on Windows
+            # and "bash" for executing scripts on other platforms.
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)pod-evidence\\.(sh|ps1)"
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # ── messaging-namespace-connectivity-probe ──
   # Added with issue #2511: for the messaging "cannot connect at all" flow the
@@ -262,9 +303,8 @@ stimuli:
           required:
             - azure-diagnostics
       # The script's shell tool call completes (earlyTerminate fires on its
-      # *result*), so the built-in `tool-calls` grader can match it via the
-      # tool_result. `required` matches on completion; this is the same shape the
-      # azure-validate e2e suite uses to confirm a script was run.
+      # result), so the built-in `tool-calls` grader can match it via the
+      # tool_result.
       - type: tool-calls
         config:
           required:
