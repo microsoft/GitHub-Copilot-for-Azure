@@ -11,7 +11,7 @@
 
 import fs from "fs";
 import path from "path";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
 import type { CompareRunOutput } from "./run-compare";
 
 const STORAGE_ACCOUNT = "strdashboarddevveobvk";
@@ -112,8 +112,15 @@ function run(): void {
 
       let discoveryResult: string;
       try {
-        const cmd = `az storage blob list --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --prefix "${prefix}" --auth-mode login --query "[?ends_with(name, '.md')].name" -o tsv`;
-        discoveryResult = execSync(cmd, {
+        discoveryResult = execFileSync("az", [
+          "storage", "blob", "list",
+          "--account-name", STORAGE_ACCOUNT,
+          "--container-name", CONTAINER,
+          "--prefix", prefix,
+          "--auth-mode", "login",
+          "--query", "[?ends_with(name, '.md')].name",
+          "-o", "tsv"
+        ], {
           encoding: "utf-8",
           stdio: ["pipe", "pipe", "ignore"]
         }) as string;
@@ -161,8 +168,15 @@ function run(): void {
 
         let blobs: string;
         try {
-          const cmd = `az storage blob list --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --prefix "${blobPrefix}" --auth-mode login --query "[?ends_with(name, '.md')].name" -o tsv`;
-          blobs = execSync(cmd, {
+          blobs = execFileSync("az", [
+            "storage", "blob", "list",
+            "--account-name", STORAGE_ACCOUNT,
+            "--container-name", CONTAINER,
+            "--prefix", blobPrefix,
+            "--auth-mode", "login",
+            "--query", "[?ends_with(name, '.md')].name",
+            "-o", "tsv"
+          ], {
             encoding: "utf-8",
             stdio: ["pipe", "pipe", "ignore"]
           }) as string;
@@ -193,8 +207,17 @@ function run(): void {
 
           try {
             const outputPath = path.join(stimuliOutputDir, fileName);
-            const cmd = `az storage blob download --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --name "${blob}" --file "${outputPath}" --auth-mode login --overwrite --no-progress -o none`;
-            execSync(cmd, { stdio: "ignore" });
+            execFileSync("az", [
+              "storage", "blob", "download",
+              "--account-name", STORAGE_ACCOUNT,
+              "--container-name", CONTAINER,
+              "--name", blob,
+              "--file", outputPath,
+              "--auth-mode", "login",
+              "--overwrite",
+              "--no-progress",
+              "-o", "none"
+            ], { stdio: "ignore" });
           } catch {
             console.error(`Error: failed to download blob ${blob}`);
             failed = 1;
