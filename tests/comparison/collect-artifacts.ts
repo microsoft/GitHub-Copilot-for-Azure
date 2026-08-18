@@ -60,7 +60,7 @@ function run(): void {
       execSync(`command -v ${cmd}`, {
         stdio: "ignore",
       });
-    } catch (err: unknown) {
+    } catch {
       console.error(`Error: required command '${cmd}' is not installed.`);
       process.exit(1);
     }
@@ -129,7 +129,7 @@ function run(): void {
           encoding: "utf-8",
           stdio: ["pipe", "pipe", "ignore"]
         }) as string;
-      } catch (err: unknown) {
+      } catch {
         console.error(`Error: failed to discover blobs for run ${runId}.`);
         failed = 1;
         continue;
@@ -178,7 +178,7 @@ function run(): void {
             encoding: "utf-8",
             stdio: ["pipe", "pipe", "ignore"]
           }) as string;
-        } catch (err: unknown) {
+        } catch {
           console.error(
             `Error: failed to list blobs for run ${runId}, stimuli ${stimuliPart}.`
           );
@@ -207,7 +207,7 @@ function run(): void {
             const outputPath = path.join(stimuliOutputDir, fileName);
             const cmd = `az storage blob download --account-name "${STORAGE_ACCOUNT}" --container-name "${CONTAINER}" --name "${blob}" --file "${outputPath}" --auth-mode login --overwrite --no-progress -o none`;
             execSync(cmd, { stdio: "ignore" });
-          } catch (err: unknown) {
+          } catch {
             console.error(`Error: failed to download blob ${blob}`);
             failed = 1;
           }
