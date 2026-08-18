@@ -1,6 +1,6 @@
 ---
 name: analyze-comparison-tests
-description: "Collects comparison test run artifacts and answer user's questions based on the trajectories of each run. WHEN TO USE: collect comparison test artifacts"
+description: "Collects comparison test run artifacts and answers the user's questions based on the trajectories of each run. WHEN TO USE: collect comparison test artifacts"
 license: MIT
 metadata:
   author: Microsoft
