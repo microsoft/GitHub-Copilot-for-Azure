@@ -4,13 +4,15 @@ import * as nbgv from "nerdbank-gitversioning";
 import * as path from "path";
 import log from "fancy-log";
 import { execSync } from "child_process";
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, cpSync } from "fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync, cpSync, existsSync } from "fs";
 import Vinyl = require("vinyl");
 
 // Matches top-level skill files like skills/azure-deploy/SKILL.md but not nested ones.
 const TOP_LEVEL_SKILL_RE = /^skills[\\/][^\\/]+[\\/]SKILL\.md$/;
 // Matches plugin.json in the .plugin/, .cursor-plugin/, and .claude-plugin/ directories.
 const PLUGIN_JSON_RE = /^\.(?:plugin|cursor-plugin|claude-plugin)[\\/]plugin\.json$/;
+// Hook manifest files that must be merged (not overwritten) between hooks/shared and hooks/<plugin>.
+const HOOK_MANIFEST_FILENAMES = ["copilot-hooks.json", "cursor-hooks.json", "claude-hooks.json"];
 
 /**
  * Stamps each top-level skill's SKILL.md with a per-skill NBGV version.
@@ -119,10 +121,54 @@ function getPluginDirnames(): string[] {
     .sort();
 }
 
-function copyHookScript(pluginDirname: string) {
-  const src = path.join(__dirname, "hooks");
+/**
+ * Merges a shared and a plugin-specific hook manifest: all other top-level
+ * properties come from the plugin manifest (falling back to the shared one
+ * if the plugin has none), while `hooks` is merged by concatenating the
+ * arrays for each event key found in either file.
+ */
+function mergeHookManifests(sharedPath: string, pluginPath: string): Record<string, unknown> {
+  const sharedManifest = existsSync(sharedPath) ? JSON.parse(readFileSync(sharedPath, "utf-8")) : {};
+  const pluginManifest = existsSync(pluginPath) ? JSON.parse(readFileSync(pluginPath, "utf-8")) : {};
+
+  const sharedHooks = sharedManifest.hooks ?? {};
+  const pluginHooks = pluginManifest.hooks ?? {};
+
+  const mergedHooks: Record<string, unknown[]> = {};
+  for (const eventName of new Set([...Object.keys(sharedHooks), ...Object.keys(pluginHooks)])) {
+    mergedHooks[eventName] = [...(sharedHooks[eventName] ?? []), ...(pluginHooks[eventName] ?? [])];
+  }
+
+  return {
+    ...sharedManifest,
+    ...pluginManifest,
+    hooks: mergedHooks,
+  };
+}
+
+/**
+ * Merge-copies `hooks/shared` and `hooks/<plugin>` into the plugin's output
+ * hooks directory. Hook manifest JSON files are merged at the top-level
+ * `hooks` property instead of one overwriting the other.
+ */
+function buildHookScript(pluginDirname: string) {
+  const sharedDir = path.join(__dirname, "hooks/shared");
+  const pluginDir = path.join(__dirname, "hooks", pluginDirname);
   const dst = path.join(__dirname, `output/${pluginDirname}/hooks`);
-  cpSync(src, dst, { recursive: true });
+
+  mkdirSync(dst, { recursive: true });
+  cpSync(sharedDir, dst, { recursive: true, filter: (src) => !HOOK_MANIFEST_FILENAMES.includes(path.basename(src)) });
+  if (existsSync(pluginDir)) {
+    cpSync(pluginDir, dst, { recursive: true, filter: (src) => !HOOK_MANIFEST_FILENAMES.includes(path.basename(src)) });
+  }
+
+  for (const manifestFilename of HOOK_MANIFEST_FILENAMES) {
+    const merged = mergeHookManifests(
+      path.join(sharedDir, manifestFilename),
+      path.join(pluginDir, manifestFilename)
+    );
+    writeFileSync(path.join(dst, manifestFilename), JSON.stringify(merged, null, 2) + "\n", "utf-8");
+  }
 }
 
 function buildPlugin(pluginDirname: string): Promise<void> {
@@ -149,7 +195,7 @@ function buildPlugin(pluginDirname: string): Promise<void> {
     pipeline.on("end", () => {
       try {
         generateChangelog(pluginDirname, legacyChangelog);
-        copyHookScript(pluginDirname);
+        buildHookScript(pluginDirname);
         resolve();
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
