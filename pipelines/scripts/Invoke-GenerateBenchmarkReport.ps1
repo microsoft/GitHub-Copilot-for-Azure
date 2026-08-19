@@ -1,512 +1,561 @@
 <#
 .SYNOPSIS
-    Generates benchmark analysis reports for completed MSBench runs using GitHub Copilot
-    and uploads them to Azure Blob Storage.
+    Generates Agent Forensics reports for completed Azure MSBench runs.
 
 .DESCRIPTION
-    This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
-    Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
-    PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The script retrieves a GitHub PAT from KeyVault, clones the msbench-benchmarks repo,
-    installs MSBench CLI, checks the status of existing benchmark runs, and uses GitHub Copilot
-    to generate detailed analysis reports for the specified run IDs.
+    This script runs in Azure DevOps under an AzureCLI@2 task with federated
+    authentication. PipAuthenticate@1 configures the MicrosoftSweBench feed.
+    For each date in the ToBeProcessed blob, the script downloads run_ids.json,
+    verifies the runs are complete, extracts every run into one shared Agent
+    Forensics data root, and performs one combined azure.skill analysis.
 
-    The script downloads a ToBeProcessed file from the blob container root to determine which
-    dates need report generation. For each date, it downloads the corresponding run_ids.json,
-    generates reports using GitHub Copilot CLI, enriches eval_report.json files with model
-    metadata and resolved status from eval.json, and uploads all artifacts to Azure Blob Storage.
+    Agent Forensics uses the external GitHub Copilot CLI with HMAC provider
+    authentication. The HMAC key and integration ID are retrieved from Azure
+    Key Vault and exposed only as COPILOT_HMAC_KEY and
+    COPILOT_HMAC_INTEGRATION_ID.
 
-    After processing, successfully completed dates are removed from the ToBeProcessed file,
-    which is then uploaded back to blob storage.
+    Reports and compressed snapshots are staged under:
+      {date}/agent-forensics/{reports|snapshots}
 
-    Blob path format: {date}/{benchmark_instance}/{filename}
+    They are uploaded to the matching blob prefix. Existing enriched
+    per-task eval_report.json blobs remain at:
+      {date}/{benchmark_instance}/{model}_{benchmark_instance}_eval_report.json
+
+    A date is removed from ToBeProcessed only after extraction, combined
+    analysis, classification, compatibility enrichment, and every blob upload
+    succeed.
 
 .PARAMETER OutputPath
-    Directory path where generated benchmark reports will be saved, organized by date.
+    Azure DevOps artifact staging directory.
 
 .PARAMETER StorageAccountName
-    The Azure Storage account name for reading ToBeProcessed/run_ids.json and uploading reports.
+    Storage account containing ToBeProcessed, run_ids.json, and reports.
 
 .PARAMETER ContainerName
-    The blob container name for reading ToBeProcessed/run_ids.json and uploading reports.
+    Blob container containing the benchmark reporting queue and artifacts.
 
-    MSBench CLI reference:
-    - https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
+.PARAMETER Benchmark
+    Exact benchmark name to analyze. Default: azure.skill.
 
-.LINK
-    https://github.com/devdiv-microsoft/MicrosoftSweBench/wiki
+.PARAMETER KeyVaultName
+    Key Vault containing the Copilot HMAC credentials.
+
+.PARAMETER HmacKeySecretName
+    Key Vault secret containing the Copilot HMAC signing key.
+
+.PARAMETER HmacIntegrationIdSecretName
+    Key Vault secret containing the matching Copilot integration ID.
 #>
 
+param(
+    [string]$OutputPath,
+    [string]$StorageAccountName,
+    [string]$ContainerName,
+    [string]$Benchmark = "azure.skill",
+    [string]$KeyVaultName = "kv-msbench-eval-azuremcp",
+    [string]$HmacKeySecretName = "azure-mcp-eval-capi-hmac",
+    [string]$HmacIntegrationIdSecretName = "azure-mcp-eval-capi-id"
+)
+
+Set-StrictMode -Version Latest
+
+$agentForensicsVersion = "0.4.0"
+$pipelineRun = $env:TF_BUILD -eq "True"
+
+function Assert-RequiredValue {
     param(
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$OutputPath,
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$StorageAccountName,
-        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]$ContainerName
+        [string]$Name,
+        [string]$Value
     )
 
-    Set-StrictMode -Version Latest
-    $ErrorActionPreference = "Stop"
-
-    if (!(Test-Path -Path $OutputPath)) {
-        New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
+    if ([string]::IsNullOrWhiteSpace($Value)) {
+        throw "$Name is required."
     }
+}
 
-    $vaultName = "kv-msbench-eval-azuremcp"
-    $secretName = "msbench-report-copilot-usage"
-
-    Write-Host "Output Path: $OutputPath"
-    $pipelineRun = $env:TF_BUILD -eq "True"
-
-    # --- Retrieve GitHub PAT from KeyVault ---
-    # It needs to be a fine-grained GitHub access token with the Account level Copilot Request permission
-    try {
-        Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretName"
-        $azArgs = @(
-            "keyvault", "secret", "show",
-            "--vault-name", $vaultName,
-            "--name", $secretName,
-            "--query", "value",
-            "-o", "tsv"
-        )
-        $pat = az @azArgs
-
-        if (!$pat) {
-            throw "Secret $secretName not found in KeyVault $vaultName."
-        }
-
-        $env:COPILOT_GITHUB_TOKEN = $pat
-        
-        # Log the PAT as a secret variable to avoid exposing it in logs
-        if ($pipelineRun) {
-            Write-Host "##vso[task.setsecret]$pat"
-        }
-    }
-    catch {
-        throw "Failed to retrieve GitHub PAT from KeyVault: $_"
-    }
-
-    # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
-    # PipAuthenticate sets PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    if ($env:PIP_EXTRA_INDEX_URL) {
-        Write-Host "PIP_EXTRA_INDEX_URL is set (feed auth configured by PipAuthenticate task)"
-    } else {
-        Write-Warning "PIP_EXTRA_INDEX_URL is not set. Feed authentication may fail. Ensure PipAuthenticate@1 runs before this script."
-    }
-
-    $pythonCommand = Get-Command python
-    Write-Host "Using python from: $($pythonCommand.Path). Version: $(python --version 2>&1)"
-
-    Write-Host "Install/upgrade pip"
-    python -m pip install --upgrade pip
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip install/upgrade failed with exit code $LASTEXITCODE"
-    }
-
-    Write-Host "Installing/upgrading MSBench CLI"
-    python -m pip install msbench-cli --no-input
-    if ($LASTEXITCODE -ne 0) {
-        throw "pip install msbench-cli failed with exit code $LASTEXITCODE"
-    }
-
-    Write-Host "MSBench CLI version"
-    & 'msbench-cli' version
-    if ($LASTEXITCODE -ne 0) {
-        throw "msbench-cli version failed with exit code $LASTEXITCODE"
-    }
-
-    # --- Clone repo and cd to working directory ---
-    $msbenchRepo = "https://devdiv@dev.azure.com/devdiv/OnlineServices/_git/msbench-benchmarks"
-    $repoName = "msbench-benchmarks"
-
-    $cloneDir = Join-Path $PWD $repoName
-
-    if (Test-Path $cloneDir) {
-        Write-Host "Removing existing directory $cloneDir"
-        Remove-Item -Recurse -Force $cloneDir
-    }
-
-    Write-Host "Cloning $msbenchRepo into $cloneDir"
-    # ADO resource id for Azure Repos is 499b84ac-1321-427f-aa17-267ca6975798
-    $azArgs = @(
-        "account", "get-access-token",
-        "--resource", "499b84ac-1321-427f-aa17-267ca6975798",
-        "--query", "accessToken",
-        "-o", "tsv"
+function Get-KeyVaultSecretValue {
+    param(
+        [string]$VaultName,
+        [string]$SecretName
     )
-    $token = az @azArgs  
-    if ($pipelineRun) {  
-        Write-Host "##vso[task.setsecret]$token"  
-    }  
-    
-    git -c http.extraheader="AUTHORIZATION: bearer $token" `
-        clone --depth 1 $msbenchRepo $cloneDir
-    if ($LASTEXITCODE -ne 0) {
-        throw "git clone failed with exit code $LASTEXITCODE"
+
+    $value = az keyvault secret show `
+        --vault-name $VaultName `
+        --name $SecretName `
+        --query value `
+        -o tsv
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "Failed to retrieve Key Vault secret '$SecretName' from '$VaultName' (exit $exitCode)."
     }
 
-    Write-Host "Checking out branch main in $cloneDir" 
-    Set-Location $cloneDir
-    git checkout main
-    if ($LASTEXITCODE -ne 0) {
-        throw "git checkout failed with exit code $LASTEXITCODE"
+    $secretValue = ($value -join "`n").Trim()
+    if ([string]::IsNullOrWhiteSpace($secretValue)) {
+        throw "Key Vault secret '$SecretName' in '$VaultName' is empty."
     }
 
-    $targetDir = Join-Path $cloneDir "curation/benchmarks/azure/report"
-    if (!(Test-Path $targetDir)) {
-        throw "Working directory '$targetDir' does not exist after clone."
-    }
+    return $secretValue
+}
 
-    # --- Get dates from ToBeProcessed file in blob container root ---
-    Write-Host "Downloading ToBeProcessed file from blob container $ContainerName"
-    $toBeProcessedLocal = Join-Path $OutputPath 'ToBeProcessed'
-
-    $azArgs = @(
-        "storage", "blob", "download",
-        "--account-name", $StorageAccountName,
-        "--container-name", $ContainerName,
-        "--name", "ToBeProcessed",
-        "--file", $toBeProcessedLocal,
-        "--auth-mode", "login"
+function Invoke-BlobDownload {
+    param(
+        [string]$BlobName,
+        [string]$Destination
     )
-    az @azArgs
-    if ($LASTEXITCODE -ne 0 -or !(Test-Path $toBeProcessedLocal)) {
-        throw "Failed to download ToBeProcessed file from blob container $ContainerName. Ensure the file exists and the service principal has access."
+
+    if (Test-Path -LiteralPath $Destination) {
+        Remove-Item -LiteralPath $Destination -Force -ErrorAction Stop
     }
 
-    $dates = @(Get-Content -Path $toBeProcessedLocal | 
-                Where-Object { $_.Trim() -ne '' } | 
-                ForEach-Object { $_.Trim() } |
-                Where-Object { $_ -match '^\d{4}-\d{2}-\d{2}$' })
-    if ($dates.Count -eq 0) {
-        Write-Host "ToBeProcessed file is empty. No action needed."
-        exit 0
+    az storage blob download `
+        --account-name $StorageAccountName `
+        --container-name $ContainerName `
+        --name $BlobName `
+        --file $Destination `
+        --auth-mode login `
+        --only-show-errors | Out-Null
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0 -or !(Test-Path -LiteralPath $Destination)) {
+        throw "Failed to download '$BlobName' from '$ContainerName' (exit $exitCode)."
     }
-    Write-Host "Found $($dates.Count) date(s) to process: $($dates -join ', ')"
+}
 
-    # --- Download run_ids.json for each date from blob container ---
-    $dateRunIdMap = @{}
-    foreach ($d in $dates) {
-        $runIdsBlobPath = "$d/run_ids.json"
-        $runIdsLocalFile = Join-Path $OutputPath "run_ids_${d}.json"
+function Invoke-BlobUpload {
+    param(
+        [string]$Source,
+        [string]$BlobName
+    )
 
-        Write-Host "Downloading $runIdsBlobPath from blob container $ContainerName"
-        $azArgs = @(
-            "storage", "blob", "download",
-            "--account-name", $StorageAccountName,
-            "--container-name", $ContainerName,
-            "--name", $runIdsBlobPath,
-            "--file", $runIdsLocalFile,
-            "--auth-mode", "login"
-        )
-        az @azArgs
+    az storage blob upload `
+        --account-name $StorageAccountName `
+        --container-name $ContainerName `
+        --name $BlobName `
+        --file $Source `
+        --auth-mode login `
+        --overwrite `
+        --only-show-errors | Out-Null
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "Failed to upload '$Source' to '$ContainerName/$BlobName' (exit $exitCode)."
+    }
+}
 
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to download $runIdsBlobPath from blob container $ContainerName"
-        }
+function Get-RelativePathForBlob {
+    param(
+        [string]$BasePath,
+        [string]$Path
+    )
 
-        $runIds = @(Get-Content -Path $runIdsLocalFile -Raw | ConvertFrom-Json)
-        if (-not $runIds -or $runIds.Count -eq 0) {
-            Write-Warning "No run IDs found in $runIdsBlobPath. Skipping date $d."
+    return [System.IO.Path]::GetRelativePath($BasePath, $Path).Replace('\', '/')
+}
+
+function Get-EnrichedEvalReports {
+    param(
+        [string]$Date,
+        [string[]]$RunIds,
+        [string]$DataRoot,
+        [string]$DateOutputPath
+    )
+
+    $benchmarkDataPath = Join-Path $DataRoot "$Date/$Benchmark"
+    if (!(Test-Path -LiteralPath $benchmarkDataPath -PathType Container)) {
+        throw "Expected extracted benchmark directory '$benchmarkDataPath' was not created."
+    }
+
+    $metadataFiles = @(
+        Get-ChildItem -LiteralPath $benchmarkDataPath -Filter "run_metadata.json" -File -Recurse -ErrorAction Stop
+    )
+    if ($metadataFiles.Count -eq 0) {
+        throw "No run_metadata.json files were found under '$benchmarkDataPath'."
+    }
+
+    $metadataRunIds = @($metadataFiles | ForEach-Object { $_.Directory.Name })
+    $missingRunIds = @($RunIds | Where-Object { $_ -notin $metadataRunIds })
+    if ($missingRunIds.Count -gt 0) {
+        throw "Extracted metadata is missing run ID(s): $($missingRunIds -join ', ')."
+    }
+
+    $reports = @()
+    foreach ($metadataFile in $metadataFiles) {
+        $runDirectory = $metadataFile.Directory
+        $runId = $runDirectory.Name
+        if ($runId -notin $RunIds) {
             continue
         }
-        $dateRunIdMap[$d] = $runIds
-        Write-Host "Date ${d}: loaded $($runIds.Count) run ID(s): $($runIds -join ',')"
-    }
 
-    if ($dateRunIdMap.Count -eq 0) {
-        throw "No valid run IDs found for any date in ToBeProcessed."
-    }
-
-    function Get-BenchmarkInstanceID {
-        param([string]$FileName)
-
-        $baseName = [System.IO.Path]::GetFileNameWithoutExtension($FileName).ToLower()
-        $normalized = $baseName -replace '-', '_'
-
-        # Extract BENCHMARK_INSTANCE from: msbench_analysis_report_[BENCHMARK_INSTANCE]_[DATE]
-        $instance = $normalized -replace '^msbench_(analysis_)?report_', '' `
-                                -replace '_\d{4}_\d{2}_\d{2}$', ''
-
-        if ($instance) {
-            return $instance
+        $metadata = Get-Content -LiteralPath $metadataFile.FullName -Raw -ErrorAction Stop |
+            ConvertFrom-Json -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace([string]$metadata.model)) {
+            throw "Run '$runId' has no model in '$($metadataFile.FullName)'."
         }
+        $model = ([string]$metadata.model) -replace '-autodev-test$', ''
 
-        return $baseName
-    }
-
-    # --- Process each date ---
-    $processedDates = @()
-    foreach ($date in $dateRunIdMap.Keys) {
-        $inputRunIds = @($dateRunIdMap[$date])
-        Write-Host "`n=========================================="
-        Write-Host "Processing date: $date with $($inputRunIds.Count) run ID(s): $($inputRunIds -join ',')"
-        Write-Host "==========================================`n"
-
-        $dateOutputPath = Join-Path $OutputPath $date
-        New-Item -Path $dateOutputPath -ItemType Directory -Force | Out-Null
-
-        # Check if all the runs have completed
-        Write-Host "Checking status of run ID: $($inputRunIds -join ',')"
-        & 'msbench-cli' resume --run-id $($inputRunIds -join ',')
-        if ($LASTEXITCODE -ne 0) {
-            throw "msbench-cli resume failed for run ID $($inputRunIds -join ',') with exit code $LASTEXITCODE"
-        }
-
-        # Ensure we are in the target directory for copilot
-        Write-Host "Changing directory to $targetDir"
-        Set-Location $targetDir
-
-        # Generate benchmark analysis report using GitHub Copilot CLI
-        # Copilot will analyze the specified run IDs and generate detailed markdown reports
-        Write-Host "Generating benchmark report for run IDs: $($inputRunIds -join ', ')"
-        $reportGenerationPrompt = "analyze msbench run on $date`: $($inputRunIds -join ', ')"
-        $copilotLogDir = Join-Path $dateOutputPath "copilot_log"
-        $copilotLogFile = Join-Path $copilotLogDir "copilot_log.md"
-        New-Item -Path $copilotLogDir -ItemType Directory -Force | Out-Null
-        $copilotArgs = @(
-                "-p", $reportGenerationPrompt,
-                "--model", "claude-opus-4.6",
-                "--share", $copilotLogFile,
-                "--yolo"
-            )
-        & 'copilot' @copilotArgs
-        if ($LASTEXITCODE -ne 0) {
-            throw "copilot report generation failed with exit code $LASTEXITCODE"
-        }
-
-        Write-Host "`nMSBench benchmark report generation completed successfully for date $date."
-
-        # Copy generated markdown reports from the working directory to the date output path
-        Write-Host "Copying generated report files to output path: $dateOutputPath"
-        $reportsDir = Join-Path $targetDir "reports"
-        $reportFiles = @()
-        $reportsFound = $false
-        if ((Test-Path $reportsDir)) {
-            $reportsDirMdFiles = @(Get-ChildItem -Path $reportsDir -Filter '*.md')
-            if ($reportsDirMdFiles.Count -gt 0) {
-                $reportFiles = $reportsDirMdFiles
-                $reportsFound = $true
-                Write-Host "Found $($reportFiles.Count) report(s) in $reportsDir"
-            }
-        }
-        if (-not $reportsFound) {
-            $reportFiles = Get-ChildItem -Path $targetDir -Filter '*.md' | Where-Object { $_.FullName -notlike "*\.github\*" -and $_.FullName -notlike "*/.github/*" }
-            Write-Host "Found $($reportFiles.Count) report(s) in $targetDir (excluding .github folders)"
-        }
-
-        if ($reportFiles.Count -gt 0) {
-            foreach ($report in $reportFiles) {
-                $destination = Join-Path $dateOutputPath $report.Name
-                Copy-Item -Path $report.FullName -Destination $destination -Force
-                Write-Host "Copied report to $destination"
-
-                # Upload report summary if running in pipeline
-                if ($pipelineRun) {
-                    Write-Host "##vso[task.uploadsummary]$destination"
-                }
-
-                # Upload report to Azure Blob Storage
-                $benchmarkInstance = Get-BenchmarkInstanceID -FileName $report.Name
-                $blobPath = "$date/$benchmarkInstance/$($report.Name)"
-                Write-Host "Uploading $($report.Name) -> $ContainerName/$blobPath (instance: $benchmarkInstance)"
-
-                $azArgs = @(
-                    "storage"
-                    "blob"
-                    "upload"
-                    "--account-name"
-                    $StorageAccountName
-                    "--container-name"
-                    $ContainerName
-                    "--name"
-                    $blobPath
-                    "--file"
-                    $destination
-                    "--auth-mode"
-                    "login"
-                    "--overwrite"
-                )
-
-                az @azArgs
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to upload $($report.Name)"
-                }
-            }
-        } else {
-            Write-Warning "No generated report (.md) files found in $reportsDir or $targetDir"
-        }
-
-        # Find and copy eval_report.json files for each benchmark instance,
-        # enriched with model name and run ID from run_metadata.json.
-        # Folder structure:
-        #   msbench_run_results/
-        #     {runId}_results/
-        #       run_metadata.json
-        #       azure.eval.x86_64.{instance}-output/
-        #         output/
-        #           eval_report.json
-        #           eval.json
-        Write-Host "Searching for eval_report.json files to enrich and copy to output path"
-        $msbenchRunResultsDir = Join-Path $targetDir 'msbench_run_results'
-        if (!(Test-Path $msbenchRunResultsDir)) {
-            # Fallback: find run_metadata.json and derive the results folder
-            # Structure: {results_folder}/{runId}_results/run_metadata.json
-            Write-Host "msbench_run_results not found at expected path. Searching for run_metadata.json under $targetDir"
-            $metadataHit = Get-ChildItem -Path $targetDir -Filter 'run_metadata.json' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if (-not $metadataHit) {
-                Write-Warning "No run_metadata.json found under $targetDir. Cannot locate results folder. Skipping date $date."
-                continue
-            }
-            # run_metadata.json is inside {results_folder}/{runId}_results/ — go up 2 levels
-            $msbenchRunResultsDir = $metadataHit.Directory.Parent.FullName
-            Write-Host "Found results folder via run_metadata.json: $msbenchRunResultsDir"
-        }
-
-        $evalCount = 0
-        $runDirs = Get-ChildItem -Path $msbenchRunResultsDir -Directory -Filter '*_results' -ErrorAction SilentlyContinue
-        Write-Host "Processing run results directory: $msbenchRunResultsDir"
-        foreach ($runDir in $runDirs) {
-            # Read model name from run_metadata.json
-            $metadataFile = Join-Path $runDir.FullName 'run_metadata.json'
-            if (!(Test-Path $metadataFile)) {
-                Write-Warning "run_metadata.json not found in $($runDir.FullName). Skipping this run directory."
-                continue
-            }
-            $metadata = Get-Content -Path $metadataFile -Raw | ConvertFrom-Json
-            if (-not $metadata.model) {
-                Write-Warning "No 'model' field in run_metadata.json in $($runDir.FullName). Skipping this run directory."
-                continue
-            }
-            $model = $metadata.model -replace '-autodev-test$', ''
-            $runId = $runDir.Name -replace '_results$', ''
-            Write-Host "Run ${runId}: model=$model"
-
-            # Iterate over azure.eval.x86_64.{instance}-output directories
-            $instanceDirs = Get-ChildItem -Path $runDir.FullName -Directory -Filter 'azure.eval.x86_64.*-output' -ErrorAction SilentlyContinue
-            foreach ($instanceDir in $instanceDirs) {
-                $instanceName = $instanceDir.Name -replace '^azure\.eval\.x86_64\.', '' -replace '-output$', ''
-                $outputDir = Join-Path $instanceDir.FullName 'output'
-
-                $evalReportFile = Join-Path $outputDir 'eval_report.json'
-                if (!(Test-Path $evalReportFile)) {
-                    Write-Warning "eval_report.json not found in $outputDir for instance '$instanceName'. Skipping."
-                    continue
-                }
-                # Enrich eval_report.json with model and instance metadata
-                $evalContent = Get-Content -Path $evalReportFile -Raw | ConvertFrom-Json
-                $evalContent | Add-Member -NotePropertyName 'model' -NotePropertyValue $model -Force
-                $evalContent | Add-Member -NotePropertyName 'instance_id' -NotePropertyValue $instanceName -Force
-
-                # Enrich with resolved field from eval.json in the same output directory
-                $evalJsonFile = Join-Path $outputDir 'eval.json'
-                if (!(Test-Path $evalJsonFile)) {
-                    Write-Warning "eval.json not found in $outputDir for instance '$instanceName'. Skipping."
-                    continue
-                }
-                $evalJson = Get-Content -Path $evalJsonFile -Raw | ConvertFrom-Json
-                $resolvedValue = $null
-                # eval.json structure: { "instance_name": { "resolved": true/false } }
-                foreach ($prop in $evalJson.PSObject.Properties) {
-                    if ($prop.Value -is [psobject] -and $prop.Value.PSObject.Properties.Name -contains 'resolved') {
-                        $resolvedValue = $prop.Value.resolved
-                        break
-                    }
-                }
-                if ($null -ne $resolvedValue) {
-                    $evalContent | Add-Member -NotePropertyName 'resolved' -NotePropertyValue $resolvedValue -Force
-                    Write-Host "Enriched with resolved=$resolvedValue from eval.json for instance '$instanceName'"
-                } else {
-                    Write-Warning "eval.json found but no 'resolved' field for instance '$instanceName'"
-                }
-
-                $destination = Join-Path $dateOutputPath "${model}_${instanceName}_eval_report.json"
-                $evalContent | ConvertTo-Json -Depth 10 | Set-Content -Path $destination -Encoding UTF8
-                Write-Host "Saved enriched eval_report.json for instance '$instanceName' (model: $model) to $destination"
-
-                # Upload eval_report.json to Azure Blob Storage
-                $evalBlobPath = "$date/$instanceName/${model}_${instanceName}_eval_report.json"
-                Write-Host "Uploading ${model}_${instanceName}_eval_report.json -> $ContainerName/$evalBlobPath"
-
-                $evalAzArgs = @(
-                    "storage"
-                    "blob"
-                    "upload"
-                    "--account-name"
-                    $StorageAccountName
-                    "--container-name"
-                    $ContainerName
-                    "--name"
-                    $evalBlobPath
-                    "--file"
-                    $destination
-                    "--auth-mode"
-                    "login"
-                    "--overwrite"
-                )
-
-                az @evalAzArgs
-                if ($LASTEXITCODE -ne 0) {
-                    Write-Warning "Failed to upload $([System.IO.Path]::GetFileName($destination)) for instance $instanceName"
-                }
-
-                $evalCount++
-            }
-        }
-        if ($evalCount -eq 0) {
-            Write-Warning "No eval_report.json files found under msbench_run_results"
-        } else {
-            Write-Host "Processed $evalCount eval_report.json file(s)"
-        }
-
-        # Clean up run results for the next date iteration
-        if ($msbenchRunResultsDir -and (Test-Path $msbenchRunResultsDir)) {
-            Remove-Item -Path $msbenchRunResultsDir -Recurse -Force
-            Write-Host "Cleaned up $msbenchRunResultsDir for next iteration"
-        }
-        $reportsCleanup = Join-Path $targetDir "reports"
-        if (Test-Path $reportsCleanup) {
-            Remove-Item -Path $reportsCleanup -Recurse -Force
-            Write-Host "Cleaned up $reportsCleanup for next iteration"
-        }
-
-        $processedDates += $date
-        Write-Host "Date $date processed successfully."
-    }
-
-    # --- Update ToBeProcessed file in blob storage ---
-    if ($processedDates.Count -gt 0) {
-        Write-Host "`nSuccessfully processed $($processedDates.Count) date(s): $($processedDates -join ', ')"
-
-        # Remove processed dates from the original list
-        $remainingDates = @($dates | Where-Object { $_ -notin $processedDates })
-
-        if ($remainingDates.Count -eq 0) {
-            Write-Host "All dates processed. Uploading empty ToBeProcessed file."
-            Set-Content -Path $toBeProcessedLocal -Value '' -Encoding UTF8
-        } else {
-            Write-Host "Remaining dates to process: $($remainingDates -join ', ')"
-            Set-Content -Path $toBeProcessedLocal -Value ($remainingDates -join "`n") -Encoding UTF8
-        }
-
-        # Upload updated ToBeProcessed file to blob storage
-        Write-Host "Uploading updated ToBeProcessed file to blob container $ContainerName"
-        $azArgs = @(
-            "storage", "blob", "upload",
-            "--account-name", $StorageAccountName,
-            "--container-name", $ContainerName,
-            "--name", "ToBeProcessed",
-            "--file", $toBeProcessedLocal,
-            "--auth-mode", "login",
-            "--overwrite"
+        $instanceDirectories = @(
+            Get-ChildItem -LiteralPath $runDirectory.FullName `
+                -Directory `
+                -Filter "azure.eval.x86_64.*-output" `
+                -ErrorAction Stop
         )
-        az @azArgs
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Failed to upload updated ToBeProcessed file to blob storage"
-        } else {
-            Write-Host "Updated ToBeProcessed file uploaded successfully."
+        if ($instanceDirectories.Count -eq 0) {
+            throw "Run '$runId' contains no Azure benchmark instance output directories."
         }
-    } else {
-        Write-Warning "No dates were processed successfully."
+
+        foreach ($instanceDirectory in $instanceDirectories) {
+            $instanceName = $instanceDirectory.Name `
+                -replace '^azure\.eval\.x86_64\.', '' `
+                -replace '-output$', ''
+            $taskOutputPath = Join-Path $instanceDirectory.FullName "output"
+            $evalReportPath = Join-Path $taskOutputPath "eval_report.json"
+            $evalPath = Join-Path $taskOutputPath "eval.json"
+
+            if (!(Test-Path -LiteralPath $evalReportPath -PathType Leaf)) {
+                Write-Warning "No eval_report.json is available for run '$runId', instance '$instanceName'."
+                continue
+            }
+            if (!(Test-Path -LiteralPath $evalPath -PathType Leaf)) {
+                Write-Warning "No eval.json is available for run '$runId', instance '$instanceName'."
+                continue
+            }
+
+            $evalContent = Get-Content -LiteralPath $evalReportPath -Raw -ErrorAction Stop |
+                ConvertFrom-Json -ErrorAction Stop
+            $evalJson = Get-Content -LiteralPath $evalPath -Raw -ErrorAction Stop |
+                ConvertFrom-Json -ErrorAction Stop
+
+            $resolvedValue = $null
+            foreach ($property in $evalJson.PSObject.Properties) {
+                if ($property.Value -is [psobject] -and
+                    $property.Value.PSObject.Properties.Name -contains "resolved") {
+                    $resolvedValue = $property.Value.resolved
+                    break
+                }
+            }
+            if ($null -eq $resolvedValue) {
+                Write-Warning "eval.json has no resolved field for run '$runId', instance '$instanceName'."
+            }
+
+            $evalContent | Add-Member -NotePropertyName "model" -NotePropertyValue $model -Force
+            $evalContent | Add-Member -NotePropertyName "instance_id" -NotePropertyValue $instanceName -Force
+            if ($null -ne $resolvedValue) {
+                $evalContent | Add-Member -NotePropertyName "resolved" -NotePropertyValue $resolvedValue -Force
+            }
+
+            $fileName = "${model}_${instanceName}_eval_report.json"
+            $destination = Join-Path $DateOutputPath $fileName
+            $evalContent |
+                ConvertTo-Json -Depth 10 |
+                Set-Content -LiteralPath $destination -Encoding UTF8 -ErrorAction Stop
+
+            $reports += [pscustomobject]@{
+                Source = $destination
+                BlobName = "$Date/$instanceName/$fileName"
+            }
+        }
     }
 
-    Write-Host "`nAll dates processed successfully."
+    if ($reports.Count -eq 0) {
+        throw "No compatibility eval_report.json files were generated for date '$Date'."
+    }
+
+    return $reports
+}
+
+Assert-RequiredValue -Name "OutputPath" -Value $OutputPath
+Assert-RequiredValue -Name "StorageAccountName" -Value $StorageAccountName
+Assert-RequiredValue -Name "ContainerName" -Value $ContainerName
+Assert-RequiredValue -Name "Benchmark" -Value $Benchmark
+Assert-RequiredValue -Name "KeyVaultName" -Value $KeyVaultName
+Assert-RequiredValue -Name "HmacKeySecretName" -Value $HmacKeySecretName
+Assert-RequiredValue -Name "HmacIntegrationIdSecretName" -Value $HmacIntegrationIdSecretName
+
+New-Item -Path $OutputPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+
+$tempRoot = if ([string]::IsNullOrWhiteSpace($env:AGENT_TEMPDIRECTORY)) {
+    [System.IO.Path]::GetTempPath()
+} else {
+    $env:AGENT_TEMPDIRECTORY
+}
+$workingRoot = Join-Path $tempRoot "msbench-agent-forensics-$([guid]::NewGuid().ToString('N'))"
+$dataRoot = Join-Path $workingRoot "data"
+New-Item -Path $dataRoot -ItemType Directory -Force -ErrorAction Stop | Out-Null
+
+try {
+    Write-Host "Output Path: $OutputPath"
+    Write-Host "Benchmark: $Benchmark"
+
+    if ([string]::IsNullOrWhiteSpace($env:PIP_INDEX_URL) -and
+        [string]::IsNullOrWhiteSpace($env:PIP_EXTRA_INDEX_URL)) {
+        throw "No authenticated pip index is configured. PipAuthenticate@1 must authenticate the MicrosoftSweBench feed."
+    }
+
+    python -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Python 3.11 or later is required by msbench-agent-forensics."
+    }
+    Write-Host "Using Python: $(python --version 2>&1)"
+
+    Write-Host "Installing msbench-cli and msbench-agent-forensics $agentForensicsVersion from configured feeds"
+    python -m pip install `
+        --upgrade `
+        --no-input `
+        msbench-cli `
+        "msbench-agent-forensics==$agentForensicsVersion"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Package installation failed. Ensure msbench-agent-forensics $agentForensicsVersion is published to the MicrosoftSweBench feed."
+    }
+
+    $installedVersion = python -c "import agent_forensics; print(agent_forensics.__version__)"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to import the installed msbench-agent-forensics package."
+    }
+    $installedVersion = ($installedVersion -join "`n").Trim()
+    if ($installedVersion -ne $agentForensicsVersion) {
+        throw "Installed msbench-agent-forensics version '$installedVersion'; expected '$agentForensicsVersion'."
+    }
+    Write-Host "Installed msbench-agent-forensics $installedVersion"
+
+    & "msbench-cli" version
+    if ($LASTEXITCODE -ne 0) {
+        throw "msbench-cli version failed with exit code $LASTEXITCODE."
+    }
+
+    $packageOutputPath = python -c "import agent_forensics, pathlib; print(pathlib.Path(agent_forensics.__file__).parent / 'output')"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to resolve the Agent Forensics package output directory."
+    }
+    $packageOutputPath = ($packageOutputPath -join "`n").Trim()
+
+    Write-Host "Retrieving Copilot HMAC credentials from Key Vault '$KeyVaultName'"
+    $env:COPILOT_HMAC_KEY = Get-KeyVaultSecretValue `
+        -VaultName $KeyVaultName `
+        -SecretName $HmacKeySecretName
+    $env:COPILOT_HMAC_INTEGRATION_ID = Get-KeyVaultSecretValue `
+        -VaultName $KeyVaultName `
+        -SecretName $HmacIntegrationIdSecretName
+
+    $toBeProcessedLocal = Join-Path $workingRoot "ToBeProcessed"
+    Invoke-BlobDownload -BlobName "ToBeProcessed" -Destination $toBeProcessedLocal
+    $toBeProcessedArtifactPath = Join-Path $OutputPath "ToBeProcessed"
+    Copy-Item `
+        -LiteralPath $toBeProcessedLocal `
+        -Destination $toBeProcessedArtifactPath `
+        -Force `
+        -ErrorAction Stop
+
+    $queueEntries = @(
+        Get-Content -LiteralPath $toBeProcessedLocal -ErrorAction Stop |
+            ForEach-Object { $_.Trim() } |
+            Where-Object { $_ }
+    )
+    $invalidEntries = @($queueEntries | Where-Object { $_ -notmatch '^\d{4}-\d{2}-\d{2}$' })
+    if ($invalidEntries.Count -gt 0) {
+        throw "ToBeProcessed contains invalid date value(s): $($invalidEntries -join ', ')."
+    }
+    $dates = @($queueEntries | Select-Object -Unique)
+    if ($dates.Count -eq 0) {
+        Write-Host "ToBeProcessed is empty. No action needed."
+        return
+    }
+
+    Write-Host "Found $($dates.Count) date(s) to process: $($dates -join ', ')"
+    $processedDates = @()
+    $failedDates = @()
+
+    foreach ($date in $dates) {
+        try {
+            Write-Host "`nProcessing date $date"
+            $dateWorkingPath = Join-Path $workingRoot $date
+            $dateSnapshotsPath = Join-Path $dateWorkingPath "snapshots"
+            $dateOutputPath = Join-Path $OutputPath $date
+            $dateAgentForensicsPath = Join-Path $dateOutputPath "agent-forensics"
+            New-Item -Path $dateSnapshotsPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            New-Item -Path $dateOutputPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            if (Test-Path -LiteralPath $dateAgentForensicsPath) {
+                Remove-Item -LiteralPath $dateAgentForensicsPath -Recurse -Force -ErrorAction Stop
+            }
+
+            $runIdsLocalPath = Join-Path $dateWorkingPath "run_ids.json"
+            Invoke-BlobDownload -BlobName "$date/run_ids.json" -Destination $runIdsLocalPath
+            Copy-Item `
+                -LiteralPath $runIdsLocalPath `
+                -Destination (Join-Path $OutputPath "run_ids_$date.json") `
+                -Force `
+                -ErrorAction Stop
+            $runIdsJson = Get-Content -LiteralPath $runIdsLocalPath -Raw -ErrorAction Stop |
+                ConvertFrom-Json -ErrorAction Stop
+            $inputRunIds = @($runIdsJson | ForEach-Object { ([string]$_).Trim() })
+            $invalidRunIds = @($inputRunIds | Where-Object { $_ -notmatch '^\d+$' })
+            if ($inputRunIds.Count -eq 0 -or $invalidRunIds.Count -gt 0) {
+                throw "Date '$date' has missing or invalid run IDs."
+            }
+            $inputRunIds = @($inputRunIds | Select-Object -Unique)
+
+            Write-Host "Checking completion of run ID(s): $($inputRunIds -join ', ')"
+            & "msbench-cli" resume --run-id ($inputRunIds -join ',')
+            if ($LASTEXITCODE -ne 0) {
+                throw "msbench-cli resume failed for date '$date' (exit $LASTEXITCODE)."
+            }
+
+            foreach ($runId in $inputRunIds) {
+                Write-Host "Extracting run $runId into the shared data root"
+                & "agent-forensics" extract `
+                    --run_id $runId `
+                    --run_date $date `
+                    --data-dir $dataRoot
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Agent Forensics extraction failed for run '$runId' (exit $LASTEXITCODE)."
+                }
+            }
+
+            $benchmarkDataPath = Join-Path $dataRoot "$date/$Benchmark"
+            if (!(Test-Path -LiteralPath $benchmarkDataPath -PathType Container)) {
+                throw "Extraction did not produce the expected exact benchmark '$Benchmark' for date '$date'."
+            }
+
+            $analysisDirectoriesBefore = @()
+            if (Test-Path -LiteralPath $packageOutputPath -PathType Container) {
+                $analysisDirectoriesBefore = @(
+                    Get-ChildItem -LiteralPath $packageOutputPath -Directory -ErrorAction Stop |
+                        ForEach-Object { $_.Name }
+                )
+            }
+
+            Write-Host "Running one combined Agent Forensics analysis for $Benchmark on $date"
+            & "agent-forensics" analyze `
+                --rundate $date `
+                --benchmark $Benchmark `
+                --exact_match `
+                --formatter-mode both `
+                --provider hmac `
+                --data-dir $dataRoot `
+                --snapshots-dir $dateSnapshotsPath
+            if ($LASTEXITCODE -ne 0) {
+                throw "Agent Forensics analysis failed for date '$date' (exit $LASTEXITCODE)."
+            }
+
+            $newAnalysisDirectories = @(
+                Get-ChildItem -LiteralPath $packageOutputPath -Directory -ErrorAction Stop |
+                    Where-Object { $_.Name -notin $analysisDirectoriesBefore }
+            )
+            if ($newAnalysisDirectories.Count -ne 1) {
+                throw "Expected one new Agent Forensics analysis directory for '$date'; found $($newAnalysisDirectories.Count)."
+            }
+            $analysisDirectory = $newAnalysisDirectories[0]
+
+            Write-Host "Classifying root causes using Copilot CLI with HMAC authentication"
+            & "agent-forensics" classify `
+                --rundate $date `
+                --benchmark $Benchmark `
+                --exact_match `
+                --use-copilot `
+                --provider hmac `
+                --source snapshot-only `
+                --data-dir $dataRoot `
+                --snapshots-dir $dateSnapshotsPath
+            if ($LASTEXITCODE -ne 0) {
+                throw "Agent Forensics classification failed for date '$date' (exit $LASTEXITCODE)."
+            }
+
+            $scopeName = "bm=$Benchmark`__exact"
+            $reportSourcePath = Join-Path $analysisDirectory.FullName "$date/$scopeName"
+            $copilotReport = Join-Path $reportSourcePath "comprehensive-report.md"
+            $deterministicReport = Join-Path $reportSourcePath "comprehensive-report-python.md"
+            if (!(Test-Path -LiteralPath $copilotReport -PathType Leaf)) {
+                throw "Copilot synthesis report was not generated at '$copilotReport'."
+            }
+            if (!(Test-Path -LiteralPath $deterministicReport -PathType Leaf)) {
+                throw "Deterministic report was not generated at '$deterministicReport'."
+            }
+
+            $snapshotFiles = @(
+                Get-ChildItem -LiteralPath $dateSnapshotsPath -File -Recurse -ErrorAction Stop
+            )
+            $compressedSnapshots = @($snapshotFiles | Where-Object { $_.Extension -eq ".gz" })
+            if ($compressedSnapshots.Count -eq 0) {
+                throw "No compressed Agent Forensics snapshot was generated for date '$date'."
+            }
+
+            $reportDestinationPath = Join-Path $dateAgentForensicsPath "reports"
+            $snapshotDestinationPath = Join-Path $dateAgentForensicsPath "snapshots"
+            New-Item -Path $reportDestinationPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            New-Item -Path $snapshotDestinationPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            Copy-Item -Path (Join-Path $reportSourcePath "*") `
+                -Destination $reportDestinationPath `
+                -Recurse `
+                -Force `
+                -ErrorAction Stop
+            Copy-Item -Path (Join-Path $dateSnapshotsPath "*") `
+                -Destination $snapshotDestinationPath `
+                -Recurse `
+                -Force `
+                -ErrorAction Stop
+
+            $compatibilityReports = @(
+                Get-EnrichedEvalReports `
+                    -Date $date `
+                    -RunIds $inputRunIds `
+                    -DataRoot $dataRoot `
+                    -DateOutputPath $dateOutputPath
+            )
+
+            if ($pipelineRun) {
+                Write-Host "##vso[task.uploadsummary]$copilotReport"
+            }
+
+            $agentForensicsFiles = @(
+                Get-ChildItem -LiteralPath $dateAgentForensicsPath -File -Recurse -ErrorAction Stop
+            )
+            foreach ($file in $agentForensicsFiles) {
+                $relativePath = Get-RelativePathForBlob `
+                    -BasePath $dateAgentForensicsPath `
+                    -Path $file.FullName
+                Invoke-BlobUpload `
+                    -Source $file.FullName `
+                    -BlobName "$date/agent-forensics/$relativePath"
+            }
+            foreach ($report in $compatibilityReports) {
+                Invoke-BlobUpload -Source $report.Source -BlobName $report.BlobName
+            }
+
+            $processedDates += $date
+            Write-Host "Date '$date' processed and uploaded successfully."
+        }
+        catch {
+            $failedDates += $date
+            Write-Error "Date '$date' failed and will remain in ToBeProcessed: $($_.Exception.Message)" -ErrorAction Continue
+        }
+    }
+
+    if ($processedDates.Count -gt 0) {
+        $remainingDates = @($dates | Where-Object { $_ -notin $processedDates })
+        if ($remainingDates.Count -eq 0) {
+            Set-Content -LiteralPath $toBeProcessedLocal -Value "" -Encoding UTF8 -ErrorAction Stop
+        } else {
+            Set-Content `
+                -LiteralPath $toBeProcessedLocal `
+                -Value ($remainingDates -join "`n") `
+                -Encoding UTF8 `
+                -ErrorAction Stop
+        }
+        Copy-Item `
+            -LiteralPath $toBeProcessedLocal `
+            -Destination $toBeProcessedArtifactPath `
+            -Force `
+            -ErrorAction Stop
+        Invoke-BlobUpload -Source $toBeProcessedLocal -BlobName "ToBeProcessed"
+        Write-Host "Removed successfully processed date(s) from ToBeProcessed: $($processedDates -join ', ')."
+    }
+
+    if ($failedDates.Count -gt 0) {
+        throw "Benchmark reporting failed for date(s): $($failedDates -join ', ')."
+    }
+
+    Write-Host "All queued dates processed successfully."
+}
+finally {
+    Remove-Item Env:COPILOT_HMAC_KEY -ErrorAction SilentlyContinue
+    Remove-Item Env:COPILOT_HMAC_INTEGRATION_ID -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath $workingRoot) {
+        Remove-Item -LiteralPath $workingRoot -Recurse -Force -ErrorAction Continue
+    }
+}

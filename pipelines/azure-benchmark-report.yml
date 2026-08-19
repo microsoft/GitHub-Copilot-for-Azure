@@ -44,7 +44,7 @@ stages:
 
     - task: AzureCLI@2
       name: GenerateBenchmarkReports
-      displayName: 'Generate benchmark reports for MSBench runs'
+      displayName: 'Generate Agent Forensics reports for MSBench runs'
       inputs:
         connectedServiceNameARM: 'azure_msbench_eval'
         addSpnToEnvironment: true
@@ -55,6 +55,10 @@ stages:
           -OutputPath "$(Build.ArtifactStagingDirectory)"
           -StorageAccountName "msbenchnightlydata"
           -ContainerName "msbench-reports"
+          -Benchmark "azure.skill"
+          -KeyVaultName "kv-msbench-eval-azuremcp"
+          -HmacKeySecretName "azure-mcp-eval-capi-hmac"
+          -HmacIntegrationIdSecretName "azure-mcp-eval-capi-id"
 
     - publish: $(Build.ArtifactStagingDirectory)
       artifact: benchmark-reports
