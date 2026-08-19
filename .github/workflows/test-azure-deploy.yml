@@ -30,6 +30,11 @@ on:
         required: false
         type: boolean
         default: false
+      no-skills:
+        description: 'Optional: whether to override the run to load no skills'
+        required: false
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       model-override:
@@ -43,6 +48,11 @@ on:
         default: ''
       debug:
         description: 'Whether to set DEBUG=1 for jest tests'
+        required: false
+        type: boolean
+        default: false
+      no-skills:
+        description: 'Optional: whether to override the run to load no skills'
         required: false
         type: boolean
         default: false
@@ -177,6 +187,7 @@ jobs:
           GH_HEAD_SHA: ${{ github.sha }}
           TEST_RUN_ID: azure-deploy
           DEBUG: ${{ inputs.debug && '1' || '' }}
+          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           TEST_GROUP: ${{ matrix.test-group }}
         run: |

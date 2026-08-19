@@ -7,6 +7,11 @@ import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, g
 import { normalizeTestName } from "./utils.ts";
 import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
 
+/**
+ * The model to use for the agent run.
+ */
+const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
+
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
   supportsMultiTurn = true;
@@ -27,7 +32,7 @@ export class IntegrationTestAgentRunner implements Executor {
     const workDir = options.workDir;
 
     // Set the model to use
-    const model = options.model ?? "claude-sonnet-4.6";
+    const model = modelOverride ?? options.model ?? "claude-sonnet-4.6";
 
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
     const systemPrompt = getSystemPrompt(tags);

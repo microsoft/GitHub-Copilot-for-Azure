@@ -28,10 +28,13 @@ on:
       model-override:
         description: "Model to use for testing"
         required: false
-        type: choice
-        options:
-          - claude-sonnet-4.6
-          - claude-opus-4.6
+        type: string
+        default: claude-sonnet-4.6
+      no-skills:
+        description: "Optional: whether to override the run to load no skills"
+        required: false
+        type: boolean
+        default: false
       skill-test-pattern:
         description: "Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests"
         required: false
@@ -169,6 +172,7 @@ jobs:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
       debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
+      no-skills: ${{ inputs.no-skills }}
 
   test:
     name: Integration – ${{ matrix.skill }}
@@ -292,6 +296,7 @@ jobs:
         if: ${{ !contains(fromJson(env.JEST_SKILLS), matrix.skill) }}
         env:
           DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
+          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
