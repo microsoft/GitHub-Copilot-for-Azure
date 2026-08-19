@@ -16,7 +16,7 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           path: source-repo
           fetch-depth: 0 # Full history required for NBGV version computation
@@ -118,7 +118,7 @@ jobs:
     steps:
       # 1. Checkout the current repo
       - name: Checkout current repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           path: source-repo
           fetch-depth: 0 # Full history required for NBGV version computation

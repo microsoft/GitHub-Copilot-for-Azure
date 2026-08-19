@@ -68,11 +68,11 @@ jobs:
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Resolve inputs based on trigger type
         id: resolve
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           INPUT_SKILLS: ${{ inputs.skills }}
           INPUT_DEPLOY_TEST_PATTERN: ${{ inputs.deploy-test-pattern }}
@@ -140,7 +140,7 @@ jobs:
     steps:
       - name: Parse skills input into matrix
         id: set-matrix
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         env:
           SKILLS_INPUT: ${{ needs.resolve-inputs.outputs.skills }}
         with:
@@ -194,12 +194,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
       - name: Install azd
-        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
+        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2.4.0
 
       - name: Log in with Azure (Federated Credentials)
         run: |
@@ -265,7 +265,7 @@ jobs:
       # github.token(aka. GITHUB_TOKEN) is granted permission to make CAPI requests by having the copilot-requests permission
       - name: Setup Copilot CLI
         id: setup-copilot-cli
-        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1.0.0
         with:
           token: ${{ github.token }}
 
