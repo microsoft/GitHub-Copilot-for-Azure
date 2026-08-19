@@ -59,8 +59,4 @@ Before writing any `.bicep` or `.tf` files in Phase 6:
 3. Write `main.bicep` (or `main.tf`) inside `infra/`, not in the project root or `.azure/`.
 
 
-// look into bicep and terraform for referenced resources
-// look into infra plans
-// look into deployment - 
-// add referenced workloads to golden dataset
 
