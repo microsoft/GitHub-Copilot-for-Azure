@@ -4,7 +4,7 @@ description: "Architect and provision enterprise Azure infrastructure from workl
 license: MIT
 metadata:
   author: Microsoft
-  version: "2.0.0"
+  version: "0.0.0-placeholder"
 ---
 
 # Azure Enterprise Infra Planner
