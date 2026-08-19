@@ -827,7 +827,15 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         }),
         systemMessage: runConfig.systemPrompt,
         // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
-        enableSessionTelemetry: false
+        enableSessionTelemetry: false,
+        hooks: {
+          // Note: keep this in sync with hooks/azure-skills/scripts/discover-skills
+          onSessionStart: async (_input, _invocation) => {
+            return {
+              additionalContext: "Make sure to use discover-azure-skills once when the user asks you to execute a task related to Azure if there is no relevant skill/mcp tool in the context. Avoid using discover-azure-skills when the user asks informational questions on how to do something."
+            }
+          }
+        }
       });
       entry.session = session;
 

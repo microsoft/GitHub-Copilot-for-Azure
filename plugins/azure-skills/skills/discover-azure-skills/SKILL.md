@@ -1,6 +1,6 @@
 ---
 name: discover-azure-skills
-description: "Searches the Azure skills catalog and recommends installable agent skills by matching an Azure task to skill metadata and plugin installation guidance. WHEN: \"search the Azure skills catalog\", \"find an Azure skill for this task\", \"recommend Azure skills not currently installed\", \"which plugin contains this Azure skill\"."
+description: "Searches the Azure skills catalog and recommends installable agent skills by matching an Azure task to skill metadata and plugin installation guidance. WHEN: before starting any task that involves an Azure or Microsoft-cloud service, product, or data source, when no currently loaded skill or tool already covers it."
 license: MIT
 metadata:
   author: Microsoft

@@ -17,9 +17,7 @@ scoring:
   threshold: 0.8
 
 stimuli:
-  # There is no matching skill for Azure load testing.
-  # The agent needs to use the skill to find out.
-  - name: "Choose an Azure plugin"
+  - name: "Find an Azure plugin"
     prompt: "Search the Azure skills catalog and tell me which plugin contains a skill for configuring Azure Load Testing."
     tags:
       type: integration
@@ -38,7 +36,6 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   # Azure Kusto Graph related skills are in a different plugin
-  # The agent needs to use the skill to find it
   - name: "Find a skill to generate Azure Kusto graph"
     prompt: "Find an Azure agent skill that can generate an Azure Kusto graph."
     tags:
@@ -59,25 +56,25 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  # There is an azure-diagnostics skill in the same plugin
-  - name: "Find an Azure skill for a task"
-    prompt: "Find an Azure agent skill that can help me troubleshoot an AKS cluster."
+  - name: "Trigger discover by a task"
+    prompt: "Build an azure ai search index from my blob storage. Generate all the todo items and tell me what information I need to provide you to create it. Avoid using azure-ai skill or azure mcp tool. Although they sound related, they lack the knowledge for this task."
     tags:
       type: integration
       tier: full
       cost: llm
-      area: output
+      area: routing
       skill: discover-azure-skills
+      debug: yes
+      earlyTerminate: '[{"type":"skill-call","skill":"discover-azure-skills"},{"type":"tool-call-count","count":3}]'
     graders:
-      - type: output-contains
+      - type: skill-invocation
         config:
-          substring: "azure-diagnostics"
+          required:
+            - discover-azure-skills
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  # User asks a generic "how to" question. The user wants to learn how to do it
-  # themselves (e.g. via the MS Learn tool), not have the agent search for a skill.
   - name: "How-to question should not trigger skill discovery"
     prompt: "How do I set up an Azure Chaos Studio fault-injection experiment against my VM scale set?"
     tags:
@@ -95,8 +92,7 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  # User issues a direct command to perform a task.
-  # The agent should not try to search for available skill.
+  # azure plugin has skill/tools related to resource enumeration
   - name: "High-level AKS troubleshooting question"
     prompt: "Enumerate Azure resources across my subscription and give me the count of resources per type"
     tags:
