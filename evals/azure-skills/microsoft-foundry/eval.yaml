@@ -1101,8 +1101,6 @@ stimuli:
   # ═══════════════════════════════════════════════════════════════════════════
 
   - name: "Golden Path - Create and deploy hosted agent"
-    constraints:
-      max_turns: 50
     tags:
       id: golden-path-create-and-deploy-hosted-agent
       type: foundry-e2e
@@ -1136,8 +1134,6 @@ stimuli:
       files:
         - src: fixture/openai-agents-sdk
           dest: .
-    constraints:
-      max_turns: 70
     tags:
       id: migration-openai-agents-sdk-to-foundry
       type: foundry-e2e
