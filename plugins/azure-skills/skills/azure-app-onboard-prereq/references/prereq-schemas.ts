@@ -50,6 +50,17 @@ export interface PrereqWarning {
   fixPhase: "prereq" | "scaffold" | "deploy-gate" | "post-deploy";
 }
 
+/** A functional non-Azure cloud SDK dependency that must be swapped before deploy.
+ *  Surfaced at prereq Step 8 as a 🔶 blocker with the Azure swap mapping. */
+export interface CloudSdkFinding {
+  /** The detected dependency, e.g. "aws-sdk", "@google-cloud/storage", "boto3". */
+  dependency: string;
+  /** Which component/path it was found in. */
+  component: string;
+  /** Suggested Azure equivalent, e.g. "@azure/storage-blob". */
+  azureEquivalent: string;
+}
+
 export interface PrereqOutput {
   // AppOnboardComponent[] — see session-schemas.ts
   components: any[];
@@ -77,4 +88,7 @@ export interface PrereqOutput {
    *  framework signals + migrations/ dir. Prepare prepends required entries
    *  to deployStrategy.startupCommand. See dependency-compatibility.md § First-Run. */
   initCommands?: { type: string; framework: string; command: string; required: boolean }[];
+  /** Non-Azure cloud SDK deps requiring migration before deploy — populated by the cloud-SDK gate (Step 2).
+   *  Non-empty routes Step 8 to azure-cloud-migrate. */
+  cloudSdkFindings?: CloudSdkFinding[];
 }
