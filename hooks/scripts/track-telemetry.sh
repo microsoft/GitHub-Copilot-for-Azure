@@ -78,12 +78,15 @@
 #
 #   Recognized install paths (one set per plugin, see is_azure_skills_path):
 #     azure-skills:
-#     - .copilot/installed-plugins/azure-skills/azure/skills/...
+#     - .copilot/installed-plugins/<catalog-name>/azure/skills/...
+#       (<catalog-name> is the marketplace/catalog folder the plugin was
+#       installed under, e.g. "awesome-copilot" — it does not necessarily
+#       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
 #     azure-kusto-graph-skills:
-#     - .copilot/installed-plugins/azure-kusto-graph-skills/azure-kusto-graph-skills/skills/...
+#     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
 #     - .claude/plugins/cache/azure-kusto-graph-skills/azure-kusto-graph-skills/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure-kusto-graph-skills/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-kusto-graph-skills/.github/plugins/azure-kusto-graph-skills/skills/...
@@ -290,13 +293,16 @@ is_azure_skills_path() {
     local p="$1"
 
     # --- azure-skills plugin ---
-    [[ "$p" == *".copilot/installed-plugins/azure-skills/azure/skills/"* ]] && return 0
+    # The Copilot CLI pattern wildcards the catalog/marketplace folder name
+    # (e.g. "awesome-copilot") since it does not necessarily match the
+    # plugin's own name ("azure").
+    [[ "$p" == *".copilot/installed-plugins/"*"/azure/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
 
     # --- azure-kusto-graph-skills plugin ---
-    [[ "$p" == *".copilot/installed-plugins/azure-skills/azure-kusto-graph-skills/skills/"* ]] && return 0
+    [[ "$p" == *".copilot/installed-plugins/"*"/azure-kusto-graph-skills/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/azure-skills/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/"* ]] && return 0
 

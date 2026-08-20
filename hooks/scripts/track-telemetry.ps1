@@ -76,12 +76,15 @@
 #
 #   Recognized install paths (one set per plugin, see $pathPatterns below):
 #     azure-skills:
-#     - .copilot/installed-plugins/azure-skills/azure/skills/...
+#     - .copilot/installed-plugins/<catalog-name>/azure/skills/...
+#       (<catalog-name> is the marketplace/catalog folder the plugin was
+#       installed under, e.g. "awesome-copilot" — it does not necessarily
+#       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
 #     azure-kusto-graph-skills:
-#     - .copilot/installed-plugins/azure-skills/azure-kusto-graph-skills/skills/...
+#     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
 #     shared:
@@ -279,12 +282,15 @@ function Get-ToolInputPath {
 # segments swapped for the new plugin's name) when onboarding another plugin.
 
 # --- azure-skills plugin ---
-$pathPatternCopilot = '\.copilot/installed-plugins/azure-skills/azure/skills/'
+# The Copilot CLI pattern wildcards the catalog/marketplace folder name
+# (e.g. "awesome-copilot") since it does not necessarily match the plugin's
+# own name ("azure").
+$pathPatternCopilot = '\.copilot/installed-plugins/[^/]+/azure/skills/'
 $pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
 
 # --- azure-kusto-graph-skills plugin ---
-$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/azure-skills/azure-kusto-graph-skills/skills/'
+$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/[^/]+/azure-kusto-graph-skills/skills/'
 $pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-graph-skills/[0-9.]+/skills/'
 $pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
 
