@@ -227,12 +227,14 @@ $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
 # Copilot CLI (<0.0.421):  has "toolArgs" field without "hook_event_name" — backward compat fallback
+# Cursor: has hook_event_name AND a "cursor_version" field
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
 $hasHookEventName = $inputData.PSObject.Properties.Name -contains "hook_event_name"
 $hasToolArgs = $inputData.PSObject.Properties.Name -contains "toolArgs"
 $toolUseId = $inputData.tool_use_id
 $transcriptPath = $inputData.transcript_path
+$cursorVersion = $inputData.cursor_version
 $isVscodeToolUseId = $toolUseId -and ($toolUseId -match '__vscode')
 # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
 $isVscodeTranscript = $transcriptPath -and ($transcriptPath -match '[/\\]Code( - Insiders)?[/\\]')
@@ -240,6 +242,8 @@ $isVscodeTranscript = $transcriptPath -and ($transcriptPath -match '[/\\]Code( -
 # Copilot CLI check first — env var available since v0.0.421
 if ($env:COPILOT_CLI -eq "1") {
     $clientName = "copilot-cli"
+} elseif ($hasHookEventName -and $cursorVersion) {
+    $clientName = "cursor"
 } elseif ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
     # Detect VS Code variant from transcript_path
     # Insiders: ...AppData\Roaming\Code - Insiders\User\...
