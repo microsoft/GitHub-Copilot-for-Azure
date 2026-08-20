@@ -247,6 +247,7 @@ timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
 # Copilot CLI (<0.0.421):  has "toolArgs" field without "hook_event_name" — backward compat fallback
+# Cursor: has hook_event_name AND a "cursor_version" field
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
 if [ "$COPILOT_CLI" = "1" ]; then
@@ -254,10 +255,13 @@ if [ "$COPILOT_CLI" = "1" ]; then
 elif echo "$rawInput" | grep -q '"hook_event_name"'; then
     toolUseId=$(extract_json_field "$rawInput" "tool_use_id")
     transcriptPath=$(extract_json_field "$rawInput" "transcript_path")
+    cursorVersion=$(extract_json_field "$rawInput" "cursor_version")
     # Normalize backslashes to forward slashes for consistent matching
     transcriptPathNorm=$(echo "$transcriptPath" | tr '\\' '/')
+    if [ -n "$cursorVersion" ]; then
+        clientName="cursor"
     # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
-    if [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
+    elif [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
         # Detect VS Code variant from transcript_path
         # Insiders: ...AppData/Roaming/Code - Insiders/User/...
         # Stable:   ...AppData/Roaming/Code/User/...
