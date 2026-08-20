@@ -1,0 +1,49 @@
+name: azure-enterprise-infra-planner-eval-plan-serverless-workflow
+description: |
+  Serverless order processing workflow.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-serverless-workflow
+    prompt: >
+      Deploy a serverless workflow for order processing, trigger via Azure Event
+      Grid from incoming messages, and archive completed order data in Azure Table
+      Storage. Assume all defaults to create the preliminary resource list, then
+      approve the preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)function|serverless|logic.?app|workflow"
+      - type: output-matches
+        config:
+          pattern: "(?i)event.?grid|trigger|event.?driven|message"
+      - type: output-matches
+        config:
+          pattern: "(?i)table.?storage|storage|archive|persist"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'function|eventgrid|serverless' .azure/infrastructure-plan.json"

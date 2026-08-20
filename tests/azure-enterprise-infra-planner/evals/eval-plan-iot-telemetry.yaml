@@ -1,0 +1,57 @@
+name: azure-enterprise-infra-planner-eval-plan-iot-telemetry
+description: |
+  IoT telemetry with Edge + Event Hub.
+version: "1.0"
+type: capability
+
+environment:
+  skills:
+    - "../../../plugin/skills/azure-enterprise-infra-planner"
+  files:
+    - src: "fixtures/package.json"
+      dest: "package.json"
+    - src: "fixtures/index.js"
+      dest: "index.js"
+
+config:
+  runs: 1
+  timeout: 600
+  executor: copilot-sdk
+  model: claude-sonnet-4.6
+
+stimuli:
+  - name: plan-iot-telemetry
+    prompt: >
+      Provision an IoT solution that collects data from 1000+ edge devices,
+      processes data with Azure IoT Edge, and forwards alerts in real time to
+      Azure Event Hub. Assume all defaults to create the preliminary resource list,
+      then approve the preliminary list and proceed to plan generation.
+    constraints:
+      max_duration_ms: 600000
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)iot.?hub|iot.?edge|iot.?central|device"
+      - type: output-matches
+        config:
+          pattern: "(?i)event.?hub|stream|alert|real.?time"
+      - type: output-matches
+        config:
+          pattern: "(?i)edge|device|gateway|process"
+      - type: output-matches
+        config:
+          pattern: "(?i)plan|infrastructure|resource"
+      - type: file-exists
+        config:
+          path: ".azure/infrastructure-plan.json"
+      - type: run-command
+        config:
+          command: "grep -iE 'iot|iothub' .azure/infrastructure-plan.json"
+
+  - name: trigger-should-iot-edge
+    prompt: "Create an IoT solution for 10,000 edge devices on Azure"
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-enterprise-infra-planner
