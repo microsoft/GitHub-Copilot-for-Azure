@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, getSkillsForTest, type SkillRef } from "./skill-loader.ts";
 
@@ -25,48 +25,6 @@ export { getAllAssistantMessages } from "./evaluate.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-/**
- * Resolve the bundled Copilot CLI entry point.
- *
- * The SDK's default `getBundledCliPath()` uses `import.meta.resolve()`, which
- * is not available inside Jest's ESM VM context (even with
- * `--experimental-vm-modules`). We replicate the same path arithmetic here
- * using a plain `path.resolve` from `node_modules` so it works everywhere.
- *
- * Rather than hard-coding the entry filename, we read the package's `bin`
- * field so we stay resilient to upstream renames (e.g. `index.js` →
- * `npm-loader.js` in @github/copilot@1.0.67). We fall back to the known
- * filenames if the manifest cannot be read.
- */
-function getBundledCliPath(): string {
-  const pkgDir = path.resolve(__dirname, "../node_modules/@github/copilot");
-
-  const candidates: string[] = [];
-  try {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(pkgDir, "package.json"), "utf8")
-    ) as { bin?: string | Record<string, string> };
-    const bin = typeof pkg.bin === "string" ? pkg.bin : pkg.bin?.copilot;
-    if (bin) {
-      candidates.push(bin);
-    }
-  } catch {
-    // Fall through to the well-known filenames below.
-  }
-  candidates.push("npm-loader.js", "index.js");
-
-  for (const candidate of candidates) {
-    const candidatePath = path.resolve(pkgDir, candidate);
-    if (fs.existsSync(candidatePath)) {
-      return candidatePath;
-    }
-  }
-
-  // Last resort: return the conventional path so the caller surfaces a clear
-  // spawn error instead of a silent undefined.
-  return path.resolve(pkgDir, "npm-loader.js");
-}
 
 interface TokenUsage {
   /** Total input tokens across all LLM calls */
@@ -835,10 +793,6 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
         workingDirectory: testWorkspace,
-        connection: RuntimeConnection.forStdio({
-          path: getBundledCliPath(),
-          args: cliArgs
-        }),
         env: {
           ...process.env,
           ...envVar,
