@@ -46,3 +46,7 @@ jest.on("error", (err) => {
   console.error("Failed to start jest:", err.message);
   process.exit(1);
 });
+
+jest.on("close", (code) => {
+  process.exit(code ?? 1);
+});

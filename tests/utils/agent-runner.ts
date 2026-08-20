@@ -16,7 +16,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, RuntimeConnection, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, getSkillsForTest, type SkillRef } from "./skill-loader.ts";
 
@@ -793,6 +793,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
         workingDirectory: testWorkspace,
+        connection: RuntimeConnection.forStdio({ args: cliArgs }),
         env: {
           ...process.env,
           ...envVar,
