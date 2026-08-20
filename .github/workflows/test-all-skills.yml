@@ -74,7 +74,7 @@ jobs:
           if [ -n "$SKILL_NAME" ]; then
             TEST_ARGS="--testPathPatterns=$SKILL_NAME"
           fi
-          npm run test:ci -- $TEST_ARGS
+          npm run test -- $TEST_ARGS
 
       - name: Upload test results
         if: always()

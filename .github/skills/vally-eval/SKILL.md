@@ -21,15 +21,9 @@ Vally eval suites for azure-skills plugin have the following file layout. The sh
 
 Use meaningful file names to categorize tests. If a skill needs fixture files for its eval suites, it should organize such fixture files in a `fixture` directory under its directory, e.g. `<repo-root>/evals/azure-skills/azure-ai/fixture/`. The [vally test runner](/tests/run-vally-test.ts) and [stimulus validation script](/scripts/src/vally/validate-stimulus.ts) will load all `*.yaml` files except for those under a `fixture/` directory. Make sure to put all fixture files under the `fixture/` directory.
 
-## Migrate integration tests
-
-azure-skills plugin have implemented JavaScript integration test using Jest as the underlying test runner. All such integration tests are under `tests/**/integration.test.ts` files.
-
-To migrate integration test for a skill to vally suites, create its eval suite spec at `<repo-root>/evals/<plugin-dirname>/<skill-name>/eval.yaml`, add a suite that runs the same prompt and uses vally's built-in graders to grade the trajectory of the agent run. If the integration test grades the agent run in a way that vally's built-in graders don't support, refer to the official documentation on how to create a custom grader [writing-custom-grader](https://microsoft.github.io/vally/guides/writing-custom-graders/).
-
 ## Why is there a custom executor
 
-The legacy Jest based integration test framework implemented features that vally doesn't support yet, such as early termination, follow up, system prompt modification, screenshot taking, etc. Besides, [test-all-integration](/.github/workflows/test-all-integration.yml) runs automated integration tests, collects its exported data and feeds the data to a dashboard web app under `<repo-root>/dashboard/` to monitor skill integration test results.
+Our custom executor implemented features that vally doesn't support yet, such as early termination, system prompt modification, screenshot taking, etc. Besides, [test-all-integration](/.github/workflows/test-all-integration.yml) runs automated integration tests, collects its exported data and feeds the data to a dashboard web app under `<repo-root>/dashboard/` to monitor skill integration test results.
 
 If you intend to have your vally suites use any of the extended features or have their results be consumed by the dashboard, you **MUST** use the custom executor in your vally suites.
 

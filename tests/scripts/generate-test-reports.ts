@@ -30,8 +30,7 @@ const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
 const SKILL_REPORT_SUFFIX = "-SKILL-REPORT.md";
 const agent = useAgentRunner({
-  isTest: false,
-  useJest: false
+  isTest: false
 });
 
 /**

@@ -1,26 +1,29 @@
 # GitHub Copilot for Azure — Repository Instructions
 
-This repo is a plugin containing agent skills (markdown-based knowledge packages) for Azure. Plugin source is under `plugin/`; the build produces versioned output in `output/`.
+This repo contains Azure agent skills (markdown-based knowledge packages) organized into per-plugin sources under `plugins/`. The build produces versioned output in `output/`, with shared hooks built at the top level.
 
 ## Repository Layout
 
 ```
-plugin/                   # Plugin source (skills, hooks, MCP config, manifests)
-  .plugin/plugin.json     # GitHub Copilot plugin manifest
-  .cursor-plugin/         # Cursor plugin manifest
-  .claude-plugin/         # Claude plugin manifest
-  skills/<name>/          # Individual skill directories
-    SKILL.md              # Skill definition (required)
-    version.json          # NBGV per-skill version config
-    references/           # On-demand reference docs
-  hooks/                  # Agent hooks
-  .mcp.json               # MCP server declarations
-  version.json            # NBGV plugin-level version config
+plugins/                  # Plugin sources
+  <plugin-dirname>/       # Individual plugin package
+    .plugin/              # GitHub Copilot plugin manifest
+    .cursor-plugin/       # Cursor plugin manifest
+    .claude-plugin/       # Claude plugin manifest
+    skills/<name>/        # Individual skill directories
+      SKILL.md            # Skill definition (required)
+      version.json        # NBGV per-skill version config
+      references/         # On-demand reference docs
+    .mcp.json             # MCP server declarations
+    version.json          # NBGV plugin-level version config
+hooks/                    # Shared hook sources, built at the output top level
 
 output/                   # Build output (git-ignored) — stamped, ready to deploy
+  <plugin-dirname>/       # Built plugin output
+  hooks/                  # Built shared hooks
 scripts/                  # Dev tooling: token analysis, frontmatter/reference validators
 evals/                    # Vally test suites
-tests/                    # Jest test suite (unit, trigger, integration)
+tests/                    # Code related to testing
 .github/
   instructions/           # Copilot instruction files for skill authoring
   skills/                 # Repo-local agent skills (not shipped in plugin)
@@ -36,17 +39,17 @@ gulpfile.ts               # Build pipeline
 
 ```bash
 npm install          # Install root + scripts deps (postinstall handles scripts/)
-npm run build        # Copies plugin/ → output/, stamps NBGV versions, generates CHANGELOG.md
+npm run build        # Builds plugins/ and shared hooks into output/, stamps NBGV versions, generates CHANGELOG.md
 ```
 
 ## Versioning Rules
 
 This repo uses **Nerdbank.GitVersioning (NBGV)**. Versions are computed automatically from git commit history.
 
-- **Never manually edit version numbers** in `plugin.json` or SKILL.md frontmatter under `plugin/`
+- **Never manually edit version numbers** in plugin manifests or SKILL.md frontmatter under `plugins/`
 - Source files must always use `"0.0.0-placeholder"` — the build stamps real versions
 - Each skill has its own `version.json` with `pathFilters: ["."]`; only commits touching that skill's directory increment its version
-- For skills outside `plugin/` (e.g., `.github/skills/`), set a real semver version and bump it in the same PR that modifies the skill
+- For skills outside `plugins/` (e.g., `.github/skills/`), set a real semver version and bump it in the same PR that modifies the skill
 - Use conventional commit-style PR titles (e.g. `feat:`, `fix:`, `feature:`) — the build generates `CHANGELOG.md` from these
 
 ## Validating Changes
@@ -71,25 +74,14 @@ npm run references            # Validate markdown links stay within skill direct
 ```bash
 cd tests
 npm install
-npm test                                    # Run all tests
-npm test -- --testPathPatterns=<skill-name>  # Run tests for a single skill
+npm test                                    # Run unit tests
 npm run typecheck                            # TypeScript type checking
 npm run lint                                 # ESLint
 ```
 
 ### Integration Tests
 
-Integration tests require the Copilot SDK and run against a live agent:
-
-```bash
-cd tests
-npm run test:integration -- <skill-name>
-```
-
-Skip integration tests when the SDK is unavailable:
-```bash
-SKIP_INTEGRATION_TESTS=true npm test -- --testPathPatterns=<skill-name>
-```
+Integration tests are authored as vally eval suites. Read `vally-eval` skill to see how to author integration tests for skills.
 
 ## Adding a New Skill
 
@@ -223,7 +215,7 @@ PRs against `main` must pass these checks — run the corresponding local comman
 
 - Use conventional commit-style PR titles: `feat:`, `fix:`, `feature:` (these populate the auto-generated changelog)
 - If modifying skill descriptions, verify routing correctness with integration tests
-- For skills under `plugin/`, never bump the frontmatter version — it uses `0.0.0-placeholder`
+- For skills under `plugins/`, never bump the frontmatter version — it uses `0.0.0-placeholder`
 - For skills under `.github/skills/`, bump the frontmatter version in the same PR
 
 ## Available Agent Skills

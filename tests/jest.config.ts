@@ -26,15 +26,6 @@ const config: Config = {
     "/dist/"
   ],
 
-  // Global setup — runs once before any worker starts
-  globalSetup: "./jest.globalSetup.mjs",
-
-  // Global teardown — runs once after all workers finish
-  globalTeardown: "./jest.globalTeardown.mjs",
-
-  // Setup file for shared utilities
-  setupFilesAfterEnv: ["./jest.setup.ts"],
-
   // Coverage configuration
   collectCoverageFrom: [
     "../output/*/skills/**/*.js",
