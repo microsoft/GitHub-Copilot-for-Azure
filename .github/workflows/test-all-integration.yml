@@ -45,19 +45,6 @@ on:
         required: false
         type: string
         default: ""
-      debug:
-        description: "Whether to set DEBUG=1 for jest tests"
-        required: false
-        type: boolean
-        default: false
-
-# SCHEDULE CONFIGURATION
-# Customize the inputs for each scheduled run by modifying these env vars.
-# Skills for each schedule are defined in tests/skills.json under integrationTestSchedule.
-env:
-  SCHEDULED_DEBUG_21: "false" # debug flag for 9:00 PM PST run
-  SCHEDULED_DEBUG_00: "false" # debug flag for 12:00 AM PST run
-  SCHEDULED_DEBUG_04: "false" # debug flag for 4:00 AM PST run
 
 jobs:
   resolve-inputs:
@@ -67,7 +54,6 @@ jobs:
     outputs:
       skills: ${{ steps.resolve.outputs.skills }}
       deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
-      debug: ${{ steps.resolve.outputs.debug }}
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
@@ -79,11 +65,7 @@ jobs:
         env:
           INPUT_SKILLS: ${{ inputs.skills }}
           INPUT_DEPLOY_TEST_PATTERN: ${{ inputs.deploy-test-pattern }}
-          INPUT_DEBUG: ${{ inputs.debug }}
           EVENT_SCHEDULE: ${{ github.event.schedule }}
-          SCHEDULED_DEBUG_21: ${{ env.SCHEDULED_DEBUG_21 }}
-          SCHEDULED_DEBUG_00: ${{ env.SCHEDULED_DEBUG_00 }}
-          SCHEDULED_DEBUG_04: ${{ env.SCHEDULED_DEBUG_04 }}
         with:
           script: |
             const eventName = context.eventName;
@@ -92,7 +74,6 @@ jobs:
               // Manual trigger - use provided inputs
               core.setOutput("skills", process.env.INPUT_SKILLS);
               core.setOutput("deploy-test-pattern", process.env.INPUT_DEPLOY_TEST_PATTERN);
-              core.setOutput("debug", process.env.INPUT_DEBUG);
             } else {
               // Scheduled trigger - read from tests/skills.json
               const cron = process.env.EVENT_SCHEDULE;
@@ -117,20 +98,6 @@ jobs:
               const skills = skillsList.join(",");
               core.info(`Skills from schedule config: ${skills}`);
               core.setOutput("skills", skills);
-
-              // Set debug flag based on the schedule slot
-              const debugMap = {
-                "0 5 * * 2-6":  process.env.SCHEDULED_DEBUG_21,
-                "0 8 * * 2-6":  process.env.SCHEDULED_DEBUG_00,
-                "0 12 * * 2-6": process.env.SCHEDULED_DEBUG_04,
-              };
-
-              if (!(cron in debugMap)) {
-                core.setFailed(`Unknown schedule: ${cron}`);
-                return;
-              }
-
-              core.setOutput("debug", debugMap[cron]);
             }
 
   setup:
@@ -171,7 +138,6 @@ jobs:
     with:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
-      debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
       no-skills: ${{ inputs.no-skills }}
 
   test:
@@ -181,8 +147,6 @@ jobs:
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
-      # Skills that should be tested using jest in a JSON array
-      JEST_SKILLS: '["azure-skills/microsoft-foundry"]'
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -277,25 +241,9 @@ jobs:
       # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
-      - name: Run integration tests – ${{ matrix.skill }}
-        if: ${{ contains(fromJson(env.JEST_SKILLS), matrix.skill) }}
-        env:
-          DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
-          TEST_RUN_ID: all-integration
-          MODEL_OVERRIDE: ${{ inputs.model-override }}
-          SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          PLUGIN_DIR="${SKILL%%/*}"
-          SKILL_NAME="${SKILL##*/}"
-          npm run test:integration "$SKILL_NAME" "$SKILL_TEST_PATTERN"
-        continue-on-error: false
-
       # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
       - name: Run integration tests (vally) - ${{ matrix.skill }}
-        if: ${{ !contains(fromJson(env.JEST_SKILLS), matrix.skill) }}
         env:
-          DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
           NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}

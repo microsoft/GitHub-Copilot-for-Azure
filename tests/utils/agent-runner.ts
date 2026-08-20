@@ -19,7 +19,6 @@ import { fileURLToPath } from "url";
 import { type CopilotSession, CopilotClient, type SessionEvent, approveAll, type SystemMessageConfig, RuntimeConnection } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, getSkillsForTest, type SkillRef } from "./skill-loader.ts";
-import { sanitizeTestName } from "../vally/utils.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate.ts";
@@ -745,17 +744,10 @@ export type AgentRunnerConfig = {
    * If the runner is running for an integration test.
    */
   isTest: boolean;
-  /**
-   * If the runner is running in a jest environment.
-   * Used for backward compatibility.
-   * @todo: Remove this option after migrating all jest integration tests.
-   */
-  useJest: boolean;
 
   /**
    * Name of the test.
    * Only used when the runner is running for a test and isn't running in a jest environment.
-   * @todo: Make this parameter required after migrating all jest integration tests.
    */
   testName?: string;
 };
@@ -790,55 +782,12 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
     currentCleanups = [];
   }
 
-  // @todo: Remove the code for jest tests.
-  function useJest(): boolean {
-    return config.useJest;
-  }
-
   function isTest(): boolean {
     return config.isTest;
   }
 
   function getTestName(): string {
-    // @todo: Remove the code for jest tests.
-    if (config.useJest) {
-      try {
-        // Jest provides expect.getState() with current test info
-        const state = expect.getState();
-        const testName = state.currentTestName ?? "unknown-test";
-        // Sanitize for use as filename
-        return sanitizeTestName(testName);
-      } catch {
-        // Fallback if not running in Jest context
-        return `test-${Date.now()}`;
-      }
-    } else {
-      return config.testName ?? "unknown";
-    }
-  }
-
-  /**
-   * @deprecated Migrate jest test cases to vally suites and stop using this function.
-   * @todo: Remove the code for jest tests.
-   */
-  async function createMarkdownReportInternal(): Promise<void> {
-    for (const entry of currentCleanups) {
-      try {
-        if (isTest() && useJest() && entry.config && entry.agentMetadata) {
-          writeMarkdownReport(getTestName(), entry.config, entry.agentMetadata);
-        }
-      } catch { /* ignore */ }
-    }
-  }
-
-  // @todo: Remove the code for jest tests.
-  if (isTest() && useJest()) {
-    // Guarantees cleanup even if it times out in a test.
-    // No harm in running twice if the test also calls cleanup.
-    afterEach(async () => {
-      await createMarkdownReportInternal();
-      await cleanup();
-    });
+    return config.testName ?? "unknown";
   }
 
   async function run(runConfig: AgentRunConfig): Promise<AgentMetadata> {
@@ -1104,12 +1053,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       console.error("Agent runner error:", errorDetails);
       throw error;
     } finally {
-      // Jest integration tests clean up in afterEach so reports can be written first.
-      // Non-Jest test runners such as Vally must clean up here; otherwise Copilot CLI
-      // child processes keep the Node process alive after results are written.
-      if (!isTest() || !useJest()) {
-        await cleanup();
-      }
+      await cleanup();
     }
   }
 

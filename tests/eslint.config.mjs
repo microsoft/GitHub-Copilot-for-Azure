@@ -2,7 +2,6 @@ import eslint from "@eslint/js";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import jest from "eslint-plugin-jest";
-import integrationTestNameRule from "./eslint-rules/integration-test-name.mjs";
 import importPlugin from "eslint-plugin-import-x";
 
 const tsFiles = ["**/*.ts"];
@@ -115,23 +114,6 @@ export default defineConfig(
       "no-restricted-globals": ["error", {
         name: "require",
         message: "Use ESM 'import' instead of 'require()'"
-      }],
-    },
-  },
-  // Enforce describe() naming in integration test files
-  {
-    files: ["**/integration.test.ts"],
-    plugins: {
-      "custom": {
-        rules: {
-          "integration-test-name": integrationTestNameRule,
-        },
-      },
-    },
-    rules: {
-      // Update the pattern option below to change the required format.
-      "custom/integration-test-name": ["error", {
-        pattern: "^[a-z0-9-]+_[a-z0-9-]* - Integration Tests$"
       }],
     },
   }

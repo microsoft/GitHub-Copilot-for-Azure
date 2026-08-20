@@ -43,8 +43,8 @@ jobs:
       - name: Install tests dependencies
         run: cd tests && npm ci
 
-      - name: Run non-integration tests
-        run: cd tests && npm run test:ci
+      - name: Run unit tests
+        run: cd tests && npm run test
 
       - name: Collect dashboard data
         run: npm run dashboard:collect
