@@ -24,7 +24,7 @@ export interface BuildRequirements {
   exposedPort?: number;
   /** Estimated native module compilation time in seconds (typically 30–300s;
    *  larger compiled dependencies like scipy may take 600+s).
-   *  Used by deploy phase to set WEBSITES_CONTAINER_START_TIME_LIMIT. */
+   *  Informational — scaffold hardcodes WEBSITES_CONTAINER_START_TIME_LIMIT to 1800 (the platform max) for safety. */
   estimatedInstallTime?: number;
   /** Why F1 is not viable — set when f1Viable is false.
    *  Examples: "native modules (node-gyp)", "large dependency tree (27 pinned deps)",

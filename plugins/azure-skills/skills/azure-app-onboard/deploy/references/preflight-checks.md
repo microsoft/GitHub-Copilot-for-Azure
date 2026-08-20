@@ -59,13 +59,12 @@ az deployment sub what-if \
 #### Bicep (resource-group scope)
 
 ```bash
-az deployment group create \
+az deployment group what-if \
   --resource-group {rg} \
   --template-file infra/main.bicep \
   --parameters @infra/main.parameters.json \
   --parameters {additionalSecureParams} \
-  --subscription {subscriptionId} \
-  --what-if
+  --subscription {subscriptionId}
 ```
 
 > ⛔ Pass every `@secure()` param from `main.bicep` (e.g. `deployerObjectId`) as `--parameters {additionalSecureParams}` — same list as Step 6's deploy command. Omitting one hangs `what-if` silently instead of erroring. Use only the flags shown above; unlisted flags (e.g. `--what-if-result-format`) fail outright.

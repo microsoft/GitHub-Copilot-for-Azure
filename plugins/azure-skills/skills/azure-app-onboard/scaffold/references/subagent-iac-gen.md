@@ -47,7 +47,7 @@ Read ONLY the compute-target reference(s) matching the plan, if the plan has mul
 - If plan has Static Web Apps → read [bicep-swa.md](bicep-swa.md).
 - If plan has BOTH → read both.
 
-**Do:** Generate compute module(s) using the patterns from each reference file. F1/D1 App Service: do NOT generate Dockerfile, do NOT add managed identity (OOM). App Service health probe: if `prereq-output.json.healthEndpoint` is non-null, set `siteConfig.healthCheckPath` to that value; otherwise omit (do NOT default to `/`).
+**Do:** Generate compute module(s) using the patterns from each reference file. F1/D1 App Service: do NOT generate Dockerfile, do NOT add managed identity (OOM). App Service health probe: if `prereq-output.json.healthEndpoint` is non-null, set `siteConfig.healthCheckPath` to that value; otherwise omit (do NOT default to `/`). Container Apps: set `appPort` from `buildRequirements.exposedPort ?? 8080` — this value drives `targetPort` and the `PORT` env var in the module.
 
 ### Step 3 — Read security patterns
 
