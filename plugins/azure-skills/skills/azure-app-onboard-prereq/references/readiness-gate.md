@@ -38,7 +38,7 @@
 ## Critical Readiness Gate
 
 ⛔ **Verdict propagation cross-check** before computing `overallHealth` (statuses below are `verdicts` axes — see the enum note above):
-1. Any finding with `verdict: "FAIL"` → that component's `verdicts.{axis}` MUST be `"FAIL"`. (WARN findings do NOT propagate a failed axis — they may escalate at line 2 below if `fixPhase: "prereq"`, but only to WARN, not FAIL.)
+1. Any finding with `verdict: "FAIL"` → that component's `verdicts.{axis}` MUST be `"FAIL"`.
 2. Any `WARN` axis with `fixPhase: "prereq"` → escalate `verdicts.{axis}` to `"FAIL"` (prevents wasting a deploy cycle). ⛔ Escalate only WARNs that would actually break THIS deploy (build/startup failure, or a health probe wired to a route the app lacks). Issues that deploy and run fine — README, in-memory sessions — stay `fixPhase: "post-deploy"`/`"scaffold"`; trust proxy escalates to `fixPhase: "prereq"` when the app sets `secure` session cookies behind the proxy (cookie never set → auth fails), and `engines`/health-endpoint escalate only on a real version/probe mismatch (see [completeness-check.md](completeness-check.md) § Stack-Specific Checks).
 
 | Tiers | Reference file |

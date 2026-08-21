@@ -23,7 +23,7 @@ Read `prepare-plan.json` to determine the service types, then build the checklis
 
 ## ⛔ Read deploy/SKILL.md
 - You MUST `view` deploy/SKILL.md BEFORE running any `az deployment` command
-- Path: `plugins/azure-skills/skills/azure-app-onboard/deploy/SKILL.md` (from repo root) — use this absolute repo-relative path, NOT `../SKILL.md`, which resolves incorrectly when this checklist is read from `.copilot-azure/sessions/{id}/`
+- Path: `plugins/azure-skills/skills/azure-app-onboard/deploy/SKILL.md` (repo-root-relative)
 - If you have not read it in this conversation (or since the last compaction), read it NOW
 - It covers preflight checks, portal links, what-if, SCM lifecycle, deploy-result.json schema, audit logging, and health checks — skip it and none of these happen
 
