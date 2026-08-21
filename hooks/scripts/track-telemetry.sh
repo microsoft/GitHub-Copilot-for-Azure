@@ -164,6 +164,20 @@ get_skill_version() {
         | sed -E 's/^[[:space:]]*version:[[:space:]]*//; s/^["'"'"']//; s/["'"'"'][[:space:]]*$//; s/[[:space:]]*$//'
 }
 
+# Extract the plugin version from the top-level .plugin/plugin.json manifest.
+# Prints nothing if the file or expected JSON value cannot be read.
+get_plugin_version() {
+    local pluginManifestPath
+    pluginManifestPath="$(dirname "$SKILLS_DIR")/.plugin/plugin.json"
+    [ -f "$pluginManifestPath" ] || return 0
+    node -e '
+        try {
+            const manifest = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            if (typeof manifest.version === "string" && manifest.version) process.stdout.write(manifest.version);
+        } catch { }
+    ' "$pluginManifestPath" 2>/dev/null
+}
+
 # === JSON Parsing Functions (using sed - portable across platforms) ===
 
 # Extract simple string field from JSON
@@ -410,6 +424,8 @@ fi
 # === STEP 3: Publish event via azmcp ===
 
 if [ "$shouldTrack" = true ]; then
+    pluginVersion=$(get_plugin_version)
+
     # Build MCP command arguments (using array for proper quoting)
     mcpArgs=(
         "server" "plugin-telemetry"
@@ -421,6 +437,7 @@ if [ "$shouldTrack" = true ]; then
     [ -n "$sessionId" ] && mcpArgs+=("--session-id" "$sessionId")
     [ -n "$skillName" ] && mcpArgs+=("--skill-name" "$skillName")
     [ -n "$skillVersion" ] && mcpArgs+=("--skill-version" "$skillVersion")
+    [ -n "$pluginVersion" ] && mcpArgs+=("--plugin-version" "$pluginVersion")
     [ -n "$azureToolName" ] && mcpArgs+=("--tool-name" "$azureToolName")
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")
