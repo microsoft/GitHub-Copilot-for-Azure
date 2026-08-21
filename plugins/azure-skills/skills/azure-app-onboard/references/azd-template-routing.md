@@ -64,7 +64,7 @@ This is a complete azd template — it already defines how to build and deploy y
 **Option 2 — Start fresh:**
 
 1. Write override to `context.json.overrides[]`: `{ "key": "ignoreExistingInfra", "value": "true", "reason": "User chose greenfield over existing azd template" }`
-2. If `infra/` directory exists, rename it to `infra.bak/` (single folder rename). If `azure.yaml` exists, rename it to `azure.yaml.bak`. This preserves the user's existing IaC as a backup before scaffold writes new files, and clears the azd-template detection signal (`azure.yaml` + `infra/`) so future sessions don't re-flag the repo as existing IaC. Tell the user their originals are preserved at these `.bak` paths.
+2. If `infra/` directory exists, rename it to `infra.bak-{sessionId}/` (use `context.json.sessionId` — session-scoped to avoid collision on subsequent runs). If `azure.yaml` exists, rename it to `azure.yaml.bak-{sessionId}`. ⛔ **Before renaming, check the target path does not already exist** — if it does, skip the rename and tell the user a backup already exists at that path. This preserves the user's existing IaC as a backup before scaffold writes new files, and clears the azd-template detection signal (`azure.yaml` + `infra/`) so future sessions don't re-flag the repo as existing IaC. Tell the user their originals are preserved at these paths.
 3. Continue AppOnboard pipeline from Step 5 (plan architecture).
 4. Scaffold Step 3 is skipped (override exists) — the backup was already done here.
 
