@@ -62,7 +62,7 @@ Web apps must bind a port. Detect via `app.listen`, `PORT` env var, framework po
 
 ### 6. Static Asset Integrity
 
-Parse `href`/`src` from HTML tags. Check relative to HTML file directory. Ignore external URLs.
+⛔ **Mandatory whenever the repo contains HTML — do not skip.** For each HTML file, extract every `href`/`src` local path (ignore `http(s)://`, `//`, `data:`), resolve it against that file's directory, and confirm the target exists on disk. Any referenced local asset that does not exist is a broken reference (e.g. `<link href="/css/style.css">` with no `public/css/style.css`).
 
 | Outcome | Verdict |
 |---------|---------|
@@ -89,7 +89,7 @@ Verify these patterns. Assess severity with tier definitions from [readiness-gat
 - **Any web app:** health endpoint (`/health`, `/healthz`), README documentation
 - **Static sites:** health endpoint is N/A (responds 200 on `/`)
 
-> ⛔ Default these to **⚠️ WARN / `fixPhase: "postdeploy"`** — an app that deploys and runs (missing trust proxy, README, in-memory sessions) is **not** `blocked`. Escalate to ❌ FAIL / `prereq` only when the case actually breaks THIS deploy: `engines` when the app needs a runtime the platform default won't provide, or a health endpoint when a probe is wired to a route the app lacks.
+> ⛔ Default these to **⚠️ WARN / `fixPhase: "post-deploy"`** — an app that deploys and runs (README, in-memory sessions) is **not** `blocked`. Escalate to ❌ FAIL / `prereq` only when the case actually breaks THIS deploy: **trust proxy when the app sets `secure` session cookies behind the proxy** (express refuses to set the cookie → auth silently fails on every request), `engines` when the app needs a runtime the platform default won't provide, or a health endpoint when a probe is wired to a route the app lacks.
 
 > **Do not short-circuit.** Iterate ALL sub-checks (1–7 + stack-specific) per component.
 

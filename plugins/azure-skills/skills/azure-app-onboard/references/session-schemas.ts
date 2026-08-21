@@ -46,7 +46,9 @@ export interface AppOnboardComponent {
   path: string;
   stack: AppOnboardComponentStack;
   readiness: AppOnboardComponentReadiness;
-  verdicts?: AppOnboardComponentVerdicts;
+  /** REQUIRED — every component MUST carry per-axis verdicts (build/completeness/deployability); the prepare phase reads these for readiness scoring. Never omit, even for multi-component repos. */
+  verdicts: AppOnboardComponentVerdicts;
+  /** Per-axis problems + fixes. Omit or leave empty when all verdicts PASS. ⛔ REQUIRED when any verdict is WARN or FAIL: every non-PASS axis MUST have a matching entry (same `category`) explaining the issue and its fix. */
   findings?: readonly AppOnboardComponentFinding[];
 }
 
@@ -57,10 +59,16 @@ export interface AppOnboardAzureTarget {
   subscriptionName: string;
   resourceGroup: string;
   region: string;
+  /** Entra tenant ID from `az account show --query tenantId`. If absent on a resumed session, resolve and backfill before proceeding. */
+  tenantId: string;
+  /** Signed-in user's display name (`az ad signed-in-user show --query displayName`) — used for the `deployed-by` tag and handoff identity. */
+  userDisplayName?: string;
 }
 
 export interface AppOnboardRepoInfo {
   remote: string | null;
+  /** Full 40-char HEAD SHA at last prereq scan (`git rev-parse HEAD`). Prereq resume compares to HEAD to detect repo changes (staleness guard). */
+  lastScanCommit?: string;
 }
 
 export interface AppOnboardOverride {
@@ -101,7 +109,7 @@ export interface AppOnboardIntent {
   scanDiscoveredFacts?: string[];
 }
 
-export type AppOnboardPhase = "info" | "prereq" | "prepare" | "scaffold" | "deploy" | "cicd" | "observe";
+export type AppOnboardPhase = "info" | "prereq" | "prepare" | "scaffold" | "deploy";
 
 export interface AppOnboardContext {
   sessionId: string;
@@ -127,11 +135,11 @@ export interface AppOnboardContext {
   /** Service dependencies parsed from docker-compose, config files, or code imports */
   detectedServices: readonly DetectedService[];
   overrides: AppOnboardOverride[];
-  /** Set when a phase routes the pipeline to another skill — e.g. "azure-cloud-migrate"
-   *  (non-Azure cloud SDK deps) or "azure-prepare" (existing azd template). Presence halts
-   *  the greenfield pipeline; the resume path in session-protocol.md clears it and re-runs prereq. */
+  /** The skill to invoke next. Set by the cloud-SDK gate, specialized-skill detection, or
+   *  normal health+infra routing. Examples: "azure-cloud-migrate", "microsoft-foundry", "azure-prepare".
+   *  Presence halts the greenfield pipeline; the resume path in session-protocol.md clears it and re-runs prereq. */
   routeToSkill?: string;
-  /** Human-readable reason paired with `routeToSkill` (e.g. "existing-azd-template"). */
+  /** Why this route was chosen. Examples: "cloud-sdk-migration", "existing-azd-template", "foundry-agents-detected", "ready-no-infra", "ready-existing-infra". */
   routeReason?: string;
 }
 

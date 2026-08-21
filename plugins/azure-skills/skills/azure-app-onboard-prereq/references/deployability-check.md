@@ -29,6 +29,8 @@ Assess whether at least one deployment recipe is viable.
 | Minor platform concerns (ephemeral storage, missing .dockerignore) | ⚠️ WARN — informational |
 | No viable recipe identified | ❌ FAIL |
 
+> ⛔ **External managed-service deps are NOT prereq blockers.** A local/embedded or self-hosted datastore, cache, or queue (SQLite, local Postgres/MySQL, Redis, Kafka) that maps to an Azure managed equivalent (Azure DB for PostgreSQL/MySQL, Azure Cache for Redis, Event Hubs) is prepare-phase service-mapping → classify `⚠️ WARN` (`deployability`, `fixPhase: "scaffold"`) → `readyWithCaveats`, NEVER `❌ FAIL`/`blocked`. Only a datastore with NO Azure equivalent is a blocker.
+
 ## Step 5: Specialized Skill Detection
 
 Check if the repo's stack requires a specialized deployment skill. If a match is found, set `context.json.routeToSkill` and `routeReason` so Step 8 routes directly.

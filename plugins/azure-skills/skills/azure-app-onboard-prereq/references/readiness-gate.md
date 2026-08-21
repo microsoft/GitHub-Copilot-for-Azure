@@ -8,8 +8,8 @@
 
 ## Severity Tiers
 
-| Verdict | Icon | Meaning |
-|---------|------|---------|
+| Severity Tier | Icon | Meaning |
+|---------------|------|---------|
 | Hard Halt | 🛑 | App is intentionally vulnerable — pipeline stops, no fix possible |
 | Major Migration | 🔶 | Large-scope change (EOL runtime, cloud SDK migration, >5 files) — redirect or warn |
 | Critical | ❌ FAIL | Deployment will fail — agent can fix (≤5 files, config-level) |
@@ -21,7 +21,9 @@
 
 ## Overall Health Gate
 
-**Compute `overallHealth`:** ALL ✅ PASS → `"ready"` | Any ⚠️ WARN no ❌ FAIL → `"readyWithCaveats"` | ANY ❌ FAIL → `"blocked"`
+⛔ **`overallHealth` is a top-level field with its OWN enum — `ready` / `readyWithCaveats` / `blocked`.** It is NOT a per-component `verdicts` axis (those are `PASS`/`WARN`/`FAIL`). Never write `ready`/`readyWithCaveats`/`blocked` into a `verdicts` axis, and never invent a singular `verdict` field.
+
+**Compute `overallHealth`** from the per-component `verdicts` axes: ALL ✅ PASS → `"ready"` | Any ⚠️ WARN, no ❌ FAIL and no 🔶 → `"readyWithCaveats"` | ANY ❌ FAIL **OR 🔶 Major Migration without a `routeToSkill` redirect** → `"blocked"`
 
 **Component `readiness.status` alignment:**
 - `"ready"` → `readiness.status: "ready"`
@@ -35,9 +37,9 @@
 
 ## Critical Readiness Gate
 
-⛔ **Verdict propagation cross-check** before computing `overallHealth`:
-1. Any finding with `verdict: "FAIL"` → axis verdict MUST be `"FAIL"`.
-2. Any finding with `verdict: "WARN"` + `fixPhase: "prereq"` → escalate to `"FAIL"` (prevents wasting a deploy cycle). ⛔ Escalate only WARNs that would actually break THIS deploy (build/startup failure, or a health probe wired to a route the app lacks). Issues that deploy and run fine — missing trust proxy, README, in-memory sessions — stay `fixPhase: "postdeploy"`/`"scaffold"`; `engines`/health-endpoint escalate only on a real version/probe mismatch (see [completeness-check.md](completeness-check.md) § Stack-Specific Checks).
+⛔ **Verdict propagation cross-check** before computing `overallHealth` (statuses below are `verdicts` axes — see the enum note above):
+1. Any finding with `verdict: "FAIL"` → that component's `verdicts.{axis}` MUST be `"FAIL"`.
+2. Any `WARN` axis with `fixPhase: "prereq"` → escalate `verdicts.{axis}` to `"FAIL"` (prevents wasting a deploy cycle). ⛔ Escalate only WARNs that would actually break THIS deploy (build/startup failure, or a health probe wired to a route the app lacks). Issues that deploy and run fine — README, in-memory sessions — stay `fixPhase: "post-deploy"`/`"scaffold"`; trust proxy escalates to `fixPhase: "prereq"` when the app sets `secure` session cookies behind the proxy (cookie never set → auth fails), and `engines`/health-endpoint escalate only on a real version/probe mismatch (see [completeness-check.md](completeness-check.md) § Stack-Specific Checks).
 
 | Tiers | Reference file |
 |-------|---------------|
@@ -51,16 +53,20 @@
 
 ## Batch-Then-Approve Flow
 
-⛔ **Artifacts before message.** Write AND read back all 3 artifacts (`prereq-output.json`, `context.json`, `readiness-report.md`) to confirm they exist on disk BEFORE presenting any findings, cloud-SDK stop prompt, or 🛑 hard-halt message. Those messages can end the turn, so every artifact MUST already be persisted — NEVER batch artifact writes after the message.
+⛔ **Artifacts before message.** Before presenting ANY findings, cloud-SDK stop prompt, or 🛑 hard-halt message, run:
+```
+bash: ls .copilot-azure/sessions/*/prereq-output.json .copilot-azure/sessions/*/context.json .copilot-azure/sessions/*/readiness-report.md
+```
+All 3 must exist (exit 0). Write any missing file immediately and re-run the command. Only present findings after exit 0 — NEVER batch artifact writes after the message.
 
 1. **Detect ALL issues first** — full 3-axis scan, all components.
 2. **Present ALL findings at once** — summary: "🔍 Readiness: 2 critical, 1 recommended fix, 3 warnings". Group: 🛑 → 🔶 → ❌ → 🔧 → ⚠️.
 3. **Fix plan** — for ❌, 🔧, 🔶, ⚠️ with `fixPhase: "prereq"`: describe WHAT and WHY. ⛔ Exclude 🔶 with `routeToSkill` set. Never include 🛑.
 4. **User choice** (based on highest severity):
    - **🛑:** Pipeline stops. No formal gate.
-   - **🔶 + others:** "Fix {N} issues including {M} migration(s) — scope warning" / "Fix blockers only" / "Continue with risks" / "Cancel"
-   - **🔶 only:** "Attempt migration" / "Continue as-is" / "Cancel"
-   - **❌/🔧/⚠️ with fixPhase prereq:** "Fix {N} deployment issues" / "Continue with risks" / "Cancel"
+   - **🔶 + others:** "Fix {N} issues including {M} migration(s) — scope warning" / "Fix blockers only" / "Continue without fixing — I accept the risks" / "Cancel"
+   - **🔶 only:** "Attempt migration" / "Continue without fixing — I accept the risks" / "Cancel"
+   - **❌/🔧/⚠️ with fixPhase prereq:** "Fix {N} deployment issues" / "Continue without fixing — I accept the risks" / "Cancel"
 5. **After approval** → apply fixes per [remediation-protocol.md](remediation-protocol.md).
 
 > ⛔ **Two-gate rule:** Intent approval ≠ fix execution approval. Present the fix prompt here even if user agreed earlier.

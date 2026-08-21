@@ -41,6 +41,14 @@ if printf '%s' "$main_bicep" | grep -qE 'module[[:space:]]+[A-Za-z]*[Dd]iagnosti
   add_fail "DIAG-GATED" "diagnostic-settings module wired without an enableDiagnostics gate — gate it (module ... = if (enableDiagnostics), default false) or remove it; unconditional wiring blocks the first deploy" "infra/main.bicep"
 fi
 
+# 13. NO-TILDE-LINUXFXVERSION — linuxFxVersion runtime tag must be an exact tag ('NODE|20-lts'). A tilde
+#     ('NODE|~20') is npm-semver, invalid for linuxFxVersion: App Service cannot resolve it, Oryx falls back
+#     to an old default Node, and native-module builds fail because node-gyp compiles against the wrong ABI.
+#     The generated bicep, a nodeVersion param/var, or the params file must never carry a tilde here.
+if iac_has "linuxFxVersion:[[:space:]]*'[A-Za-z]+\|~" || iac_has "nodeVersion[^=]*=[[:space:]]*'~[0-9]"; then
+  add_fail "NO-TILDE-LINUXFXVERSION" "linuxFxVersion uses a tilde (e.g. 'NODE|~20') — invalid for linuxFxVersion; use an exact tag such as 'NODE|20-lts'. A tilde makes App Service fall back to an old default Node and breaks native-module builds." "infra/modules/app-service.bicep"
+fi
+
 # 2. NO-PLAINTEXT-SECRET (jq-free: awk over the params file so it runs on hosts without jq)
 if [ -n "$params_raw" ]; then
   bad_keys="$(printf '%s' "$params_raw" | awk '
@@ -172,6 +180,16 @@ if iac_has 'Microsoft\.KeyVault/vaults'; then
   has_param=0; { iac_has 'deployerObjectId' || printf '%s' "$params_raw" | grep -q 'deployerObjectId'; } && has_param=1
   if [ "$has_officer" != 1 ] || [ "$has_param" != 1 ]; then
     add_fail "KV-DEPLOYER-ROLE" "missing deployer Key Vault Secrets Officer role and/or deployerObjectId param" "infra/modules/role-assignments.bicep"
+  fi
+fi
+
+# --- App Service / Functions checks (pure-text) ---
+# 18. APPSVC-PUBLISH-POLICIES — every Microsoft.Web/sites app MUST keep BOTH scm+ftp
+#     basicPublishingCredentialsPolicies child resources. bicep build passes with them missing, so a
+#     dropped policy (e.g. an over-eager BCP121 dedup) silently strips the publishing-credential lockdown.
+if iac_has 'Microsoft\.Web/sites@'; then
+  if ! iac_has 'basicPublishingCredentialsPolicies' || ! iac_has "name:[[:space:]]*'scm'" || ! iac_has "name:[[:space:]]*'ftp'"; then
+    add_fail "APPSVC-PUBLISH-POLICIES" "App Service/Functions site missing basicPublishingCredentialsPolicies scm+ftp child resources — both MUST exist (a dropped policy removes the publishing-credential lockdown and bicep build will not catch it)" "infra/modules"
   fi
 fi
 
