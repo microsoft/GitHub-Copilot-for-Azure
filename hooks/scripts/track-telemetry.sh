@@ -340,7 +340,6 @@ shouldTrack=false
 eventType=""
 skillName=""
 skillVersion=""
-pluginVersion=$(get_plugin_version)
 azureToolName=""
 filePath=""
 
@@ -425,6 +424,8 @@ fi
 # === STEP 3: Publish event via azmcp ===
 
 if [ "$shouldTrack" = true ]; then
+    pluginVersion=$(get_plugin_version)
+
     # Build MCP command arguments (using array for proper quoting)
     mcpArgs=(
         "server" "plugin-telemetry"

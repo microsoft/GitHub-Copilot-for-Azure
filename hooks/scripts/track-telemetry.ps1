@@ -333,7 +333,6 @@ $shouldTrack = $false
 $eventType = $null
 $skillName = $null
 $skillVersion = $null
-$pluginVersion = Get-PluginVersion
 $azureToolName = $null
 $filePath = $null
 
@@ -432,6 +431,8 @@ if (-not $filePath -and -not $skillName) {
 # === STEP 3: Publish event ===
 
 if ($shouldTrack) {
+    $pluginVersion = Get-PluginVersion
+
     # Build MCP command arguments
     $mcpArgs = @(
         "server", "plugin-telemetry",
