@@ -23,6 +23,9 @@ permissions:
   contents: read
   issues: read
 
+concurrency:
+  group: "gh-aw-${{ github.workflow }}-${{ github.event.issue.number || inputs.issue_number || github.run_id }}"
+
 engine: copilot
 
 tools:
