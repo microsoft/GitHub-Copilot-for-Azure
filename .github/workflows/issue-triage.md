@@ -1,126 +1,196 @@
 ---
+name: Issue Triage
 description: |
-  Triages newly opened GitHub issues by analyzing their content and assigning appropriate labels and fields.
-  Assigns skill-specific labels (azure-deploy, azure-prepare, etc.), sets the Issue Type and
-  Priority fields, and applies the assign-to-copilot label when a coding agent can meaningfully
-  assist with the issue.
+  Agentic issue triage for microsoft/GitHub-Copilot-for-Azure.
+  Applies classification and routing labels, sets issue fields, and leaves a concise rationale comment.
 
 on:
   issues:
     types: [opened, reopened]
-  roles: all
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to triage manually.
+        required: true
+        type: string
+
+# Skip the tracking issue that report-incomplete creates for this workflow.
+if: github.event_name != 'issues' || !startsWith(github.event.issue.title, '[incomplete] Issue Triage')
 
 permissions:
   copilot-requests: write
-  issues: read
   contents: read
+  issues: read
 
-network: {}
+engine: copilot
 
 tools:
+  bash: []
   github:
-    toolsets: [issues, labels]
+    toolsets: [issues, labels, repos]
+    min-integrity: none
+    allowed-repos: ["microsoft/github-copilot-for-azure"]
+
+network:
+  allowed:
+    - defaults
+    - github
+
+timeout-minutes: 15
 
 safe-outputs:
-  update-issue:
+  add-comment:
     max: 1
-    target: '*'
+    target: "*"
+  add-labels:
+    allowed:
+      - bug
+      - enhancement
+      - assign-to-copilot
+      - skills
+      - integration-test
+      - agentic-workflows
+      - "area:*"
+      - "azure-*"
+      - "entra-*"
+      - microsoft-foundry
+      - python-appservice-deploy
+      - appinsights-instrumentation
+      - airunway-aks-setup
+      - telemetry
+      - functions
+      - vscode
+      - github_actions
+      - javascript
+      - python
+      - auth
+      - sign-in
+      - cost
+      - diagnostics
+      - deploy
+      - foundry
+      - intent-detection
+      - skill-invocation
+      - skills-installation
+      - linux
+      - mac
+      - codespace
+      - infrastructure
+      - infra
+      - ux
+      - context-awareness
+      - hallucination
+      - too-many-tools
+      - aks
+      - applogs
+      - access-check
+      - partner
+      - external
+      - tenant-subscription
+      - ".net*"
+      - "3rd party - unsupported"
+    max: 5
+    target: "*"
+  remove-labels:
+    allowed: [untriaged]
+    max: 1
+    target: "*"
   set-issue-type:
     allowed: [Bug, Feature, Task]
     max: 1
+    target: "*"
   set-issue-field:
     allowed-fields: [Priority]
     max: 1
-  add-comment:
+    target: "*"
+  noop:
+    report-as-issue: false
+  report-incomplete:
     max: 1
 
-engine:
-  id: copilot
 ---
 
 # Issue Triage
 
-You are triaging a newly opened GitHub issue in the **GitHub Copilot for Azure** repository.
-Analyze the issue, apply the most relevant labels, and set the appropriate issue fields.
+<!-- After editing run 'gh aw compile issue-triage' -->
 
-## Current Issue
+Triage exactly one issue in **microsoft/GitHub-Copilot-for-Azure**.
 
-- **Issue Number**: ${{ github.event.issue.number }}
-- **Title**: ${{ github.event.issue.title }}
+Target issue: **#${{ inputs.issue_number || github.event.issue.number }}**
 
-## Your Task
+## Guardrails
 
-1. Fetch the full issue details for issue #${{ github.event.issue.number }} using the GitHub issues tool to read the complete title and body.
-2. List all available labels in the repository using the labels tool.
-3. Assign appropriate labels and fields based on the content.
-4. Post a helpful acknowledgement comment on the issue.
-
-## Triage Assignment Guidelines
-
-### Skill Labels
-
-Assign one or more skill labels if the issue is related to a specific Azure skill area:
-
-- `azure-deploy` - deployment issues, `azd deploy`, Azure resource deployment, Bicep
-- `azure-prepare` - project setup, `azd init`, scaffolding, project preparation
-- `azure-validate` - validation, environment checking, pre-deployment checks
-- `azure-diagnostics` - diagnostics, troubleshooting, logs, error investigation
-- `azure-cost` - cost management, billing, resource optimization
-- `azure-messaging` - Service Bus, Event Hubs, messaging services
-- `azure-observability` - monitoring, alerts, Azure Monitor, Application Insights
-
-If the issue doesn't map to any skill, skip skill labels.
-
-### Issue Type Field
-
-Set exactly one **Issue Type** field value. Do not add or rely on the `bug`, `enhancement`, `question`, or `documentation` labels for type triage.
-
-- `Bug` - the issue describes broken or unexpected behavior
-- `Feature` - the issue requests a new feature or improvement
-- `Task` - the issue is asking for help or clarification, is about docs, examples, README changes, or is general maintenance work
-
-### Priority Field
-
-Set exactly one **Priority** field value based on impact and urgency. Do not use labels for priority triage.
-
-- `Urgent` - active repo-wide blocker, release blocker, security incident, or CI failure that blocks broad PR flow
-- `High` - regression, deploy/provision/auth failure, data/schema corruption, customer-reported severe bug, or work blocking an active initiative/workstream
-- `Medium` - important product bug or feature gap with clear user impact, but not broadly blocking; follow-up, docs, quality, UX polish, or engineering improvement with contained impact
-- `Low` - backlog idea, exploratory item, or low-urgency cleanup
-
-### Coding Agent Label
-
-Assign **`assign-to-copilot`** if the issue describes work a coding agent could meaningfully assist with, such as:
-
-- A code bug that requires a fix in the codebase
-- A feature or enhancement that requires writing or modifying code
-- A refactor, test addition, or other hands-on coding task
-
-Do **not** assign `assign-to-copilot` for questions, docs-only requests, or issues that require human judgment/architectural decisions.
-
-## Responding
-
-After triaging the issue, post a single friendly acknowledgement comment that:
-
-- Thanks the reporter for opening the issue.
-- Briefly confirms what labels were applied and why (one sentence per label group).
-- Briefly confirms the Issue Type and Priority fields selected.
-- If `assign-to-copilot` was applied, mention that a coding agent will look into it.
-- If the Issue Type is `Task` because the issue is a question, point them to any relevant documentation or suggest next steps.
-- Keeps the tone warm, concise, and professional - no more than 4-5 sentences total.
-
-Do **not** promise a specific fix timeline. Do **not** repeat the entire issue body back.
+- Process only the target issue. Never process a pull request.
+- Add labels only from the approved safe-output list. Never replace or remove labels except `untriaged`.
+- Never close, lock, or assign the issue.
+- Preserve valid values already set by a reporter or maintainer. Do not add a second classification label or overwrite an existing Issue Type or Priority.
+- Treat `bug` and `enhancement` as mutually exclusive. If the existing classification appears wrong, recommend the correction in the comment instead of changing it.
+- If required labels or field values are unavailable or ambiguous, use `report-incomplete` with the missing details. Do not remove `untriaged` when triage is incomplete.
 
 ## Process
 
-1. Fetch issue #${{ github.event.issue.number }} using the GitHub issues tool to read the full title and body.
-2. Use the labels tool to list all available labels in the repository.
-3. Analyze the issue title and body.
-4. Select the most appropriate labels and fields:
-   - Zero or more skill labels
-   - Optionally `assign-to-copilot`
-   - Exactly one Issue Type field value
-   - Exactly one Priority field value
-5. Update the issue by adding the selected labels, setting the selected Issue Type and Priority fields, and removing the `untriaged` label if it is present.
-6. Do not add the `bug`, `enhancement`, `question`, or `documentation` labels. If any of those labels are already present, remove them when setting the Issue Type field.
-7. Post a helpful acknowledgement comment on the issue.
+1. Fetch the target issue's full title, body, current labels, Issue Type, and Priority.
+2. List the repository's available labels.
+3. Classify the issue and select only labels that are directly supported by its content.
+4. Read `.github/CODEOWNERS` and identify one primary owner only when the affected area is clear.
+5. Apply the safe outputs described below.
+
+## Triage outputs
+
+### 1) Classification
+
+Choose one dominant classification:
+
+- `bug`: broken existing behavior, regression, crash, error, failing CI, authentication failure, or documented behavior that does not work.
+- `enhancement`: a new capability or improvement to existing behavior.
+- `task`: guidance, investigation, documentation, maintenance, or internal engineering work.
+
+Add `bug` or `enhancement` only when neither classification label is present. There is no classification label for `task`.
+
+Set a missing Issue Type from the classification:
+
+- `bug` -> `Bug`
+- `enhancement` -> `Feature`
+- `task` -> `Task`
+
+### 2) Routing labels
+
+Add up to three routing labels in addition to a classification label:
+
+- The exact skill label when the issue clearly concerns one skill, such as `azure-deploy`, `azure-diagnostics`, `microsoft-foundry`, or `entra-app-registration`.
+- `skills` for cross-skill or general skill-system work.
+- `integration-test`, `agentic-workflows`, `telemetry`, `functions`, `vscode`, `github_actions`, `area:testing`, `area:docs`, or `area:release` when directly relevant.
+- A platform or problem label such as `linux`, `mac`, `codespace`, `auth`, `sign-in`, `hallucination`, or `too-many-tools` only when the issue explicitly supports it.
+
+Skip uncertain labels and labels that do not exist.
+
+### 3) Priority field
+
+Set Priority only when it is missing, using the configured value exactly:
+
+- `Urgent`: active repository-wide blocker, release blocker, security incident, or CI failure blocking broad pull request flow.
+- `High`: regression, deploy/provision/auth failure, data corruption, severe customer bug, or active initiative blocker.
+- `Medium`: important bug or feature gap with clear impact but no broad blocker, including contained documentation and quality work.
+- `Low`: backlog idea, exploratory work, or low-urgency cleanup.
+
+### 4) Coding agent label
+
+Add `assign-to-copilot` only when the issue is sufficiently scoped for a coding agent to make a concrete repository change. Do not add it for support questions, incomplete reports, architectural decisions, external service problems, or work that needs credentials or live Azure access.
+
+### 5) Owner recommendation
+
+Recommend one primary owner in the comment, but do not assign anyone:
+
+- Prefer a specific code owner for the affected skill or area.
+- Use the repository-wide CODEOWNERS team for cross-cutting work.
+- If confidence is low, state that the owner is left for maintainer review.
+
+## Final action
+
+When triage is complete:
+
+1. Add the selected labels and set any missing fields.
+2. Remove `untriaged` if it is present.
+3. Post one concise comment with the classification reason, routing labels, Priority, Issue Type, and owner recommendation.
+
+Do not promise a fix or timeline. Do not repeat the issue body.
