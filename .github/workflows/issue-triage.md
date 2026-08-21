@@ -7,6 +7,7 @@ description: |
 on:
   issues:
     types: [opened, reopened]
+  roles: all
   workflow_dispatch:
     inputs:
       issue_number:
@@ -33,7 +34,6 @@ tools:
 
 network:
   allowed:
-    - defaults
     - github
 
 timeout-minutes: 15
@@ -50,9 +50,34 @@ safe-outputs:
       - skills
       - integration-test
       - agentic-workflows
-      - "area:*"
-      - "azure-*"
-      - "entra-*"
+      - "area:docs"
+      - "area:release"
+      - "area:testing"
+      - azure-ai
+      - azure-aigateway
+      - azure-cloud-migrate
+      - azure-compliance
+      - azure-compute
+      - azure-cost
+      - azure-cost-optimization
+      - azure-deploy
+      - azure-diagnostics
+      - azure-enterprise-infra-planner
+      - azure-hosted-copilot-sdk
+      - azure-kubernetes
+      - azure-kusto
+      - azure-messaging
+      - azure-prepare
+      - azure-quotas
+      - azure-rbac
+      - azure-reliability
+      - azure-resource-lookup
+      - azure-resource-visualizer
+      - azure-storage
+      - azure-upgrade
+      - azure-validate
+      - entra-agent-id
+      - entra-app-registration
       - microsoft-foundry
       - python-appservice-deploy
       - appinsights-instrumentation
@@ -61,34 +86,14 @@ safe-outputs:
       - functions
       - vscode
       - github_actions
-      - javascript
-      - python
       - auth
       - sign-in
-      - cost
-      - diagnostics
-      - deploy
-      - foundry
       - intent-detection
-      - skill-invocation
-      - skills-installation
+      - hallucination
+      - too-many-tools
       - linux
       - mac
       - codespace
-      - infrastructure
-      - infra
-      - ux
-      - context-awareness
-      - hallucination
-      - too-many-tools
-      - aks
-      - applogs
-      - access-check
-      - partner
-      - external
-      - tenant-subscription
-      - ".net*"
-      - "3rd party - unsupported"
     max: 5
     target: "*"
   remove-labels:
