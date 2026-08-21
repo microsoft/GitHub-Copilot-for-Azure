@@ -59,7 +59,7 @@ export interface AppOnboardAzureTarget {
   subscriptionName: string;
   resourceGroup: string;
   region: string;
-  /** Entra tenant ID from `az account show --query tenantId`. */
+  /** Entra tenant ID from `az account show --query tenantId`. If absent on a resumed session, resolve and backfill before proceeding. */
   tenantId: string;
   /** Signed-in user's display name (`az ad signed-in-user show --query displayName`) — used for the `deployed-by` tag and handoff identity. */
   userDisplayName?: string;
