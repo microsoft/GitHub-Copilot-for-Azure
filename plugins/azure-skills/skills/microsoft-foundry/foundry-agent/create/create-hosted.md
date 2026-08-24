@@ -93,7 +93,7 @@ Branch on the agent status reported by `verify-environment`:
 
 ### Step 2 -- New or existing Foundry project?
 
-Skip this `Step 2` when the workspace is already configured as a Foundry hosted agent.
+Skip this `Step 2` when the workspace is already configured as a Foundry hosted agent and its Foundry project target is already resolved.
 
 Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the user supplies an existing project endpoint / project ARM resource ID.
 
