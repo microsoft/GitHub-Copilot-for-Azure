@@ -31,15 +31,17 @@ defaults:
 scoring:
   threshold: 0.8
   weights:
-    completed: 0.1
-    file-exists: 0.1
-    file-matches: 0.1
-    file-not-exists: 0.1
-    output-contains: 0.1
-    output-matches: 0.1
-    output-not-matches: 0.1
-    json-object-rules: 0.1
-    skill-invocation: 0.2
+    completed: 0.06
+    file-exists: 0.06
+    file-matches: 0.06
+    file-not-exists: 0.06
+    file-not-matches: 0.2
+    output-contains: 0.06
+    output-matches: 0.06
+    output-not-matches: 0.06
+    json-object-rules: 0.06
+    shell-command-invoked: 0.2
+    skill-invocation: 0.12
 
 stimuli:
   # ── invoke-simple-plan ──
@@ -384,6 +386,33 @@ stimuli:
       - type: file-exists
         config:
           path: "**/infra/main.tf"
+      # Phase 6 hardened gate: local validation and security scanning must run.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: '(?i)terraform(?:\s+-chdir=\S+)?\s+init\s+-backend=false\b'
+              description: "Terraform initialized without a backend"
+            - command: '(?i)terraform(?:\s+-chdir=\S+)?\s+validate\b'
+              description: "Terraform configuration validated"
+            - command: '(?i)checkov\s+-d\s+[^\r\n]*infra[/\\]?'
+              description: "Generated Terraform scanned with Checkov"
+          disallowed:
+            - command: '(?i)terraform\s+(apply|destroy)\b|az\s+deployment\s+(group|sub|mg|tenant)\s+create\b'
+              description: "Phase 6 must not deploy infrastructure"
+      # The response must prove the gate ran and emit the documented self-check.
+      - type: output-matches
+        config:
+          pattern: '(?is)(terraform\s+validate|terraform validation).{0,500}(exit\s+(code|status)\s*:?\s*0|success|succeed|pass|unavailable|not installed|not found)'
+      - type: output-matches
+        config:
+          pattern: '(?is)checkov.{0,500}(0\s+failed|pass|no unresolved (high|critical)|unavailable|not installed|not found)'
+      - type: output-matches
+        config:
+          pattern: '(?is)validation ran.{0,2000}checkov.{0,2000}secure-by-default.{0,2000}files under'
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?i)(password|client_secret|account_key)\s*=\s*"[^"]+"'
       # Global: has_output
       - type: completed
       # Global: no_runtime_failure
@@ -684,6 +713,43 @@ stimuli:
       - type: file-exists
         config:
           path: "**/infra/main.bicep"
+      # Phase 6 hardened gate: compile and scan the generated template.
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: '(?i)az\s+bicep\s+build\b[^\r\n]*--file\s+[^\r\n]*infra[/\\]main\.bicep'
+              description: "Bicep template compiled successfully"
+            - command: '(?i)checkov\s+-d\s+[^\r\n]*infra[/\\]?'
+              description: "Generated Bicep scanned with Checkov"
+          disallowed:
+            - command: '(?i)az\s+deployment\s+(group|sub|mg|tenant)\s+create\b|terraform\s+(apply|destroy)\b'
+              description: "Phase 6 must not deploy infrastructure"
+      - type: output-matches
+        config:
+          pattern: '(?is)(az\s+bicep\s+build|bicep validation).{0,500}(exit\s+(code|status)\s*:?\s*0|success|succeed|pass|unavailable|not installed|not found)'
+      - type: output-matches
+        config:
+          pattern: '(?is)checkov.{0,500}(0\s+failed|pass|no unresolved (high|critical)|unavailable|not installed|not found)'
+      - type: output-matches
+        config:
+          pattern: '(?is)validation ran.{0,2000}checkov.{0,2000}secure-by-default.{0,2000}files under'
+      # The SAP scenario includes Key Vault; verify the new secure defaults on disk.
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "enablePurgeProtection\\s*:\\s*true"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "enableRbacAuthorization\\s*:\\s*true"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "publicNetworkAccess\\s*:\\s*'Disabled'"
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)(password|clientSecret|accountKey)\\s*:\\s*'[^']+'"
 
   # ── plan-hub-spoke-iot-001 ──
   # Adapted from removed IoT Telemetry → hub-spoke ingestion network topology
@@ -1038,3 +1104,396 @@ stimuli:
       - type: skill-invocation
         config:
           required: ["azure-enterprise-infra-planner"]
+
+  # ── Brownfield: referenced workloads (2) ──
+  # Declared Bicep infrastructure must be referenced and wired, never recreated.
+  - name: "Brownfield Workload - Existing Bicep is reused and wired"
+    turns:
+      - |
+        The resources declared in existing-infrastructure.bicep are already deployed.
+        Add a secure Storage account with a private endpoint in the existing
+        private-endpoints subnet. Send its diagnostics to the existing Log Analytics
+        workspace and grant a new user-assigned managed identity access to the existing
+        Key Vault. Treat every resource in the supplied file as existing: inventory and
+        reference it, wire the new resources to it, and never recreate or modify it.
+        Assume sensible defaults and prepare the preliminary resource list. Do not deploy.
+      - "Incorporate all three existing resources. The resource list looks good; proceed with the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Bicep IaC for the approved plan. Do not deploy."
+    environment:
+      files:
+        - src: fixture/existing-infrastructure.bicep
+          dest: existing-infrastructure.bicep
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output-files
+      category: brownfield
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 100
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.bicep"
+
+      # The provided declaration remains present with its original identifying content.
+      - type: file-matches
+        config:
+          path: "existing-infrastructure.bicep"
+          pattern: "(?s)fixture-id: enterprise-planner-referenced-v1.*corp-hub-vnet.*10\\.20\\.0\\.0/16.*corp-ops-law.*corp-shared-kv"
+
+      # All supplied resources are references in generated IaC, never new declarations.
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)resource\\s+\\w+\\s+'Microsoft\\.Network/virtualNetworks@[^']+'\\s+existing\\s*="
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)resource\\s+\\w+\\s+'Microsoft\\.Network/virtualNetworks/subnets@[^']+'\\s+existing\\s*="
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)resource\\s+\\w+\\s+'Microsoft\\.OperationalInsights/workspaces@[^']+'\\s+existing\\s*="
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)resource\\s+\\w+\\s+'Microsoft\\.KeyVault/vaults@[^']+'\\s+existing\\s*="
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)resource\\s+\\w+\\s+'Microsoft\\.(Network/virtualNetworks(?:/subnets)?|OperationalInsights/workspaces|KeyVault/vaults)@[^']+'\\s*="
+
+      # New resources are connected to each of the three existing integration points.
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?is)Microsoft\\.Network/privateEndpoints.*subnet\\s*:\\s*\\{.*id\\s*:"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?is)Microsoft\\.Insights/diagnosticSettings.*workspaceId\\s*:"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?is)Microsoft\\.Authorization/roleAssignments.*(scope\\s*:.*keyVault|keyVault.*scope\\s*:)"
+
+      # Referenced mode still produces artifacts, but deployment remains gated.
+      - type: output-matches
+        config:
+          pattern: "(?is)(existing|referenc|additive).*(confirm|confirmation).{0,160}(deploy|deployment)|(deploy|deployment).{0,160}(confirm|confirmation)"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)az\s+deployment\s+(group|sub|mg|tenant)\s+create\b|terraform\s+(apply|destroy)\b|--mode\s+complete\b'
+              description: "No deployment or destructive mode before confirmation"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+
+  # Declared Terraform infrastructure must use data sources and remain untouched.
+  - name: "Brownfield Workload - Existing Terraform is reused and wired"
+    turns:
+      - |
+        The resources declared in existing-infrastructure.tf are already deployed.
+        Add a secure Storage account with a private endpoint in the existing
+        private-endpoints subnet. Send diagnostics to the existing Log Analytics
+        workspace and grant a new user-assigned managed identity access to the existing
+        Key Vault. Incorporate all existing resources through Terraform data sources;
+        never recreate or modify them. Assume sensible defaults and prepare the
+        preliminary resource list. Do not deploy.
+      - "Incorporate all existing resources. The resource list looks good; proceed with the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Terraform IaC for the approved plan. Do not deploy."
+    environment:
+      files:
+        - src: fixture/existing-infrastructure.tf
+          dest: existing-infrastructure.tf
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output-files
+      category: brownfield
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 100
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.tf"
+      - type: file-matches
+        config:
+          path: "existing-infrastructure.tf"
+          pattern: "(?s)fixture-id: enterprise-planner-referenced-tf-v1.*corp-hub-vnet-tf.*10\\.30\\.0\\.0/16.*corp-ops-law-tf.*corp-shared-kv-tf"
+
+      # Every dependency is looked up rather than placed under Terraform management.
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)data\s+"azurerm_resource_group"\s+"[^"]+"\s*\{'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)data\s+"azurerm_virtual_network"\s+"[^"]+"\s*\{'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)data\s+"azurerm_subnet"\s+"[^"]+"\s*\{'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)data\s+"azurerm_log_analytics_workspace"\s+"[^"]+"\s*\{'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)data\s+"azurerm_key_vault"\s+"[^"]+"\s*\{'
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_(resource_group|virtual_network|subnet|log_analytics_workspace|key_vault)"\s+"[^"]+"\s*\{'
+
+      # New resources are wired to all three shared services.
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_private_endpoint".*subnet_id\s*=.*data\.azurerm_subnet\.'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_monitor_diagnostic_setting".*log_analytics_workspace_id\s*=.*data\.azurerm_log_analytics_workspace\.'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_role_assignment".*scope\s*=.*data\.azurerm_key_vault\.'
+      - type: output-matches
+        config:
+          pattern: "(?is)(existing|data source|referenc|additive).*(confirm|confirmation).{0,160}(deploy|deployment)|(deploy|deployment).{0,160}(confirm|confirmation)"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)terraform\s+(apply|destroy)\b|az\s+deployment\s+(group|sub|mg|tenant)\s+create\b'
+              description: "No deployment or destructive action before confirmation"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+
+  # ── Brownfield: reference material (3) ──
+  # A security baseline must shape the generated plan and Bicep without being edited.
+  - name: "Brownfield Reference Material - Security baseline"
+    turns:
+      - |
+        Use security-baseline.md as authoritative reference material for a confidential
+        document archive. Plan a Storage account, Key Vault, private endpoints, a
+        user-assigned managed identity, and Log Analytics diagnostics. Apply every
+        relevant requirement from the document. Assume sensible defaults and prepare
+        the preliminary resource list. Do not deploy.
+      - "The resource list looks good; proceed with the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Bicep IaC for the approved plan. Do not deploy."
+    environment:
+      files:
+        - src: fixture/security-baseline.md
+          dest: security-baseline.md
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output-files
+      category: brownfield
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 100
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.bicep"
+      - type: file-matches
+        config:
+          path: "security-baseline.md"
+          pattern: "(?s)fixture-id: enterprise-planner-security-v1.*data-classification.*confidential.*cost-center.*CC-4100"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)confidential|CC-4100"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)allowSharedKeyAccess\\s*:\\s*false.*minimumTlsVersion\\s*:\\s*'TLS1_2'|minimumTlsVersion\\s*:\\s*'TLS1_2'.*allowSharedKeyAccess\\s*:\\s*false"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?s)enableRbacAuthorization\\s*:\\s*true.*enablePurgeProtection\\s*:\\s*true|enablePurgeProtection\\s*:\\s*true.*enableRbacAuthorization\\s*:\\s*true"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "publicNetworkAccess\\s*:\\s*'Disabled'"
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?i)(password|clientSecret|accountKey)\\s*:\\s*'[^']+'"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)az\s+deployment\s+(group|sub|mg|tenant)\s+create\b|terraform\s+(apply|destroy)\b'
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+
+  # Network standards must carry through to a generated Terraform topology.
+  - name: "Brownfield Reference Material - Network standards"
+    turns:
+      - |
+        Use network-standards.md as reference material to plan a private Azure
+        Container Apps environment with Azure Container Registry and Blob Storage.
+        Apply its region, naming, address-space, subnet, DNS, egress, and tagging
+        requirements. Assume sensible defaults and prepare the preliminary resource
+        list. Do not deploy.
+      - "The resource list looks good; proceed with the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Terraform IaC for the approved plan. Do not deploy."
+    environment:
+      files:
+        - src: fixture/network-standards.md
+          dest: network-standards.md
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output-files
+      category: brownfield
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 100
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.tf"
+      - type: file-matches
+        config:
+          path: "network-standards.md"
+          pattern: "(?s)fixture-id: enterprise-planner-network-v1.*westus3.*10\\.42\\.0\\.0/16.*private-endpoints.*privatelink\\.blob\\.core\\.windows\\.net"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)westus3|10\\.42\\.0\\.0/16|NW-PROD"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_virtual_network".*10\.42\.0\.0/16'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_subnet".*10\.42\.2\.0/24'
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?i)privatelink\.blob\.core\.windows\.net'
+      - type: file-not-matches
+        config:
+          path: "**/infra/**/*.tf"
+          pattern: '(?s)resource\s+"azurerm_public_ip"'
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)terraform\s+(apply|destroy)\b|az\s+deployment\s+(group|sub|mg|tenant)\s+create\b'
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
+
+  # Governance requirements must produce subscription-scope policy and RBAC IaC.
+  - name: "Brownfield Reference Material - Governance requirements"
+    turns:
+      - |
+        Use governance-requirements.md as authoritative reference material to plan a
+        subscription landing-zone extension. Apply all location, policy, RBAC, required
+        tag, and audit requirements from the document. Assume sensible defaults and
+        prepare the preliminary resource list. Do not deploy.
+      - "The resource list looks good; proceed with the plan."
+      - "Approve the plan as-is."
+      - "Yes, generate the Bicep IaC for the approved plan. Do not deploy."
+    environment:
+      files:
+        - src: fixture/governance-requirements.md
+          dest: governance-requirements.md
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: output-files
+      category: brownfield
+      skill: azure-enterprise-infra-planner
+    constraints:
+      max_turns: 100
+    graders:
+      - type: skill-invocation
+        config:
+          required: ["azure-enterprise-infra-planner"]
+      - type: file-exists
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+      - type: file-exists
+        config:
+          path: "**/infra/main.bicep"
+      - type: file-matches
+        config:
+          path: "governance-requirements.md"
+          pattern: "(?s)fixture-id: enterprise-planner-governance-v1.*eastus2.*westus3.*owner.*cost-center.*environment"
+      - type: file-matches
+        config:
+          path: "**/.azure/infrastructure-plan.json"
+          pattern: "(?i)policy|role assignment|rbac|governance"
+      - type: file-matches
+        config:
+          path: "**/infra/main.bicep"
+          pattern: "targetScope\\s*=\\s*'subscription'"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "Microsoft\\.Authorization/policyAssignments@"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "Microsoft\\.Authorization/roleAssignments@"
+      - type: file-matches
+        config:
+          path: "**/infra/**/*.bicep"
+          pattern: "(?is)owner.*cost-center.*environment|environment.*cost-center.*owner"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: '(?i)az\s+deployment\s+(group|sub|mg|tenant)\s+create\b|terraform\s+(apply|destroy)\b'
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|crashed|unhandled exception|panic:"
