@@ -182,6 +182,20 @@ function Get-SkillVersion {
     return $null
 }
 
+# Extract the plugin version from the top-level .plugin/plugin.json manifest.
+# Returns $null if the file or expected JSON value cannot be read.
+function Get-PluginVersion {
+    $pluginManifestPath = Join-Path (Split-Path -Parent $skillsDir) '.plugin/plugin.json'
+    if (-not (Test-Path -LiteralPath $pluginManifestPath)) { return $null }
+    try {
+        $manifest = Get-Content -LiteralPath $pluginManifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        if ($manifest.version -is [string] -and -not [string]::IsNullOrWhiteSpace($manifest.version)) {
+            return $manifest.version
+        }
+    } catch { }
+    return $null
+}
+
 # === Main Processing ===
 
 # Read entire stdin at once - hooks send one complete JSON per invocation
@@ -417,6 +431,8 @@ if (-not $filePath -and -not $skillName) {
 # === STEP 3: Publish event ===
 
 if ($shouldTrack) {
+    $pluginVersion = Get-PluginVersion
+
     # Build MCP command arguments
     $mcpArgs = @(
         "server", "plugin-telemetry",
@@ -428,6 +444,7 @@ if ($shouldTrack) {
     if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
     if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
     if ($skillVersion) { $mcpArgs += "--skill-version"; $mcpArgs += $skillVersion }
+    if ($pluginVersion) { $mcpArgs += "--plugin-version"; $mcpArgs += $pluginVersion }
     if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }
