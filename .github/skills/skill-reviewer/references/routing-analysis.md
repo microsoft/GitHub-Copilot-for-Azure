@@ -50,7 +50,7 @@ description: "... DO NOT USE FOR: general GCP-to-Azure migration (use azure-clou
 
 After changes, run:
 ```bash
-cd tests && npm test -- --testPathPatterns={skill-name}
+cd tests && npm run test:vally -- --plugin {plugin-dirname} --skill {skill-name}
 ```
 
 ## Known Broad Skills (High Overlap Risk)

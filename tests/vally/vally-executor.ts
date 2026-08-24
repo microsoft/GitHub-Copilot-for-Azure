@@ -24,7 +24,6 @@ export class IntegrationTestAgentRunner implements Executor {
     const normalizedTestName = normalizeTestName(skillName, stimulus.name);
     const agentRunner = useAgentRunner({
       isTest: true,
-      useJest: false,
       testName: normalizedTestName
     });
 
