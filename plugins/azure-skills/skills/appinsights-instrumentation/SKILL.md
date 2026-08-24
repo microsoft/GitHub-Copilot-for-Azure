@@ -48,7 +48,7 @@ No matter which option you choose, recommend the user to create the App Insights
 - If the app is a Node.js app, see [NODEJS guide](references/nodejs.md) for how to modify the JavaScript/TypeScript code.
 - If the app is a Python app, see [PYTHON guide](references/python.md) for how to modify the Python code.
 
-If you have tools to edit code, make the changes and explain what they do. Otherwise, show what changes need to be made.
+For manual instrumentation, if you have tools to edit code, make the changes and explain what they do. Otherwise, show what changes need to be made.
 
 ## SDK Quick References
 
