@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Microsoft Foundry hosted-agent validation report",
+  "type": "object",
+  "required": [
+    "reportId",
+    "generatedAt",
+    "target",
+    "results",
+    "markdownPath"
+  ],
+  "properties": {
+    "reportId": {
+      "type": "string",
+      "pattern": "^[0-9]{8}T[0-9]{6}Z$"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "target": {
+      "type": "object",
+      "required": ["serviceName", "agentRoot"],
+      "properties": {
+        "serviceName": {
+          "type": "string"
+        },
+        "agentRoot": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ruleId", "title", "level", "status", "details", "link"],
+        "properties": {
+          "ruleId": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9]*-[0-9]{3}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "type": "string",
+            "enum": ["error", "warning", "recommendation"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "inconclusive", "skipped"]
+          },
+          "details": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Status rationale, repository evidence, and remediation or missing-evidence guidance."
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "Official best-practice documentation URL from the rule's bestPracticeLink."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "markdownPath": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}
