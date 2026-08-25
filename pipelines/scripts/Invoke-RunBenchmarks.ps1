@@ -6,9 +6,9 @@
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The run requires both a GitHub PAT retrieved from KeyVault and the CAPI integration
-    credentials/environment variables expected by MSBench for the selected agent. The script
-    clones the msbench-benchmarks repo, installs MSBench CLI, and invokes for each model:
+    The run requires CAPI integration credentials retrieved from KeyVault and submitted to
+    MSBench as encrypted environment variables. The script clones the msbench-benchmarks repo,
+    installs MSBench CLI, and invokes for each model:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model> --no-wait
 
     Run IDs are extracted from the output and set as the pipeline output variable RUN_IDS.
@@ -65,20 +65,15 @@
     $pipelineRun = $env:TF_BUILD -eq "True"
 
     $vaultName = "kv-msbench-eval-azuremcp"
-    $secretNameGhPAT = "azure-eval-gh-pat"
     $secretNameCAPIID = "azure-mcp-eval-capi-id"
     $secretNameCAPIHMAC = "azure-mcp-eval-capi-hmac"
 
-    # --- Retrieve GitHub PAT from KeyVault ---
+    # --- Retrieve CAPI credentials from KeyVault ---
     try {
-        Write-Host "Retrieving GitHub PAT from KeyVault $vaultName secret $secretNameGhPAT"
-        $pat = az keyvault secret show --vault-name $vaultName --name $secretNameGhPAT --query value -o tsv
+        Write-Host "Retrieving CAPI credentials from KeyVault $vaultName"
         $capiId = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIID --query value -o tsv
         $capiHmac = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIHMAC --query value -o tsv
 
-        if (!$pat) {
-            throw "Secret $secretNameGhPAT not found in KeyVault $vaultName."
-        }
         if (!$capiId) {
             throw "Secret $secretNameCAPIID not found in KeyVault $vaultName."
         }
@@ -86,19 +81,17 @@
             throw "Secret $secretNameCAPIHMAC not found in KeyVault $vaultName."
         }
 
-        $env:GITHUB_MCP_SERVER_TOKEN = $pat
         $env:CAPI_INTEGRATION_ID = $capiId
         $env:CAPI_HMAC_KEY = $capiHmac
         $env:USE_COPILOT_CLI_VERSION = "latest"
-        # Log the secrets as secret variables to avoid exposing them in logs
+        # Register the credentials as pipeline secrets without logging their values.
         if ($pipelineRun) {
-            Write-Host "##vso[task.setsecret]$pat"
             Write-Host "##vso[task.setsecret]$capiId"
             Write-Host "##vso[task.setsecret]$capiHmac"
         }
     }
     catch {
-        throw "Failed to retrieve GitHub PAT from KeyVault: $_"
+        throw "Failed to retrieve CAPI credentials from KeyVault: $_"
     }
 
     # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
@@ -179,7 +172,8 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--env", "GITHUB_MCP_SERVER_TOKEN CAPI_INTEGRATION_ID CAPI_HMAC_KEY USE_COPILOT_CLI_VERSION",
+            "--encrypted-env", "CAPI_INTEGRATION_ID CAPI_HMAC_KEY",
+            "--env", "USE_COPILOT_CLI_VERSION",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",
             "--no-wait",
