@@ -15,26 +15,19 @@ Do not invoke this sub-skill proactively during agent creation, deployment, invo
 
 ## Workflow
 
-### Step 1: Resolve Inputs
-
-#### Step 1.1: Resolve the Agent Path
+### Step 1: Resolve the Agent Path
 
 1. If the user provided a hosted-agent path, validate that path.
 2. Otherwise, validate whether the current directory is a Microsoft Foundry hosted-agent path.
 3. A valid path must identify a hosted agent configured with `host: azure.ai.agent` in `azure.yaml`.
 4. If neither path is valid, ask the user to provide the Microsoft Foundry hosted-agent path. Do not search other directories.
 
-#### Step 1.2: Resolve Custom Rules
+### Step 2: Load Validation Rules
 
 1. If the user provides an `agent-validation-rules.yaml` file in the prompt, use it as the custom-rules file.
 2. Otherwise, use `<agent-root>/foundry/agent-validation-rules.yaml` when that file exists.
-3. If neither file is available, continue with only the default rules.
-
-### Step 2: Load Validation Rules
-
-1. If Step 1.2 resolved an `agent-validation-rules.yaml` file, read and use only its `rules`.
-2. Otherwise, read and use the `rules` from [references/default-rules.yaml](references/default-rules.yaml).
-3. Each rule contains `id`, `title`, `level`, `when`, `checks`, `statusCriteria`, and `bestPracticeLink`.
+3. If a custom-rules file was resolved, read and use only its `rules`. Otherwise, read and use the `rules` from [references/default-rules.yaml](references/default-rules.yaml).
+4. Each rule contains `id`, `title`, `level`, `when`, `checks`, `statusCriteria`, and `bestPracticeLink`.
 
 ### Step 3: Validate Rules One by One
 
