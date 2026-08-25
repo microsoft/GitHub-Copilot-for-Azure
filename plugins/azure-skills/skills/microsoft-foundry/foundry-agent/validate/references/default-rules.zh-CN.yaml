@@ -1,0 +1,15 @@
+version: 4.3.0
+scope: 存储库审查规则，而非认证控制措施。
+
+rules:
+  - id: TOOL-001
+    title: 通过 Foundry Toolbox 配置和访问 MCP
+    level: recommendation
+    bestPracticeLink: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox"
+    when: 托管智能体使用一个或多个 MCP 服务器。
+    checks: >-
+      检查存在的 azure.yaml 和 toolbox.yaml，并同时检查托管智能体代码和配置。识别智能体使用的每个 MCP 服务器；如果存在本地 Toolbox 定义，请验证每个服务器是否都配置为 Foundry Toolbox 中的工具；同时验证每次 MCP 调用是否使用 Toolbox 使用者终结点，而不是原始 MCP 服务器终结点。Toolbox 可以定义在任一配置文件、两个文件中或存储库外部；如果不存在本地定义，只要代码或配置明确指向 Toolbox 使用者终结点，即可接受仅使用终结点的方式。SDK 包装器和通用 MCP 客户端均有效。
+    statusCriteria:
+      pass: 本地配置将每个 MCP 服务器放入 Foundry Toolbox，并且智能体使用其使用者终结点；或者不存在本地 Toolbox 定义，但智能体明确使用外部管理的 Toolbox 终结点。不存在直接访问 MCP 服务器终结点的代码路径。
+      fail: 本地配置将 MCP 服务器置于 Toolbox 之外，或者任何托管智能体代码路径直接访问 MCP 服务器终结点而不是 Toolbox 使用者终结点。
+      skipped: 托管智能体未使用任何 MCP 服务器。

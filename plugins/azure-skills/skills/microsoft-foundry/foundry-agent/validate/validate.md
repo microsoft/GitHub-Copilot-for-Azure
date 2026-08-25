@@ -32,11 +32,9 @@ Do not invoke this sub-skill proactively during agent creation, deployment, invo
 
 ### Step 2: Load Validation Rules
 
-1. Read and parse [references/default-rules.yaml](references/default-rules.yaml) completely. Each rule contains `id`, `title`, `level`, `when`, `checks`, `statusCriteria`, and `bestPracticeLink`. `level` is `error`, `warning`, or `recommendation`.
-2. If Step 1.2 resolved an `agent-validation-rules.yaml` file, read and parse it completely. Apply its `rules` entries on top of the defaults:
-   - When a custom rule ID duplicates a default rule ID, use the custom rule instead of the default rule.
-   - When that custom rule sets `when: never`, disable the matching default rule and exclude it from evaluation and reports.
-   - A new custom rule ID extends the ruleset.
+1. If Step 1.2 resolved an `agent-validation-rules.yaml` file, read and use only its `rules`.
+2. Otherwise, read and use the `rules` from [references/default-rules.yaml](references/default-rules.yaml).
+3. Each rule contains `id`, `title`, `level`, `when`, `checks`, `statusCriteria`, and `bestPracticeLink`.
 
 ### Step 3: Validate Rules One by One
 
