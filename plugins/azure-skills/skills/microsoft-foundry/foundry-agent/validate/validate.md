@@ -8,7 +8,7 @@ Review one Microsoft Foundry hosted agent against deployment, security, reliabil
 
 Use this sub-skill only when the user explicitly asks to:
 
-- Validate whether hosted-agent code meets Microsoft Foundry best practices.
+- Validate whether Microsoft Foundry hosted-agent code meets Microsoft Foundry best practices.
 - Explicitly use this validation sub-skill.
 
 Do not invoke this sub-skill proactively during agent creation, deployment, invocation, troubleshooting, optimization, or a general code review.
