@@ -67,7 +67,8 @@
                 "type": "string",
                 "minLength": 1
               }
-            }
+            },
+            "additionalProperties": false
           },
           "guidance": {
             "type": "array",
