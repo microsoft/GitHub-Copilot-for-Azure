@@ -13,7 +13,7 @@ Use this sub-skill only when the user explicitly asks to:
 
 Do not invoke this sub-skill proactively during agent creation, deployment, invocation, troubleshooting, optimization, or a general code review.
 
-## Workflow
+## Hosted Agent Validation Workflow
 
 ### Step 1: Resolve the Agent Path
 
@@ -22,35 +22,27 @@ Do not invoke this sub-skill proactively during agent creation, deployment, invo
 3. A valid path must identify a hosted agent configured with `host: azure.ai.agent` in `azure.yaml`.
 4. If neither path is valid, ask the user to provide the Microsoft Foundry hosted-agent path. Do not search other directories.
 
-### Step 2: Load Validation Rules
+### Step 2: Load and Validate Rules
 
-1. If the user provides an `agent-validation-rules.yaml` file in the prompt, use it as the custom-rules file.
-2. Otherwise, use `<agent-root>/foundry/agent-validation-rules.yaml` when that file exists.
-3. If a custom-rules file was resolved, read and use only its `rules`. Otherwise, read and use the `rules` from [references/default-rules.yaml](references/default-rules.yaml).
-4. Each rule contains `id`, `title`, `level`, `rationale`, `when`, `checks`, `statusCriteria`, and a `guidance` array of URLs.
+1. Select exactly one rules file:
+   - If the prompt provides `agent-validation-rules.yaml`, use it.
+   - Otherwise, if `<agent-root>/foundry/agent-validation-rules.yaml` exists, use it.
+   - Otherwise, use [default-rules.yaml](references/default-rules.yaml).
+2. **Optional — custom rules only:** Validate a custom `rulesFile` against [rules-schema.json](references/rules-schema.json). If validation fails, list all errors and stop without evaluating rules, writing reports, or falling back to defaults.
+3. Record the selected path as `rulesFile`. Step 3 must use only the `rules` from `rulesFile`.
 
 ### Step 3: Validate Rules One by One
 
-Process active rules sequentially. Complete one rule before starting the next:
+Use only the `rules` from the `rulesFile` selected in Step 2. Process them in order:
 
-1. Select the next rule and read its `rationale`, `when`, `checks`, `statusCriteria`, and `guidance`.
-2. Determine whether its `when` condition applies using only files under the hosted-agent root.
-   - If it does not apply, set `status` to `skipped` and record why.
-   - If it applies, follow the rule's `checks` instruction.
-3. To perform `checks`, inspect only the relevant source, dependency manifests, configuration, IaC, workflows, evaluations, ignore files, or documentation.
-4. Do not inspect environments, dependency caches, build output, generated results, or files outside the hosted-agent root.
-5. Generate exactly one result:
-   - `ruleId`: copy the rule's `id`.
-   - `title`: copy the rule's `title`.
-   - `level`: copy the rule's `level`.
-   - `status`:
-     - Use `skipped` when the `when` condition does not apply.
-     - Use `pass` only when the evidence establishes the `pass` criteria.
-     - Use `fail` only when the evidence establishes the `fail` criteria.
-     - Use `inconclusive` when the evidence establishes neither `pass` nor `fail`.
-   - `details`: use the rule's `rationale` to explain why it matters, explain why the selected `status` matches `when` and `statusCriteria`, and cite relevant repository evidence with `file:line` when available. For `fail`, explain how to fix the issue. For `inconclusive`, explain what evidence is missing. For `skipped`, explain why the rule does not apply.
-   - `guidance`: copy the rule's `guidance` URL array.
-6. Repeat Steps 1-5 until every active rule has exactly one result.
+1. If `when` does not apply, use `skipped`. Otherwise, perform `checks` using only relevant files under the hosted-agent root.
+2. Exclude environments, dependency caches, build output, generated results, and files outside the hosted-agent root.
+3. Compare the evidence with `statusCriteria`: use `pass` or `fail` only when proved; otherwise use `inconclusive`.
+4. Create one result with:
+   - `ruleId`, `title`, and `level` copied from the rule.
+   - `status` selected above.
+   - `details` containing the rationale, evidence with `file:line` when available, remediation for `fail`, missing evidence for `inconclusive`, or the reason for `skipped`.
+   - `guidance` copied from the rule.
 
 ### Step 4: Generate Reports
 
