@@ -35,7 +35,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["ruleId", "title", "level", "status", "details", "link"],
+        "required": ["ruleId", "title", "level", "status", "details", "guidance"],
         "properties": {
           "ruleId": {
             "type": "string",
@@ -58,10 +58,14 @@
             "minLength": 1,
             "description": "Status rationale, repository evidence, and remediation or missing-evidence guidance."
           },
-          "link": {
-            "type": "string",
-            "format": "uri",
-            "description": "Official best-practice documentation URL from the rule's bestPracticeLink."
+          "guidance": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Guidance URLs copied from the rule."
           }
         },
         "additionalProperties": false

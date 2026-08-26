@@ -15,7 +15,7 @@ Create one subsection for each active rule:
 
 - **Level:** error / warning / recommendation
 - **Status:** pass / fail / inconclusive / skipped
-- **Best practice:** Render the rule's `bestPracticeLink` as a Markdown link.
+- **Guidance:** Render every URL from the rule's `guidance` array as a Markdown link.
 
 #### Details
 

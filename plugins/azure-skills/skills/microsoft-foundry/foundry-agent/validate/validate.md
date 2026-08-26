@@ -27,13 +27,13 @@ Do not invoke this sub-skill proactively during agent creation, deployment, invo
 1. If the user provides an `agent-validation-rules.yaml` file in the prompt, use it as the custom-rules file.
 2. Otherwise, use `<agent-root>/foundry/agent-validation-rules.yaml` when that file exists.
 3. If a custom-rules file was resolved, read and use only its `rules`. Otherwise, read and use the `rules` from [references/default-rules.yaml](references/default-rules.yaml).
-4. Each rule contains `id`, `title`, `level`, `when`, `checks`, `statusCriteria`, and `bestPracticeLink`.
+4. Each rule contains `id`, `title`, `level`, `rationale`, `when`, `checks`, `statusCriteria`, and a `guidance` array of URLs.
 
 ### Step 3: Validate Rules One by One
 
 Process active rules sequentially. Complete one rule before starting the next:
 
-1. Select the next rule and read its `when`, `checks`, `statusCriteria`, and `bestPracticeLink`.
+1. Select the next rule and read its `rationale`, `when`, `checks`, `statusCriteria`, and `guidance`.
 2. Determine whether its `when` condition applies using only files under the hosted-agent root.
    - If it does not apply, set `status` to `skipped` and record why.
    - If it applies, follow the rule's `checks` instruction.
@@ -48,8 +48,8 @@ Process active rules sequentially. Complete one rule before starting the next:
      - Use `pass` only when the evidence establishes the `pass` criteria.
      - Use `fail` only when the evidence establishes the `fail` criteria.
      - Use `inconclusive` when the evidence establishes neither `pass` nor `fail`.
-   - `details`: explain why the selected `status` matches `when` and `statusCriteria`, and cite relevant repository evidence with `file:line` when available. For `fail`, explain how to fix the issue. For `inconclusive`, explain what evidence is missing. For `skipped`, explain why the rule does not apply.
-   - `link`: copy the rule's `bestPracticeLink`.
+   - `details`: use the rule's `rationale` to explain why it matters, explain why the selected `status` matches `when` and `statusCriteria`, and cite relevant repository evidence with `file:line` when available. For `fail`, explain how to fix the issue. For `inconclusive`, explain what evidence is missing. For `skipped`, explain why the rule does not apply.
+   - `guidance`: copy the rule's `guidance` URL array.
 6. Repeat Steps 1-5 until every active rule has exactly one result.
 
 ### Step 4: Generate Reports
