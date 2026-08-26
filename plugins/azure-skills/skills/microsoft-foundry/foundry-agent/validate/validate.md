@@ -48,7 +48,7 @@ Use only the `rules` from the `rulesFile` selected in Step 2. Process them in or
 
 1. Read the [report schema](references/report-schema.json) and [report template](references/report-template.md).
 2. Create one UTC `reportId` in `YYYYMMDDTHHMMSSZ` format and use it for both report filenames.
-3. Build the JSON report from the completed rule results. Include every active rule exactly once, set `target.agentRoot` to the hosted-agent root, set `markdownPath` to `.foundry/results/validation-<reportId>.md`, and follow the report schema.
+3. Build the JSON report from the completed rule results. Include every active rule exactly once, set `target.serviceName` to the selected `azure.yaml` service name, set `target.agentRoot` to the hosted-agent root, set `markdownPath` to `.foundry/results/validation-<reportId>.md`, and follow the report schema.
 4. Build the Markdown report from the same results and follow the report template. Keep its meaning consistent with the JSON report.
 5. Write both files under the hosted-agent root:
 
