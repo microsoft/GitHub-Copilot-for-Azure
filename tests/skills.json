@@ -40,6 +40,16 @@
             }
         },
         {
+            "name": "aks-skills",
+            "dirname": "aks-skills",
+            "skills": [
+                "aks-network-capture"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "aks-network-capture"
+            }
+        },
+        {
             "name": "azure-kusto-graph-skills",
             "dirname": "azure-kusto-graph-skills",
             "skills": [

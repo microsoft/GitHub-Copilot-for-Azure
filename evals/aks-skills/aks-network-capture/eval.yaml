@@ -1,0 +1,49 @@
+name: aks-network-capture-agentic-eval
+description: |
+  Routing evaluation for aks-network-capture. Explicit packet-capture intent
+  invokes this skill; generic AKS connectivity does not.
+
+tags:
+  type: integration
+  skill: aks-network-capture
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring: {}
+
+stimuli:
+  - name: "Routing: explicit node packet capture"
+    prompt: "Capture packets on the AKS node hosting my pod and give me a pcap so I can prove where port 443 traffic is being dropped."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-network-capture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Routing: generic egress failure"
+    prompt: "Pods in my AKS cluster cannot reach external services and egress seems blocked. Help me investigate."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - aks-network-capture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
