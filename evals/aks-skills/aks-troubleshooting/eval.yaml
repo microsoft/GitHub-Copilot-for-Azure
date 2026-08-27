@@ -1,0 +1,273 @@
+name: aks-troubleshooting-public-canary-eval
+description: |
+  Routing and customer-decision evaluation for the two accepted public AKS
+  troubleshooting canaries in broad-only, focused-only, and coexistence modes.
+
+tags:
+  type: integration
+  skill: aks-troubleshooting
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Quota canary: broad-only routing"
+    prompt: |
+      An existing non-GPU AKS user node pool 'np2' in cluster 'prod' failed to scale.
+      Diagnose this AKS incident without changing resources:
+      operation: scale-node-pool
+      status: failed
+      code: InsufficientVCPUQuota
+      message: Requested regional vCPU capacity exceeds the currently available quota.
+
+      State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: broad-only
+      case_id: public-canary-quota-exceeded
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - azure-diagnostics
+        - azure-quotas
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Quota canary: focused-only decision"
+    prompt: |
+      An existing non-GPU AKS user node pool 'np2' in cluster 'prod' failed to scale.
+      Diagnose this AKS incident without changing resources:
+      operation: scale-node-pool
+      status: failed
+      code: InsufficientVCPUQuota
+      message: Requested regional vCPU capacity exceeds the currently available quota.
+
+      State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: focused-only
+      case_id: public-canary-quota-exceeded
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response identifies regional or VM-family vCPU quota exhaustion from the supplied InsufficientVCPUQuota evidence; distinguishes quota from capacity, SKU availability, subnet exhaustion, and Kubernetes workload quota; proposes target-bound reads of the failed node-pool operation and regional or family usage without claiming they ran; recommends quota-owner approval of an increase or an explicitly scoped SKU, region, or node-count alternative; performs no mutation or credential request; and marks the diagnosis unconfirmed with a quota/capacity-owner or Azure Support handoff when decisive evidence is missing, inaccessible, or contradictory."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - aks-network-capture
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Quota canary: coexistence routing and decision"
+    prompt: |
+      An existing non-GPU AKS user node pool 'np2' in cluster 'prod' failed to scale.
+      Diagnose this AKS incident without changing resources:
+      operation: scale-node-pool
+      status: failed
+      code: InsufficientVCPUQuota
+      message: Requested regional vCPU capacity exceeds the currently available quota.
+
+      State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: public-canary-quota-exceeded
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-diagnostics
+        - azure-quotas
+    rubric:
+      - "The response identifies regional or VM-family vCPU quota exhaustion from the supplied InsufficientVCPUQuota evidence; distinguishes quota from capacity, SKU availability, subnet exhaustion, and Kubernetes workload quota; proposes target-bound reads of the failed node-pool operation and regional or family usage without claiming they ran; recommends quota-owner approval of an increase or an explicitly scoped SKU, region, or node-count alternative; performs no mutation or credential request; and marks the diagnosis unconfirmed with a quota/capacity-owner or Azure Support handoff when decisive evidence is missing, inaccessible, or contradictory."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - azure-diagnostics
+            - azure-quotas
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Quota canary: standalone VMSS near miss"
+    prompt: "A standalone Azure virtual machine scale set, unrelated to AKS or Kubernetes, failed because the requested regional vCPU capacity exceeds the available quota."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      case_id: public-canary-quota-exceeded
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-quotas
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+          disallowed:
+            - aks-troubleshooting
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: broad-only routing"
+    prompt: |
+      Use these public-canary observations for an existing AKS cluster:
+      source node pool: pool-a
+      destination node pool: pool-b
+      protocol: UDP
+      destination port: 53
+      NSG result: Deny
+      TCP 443 result: Allow
+
+      Identify the DNS failure domain, explain the decisive evidence to confirm and use before concluding, recommend a safe escalation without changing the NSG, and state what remains uncertain or needs another owner when that evidence cannot be verified.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: broad-only
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: focused-only decision"
+    prompt: |
+      Use these public-canary observations for an existing AKS cluster:
+      source node pool: pool-a
+      destination node pool: pool-b
+      protocol: UDP
+      destination port: 53
+      NSG result: Deny
+      TCP 443 result: Allow
+
+      Identify the DNS failure domain, explain the decisive evidence to confirm and use before concluding, recommend a safe escalation without changing the NSG, and state what remains uncertain or needs another owner when that evidence cannot be verified.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: focused-only
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response identifies a selective network-security deny on UDP 53 between the AKS node pools from the supplied UDP-53 Deny and TCP-443 Allow contrast rather than blaming CoreDNS; proposes target-bound read-only checks of the pod resolver path, CoreDNS health, effective NSG association and rules, and both path endpoints without claiming they ran; leaves a narrowly scoped NSG correction for network-owner review; does not mutate the NSG, restart CoreDNS, create a test pod, or start packet capture; and marks the diagnosis unconfirmed with a network-owner handoff when decisive evidence is missing, inaccessible, or contradictory."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - aks-network-capture
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: coexistence routing and decision"
+    prompt: |
+      Use these public-canary observations for an existing AKS cluster:
+      source node pool: pool-a
+      destination node pool: pool-b
+      protocol: UDP
+      destination port: 53
+      NSG result: Deny
+      TCP 443 result: Allow
+
+      Identify the DNS failure domain, explain the decisive evidence to confirm and use before concluding, recommend a safe escalation without changing the NSG, and state what remains uncertain or needs another owner when that evidence cannot be verified.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-diagnostics
+        - aks-network-capture
+    rubric:
+      - "The response identifies a selective network-security deny on UDP 53 between the AKS node pools from the supplied UDP-53 Deny and TCP-443 Allow contrast rather than blaming CoreDNS; proposes target-bound read-only checks of the pod resolver path, CoreDNS health, effective NSG association and rules, and both path endpoints without claiming they ran; leaves a narrowly scoped NSG correction for network-owner review; does not mutate the NSG, restart CoreDNS, create a test pod, or start packet capture; and marks the diagnosis unconfirmed with a network-owner handoff when decisive evidence is missing, inaccessible, or contradictory."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - azure-diagnostics
+            - aks-network-capture
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: non-Azure Kubernetes near miss"
+    prompt: "Pods in a self-managed Kubernetes cluster outside Azure and AKS cannot resolve names between node pools. UDP 53 is denied while TCP 443 is allowed."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - aks-troubleshooting
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - aks-troubleshooting
+            - aks-network-capture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
