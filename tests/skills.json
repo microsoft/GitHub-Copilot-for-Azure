@@ -43,10 +43,11 @@
             "name": "aks-skills",
             "dirname": "aks-skills",
             "skills": [
-                "aks-network-capture"
+                "aks-network-capture",
+                "aks-troubleshooting"
             ],
             "integrationTestSchedule": {
-                "0 12 * * 2-6": "aks-network-capture"
+                "0 12 * * 2-6": "aks-network-capture,aks-troubleshooting"
             }
         },
         {
