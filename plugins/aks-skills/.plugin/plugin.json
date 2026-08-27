@@ -1,0 +1,22 @@
+{
+  "name": "aks-skills",
+  "description": "AKS-focused operational skills for packet-level network capture and evidence collection.",
+  "version": "0.0.0-placeholder",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": [
+    "azure",
+    "aks",
+    "kubernetes",
+    "networking",
+    "packet-capture"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/copilot-hooks.json"
+}
