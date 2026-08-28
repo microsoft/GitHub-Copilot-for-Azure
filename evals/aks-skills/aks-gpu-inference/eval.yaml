@@ -1,0 +1,246 @@
+name: aks-gpu-inference-day2-eval
+description: |
+  Routing and evidence-contract evaluation for AKS GPU and KAITO Day-2
+  diagnosis against neighboring setup, troubleshooting, quota, and cost skills.
+
+tags:
+  type: integration
+  skill: aks-gpu-inference
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "GPU Pending: profile-aware four-wall diagnosis"
+    prompt: |
+      Diagnose without running commands or changing resources. Two existing AKS
+      GPU pools show pods Pending with "Insufficient nvidia.com/gpu":
+
+      - pool managed: gpuProfile driver=Install, managementMode=Managed;
+        enableAutoScaling=true; node allocatable has no nvidia.com/gpu.
+      - pool driveronly: gpuProfile driver=Install,
+        managementMode=Unmanaged; node allocatable has no nvidia.com/gpu and no
+        NVIDIA device-plugin pod.
+
+      For both pools, the pod requests nvidia.com/gpu: 1 but its tolerations,
+      selected GPU-family regional quota, failed allocation operation, and live
+      SKU restrictions were not supplied. Give the read-only evidence plan,
+      distinguish the profiles, and state what remains uncertain.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-gpu-inference
+        - aks-troubleshooting
+        - azure-diagnostics
+        - azure-quotas
+    rubric:
+      - "The response invokes the GPU Day-2 path; treats regional and exact GPU-family quota, capacity and SKU eligibility, pod taints/tolerations plus nvidia.com/gpu request, and the observed gpuProfile as four distinct evidence walls; explains that the Managed+Install pool should have an AKS-managed device plugin while the Unmanaged+Install pool has only an AKS-installed driver and needs its customer-managed device plugin; identifies the missing device plugin as supported evidence only for the driver-only pool and does not assert a final cause for the managed pool without component or node-health evidence; flags enableAutoScaling=true as unsupported for managed GPU preview and never recommends cluster-autoscaler scale-to-zero there; proposes only target-bound reads, marks missing quota/capacity/scheduling evidence uncertain with an owner handoff, claims no checks ran, and requires explicit authorization before repair, scaling, cordon/drain, pool creation/deletion, add-on enablement, or monitoring mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-gpu-inference]
+          disallowed: [aks-troubleshooting, azure-diagnostics, azure-quotas]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "KAITO not ready: documented evidence and cleanup warning"
+    prompt: |
+      An existing KAITO Workspace has been observed for 27 minutes and is still
+      not ready. Its status reports ResourceReady=False and
+      WorkspaceSucceeded=False. The AKS region and Workspace instance type are
+      known, but GPU-family quota usage and regional SKU restrictions were not
+      collected. Diagnose without running commands, deleting anything, enabling
+      the add-on, or changing the Workspace. Include the cleanup implications if
+      Workspace deletion is considered later.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-gpu-inference
+        - airunway-aks-setup
+        - azure-quotas
+    rubric:
+      - "The response recognizes that 27 minutes exceeds the Microsoft Learn statement that machine readiness can take up to 10 minutes and Workspace readiness up to 20 minutes depending on model size; uses only the supplied Workspace readiness/status evidence and proposes read-only exact GPU-family quota and region/instance-type availability or restriction checks; does not invent NodeClaim names, controller logs, or undocumented condition chains; marks quota versus regional availability unconfirmed until evidence is collected and gives a cluster/quota-owner or Azure Support handoff; warns that deleting a Workspace does not delete its GPU node pool and that the pool requires separate manual cleanup; claims no check ran and requires separate explicit authorization before Workspace or pool deletion, scaling, add-on enablement, or monitoring mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-gpu-inference]
+          disallowed: [airunway-aks-setup, azure-quotas]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Model-load OOM: managed DCGM VRAM evidence"
+    prompt: |
+      Diagnose without running commands or changing monitoring. An existing
+      model server on an AKS pool with gpuProfile driver=Install and
+      managementMode=Managed terminated during weight loading. Kubernetes shows
+      OOMKilled at 14:03Z. No node-memory-pressure condition exists, and no DCGM
+      samples were supplied. State the evidence needed to decide whether this
+      was GPU VRAM exhaustion.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: model-load-oom
+      requiredSkills:
+        - aks-gpu-inference
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response does not treat OOMKilled or absent Kubernetes node memory pressure as proof of VRAM exhaustion; identifies managed DCGM exporter port 19400 for the observed Managed+Install profile; asks for target-bound DCGM_FI_DEV_FB_USED and DCGM_FI_DEV_FB_FREE samples for the affected GPU and incident window correlated with pod/container termination and model-load logs; explains that rising FB_USED and exhausted FB_FREE would support VRAM pressure; marks the conclusion unconfirmed if historical telemetry is absent; avoids generic CPU-memory limit advice and model/SKU sizing tables; claims no reads ran and requires explicit authorization before monitoring mutation, scaling, restart, cordon/drain, or pool changes."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-gpu-inference]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "GPU scaling: KEDA workload versus node pool"
+    prompt: |
+      An existing AKS GPU Deployment is controlled by a KEDA ScaledObject using
+      DCGM_FI_DEV_GPU_UTIL. The HPA says ScalingActive=False because its
+      s0-prometheus external metric is unavailable. A separate GPU pod is
+      Pending because no GPU node is schedulable. The pool's gpuProfile and
+      enableAutoScaling values were not supplied. Diagnose both loops without
+      enabling monitoring/KEDA, scaling anything, or changing resources.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-gpu-inference
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response separates KEDA/HPA workload-replica scaling from AKS GPU node-pool scaling; uses the unavailable s0-prometheus metric and HPA ScalingActive condition only for the workload loop; proposes target-bound reads of the ScaledObject query, HPA conditions, external metric, and intended workload; requires observed gpuProfile and enableAutoScaling before discussing node capacity; states that managed GPU preview pools do not support cluster autoscaler and never recommends cluster-autoscaler scale-to-zero without first proving a non-managed profile; marks both loops unconfirmed beyond the supplied evidence, claims no checks ran, and requires explicit authorization before enabling KEDA/monitoring/autoscaling or scaling/changing resources."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-gpu-inference]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: initial GPU and KAITO setup"
+    prompt: |
+      Create my first AKS GPU node pool, enable the AI toolchain operator, choose
+      a KAITO model and provider, and deploy a new Workspace for inference.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-gpu-inference
+        - airunway-aks-setup
+    graders:
+      - type: skill-invocation
+        config:
+          required: [airunway-aks-setup]
+          disallowed: [aks-gpu-inference]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: non-GPU AKS incident"
+    prompt: |
+      A CPU-only pod on my existing AKS system pool is Pending after a node
+      became NotReady. There are no GPU resources or inference workloads.
+      Investigate without changing the cluster.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-gpu-inference
+        - aks-troubleshooting
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-gpu-inference, azure-diagnostics]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: standalone VM quota"
+    prompt: |
+      A standalone Azure virtual machine, unrelated to AKS or Kubernetes, cannot
+      be created because the selected VM family has insufficient regional vCPU
+      quota. Help me inspect the quota.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-gpu-inference
+        - azure-quotas
+        - azure-compute
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-quotas]
+          disallowed: [aks-gpu-inference]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: generic Azure cost"
+    prompt: |
+      Analyze my overall Azure bill, find the biggest subscription-level cost
+      changes, and recommend general savings opportunities. This is not an AKS
+      GPU incident.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-gpu-inference
+        - azure-cost
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-cost]
+          disallowed: [aks-gpu-inference]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
