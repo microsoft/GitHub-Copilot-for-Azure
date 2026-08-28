@@ -1,0 +1,230 @@
+name: aks-known-issues-coexistence-eval
+description: |
+  Deterministic routing and customer-decision evaluation for named AKS
+  signatures competing with AKS troubleshooting and broad Azure diagnostics.
+
+tags:
+  type: integration
+  skill: aks-known-issues
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Known issue: ephemeral OS disk signature"
+    prompt: |
+      An AKS node-pool create operation failed with code
+      VMCannotFitEphemeralOSDisk. Diagnose it and recommend the safe next step,
+      but do not run checks or change resources.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response attributes the exact VMCannotFitEphemeralOSDisk signature to an ephemeral OS disk that does not fit the selected VM SKU cache or temporary storage; cites the Microsoft Learn ephemeral OS disk guidance; proposes a read-only comparison of requested disk size and SKU storage before recommending a fitting SKU, smaller disk, or managed disk and notes that changing disk type or size requires a new node pool; does not claim any check ran; and requires explicit approval before creating or changing resources."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-known-issues]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Known issue: nested CSE exit 50"
+    prompt: |
+      An AKS scale operation returned VMExtensionProvisioningError from vmssCSE:
+      CSE failed with VMExtensionError_OutboundConnFail; node provisioning could
+      not obtain packages; exit status 50. Diagnose and advise without running
+      checks or making changes.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response uses the AKS vmssCSE VMExtensionError_OutboundConnFail and exit-50 context to identify blocked outbound connectivity needed to obtain node-provisioning packages; cites the Microsoft Learn OutboundConnFail article; proposes read-only connectivity and firewall, proxy, NSG, UDR, DNS, and required-egress inspection before a documented network correction; does not claim those checks ran; and requires explicit approval before changing network or cluster resources."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-known-issues]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Known issue: message-qualified AllocationFailed"
+    prompt: |
+      An AKS node-pool scale operation returned code AllocationFailed with the
+      full nested message: "The VM allocation failed due to an internal error.
+      Please retry later or try deploying to a different location." Diagnose it,
+      including what to verify before acting, but do not run checks or retry.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response uses the full nested AllocationFailed message to identify the documented internal allocation error and does not mislabel it as quota or capacity exhaustion; cites the Microsoft Learn AKS allocation-error article; proposes read-only confirmation of the failed operation and exact message before recommending a later retry or another location; does not claim verification ran; and requires explicit approval before retrying or redeploying."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-known-issues]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Known issue: corrected node-pool version skew"
+    prompt: |
+      An AKS node-pool upgrade failed with NodePoolMcVersionIncompatible.
+      The control plane is 1.33 and the node pool is 1.30. Explain the rule and
+      safe fix, including what to verify first, but do not run checks or upgrade.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response states that an AKS node pool must remain within two minor versions of the control plane and cannot exceed the control-plane version, so 1.30 is incompatible with 1.33; cites the current Microsoft Learn NodePoolMcVersionIncompatible article; proposes read-only retrieval of control-plane, node-pool, and available upgrade versions before selecting a compliant node-pool version; does not claim those reads ran; and requires explicit approval before upgrading."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-known-issues]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: bare wrapper and context-free exit"
+    prompt: |
+      A node in my AKS cluster reports the outer wrapper
+      VMExtensionProvisioningError. A separate log line says exit code 50, but
+      I do not have vmssCSE/CSE output or a nested error signature. Investigate
+      this live AKS incident and identify the missing evidence.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-known-issues, azure-diagnostics]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: bare AllocationFailed"
+    prompt: |
+      My AKS node-pool scale operation returned code AllocationFailed, but the
+      nested Azure message is missing. Help me investigate the failure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-known-issues, azure-diagnostics]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: generic AKS capacity symptom"
+    prompt: |
+      My AKS node-pool upgrade is stuck because it cannot add surge capacity.
+      There is no stable error code or full allocation message. Investigate it
+      without changing the cluster.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-known-issues, azure-diagnostics]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: non-AKS LinkedAuthorizationFailed"
+    prompt: |
+      A standalone Azure virtual network deployment, unrelated to AKS or
+      Kubernetes, failed with LinkedAuthorizationFailed on a linked DDoS plan.
+      Debug this Azure production deployment failure, analyze the relevant
+      Activity Log evidence, and identify the root cause.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence-negative
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-diagnostics]
+          disallowed: [aks-known-issues, aks-troubleshooting]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
