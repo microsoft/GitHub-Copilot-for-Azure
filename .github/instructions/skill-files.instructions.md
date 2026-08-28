@@ -25,7 +25,7 @@ metadata:
 - **description**: 1-1024 characters, explain WHAT the skill does and WHEN to use it. Include trigger phrases.
 - **license**: Required for all skills. Use `MIT` unless there is a documented exception.
 - **metadata.author**: Recommended value is `Microsoft`.
-- **metadata.version**: Semver format (`X.Y.Z`). Set to `"0.0.0-placeholder"` for new skills. For skills under `plugins/`, versions are stamped automatically at build time by NBGV — use `"0.0.0-placeholder"` in source. For skills elsewhere (e.g., `.github/skills/`), set a real version and bump it in the same PR that modifies the skill.
+- **metadata.version**: Set to `"0.0.0-placeholder"` for new skills. For skills under `plugins/`, versions are stamped automatically at build time by NBGV — use `"0.0.0-placeholder"` in source. For skills elsewhere (e.g., `.github/skills/`), set a real X.Y.Z version and bump it in the same PR that modifies the skill.
 
 ## Size Limits
 
