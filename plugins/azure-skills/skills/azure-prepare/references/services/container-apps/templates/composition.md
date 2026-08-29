@@ -9,8 +9,7 @@ Step-by-step algorithm for composing a Container Apps base template with integra
 ```
 INPUT:
   - base:        web-app | api | microservice | worker | job | functions-on-aca
-  - recipes:     dapr | cosmos | servicebus | redis | acr | postgres (zero or more)
-  - iac:         bicep | terraform
+  - recipes:     dapr | cosmos | servicebus | eventhubs | redis | acr | postgres
 
 OUTPUT:
   - Complete project directory ready for `azd up`
@@ -18,13 +17,16 @@ OUTPUT:
 
 ### Step 1: Select Base Template
 
-Choose the base template from [selection.md](../selection.md) based on the workload type.
-Use `-t <template-name>` when initializing new projects so the project starts from proven IaC. Only omit `-t` if you are inside an existing template directory.
+Choose one base guide from [selection.md](selection.md). These files are generation
+guidance, not published AZD template identifiers.
 
 ```bash
 ENV_NAME="$(basename "$PWD" | tr '[:upper:]' '[:lower:]' | tr ' _' '-')-dev"
-azd init -t "<template-name-from-selection.md>" -e "$ENV_NAME" --no-prompt
+azd init -e "$ENV_NAME" --no-prompt
 ```
+
+Generate the application, multi-stage [Dockerfile](dockerfiles/README.md), `azure.yaml`,
+and base infrastructure from the selected guide. Preserve existing project files in MODIFY mode.
 
 ### Step 2: Check if Recipes Needed
 
@@ -40,12 +42,13 @@ IF recipes detected:
 
 Read the recipe's README for IaC patterns, env vars, RBAC roles, and scaling rules:
 
-- [recipes/acr/README.md](acr/README.md) — Container Registry build + push
-- [recipes/cosmos/README.md](cosmos/README.md) — Cosmos DB NoSQL
-- [recipes/dapr/README.md](dapr/README.md) — Dapr components (state, pub/sub, invocation, secrets)
-- [recipes/postgres/README.md](postgres/README.md) — PostgreSQL Flexible Server
-- [recipes/redis/README.md](redis/README.md) — Redis cache / state store
-- [recipes/servicebus/README.md](servicebus/README.md) — Service Bus messaging + KEDA scaling
+- [ACR](recipes/acr/README.md) — Container Registry build + push
+- [Cosmos DB](recipes/cosmos/README.md) — Cosmos DB NoSQL
+- [Dapr](recipes/dapr/README.md) — state, pub/sub, invocation, secrets
+- [Event Hubs](recipes/eventhubs/README.md) — streaming + KEDA scaling
+- [PostgreSQL](recipes/postgres/README.md) — PostgreSQL Flexible Server
+- [Redis](recipes/redis/README.md) — cache / state store
+- [Service Bus](recipes/servicebus/README.md) — messaging + KEDA scaling
 
 **Bicep:**
 1. Create recipe Bicep module in `infra/app/` based on the recipe's documented patterns
@@ -62,10 +65,6 @@ Read the recipe's README for IaC patterns, env vars, RBAC roles, and scaling rul
      }
    }
    ```
-
-**Terraform:**
-1. Copy recipe `.tf` file into `infra/`
-2. Merge recipe app settings into container app environment variables
 
 ### Step 4: Add Environment Variables
 
@@ -137,8 +136,8 @@ Base (web-app)
 
 ## Critical Rules
 
-1. **Never synthesize IaC from scratch** — always extend base template
-2. **Don't replace or remove base IaC resources** — extend base files only by adding module references and additive resources
+1. **Generate from the selected base guide** — do not pass Markdown filenames to `azd init -t`
+2. **Don't replace or remove existing IaC resources** — merge additive modules in MODIFY mode
 3. **Always use recipe RBAC role GUIDs** — never let the LLM guess role IDs
 4. **Always use UAMI** — never use connection strings or access keys
 5. **Always use `--no-prompt`** with azd commands

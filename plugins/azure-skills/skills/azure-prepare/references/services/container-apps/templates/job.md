@@ -55,7 +55,7 @@ param imageName string
 param userAssignedIdentityId string
 param cronExpression string = '0 0 * * *'
 
-resource job 'Microsoft.App/jobs@2024-03-01' = {
+resource job 'Microsoft.App/jobs@2025-01-01' = {
   name: name
   location: location
   tags: union(tags, { 'azd-service-name': 'job' })
@@ -99,7 +99,7 @@ output name string = job.name
 ## Bicep — Event-Triggered Job
 
 ```bicep
-resource eventJob 'Microsoft.App/jobs@2024-03-01' = {
+resource eventJob 'Microsoft.App/jobs@2025-01-01' = {
   name: '${name}-event'
   location: location
   tags: tags

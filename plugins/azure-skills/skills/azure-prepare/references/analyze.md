@@ -102,8 +102,8 @@ Converting an existing application to run on Azure.
 **If the target compute is Azure Container Apps**, you MUST load the composition algorithm before generating ANY infrastructure:
 
 1. Load `services/container-apps/templates/selection.md` — decision tree for base template (web-app, api, microservice, worker, job, functions-on-aca) + recipe layering (Dapr, Cosmos DB, Service Bus, Redis, ACR, PostgreSQL)
-2. Load `services/container-apps/templates/recipes/composition.md` — the exact algorithm to follow
-3. Compose the selected base template with each required recipe — NEVER hand-write Bicep/Terraform from scratch; use `azd init -t <template>` as the starting point
+2. Load `services/container-apps/templates/composition.md` — the exact algorithm to follow
+3. Generate from the selected base guide and compose each required recipe; these Markdown files are not valid `azd init -t` identifiers
 
 > ⚠️ **Critical**: The Container Apps `bicep.md` and `terraform.md` files are **REFERENCE DOCUMENTATION**, not templates to copy. Hand-writing infrastructure from these patterns results in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 

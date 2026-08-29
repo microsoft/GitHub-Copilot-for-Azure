@@ -35,12 +35,12 @@ resource redis 'Microsoft.Cache/redis@2024-03-01' = {
   }
 }
 
-// Data access — Redis uses its own access policy system, not ARM roleAssignments
+// Data access — application read/write without access-policy administration
 resource accessPolicy 'Microsoft.Cache/redis/accessPolicyAssignments@2024-03-01' = {
   parent: redis
   name: guid(redis.id, principalId, 'data-owner')
   properties: {
-    accessPolicyName: 'Data Owner'
+    accessPolicyName: 'Data Contributor'
     objectId: principalId
     objectIdAlias: 'appIdentity'
   }
@@ -100,6 +100,8 @@ async function createRedisClient() {
 Redis can also be used as a Dapr state store component:
 
 ```bicep
+param daprAppIds array
+
 resource stateStore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   parent: env
   name: 'statestore'
@@ -112,9 +114,17 @@ resource stateStore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01
       { name: 'azureClientId', value: uamiClientId }
       { name: 'useEntraID', value: 'true' }
     ]
+    scopes: daprAppIds
   }
 }
 ```
 
 > ⚠️ **Always enable Entra ID authentication** via `aad-enabled: true`
 > and disable non-SSL port.
+
+## Language Guides
+
+[C#](source/dotnet.md) | [Python](source/python.md) |
+[Node.js/TypeScript](source/nodejs.md) | [Go](source/go.md) | [Java](source/java.md)
+
+See [eval/summary.md](eval/summary.md) for static coverage.

@@ -28,6 +28,7 @@ Base Template (web-app, api, worker, job, etc.)
 | [dapr](dapr/README.md) | ✅ Dapr components | ❌ | ✅ Available |
 | [cosmos](cosmos/README.md) | ✅ Cosmos account + DB + RBAC | ❌ | ✅ Available |
 | [servicebus](servicebus/README.md) | ✅ SB namespace + queue + RBAC | ✅ KEDA azure-servicebus | ✅ Available |
+| [eventhubs](eventhubs/README.md) | ✅ Event Hubs + checkpoints + RBAC | ✅ KEDA azure-eventhub | ✅ Available |
 | [redis](redis/README.md) | ✅ Redis cache + RBAC | ❌ | ✅ Available |
 | [acr](acr/README.md) | ✅ ACR + RBAC | ❌ | ✅ Available |
 | [postgres](postgres/README.md) | ✅ PostgreSQL Flexible + RBAC | ❌ | ✅ Available |
@@ -36,7 +37,8 @@ Base Template (web-app, api, worker, job, etc.)
 
 ### Step 1: Select Base Template
 
-Choose from [selection.md](../selection.md) based on workload type.
+Choose from [selection.md](../selection.md) based on workload type, then follow
+[composition.md](../composition.md).
 
 ### Step 2: Apply Recipe(s)
 
@@ -49,7 +51,6 @@ Read each recipe's README for:
 ### Step 3: Wire Into Base
 
 **Bicep:** Add `module` reference in `main.bicep`
-**Terraform:** Copy `.tf` files, merge environment variables
 
 ### Step 4: Deploy
 
@@ -68,5 +69,5 @@ azd deploy --no-prompt
 | **Never modify base; only extend** | Recipes are additive — no risk of breaking core |
 | **Recipes own their RBAC** | Exact role GUIDs, no LLM guessing |
 | **Stack-agnostic** | Container Apps runs any container — recipes work with any language |
-| **Same algorithm for Bicep & Terraform** | Only IaC files differ, not composition logic |
+| **Bicep composition** | Add recipe modules without replacing base resources |
 | **UAMI everywhere** | Managed identity for all service connections |

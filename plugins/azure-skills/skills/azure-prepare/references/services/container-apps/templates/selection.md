@@ -4,7 +4,7 @@
 
 **Architecture**: All deployments start from an appropriate base template for the workload (e.g., [web-app.md](web-app.md), [api.md](api.md), [worker.md](worker.md)).
 Integrations are applied as [composable recipes](recipes/README.md) on top of the base.
-See [composition.md](recipes/composition.md) for the merge algorithm.
+See [composition.md](composition.md) for the merge algorithm.
 
 Container Apps hosts **any** containerized app — any language, any framework, any SDK.
 Event-driven processing with triggers/bindings uses [Functions on Container Apps](functions-on-aca.md).
@@ -45,7 +45,7 @@ Event-driven processing with triggers/bindings uses [Functions on Container Apps
 
 After selecting the base template, always check whether the app needs integration recipes.
 Recipes are additive — apply every matching recipe independently on top of the base.
-See [composition.md](recipes/composition.md) for the merge algorithm.
+See [composition.md](composition.md) for the merge algorithm.
 
 ```
 Does it use Dapr?
@@ -59,7 +59,8 @@ Does it need a database?
 
 Does it use messaging?
   Indicators: Service Bus, Event Hubs, Storage Queues
-  └─► YES → Add messaging recipe (recipes/servicebus/README.md)
+  └─► Service Bus → Add recipes/servicebus/README.md
+  └─► Event Hubs → Add recipes/eventhubs/README.md
 
 Does it build/push container images?
   └─► YES → Add ACR recipe (recipes/acr/README.md)
@@ -72,6 +73,7 @@ Does it build/push container images?
 | Dapr | [recipes/dapr/](recipes/dapr/README.md) | Service invocation, state, pub/sub, secrets |
 | Cosmos DB | [recipes/cosmos/](recipes/cosmos/README.md) | NoSQL database |
 | Service Bus | [recipes/servicebus/](recipes/servicebus/README.md) | Messaging with KEDA scaling |
+| Event Hubs | [recipes/eventhubs/](recipes/eventhubs/README.md) | Event streaming with KEDA scaling |
 | Redis | [recipes/redis/](recipes/redis/README.md) | Cache / state store |
 | ACR | [recipes/acr/](recipes/acr/README.md) | Container registry build + push |
 | PostgreSQL | [recipes/postgres/](recipes/postgres/README.md) | PostgreSQL Flexible Server |
@@ -87,11 +89,13 @@ Does it build/push container images?
 | Job | Scheduled / event / manual jobs | [job.md](job.md) |
 | Functions on ACA | Event-driven triggers/bindings | [functions-on-aca.md](functions-on-aca.md) |
 
+Choose a runtime image from [multi-stage Dockerfiles](dockerfiles/README.md).
+
 ## Critical Rules
 
 1. **Container Apps is stack-agnostic** — any language, any framework, any container image
 2. **Use UAMI (User Assigned Managed Identity)** for all service connections — never connection strings
 3. **Always use `--no-prompt`** with azd commands
-4. **Never synthesize Bicep/Terraform from scratch** — use AZD templates or proven modules
+4. **Generate from these verified guides** — do not treat Markdown filenames as AZD template IDs
 5. **Use KEDA scaling rules** for event-driven workloads (queue depth, HTTP concurrency, cron)
 6. **Disable local auth** on all backing services (Cosmos, Service Bus, etc.)

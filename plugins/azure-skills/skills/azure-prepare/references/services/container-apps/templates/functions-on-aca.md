@@ -72,11 +72,30 @@ param containerRegistryName string
 param imageName string
 param userAssignedIdentityId string
 param uamiClientId string
+param uamiPrincipalId string
 param storageAccountName string
 
-resource funcApp 'Microsoft.App/containerApps@2024-03-01' = {
+resource hostStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = {
+  name: storageAccountName
+}
+
+resource hostStorageAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(hostStorage.id, uamiPrincipalId, 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
+  scope: hostStorage
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
+    )
+    principalId: uamiPrincipalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource funcApp 'Microsoft.App/containerApps@2025-01-01' = {
   name: name
   location: location
+  kind: 'functionapp'
   tags: union(tags, { 'azd-service-name': 'api' })
   identity: {
     type: 'UserAssigned'
@@ -129,12 +148,18 @@ resource funcApp 'Microsoft.App/containerApps@2024-03-01' = {
       }
     }
   }
+  dependsOn: [hostStorageAccess]
 }
 ```
 
+The host identity requires **Storage Blob Data Owner** on `AzureWebJobsStorage`. Add Storage
+Queue Data Contributor for queue triggers. Blob triggers also require Storage Queue Data
+Contributor and Storage Account Contributor. Add Storage Table Data Contributor when the
+selected extension persists host or trigger state in tables.
+
 ## Supported Triggers
 
-All Functions triggers work on Container Apps:
+The platform generates KEDA rules from Functions trigger configuration:
 
 | Trigger | KEDA Scaler | Notes |
 |---------|-------------|-------|
@@ -143,38 +168,24 @@ All Functions triggers work on Container Apps:
 | Service Bus | `azure-servicebus` | Queue/topic scaling |
 | Event Hubs | `azure-eventhub` | Partition-based scaling |
 | Cosmos DB | `azure-cosmosdb` | Change feed scaling |
-| Blob Storage | `azure-blob` | Blob count scaling |
+| Blob Storage | Event Grid | Autoscaling requires an Event Grid source |
 | Storage Queue | `azure-queue` | Queue length scaling |
 
-## KEDA Scale Rules for Triggers
+Redis and Azure SQL triggers do not support autoscaling. Set `minReplicas` above zero for
+unsupported triggers. Durable Functions autoscaling supports SQL Server and Durable Task
+Scheduler storage providers.
 
-```bicep
-scale: {
-  minReplicas: 0
-  maxReplicas: 30
-  rules: [
-    {
-      name: 'servicebus-scale'
-      custom: {
-        type: 'azure-servicebus'
-        metadata: {
-          queueName: 'myqueue'
-          namespace: 'my-sb-namespace'
-          messageCount: '5'
-        }
-        identity: userAssignedIdentityId
-      }
-    }
-  ]
-}
-```
+Only set custom rules after opting out with `allowScalingRuleOverride`. Default deployments
+should let the Functions platform derive rules from trigger attributes and `host.json`.
 
 ## Key Differences from Standard Functions
 
 1. **You manage the Dockerfile** — base image must be `mcr.microsoft.com/azure-functions/<runtime>`
-2. **Scaling is KEDA-based** — configure scale rules explicitly
+2. **Scaling is KEDA-based** — platform-generated rules are the default
 3. **Storage is still required** — Functions runtime needs `AzureWebJobsStorage`
 4. **No Flex Consumption billing** — billed as Container Apps
 
 > ⚠️ **Always use the official Functions base images** from MCR.
 > Custom base images may break the Functions runtime.
+>
+> **Source:** [Azure Functions on Azure Container Apps](https://learn.microsoft.com/azure/container-apps/functions-overview)

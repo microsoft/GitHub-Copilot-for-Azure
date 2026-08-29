@@ -121,3 +121,10 @@ const database = client.database(process.env.COSMOS_DATABASE);
 > ⚠️ **Use `sqlRoleAssignments`, not ARM `roleAssignments`.** Cosmos DB data-plane RBAC
 > requires the resource-specific role assignment type shown above.
 > Also set `disableLocalAuth: true` to disable primary/secondary key auth.
+
+## Language Guides
+
+[C#](source/dotnet.md) | [Python](source/python.md) |
+[Node.js/TypeScript](source/nodejs.md) | [Go](source/go.md) | [Java](source/java.md)
+
+See [eval/summary.md](eval/summary.md) for static coverage.

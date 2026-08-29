@@ -79,27 +79,12 @@ Invoke related skills for specialized scenarios:
 | Scenario | Action |
 |----------|--------|
 | Using Azure Functions | Stay in **azure-prepare** — load [selection.md](services/functions/templates/selection.md) → Follow [composition.md](services/functions/templates/recipes/composition.md) algorithm |
-| Using Container Apps with Dapr/recipes (Cosmos, Service Bus, Redis, ACR, PostgreSQL) | Stay in **azure-prepare** — load [selection.md](services/container-apps/templates/selection.md) → Follow [composition.md](services/container-apps/templates/recipes/composition.md) algorithm |
+| Using Container Apps with Dapr/recipes (Cosmos, messaging, Redis, ACR, PostgreSQL) | Stay in **azure-prepare** — load [selection.md](services/container-apps/templates/selection.md) → Follow [composition.md](services/container-apps/templates/composition.md) algorithm |
 | PostgreSQL with passwordless auth | Handle directly without a separate skill |
 | Need detailed security hardening | Handle directly with service-specific security guidance and platform best practices |
 | Setting up App Insights instrumentation | `appinsights-instrumentation` |
 | Building AI applications | `microsoft-foundry` |
 | Cost-sensitive deployment | `azure-cost` |
-
-**Skill/Reference Invocation Pattern:**
-
-For **Azure Functions**:
-1. Load: [selection.md](services/functions/templates/selection.md) (decision tree)
-2. Follow: [composition.md](services/functions/templates/recipes/composition.md) (algorithm)
-3. Result: Base template + recipe composition (never synthesize IaC)
-
-For **PostgreSQL**:
-1. Handle passwordless auth patterns directly without a separate skill
-
-For **Container Apps** (with Dapr or other recipes):
-1. Load: [selection.md](services/container-apps/templates/selection.md) (base template + recipe decision tree)
-2. Follow: [composition.md](services/container-apps/templates/recipes/composition.md) (algorithm)
-3. Result: Base template (web-app, api, microservice, worker, job, functions-on-aca) + recipe composition (never synthesize IaC)
 
 ### Step 3: Document in Plan
 
@@ -107,42 +92,12 @@ Add research findings to `.azure/deployment-plan.md` under a `## Research Summar
 
 ## Common Research Patterns
 
-### Web Application + API + Database (Cosmos DB)
+| Scenario | Load or invoke |
+|----------|----------------|
+| Web/API + Cosmos DB | [Container Apps](services/container-apps/README.md), [Cosmos DB](services/cosmos-db/README.md), [partitioning](services/cosmos-db/partitioning.md), [Key Vault](services/key-vault/README.md), `azure-observability` |
+| Container Apps + SQL | [Container Apps selection](services/container-apps/templates/selection.md), [composition](services/container-apps/templates/composition.md), [SQL Bicep](services/sql-database/bicep.md), [SQL auth](services/sql-database/auth.md), [Key Vault](services/key-vault/README.md) |
+| App Service + SQL | [App Service Bicep](services/app-service/bicep.md), [SQL Bicep](services/sql-database/bicep.md), [SQL auth](services/sql-database/auth.md), [Key Vault](services/key-vault/README.md) |
+| Serverless events | [Functions](services/functions/README.md), [Event Grid](services/event-grid/README.md) or [Service Bus](services/service-bus/README.md), [Storage](services/storage/README.md), `azure-observability` |
+| AI application | `microsoft-foundry`, [Container Apps](services/container-apps/README.md), [Cosmos DB partitioning](services/cosmos-db/partitioning.md), [Key Vault](services/key-vault/README.md) |
 
-1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md), [scaling.md](services/container-apps/scaling.md)
-2. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md)
-3. Load: [services/key-vault/README.md](services/key-vault/README.md)
-4. Invoke: `azure-observability` (monitoring setup)
-5. Review service-specific security guidance directly before generation
-
-### Container Apps + API + SQL Database
-
-1. Load: [services/container-apps/README.md](services/container-apps/README.md) → [templates/selection.md](services/container-apps/templates/selection.md) → [templates/recipes/composition.md](services/container-apps/templates/recipes/composition.md)
-2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
-3. Load: [services/key-vault/README.md](services/key-vault/README.md)
-4. Review [auth.md](services/sql-database/auth.md) directly for Entra-only auth configuration
-
-### App Service + API + SQL Database
-
-1. Load: [services/app-service/README.md](services/app-service/README.md) → [bicep.md](services/app-service/bicep.md)
-2. Load: [services/sql-database/README.md](services/sql-database/README.md) → [bicep.md](services/sql-database/bicep.md), [auth.md](services/sql-database/auth.md)
-3. Load: [services/key-vault/README.md](services/key-vault/README.md)
-4. Review [auth.md](services/sql-database/auth.md) directly for Entra-only auth configuration
-
-### Serverless Event-Driven
-
-1. Load: [services/functions/README.md](services/functions/README.md) (contains mandatory composition workflow)
-2. Load: [services/event-grid/README.md](services/event-grid/README.md) or [services/service-bus/README.md](services/service-bus/README.md) (if using messaging)
-3. Load: [services/storage/README.md](services/storage/README.md) (if using queues/blobs)
-4. Invoke: `azure-observability` (distributed tracing)
-
-### AI Application
-
-1. Invoke: `microsoft-foundry` (AI patterns and best practices)
-2. Load: [services/container-apps/README.md](services/container-apps/README.md) → [bicep.md](services/container-apps/bicep.md) or [terraform.md](services/container-apps/terraform.md)
-3. Load: [services/cosmos-db/README.md](services/cosmos-db/README.md) → [partitioning.md](services/cosmos-db/partitioning.md) (vector storage)
-4. Review Key Vault and Foundry references directly for API key management
-
-## After Research
-
-Proceed to **Generate Artifacts** step with research findings applied.
+Apply the findings during **Generate Artifacts**.

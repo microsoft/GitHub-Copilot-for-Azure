@@ -38,14 +38,14 @@ resource queue 'Microsoft.ServiceBus/namespaces/queues@2024-01-01' = {
   }
 }
 
-// RBAC — Azure Service Bus Data Owner
+// RBAC — receiver for queue-processing workers
 resource rbac 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(sb.id, principalId, '090c5cfd-751d-490a-894a-3ce6f1109419')
+  name: guid(sb.id, principalId, '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0')
   scope: sb
   properties: {
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
-      '090c5cfd-751d-490a-894a-3ce6f1109419'
+      '4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0'
     )
     principalId: principalId
     principalType: 'ServicePrincipal'
@@ -98,7 +98,6 @@ scale: {
 
 | Role | GUID | Access |
 |------|------|--------|
-| Azure Service Bus Data Owner | `090c5cfd-751d-490a-894a-3ce6f1109419` | Full access |
 | Azure Service Bus Data Sender | `69a216fc-b8fb-44d8-bc22-1f3c2cd27a39` | Send only |
 | Azure Service Bus Data Receiver | `4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0` | Receive only |
 
@@ -119,3 +118,12 @@ client = ServiceBusClient(
 ```
 
 > ⚠️ **Always set `disableLocalAuth: true`** — use RBAC only, never SAS keys.
+> Assign Data Sender to publishers and Data Receiver to consumers. Use Data Owner only
+> when one identity must perform both roles and manage entities.
+
+## Language Guides
+
+[C#](source/dotnet.md) | [Python](source/python.md) |
+[Node.js/TypeScript](source/nodejs.md) | [Go](source/go.md) | [Java](source/java.md)
+
+See [eval/summary.md](eval/summary.md) for static coverage.

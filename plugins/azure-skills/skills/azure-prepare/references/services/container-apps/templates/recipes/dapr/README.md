@@ -56,6 +56,8 @@ within the same Managed Environment.
 ### Component (backed by Service Bus)
 
 ```bicep
+param daprAppIds array
+
 resource pubsub 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   parent: env
   name: 'pubsub'
@@ -66,6 +68,7 @@ resource pubsub 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = 
       { name: 'namespaceName', value: sbNamespaceFqdn }
       { name: 'azureClientId', value: uamiClientId }
     ]
+    scopes: daprAppIds
   }
 }
 ```
@@ -97,6 +100,8 @@ spec:
 ### Component (backed by Redis)
 
 ```bicep
+param daprAppIds array
+
 resource statestore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   parent: env
   name: 'statestore'
@@ -109,6 +114,7 @@ resource statestore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01
       { name: 'azureClientId', value: uamiClientId }
       { name: 'useEntraID', value: 'true' }
     ]
+    scopes: daprAppIds
   }
 }
 ```
@@ -130,6 +136,8 @@ Access Key Vault secrets through the Dapr sidecar without embedding the Key Vaul
 ### Component (backed by Key Vault, UAMI auth)
 
 ```bicep
+param daprAppIds array
+
 resource secretstore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-01' = {
   parent: env
   name: 'secretstore'
@@ -140,6 +148,7 @@ resource secretstore 'Microsoft.App/managedEnvironments/daprComponents@2024-03-0
       { name: 'vaultName', value: keyVaultName }
       { name: 'azureClientId', value: uamiClientId }
     ]
+    scopes: daprAppIds
   }
 }
 
@@ -198,8 +207,8 @@ carry the connection metadata, and the sidecar handles authentication via UAMI.
 
 | Recipe Component | Role | GUID |
 |---|---|---|
-| Pub/sub (Service Bus) | Azure Service Bus Data Owner | `090c5cfd-751d-490a-894a-3ce6f1109419` |
-| State (Redis) | Redis Data Owner (access policy) | N/A — see [redis recipe](../redis/README.md) |
+| Pub/sub (Service Bus) | Data Sender + Data Receiver | `69a216fc-b8fb-44d8-bc22-1f3c2cd27a39`, `4f6d3b9b-027b-4f4c-9142-0e5a2a2247e0` |
+| State (Redis) | Redis Data Contributor (access policy) | N/A; see [redis recipe](../redis/README.md) |
 | Secrets (Key Vault) | Key Vault Secrets User | `4633458b-17de-408a-b874-0445c86b69e6` |
 
 ## Critical Rules
@@ -208,4 +217,13 @@ carry the connection metadata, and the sidecar handles authentication via UAMI.
 2. **Always set `appId` to a stable, unique name** — other services invoke by this ID
 3. **Always use UAMI for component authentication** — never embed connection strings in component metadata
 4. **Secrets components require `Key Vault Secrets User`, not broader roles**
-5. **Components are environment-scoped** — all apps in the same Managed Environment can reference the same component names
+5. **Set component `scopes`** — list only the Dapr app IDs that require access
+
+**Source:** [Connect to services with Dapr components](https://learn.microsoft.com/azure/container-apps/dapr-component-connect-services)
+
+## Language Guides
+
+[C#](source/dotnet.md) | [Python](source/python.md) |
+[Node.js/TypeScript](source/nodejs.md) | [Go](source/go.md) | [Java](source/java.md)
+
+See [eval/summary.md](eval/summary.md) for static coverage.

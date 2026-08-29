@@ -41,8 +41,8 @@ services:
 ## Templates & Recipes
 
 > ⚠️ **Before generating IaC**, load [templates/selection.md](templates/selection.md) for the base
-> template decision tree, then follow [templates/recipes/composition.md](templates/recipes/composition.md)
-> to compose the base template with any required recipes. Never hand-write Container Apps IaC from scratch.
+> template decision tree, then follow [templates/composition.md](templates/composition.md)
+> to generate the base and compose required recipes.
 
 | Base Template | Use Case |
 |---------------|----------|
@@ -58,9 +58,12 @@ services:
 | [dapr](templates/recipes/dapr/README.md) | Service invocation, pub/sub, state, secrets |
 | [cosmos](templates/recipes/cosmos/README.md) | Cosmos DB NoSQL |
 | [servicebus](templates/recipes/servicebus/README.md) | Service Bus messaging + KEDA scaling |
+| [eventhubs](templates/recipes/eventhubs/README.md) | Event Hubs streaming + KEDA scaling |
 | [redis](templates/recipes/redis/README.md) | Redis cache / state store |
 | [acr](templates/recipes/acr/README.md) | Container Registry build/push |
 | [postgres](templates/recipes/postgres/README.md) | PostgreSQL Flexible Server |
+
+Choose a runtime from [multi-stage Dockerfiles](templates/dockerfiles/README.md).
 
 ## References
 
