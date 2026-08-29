@@ -9,7 +9,7 @@
 | **Always-ready / min instances** | ❌ | ✅ (always-ready groups) | ✅ (min instances) | ✅ (Always On) | ✅ (min replicas) |
 | **Scale to zero** | ✅ | ✅ | ❌ (min 1 instance) | ❌ | ✅ (`minReplicas: 0`) |
 | **VNet integration (outbound)** | ❌ | ✅ | ✅ | ✅ | ✅ |
-| **Private endpoints (inbound)** | ❌ | ✅ | ✅ | ✅ | ❌ |
+| **Private endpoints (inbound)** | ❌ | ✅ | ✅ | ✅ | ✅ (environment-level) |
 | **Deployment slots (incl. production)** | 2 | ❌ Not supported | 3 | 1-20 (tier-dependent) | Via [revisions](https://learn.microsoft.com/azure/container-apps/revisions) |
 | **Function timeout — default / max** | 5 min / 10 min | 30 min / unbounded | 30 min / unbounded | 30 min / unbounded (requires Always On) | 30 min / unbounded |
 | **OS support** | Windows + Linux | Linux only | Windows + Linux | Windows + Linux | Linux only |
@@ -87,8 +87,8 @@ Need per-function scaling, Linux, and fast/large scale-out?
 ### Container Apps (Functions-on-ACA)
 
 - Best for: teams standardizing on Container Apps/Dapr/microservices, or needing a custom container image for Functions.
-- Deployed as a `Microsoft.Web/sites` resource (kind `functionapp,linux,container,azurecontainerapps`) pointed at a Container Apps managed environment — **not** a bare `Microsoft.App/containerApps` resource. See [cold-start.md](cold-start.md#functions-on-container-apps) for the correct Bicep shape.
-- Scale-to-zero via `minimumElasticInstanceCount: 0`; revisions replace deployment slots for staged rollout.
+- For new deployments, use the native `Microsoft.App/containerApps` integration with `kind: 'functionapp'`. The older `Microsoft.Web/sites` integration is legacy and planned for future deprecation. See [cold-start.md](cold-start.md#functions-on-container-apps) for the current Bicep shape.
+- Scale-to-zero via `minReplicas: 0`; revisions replace deployment slots for staged rollout.
 
 ## Migration Notes
 

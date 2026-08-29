@@ -2,39 +2,30 @@
 
 Cold starts occur when a function app must allocate infrastructure, load the runtime, and initialize your code before handling a request. Impact and mitigation options differ significantly by hosting plan.
 
-## Cold Start Impact by Plan
+## Cold Start Behavior by Plan
 
-| Plan | Typical Cold Start | Can Eliminate? |
-|------|--------------------|----------------|
-| Consumption (Y1) | Seconds, worse on Linux with large dependency trees | ❌ No built-in always-ready mechanism; timer warm-up is a workaround only |
-| Flex Consumption (FC1) | Near-zero with always-ready instances configured | ✅ Yes, via always-ready instance groups |
-| Premium (EP1–EP3) | Near-zero with minimum instances configured | ✅ Yes, via minimum instance count |
-| Dedicated | None while `Always On` is enabled | ✅ Yes, plan runs continuously |
-| Container Apps (Functions-on-ACA) | Depends on `minimumElasticInstanceCount` | ✅ Yes, set minimum instance count ≥ 1 |
+Cold-start duration depends on the runtime, dependencies, package size, and initialization work. Measure the latency of the deployed app instead of relying on a fixed estimate.
+
+| Plan | Platform behavior | Primary mitigation |
+|------|-------------------|--------------------|
+| Consumption (Y1) | Scales to zero; cold starts are expected | Reduce dependencies and startup work, or move to another plan |
+| Flex Consumption (FC1) | Improved scale-from-zero behavior | Configure always-ready instances per function or trigger group |
+| Premium (EP1-EP3) | Keeps app-level always-ready instances and an HTTP prewarmed buffer | Configure the app's always-ready instance count |
+| Dedicated | Host runs continuously when `Always On` is enabled | Enable `Always On` |
+| Container Apps (Functions-on-ACA) | Scales to zero when `minReplicas` is `0` | Set `minReplicas` to `1` or higher |
 
 ## Mitigation Strategies
 
 ### Consumption Plan
 
-No built-in always-ready mechanism. Available workarounds:
+Consumption has no built-in always-ready setting. Reduce the work required to specialize a new instance:
 
 | Strategy | How | Trade-off |
 |----------|-----|-----------|
-| Timer trigger warm-up | Timer function every few minutes pings HTTP endpoints | Extra invocations; not guaranteed to prevent every cold start |
 | Reduce package size | Trim unused dependencies; use tree-shaking/bundling | Development effort |
 | Optimize startup code | Lazy-load heavy modules; defer non-critical connections | Code changes required |
 
-```jsonc
-// host.json — reduce extension bundle load time by pinning a narrower version range
-{
-  "extensionBundle": {
-    "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[4.*, 5.0.0)"
-  }
-}
-```
-
-> 💡 **Tip:** If cold starts are a consistent problem on Consumption, move to Flex Consumption or Premium — see [hosting-plans.md](hosting-plans.md) for the comparison.
+> 💡 **Tip:** A timer-based keep-alive isn't a cold-start guarantee and creates extra executions. If cold starts are a consistent problem, move to Flex Consumption or Premium. See [hosting-plans.md](hosting-plans.md) for the comparison.
 
 ### Flex Consumption Plan
 
@@ -77,14 +68,21 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
 
 ### Premium Plan
 
-Premium plans support a configurable minimum instance count; the platform auto-calculates a floor from each app's always-ready requests, but you can raise it explicitly:
+Set the app-level always-ready count so this function app stays loaded. The HTTP prewarmed buffer defaults to one instance and usually shouldn't be changed:
+
+```bash
+az functionapp update -g $RG -n $APP \
+  --set siteConfig.minimumElasticInstanceCount=2
+```
+
+If you need to reserve plan capacity ahead of scale-out or change its burst ceiling, configure the plan separately:
 
 ```bash
 az functionapp plan update -g $RG -n $PLAN --min-instances 2
 az functionapp plan update -g $RG -n $PLAN --max-burst 20
 ```
 
-> `--min-elastic-worker-count` is not a valid parameter for `az functionapp plan update` — use `--min-instances`.
+> `--min-instances` reserves plan capacity. It doesn't replace the app-level `minimumElasticInstanceCount` setting that keeps a specific app always ready. `--min-elastic-worker-count` isn't a valid parameter for `az functionapp plan update`.
 
 ### Dedicated Plan
 
@@ -96,24 +94,41 @@ az functionapp config set -g $RG -n $APP --always-on true
 
 ### Functions on Container Apps
 
-Functions running on Container Apps are deployed as a `Microsoft.Web/sites` resource pointed at a Container Apps managed environment — **not** a bare `Microsoft.App/containerApps` resource, which would produce a plain container app with no Functions host. Set the minimum instance count via `siteConfig.minimumElasticInstanceCount`:
+For new deployments, use the native `Microsoft.App/containerApps` integration and set `kind: 'functionapp'`. A generic container app without this kind doesn't enable the Functions integration. The older `Microsoft.Web/sites` integration is legacy and planned for future deprecation.
 
 ```bicep
-resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
+resource functionApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
   name: appName
   location: location
-  kind: 'functionapp,linux,container,azurecontainerapps'
+  kind: 'functionapp'
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
-    siteConfig: {
-      minimumElasticInstanceCount: 1
-      linuxFxVersion: 'DOCKER|${containerImage}'
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 80
+      }
+    }
+    template: {
+      containers: [
+        {
+          name: appName
+          image: containerImage
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+        }
+      ]
+      scale: {
+        minReplicas: 1
+      }
     }
   }
 }
 ```
 
-> ⚠️ **Warning:** `minimumElasticInstanceCount: 0` allows scale-to-zero (cold starts return); set it to `1` or higher to keep at least one instance warm.
+> ⚠️ **Warning:** `minReplicas: 0` allows scale-to-zero; set it to `1` or higher to keep at least one replica running. Configure required Functions settings such as `AzureWebJobsStorage` through secrets or managed identity.
 
 ## Language-Specific Optimization
 
@@ -129,8 +144,8 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
 
 | Scenario | Recommended Plan | Cold Start Strategy |
 |----------|-----------------|----------------------|
-| Cost-sensitive, tolerates latency | Consumption | Timer warm-up + small deployment package |
+| Cost-sensitive, tolerates latency | Consumption | Small deployment package + minimal startup work |
 | Low latency, Linux, bursty | Flex Consumption | 1-2 always-ready instances via `az functionapp scale config always-ready set` |
-| Enterprise, strict SLA, Windows or slots needed | Premium | `--min-instances` set to cover peak-adjacent baseline |
+| Enterprise, strict SLA, Windows or slots needed | Premium | App-level `minimumElasticInstanceCount` + default prewarmed buffer |
 | Shared App Service plan, always running | Dedicated | `Always On = true` |
-| Containerized Functions | Container Apps (Functions-on-ACA) | `siteConfig.minimumElasticInstanceCount ≥ 1` on a `Microsoft.Web/sites` resource |
+| Containerized Functions | Container Apps (Functions-on-ACA) | `minReplicas` set to `1` or higher on a `Microsoft.App/containerApps` resource with `kind: 'functionapp'` |
