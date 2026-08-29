@@ -1,0 +1,118 @@
+# Vally eval config for Function App trigger & Durable Functions troubleshooting
+# Added for issue #1615: trigger diagnostics (HTTP/Timer/Queue/Blob/Service Bus/Cosmos)
+# and Durable Functions diagnostics (stuck orchestrations, non-determinism, task hub
+# conflicts) added to azure-diagnostics/references/functions/{triggers,durable}.md.
+
+name: azure-diagnostics-functions-troubleshooting-eval
+description: |
+  Integration evaluation for the Function App trigger and Durable Functions
+  troubleshooting references added to azure-diagnostics. Covers queue poison-message
+  diagnosis, Cosmos trigger partial-document deserialization diagnosis, and stuck
+  Durable orchestration diagnosis, asserting correct skill routing and that the
+  response reflects the corrected guidance (not the incorrect fixes from the
+  abandoned prior attempt).
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # Queue poison-message diagnosis
+  - name: "Queue trigger poison message diagnosis"
+    prompt: "My Azure Function queue trigger keeps moving messages to the poison queue after 5 dequeue attempts. How do I diagnose why the messages are failing?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-matches
+        config:
+          pattern: "(?i)maxDequeueCount|dequeue count|poison queue"
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Cosmos trigger partial-document diagnosis
+  # Regression guard for the corrected fix vs. abandoned PR #1641: the response
+  # must not claim StartFromBeginning/lease reset fixes partial document payloads.
+  - name: "Cosmos DB trigger partial document deserialization"
+    prompt: "My Cosmos DB trigger function is throwing deserialization errors because incoming documents are missing fields my POCO expects. Restarting the change feed from the beginning didn't help. How do I troubleshoot this?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-matches
+        config:
+          pattern: "(?is)StartFromBeginning.{0,100}(does not|doesn't|cannot|can't|won't).{0,60}(fix|resolve|repair).{0,60}(deserializ|schema|payload|document)|(deserializ|schema|payload|document).{0,100}(is not|isn't|aren't|cannot|can't).{0,60}(fix|resolve|repair).{0,60}StartFromBeginning"
+      - type: output-matches
+        config:
+          pattern: "(?i)(schema|bound type|POCO|deserializ).*(raw|JsonElement|JObject|string)|(raw|JsonElement|JObject).*(schema|bound type|POCO|deserializ)"
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Durable stuck-orchestration diagnosis
+  # Regression guard: the response should not present a bare Task.WhenAny timeout
+  # pattern without cancelling the losing operation (the bug fixed vs. PR #1641).
+  - name: "Durable Functions stuck orchestration diagnosis"
+    prompt: "One of my Durable Functions orchestrations has been stuck in the Running status for hours and never completes. How do I diagnose whether this is a non-determinism issue or something else, and how should I add a safe timeout?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-matches
+        config:
+          pattern: "(?is)(cancel|CancellationToken).{0,100}timer|timer.{0,100}(cancel|CancellationToken)"
+      - type: output-matches
+        config:
+          pattern: "(?is)(TerminateAsync|TerminateInstanceAsync|external monitor|client-capable).{0,120}(child|sub-orchestration)|(?:child|sub-orchestration).{0,120}(TerminateAsync|TerminateInstanceAsync|external monitor|client-capable)"
+      - type: output-not-matches
+        config:
+          pattern: "(?is)((cancel(?:ing|lation)?|CancellationToken).{0,40}timer|timer.{0,20}cancel(?:s|ing|lation)?)(?!.{0,40}(does not|doesn't|cannot|can't|won't)).{0,60}(terminates?|cancels?|stops?).{0,40}(child|sub-orchestration|activity)"
+      - type: completed
+      # Global: no_runtime_failure
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
