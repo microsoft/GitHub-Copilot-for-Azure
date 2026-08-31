@@ -6,8 +6,8 @@
     This script runs in Azure DevOps under an AzureCLI@2 task with federated authentication.
     Feed authentication is handled by a preceding PipAuthenticate@1 task that sets
     PIP_EXTRA_INDEX_URL for the azure-sdk/internal/MicrosoftSweBench feed.
-    The run requires CAPI integration credentials retrieved from KeyVault and submitted to
-    MSBench as encrypted environment variables. The script clones the msbench-benchmarks repo,
+    Direct CAPI model runs require integration credentials retrieved from KeyVault and submitted
+    to MSBench as encrypted environment variables. The script clones the msbench-benchmarks repo,
     installs MSBench CLI, and invokes for each model:
     msbench-cli run --agent github-copilot-cli --benchmark <benchmark> --model <model> --no-wait
 
@@ -63,35 +63,44 @@
     Write-Host "Models: $($Model -join ', ')"
     Write-Host "Output Path: $OutputPath"
     $pipelineRun = $env:TF_BUILD -eq "True"
+    $directCapiModels = @(
+        "claude-opus-4.7",
+        "gpt-5.5"
+    )
+    $requiresCapiCredentials = @($Model | Where-Object { $directCapiModels -contains $_ }).Count -gt 0
+    $env:USE_COPILOT_CLI_VERSION = "latest"
 
-    $vaultName = "kv-msbench-eval-azuremcp"
-    $secretNameCAPIID = "azure-mcp-eval-capi-id"
-    $secretNameCAPIHMAC = "azure-mcp-eval-capi-hmac"
+    if ($requiresCapiCredentials) {
+        $vaultName = "kv-msbench-eval-azuremcp"
+        $secretNameCAPIID = "azure-mcp-eval-capi-id"
+        $secretNameCAPIHMAC = "azure-mcp-eval-capi-hmac"
 
-    # --- Retrieve CAPI credentials from KeyVault ---
-    try {
-        Write-Host "Retrieving CAPI credentials from KeyVault $vaultName"
-        $capiId = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIID --query value -o tsv
-        $capiHmac = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIHMAC --query value -o tsv
+        # --- Retrieve CAPI credentials from KeyVault ---
+        try {
+            Write-Host "Retrieving CAPI credentials from KeyVault $vaultName"
+            $capiId = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIID --query value -o tsv
+            $capiHmac = az keyvault secret show --vault-name $vaultName --name $secretNameCAPIHMAC --query value -o tsv
 
-        if (!$capiId) {
-            throw "Secret $secretNameCAPIID not found in KeyVault $vaultName."
+            if (!$capiId) {
+                throw "Secret $secretNameCAPIID not found in KeyVault $vaultName."
+            }
+            if (!$capiHmac) {
+                throw "Secret $secretNameCAPIHMAC not found in KeyVault $vaultName."
+            }
+
+            $env:CAPI_INTEGRATION_ID = $capiId
+            $env:CAPI_HMAC_KEY = $capiHmac
+            # Register the credentials as pipeline secrets without logging their values.
+            if ($pipelineRun) {
+                Write-Host "##vso[task.setsecret]$capiId"
+                Write-Host "##vso[task.setsecret]$capiHmac"
+            }
         }
-        if (!$capiHmac) {
-            throw "Secret $secretNameCAPIHMAC not found in KeyVault $vaultName."
+        catch {
+            throw "Failed to retrieve CAPI credentials from KeyVault: $_"
         }
-
-        $env:CAPI_INTEGRATION_ID = $capiId
-        $env:CAPI_HMAC_KEY = $capiHmac
-        $env:USE_COPILOT_CLI_VERSION = "latest"
-        # Register the credentials as pipeline secrets without logging their values.
-        if ($pipelineRun) {
-            Write-Host "##vso[task.setsecret]$capiId"
-            Write-Host "##vso[task.setsecret]$capiHmac"
-        }
-    }
-    catch {
-        throw "Failed to retrieve CAPI credentials from KeyVault: $_"
+    } else {
+        Write-Host "Selected models do not require direct CAPI credentials; skipping KeyVault retrieval."
     }
 
     # --- Feed auth is handled by the PipAuthenticate@1 pipeline task ---
@@ -171,8 +180,14 @@
             "run",
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
-            "--model", $m,
-            "--encrypted-env", "CAPI_INTEGRATION_ID", "CAPI_HMAC_KEY",
+            "--model", $m
+        )
+
+        if ($directCapiModels -contains $m) {
+            $runArgs += @("--encrypted-env", "CAPI_INTEGRATION_ID", "CAPI_HMAC_KEY")
+        }
+
+        $runArgs += @(
             "--env", "USE_COPILOT_CLI_VERSION",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",
