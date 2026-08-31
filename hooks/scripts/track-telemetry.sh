@@ -303,9 +303,9 @@ fi
 # === STEP 2: Determine what to track for azmcp ===
 
 # Check if a path matches any known plugin skills folder structure.
-# Each plugin has its own block below — add a new block (with the
-# "azure-skills" segments swapped for the new plugin's name) when onboarding
-# another plugin. Returns 0 (true) if matched, 1 (false) otherwise.
+ # Each plugin has its own block below — when onboarding another plugin, add a new
+ # block by swapping both the catalog/plugin segments (e.g. "azure" and
+ # "azure-skills") for the new plugin. Returns 0 (true) if matched, 1 (false) otherwise.
 is_azure_skills_path() {
     local p="$1"
 
