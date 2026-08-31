@@ -17,7 +17,7 @@ description: "Detailed description including trigger phrases and use cases."
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "0.0.0-placeholder"
 ---
 ```
 
@@ -25,7 +25,7 @@ metadata:
 - **description**: 1-1024 characters, explain WHAT the skill does and WHEN to use it. Include trigger phrases.
 - **license**: Required for all skills. Use `MIT` unless there is a documented exception.
 - **metadata.author**: Recommended value is `Microsoft`.
-- **metadata.version**: Semver format (`X.Y.Z`). Set to `"1.0.0"` for new skills. For skills under `plugin/`, versions are stamped automatically at build time by NBGV — use `"0.0.0-placeholder"` in source. For skills elsewhere (e.g., `.github/skills/`), set a real version and bump it in the same PR that modifies the skill.
+- **metadata.version**: Set to `"0.0.0-placeholder"` for new skills. For skills under `plugins/`, versions are stamped automatically at build time by NBGV — use `"0.0.0-placeholder"` in source. For skills elsewhere (e.g., `.github/skills/`), set a real X.Y.Z version and bump it in the same PR that modifies the skill.
 
 ## Size Limits
 
@@ -34,10 +34,12 @@ Keep the main SKILL.md concise. Move detailed documentation to files under the `
 ## Required Sections
 
 1. **Quick Reference** - Summary table with key properties (MCP tools, CLI commands, best for)
-2. **When to Use This Skill** - Clear list of activation scenarios
-3. **MCP Tools** - Table of available MCP commands with parameters
-4. **Workflow/Steps** - Numbered or phased step-by-step processes
-5. **Error Handling** - Table of errors, messages, and remediation
+2. **Workflow/Steps** - Numbered or phased step-by-step processes
+
+## Optional Sections
+
+1. **Prerequisite** - Expected environmental conditions for the skill to operate (e.g. files in the workspace, local CLI tools, type of projects, etc.)
+2. **Error Handling** - Table of errors, messages, and remediation. When the workflow is complicated and has a high chance of getting errors, use this section to provide troubleshooting guidance. Simple workflows don't need an explicit error handling section.
 
 ## Formatting Standards
 
