@@ -1,0 +1,129 @@
+name: microsoft-foundry-skill-invocation-smoke-eval
+description: |
+  Smoke tests core Microsoft Foundry skill invocation scenarios.
+  Runs terminate after the skill's dependency check and setup script completes.
+
+tags:
+  type: integration
+  skill: microsoft-foundry
+
+defaults:
+  runs: 5
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Create
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Create Python hosted Foundry agent"
+    prompt: "Create a new hosted agent for Foundry using Python."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Deploy Foundry agent routing"
+    prompt: "Deploy my agent to Microsoft Foundry"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Invoke
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Invoke Foundry agent routing"
+    prompt: "Send a test message to my Foundry agent"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Troubleshoot
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Troubleshoot Foundry agent routing"
+    prompt: "Troubleshoot my Foundry agent that is returning errors"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "AI model deployment from Foundry catalog"
+    prompt: "How do I deploy an AI model from the Microsoft Foundry catalog?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"

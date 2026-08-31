@@ -1,0 +1,211 @@
+name: microsoft-foundry-integration-eval
+description: |
+  General integration tests for Microsoft Foundry guidance and troubleshooting
+  workflows.
+
+tags:
+  skill: microsoft-foundry
+
+defaults:
+  runs: 5
+  timeout: "30m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Quota Response Quality
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Show quota-related commands"
+    prompt: "How do I check my Microsoft Foundry quota limits?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)az cognitiveservices|quota"
+      - type: completed
+
+  - name: "Explain quota and TPM"
+    prompt: "Explain quota in Microsoft Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)TPM|Tokens Per Minute"
+      - type: completed
+
+  - name: "Calculate production quota requirements"
+    prompt: "How much quota do I need for a production Foundry deployment?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)TPM|PTU|capacity|tokens per minute"
+      - type: output-matches
+        config:
+          pattern: "(?i)calculate|estimate|calculation|quantify"
+      - type: completed
+
+  - name: "Explain quota increase justification"
+    prompt: "Request more TPM quota for Microsoft Foundry and explain what justification is needed"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)justification|business|reason|rationale"
+      - type: completed
+
+  - name: "Track quota allocation by model"
+    prompt: "Show me quota allocation by model in Microsoft Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)model"
+      - type: output-matches
+        config:
+          pattern: "(?i)capacity|quota|allocation"
+      - type: completed
+
+  - name: "Troubleshoot DeploymentLimitReached"
+    prompt: "DeploymentLimitReached error in Microsoft Foundry, what should I do?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)delete|deployment"
+      - type: completed
+
+  - name: "Address 429 rate limiting"
+    prompt: "Getting 429 rate limit errors from my Foundry deployment"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)429|rate limit"
+      - type: completed
+
+  - name: "Explain quota management best practices"
+    prompt: "What are best practices for quota management in Microsoft Foundry?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)best practice|optimize"
+      - type: completed
+
+  - name: "List model deployments and capacity"
+    prompt: "Use the microsoft-foundry skill to list all my Microsoft Foundry model deployments and their capacity"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass if the trajectory does at least one of the following: calls an Azure MCP model deployment tool, runs an Azure CLI command concerning deployments, models, capacity, or quota, or mentions an applicable `az cognitiveservices`, `az rest`, or `az ai` command. Otherwise fail.
+      - type: completed
+
+  - name: "Offer another region when quota is exhausted"
+    prompt: "I ran out of quota in East US for Microsoft Foundry. What are my options?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)region|location"
+      - type: completed
+
+  - name: "Free quota from unused deployments"
+    prompt: "I need to free up quota in Microsoft Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)delete|unused"
+      - type: completed
+
+  - name: "Interpret quota usage output"
+    prompt: "What does the quota usage output mean in Microsoft Foundry?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)currentValue|limit"
+      - type: completed
+
+  - name: "Explain the TPM quota concept"
+    prompt: "What is TPM in the context of Microsoft Foundry quotas?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Tokens Per Minute|TPM"
+      - type: completed
+
+  - name: "Offer multiple quota resolution options"
+    prompt: "What are my options when I hit quota limits in Microsoft Foundry?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)option|reduce|increase"
+      - type: completed
