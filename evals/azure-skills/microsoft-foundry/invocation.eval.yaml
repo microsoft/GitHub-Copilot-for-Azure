@@ -28,7 +28,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -47,7 +47,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -66,7 +66,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -88,7 +88,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -107,7 +107,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -126,7 +126,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 10
     graders:
@@ -145,7 +145,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -164,7 +164,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -183,7 +183,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -202,7 +202,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -224,7 +224,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -243,7 +243,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -265,7 +265,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -288,7 +288,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -310,7 +310,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -332,7 +332,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -357,7 +357,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -379,7 +379,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -401,7 +401,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -420,7 +420,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -439,7 +439,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -458,7 +458,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -477,7 +477,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -499,7 +499,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -518,7 +518,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -537,7 +537,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -556,7 +556,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -575,7 +575,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -597,7 +597,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -616,7 +616,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -635,7 +635,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -654,7 +654,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -676,7 +676,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -695,7 +695,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -714,7 +714,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -733,7 +733,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -755,7 +755,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -774,7 +774,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -793,7 +793,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -815,7 +815,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -834,7 +834,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -856,7 +856,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -875,7 +875,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -894,7 +894,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -913,7 +913,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -935,7 +935,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -957,7 +957,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -976,7 +976,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -995,7 +995,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1014,7 +1014,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1036,7 +1036,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1055,7 +1055,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1077,7 +1077,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1096,7 +1096,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1118,7 +1118,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1137,7 +1137,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1156,7 +1156,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1175,7 +1175,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1197,7 +1197,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1216,7 +1216,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1238,7 +1238,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1257,7 +1257,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1276,7 +1276,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1295,7 +1295,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1314,7 +1314,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1333,7 +1333,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1352,7 +1352,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1371,7 +1371,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1390,7 +1390,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
@@ -1409,7 +1409,7 @@ stimuli:
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"(?i:\"command\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:az|azd)(?:\\.cmd|\\.exe)?\\s+)"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
     constraints:
       max_turns: 5
     graders:
