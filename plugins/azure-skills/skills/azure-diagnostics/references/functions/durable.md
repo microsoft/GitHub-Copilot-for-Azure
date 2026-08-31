@@ -43,6 +43,7 @@ This in-process C# example cancels the timer and assigns a known child ID:
 
 ```csharp
 using var timeoutCts = new CancellationTokenSource();
+var deadline = context.CurrentUtcDateTime.AddMinutes(5);
 var childInstanceId = $"{context.InstanceId}:child";
 var subTask = context.CallSubOrchestratorAsync<Result>(
     "ChildOrchestrator", childInstanceId, input);

@@ -29,8 +29,6 @@ stimuli:
   # Queue poison-message diagnosis
   - name: "Queue trigger poison message diagnosis"
     prompt: "My Azure Function queue trigger keeps moving messages to the poison queue after 5 dequeue attempts. How do I diagnose why the messages are failing?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -57,8 +55,6 @@ stimuli:
   # must not claim StartFromBeginning/lease reset fixes partial document payloads.
   - name: "Cosmos DB trigger partial document deserialization"
     prompt: "My Cosmos DB trigger function is throwing deserialization errors because incoming documents are missing fields my POCO expects. Restarting the change feed from the beginning didn't help. How do I troubleshoot this?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
@@ -88,8 +84,6 @@ stimuli:
   # pattern without cancelling the losing operation (the bug fixed vs. PR #1641).
   - name: "Durable Functions stuck orchestration diagnosis"
     prompt: "One of my Durable Functions orchestrations has been stuck in the Running status for hours and never completes. How do I diagnose whether this is a non-determinism issue or something else, and how should I add a safe timeout?"
-    config:
-      runs: 1
     tags:
       type: integration
       tier: full
