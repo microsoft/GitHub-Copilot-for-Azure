@@ -78,10 +78,10 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
           resources: { cpu: json('0.5'), memory: '1Gi' }
           env: [
             {
-              name: 'SERVICEBUS_NAMESPACE'
+              name: 'SERVICEBUS_FQDN'
               value: '${serviceBusNamespace}.servicebus.windows.net'
             }
-            { name: 'QUEUE_NAME', value: queueName }
+            { name: 'SERVICEBUS_QUEUE', value: queueName }
             {
               name: 'AZURE_CLIENT_ID'
               value: uamiClientId
@@ -112,6 +112,7 @@ resource worker 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 output name string = worker.name
+output principalId string = worker.identity.userAssignedIdentities[userAssignedIdentityId].principalId
 ```
 
 ## Scaling Patterns

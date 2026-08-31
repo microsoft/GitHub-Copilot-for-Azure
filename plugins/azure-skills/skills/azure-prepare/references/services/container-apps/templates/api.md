@@ -105,6 +105,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
 
 output fqdn string = api.properties.configuration.ingress.fqdn
 output name string = api.name
+output principalId string = api.identity.userAssignedIdentities[userAssignedIdentityId].principalId
 ```
 
 ## REST vs gRPC

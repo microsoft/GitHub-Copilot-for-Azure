@@ -94,6 +94,7 @@ resource job 'Microsoft.App/jobs@2025-01-01' = {
 }
 
 output name string = job.name
+output principalId string = job.identity.userAssignedIdentities[userAssignedIdentityId].principalId
 ```
 
 ## Bicep — Event-Triggered Job

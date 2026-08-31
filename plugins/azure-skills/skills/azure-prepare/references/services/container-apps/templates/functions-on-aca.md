@@ -150,6 +150,8 @@ resource funcApp 'Microsoft.App/containerApps@2025-01-01' = {
   }
   dependsOn: [hostStorageAccess]
 }
+
+output principalId string = uamiPrincipalId
 ```
 
 The host identity requires **Storage Blob Data Owner** on `AzureWebJobsStorage`. Add Storage
