@@ -50,7 +50,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
     functionAppConfig: {
       runtime: {
         name: 'node'
-        version: '22'
+        version: '<supported-major-version>'
       }
       scaleAndConcurrency: {
         alwaysReady: [
@@ -135,7 +135,7 @@ resource functionApp 'Microsoft.App/containerApps@2024-10-02-preview' = {
 | Language | Cold Start Tip |
 |----------|---------------|
 | .NET | Use ReadyToRun (or Native AOT where supported) compilation; avoid heavy DI registration in startup |
-| Node.js | Minimize `node_modules`; bundle with esbuild/webpack; use Node 22 (current LTS) |
+| Node.js | Minimize `node_modules`; bundle with esbuild/webpack; use the latest LTS version supported by Azure Functions |
 | Python | Reduce package count; avoid importing unused modules at the top of the file |
 | Java | Prefer the latest supported Java version on Functions v4; minimize static initialization and classpath size |
 | PowerShell | Minimize modules declared in `requirements.psd1` |
