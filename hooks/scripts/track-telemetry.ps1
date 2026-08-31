@@ -296,8 +296,9 @@ function Get-ToolInputPath {
 # === STEP 2: Determine what to track for azmcp ===
 
 # Path patterns per client, one block per plugin (used for SKILL.md and
-# file-reference matching). Add a new block (with the "azure-skills"
-# segments swapped for the new plugin's name) when onboarding another plugin.
+# file-reference matching). When onboarding another plugin, add a new block by
+# swapping both the catalog/plugin segments (e.g. "azure" and "azure-skills")
+# for the new plugin's name.
 
 # --- azure-skills plugin ---
 # The Copilot CLI pattern wildcards the catalog/marketplace folder name
