@@ -19,9 +19,10 @@
 #
 # Cursor:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
-#   - Tool names:     PascalCase for file reads (Read), MCP:<namespace> for MCP tools
+#   - Tool names:     PascalCase for file reads (Read); raw MCP tool name from afterMCPExecution
 #   - Skill paths:    .cursor/plugins/cache/<catalog>/azure/<revision>/skills/<name>/SKILL.md
 #   - Detection:      has "hook_event_name" and "cursor_version"
+#   - MCP detection:  afterMCPExecution event with mcp_server_name "azure"
 #
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
@@ -48,9 +49,8 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*;
-#      Cursor additionally uses MCP:<Azure namespace>, matched against the
-#      bundled azure-mcp-tool-names.txt allowlist)
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*), or when Cursor
+#      sends afterMCPExecution with mcp_server_name "azure"
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read
@@ -169,20 +169,6 @@ $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $skillsDir = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) 'skills'
 
-# Returns true when a Cursor MCP tool name contains a known Azure MCP namespace.
-function Test-CursorAzureMcpTool {
-    param([string]$ToolName)
-    if (-not $ToolName -or -not $ToolName.StartsWith("MCP:")) { return $false }
-    $toolNamesPath = Join-Path $scriptDir 'azure-mcp-tool-names.txt'
-    if (-not (Test-Path -LiteralPath $toolNamesPath)) { return $false }
-    try {
-        $namespace = $ToolName.Substring(4)
-        return (Get-Content -LiteralPath $toolNamesPath -ErrorAction Stop) -contains $namespace
-    } catch {
-        return $false
-    }
-}
-
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Returns $null if the file or version cannot be read.
 function Get-SkillVersion {
@@ -256,6 +242,8 @@ $sessionId = $inputData.sessionId
 if (-not $sessionId) {
     $sessionId = $inputData.session_id
 }
+$hookEventName = $inputData.hook_event_name
+$mcpServerName = $inputData.mcp_server_name
 
 # Get tool arguments (Copilot CLI: toolArgs, Claude Code / VS Code: tool_input)
 $toolInput = $inputData.toolArgs
@@ -410,11 +398,18 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
-# Cursor:       "MCP:<Azure namespace>" from the bundled allowlist
-#               (e.g., MCP:get_azure_bestpractices)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; normalize the
+#               raw tool name to the postToolUse form (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if ($toolName) {
-    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_") -or ($clientName -eq "cursor" -and (Test-CursorAzureMcpTool $toolName))) {
+    if ($clientName -eq "cursor" -and $hookEventName -eq "afterMCPExecution" -and $mcpServerName -eq "azure") {
+        $azureToolName = $toolName
+        if (-not $azureToolName.StartsWith("MCP:")) {
+            $azureToolName = "MCP:$azureToolName"
+        }
+        $eventType = "tool_invocation"
+        $shouldTrack = $true
+    } elseif ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_")) {
         $azureToolName = $toolName
         $eventType = "tool_invocation"
         $shouldTrack = $true

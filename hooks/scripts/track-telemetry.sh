@@ -21,9 +21,10 @@
 #
 # Cursor:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
-#   - Tool names:     PascalCase for file reads (Read), MCP:<namespace> for MCP tools
+#   - Tool names:     PascalCase for file reads (Read); raw MCP tool name from afterMCPExecution
 #   - Skill paths:    .cursor/plugins/cache/<catalog>/azure/<revision>/skills/<name>/SKILL.md
 #   - Detection:      has "hook_event_name" and "cursor_version"
+#   - MCP detection:  afterMCPExecution event with mcp_server_name "azure"
 #
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
@@ -50,9 +51,8 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*;
-#      Cursor additionally uses MCP:<Azure namespace>, matched against the
-#      bundled azure-mcp-tool-names.txt allowlist)
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*), or when Cursor
+#      sends afterMCPExecution with mcp_server_name "azure"
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read
@@ -158,15 +158,6 @@ write_telemetry_debug_log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
 
-# Returns true when a Cursor MCP tool name contains a known Azure MCP namespace.
-is_cursor_azure_mcp_tool() {
-    local toolNameValue="$1"
-    [[ "$toolNameValue" == MCP:* ]] || return 1
-    local namespace="${toolNameValue#MCP:}"
-    [ -f "$SCRIPT_DIR/azure-mcp-tool-names.txt" ] || return 1
-    grep -Fqx -- "$namespace" "$SCRIPT_DIR/azure-mcp-tool-names.txt" 2>/dev/null
-}
-
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Prints nothing if the file or version cannot be read.
 get_skill_version() {
@@ -266,6 +257,8 @@ write_raw_input_to_file "$rawInput"
 # Support Copilot CLI (camelCase), Claude Code (snake_case), and VS Code (snake_case) formats
 toolName=$(extract_json_field "$rawInput" "toolName")
 sessionId=$(extract_json_field "$rawInput" "sessionId")
+hookEventName=$(extract_json_field "$rawInput" "hook_event_name")
+mcpServerName=$(extract_json_field "$rawInput" "mcp_server_name")
 
 # Fall back to Claude Code / VS Code snake_case field names
 if [ -z "$toolName" ]; then
@@ -401,11 +394,16 @@ fi
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
-# Cursor:       "MCP:<Azure namespace>" from the bundled allowlist
-#               (e.g., MCP:get_azure_bestpractices)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; normalize the
+#               raw tool name to the postToolUse form (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if [ -n "$toolName" ]; then
-    if [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]] || { [ "$clientName" = "cursor" ] && is_cursor_azure_mcp_tool "$toolName"; }; then
+    if [ "$clientName" = "cursor" ] && [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
+        azureToolName="$toolName"
+        [[ "$azureToolName" == MCP:* ]] || azureToolName="MCP:$azureToolName"
+        eventType="tool_invocation"
+        shouldTrack=true
+    elif [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]]; then
         azureToolName="$toolName"
         eventType="tool_invocation"
         shouldTrack=true

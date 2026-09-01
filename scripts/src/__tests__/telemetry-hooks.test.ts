@@ -32,8 +32,6 @@ const LOG_DIR = join(TEST_DIR, "logs");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
-const AZURE_MCP_TOOL_NAMES_PATH = join(HOOKS_DIR, "azure-mcp-tool-names.txt");
-const AZURE_MCP_TOOL_SNAPSHOT_PATH = join(REPO_ROOT, "tests", "fixtures", "azure-mcp-tool-names.snapshot.json");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
 
 const shellCandidates: ShellCase[] = [
@@ -133,15 +131,6 @@ afterAll(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
-it("keeps the Cursor Azure MCP allowlist aligned with the Azure MCP tool snapshot", () => {
-  const allowedToolNames = readFileSync(AZURE_MCP_TOOL_NAMES_PATH, "utf8").trim().split(/\r?\n/);
-  const snapshot = JSON.parse(readFileSync(AZURE_MCP_TOOL_SNAPSHOT_PATH, "utf8")) as {
-    toolNames: string[];
-  };
-
-  expect(allowedToolNames).toEqual(snapshot.toolNames);
-});
-
 describe.each(shells)("Cursor telemetry hook ($name)", shell => {
   const skillRoot = createCursorSkillCache();
 
@@ -185,7 +174,16 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
   it("does not report a non-Azure MCP invocation", () => {
     const payload = fixture("cursor-mcp-invocation.json");
-    payload.tool_name = "MCP:github";
+    payload.mcp_server_name = "github";
+
+    expect(runHook(shell, payload)).toEqual([]);
+  });
+
+  it("does not report MCP calls from the generic postToolUse event", () => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    payload.hook_event_name = "postToolUse";
+    payload.tool_name = "MCP:get_azure_bestpractices";
+    delete payload.mcp_server_name;
 
     expect(runHook(shell, payload)).toEqual([]);
   });
