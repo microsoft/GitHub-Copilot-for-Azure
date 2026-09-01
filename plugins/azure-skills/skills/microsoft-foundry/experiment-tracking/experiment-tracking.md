@@ -7,7 +7,8 @@ Inspect Microsoft Foundry experiment runs and send telemetry through the standal
 | Intent | Command group | Details |
 |--------|---------------|---------|
 | Inspect or compare runs | `azd ai loom run` | [Run inspection](references/run-inspection.md) |
-| Query spans or trace chat | `azd ai loom run span/trace` | [Span and trace queries](references/span-trace-queries.md) |
+| List, show, or chat with traces | `azd ai loom run trace` | [Span and trace queries](references/span-trace-queries.md) |
+| Query spans | `azd ai loom run span query` | [Span and trace queries](references/span-trace-queries.md) |
 | Upload OTLP or agent telemetry | `azd ai loom run ingest` | [Ingestion and W&B](references/ingestion-wandb.md) |
 | Send W&B-compatible requests | `azd ai loom run wandb` | [Ingestion and W&B](references/ingestion-wandb.md) |
 

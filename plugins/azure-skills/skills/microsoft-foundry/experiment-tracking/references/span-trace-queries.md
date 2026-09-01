@@ -12,12 +12,12 @@ Use `--request-file <request.json>` when the user already has a complete trace-c
 
 ## Span query
 
-```bash
+```text
 azd ai loom run span query \
   --run-id <run-id> \
-  --filter-file <filter.json> \
-  --include-details \
-  --limit <count>
+  [--filter <json> | --filter-file <path> | --request-file <path>] \
+  [--include-details] \
+  [--limit <count>]
 ```
 
 Choose one input form:
