@@ -48,7 +48,8 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, MCP:*, mcp_azure_mcp_*)
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*;
+#      Cursor additionally uses MCP:*)
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read

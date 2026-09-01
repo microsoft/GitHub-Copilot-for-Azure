@@ -33,7 +33,7 @@ const HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
 
-const shells: ShellCase[] = [
+const shellCandidates: ShellCase[] = [
   {
     name: "Bash",
     command: "bash",
@@ -45,6 +45,13 @@ const shells: ShellCase[] = [
     args: scriptPath => ["-NoProfile", "-NonInteractive", "-File", scriptPath],
   },
 ];
+
+// Returns whether the shell executable can be launched in the current environment.
+function isCommandAvailable(command: string): boolean {
+  return spawnSync(command, ["--version"], { stdio: "ignore" }).error === undefined;
+}
+
+const shells = shellCandidates.filter(shell => isCommandAvailable(shell.command));
 
 // Loads a Cursor hook payload fixture by file name.
 function fixture(name: string): Record<string, unknown> {
