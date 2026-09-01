@@ -22,6 +22,8 @@ azd ai loom run wandb graphql --file <request.json>
 azd ai loom run wandb file-stream --run-id <run-id> --file <request.json>
 ```
 
+For `file-stream`, use `--entity <name>` or `--wandb-project <name>` only when overriding the derived W&B entity or Foundry project ID.
+
 Validate that request files contain JSON, but do not deserialize and reserialize them: escaped identifiers and large JSON numbers must remain unchanged.
 
 Follow the parent azd guidance and set `AZURE_DEV_USER_AGENT=microsoft_foundry_skill` inline when executing each command. All commands return complete JSON service responses.

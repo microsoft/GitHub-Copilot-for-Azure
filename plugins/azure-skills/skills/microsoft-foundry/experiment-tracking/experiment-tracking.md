@@ -25,7 +25,7 @@ All commands are preview functionality and emit complete JSON responses.
    ```
 
    If `azure.ai.loom` is missing, ask before installing it in an interactive session, then run `azd extension install azure.ai.loom`. Loom requires `azd >= 1.32.0`. If the command remains unavailable, update `azd` and the extension rather than falling back to REST or an SDK.
-3. Resolve the Foundry project endpoint in this order: `--project-endpoint`, `FOUNDRY_PROJECT_ENDPOINT` or `AZURE_AI_PROJECT_ENDPOINT` in the active azd environment, the compatible context saved by `azd ai project set`, then `FOUNDRY_PROJECT_ENDPOINT` in the host process. Loom can run without the `azure.ai.projects` extension. The project ID is normally derived from `/api/projects/{projectId}`; use `--project-id` only for a nonstandard endpoint.
+3. Resolve the Foundry project endpoint in this order: `--project-endpoint`, `FOUNDRY_PROJECT_ENDPOINT` or `AZURE_AI_PROJECT_ENDPOINT` in the active azd environment, the compatible context saved by `azd ai project set`, then either endpoint variable in the host process. Loom can run without the `azure.ai.projects` extension. The project ID is normally derived from `/api/projects/{projectId}`; use `--project-id` only for a nonstandard endpoint.
 4. Use Microsoft Entra bearer authentication with the `https://ai.azure.com/.default` scope by default. If the user explicitly chooses project-key authentication, set `AZURE_AI_PROJECT_API_KEY` only in the current process; never persist or print it.
 5. Select the operation from the quick-reference table. Add `--api-version` only when the user requests an override or the service requires one.
 6. Return the complete JSON response or save it to the user-requested file. Do not apply client-side truncation, replace it with a lossy table, or truncate large JSON numbers. Run queries may still be bounded by `--take`.
@@ -35,7 +35,7 @@ All commands are preview functionality and emit complete JSON responses.
 | Symptom | Resolution |
 |---------|------------|
 | `unknown command "loom"` | Install/update `azure.ai.loom`, ensure `azd >= 1.32.0`, then verify with `azd ai loom --help`. |
-| Missing project endpoint | Pass `--project-endpoint`, set `FOUNDRY_PROJECT_ENDPOINT` or `AZURE_AI_PROJECT_ENDPOINT` in the active azd environment, reuse `azd ai project set`, or set `FOUNDRY_PROJECT_ENDPOINT` in the current process. |
+| Missing project endpoint | Pass `--project-endpoint`, set `FOUNDRY_PROJECT_ENDPOINT` or `AZURE_AI_PROJECT_ENDPOINT` in the active azd environment, reuse `azd ai project set`, or set either endpoint variable in the current process. |
 | Project ID cannot be derived | Pass `--project-id <project-id>` for the nonstandard endpoint. |
 | `401` or `403` | Ask the user to authenticate; never run `azd auth login` for them. Check whether an explicitly configured API key is valid. |
 | Empty ingestion payload | Stop and request a non-empty file or stdin payload. |

@@ -15,7 +15,7 @@ azd ai loom run trace show --run-id <run-id> --trace-id <trace-id>
 azd ai loom run compare --run-id <first-run> --run-id <second-run> --metric <metric>
 ```
 
-`compare` accepts the two repeated `--run-id` values in comparison order. Add `--min` and `--max` only when the user wants to constrain the metric range.
+`compare` accepts the two repeated `--run-id` values in comparison order. `--min` and `--max` bound the metric's step range, not its values. Supply both when narrowing the range; a positive `--min` with the default `--max 0` fails validation.
 
 `run list`, `summary`, `metrics`, `system-metrics`, `logs`, `log-records`, and `trace list` accept `--take <count>` and default to 10 results. Increase `--take` when the user needs more than the default; the CLI requires a positive value.
 
