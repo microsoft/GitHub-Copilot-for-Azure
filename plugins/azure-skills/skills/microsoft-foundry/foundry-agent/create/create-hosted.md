@@ -16,7 +16,7 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 | Local run | Follow [local-run](references/local-run.md) for the service's protocol-specific invocation path |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --output json` |
-| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [toolbox.md](../toolbox/toolbox.md) |
+| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [container-deploy](../deploy/references/container-deploy.md), [toolbox.md](../toolbox/toolbox.md) |
 
 ## When to Use This Skill
 
@@ -91,20 +91,32 @@ Branch on the agent status reported by `verify-environment`:
 - `not_deployed` -> Step 2.
 - `active` / `deployed` -> for code changes, continue to Step 4b; for deploy-only requests, use [deploy/deploy.md](../deploy/deploy.md); to add a tool, use [toolbox.md](../toolbox/toolbox.md).
 
-### Step 2 -- New or existing Foundry project?
+### Step 2 -- Collect necessary information
 
-Skip this `Step 2` when the workspace is already configured as a Foundry hosted agent and its Foundry project target is already resolved.
+Before asking, resolve values from the user's request, the workspace,
+`azure.yaml`, the Step 1 verification output, and `azd env get-values`. Ask for
+all remaining applicable values in one `AskUserQuestion` round. Do not ask for
+values that are already resolved or irrelevant to the requested change.
+Populate each question with the default value below.
 
-Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the user supplies an existing project endpoint / project ARM resource ID.
+| Value | When to skip | Default | Notes |
+|-------|--------------|---------|-------|
+| Project / agent name | The user provided one, or the existing code already defines one. | For a new project, generate `ai-project-<random>` using 6-8 lowercase alphanumeric characters. Keep the sample's agent name unless the user requests a custom name. | Pass `--agent-name` to `azd ai agent init`; it sets the service key and agent name in `azure.yaml`. |
+| Language | The user provided one, or the existing code already determines it. | Python | Supported languages: Python and .NET. |
+| Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | `az account show --query id -o tsv` | Must be a subscription GUID. |
+| Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
+| Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | Ask whether to create a new project or use an existing one. | For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
+| Existing model deployment | The model deployment is already resolved by `azure.yaml` and the active azd environment, or the requested change does not affect model selection. | Use the sample manifest's model deployment. | If the user wants an existing deployment, collect its deployment name. |
+| Deploy mode | The existing agent configuration or explicit user request already determines the mode. | `code` for a new agent; preserve the configured mode for an existing agent. | Use `container` only when the user explicitly requests a container image, container deployment, or ACR. |
+| ACR | Deploy mode is `code`, or the ACR choice is already determined in the existing configs. | Ask whether to create a new Azure Container Registry or reuse an existing one. | When creating a new ACR, leave `AZURE_CONTAINER_REGISTRY_NAME`, `AZURE_CONTAINER_REGISTRY_ENDPOINT`, and `AZURE_CONTAINER_REGISTRY_RESOURCE_ID` unset; `azd provision` will create one. |
 
-- **New project** -- do NOT pass `--project-id`. `azd provision` (in deploy) will create it.
-- **Existing project with ARM resource ID** -- pass that exact ID to `azd ai agent init --project-id`.
-- **Existing project with Foundry project endpoint only** -- resolve the project ARM resource ID with the bundled script, then pass the returned `id` to `azd ai agent init --project-id`:
+If the user chooses an existing Foundry project and supplies only its endpoint,
+resolve the project ARM resource ID with the bundled script:
+
   ```bash
   ./scripts/resolve-project-id.sh --endpoint "<foundry-project-endpoint>"     # macOS / Linux
   ./scripts/resolve-project-id.ps1 -Endpoint "<foundry-project-endpoint>"     # Windows (pwsh)
   ```
-- **Existing project with neither endpoint nor ARM ID** -- ask for the ARM resource ID.
 
 Do not guess, derive, or construct the project ID from the endpoint. For `--project-id`, pass either the user-supplied project ARM resource ID or the `id` returned by Azure lookup / the bundled resolve script.
 
@@ -127,7 +139,7 @@ Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry
 
 Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
 
-Pass `--deploy-mode code` by default to use the direct code deployment.
+Pass `--deploy-mode code` by default to use direct code deployment. If the user explicitly wants user-managed container deployment or Azure Container Registry (ACR), use `--deploy-mode container`.
 
 ```bash
 azd ai agent init --no-prompt \
@@ -204,6 +216,9 @@ First determine whether the workspace is already a Foundry hosted agent project.
 
 - **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
 - **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.
+
+If the user wants to switch from the default direct code deployment method to container deployment, follow the
+[deployment method selection](../deploy/deploy.md#deployment-method-selection----hosted-agents) to update `azure.yaml`.
 
 Read [Foundry Model Reference](./references/foundry-model.md) and follow the steps in it when you want to query model related data.
 
