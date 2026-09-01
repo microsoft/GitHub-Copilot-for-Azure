@@ -1,132 +1,49 @@
 # Container Deployment Precheck
 
-Complete every applicable check before running `azd deploy`. Do not use
-deployment as a configuration probe.
+Complete every applicable check before running `azd deploy`.
 
-## 1. Validate the deployment configuration
+## 1. Select and configure the build path
 
-- `azure.yaml` contains exactly one intended `azure.ai.agent` service.
-- The service key and `name:` match.
-- `project:` resolves to the expected source directory.
+Default to remote build without asking the user. Use local build only when the
+user explicitly requests a local build or requires the image to be built on the
+local machine.
+
+| Build path | When to use | `azure.yaml` |
+|------------|-------------|--------------|
+| Remote build | Default | Set `docker.remoteBuild: true`. |
+| Local build | The user explicitly requires local build | Set `docker.remoteBuild: false`. |
+| Pre-built image | The user supplies an existing image | Set a fully qualified `image:` and `docker.imagePassthrough: true`. |
+
+## 2. Validate `azure.yaml`
+
+- The intended `azure.ai.agent` service is clearly identified.
 - `codeConfiguration:` is absent and `language: docker` is present.
-- Remote build has `docker.remoteBuild: true`.
-- Local build has `docker.remoteBuild: false`.
-- Pre-built image deployment has a fully qualified `image:` and
-  `docker.imagePassthrough: true`.
-- A Dockerfile exists for remote and local builds. Its command starts the agent
-  server on port 8088.
-- `.dockerignore` excludes `.env`, virtual environments, caches, credentials,
-  and other local-only files.
+- The selected build path matches the `docker` or `image` configuration.
 - Container CPU, memory, and declared protocols are supported.
+- `azd env get-values` shows the intended project, model deployment, and ACR.
+  For an existing ACR, its name, endpoint, and resource ID identify the same
+  registry.
 
-Run `azd env get-values` and verify that the project endpoint, project ID, model
-deployment, and ACR values match the intended environment.
+## 3. Validate the container files and code
 
-For a new ACR, these values must be unset before `azd provision`:
+For remote and local builds:
 
-```text
-AZURE_CONTAINER_REGISTRY_NAME
-AZURE_CONTAINER_REGISTRY_ENDPOINT
-AZURE_CONTAINER_REGISTRY_RESOURCE_ID
-```
+- The Dockerfile uses the correct build context, copies every required file,
+  installs dependencies, and starts the agent server on port 8088.
+- `.dockerignore` excludes `.env`, credentials, virtual environments, caches,
+  and other local-only files without excluding required application files.
+- The entry point and dependency files match the application source.
 
-To reuse an existing ACR, all three values must identify that registry.
+## 4. Validate ACR permissions
 
-Then run the non-deploying checks:
+Verify every applicable operation at the target ACR scope:
 
-```bash
-azd ai project show --output json
-azd ai agent doctor --output json
-```
+| Operation | Identity | Required access |
+|-----------|----------|-----------------|
+| Remote build | Identity running `azd deploy` | Build-source upload and task execution permissions provided by **Container Registry Tasks Contributor** or equivalent |
+| Local build and push | Identity running `azd deploy` | Image push permission provided by **AcrPush**, **Container Registry Repository Writer**, or equivalent |
+| Runtime image pull | Foundry project managed identity | The Container Registry connection targets the selected ACR and uses this identity, which has **AcrPull**, **Container Registry Repository Reader**, or equivalent |
 
-Do not treat a passing `doctor` as proof of ACR build and pull authorization;
-perform the explicit checks below.
-
-## 2. Validate ACR and build reachability
-
-- Confirm the selected ACR exists and its login server matches the azd
-  environment.
-- For remote ACR build, confirm the registry allows ACR Tasks workers. Their
-  outbound IP addresses are not predictable; a firewall or private endpoint
-  may require local build from an allowed network instead.
-- For local build, confirm Docker or Podman is running, supports Linux
-  containers, and can reach the registry.
-- Confirm the builder can reach the base-image registry and every package feed
-  required by the Dockerfile.
-
-For an existing ACR, inspect its resource and network configuration:
-
-```bash
-az acr show --ids "<acr-resource-id>" \
-  --query "{id:id,loginServer:loginServer,location:location,roleAssignmentMode:roleAssignmentMode,publicNetworkAccess:publicNetworkAccess,networkRuleSet:networkRuleSet}"
-```
-
-## 3. Validate developer build and push authorization
-
-Resolve the object ID of the identity that will run `azd deploy`.
-
-- Remote ACR build requires **Container Registry Tasks Contributor**. `AcrPush`
-  alone does not grant ACR Tasks build-source upload or `scheduleRun`.
-- Local build requires **AcrPush** on a normal RBAC registry, or **Container
-  Registry Repository Writer** with the appropriate repository condition on an
-  ABAC-mode registry.
-
-Inspect assignments at the ACR scope:
-
-```bash
-az role assignment list --assignee "<developer-object-id>" \
-  --scope "<acr-resource-id>" \
-  --query "[].{role:roleDefinitionName,scope:scope}" -o json
-```
-
-For a signed-in user, resolve the object ID with:
-
-```bash
-az ad signed-in-user show --query id -o tsv
-```
-
-For a service principal or federated CI identity, use its service-principal
-object ID, not its application/client ID.
-
-If an assignment is missing, ask before changing RBAC. If the current identity
-cannot write role assignments, provide the principal ID, required role, and ACR
-scope to an administrator. Do not run `azd deploy` expecting it to repair the
-permission.
-
-## 4. Validate Foundry runtime image-pull authorization
-
-The build or push identity is not the runtime pull identity. Resolve the
-Foundry project managed identity:
-
-```bash
-az resource show --ids "<project-arm-id>" --api-version 2025-06-01 \
-  --query identity.principalId -o tsv
-```
-
-At the ACR scope, verify that this principal has:
-
-- **AcrPull** for a normal RBAC registry, or
-- **Container Registry Repository Reader** with the appropriate repository
-  condition for an ABAC-mode registry.
-
-```bash
-az role assignment list --assignee "<project-principal-id>" \
-  --scope "<acr-resource-id>" \
-  --query "[].{role:roleDefinitionName,scope:scope}" -o json
-```
-
-`azd` can create the pull assignment only when the deploying identity has
-`Microsoft.Authorization/roleAssignments/write`. If it cannot, stop and ask an
-administrator to create the assignment before deployment.
-
-## 5. Validate the Docker build
-
-- Check Dockerfile syntax, build context, copied paths, entry point, port 8088,
-  and `linux/amd64` compatibility.
-- For local build, run the smallest available local build check.
-- For remote build, verify ACR Tasks authorization and external build
-  dependencies. Do not submit a redundant manual ACR build unless the user
-  explicitly requests one.
-- On Windows, Azure CLI log streaming can fail with a CP1252
-  `UnicodeEncodeError` even when the server-side ACR build succeeds. Set
-  `PYTHONUTF8=1` and query the ACR run status before retrying a build.
+Run `azd ai agent doctor --output json` to catch known configuration and
+permission issues. Ask before changing RBAC; if required access is missing,
+report the principal, role, and ACR scope to an administrator.

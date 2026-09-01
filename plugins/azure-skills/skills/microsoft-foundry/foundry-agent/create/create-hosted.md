@@ -16,7 +16,7 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 | Local run | Follow [local-run](references/local-run.md) for the service's protocol-specific invocation path |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
 | Sample catalog | `azd ai agent sample list --output json` |
-| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [container-deploy](../deploy/references/container-deploy.md), [toolbox.md](../toolbox/toolbox.md) |
+| Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [toolbox.md](../toolbox/toolbox.md) |
 
 ## When to Use This Skill
 
@@ -139,7 +139,7 @@ Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry
 
 Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
 
-Pass `--deploy-mode code` by default to use direct code deployment. If the user explicitly wants user-managed container deployment or Azure Container Registry (ACR), use `--deploy-mode container`.
+Pass `--deploy-mode code` for direct code deployment (recommended). `--deploy-mode container` for container deployment.
 
 ```bash
 azd ai agent init --no-prompt \
