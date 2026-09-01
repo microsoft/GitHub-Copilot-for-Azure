@@ -148,6 +148,19 @@ write_telemetry_debug_log() {
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
 
+# Return true only when a target belongs to this hook's plugin. Since this hook
+# is copied into every plugin, comparing through the skills directory prevents
+# each installed copy from reporting the same skill or reference event.
+is_owned_skill_path() {
+    # targetPath is either path to the SKILL.md or to a reference file
+    local targetPath="$1"
+    local skillsRootNorm
+    local targetPathNorm
+    skillsRootNorm=$(echo "$SKILLS_DIR" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g; s|/$||')
+    targetPathNorm=$(echo "$targetPath" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
+    [[ "$targetPathNorm" == "$skillsRootNorm/"* ]]
+}
+
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Prints nothing if the file or version cannot be read.
 get_skill_version() {
@@ -349,10 +362,11 @@ if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
     # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
     # Strip it to get the actual skill name for the allowlist
     skillName="${skillName#azure:}"
-    if [ -n "$skillName" ]; then
+    skillMdPath="$SKILLS_DIR/$skillName/SKILL.md"
+    if [ -n "$skillName" ] && [ -f "$skillMdPath" ] && is_owned_skill_path "$skillMdPath"; then
         eventType="skill_invocation"
         shouldTrack=true
-        skillVersion=$(get_skill_version "$SKILLS_DIR/$skillName/SKILL.md")
+        skillVersion=$(get_skill_version "$skillMdPath")
     fi
 fi
 
@@ -365,7 +379,7 @@ if [ "$toolName" = "view" ] || [ "$toolName" = "Read" ] || [ "$toolName" = "read
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
         # Check for SKILL.md pattern — only match azure-skills paths
-        if is_azure_skills_path "$pathLower" && [[ "$pathLower" == *"/skill.md" ]]; then
+        if is_azure_skills_path "$pathLower" && is_owned_skill_path "$pathToCheck" && [[ "$pathLower" == *"/skill.md" ]]; then
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
             if [[ "$pathNormalized" =~ /skills/([^/]+)/SKILL\.md$ ]]; then
                 skillName="${BASH_REMATCH[1]}"
@@ -398,7 +412,7 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
         # Check if path matches azure skills folder structure
-        if is_azure_skills_path "$pathLower"; then
+        if is_azure_skills_path "$pathLower" && is_owned_skill_path "$pathToCheck"; then
             # Extract relative path after 'skills/'
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
 
