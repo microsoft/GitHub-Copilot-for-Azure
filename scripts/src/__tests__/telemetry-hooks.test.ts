@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  existsSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -31,6 +32,8 @@ const LOG_DIR = join(TEST_DIR, "logs");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
+const AZURE_MCP_TOOL_NAMES_PATH = join(HOOKS_DIR, "azure-mcp-tool-names.txt");
+const AZURE_MCP_TOOL_SNAPSHOT_PATH = join(REPO_ROOT, "tests", "fixtures", "azure-mcp-tool-names.snapshot.json");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
 
 const shellCandidates: ShellCase[] = [
@@ -100,6 +103,9 @@ function runHook(shell: ShellCase, payload: Record<string, unknown>): string[] {
   expect(result.error).toBeUndefined();
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout.trim()).toBe('{"continue":true}');
+  if (!existsSync(CAPTURE_FILE)) {
+    return [];
+  }
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
 }
 
@@ -125,6 +131,15 @@ beforeAll(() => {
 
 afterAll(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
+});
+
+it("keeps the Cursor Azure MCP allowlist aligned with the Azure MCP tool snapshot", () => {
+  const allowedToolNames = readFileSync(AZURE_MCP_TOOL_NAMES_PATH, "utf8").trim().split(/\r?\n/);
+  const snapshot = JSON.parse(readFileSync(AZURE_MCP_TOOL_SNAPSHOT_PATH, "utf8")) as {
+    toolNames: string[];
+  };
+
+  expect(allowedToolNames).toEqual(snapshot.toolNames);
 });
 
 describe.each(shells)("Cursor telemetry hook ($name)", shell => {
@@ -166,5 +181,12 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--event-type", "tool_invocation");
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--tool-name", "MCP:get_azure_bestpractices");
+  });
+
+  it("does not report a non-Azure MCP invocation", () => {
+    const payload = fixture("cursor-mcp-invocation.json");
+    payload.tool_name = "MCP:github";
+
+    expect(runHook(shell, payload)).toEqual([]);
   });
 });
