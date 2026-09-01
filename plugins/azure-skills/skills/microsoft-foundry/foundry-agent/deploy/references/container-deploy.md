@@ -1,4 +1,4 @@
-# Container Deployment Precheck
+# Container Deploy Precheck
 
 Complete every applicable check before running `azd deploy`.
 
