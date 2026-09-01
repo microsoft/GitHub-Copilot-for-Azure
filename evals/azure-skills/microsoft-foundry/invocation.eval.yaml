@@ -1,0 +1,1423 @@
+name: microsoft-foundry-skill-invocation-eval
+description: |
+  Verifies that representative Microsoft Foundry requests invoke the
+  microsoft-foundry skill. Runs terminate after the skill's dependency
+  check and setup script completes.
+
+tags:
+  type: integration
+  skill: microsoft-foundry
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.95
+
+stimuli:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Microsoft Foundry Resources and Projects
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Foundry project planning skill invocation"
+    prompt: "Help me plan a new public-access Microsoft Foundry project for a development environment."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Private networking skill invocation"
+    prompt: "Help me plan network isolation for a Microsoft Foundry project using a private endpoint."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Foundry resource creation skill invocation"
+    prompt: "Help me create an Azure AI Services resource for a new Microsoft Foundry development project."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Identity and Access
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "RBAC review skill invocation"
+    prompt: "Help me review the current role assignments on my Microsoft Foundry project."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "RBAC role assignment on Foundry project"
+    prompt: "Grant a user the Foundry User role on my Foundry project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Service principal for Foundry CI/CD"
+    prompt: "Create a service principal for my Foundry CI/CD pipeline"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 10
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Managed identity roles for Foundry project"
+    prompt: "Set up managed identity roles for my Foundry project to access Azure Storage"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Audit Foundry project role assignments"
+    prompt: "Who has access to my Foundry project? List all role assignments"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Assign project manager role in Foundry"
+    prompt: "Make Bob a project manager in my Microsoft Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Validate model deployment permissions"
+    prompt: "Can I deploy models to my Foundry project? Check my permissions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Knowledge and RAG
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Knowledge index skill invocation"
+    prompt: "Help me connect a knowledge index to a Microsoft Foundry agent for a small internal Q&A prototype."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "RAG application with knowledge indexes"
+    prompt: "Build a RAG application with Microsoft Foundry using knowledge indexes"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Optimizer
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Prompt optimization skill invocation"
+    prompt: "Help me improve the instructions for my Foundry agent based on its recent evaluation results."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Generate evals for Agent Optimizer"
+    prompt: |-
+      I have an azd Python hosted agent that is already wired for Foundry Agent Optimizer.
+      Help me create the optimizer eval.yaml from eval/travel_approval_golden.jsonl,
+      generate adaptive evaluators with azd, and run optimization with an allowed
+      optimizer model. Show the current eval.yaml fields I should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Scaffold Python agent for Agent Optimizer"
+    prompt: |-
+      Make my existing azd Python hosted Foundry agent optimizer-ready. Explain the
+      files and code changes you would make, including SDK wiring, baseline config,
+      safe optimization targets, and when to stop for review before deployment.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Apply Agent Optimizer candidate locally"
+    prompt: |-
+      Agent Optimizer finished and gave me candidate cand-123. How should I apply
+      that candidate to my azd hosted agent project so the source changes are
+      reviewable before deployment?
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Observe and Evaluate
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Evaluate deployed Foundry agent"
+    prompt: |-
+      Evaluate my deployed Foundry agent using the evaluation suite in its
+      .foundry metadata. Explain the setup checks and the batch evaluation call
+      you should use.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Analyze eval failures and optimize prompt"
+    prompt: |-
+      My latest Foundry agent evaluation failed several rows. Help me download the
+      detailed eval results, cluster root causes, optimize the agent prompt, and
+      compare the new version against the baseline.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Enable continuous evaluation monitoring"
+    prompt: |-
+      Set up continuous evaluation monitoring for my Foundry agent in production.
+      Include how to check existing config, choose evaluators, and enable or update
+      monitoring safely.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Evaluate Foundry agent quality"
+    prompt: "Evaluate my Foundry agent and check its quality"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Set up Foundry agent observability"
+    prompt: "Set up monitoring and evaluation for my Foundry agent"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Create eval dataset from agent traces"
+    prompt: "Create an evaluation dataset from my Foundry agent traces"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Version eval dataset and compare regressions"
+    prompt: "Version my Foundry evaluation dataset and compare regressions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Create
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Hosted agent creation skill invocation"
+    prompt: "Help me scaffold a small Python hosted agent for Microsoft Foundry that answers common product-support questions."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Hosted agent with MCP tool skill invocation"
+    prompt: "Help me create a Python hosted agent for Microsoft Foundry that uses the Responses protocol and connects to an MCP tool."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Realtime agent skill invocation"
+    prompt: "Help me design a Foundry hosted agent that uses the invocations WebSocket protocol for a realtime conversation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Create LangGraph hosted Foundry agent"
+    prompt: "Create a LangGraph hosted agent for Foundry in Python."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Build and deploy a Foundry agent"
+    prompt: "Help me build and deploy a Foundry agent"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Deploy
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Agent update skill invocation"
+    prompt: "I have an existing Foundry hosted agent and would like help updating its Python code."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Agent redeployment skill invocation"
+    prompt: "I updated my Foundry hosted agent and want to redeploy it safely."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "CI/CD planning skill invocation"
+    prompt: "Help me draft a CI/CD approach for deploying my Foundry agent after code review."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Containerize Foundry agent routing"
+    prompt: "Containerize my agent project for Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Invoke
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Agent invocation skill invocation"
+    prompt: "Send a simple hello message to my deployed Microsoft Foundry agent and show me its reply."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Responses protocol agent invocation"
+    prompt: "Help me invoke my deployed Microsoft Foundry hosted agent through the Responses protocol and print its reply."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Conversation-context agent invocation"
+    prompt: "Help me send a follow-up message to my deployed Microsoft Foundry agent while preserving the conversation context."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Streaming agent invocation"
+    prompt: "Help me stream the response from my deployed Microsoft Foundry agent during a test invocation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Troubleshoot
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Agent troubleshooting skill invocation"
+    prompt: "My Microsoft Foundry agent has started returning intermittent errors; help me investigate."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Agent invocation 404 troubleshooting"
+    prompt: "Calls to my deployed Microsoft Foundry agent return 404 even though deployment succeeded; help me diagnose the endpoint and agent identifiers."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Agent invocation timeout troubleshooting"
+    prompt: "My Microsoft Foundry hosted agent invocation is timing out; help me inspect its deployment status and logs."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Trace
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Analyze Foundry agent traces"
+    prompt: "Analyze traces for my Foundry agent in App Insights"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Find failing Foundry agent traces"
+    prompt: "Find failing traces and errors for my Foundry agent"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Prompt Agents
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Prompt agent creation skill invocation"
+    prompt: "Help me create a simple prompt agent in my existing Microsoft Foundry project."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Prompt agent update skill invocation"
+    prompt: "Help me update the instructions of my existing Foundry prompt agent to give shorter answers."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Prompt agent tool addition skill invocation"
+    prompt: "Help me add a web search tool to my existing Microsoft Foundry prompt agent."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Prompt agent invocation skill invocation"
+    prompt: "Send a short test question to my deployed Foundry prompt agent and show me the response."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Automation
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Agent routine skill invocation"
+    prompt: "Help me schedule my Foundry agent to run a short daily maintenance task."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Fine-tuning
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Fine-tuning skill invocation"
+    prompt: "Help me prepare a supervised fine-tuning run for a small Foundry model using my training dataset."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Fine-tuning guidance"
+    prompt: "Help me fine-tune gpt-4.1-mini on my dataset"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "RFT with a Python grader"
+    prompt: "Submit a reinforcement fine-tuning job with a Python grader"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "SFT model distillation"
+    prompt: "Distill gpt-4.1-mini into nano using supervised fine-tuning"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Capacity
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Discover model capacity across regions"
+    prompt: "Find available capacity for the gpt-4o model in Microsoft Foundry across all Azure regions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Compare regional TPM capacity"
+    prompt: "Which Azure regions have the gpt-4o model available in Microsoft Foundry with enough TPM capacity?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Customize
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Configure a custom model deployment"
+    prompt: "Deploy gpt-4o with custom SKU and capacity configuration"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Deploy with provisioned throughput"
+    prompt: "Deploy gpt-4o with provisioned throughput PTU in my Foundry project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Router
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Model deployment skill invocation"
+    prompt: "Help me deploy gpt-4.1-mini from the Microsoft Foundry model catalog with a standard configuration."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Deploy a model to an Azure project"
+    prompt: "Deploy gpt-4o model to my Azure project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Route model deployment to capacity discovery"
+    prompt: "Where can I deploy the gpt-4o model in Foundry? Check capacity across Azure regions"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Route model deployment to customization"
+    prompt: "Deploy gpt-4o with custom SKU and capacity settings"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Model Deployment Optimal Region
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Deploy quickly to the optimal region"
+    prompt: "Deploy gpt-4o quickly to the optimal region"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Deploy to the best highly available region"
+    prompt: "Deploy gpt-4o to the best available region with high availability"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Quota
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Check current quota usage"
+    prompt: "Use the microsoft-foundry skill to show me my current quota usage for Microsoft Foundry resources"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Check quota before model deployment"
+    prompt: "Use the microsoft-foundry skill to check if I have enough quota to deploy GPT-4o to Microsoft Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Request a quota increase"
+    prompt: "Using the microsoft-foundry quota skill, how do I request a quota increase for Microsoft Foundry?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Monitor quota across deployments"
+    prompt: "Use the microsoft-foundry quota skill to monitor quota usage across all my Microsoft Foundry deployments"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Troubleshoot QuotaExceeded"
+    prompt: "My Microsoft Foundry deployment failed with QuotaExceeded error. Help me fix it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Troubleshoot InsufficientQuota"
+    prompt: "I'm getting an InsufficientQuota error when deploying gpt-4o to eastus in Microsoft Foundry. Use the microsoft-foundry skill to help me troubleshoot and fix this."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Plan production deployment capacity"
+    prompt: "Help me plan capacity for production Microsoft Foundry deployment with 1M requests per day"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Explain regional quota distribution"
+    prompt: "Using the microsoft-foundry quota skill, explain how quota works across different Azure regions for Foundry"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Optimize quota allocation"
+    prompt: "How can I optimize my Microsoft Foundry quota allocation?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Provide quota error resolution steps"
+    prompt: "Walk me through fixing a quota error in Microsoft Foundry deployment"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
