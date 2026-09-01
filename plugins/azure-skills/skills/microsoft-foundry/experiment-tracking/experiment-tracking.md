@@ -24,17 +24,17 @@ All commands are preview functionality and emit complete JSON responses.
    ```
 
    If `azure.ai.projects` is missing, ask before installing it in an interactive session, then run `azd extension install azure.ai.projects`. If the command remains unavailable, update `azd` and the extension rather than falling back to REST or an SDK.
-3. Resolve the Foundry project endpoint through the existing `azure.ai.projects` context. The project ID is normally the final segment of `/api/projects/{projectId}`; use `--project-id` only for a nonstandard endpoint.
+3. Resolve the Foundry project endpoint through the existing `azure.ai.projects` context, including `FOUNDRY_PROJECT_ENDPOINT` or a default set with `azd ai project set`. The project ID is normally the final segment of `/api/projects/{projectId}`; use `--project-id` only for a nonstandard endpoint.
 4. Use Microsoft Entra bearer authentication with the `https://ai.azure.com/.default` scope by default. If the user explicitly chooses project-key authentication, set `AZURE_AI_PROJECT_API_KEY` only in the current process; never persist or print it.
 5. Select the operation from the quick-reference table. Add `--api-version` only when the user requests an override or the service requires one.
-6. Return the complete JSON response or save it to the user-requested file. Do not replace it with a lossy table or truncate large JSON numbers.
+6. Return the complete JSON response or save it to the user-requested file. Do not apply client-side truncation, replace it with a lossy table, or truncate large JSON numbers. Run queries may still be bounded by `--take`.
 
 ## Error Handling
 
 | Symptom | Resolution |
 |---------|------------|
 | `unknown command "run"` or `"ingest"` | Update `azd` and reinstall/update `azure.ai.projects`, then verify with `--help`. |
-| Missing project endpoint | Select an azd environment containing `AZURE_AI_PROJECT_ENDPOINT` or run `azd ai project set <endpoint>`. |
+| Missing project endpoint | Set `FOUNDRY_PROJECT_ENDPOINT` in the current azd environment or process, or run `azd ai project set <endpoint>`. |
 | Project ID cannot be derived | Pass `--project-id <project-id>` for the nonstandard endpoint. |
 | `401` or `403` | Ask the user to authenticate; never run `azd auth login` for them. Check whether an explicitly configured API key is valid. |
 | Empty ingestion payload | Stop and request a non-empty file or stdin payload. |

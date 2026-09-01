@@ -17,4 +17,6 @@ azd ai project run compare --run-id <first-run> --run-id <second-run> --metric <
 
 `compare` accepts the two repeated `--run-id` values in comparison order. Add `--min` and `--max` only when the user wants to constrain the metric range.
 
+`run list`, `summary`, `metrics`, `system-metrics`, `logs`, `log-records`, and `traces` accept `--take <count>` and default to 10 results. Increase `--take` when the user needs more than the default; the CLI requires a positive value.
+
 Follow the parent azd guidance and set `AZURE_DEV_USER_AGENT=microsoft_foundry_skill` inline when executing each command. Preserve the complete JSON response. For trace chat or span filtering, use [Span and trace queries](span-trace-queries.md).
