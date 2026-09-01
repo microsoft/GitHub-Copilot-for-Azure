@@ -159,6 +159,18 @@ $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $skillsDir = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) 'skills'
 
+# Return true only when a target belongs to this hook's plugin. Since this hook
+# is copied into every plugin, comparing through the skills directory prevents
+# each installed copy from reporting the same skill or reference event.
+function Test-OwnedSkillPath {
+    # targetPath is either path to the SKILL.md or to a reference file
+    param([string]$TargetPath)
+    if ([string]::IsNullOrWhiteSpace($TargetPath)) { return $false }
+    $skillsRootNorm = (($skillsDir -replace '\\', '/') -replace '/+', '/').TrimEnd('/')
+    $targetPathNorm = ($TargetPath -replace '\\', '/') -replace '/+', '/'
+    return $targetPathNorm.StartsWith("$skillsRootNorm/", [System.StringComparison]::OrdinalIgnoreCase)
+}
+
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Returns $null if the file or version cannot be read.
 function Get-SkillVersion {
@@ -345,10 +357,11 @@ if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     if ($skillName -and $skillName.StartsWith("azure:")) {
         $skillName = $skillName.Substring(6)
     }
-    if ($skillName) {
+    $skillMdPath = Join-Path $skillsDir (Join-Path $skillName 'SKILL.md')
+    if ($skillName -and (Test-Path -LiteralPath $skillMdPath) -and (Test-OwnedSkillPath $skillMdPath)) {
         $eventType = "skill_invocation"
         $shouldTrack = $true
-        $skillVersion = Get-SkillVersion (Join-Path $skillsDir (Join-Path $skillName 'SKILL.md'))
+        $skillVersion = Get-SkillVersion $skillMdPath
     }
 }
 
@@ -369,7 +382,7 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
             }
         }
 
-        if ($isAzureSkillMd) {
+        if ($isAzureSkillMd -and (Test-OwnedSkillPath $pathToCheck)) {
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
             if ($pathNormalized -match '/skills/([^/]+)/SKILL\.md$') {
                 $skillName = $Matches[1]
@@ -408,7 +421,7 @@ if (-not $filePath -and -not $skillName) {
                 break
             }
         }
-        if ($matchesPattern) {
+        if ($matchesPattern -and (Test-OwnedSkillPath $pathToCheck)) {
             # Extract relative path after 'skills/'
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
 
