@@ -229,7 +229,7 @@ stimuli:
   # Jest: "finds resources missing tags"
   # Assertions: assistant output mentions "tag"
   - name: "Missing tags response mentions tag"
-    prompt: "Find resources missing required tags in my subscription"
+    prompt: "Find resources missing the required tag 'foo'"
     config:
       runs: 1
     tags:
