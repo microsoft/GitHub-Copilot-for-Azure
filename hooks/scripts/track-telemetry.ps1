@@ -17,6 +17,12 @@
 #   - Skill prefix:   azure:<skill-name>  (e.g., azure:azure-prepare)
 #   - Detection:      has "hook_event_name", tool_use_id does NOT contain "__vscode"
 #
+# Cursor:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     PascalCase for file reads (Read), MCP:<command> for MCP tools
+#   - Skill paths:    .cursor/plugins/cache/<catalog>/azure/<revision>/skills/<name>/SKILL.md
+#   - Detection:      has "hook_event_name" and "cursor_version"
+#
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
 #   - Tool names:     snake_case (read_file, replace_string_in_file)
@@ -42,7 +48,7 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*)
+#      (azure-*, mcp__plugin_azure_azure__*, MCP:*, mcp_azure_mcp_*)
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read
@@ -66,8 +72,8 @@
 #
 # === Reference File Detection ===
 #
-# When a file read tool is invoked (Copilot CLI: "view", Claude Code: "Read",
-# VS Code: "read_file"), the script extracts the file path from the tool input
+# When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
+# "Read", VS Code: "read_file"), the script extracts the file path from the tool input
 # and checks if it falls within a recognized azure-skills folder:
 #
 #   Path field lookup order:
@@ -82,10 +88,12 @@
 #       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
 #     azure-kusto-graph-skills:
 #     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
 #     shared:
 #     - .agents/skills/...
@@ -306,11 +314,13 @@ function Get-ToolInputPath {
 # own name ("azure").
 $pathPatternCopilot = '\.copilot/installed-plugins/[^/]+/azure/skills/'
 $pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
+$pathPatternCursor = '\.cursor/plugins/cache/[^/]+/azure/[^/]+/skills/'
 $pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
 
 # --- azure-kusto-graph-skills plugin ---
 $pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/[^/]+/azure-kusto-graph-skills/skills/'
 $pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-graph-skills/[0-9.]+/skills/'
+$pathPatternCursorKustoGraph = '\.cursor/plugins/cache/[^/]+/azure-kusto-graph-skills/[^/]+/skills/'
 $pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
 
 # --- shared across all plugins ---
@@ -318,8 +328,8 @@ $pathPatternAgentsSkills = '\.agents/skills/'
 
 # Put the path patterns into an array for easier iteration
 $pathPatterns = @(
-    $pathPatternCopilot, $pathPatternClaude, $pathPatternVscodeAgentPlugins,
-    $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
+    $pathPatternCopilot, $pathPatternClaude, $pathPatternCursor, $pathPatternVscodeAgentPlugins,
+    $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternCursorKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
     $pathPatternAgentsSkills
 )
 
@@ -384,9 +394,10 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
+# Cursor:       "MCP:*" prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if ($toolName) {
-    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_")) {
+    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_") -or ($clientName -eq "cursor" -and $toolName.StartsWith("MCP:"))) {
         $azureToolName = $toolName
         $eventType = "tool_invocation"
         $shouldTrack = $true

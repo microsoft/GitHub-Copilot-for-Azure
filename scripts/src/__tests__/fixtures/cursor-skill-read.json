@@ -1,0 +1,14 @@
+{
+  "conversation_id": "73e52424-a95d-4e21-b70c-2dffe48fdd86",
+  "generation_id": "8e640ba5-0c44-49c4-a0f3-9f3a1a790045",
+  "model": "grok-4.6",
+  "tool_name": "Read",
+  "tool_input": {
+    "file_path": "/home/test/.cursor/plugins/cache/cursor-public/azure/revision/skills/azure-cost/SKILL.md"
+  },
+  "duration": 9.922,
+  "tool_use_id": "call-skill-read",
+  "session_id": "73e52424-a95d-4e21-b70c-2dffe48fdd86",
+  "hook_event_name": "postToolUse",
+  "cursor_version": "3.18.9"
+}
