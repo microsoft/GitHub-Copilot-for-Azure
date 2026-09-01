@@ -5,10 +5,10 @@
 OTLP metrics, logs, and traces require protobuf payloads. Agent traces require JSON.
 
 ```bash
-azd ai project ingest metrics --run-id <run-id> --file <metrics.pb>
-azd ai project ingest logs --run-id <run-id> --file <logs.pb>
-azd ai project ingest traces --run-id <run-id> --file <traces.pb>
-azd ai project ingest agent-traces --run-id <run-id> --file <agent-traces.json>
+azd ai loom run ingest metrics --run-id <run-id> --file <metrics.pb>
+azd ai loom run ingest logs --run-id <run-id> --file <logs.pb>
+azd ai loom run ingest traces --run-id <run-id> --file <traces.pb>
+azd ai loom run ingest agent-traces --run-id <run-id> --file <agent-traces.json>
 ```
 
 Use `--file -` only when the user wants to pipe a non-empty payload through stdin. Confirm the file exists and is non-empty before executing. Do not decode or rewrite protobuf payloads.
@@ -18,8 +18,8 @@ Use `--file -` only when the user wants to pipe a non-empty payload through stdi
 These commands send complete JSON request bodies:
 
 ```bash
-azd ai project wandb graphql --file <request.json>
-azd ai project wandb file-stream --run-id <run-id> --file <request.json>
+azd ai loom run wandb graphql --file <request.json>
+azd ai loom run wandb file-stream --run-id <run-id> --file <request.json>
 ```
 
 Validate that request files contain JSON, but do not deserialize and reserialize them: escaped identifiers and large JSON numbers must remain unchanged.

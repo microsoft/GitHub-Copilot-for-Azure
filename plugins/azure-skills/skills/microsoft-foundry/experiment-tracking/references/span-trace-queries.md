@@ -5,7 +5,7 @@
 Return a chat-oriented view of one trace:
 
 ```bash
-azd ai project run trace chat --run-id <run-id> --trace-id <trace-id>
+azd ai loom run trace chat --run-id <run-id> --trace-id <trace-id>
 ```
 
 Use `--request-file <request.json>` when the user already has a complete trace-chat request body.
@@ -13,7 +13,7 @@ Use `--request-file <request.json>` when the user already has a complete trace-c
 ## Span query
 
 ```bash
-azd ai project run spans query \
+azd ai loom run span query \
   --run-id <run-id> \
   --filter-file <filter.json> \
   --include-details \
