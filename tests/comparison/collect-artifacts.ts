@@ -90,6 +90,7 @@ function run(): void {
     for (const run of runs) {
       const model: string = run.model;
       const withSkill: boolean = run.withSkill;
+      const withAzureMcp: boolean | undefined = run.withAzureMcp;
       const runUrl: string = run.run;
 
       if (!model) continue;
@@ -103,6 +104,9 @@ function run(): void {
       }
 
       const skillSuffix = withSkill ? "with-skill" : "without-skill";
+      const mcpSuffix = withAzureMcp === undefined
+        ? ""
+        : withAzureMcp ? "-with-mcp" : "-without-mcp";
 
       // Discover stimuli for this run
       const prefix = `${date}/${runId}/${skillName}/${skillName}_`;
@@ -158,7 +162,7 @@ function run(): void {
           OUTPUT_ROOT,
           encodeBranchName(branch),
           stimuliPart,
-          `${model}-${skillSuffix}`
+          `${model}-${skillSuffix}${mcpSuffix}`
         );
         const blobPrefix = `${date}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
 

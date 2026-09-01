@@ -41,6 +41,11 @@ type CompareOption = {
    * Whether to load the skill.
    */
   withSkill: boolean;
+
+  /**
+   * Whether to register Azure MCP tools. Defaults to true.
+   */
+  withAzureMcp?: boolean;
 };
 
 export type CompareRunOutput = {
@@ -55,6 +60,7 @@ type BranchOutput = {
   runs: Array<{
     model: string;
     withSkill: boolean;
+    withAzureMcp?: boolean;
     run: string;
   }>;
 };
@@ -96,7 +102,8 @@ async function queueComparisonRun(
     "model-override": option.model,
     "evaluation-path": evaluationPath ?? "",
     // Note: gh cli use string values for boolean input
-    "no-skills": !option.withSkill ? "true" : "false"
+    "no-skills": !option.withSkill ? "true" : "false",
+    "no-azure-mcp": option.withAzureMcp === false ? "true" : "false"
   });
 
   return await new Promise((resolve, reject) => {
@@ -168,6 +175,7 @@ async function main() {
       const entry = {
         model: option.model,
         withSkill: option.withSkill,
+        withAzureMcp: option.withAzureMcp ?? true,
         run: output
       };
       results.push(entry);

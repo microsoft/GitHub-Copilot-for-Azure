@@ -35,6 +35,11 @@ on:
         required: false
         type: boolean
         default: false
+      no-azure-mcp:
+        description: "Optional: whether to run without Azure MCP tools"
+        required: false
+        type: boolean
+        default: false
       evaluation-path:
         description: "Optional: repo-relative directory containing experimental Vally eval specs"
         required: false
@@ -250,6 +255,7 @@ jobs:
       - name: Run integration tests (vally) - ${{ matrix.skill }}
         env:
           NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
+          VALLY_RUNNER_DISABLE_AZURE_MCP: ${{ inputs.no-azure-mcp && 'true' || '' }}
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}

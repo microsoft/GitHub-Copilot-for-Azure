@@ -10,43 +10,103 @@
   "compareOptions": [
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": true
+      "withSkill": true,
+      "withAzureMcp": true
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": false
+      "withSkill": false,
+      "withAzureMcp": true
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": true
+      "withSkill": true,
+      "withAzureMcp": false
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": false
+      "withSkill": false,
+      "withAzureMcp": false
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": true
+      "withSkill": true,
+      "withAzureMcp": true
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": false
+      "withSkill": false,
+      "withAzureMcp": true
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": true
+      "withSkill": true,
+      "withAzureMcp": false
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": false
+      "withSkill": false,
+      "withAzureMcp": false
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": true
+      "withSkill": true,
+      "withAzureMcp": true
     },
     {
       "model": "claude-sonnet-4.6",
-      "withSkill": false
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true,
+      "withAzureMcp": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false,
+      "withAzureMcp": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true,
+      "withAzureMcp": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false,
+      "withAzureMcp": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true,
+      "withAzureMcp": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false,
+      "withAzureMcp": false
     }
   ]
 }
