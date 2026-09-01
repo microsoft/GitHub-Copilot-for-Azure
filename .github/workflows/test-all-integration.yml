@@ -35,6 +35,11 @@ on:
         required: false
         type: boolean
         default: false
+      evaluation-path:
+        description: "Optional: repo-relative directory containing experimental Vally eval specs"
+        required: false
+        type: string
+        default: ""
       skill-test-pattern:
         description: "Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests"
         required: false
@@ -248,10 +253,15 @@ jobs:
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
+          EVALUATION_PATH: ${{ inputs.evaluation-path }}
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
-          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
+          EVAL_ARGS=()
+          if [[ -n "$EVALUATION_PATH" ]]; then
+            EVAL_ARGS+=(--eval-dir "$EVALUATION_PATH")
+          fi
+          npm run test:vally -- --plugin "$PLUGIN_DIR" --skill "$SKILL_NAME" --workers 2 "${EVAL_ARGS[@]}"
 
       - name: Generate skill report
         if: always()

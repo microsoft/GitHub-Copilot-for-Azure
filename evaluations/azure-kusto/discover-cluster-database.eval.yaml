@@ -1,0 +1,79 @@
+name: azure-kusto-discover-cluster-database
+description: Ten matched scenarios for discovering Azure Data Explorer clusters and databases.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Discover all accessible ADX clusters"
+    prompt: "I need to find every Azure Data Explorer cluster I can access in my current subscription. Explain the read-only steps and the Azure Kusto MCP tool you would use."
+    rubric: &rubric
+      - The response gives a safe and actionable cluster or database discovery workflow appropriate to the stated scope.
+      - The response selects applicable Azure Kusto MCP tools, including kusto_cluster_list for cluster discovery and kusto_database_list when databases are requested, with the required identifiers.
+      - The response distinguishes discovered facts from assumptions and does not invent resource names or access.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Find databases in a named cluster"
+    prompt: "List the databases in my ADX cluster telemetry-prod after I provide my subscription. Tell me which Kusto MCP operation should be called and what inputs it needs."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Locate a cluster without its resource group"
+    prompt: "I know my Azure Data Explorer cluster is named salesadx but I do not know its resource group. How should you locate it before listing its databases?"
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Enumerate clusters across subscriptions"
+    prompt: "I have access to several Azure subscriptions and need to identify which one contains an ADX cluster named securitylogs. Give me an efficient read-only discovery workflow."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Resolve a cluster URI to a resource"
+    prompt: "The only detail I have is https://operations.eastus.kusto.windows.net. Help me identify the corresponding ADX cluster and then discover its databases without guessing."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Find a development Kusto database"
+    prompt: "Find the Azure Data Explorer database used for development in a cluster called appinsights-dev. Describe the tool sequence and how you would identify the likely database."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Confirm database existence"
+    prompt: "Before I run any KQL, confirm whether database Customer360 exists in cluster analytics-west. Which Kusto discovery call should happen first and why?"
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Discover regional ADX clusters"
+    prompt: "I need an inventory of Azure Data Explorer clusters in westus3 for a migration assessment. Explain how to discover and filter them using read-only Azure operations."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Diagnose an ambiguous cluster name"
+    prompt: "Two teams both refer to their ADX environment as prod-kusto. Show how you would discover the exact subscription, resource group, cluster, and database before querying."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Inventory cluster databases"
+    prompt: "Create a read-only inventory plan that lists each ADX cluster in one subscription and the databases under each cluster. Map every step to the relevant Kusto MCP tool."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

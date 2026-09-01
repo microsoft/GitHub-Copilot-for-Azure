@@ -1,0 +1,52 @@
+{
+  "skill": {
+    "pluginDirname": "azure-skills",
+    "name": "azure-kusto"
+  },
+  "evaluationPath": "evaluations/azure-kusto",
+  "branches": [
+    "skaluvak/kusto-evaluations"
+  ],
+  "compareOptions": [
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true
+    },
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": false
+    }
+  ]
+}

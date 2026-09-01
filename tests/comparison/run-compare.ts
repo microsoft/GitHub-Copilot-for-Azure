@@ -14,6 +14,12 @@ type CompareInput = {
   skill: SkillRef;
 
   /**
+   * Optional repo-relative directory containing an experimental eval suite.
+   * The skill name remains the actual skill under test and artifact prefix.
+   */
+  evaluationPath?: string;
+
+  /**
    * The branches to run the tests on.
    */
   branches?: string[];
@@ -39,6 +45,7 @@ type CompareOption = {
 
 export type CompareRunOutput = {
   skill: SkillRef;
+  evaluationPath?: string;
   date: string;
   results: Array<BranchOutput>;
 }
@@ -76,12 +83,18 @@ const repo = "microsoft/GitHub-Copilot-for-Azure";
 // Id of the "Integration Tests - all" workflow
 const integrationTestWorkflowId = "233698760";
 
-async function queueComparisonRun(branch: string, skill: SkillRef, option: CompareOption): Promise<string> {
+async function queueComparisonRun(
+  branch: string,
+  skill: SkillRef,
+  option: CompareOption,
+  evaluationPath?: string,
+): Promise<string> {
   const skillsInput = `${skill.pluginDirname}/${skill.name}`;
   const args = ["workflow", "run", integrationTestWorkflowId, "--repo", repo, "--ref", branch, "--json"];
   const inputs = JSON.stringify({
     skills: skillsInput,
     "model-override": option.model,
+    "evaluation-path": evaluationPath ?? "",
     // Note: gh cli use string values for boolean input
     "no-skills": !option.withSkill ? "true" : "false"
   });
@@ -138,6 +151,7 @@ async function main() {
   const date = new Date().toISOString().slice(0, 10); // Get yyyy-mm-dd date string
   const output: CompareRunOutput = {
     skill: input.skill,
+    evaluationPath: input.evaluationPath,
     date: date,
     results: []
   };
@@ -150,7 +164,7 @@ async function main() {
     for (const option of options) {
       // Each output is a url to the queued run
       // e.g. https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31218229738
-      const output = await queueComparisonRun(branch, skill, option);
+      const output = await queueComparisonRun(branch, skill, option, input.evaluationPath);
       const entry = {
         model: option.model,
         withSkill: option.withSkill,

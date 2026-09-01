@@ -1,0 +1,79 @@
+name: azure-kusto-discover-schema-table
+description: Ten matched scenarios for table and schema discovery.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Find checkout telemetry table"
+    prompt: "I need to analyze checkout failures in an ADX database but do not know the table or columns. Describe how to discover the relevant table and inspect its schema before writing KQL."
+    rubric: &rubric
+      - The response uses a logical table discovery then schema inspection sequence rather than inventing a schema.
+      - The response identifies kusto_table_schema_get for the selected table and explains how names and data types affect the eventual query.
+      - The response proposes safe, bounded inspection when metadata alone cannot identify the relevant table or field.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Inspect a known table schema"
+    prompt: "Before querying ApiRequests, retrieve its ADX schema and explain which columns could represent event time, latency, status, and correlation."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Discover ingestion timestamp"
+    prompt: "I do not know whether my SecurityEvents table uses Timestamp, TimeGenerated, or another datetime column. Show how to determine the correct time field safely."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Find tables containing device data"
+    prompt: "Help me discover which tables in my Kusto database likely contain DeviceId telemetry, then verify the schema before selecting one."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Identify dynamic columns"
+    prompt: "Find whether table AppEvents has any dynamic JSON columns and explain how schema types guide parsing in the final query."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Discover join keys"
+    prompt: "I need to correlate Requests and Dependencies but do not know their shared key. Describe a schema-first workflow to identify a valid join key."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Find error classification fields"
+    prompt: "Determine which columns in Operations could classify success, failure, status code, and exception category before authoring an error query."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Check column type before aggregation"
+    prompt: "Confirm the type of DurationMs in ApiLogs before calculating averages, and explain what conversion is needed if it is stored as string."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Discover table retention clues"
+    prompt: "I expected 90 days of data but only see recent rows. Explain which schema and bounded data checks you would perform before concluding retention is wrong."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Map business concepts to columns"
+    prompt: "I need customer, order value, checkout state, and event time from an unfamiliar CommerceEvents table. Describe how to inspect and validate candidate columns without guessing."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

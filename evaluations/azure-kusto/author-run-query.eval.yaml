@@ -1,0 +1,79 @@
+name: azure-kusto-author-run-query
+description: Ten matched scenarios for authoring and running KQL.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Query recent application errors"
+    prompt: "Write KQL for table AppLogs to return Timestamp, Service, Message, and CorrelationId for Error or Critical rows in the last two hours, newest first, limited to 200 rows."
+    rubric: &rubric
+      - The response provides syntactically plausible KQL that satisfies the requested filters, fields, aggregation or ordering, and result bounds.
+      - The query applies selective time and value filters early and avoids unnecessary data transfer or client-side processing.
+      - If execution is requested, the response identifies kusto_query and its subscription, cluster, database, and query inputs without fabricating results.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Aggregate hourly checkout failures"
+    prompt: "Write a KQL query over CheckoutEvents for the last seven days that counts failed checkouts by Region and one-hour bins, ordered chronologically."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Calculate API latency percentiles"
+    prompt: "Using Requests(Timestamp, Endpoint, DurationMs, Success), write KQL for p50, p95, and p99 latency by Endpoint over the last 24 hours, excluding failed requests."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Find top exception types"
+    prompt: "Author KQL over Exceptions for the past day to show the ten most frequent ExceptionType values with counts and the latest occurrence."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Correlate requests and dependencies"
+    prompt: "Write KQL joining Requests and Dependencies on OperationId for the last six hours, returning failed requests whose dependency duration exceeded 2 seconds."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Parse JSON telemetry properties"
+    prompt: "The Telemetry.Properties column is JSON. Write KQL for the last hour that extracts tenantId and featureName, then counts events by both values."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Compute daily active devices"
+    prompt: "Write KQL over DeviceEvents to calculate distinct active DeviceId values per day for the last 30 days."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Detect response-time anomalies"
+    prompt: "Author KQL over ApiMetrics for a seven-day five-minute response-time series and use an appropriate Kusto series function to flag anomalies."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Compare current and previous periods"
+    prompt: "Write KQL that compares error counts in AppLogs for the last 24 hours against the preceding 24 hours and returns both counts plus percentage change."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Run a bounded exploratory query"
+    prompt: "I want you to inspect recent rows from table AuditEvents in my ADX database. Provide a safe exploratory KQL query and explain how you would execute it through Azure Kusto MCP."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

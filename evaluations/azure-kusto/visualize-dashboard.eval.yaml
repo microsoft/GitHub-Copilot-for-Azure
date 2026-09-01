@@ -1,0 +1,79 @@
+name: azure-kusto-visualize-dashboard
+description: Ten matched scenarios for Kusto visualization and dashboard queries.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Dashboard request health time series"
+    prompt: "Write dashboard-ready KQL over Requests(Timestamp, Success, DurationMs) for request count, error-rate percentage, and p95 latency in five-minute bins over 24 hours."
+    rubric: &rubric
+      - The query returns chart-ready data at the requested grain and time range with correct requested metrics and dimensions.
+      - The response chooses a suitable Kusto visualization or output shape, orders or fills time-series data appropriately, and handles empty bins or divide-by-zero where relevant.
+      - The response keeps dashboard queries bounded and explains any trade-off between granularity, readability, and query cost.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Dashboard regional error bars"
+    prompt: "Build KQL for a dashboard bar chart showing request count and error percentage by Region over the last six hours from ApiEvents."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard top failing services"
+    prompt: "Create dashboard-ready KQL showing the top ten Services by failed request count in the last day, including total requests and failure rate."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard latency heatmap data"
+    prompt: "Prepare KQL output suitable for a heatmap of p95 DurationMs by Region and hourly time bucket over seven days."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard continuous CPU series"
+    prompt: "Write KQL for a 12-hour CPU time chart by Host using ten-minute bins, including sensible handling for missing time buckets."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard deployment markers"
+    prompt: "Create KQL datasets to visualize hourly error count and deployment events together for the last 48 hours using AppLogs and Deployments."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard status-code distribution"
+    prompt: "Write KQL for a dashboard chart showing the distribution of HTTP StatusCode values over the past day while grouping rare codes into Other."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard active-device trend"
+    prompt: "Build a daily time-series query for distinct active DeviceId values by Region over 30 days, suitable for a multi-line chart."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard SLO compliance"
+    prompt: "Write dashboard KQL for hourly availability percentage from Requests.Success over seven days, with a 99.9 percent target visible in the output."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard slow endpoint table"
+    prompt: "Create KQL for a dashboard table of endpoints with request volume, p95 latency, and error rate over 24 hours, filtering out endpoints with fewer than 100 requests."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

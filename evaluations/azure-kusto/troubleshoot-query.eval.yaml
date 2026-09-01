@@ -1,0 +1,79 @@
+name: azure-kusto-troubleshoot-query
+description: Ten matched scenarios for troubleshooting KQL queries.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Fix empty exact-time filter"
+    prompt: "Events has rows today, but `Events | where Timestamp == ago(1d) | where State contains \"failed\"` returns none. Diagnose it, correct it for the last day, and give one follow-up check."
+    rubric: &rubric
+      - The response accurately identifies the primary KQL correctness or performance problem stated in the prompt.
+      - The corrected query is syntactically plausible, preserves the requested semantics, and applies selective time filters early.
+      - The explanation includes a focused validation or follow-up check and does not claim unobserved results.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Optimize late-filter join"
+    prompt: "This is slow: `Requests | join kind=inner (Dependencies) on OperationId | where Timestamp > ago(24h)`. Rewrite it for two large tables and explain the main improvements."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix summarize grouping error"
+    prompt: "Why does `Events | summarize count(), Service by bin(Timestamp, 1h)` fail? Provide the corrected hourly count by Service."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix scalar versus tabular expression"
+    prompt: "My KQL fails when I write `let cutoff = Events | summarize max(Timestamp); Events | where Timestamp > cutoff`. Explain and correct the scalar handling."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix contains casing mismatch"
+    prompt: "A query using `State contains_cs \"failed\"` misses rows containing Failed and FAILED. Correct it and explain the semantic difference."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix integer division rate"
+    prompt: "My error-rate query returns zero: `summarize Errors=countif(not(Success)), Total=count() | extend Rate=Errors/Total*100`. Make the calculation robust."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix join duplicate columns"
+    prompt: "After joining Requests and Dependencies on OperationId, references to Timestamp are ambiguous. Show a clear KQL pattern for preserving and naming both timestamps."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix malformed JSON parsing"
+    prompt: "`extend p=parse_json(Properties) | project p.tenantId` behaves inconsistently because some Properties values are invalid. Provide safer diagnostic KQL."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix time-series gaps"
+    prompt: "A summarize-by-bin chart omits quiet five-minute periods. Rewrite the query to provide a continuous 24-hour series with zero-filled gaps."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Fix unbounded regex query"
+    prompt: "This query times out: `Logs | where Message matches regex @\"error.*timeout\" | summarize count() by Service`. Optimize it while preserving intent for the last seven days."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

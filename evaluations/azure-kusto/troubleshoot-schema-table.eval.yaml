@@ -1,0 +1,79 @@
+name: azure-kusto-troubleshoot-schema-table
+description: Ten matched scenarios for troubleshooting Kusto tables and schemas.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Fix string duration aggregation"
+    prompt: "ApiLogs.DurationMs is string and may contain 'unknown'. Explain why avg(DurationMs) fails and provide robust KQL for average duration by Endpoint over six hours."
+    rubric: &rubric
+      - The response correctly diagnoses the stated schema or table mismatch and avoids assuming undocumented fields or types.
+      - The response provides plausible KQL or metadata checks that safely handle invalid, null, renamed, or differently typed values.
+      - The troubleshooting sequence starts with focused schema and bounded data checks and preserves the requested time scope.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Handle renamed status column"
+    prompt: "A saved query now fails because StatusCode no longer exists in Requests. Show how to confirm the current schema and adapt safely without guessing the replacement."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Resolve datetime stored as text"
+    prompt: "LegacyEvents.EventTime is stored as string and some values are malformed. Write KQL that safely filters valid events from the last day."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Diagnose missing recent rows"
+    prompt: "TelemetryEvents has historical rows but apparently nothing from today. Give a schema- and data-focused troubleshooting sequence before blaming ingestion."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Handle dynamic versus string JSON"
+    prompt: "Properties was changed from dynamic to string and bag_unpack-based queries fail. Explain how to verify the type and update parsing safely."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Resolve join key type mismatch"
+    prompt: "Requests.OperationId is guid but Dependencies.OperationId is string, causing a Kusto join error. Provide a safe correction and validation checks."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Investigate duplicate event rows"
+    prompt: "Events appears to contain duplicates for EventId. Write a bounded diagnostic query to quantify duplicates and explain schema or ingestion clues to inspect."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Troubleshoot nullable numeric values"
+    prompt: "Revenue is real but many rows are null, making totals confusing. Provide KQL that reports null prevalence and clearly handles nulls in aggregation."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Diagnose case-sensitive column failure"
+    prompt: "A query references correlationid but the table may expose CorrelationId. Explain how to verify the schema and correct the query."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Resolve cross-table schema drift"
+    prompt: "Two regional tables should have the same columns, but union reports inconsistent types for Severity. Show how to inspect and normalize them."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

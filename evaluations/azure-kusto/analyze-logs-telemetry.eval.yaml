@@ -1,0 +1,79 @@
+name: azure-kusto-analyze-logs-telemetry
+description: Ten matched scenarios for analyzing logs and telemetry.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: claude-sonnet-4.6
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Analyze deployment error spike"
+    prompt: "AppLogs has Timestamp, Service, Level, Message, and DeploymentId. Write KQL to compare hourly error rates before and after a deployment six hours ago and explain how to interpret it."
+    rubric: &rubric
+      - The response provides plausible KQL that uses the supplied schema and time scope to answer the analysis question.
+      - The response computes meaningful rates, trends, correlations, or segments rather than only returning raw logs, and guards invalid arithmetic where relevant.
+      - The interpretation distinguishes evidence from causation and identifies useful follow-up dimensions or checks.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Analyze regional latency"
+    prompt: "Requests contains Timestamp, Region, DurationMs, and Success. Analyze p50 and p95 latency plus failure rate by Region over the last day."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze noisy exception messages"
+    prompt: "Exceptions contains Timestamp, ExceptionType, Message, and Service. Write KQL to find dominant exception types and representative messages over seven days without returning every row."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze device disconnects"
+    prompt: "DeviceEvents has Timestamp, DeviceId, Region, EventType. Analyze disconnect frequency and affected unique devices by Region in hourly bins for 48 hours."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze authentication failures"
+    prompt: "AuthEvents has Timestamp, Result, FailureReason, ClientType, UserId. Analyze failure rates and top reasons by ClientType over the last 24 hours."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze dependency bottlenecks"
+    prompt: "Dependencies has Timestamp, Target, Type, DurationMs, Success. Find dependency targets with high p95 latency and meaningful traffic over the last six hours."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze queue processing lag"
+    prompt: "QueueEvents has EnqueuedAt, ProcessedAt, QueueName, Success. Write KQL to analyze processing lag percentiles and failures by queue for the last day."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze tenant error concentration"
+    prompt: "ApiEvents contains Timestamp, TenantId, Success, StatusCode. Determine whether errors over the last day are concentrated in a few tenants while protecting against tiny sample sizes."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze CPU saturation periods"
+    prompt: "HostMetrics has Timestamp, Host, CpuPercent. Identify hosts and time bins with sustained high CPU over the last 12 hours rather than isolated spikes."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
+  - name: "Analyze funnel drop-off"
+    prompt: "CheckoutEvents has Timestamp, SessionId, Step, Success. Write KQL to summarize unique sessions reaching each checkout step and estimate drop-off over seven days."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
