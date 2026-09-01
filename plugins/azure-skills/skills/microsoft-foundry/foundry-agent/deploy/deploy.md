@@ -10,7 +10,7 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 | Property | Value |
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), then verify and invoke |
-| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Dockerfile + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
+| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
 | Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
