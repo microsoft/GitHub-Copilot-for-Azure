@@ -10,7 +10,7 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 | Property | Value |
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, direct code deployment via `azd deploy` (`codeConfiguration` present), then verify and invoke |
-| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker/Podman + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
+| Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Dockerfile + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
 | Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
@@ -113,8 +113,6 @@ What this does:
 - Creates the Foundry project (if not present) and supporting resources under `infra/`.
 - Creates connections declared as top-level `azure.ai.connection` services. `${PARAM_*}` placeholders resolve from the active azd env.
 - Wires model deployments, AI Search, ACR, etc. `infra/layers/` provision in parallel when present.
-
-This is a core `azd` command. Skip provision when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` via `azd env set` -- the extension uses the existing project as-is.
 
 After provision completes for a new project, run `azd env get-values` and set missing required azd env values, especially `AZURE_AI_PROJECT_ID` and `AZURE_TENANT_ID`, before local run or the first `azd deploy`.
 
@@ -250,7 +248,7 @@ Each env has its own `AGENT_<SVC>_*` vars.
 | `subscription quota exceeded` | Ask user to request quota; do not auto-retry. |
 | Bicep deploy errors | Forward `error.details[]` verbatim to the user. |
 | `RoleAssignmentUpdateNotPermitted` during provision | A role assignment already exists but conflicts. Check for existing role assignments with `az role assignment list --scope <resource-scope>`. The provision may have succeeded for all resources except RBAC — verify with `azd ai project show` and manually assign the `Cognitive Services User` role to the agent identity if needed. |
-| `eval generate`: `one of --gen-instruction ... is required` | Retry with `--gen-instruction "<agent purpose>"` (Step 5 option (a)). |
+| `eval generate`: `one of --gen-instruction ... is required` | Retry with `--gen-instruction "<agent purpose>"` (Step 6 option (a)). |
 | `unknown command "init" for "azd ai agent eval"` | Command was renamed: use `azd ai agent eval generate` (requires azd CLI with `azure.ai.agents` extension up to date). |
 
 For deeper logs, see [troubleshoot](../troubleshoot/troubleshoot.md).
@@ -319,7 +317,7 @@ For hosted agents, `playground_url` is in `azd ai agent show --output json`.
 
 ## After Deployment — Auto-Generate Evaluation Suite
 
-> Reference for Step 5 options (a) and (b) — start `generate` right after deploy so its server-side generation overlaps with invoke/test steps and finishes faster. Options (c) and (d) skip `generate` and go straight to section 3 (run) or stop.
+> Reference for Step 6 options (a) and (b) — start `generate` right after deploy so its server-side generation overlaps with invoke/test steps and finishes faster. Options (c) and (d) skip `generate` and go straight to section 3 (run) or stop.
 
 ### 1. Inspect existing eval.yaml
 
@@ -330,7 +328,7 @@ Check the selected agent root for `eval.yaml`:
 
 ### 2. Submit generation (asynchronous, server-side)
 
-Run `azd ai agent eval generate --no-wait` with the user's chosen flags (see the Step 5 table). The command:
+Run `azd ai agent eval generate --no-wait` with the user's chosen flags (see the Step 6 table). The command:
 
 - Submits dataset + evaluator generation jobs server-side.
 - Returns in seconds.
