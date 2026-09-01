@@ -140,7 +140,7 @@ Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry
 
 Python example (add `--project-id "<resourceId>"` for an existing Foundry project):
 
-Pass `--deploy-mode code` for code deployment (recommended), or `--deploy-mode container` for container deployment.
+Pass `--deploy-mode code` for code deploy (recommended), or `--deploy-mode container` for container deploy.
 
 ```bash
 azd ai agent init --no-prompt \
@@ -170,7 +170,7 @@ Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agen
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
-`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<agent-name>/`, and `<service-dir>/.agentignore`. A successful code-deployment init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
+`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<agent-name>/`, and `<service-dir>/.agentignore`. A successful code deploy init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 
 #### Model deployments (azd Golden Path)
 

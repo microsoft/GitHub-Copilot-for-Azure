@@ -4,7 +4,7 @@ Opinionated happy-path for first-time users creating their first Foundry hosted 
 
 ## When to Use This Skill
 
-Use this when the request is to create a new Foundry hosted agent end-to-end — scaffold, provision, deploy, and smoke-test. Common overrides (language, region, sample, topic, existing project, existing model) are fine. This skill supports only the `responses` and `invocations` protocols. When working on existing agents, using container deployment, using the `activity` protocol, or handling anything else not covered here, stop and read [create-hosted.md](create-hosted.md).
+Use this when the request is to create a new Foundry hosted agent end-to-end — scaffold, provision, deploy, and smoke-test. Common overrides (language, region, sample, topic, existing project, existing model) are fine. This skill supports only the `responses` and `invocations` protocols. When working on existing agents, using container deploy, using the `activity` protocol, or handling anything else not covered here, stop and read [create-hosted.md](create-hosted.md).
 
 ## Quick Reference
 
@@ -18,7 +18,7 @@ Use this when the request is to create a new Foundry hosted agent end-to-end —
 | Foundry model deployment | Official sample's model selection | If user supplies a deployment name, `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME` after init |
 | Model version | Whatever the sample's manifest declares | If user supplies a model version, edit `azure.yaml`. If user supplies a model deployment without model version, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. If provision fails, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. |
 | Model quota | Skip the quota pre-check | If provision fails, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. |
-| Deploy mode | `code` (no Docker, no ACR build) | Container deployment is not supported in this quick start. To use container deployment, follow [create-hosted.md](create-hosted.md). |
+| Deploy mode | `code` (no Docker, no ACR build) | Container deploy is not supported in this quick start. To use container deploy, follow [create-hosted.md](create-hosted.md). |
 | Stops at | Deployed agent + remote smoke invoke + eval generation submitted | — |
 
 ## Workflow
@@ -72,7 +72,7 @@ Populate each question with the default option below.
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
 | Foundry model deployment | The user provided one. | Official sample's model selection | If the user specifies a model deployment, collect its deployment name. |
-| Deploy mode | Always — resolve without asking. | `code` | Container deployment is not supported in this quick start. To use container deployment, follow [create-hosted.md](create-hosted.md). |
+| Deploy mode | Always — resolve without asking. | `code` | Container deploy is not supported in this quick start. To use container deploy, follow [create-hosted.md](create-hosted.md). |
 
 If the user supplied only a **Foundry project endpoint** (not an ARM ID), resolve the ARM ID before Step 4:
 
@@ -108,7 +108,7 @@ Step 4 needs `--runtime` and `--entry-point` values. These are CLI args, **not**
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
-Pass `--deploy-mode code` by default to use code deployment.
+Pass `--deploy-mode code` by default to use code deploy.
 
 ```bash
 azd ai agent init --no-prompt \

@@ -8,7 +8,7 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 | Property | Value |
 |----------|-------|
-| Hosted (recommended) | `azd provision` when needed, code deployment via `azd deploy` (`codeConfiguration` present), then verify and invoke |
+| Hosted (recommended) | `azd provision` when needed, code deploy via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container/ACR deployment via `azd deploy` (requires Docker + ACR, no `codeConfiguration:` in the `azure.yaml` service block) |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
@@ -22,15 +22,15 @@ For **prompt agents** (LLM + instructions, no custom code), use the Foundry MCP 
 
 ## Deploy Mode Selection -- Hosted agents
 
-Follow the user's explicit deploy mode preference or the existing project configuration. Otherwise, use **code deployment through azd** by default (no Docker/ACR required): the agent's `azure.yaml` service block must contain `codeConfiguration:`, so `azd deploy` will zip the source and let Foundry build it. If `azd deploy` prints `Packaging container` for an agent that does not need container-specific behavior, add or fix `codeConfiguration` and retry.
+Follow the user's explicit deploy mode preference or the existing project configuration. Otherwise, use **code deploy through azd** by default (no Docker/ACR required): the agent's `azure.yaml` service block must contain `codeConfiguration:`, so `azd deploy` will zip the source and let Foundry build it. If `azd deploy` prints `Packaging container` for an agent that does not need container-specific behavior, add or fix `codeConfiguration` and retry.
 
-When the agent depends on Dockerfile behavior, system packages, or a pre-built image, or when the user explicitly asks to build or deploy a container image, mentions Container/Docker Image/Azure Container Registry (ACR), or supplies a pre-built image, use container deployment.
+When the agent depends on Dockerfile behavior, system packages, or a pre-built image, or when the user explicitly asks to build or deploy a container image, mentions Container/Docker Image/Azure Container Registry (ACR), or supplies a pre-built image, use container deploy.
 
 Before running `azd deploy`, inspect the agent's service block in `azure.yaml`.
 
 | Service block state | Deployment path |
 |------------------|-----------------|
-| `codeConfiguration:` present | **Code deployment** through `azd deploy`; no Docker/ACR build. |
+| `codeConfiguration:` present | **Code deploy** through `azd deploy`; no Docker/ACR build. |
 | No `codeConfiguration:` with `language: docker` | **Container/ACR deploy** through `azd deploy`. |
 
 `codeConfiguration:` example in the `azure.yaml` service block:
@@ -70,7 +70,7 @@ azd env set AZURE_AI_PROJECT_ID "<project-arm-id>"
 azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<model-deployment-name>"
 ```
 
-If using container deployment and the user provided an existing ACR, set:
+If using container deploy and the user provided an existing ACR, set:
 
 ```bash
 azd env set AZURE_CONTAINER_REGISTRY_NAME "<acr-name>"
@@ -95,7 +95,7 @@ Branch on output: `not_deployed` -> Step 2. `active` / `deployed` -> redeploy (s
 
 > 🚦 **Project-selection gate.** If no foundry project endpoint is configured (not in the message, `azd env`, or `.env`) and the user hasn't asked to create one, stop and ask them to pick an existing foundry project or confirm creating a new one — don't silently select.
 
-Skip `azd provision` when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` or `FOUNDRY_PROJECT_ENDPOINT` and no infrastructure changes are needed. If container deployment needs a new ACR, run `azd provision` even when using an existing Foundry project.
+Skip `azd provision` when the user gave you an existing `AZURE_AI_PROJECT_ENDPOINT` or `FOUNDRY_PROJECT_ENDPOINT` and no infrastructure changes are needed. If container deploy needs a new ACR, run `azd provision` even when using an existing Foundry project.
 
 Run provision only for new projects or real infrastructure changes:
 
@@ -119,7 +119,7 @@ After provision completes for a new project, run `azd env get-values` and set mi
 
 Branch by deploy mode.
 
-#### Code deployment
+#### Code deploy
 
 Run `azd env get-values` and verify that these values are set for the intended
 environment:
@@ -129,9 +129,9 @@ environment:
 - `AZURE_AI_MODEL_DEPLOYMENT_NAME`
 - `AZURE_TENANT_ID`
 
-#### Container deployment
+#### Container deploy
 
-Complete the [Container Deployment Precheck](references/container-deploy.md)
+Complete the [Container Deploy Precheck](references/container-deploy.md)
 before continuing.
 
 ### Step 4 -- Deploy the agent
@@ -145,8 +145,8 @@ azd deploy <service-name> --no-prompt
 What deploy does:
 
 - Reads the agent's `azure.yaml` service block, packages the agent, uploads it, and registers a new immutable version.
-- **Code deployment** (`codeConfiguration` present): zips source, excludes `.agentignore`, and lets Foundry build the runtime image.
-- **Container deployment** (no code configuration): builds the `Dockerfile`, pushes to the project's ACR, registers the version. When the service block has `image:` set, `azd` reuses the pre-built image.
+- **Code deploy** (`codeConfiguration` present): zips source, excludes `.agentignore`, and lets Foundry build the runtime image.
+- **Container deploy** (no code configuration): builds the `Dockerfile`, pushes to the project's ACR, registers the version. When the service block has `image:` set, `azd` reuses the pre-built image.
 
 After deploy, azd writes `AGENT_<SVC>_NAME`, `AGENT_<SVC>_VERSION`, and `AGENT_<SVC>_<PROTO>_ENDPOINT` (one per protocol) into the active env.
 
@@ -206,7 +206,7 @@ Then proceed to Step 7. See [After Deployment — Auto-Generate Evaluation Suite
 
 ## `.agentignore`
 
-`azd ai agent init` writes a default `<service-dir>/.agentignore` for code-deployment projects (gitignore syntax) that excludes tooling files, secrets, language artifacts, and Docker files from the deploy ZIP. Only the root file is read; use `!path` to force-include.
+`azd ai agent init` writes a default `<service-dir>/.agentignore` for code deploy projects (gitignore syntax) that excludes tooling files, secrets, language artifacts, and Docker files from the deploy ZIP. Only the root file is read; use `!path` to force-include.
 
 ## Endpoint or card edits -- no new version
 
@@ -236,10 +236,10 @@ Each env has its own `AGENT_<SVC>_*` vars.
 | `missing_project_endpoint` | Run `azd env set AZURE_AI_PROJECT_ENDPOINT <url>`, or run `azd provision` for a new project. |
 | `invalid_agent_manifest` | `azd ai agent doctor`; fix the named field. |
 | `invalid_connection` | Inspect with `azd ai connection show <name>`. |
-| Docker daemon not running | You are on the container path. Add/fix `codeConfiguration` and retry code deployment. Only install Docker or try remote image build if you specifically need container deployment. |
-| ACR push 403 | Foundry project RBAC is missing `AcrPush` for your identity. Consider switching to code deployment to avoid ACR entirely. |
+| Docker daemon not running | You are on the container path. Add/fix `codeConfiguration` and retry code deploy. Only install Docker or try remote image build if you specifically need container deploy. |
+| ACR push 403 | Foundry project RBAC is missing `AcrPush` for your identity. Consider switching to code deploy to avoid ACR entirely. |
 | `[ImageError] Container registry authentication failed` | The Foundry project managed identity lacks **AcrPull**, or **Container Registry Repository Reader** on an ABAC registry. Grant it before retrying. |
-| `container registry endpoint not found` | ACR is not configured. Use `azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <url>`, or switch to code deployment. |
+| `container registry endpoint not found` | ACR is not configured. Use `azd env set AZURE_CONTAINER_REGISTRY_ENDPOINT <url>`, or switch to code deploy. |
 | Agent version poll times out | Build still running; retry `azd ai agent show` after a minute. |
 | `session_not_ready` (424) | Cold start or readiness delay. Wait 15-30 seconds and retry. If persistent, use `1` CPU / `2Gi` memory minimum, verify the model deployment name, capability host, and agent identity role. |
 | `invalid value "json" for --output` from `azd ai agent invoke` | Invoke supports only `default` and `raw` currently. Retry without `--output json`. |
