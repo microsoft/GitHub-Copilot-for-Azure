@@ -17,6 +17,15 @@ import type { CompareRunOutput } from "./run-compare";
 const STORAGE_ACCOUNT = "strdashboarddevveobvk";
 const CONTAINER = "manual-integration-reports";
 const OUTPUT_ROOT = "comparison-artifacts";
+const AZ_COMMAND = process.platform === "win32"
+  ? process.env.ComSpec ?? "cmd.exe"
+  : "az";
+
+function azArgs(args: string[]): string[] {
+  return process.platform === "win32"
+    ? ["/d", "/s", "/c", "az", ...args]
+    : args;
+}
 
 function usage(): void {
   console.log(`Usage: collect-artifacts.ts <input.json>
@@ -107,6 +116,60 @@ function run(): void {
       const mcpSuffix = withAzureMcp === undefined
         ? ""
         : withAzureMcp ? "-with-mcp" : "-without-mcp";
+      const conditionName = `${model}-${skillSuffix}${mcpSuffix}`;
+      const runPrefix = `${date}/${runId}/${skillName}/`;
+
+      // Download run-level grader results and summaries once per workflow run.
+      try {
+        const runBlobListing = execFileSync(AZ_COMMAND, azArgs([
+          "storage", "blob", "list",
+          "--account-name", STORAGE_ACCOUNT,
+          "--container-name", CONTAINER,
+          "--prefix", runPrefix,
+          "--auth-mode", "login",
+          "--query", "[].name",
+          "-o", "tsv"
+        ]), {
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "ignore"]
+        }) as string;
+        const runArtifacts = runBlobListing
+          .trim()
+          .split("\n")
+          .map((blob) => blob.trim())
+          .filter((blob) => blob)
+          .filter((blob) => {
+            const relativePath = blob.slice(runPrefix.length);
+            return !relativePath.includes("/")
+              && (relativePath.endsWith(".jsonl")
+                || relativePath === "testResults.json"
+                || relativePath.endsWith("-SKILL-REPORT.md"));
+          });
+        const runOutputDir = path.join(
+          OUTPUT_ROOT,
+          encodeBranchName(branch),
+          "_run-results",
+          conditionName,
+          runId
+        );
+        fs.mkdirSync(runOutputDir, { recursive: true });
+        for (const blob of runArtifacts) {
+          execFileSync(AZ_COMMAND, azArgs([
+            "storage", "blob", "download",
+            "--account-name", STORAGE_ACCOUNT,
+            "--container-name", CONTAINER,
+            "--name", blob,
+            "--file", path.join(runOutputDir, path.basename(blob)),
+            "--auth-mode", "login",
+            "--overwrite",
+            "--no-progress",
+            "-o", "none"
+          ]), { stdio: "ignore" });
+        }
+      } catch {
+        console.error(`Error: failed to download run-level artifacts for run ${runId}.`);
+        failed = 1;
+      }
 
       // Discover stimuli for this run
       const prefix = `${date}/${runId}/${skillName}/${skillName}_`;
@@ -116,7 +179,7 @@ function run(): void {
 
       let discoveryResult: string;
       try {
-        discoveryResult = execFileSync("az", [
+        discoveryResult = execFileSync(AZ_COMMAND, azArgs([
           "storage", "blob", "list",
           "--account-name", STORAGE_ACCOUNT,
           "--container-name", CONTAINER,
@@ -124,7 +187,7 @@ function run(): void {
           "--auth-mode", "login",
           "--query", "[?ends_with(name, '.md')].name",
           "-o", "tsv"
-        ], {
+        ]), {
           encoding: "utf-8",
           stdio: ["pipe", "pipe", "ignore"]
         }) as string;
@@ -162,7 +225,7 @@ function run(): void {
           OUTPUT_ROOT,
           encodeBranchName(branch),
           stimuliPart,
-          `${model}-${skillSuffix}${mcpSuffix}`
+          conditionName
         );
         const blobPrefix = `${date}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
 
@@ -172,7 +235,7 @@ function run(): void {
 
         let blobs: string;
         try {
-          blobs = execFileSync("az", [
+          blobs = execFileSync(AZ_COMMAND, azArgs([
             "storage", "blob", "list",
             "--account-name", STORAGE_ACCOUNT,
             "--container-name", CONTAINER,
@@ -180,7 +243,7 @@ function run(): void {
             "--auth-mode", "login",
             "--query", "[?ends_with(name, '.md')].name",
             "-o", "tsv"
-          ], {
+          ]), {
             encoding: "utf-8",
             stdio: ["pipe", "pipe", "ignore"]
           }) as string;
@@ -211,7 +274,7 @@ function run(): void {
 
           try {
             const outputPath = path.join(stimuliOutputDir, fileName);
-            execFileSync("az", [
+            execFileSync(AZ_COMMAND, azArgs([
               "storage", "blob", "download",
               "--account-name", STORAGE_ACCOUNT,
               "--container-name", CONTAINER,
@@ -221,7 +284,7 @@ function run(): void {
               "--overwrite",
               "--no-progress",
               "-o", "none"
-            ], { stdio: "ignore" });
+            ]), { stdio: "ignore" });
           } catch {
             console.error(`Error: failed to download blob ${blob}`);
             failed = 1;
