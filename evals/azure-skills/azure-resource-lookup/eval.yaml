@@ -237,7 +237,12 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+      azureFixture: ./fixture/missing-tag/azure-manifest.json
+      debug: yes
     graders:
+      - type: output-matches
+        config:
+          pattern: "stuntagged"
       - type: output-matches
         config:
           pattern: "(?i)tag"
