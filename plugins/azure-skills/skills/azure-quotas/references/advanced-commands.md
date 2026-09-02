@@ -1,49 +1,56 @@
 # Advanced Azure Quota Commands
 
-Reference for less commonly used Azure quota CLI commands for tracking quota requests and operations.
+Use these Azure CLI commands to track quota requests and list quota operations.
 
 ## az quota request status list
 
-Get current quota requests for a one-year period. Use oData filter to select requests.
+Use this command to get quota requests from a one-year period. Use an OData filter to select specific requests.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota request status list --scope SCOPE [--filter FILTER] [--max-items N] [--next-token TOKEN] [--skip-token TOKEN] [--top N]
 ```
 
-**Required**:
-- `--scope` - Target Azure resource URI
+Required parameter:
 
-**Optional**:
-- `--filter` - Filter by requestSubmitTime (ge/le/eq), provisioningState (eq), resourceName (eq)
-- `--max-items` - Total items to return
-- `--next-token` - Pagination token from previous response
-- `--skip-token` - Skip token for next page
-- `--top` - Number of records to return
+- `--scope`: Target Azure resource URI.
 
-**Examples**:
+Optional parameters:
+
+- `--filter`: Filter by `requestSubmitTime` (`ge`, `le`, or `eq`), `provisioningState` (`eq`), or `resourceName` (`eq`).
+- `--max-items`: Maximum total number of items to return.
+- `--next-token`: Pagination token from the previous response.
+- `--skip-token`: Token that skips to the next page.
+- `--top`: Number of records to return.
+
+Examples:
+
 ```bash
-# List compute quota requests
+# List compute quota requests.
 az quota request status list --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus
 
-# List network quota requests
+# List network quota requests.
 az quota request status list --scope /subscriptions/{id}/providers/Microsoft.Network/locations/eastus
 ```
 
 ## az quota request status show
 
-Get quota request details and status by request ID. The ID is returned from `az quota update` PUT operation.
+Use this command to get the details and status of one quota request. The `az quota update` operation returns the request ID.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota request status show --id REQUEST_ID --scope SCOPE
 ```
 
-**Required**:
-- `--id` - Quota request ID
-- `--scope` - Target Azure resource URI
+Required parameters:
 
-**Example**:
+- `--id`: Quota request ID.
+- `--scope`: Target Azure resource URI.
+
+Example:
+
 ```bash
 az quota request status show \
   --id 2B5C8515-37D8-4B6A-879B-CD641A2CF605 \
@@ -52,18 +59,20 @@ az quota request status show \
 
 ## az quota operation list
 
-List all operations supported by Microsoft.Quota resource provider.
+Use this command to list the operations that the `Microsoft.Quota` resource provider supports.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota operation list
 ```
 
-**Examples**:
+Examples:
+
 ```bash
-# List all operations
+# List all operations.
 az quota operation list
 
-# Table format
+# Show the operations in a table.
 az quota operation list --output table
 ```

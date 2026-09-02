@@ -1,65 +1,56 @@
-# Azure Quota CLI Commands Reference
+# Azure Quota CLI Command Reference
 
-Comprehensive reference for Azure CLI quota commands.
+Use this reference for Azure CLI quota commands.
 
 ## Prerequisites
 
-**Install quota extension** (required):
+Install the quota extension:
+
 ```bash
 az extension add --name quota
 ```
 
-> **⚠️ CRITICAL: ALWAYS USE CLI FIRST**
+> ⚠️ **Use Azure CLI first.**
 >
-> Azure CLI is the **ONLY reliable method** for quota checks. **Use `az quota` commands FIRST, always.**
+> 1. Run `az quota list`, `az quota show`, or `az quota usage show`.
+> 2. If the command returns `BadRequest`, use the [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits).
+> 3. Use the REST API or the Azure portal only as a fallback.
 >
-> **DO NOT use REST API or Azure Portal as your first approach.** They are unreliable.
->
-> **Required workflow:**
-> 1. **FIRST:** Try `az quota list` / `az quota show` / `az quota usage show`
-> 2. **If CLI returns `BadRequest`:** Resource provider doesn't support quota API → use [Azure service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-> 3. **Never start with REST API or Portal** - only use as fallback
->
-> **Why REST API/Portal are unreliable:**
-> - REST API returns "No Limit" or "Unlimited" values that are **MISLEADING**
-> - "No Limit" **DOES NOT mean unlimited capacity** - usually means resource doesn't support quota API
-> - Service-specific limits still apply even when REST API shows "No Limit"
-> - Portal may show incomplete or cached quota data
-> - REST API lacks proper error handling for unsupported providers
->
-> **If you see "No Limit" in REST API/Portal:**
-> - ❌ This is NOT unlimited capacity
-> - ✅ It means quota API doesn't support that resource type
-> - ✅ Check [Azure service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) for actual limits
-> - ✅ Regional capacity constraints may still exist
+> The REST API and the portal can show `No Limit` or `Unlimited`. These values do not mean that capacity is unlimited.
+> The quota API can return these values when it does not support a resource type.
+> Service-specific limits and regional capacity limits can still apply.
 
 ## Resource Name Mapping
 
-**⚠️ CRITICAL:** No 1:1 mapping exists between ARM resource types and quota names. Always discover via `az quota list`.
+An ARM resource type does not map directly to one quota resource name. Use `az quota list` to find the name.
 
-**Discovery workflow**:
-1. List all quotas: `az quota list --scope /subscriptions/{id}/providers/{Provider}/locations/{region}`
-2. Match `properties.name.localizedValue` to your resource type
-3. Use exact `name` value in subsequent commands
+1. List all quotas:
 
-**Example mappings**:
+   ```bash
+   az quota list --scope /subscriptions/{id}/providers/{Provider}/locations/{region}
+   ```
 
-| ARM Type | Quota Name |
-|----------|-----------|
+2. Match `properties.name.localizedValue` to the applicable resource type.
+3. Use the exact `name` value in later commands.
+
+Example mappings:
+
+| ARM type | Quota name |
+|---|---|
 | `Microsoft.App/managedEnvironments` | `ManagedEnvironmentCount` |
 | `Microsoft.Compute/virtualMachines` | `standardDSv3Family`, `cores`, `virtualMachines` |
 | `Microsoft.Network/publicIPAddresses` | `PublicIPAddresses`, `IPv4StandardSkuPublicIpAddresses` |
 
 ## Command Summary
 
-| Command | Description |
-|---------|-------------|
-| [az quota list](#az-quota-list) | List all quota limits for a scope |
-| [az quota show](#az-quota-show) | Show quota limit for specific resource |
-| [az quota usage list](#az-quota-usage-list) | List current usage for all resources |
-| [az quota usage show](#az-quota-usage-show) | Show current usage for specific resource |
-| [az quota update](#az-quota-update) | Request quota increase |
-| [az quota create](#az-quota-create) | Create quota limit (advanced) |
+| Command | Purpose |
+|---|---|
+| [az quota list](#az-quota-list) | List all quota limits for a scope. |
+| [az quota show](#az-quota-show) | Show the quota limit for one resource. |
+| [az quota usage list](#az-quota-usage-list) | List current usage for all resources. |
+| [az quota usage show](#az-quota-usage-show) | Show current usage for one resource. |
+| [az quota update](#az-quota-update) | Request a quota increase. |
+| [az quota create](#az-quota-create) | Create a quota limit. |
 
 See [advanced-commands.md](advanced-commands.md) for request status and operation commands.
 
@@ -67,91 +58,103 @@ See [advanced-commands.md](advanced-commands.md) for request status and operatio
 
 ## az quota list
 
-List all quota limits for a scope. **Use this first to discover quota resource names.**
+Use this command first. It lists quota limits and identifies quota resource names.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota list --scope SCOPE [--max-items N] [--next-token TOKEN]
 ```
 
-**Required**:
-- `--scope` - Azure resource URI: `/subscriptions/{id}/providers/{Provider}/locations/{region}`
+Required parameter:
 
-**Examples**:
+- `--scope`: Azure resource URI in the form `/subscriptions/{id}/providers/{Provider}/locations/{region}`
+
+Examples:
+
 ```bash
-# List compute quotas
+# List compute quotas.
 az quota list --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus
 
-# List network quotas
+# List network quotas.
 az quota list --scope /subscriptions/{id}/providers/Microsoft.Network/locations/eastus
 
-# Table format
+# Show compute quotas in a table.
 az quota list --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus --output table
 ```
 
-**Key output fields**:
-- `name` - Quota resource name (use in other commands)
-- `properties.name.localizedValue` - Human-readable description
-- `properties.limit.value` - Quota limit
+Key output fields:
+
+- `name`: Quota resource name. Use this value in other commands.
+- `properties.name.localizedValue`: Human-readable description.
+- `properties.limit.value`: Quota limit.
 
 ---
 
 ## az quota show
 
-Show quota limit for a specific resource.
+Use this command to show the quota limit for one resource.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota show --resource-name NAME --scope SCOPE
 ```
 
-**Required**:
-- `--resource-name` - Quota resource name (from `az quota list`)
-- `--scope` - Azure resource URI
+Required parameters:
 
-**Example**:
+- `--resource-name`: Quota resource name from `az quota list`.
+- `--scope`: Azure resource URI.
+
+Example:
+
 ```bash
-# Get DSv3 family vCPU limit
+# Get the DSv3-family vCPU limit.
 az quota show \
   --resource-name standardDSv3Family \
   --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus
 ```
 
-**Key output fields**:
-- `properties.limit.value` - Quota limit
-- `properties.name.localizedValue` - Human-readable description
-- `properties.quotaPeriod` - Reset period (e.g., P1M = 1 month)
+Key output fields:
+
+- `properties.limit.value`: Quota limit.
+- `properties.name.localizedValue`: Human-readable description.
+- `properties.quotaPeriod`: Reset period. For example, `P1M` means one month.
 
 ---
 
 ## az quota update
 
-Request quota increase for a resource.
+Use this command to request a quota increase.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota update --resource-name NAME --scope SCOPE --limit-object value=N [--resource-type TYPE] [--no-wait]
 ```
 
-**Required**:
-- `--resource-name` - Quota resource name
-- `--scope` - Azure resource URI  
-- `--limit-object` - New limit value (format: `value=N`)
+Required parameters:
 
-**Optional**:
-- `--resource-type` - Resource type (e.g., dedicated, lowPriority)
-- `--no-wait` - Don't wait for completion (true/false)
+- `--resource-name`: Quota resource name.
+- `--scope`: Azure resource URI.
+- `--limit-object`: New limit in the form `value=N`.
 
-**Examples**:
+Optional parameters:
+
+- `--resource-type`: Resource type, such as `dedicated` or `lowPriority`.
+- `--no-wait`: Do not wait for the operation to finish.
+
+Examples:
+
 ```bash
-# Increase FSv2 family vCPUs to 100
+# Increase FSv2-family vCPUs to 100.
 az quota update \
   --resource-name standardFSv2Family \
   --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus \
   --limit-object value=100 \
   --resource-type dedicated
 
-# Non-blocking request
+# Submit the request without waiting.
 az quota update \
   --resource-name standardFSv2Family \
   --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus \
@@ -163,87 +166,96 @@ az quota update \
 
 ## az quota usage list
 
-List current usage for all resources in a scope.
+Use this command to list current usage for all resources in a scope.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota usage list --scope SCOPE [--max-items N] [--next-token TOKEN]
 ```
 
-**Required**:
-- `--scope` - Azure resource URI
+Required parameter:
 
-**Examples**:
+- `--scope`: Azure resource URI.
+
+Examples:
+
 ```bash
-# List compute usage
+# List compute usage.
 az quota usage list --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus
 
-# Table format
+# Show compute usage in a table.
 az quota usage list --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus --output table
 ```
 
-**Key output**:
-- `properties.usages.value` - Current usage count
-- Use with `az quota show` to calculate available capacity
+The `properties.usages.value` field contains current usage. Compare this value with `az quota show` to calculate available capacity.
 
 ---
 
 ## az quota usage show
 
-Show current usage for a specific resource.
+Use this command to show current usage for one resource.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota usage show --resource-name NAME --scope SCOPE
 ```
 
-**Required**:
-- `--resource-name` - Quota resource name
-- `--scope` - Azure resource URI
+Required parameters:
 
-**Example**:
+- `--resource-name`: Quota resource name.
+- `--scope`: Azure resource URI.
+
+Example:
+
 ```bash
 az quota usage show \
   --resource-name standardDSv3Family \
   --scope /subscriptions/{id}/providers/Microsoft.Compute/locations/eastus
 ```
 
-**Calculate available capacity**:
-1. Get limit: `az quota show --resource-name {name} --scope {scope}` → limit value
-2. Get usage: `az quota usage show --resource-name {name} --scope {scope}` → current usage
-3. Available = Limit - Usage
+Calculate available capacity:
 
-**Example calculation**:
-- Limit (from `az quota show`): 350 vCPUs
-- Usage (from `az quota usage show`): 12 vCPUs
-- **Available**: 338 vCPUs
+1. Get the limit with `az quota show --resource-name {name} --scope {scope}`.
+2. Get usage with `az quota usage show --resource-name {name} --scope {scope}`.
+3. Subtract usage from the limit.
+
+Example:
+
+- Limit: 350 vCPUs.
+- Usage: 12 vCPUs.
+- Available capacity: 338 vCPUs.
 
 ---
 
 ## az quota create
 
-Create quota limit for a resource. **Rarely used** - typically use `az quota update` instead.
+Use this command to create a quota limit. This command is uncommon. Usually, use `az quota update`.
 
-**Syntax**:
+Syntax:
+
 ```bash
 az quota create --resource-name NAME --scope SCOPE --limit-object value=N [--resource-type TYPE]
 ```
 
-**Required**:
-- `--resource-name` - Quota resource name
-- `--scope` - Azure resource URI
-- `--limit-object` - Quota limit value
+Required parameters:
 
-**Examples**:
+- `--resource-name`: Quota resource name.
+- `--scope`: Azure resource URI.
+- `--limit-object`: Quota limit value.
+
+Examples:
+
 ```bash
-# Create network quota
+# Create a network quota.
 az quota create \
   --resource-name MinPublicIpInterNetworkPrefixLength \
   --scope /subscriptions/{id}/providers/Microsoft.Network/locations/eastus \
   --limit-object value=10 \
   --resource-type MinPublicIpInterNetworkPrefixLength
 
-# Create ML quota
+# Create a machine-learning quota.
 az quota create \
   --resource-name TotalLowPriorityCores \
   --scope /subscriptions/{id}/providers/Microsoft.MachineLearningServices/locations/eastus \
@@ -257,67 +269,65 @@ az quota create \
 
 ### Unsupported Resource Types
 
-Not all Azure resource providers support the quota API. If you receive a `BadRequest` error when running `az quota list`, the provider likely doesn't support quota commands.
+Some Azure resource providers do not support the quota API. A `BadRequest` response from `az quota list` can identify an unsupported provider.
 
-**Example - Microsoft.DocumentDB (Cosmos DB)**:
+Example for `Microsoft.DocumentDB`:
+
 ```bash
 az quota list --scope /subscriptions/{id}/providers/Microsoft.DocumentDB/locations/eastus
 # Error: (BadRequest) Bad request
 ```
 
-**Workarounds**:
-- Check [Azure subscription limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-- Use Azure Portal for quota management
-- Check service-specific documentation
+If the provider is unsupported:
 
-**Testing provider support**:
+- Check the [Azure subscription limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits).
+- Use the Azure portal for quota management.
+- Check the service documentation.
+
+Test provider support:
+
 ```bash
-# Try listing quotas
 az quota list --scope /subscriptions/{id}/providers/{Provider}/locations/{region}
 
-# BadRequest error → not supported
-# List of quotas → supported
+# BadRequest: The provider is not supported.
+# A quota list: The provider is supported.
 ```
 
 ### REST API "No Limit" Warning
 
-> **⚠️ CRITICAL WARNING: REST API "No Limit" is MISLEADING**
+> ⚠️ **Do not interpret `No Limit` as unlimited capacity.**
 >
-> If you see "No Limit", "Unlimited", or similar values in REST API or Azure Portal responses:
+> `No Limit`, `Unlimited`, and similar values can have these causes:
 >
-> **This DOES NOT mean unlimited capacity!**
+> - The quota API does not support the resource provider.
+> - The API cannot supply quota information.
+> - Azure manages the quota at a different scope.
 >
-> It most likely means:
-> - The resource provider doesn't support the quota API
-> - Quota information isn't available through this API
-> - The quota is managed at a different scope
->
-> **DO NOT assume unlimited capacity. Always:**
-> 1. Use `az quota` CLI commands first (preferred method)
-> 2. If CLI returns `BadRequest`, check [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-> 3. Consult service-specific documentation for actual limits
-> 4. Consider regional capacity constraints even without quota enforcement
+> Use `az quota` first. If it returns `BadRequest`, check the [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits).
+> Also check the service documentation and regional capacity.
 
 ### Common Error Codes
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| `BadRequest` | Provider not supported by quota API | Use CLI (preferred) or check [Azure service limits docs](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits) |
-| `ExtensionNotFound` | Quota extension not installed | Run `az extension add --name quota` |
-| `MissingRegistration` | Microsoft.Quota provider not registered | Run `az provider register --namespace Microsoft.Quota` |
-| `InvalidScope` | Incorrect scope format | Verify: `/subscriptions/{id}/providers/{namespace}/locations/{region}` |
-| `QuotaNotAvailableForResource` | Resource not available in region | Try different region |
-| `RequestThrottled` | Too many API calls | Implement exponential backoff |
+| Error | Cause | Corrective action |
+|---|---|---|
+| `BadRequest` | The quota API does not support the provider. | Check the [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits). |
+| `ExtensionNotFound` | The quota extension is not installed. | Run `az extension add --name quota`. |
+| `MissingRegistration` | The `Microsoft.Quota` provider is not registered. | Run `az provider register --namespace Microsoft.Quota`. |
+| `InvalidScope` | The scope has an incorrect format. | Use `/subscriptions/{id}/providers/{namespace}/locations/{region}`. |
+| `QuotaNotAvailableForResource` | The resource is not available in the region. | Select a different region. |
+| `RequestThrottled` | The client sent too many API calls. | Use exponential backoff. |
 
 ### Known Support Status
 
-**Unsupported**:
-- ❌ Microsoft.DocumentDB (Cosmos DB)
+Unsupported:
 
-**Supported**:
-- ✅ Microsoft.Compute (VMs, disks, cores)
-- ✅ Microsoft.Network (VNets, IPs, load balancers)
-- ✅ Microsoft.App (Container Apps)
-- ✅ Microsoft.Storage (storage accounts)
-- ✅ Microsoft.MachineLearningServices
-- ✅ Microsoft.ContainerService (AKS)
+- ❌ `Microsoft.DocumentDB` for Cosmos DB
+
+Supported:
+
+- ✅ `Microsoft.Compute` for VMs, disks, and cores
+- ✅ `Microsoft.Network` for virtual networks, IP addresses, and load balancers
+- ✅ `Microsoft.App` for Container Apps
+- ✅ `Microsoft.Storage` for storage accounts
+- ✅ `Microsoft.MachineLearningServices`
+- ✅ `Microsoft.ContainerService` for AKS
