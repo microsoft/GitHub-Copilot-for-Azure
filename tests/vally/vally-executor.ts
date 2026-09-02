@@ -1,16 +1,23 @@
-import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { computeMetrics } from "@microsoft/vally";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "url";
+import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
+import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
+import { normalizeTestName } from "./utils.ts";
+import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
-import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
-import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
-import { normalizeTestName } from "./utils.ts";
-import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
+import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
+import type { ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * The model to use for the agent run.
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
+const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
@@ -42,9 +49,11 @@ export class IntegrationTestAgentRunner implements Executor {
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
     const requiredSkillRefs: SkillRef[] = [];
+    let plugin: Plugin | undefined;
     (requiredSkills ?? [skillName]).forEach(s => {
       const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === s)).at(0);
       if (owningPlugin) {
+        plugin = owningPlugin;
         requiredSkillRefs.push({
           pluginDirname: owningPlugin.dirname,
           name: s
@@ -82,6 +91,22 @@ export class IntegrationTestAgentRunner implements Executor {
       // vally will delete the test workspace by default.
       preserveWorkspace: true
     };
+
+    // Provision azure fixture if it's defined
+    const relativeManifestPath = getAzureFixtureManifestPath(tags);
+    if (relativeManifestPath && plugin?.dirname) {
+      // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
+      const absoluteManifestPath = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`, relativeManifestPath);
+      console.log("absoluteManifestPath", absoluteManifestPath);
+      const provisionOutput = execFileSync(
+        NPX_COMMAND,
+        ["tsx", path.resolve(__dirname, "../azure-fixtures/provision-fixture.ts"), absoluteManifestPath],
+        { encoding: "utf8" }
+      );
+      const parsedProvisionOutput = JSON.parse(provisionOutput);
+      const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
+      runConfig.prompt += `\n${azureScopePrompt}`;
+    }
 
     const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
     const completedAt = new Date();
@@ -264,4 +289,8 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
 
 export function registerExecutors(registry: ExecutorRegistry): void {
   registry.register(new IntegrationTestAgentRunner());
+}
+
+function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): string {
+  return `Limit your operations in the following resource groups: ${JSON.stringify(fixtureOutput.resourceGroups)}. Never read or modify resources outside these resource groups`;
 }

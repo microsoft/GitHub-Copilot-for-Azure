@@ -29,22 +29,23 @@ Without fixture, our evaluations are limited in the following ways:
 
 There are two types of fixtures:
 
-- read-only fixture
+- readOnly fixture
 
 For this type of fixture, the agent task reads data of the resources but don't modify them.
 
-- read-write fixture
+- readWrite fixture
 
 For this type of fixture, the agent task reads data of the resources and modify them.
 
 ## Evaluation setup
 
 ### Files
+
 A test case (vally stimuli) defines its Azure fixtures in the following files.
 
 - A manifest.json file, called "manifest" below.
 - One or more .bicep templates. Each templates are written at the "resource group scope".
-- An environment command in the vally stimuli that executes a "provision-fixture" script, with the manifest as the cmd input.
+- An 'azureFixture' tag in the stimuli with relative path to the manifest (path relative to the stimuli file).
 - A provision-fixture script that handles provisioning fixtures.
 - A clean up script that can delete fixtures from a manifest.
 
@@ -52,8 +53,8 @@ A test case (vally stimuli) defines its Azure fixtures in the following files.
 
 The manifest contains information to support the following tasks:
 
-1. Find provisioned fixtures
-2. Delete stale provisioned fixtures
+1. Find provisioned fixtures (if needed)
+2. Delete stale provisioned fixtures (if needed)
 3. Provision new fixtures
 4. Compute the context prompt to send to the LLM to scope its operations
 
@@ -63,7 +64,7 @@ A manifest has a schemaVersion. It needs to be bumped every time the manifest sc
 
 A manifest has a version. It needs to be bumped every time the underlying fixture definition is updated and needs to be provisioned again. The provisioned fixtures will have a tag carrying this version number to support detecting stale fixtures. The computed resource group names carry the version number so a script run with an updated manifest can delete the stale fixtures and provision the new fixture at the same time.
 
-A manifest has a type indicating if the fixture is readOnly or readWrite.
+A manifest has a type indicating if the fixture is readOnly or readWrite. This is currently only used for human readers to quickly capture how the fixture will be used. The provision script doesn't use it.
 
 A manifest has a description. It's a human facing piece of text explaining what this manifest contains in natural language.
 
@@ -94,7 +95,7 @@ The provision-fixture script manages the lifecycle of all the fixtures and makes
 The script maintains a "context". The context contains the metadata of the script run and pre-computed values that can be used as substitution parameters.
 
 - runId: a unique random UUID of the run
-- suffix: a randomly generated suffix for resource group name, only used for readWrite fixtures
+- suffix: a randomly generated suffix for resource group name
 - subscriptionId: subscription ID of the test subscription
 - tenantId: tenant ID of the test subscription
 - resourceGroupNames: the actual resource group names computed for this run
@@ -106,33 +107,7 @@ The context is computed at the beginning of the script run.
 
 The script iterates through all the Bicep configs and provision each of them.
 
-##### ReadOnly
-
-ReadOnly fixtures are provisioned once, persisted and reused by test runs depending on them. Stale readOnly fixtures will be deleted.
-
-For each Bicep config:
-
-1. Scan to find existing fixture
-
-If an existing resource group with matching fixtureId is found, check the version to see if it's stale (provisioned version is lower than current version). If the provisioned fixture is not stale, skip the rest of the steps.
-
-2. Delete the stale fixture
-
-If a stale resource group with matching fixtureId is found, the script will schedule the deletion of it without waiting for it to finish. Otherwise, skip this step.
-
-3. Provision the new fixture
-
-The script first creates the target resource group using Azure CLI. The Azure CLI command will use the computed resource group name and add the following tags to it:
-
-- FixtureId={fixtureId of the Bicep config}
-- FixtureVersion={version of the manifest}
-- DoNotDelete=true, so the clean up script won't delete these fixtures
-
-Then it uses Azure CLI to provision the Bicep template to this resource group. All the declared parameters are resolved before invoking Azure CLI and passed as parameters to the Bicep template.
-
-##### ReadWrite
-
-ReadWrite fixtures are not persisted. Every new run provisions a fresh fixture. A random suffix is appended to the actual resource group names so that concurrent script runs don't run into name collision.
+Fixtures are not persisted. Every new run provisions a fresh fixture. A random suffix is appended to the actual resource group names so that concurrent script runs don't run into name collision.
 
 For each Bicep config:
 
@@ -146,7 +121,7 @@ The script first creates the target resource group using Azure CLI. The Azure CL
 
 Then it uses Azure CLI to provision the Bicep template to this resource group. All the declared parameters are resolved before invoking Azure CLI and passed as parameters to the Bicep template.
 
-As an optimization, the vally executor will attempt to delete the readWrite fixtures after the test finishes. The DeleteAfter tag is added just in case.
+As an optimization, the vally executor will attempt to delete the readWrite fixtures after the test finishes. The DeleteAfter tag is added so the external clean up script can pick them up in case this attempt failed.
 
 #### PostProvision script
 
@@ -159,11 +134,11 @@ The postProvision script can be used for these purposes:
 
 #### Output
 
-Before exit, the script writes to a file with a fixed name to the test workspace. The file contains names of all the resource groups that should be used by the integration test.
+Before exit, the script writes names of all the resource groups that should be used by the integration test to stdout.
 
 ### Executor injecting fixture context
 
-If the provision script completed with a 0 exit code, vally will reach our custom vally executor to run the test. Our vally executor has access to the environmental configuration to the stimuli and can tell when the test case has declared Azure fixtures. For test cases that have defined Azure fixture, the executor can read the output file in the current workspace, inject additional context and delete the file before starting the test agent run.
+Our custom vally executor will run the provision script if an `azureFixture` tag is present. If the provision script completed with a 0 exit code, our custom vally executor will proceed to run the test. For test cases that have defined Azure fixture, the executor can read the stdout of the provision script and then inject additional context for the test run.
 
 The injected context will be appended to the first user prompt with the following content:
 
@@ -172,15 +147,15 @@ The injected context will be appended to the first user prompt with the followin
 
 The original user prompt in the stimuli must not give conflicting information. Most existing integration tests don't provide any resource scope. Some needs to be rewritten to remove resource scopes and delegate it to the fixture.
 
+### Time budget
+
+The provision script must finish within 10 minutes. If the script fails to complete within 10 minutes, it will be aborted with a non-zero exit code. For tests that require an azure fixture, their time budget needs to take the provisioning time into consideration.
+
 ### Error handling
 
 The provisioning script will exit with a non-zero exit code if it encounters any non-recoverable error.
 
-Vally runs the provisioning script before reach to our custom vally executor. If the provisioning script exits with a non-zero exit code, vally will abort the test run and report the error.
-
-## Cost consideration
-
-Since read-only fixtures are long-lived, refrain from using expensive resources that incur significant cost over time (e.g. database servers, app services, app config, etc.)
+Our custom vally executor runs the provisioning script before running the agent. If the provisioning script exits with a non-zero exit code, the custom vally executor will abort the test run and report the error.
 
 ## Operation notes
 
@@ -210,7 +185,14 @@ The next run of the provision script will delete the stale readOnly fixture and 
 
 ## Questions and answers
 
-TBD
+Q: Why do we require postProvision scripts to be written in Typescript?
+A: This is mostly for cross-platform dev experience. Windows dev machines usually don't have bash. Non-Windows dev machines usually don't have powershell. Developing in the repo already requires Typescript so this will work for everyone working in this repo.
+
+Q: Why do we make the custom vally executor run the provision script?
+A: Vally runs the environment commands from the test workspace, which is a directory in the system's temporary directory. It makes it hard to use external scripts since it's hard to navigate the file system to find the script. The custom vally executor has the full knowledge of the test repo and can locate the script file more easily.
+
+Q: Why don't we persist fixtures for readOnly fixtures?
+A: I decided to not include this optimization in the design to simplify fixture lifecycle management. Besides, some types of resources can incur significant amount of cost over time, such as database servers and provisioned compute. For those fixtures, we still want to provision and delete them on demand. We can revisit this optimization later.
 
 ## References
 
