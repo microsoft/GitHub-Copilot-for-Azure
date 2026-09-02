@@ -99,8 +99,6 @@ export type ProvisionScriptOutput = {
 
 export const FIXTURE_ID_TAG = "FixtureId";
 export const FIXTURE_VERSION_TAG = "FixtureVersion";
-export const FIXTURE_STATE_TAG = "FixtureState";
-export const FIXTURE_STATE_PROVISIONING = "provisioning";
 
 const AZ_COMMAND = process.platform === "win32" ? "az.cmd" : "az";
 
@@ -143,6 +141,7 @@ export function runAz(args: string[]): string {
       encoding: "utf8",
       timeout: remainingMs(step),
       killSignal: "SIGKILL",
+      shell: true
     }).trim();
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
@@ -166,7 +165,7 @@ export function findFixtureResourceGroups(fixtureId: string): FixtureResourceGro
       "--tag",
       `${FIXTURE_ID_TAG}=${fixtureId}`,
       "--query",
-      "[].{name:name, tags:tags}",
+      "[].{name:name,tags:tags}",
       "-o",
       "json",
     ]),

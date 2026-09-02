@@ -97,11 +97,11 @@ export class IntegrationTestAgentRunner implements Executor {
     if (relativeManifestPath && plugin?.dirname) {
       // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
       const absoluteManifestPath = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`, relativeManifestPath);
-      console.log("absoluteManifestPath", absoluteManifestPath);
+      const provisionScriptPath = path.resolve(__dirname, "../azure-fixtures/provision-fixture.ts");
       const provisionOutput = execFileSync(
         NPX_COMMAND,
-        ["tsx", path.resolve(__dirname, "../azure-fixtures/provision-fixture.ts"), absoluteManifestPath],
-        { encoding: "utf8" }
+        ["-y", "tsx", provisionScriptPath, absoluteManifestPath],
+        { shell: true, encoding: "utf8" }
       );
       const parsedProvisionOutput = JSON.parse(provisionOutput);
       const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
@@ -292,5 +292,5 @@ export function registerExecutors(registry: ExecutorRegistry): void {
 }
 
 function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): string {
-  return `Limit your operations in the following resource groups: ${JSON.stringify(fixtureOutput.resourceGroups)}. Never read or modify resources outside these resource groups`;
+  return `Limit your operations in the following resource groups: ${JSON.stringify(fixtureOutput.resourceGroups)}. Never read or modify resources outside these resource groups.`;
 }
