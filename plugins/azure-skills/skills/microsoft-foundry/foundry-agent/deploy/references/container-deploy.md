@@ -4,14 +4,14 @@ Complete every applicable check before running `azd deploy`.
 
 ## 1. Select and configure the build path
 
-Default to remote build without asking the user. Use local build only when the
-user explicitly requests a local build or requires the image to be built on the
-local machine.
+Follow the existing `docker.remoteBuild` configuration. If it is not set,
+default to remote build without asking. Use local build when the user explicitly
+requires the image to be built locally.
 
 | Build path | When to use | `azure.yaml` |
 |------------|-------------|--------------|
-| Remote build | Default | Set `docker.remoteBuild: true`. |
-| Local build | The user explicitly requires local build | Set `docker.remoteBuild: false`. |
+| Remote build | Existing configuration selects it, or no build path is configured | Set `docker.remoteBuild: true`. |
+| Local build | Existing configuration selects it, or the user explicitly requires local build | Set `docker.remoteBuild: false`. |
 | Pre-built image | The user supplies an existing image | Set a fully qualified `image:` and `docker.imagePassthrough: true`. |
 
 ## 2. Validate `azure.yaml`
