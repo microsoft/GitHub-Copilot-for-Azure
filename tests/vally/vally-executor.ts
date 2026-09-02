@@ -8,7 +8,7 @@ import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
-import type { ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+import { deleteResourceGroup, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +23,7 @@ export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
   supportsMultiTurn = true;
   supportsPreparedWorkspace = true;
+  fixtureResourceGroups: string[] | undefined = undefined;
 
   async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
     const startedAt = new Date();
@@ -103,9 +104,10 @@ export class IntegrationTestAgentRunner implements Executor {
         ["-y", "tsx", provisionScriptPath, absoluteManifestPath],
         { shell: true, encoding: "utf8" }
       );
-      const parsedProvisionOutput = JSON.parse(provisionOutput);
+      const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput);
       const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
       runConfig.prompt += `\n${azureScopePrompt}`;
+      this.fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
     }
 
     const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
@@ -150,7 +152,13 @@ export class IntegrationTestAgentRunner implements Executor {
   }
 
   async shutdown(): Promise<void> {
-    // no-op
+    for (const resourceGroupName of this.fixtureResourceGroups ?? []) {
+      try {
+        deleteResourceGroup(resourceGroupName);
+      } catch {
+        // Suppress cleanup failures so they do not mask test results.
+      }
+    }
   }
 }
 
