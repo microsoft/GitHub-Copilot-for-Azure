@@ -8,17 +8,11 @@ Use this when the request is to create a new Foundry hosted agent end-to-end —
 
 ## Quick Reference
 
-| Property | Default (when user is silent) | Override |
-|----------|-------------------------------|----------|
-| Language / runtime | Python 3.13 (`python_3_13`) | Any of `python_3_13`, `python_3_14`, `dotnet_10` |
+| Property | Standard path | Override |
+|----------|---------------|----------|
 | Sample | Foundry hosted agent samples for the chosen language (`azd ai agent sample list --language <lang> --output json`) | User may name a different sample |
-| Subscription | `az account show` | User may supply |
-| Region | `northcentralus` | Ask user to confirm or pick another |
-| Foundry project | Ask if the user doesn't mention one | create new → no `--project-id`; existing → pass `--project-id` (ARM ID / endpoint); no mention → stop and ask (existing vs new) |
-| Foundry model deployment | Official sample's model selection | If user supplies a deployment name, `azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME` after init |
 | Model version | Whatever the sample's manifest declares | If user supplies a model version, edit `azure.yaml`. If user supplies a model deployment without model version, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. If provision fails, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. |
 | Model quota | Skip the quota pre-check | If provision fails, follow [Foundry Model Reference](./references/foundry-model.md) to query model-related data. |
-| Deploy mode | `code` (no Docker, no ACR build) | Container deploy is not supported in this quick start. To use container deploy, follow [create-hosted.md](create-hosted.md). |
 | Stops at | Deployed agent + remote smoke invoke + eval generation submitted | — |
 
 ## Workflow
