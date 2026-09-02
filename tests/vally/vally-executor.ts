@@ -23,7 +23,6 @@ export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
   supportsMultiTurn = true;
   supportsPreparedWorkspace = true;
-  fixtureResourceGroups: string[] | undefined = undefined;
 
   async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
     const startedAt = new Date();
@@ -46,6 +45,7 @@ export class IntegrationTestAgentRunner implements Executor {
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
     const requiredSkills = getRequiredSkillsCondition(tags);
     const timeout = options.timeout;
+    let fixtureResourceGroups: string[] = [];
 
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
@@ -107,7 +107,7 @@ export class IntegrationTestAgentRunner implements Executor {
       const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput);
       const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
       runConfig.prompt += `\n${azureScopePrompt}`;
-      this.fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
+      fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
     }
 
     const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
@@ -126,6 +126,15 @@ export class IntegrationTestAgentRunner implements Executor {
 
     await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
     await agentRunner.cleanup();
+
+    // Delete the fixtures provisioned for this test run
+    for (const resourceGroupName of fixtureResourceGroups) {
+      try {
+        deleteResourceGroup(resourceGroupName);
+      } catch {
+        // Suppress cleanup failures so they do not mask test results.
+      }
+    }
 
     // Vally will run the graders and produce results.jsonl.
     // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
@@ -152,13 +161,7 @@ export class IntegrationTestAgentRunner implements Executor {
   }
 
   async shutdown(): Promise<void> {
-    for (const resourceGroupName of this.fixtureResourceGroups ?? []) {
-      try {
-        deleteResourceGroup(resourceGroupName);
-      } catch {
-        // Suppress cleanup failures so they do not mask test results.
-      }
-    }
+    // no-op
   }
 }
 
