@@ -11,6 +11,7 @@ resource taggedFirst 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     foo: 'true'
   }
   properties: {
+    allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
@@ -28,6 +29,7 @@ resource taggedSecond 'Microsoft.Storage/storageAccounts@2023-05-01' = {
     foo: 'true'
   }
   properties: {
+    allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
@@ -43,6 +45,7 @@ resource untagged 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
   kind: 'StorageV2'
   properties: {
+    allowSharedKeyAccess: false
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false

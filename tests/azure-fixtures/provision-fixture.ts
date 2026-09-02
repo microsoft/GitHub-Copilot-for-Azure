@@ -10,8 +10,6 @@ import {
   BicepConfig,
   BicepParameterConfig,
   FIXTURE_ID_TAG,
-  FIXTURE_STATE_PROVISIONING,
-  FIXTURE_STATE_TAG,
   FIXTURE_VERSION_TAG,
   FixtureManifest,
   JsonValue,
@@ -135,7 +133,7 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
       const stdout = execFileSync(
         NPX_COMMAND,
         ["tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-        { encoding: "utf8", timeout: remainingMs(step), killSignal: "SIGKILL" }
+        { encoding: "utf8", timeout: remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
       output.push({ path: scriptConfig.path, stdout: stdout });
     } catch (error) {
@@ -162,8 +160,7 @@ function provision(
   const tags = [
     `${FIXTURE_ID_TAG}=${bicepConfig.fixtureId}`,
     `${FIXTURE_VERSION_TAG}=${manifest.version}`,
-    `${FIXTURE_STATE_TAG}=${FIXTURE_STATE_PROVISIONING}`,
-    `DeleteAfter=${formatDeleteAfter(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))}`,
+    `"DeleteAfter=${formatDeleteAfter(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))}"`, // Must wrap the argument since date string contains a space
   ];
 
   // Create resource group
@@ -205,19 +202,6 @@ function provision(
     resolve(manifestDir, bicepConfig.path),
     "--parameters",
     ...parameterArgs,
-    "-o",
-    "none",
-  ]);
-
-  // Clearing FixtureState marks the fixture complete. A run that fails or times out
-  // leaves the tag behind so a future run treats the fixture as stale and re-provisions it.
-  runAz([
-    "group",
-    "update",
-    "--name",
-    resourceGroupName,
-    "--remove",
-    `tags.${FIXTURE_STATE_TAG}`,
     "-o",
     "none",
   ]);
