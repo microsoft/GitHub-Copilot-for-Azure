@@ -34,16 +34,9 @@ For remote and local builds:
   and other local-only files without excluding required application files.
 - The entry point and dependency files match the application source.
 
-## 4. Validate ACR permissions
+## 4. Validate the ACR connection
 
-Verify every applicable operation at the target ACR scope:
-
-| Operation | Identity | Required access |
-|-----------|----------|-----------------|
-| Remote build | Identity running `azd deploy` | Build-source upload and task execution permissions provided by **Container Registry Tasks Contributor** or equivalent |
-| Local build and push | Identity running `azd deploy` | Image push permission provided by **AcrPush**, **Container Registry Repository Writer**, or equivalent |
-| Runtime image pull | Foundry project managed identity | The Container Registry connection targets the selected ACR and uses this identity, which has **AcrPull**, **Container Registry Repository Reader**, or equivalent |
-
-Run `azd ai agent doctor --output json` to catch known configuration and
-permission issues. Ask before changing RBAC; if required access is missing,
-report the principal, role, and ACR scope to an administrator.
+If `azd provision` created or connected the ACR, continue after provision
+succeeds. For an existing ACR, verify that the Foundry project has a Container
+Registry connection targeting it; otherwise, configure and provision the
+connection before deploy.
