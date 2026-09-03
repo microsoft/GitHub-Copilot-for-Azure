@@ -1,0 +1,205 @@
+name: cost-optimization-integration-eval
+description: Routing checks for Azure rightsizing, cleanup, and commitment analysis.
+
+tags:
+  type: integration
+  skill: cost-optimization
+
+defaults:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Find specific savings opportunities"
+    prompt: "How can we reduce costs in my current Azure subscription? Use actual resource data and prioritize specific savings opportunities."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      regression: arm-mcp-contract
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|web_fetch|fetch|curl|http|rest)$"
+      - type: output-matches
+        config:
+          pattern: "(?i)actual|Advisor|unavailable|could not|evidence"
+      - type: completed
+
+  - name: "Rightsize an oversized database"
+    prompt: "My Azure SQL Database bill is high but query volume is low. Check its tier and utilization, then recommend what I should downsize to."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-optimization"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+
+  - name: "Analyze Savings Plan coverage"
+    prompt: "What percentage of eligible compute spend in my Azure subscription is covered by Savings Plans, and which resource types have the biggest coverage gaps?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-optimization"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+
+  - name: "Investigate an orphaned public IP"
+    prompt: "I deleted a VM, but its public IP is still accruing charges. Explain why it is charging and what I need to do to stop it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-optimization"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+
+  - name: "Investigate an orphaned managed disk"
+    prompt: "I deleted an Azure VM a few days ago but I am still being charged. Check for unattached managed disks, quantify their cost, and tell me how to stop the charges."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-optimization"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+
+  - name: "Recommend Reserved Instances"
+    prompt: "My Azure VMs have no reservation coverage. Which VM SKUs should I put under Reserved Instances, and how much could I save?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-optimization"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+
+  - name: "Troubleshoot Savings Plan application"
+    prompt: "We bought an Azure Savings Plan, but some VMs still show full pay-as-you-go charges. Identify what is covered, what is not, and explain why."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-optimization"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+
+  - name: "Storage optimization mentions lifecycle policies and tiers"
+    prompt: "How can I optimize costs on my Azure storage accounts that have data sitting in hot tier for months?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: legacy-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)lifecycle|cool|archive|tiering|access tier"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|\\$0\\.0[0-9]+/GB|saves? (about |approximately |~)?[0-9]+%"
+
+  - name: "Resource Graph continuation is followed"
+    prompt: "I am ranking Azure cost optimization recommendations. A validated Azure Resource Graph query returned a skipToken after its first page. Explain what must happen before I rank the complete set."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: partial-results
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)skipToken|next page|continuation|execute_query"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)curl|az\\s+graph"
+
+  - name: "Negative cost spike"
+    prompt: "My Azure bill jumped 36 percent over two months. Find which resources and services caused the increase."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-optimization
+
+  - name: "Negative hypothetical pricing"
+    prompt: "What will a Standard_D4s_v5 Linux VM cost in four Azure regions?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-optimization
+
+  - name: "Negative budget listing"
+    prompt: "List my configured Azure budgets, current spend, and alert thresholds."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-optimization

@@ -63,6 +63,9 @@ These skills own many generic phrases. New skills must avoid conflicting with th
 | `azure-cloud-migrate` | migrate from AWS/GCP, cross-cloud migration, migration readiness |
 | `azure-deploy` | run azd up/deploy, execute deployment, push to production, ship it |
 | `azure-diagnostics` | debug, troubleshoot, analyze logs, root cause |
-| `azure-cost` | optimize costs, reduce spending, cost savings, cost report |
+| `cost-analysis` | historical spend, cost breakdowns, anomalies, AKS or AI costs |
+| `cost-estimation` | forecasts, planned-resource pricing, retail or negotiated prices |
+| `cost-optimization` | rightsizing, waste, Reservations, Savings Plans |
+| `cost-governance` | budgets, alerts, cost tags, SKU or region guardrails |
 
 Check the new skill's triggers against this table. Any overlap must be scoped more specifically or use a `DO NOT USE FOR` clause.

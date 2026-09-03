@@ -1,0 +1,270 @@
+name: cost-analysis-integration-eval
+description: Routing checks for Azure cost details, investigations, AKS, and AI cost analysis.
+
+tags:
+  type: integration
+  skill: cost-analysis
+
+defaults:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Rank service costs"
+    prompt: "Which Azure services did I spend the most on in my current subscription last month? Show the full service name breakdown ranked by cost."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Investigate date-specific spike"
+    prompt: "There was a cost spike on a specific day last month in my current subscription. Explain what caused it and which resource was responsible."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+
+  - name: "Attribute one resource's full cost"
+    prompt: "What was the total cost of one of my Function Apps last month? Include all attributable costs, not just the Functions line item."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+
+  - name: "Break down Cosmos DB meters"
+    prompt: "For one of my Cosmos DB accounts, break down last month's charges by meter name so I can compare provisioned throughput, storage, and other components."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+
+  - name: "Calculate total AKS cluster cost"
+    prompt: "Show the total cost of one of my AKS clusters last month, including node VMs, disks, load balancers, networking, and control plane costs."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+
+  - name: "Rank AKS namespaces and idle cost"
+    prompt: "Rank namespaces by cost and show total idle capacity across one of my AKS clusters for last month."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+
+  - name: "Analyze Foundry model charges"
+    prompt: "Break down last month's Azure OpenAI and Foundry Models billing costs in my current subscription by service, resource, and meter. State clearly whether the available Cost Management data supports input/output token attribution by deployment."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: evidence-contract
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|web_fetch|fetch|curl|http|rest)$"
+      - type: output-matches
+        config:
+          pattern: "(?i)query_costs|Cost Management"
+      - type: output-matches
+        config:
+          pattern: "(?i)(token.{0,30}(unavailable|not available|not supported|cannot|does not)|not.{0,30}token|cannot.{0,40}token|does not.{0,40}token)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|management\\.azure\\.com|az\\s+costmanagement|kubectl"
+      - type: completed
+
+  - name: "AKS capped results are disclosed"
+    prompt: "The supported AKS cost tool returned exactly 5,000 rows for my namespace breakdown and has no continuation input. Explain how you will proceed and what you can truthfully claim from that result."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: partial-results
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)incomplete|partial|truncat|narrow|filter|scope"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)complete (set|result)|all namespaces|invoke.{0,20}(url|nextpage)|curl|az\\s+"
+
+  - name: "Mixed spike and remediation starts with analysis"
+    prompt: "I ran over budget last month. Find what changed in my Azure bill, explain the cost drivers, and then tell me where to reduce spend."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+
+  - name: "Legacy AKS cost spike investigation"
+    prompt: "My AKS cluster costs spiked unexpectedly last Sunday from 2am to 4pm EST, help me investigate"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      regression: legacy-routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "AKS namespace cost mentions cost analysis add-on"
+    prompt: "How do I enable namespace-level cost visibility for my AKS cluster?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: legacy-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)--enable-cost-analysis|costAnalysis|cost\\s*analysis"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "AKS cost anomaly uses MCP monitoring workflow"
+    prompt: "What monitoring steps should I use to investigate a cost spike on an AKS cluster?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: legacy-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)query_aks_costs|Azure Monitor|node[- ]count|CPU|memory"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|kubectl\\s+top|az\\s+monitor|az\\s+consumption"
+
+  - name: "Negative hypothetical pricing"
+    prompt: "Estimate the monthly pay-as-you-go price of a Standard_D4s_v5 Windows VM with a P15 disk in East US."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-analysis
+
+  - name: "Negative rightsizing"
+    prompt: "Find oversized Azure SQL databases and recommend smaller SKUs to reduce spend."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-analysis
+
+  - name: "Negative budget creation"
+    prompt: "Create a monthly Azure budget with alerts at 80 and 100 percent."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-analysis
