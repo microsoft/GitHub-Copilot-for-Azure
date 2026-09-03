@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-pagination-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Aggregate every page of cost rows." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $query" } },
+        { "tool_call_id": "query-2", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $nextLink -Body $query" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "Grouped rows 1 through 1000; pageTotalUsd=10000; nextLink present." },
+          { "source_call_id": "query-2", "content": "Grouped rows 1001 through 1250; pageTotalUsd=8750; rowCount=1250; computedTotalUsd=18750; nextLink=null." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "I followed the Cost Management nextLink through both pages, retained each grouped row exactly once, and collected all 1,250 grouped query rows. The page totals are USD 10,000 and USD 8,750, producing a final Cost Management total of USD 18,750."
+    }
+  ]
+}

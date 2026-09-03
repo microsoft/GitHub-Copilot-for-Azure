@@ -1,0 +1,32 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-aks-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Analyze AKS costs." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "aks-1", "function_name": "powershell", "arguments": { "command": "az aks show --name aks-prod --resource-group rg-aks --query metricsProfile.costAnalysis" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $aksCostQuery" } },
+        { "tool_call_id": "logs-1", "function_name": "powershell", "arguments": { "command": "az monitor log-analytics query --workspace $workspaceId --analytics-query $aksIncidentQuery --timespan 2026-08-30T06:00:00Z/2026-08-30T20:00:00Z" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "aks-1", "content": "enabled=true." },
+          { "source_call_id": "query-1", "content": "periodStart=2026-08-01; periodEnd=2026-08-31; namespace allocations: payments USD 820; platform USD 430; changedResourceIds=nodepool1,payments; nodepool1CostIncreaseUsd=410; paymentsScaleOutCostIncreaseUsd=260." },
+          { "source_call_id": "logs-1", "content": "Exact incident window: nodepool1 CPU surge and payments pod scale-out correlated with changed resource IDs." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "AKS Cost Analysis is enabled. View Cost Management > Cost analysis > Kubernetes namespaces. From August 1 through August 31, 2026, payments is USD 820 and platform is USD 430. The August 30 incident converts from 02:00 to 16:00 America/New_York into 06:00 to 20:00 UTC. Cost Management and Container Insights diagnostic logs correlate changed resource IDs with nodepool1 CPU surge of USD 410 and payments scale-out of USD 260."
+    }
+  ]
+}

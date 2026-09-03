@@ -1,0 +1,18 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-validate-deploy-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Deploy the application." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Deploy.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-deploy" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-deploy." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Deployment workflow selected." }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-validate-compliance-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Check Azure policy compliance." },
+    { "step_id": 2, "source": "agent", "message": "I will use Azure Compliance.", "tool_calls": [{ "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-compliance" } }], "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-compliance." }] } },
+    { "step_id": 3, "source": "agent", "message": "Compliance workflow selected." }
+  ]
+}

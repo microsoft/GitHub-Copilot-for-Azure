@@ -1,0 +1,34 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-optimization-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Find Azure savings." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $optimizationQuery" } },
+        { "tool_call_id": "metrics-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource $vmId --metric 'Percentage CPU,Available Memory Bytes' --start-time 2026-08-04 --end-time 2026-09-02" } },
+        { "tool_call_id": "activity-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource $candidateIds --start-time 2026-06-05 --end-time 2026-09-02" } },
+        { "tool_call_id": "redis-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource /subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-cache/providers/Microsoft.Cache/Redis/cache-dev --metric 'usedmemorypercentage,connectedclients,serverLoad' --start-time 2026-08-04 --end-time 2026-09-02" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "Cost evidence: cache-dev current SKU USD 500 monthly; supported smaller SKU USD 300 monthly; disk USD 440; VM rightsize USD 900; storage USD 300; total opportunity USD 1,840 monthly." },
+          { "source_call_id": "metrics-1", "content": "30-day CPU p95=22%; available memory p05=9 GB." },
+          { "source_call_id": "activity-1", "content": "90-day evidence from 2026-06-05 through 2026-09-02: orphan-01 managedBy empty; stlegacy transactions=0; vm-api-02 CPU and memory activity present." },
+          { "source_call_id": "redis-1", "content": "30-day usedmemorypercentage p95=28%; connectedclients p95=14; serverLoad p95=19%." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The June 5 through September 2 evidence supports USD 1,840 monthly total opportunity. Keep all items as recommendations until resource owners validate dependencies, workload behavior, performance headroom, service capacity, availability requirements, maintenance windows, and rollback plans, then give explicit approval for each exact action."
+    }
+  ]
+}

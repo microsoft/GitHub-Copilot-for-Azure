@@ -1,0 +1,32 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-throttling-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle Cost Management throttling." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "cost-management-client", "arguments": { "scope": "subscription/Production", "period": "2026-08-01/2026-08-31" } },
+        { "tool_call_id": "sleep-1", "function_name": "wait", "arguments": { "retryAfterSeconds": "5", "jitterSeconds": "1", "delaySeconds": "6" } },
+        { "tool_call_id": "query-2", "function_name": "cost-management-client", "arguments": { "scope": "subscription/Production", "period": "2026-08-01/2026-08-31" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "HTTP 429 Too Many Requests; Retry-After: 5." },
+          { "source_call_id": "sleep-1", "content": "Waited for Retry-After plus jitter." },
+          { "source_call_id": "query-2", "content": "attempts=2; retryAfterSeconds=5; delaySeconds=6; jitterSeconds=1; succeeded=true; total USD 4,200." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Cost Management returned HTTP 429 with Retry-After 5 seconds. I waited for that interval plus jitter, retried once, and the query succeeded with USD 4,200. The policy is bounded to two attempts."
+    }
+  ]
+}

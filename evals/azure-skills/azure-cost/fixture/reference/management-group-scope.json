@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-management-group-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Report management-group costs." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri '/providers/Microsoft.Management/managementGroups/corp/providers/Microsoft.CostManagement/query' -Body $query" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "corp management group total USD 31,600; sub-a USD 18,400; sub-b USD 13,200." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The corp management group reports USD 31,600 for March 2026. Child subscription sub-a contributes USD 18,400 and sub-b contributes USD 13,200. The total comes from the management-group scope, and the child values are a breakdown of that total, so they must not be added again."
+    }
+  ]
+}

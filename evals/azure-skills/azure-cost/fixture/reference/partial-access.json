@@ -1,0 +1,32 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-partial-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Report costs with partial subscription access." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $engineeringCostQueryUri -Body $query" } },
+        { "tool_call_id": "query-2", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $sharedCostQueryUri -Body $query" } },
+        { "tool_call_id": "query-3", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $financeCostQueryUri -Body $query" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "Engineering USD 8,400." },
+          { "source_call_id": "query-2", "content": "Shared USD 2,100." },
+          { "source_call_id": "query-3", "content": "AuthorizationFailed for Finance." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The cost result is partial. Engineering reports USD 8,400 and Shared reports USD 2,100 for March 2026, while Finance was excluded after AuthorizationFailed. The accessible-subscription subtotal is USD 10,500, not an organization-wide total."
+    }
+  ]
+}

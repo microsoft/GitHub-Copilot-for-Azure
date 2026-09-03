@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-aggregate-count-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Count all resources without listing them." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | summarize total=count()\" --subscriptions 22222222-2222-2222-2222-222222222222" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." }, { "source_call_id": "query-1", "content": "{\"total\":2500}" }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Subscription 22222222-2222-2222-2222-222222222222 contains 2,500 resources. The server-side aggregate required one query and no pagination." }
+  ]
+}

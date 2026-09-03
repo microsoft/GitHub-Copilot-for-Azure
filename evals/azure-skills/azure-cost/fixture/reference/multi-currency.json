@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-multi-currency-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Compare costs across currencies." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $usCostQueryUri -Body $query" } },
+        { "tool_call_id": "query-2", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $euCostQueryUri -Body $query" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "period=2026-03-01/2026-03-31; prod-us USD 10,200." },
+          { "source_call_id": "query-2", "content": "period=2026-03-01/2026-03-31; prod-eu EUR 8,900." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "For March 1 through March 31, 2026, prod-us reports USD 10,200 and prod-eu reports EUR 8,900. I will not add those values without a reporting currency, exchange-rate source, and conversion date."
+    }
+  ]
+}

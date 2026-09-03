@@ -1,0 +1,667 @@
+# Vally eval config migrated from Jest integration tests
+# Source: tests/azure-validate/integration.test.ts
+# Migration: Jest skill-invocation tests → Vally routing stimuli
+#
+# Stimuli with earlyTerminate tags do not use the completed grader.
+
+name: azure-validate-routing-eval
+description: |
+  Decides whether azure-validate routes only for explicit pre-deployment validation
+  requests and stays inactive for adjacent deployment, cost, inventory, explanation,
+  and runtime-diagnostics requests. Ship only when every positive and negative
+  routing case selects the intended skill.
+
+tags:
+  type: integration
+  skill: azure-validate
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  # ═══════════════════════════════════════════
+  # Skill routing prompts
+  # ═══════════════════════════════════════════
+# Jest: "invokes azure-validate skill for deployment readiness check"
+  - name: "Deployment Readiness Check"
+    prompt: "Check if my azd app is ready to deploy to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-validate
+      polarity: positive
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: &non_validate_skills
+            - airunway-aks-setup
+            - appinsights-instrumentation
+            - azure-ai
+            - azure-aigateway
+            - azure-app-onboard
+            - azure-app-onboard-prereq
+            - azure-cloud-migrate
+            - azure-compliance
+            - azure-compute
+            - azure-cost
+            - azure-deploy
+            - azure-diagnostics
+            - azure-enterprise-infra-planner
+            - azure-kubernetes
+            - azure-kusto
+            - azure-messaging
+            - azure-prepare
+            - azure-quotas
+            - azure-reliability
+            - azure-resource-lookup
+            - azure-resource-visualizer
+            - azure-storage
+            - azure-upgrade
+            - entra-agent-id
+            - entra-app-registration
+            - microsoft-foundry
+            - python-appservice-deploy
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for azure.yaml validation prompt"
+  - name: "Azure.Yaml Validation"
+    prompt: "Validate my azure.yaml configuration before deploying"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      polarity: positive
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for Bicep validation prompt"
+  - name: "Bicep Validation"
+    prompt: "Validate my Bicep template for my azd project before deploying to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      polarity: positive
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for what-if analysis prompt"
+  - name: "What-If Analysis"
+    prompt: "Run a what-if analysis to preview changes before deploying my azd infrastructure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/azd-starter-bicep
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      polarity: positive
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for RBAC role verification prompt"
+  - name: "RBAC Role Verification"
+    prompt: "Verify the RBAC role assignments in my Bicep templates for my azd project before deploying to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/functions-quickstart-dotnet-azd
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      polarity: positive
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Jest: "invokes azure-validate skill for managed identity permissions check prompt"
+  - name: "Managed Identity Permissions Check"
+    prompt: "Validate the managed identity RBAC role assignments in my Bicep templates for my azd project before deploying to Azure"
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/Azure-Samples/functions-quickstart-dotnet-azd
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-validate
+      polarity: positive
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Negative routing prompts
+  - name: "Direct Deployment Request"
+    prompt: "Deploy my application to Azure now. It has already passed all readiness checks."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: high
+      requiredSkills:
+        - azure-validate
+        - azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/deploy.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-deploy
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Azure Cost Forecast Request"
+    prompt: "Forecast my Azure subscription cost for next month and explain the assumptions."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: medium
+      requiredSkills:
+        - azure-validate
+        - azure-cost
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/cost.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Cross-Subscription Resource Listing"
+    prompt: "List every virtual machine across my accessible Azure subscriptions."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: medium
+      requiredSkills:
+        - azure-validate
+        - azure-resource-lookup
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/lookup.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Running Application Diagnostics"
+    prompt: "My production Azure web app is returning HTTP 500 responses. Diagnose the runtime failure."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: high
+      requiredSkills:
+        - azure-validate
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/diagnostics.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Bicep Explanation Without Validation"
+    prompt: "Explain what the parent property means in a Bicep resource declaration. Do not validate or deploy anything."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: low
+    golden_trajectory:
+      path: fixture/reference/explain.json
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: skill-invocation
+        config:
+          disallowed: *non_validate_skills
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*(?:parent|child|containing declaration|nested))(?=.*(?:resource|declaration))"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Validate Before Requested Deployment"
+    prompt: "Check whether this azd project is ready for deployment, then stop. I will request the actual deployment separately after reviewing the results."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: positive
+      risk: high
+      requiredSkills:
+        - azure-validate
+        - azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Prepare Infrastructure Without Validation"
+    prompt: "Design and prepare Bicep infrastructure for my new application, but do not run deployment-readiness validation or deploy it yet."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: medium
+      requiredSkills:
+        - azure-validate
+        - azure-prepare
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/prepare.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-prepare
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Natural Readiness Sanity Check"
+    prompt: "Can you sanity check my azure.yaml and Bicep before I ship this azd project?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: positive
+      risk: medium
+      requiredSkills:
+        - azure-validate
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Natural What-If Boundary"
+    prompt: "Run an Azure Resource Manager what-if preview for this azd project's infrastructure without applying any changes."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: positive
+      risk: high
+      requiredSkills:
+        - azure-validate
+      earlyTerminate: '[{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+          disallowed: *non_validate_skills
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Non-Deployment Validation Request"
+    prompt: "Validate whether user@example.com has a syntactically valid email address format."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: low
+    golden_trajectory:
+      path: fixture/reference/non-deployment-validation.json
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-validate
+      - type: skill-invocation
+        config:
+          disallowed: *non_validate_skills
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)^(?!.*(?:(?:not\\s+(?:a\\s+)?(?:syntactically\\s+)?valid|invalid).{0,100}user@example\\.com|user@example\\.com.{0,100}(?:not\\s+(?:a\\s+)?(?:syntactically\\s+)?valid|invalid)))(?=.*user@example\\.com)(?=.*syntactically valid|valid syntax|valid format|valid email).*$"
+      - type: output-not-matches
+        config:
+          pattern: "(?is)(?:not\\s+(?:a\\s+)?(?:syntactically\\s+)?valid|invalid).{0,100}user@example\\.com|user@example\\.com.{0,100}(?:not\\s+(?:a\\s+)?(?:syntactically\\s+)?valid|invalid)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Azure Policy Compliance Validation"
+    prompt: "Validate whether my Azure subscription complies with our assigned security policies."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: medium
+      requiredSkills:
+        - azure-validate
+        - azure-compliance
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/compliance.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compliance
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Azure Quota Validation"
+    prompt: "Validate whether I have enough regional Azure quota for twenty Standard_D4s_v5 VMs."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: medium
+      requiredSkills:
+        - azure-validate
+        - azure-quotas
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/quotas.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Runtime Configuration Validation"
+    prompt: "Validate why my running Azure web app returns HTTP 500 after an app-setting change."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: negative
+      risk: high
+      requiredSkills:
+        - azure-validate
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/diagnostics.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - azure-validate
+      - type: max-repeat
+        config: { max: 1, match: name, tools: ["^skill$"] }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Validate Then Deploy Request"
+    prompt: "This fixture's validation result is expected to pass. Verify that result, then deploy the azd project in this same request."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      polarity: positive
+      risk: high
+      requiredSkills:
+        - azure-validate
+        - azure-deploy
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-deploy"},{"type":"tool-call-count","count":10}]'
+    golden_trajectory:
+      path: fixture/reference/validate-then-deploy.json
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-validate
+            - azure-deploy
+          disallowed: &non_validate_deploy_skills
+            - airunway-aks-setup
+            - appinsights-instrumentation
+            - azure-ai
+            - azure-aigateway
+            - azure-app-onboard
+            - azure-app-onboard-prereq
+            - azure-cloud-migrate
+            - azure-compliance
+            - azure-compute
+            - azure-cost
+            - azure-diagnostics
+            - azure-enterprise-infra-planner
+            - azure-kubernetes
+            - azure-kusto
+            - azure-messaging
+            - azure-prepare
+            - azure-quotas
+            - azure-reliability
+            - azure-resource-lookup
+            - azure-resource-visualizer
+            - azure-storage
+            - azure-upgrade
+            - entra-agent-id
+            - entra-app-registration
+            - microsoft-foundry
+            - python-appservice-deploy
+      - type: max-repeat
+        config: { max: 2, match: name, tools: ["^skill$"] }
+      - type: tool-calls
+        config:
+          required:
+            - name: "^skill$"
+              args: { skill: "^azure-validate$" }
+              result: "(?i)Validation passed"
+          sequence:
+            - name: "^skill$"
+              args: { skill: "^azure-validate$" }
+            - name: "^skill$"
+              args: { skill: "^azure-deploy$" }
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

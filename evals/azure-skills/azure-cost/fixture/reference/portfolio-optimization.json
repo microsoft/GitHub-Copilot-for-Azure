@@ -1,0 +1,20 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-portfolio-optimization-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Optimize a cross-service Azure portfolio." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "cost-management-client", "arguments": { "scope": "subscription/Production", "period": "2026-06-05/2026-09-02", "groupBy": "service,resource" } },
+        { "tool_call_id": "evidence-1", "function_name": "azure-resource-evidence-client", "arguments": { "resources": "db-orders,plan-web,pip-unused,vm-commitment", "period": "2026-06-05/2026-09-02" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-cost." }, { "source_call_id": "query-1", "content": "SQL savingsUsd=420; App Service savingsUsd=260; public IP savingsUsd=35; commitment eligibleSpendUsd=6000 oneYearSavingsUsd=1200; totalSavingsUsd=1915." }, { "source_call_id": "evidence-1", "content": "db-orders serverless idleHours=420; plan-web p95Cpu=18%; pip-unused ipConfiguration empty; vm commitment coverageEligible=true." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Grounded monthly opportunities are SQL db-orders serverless idle savings USD 420, App Service plan-web rightsize savings USD 260 at CPU p95 18%, unused public IP pip-unused savings USD 35, and a one-year VM commitment saving USD 1,200 on USD 6,000 eligible spend. Total is USD 1,915 after validation and approval." }
+  ]
+}

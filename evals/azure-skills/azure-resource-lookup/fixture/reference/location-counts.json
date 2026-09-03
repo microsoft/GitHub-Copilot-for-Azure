@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-location-counts-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Count resources by location." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "resource-graph-client", "arguments": { "query": "Resources | summarize count() by location", "subscriptions": "sub-a,sub-b" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." }, { "source_call_id": "query-1", "content": "{\"eastus2\":18,\"westus3\":9}" }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "{\"eastus2\":18,\"westus3\":9}" }
+  ]
+}

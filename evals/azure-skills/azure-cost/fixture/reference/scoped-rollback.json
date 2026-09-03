@@ -1,0 +1,22 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-scoped-rollback-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Execute one approved resize with verification and rollback." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will resize, verify, and roll back on failure.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "resize-1", "function_name": "powershell", "arguments": { "command": "az vm resize --ids /subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-apps/providers/Microsoft.Compute/virtualMachines/vm-api-02 --size Standard_D4s_v5" } },
+        { "tool_call_id": "verify-1", "function_name": "powershell", "arguments": { "command": "Invoke-WebRequest https://api-prod.contoso.com/health -UseBasicParsing" } },
+        { "tool_call_id": "rollback-1", "function_name": "powershell", "arguments": { "command": "az vm resize --ids /subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-apps/providers/Microsoft.Compute/virtualMachines/vm-api-02 --size Standard_D8s_v5" } },
+        { "tool_call_id": "verify-2", "function_name": "powershell", "arguments": { "command": "Invoke-WebRequest https://api-prod.contoso.com/health -UseBasicParsing" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-cost." }, { "source_call_id": "resize-1", "content": "Resize completed." }, { "source_call_id": "verify-1", "content": "Health check failed after resize." }, { "source_call_id": "rollback-1", "content": "Rollback to Standard_D8s_v5 completed." }, { "source_call_id": "verify-2", "content": "Health check passed after rollback." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "The approved resize completed but post-change health verification failed. I executed rollback to Standard_D8s_v5 and confirmed the final health check passed." }
+  ]
+}

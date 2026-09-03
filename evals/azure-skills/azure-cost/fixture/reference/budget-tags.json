@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-budget-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Assess a budget by cost allocation tags." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $tagQuery" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "periodStart=2026-08-01; periodEnd=2026-08-31; Budget USD 20,000; actual USD 15,400; forecast USD 21,300; CostCenter 4100 USD 9,100; CostCenter 4200 USD 5,600; Owner TeamA USD 8,200; Owner TeamB USD 6,500; untagged USD 700." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "For August 1 through August 31, 2026, the budget is USD 20,000, actual is USD 15,400, and forecast is USD 21,300. CostCenter 4100 is USD 9,100, CostCenter 4200 is USD 5,600, Owner TeamA is USD 8,200, Owner TeamB is USD 6,500, and USD 700 is untagged."
+    }
+  ]
+}
