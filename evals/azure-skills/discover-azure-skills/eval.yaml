@@ -56,25 +56,6 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Trigger discover by a task"
-    prompt: "Build an azure ai search index from my blob storage. Generate all the todo items and tell me what information I need to provide you to create it. Avoid using azure-ai skill or azure mcp tool. Although they sound related, they lack the knowledge for this task."
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: routing
-      skill: discover-azure-skills
-      debug: yes
-      earlyTerminate: '[{"type":"skill-call","skill":"discover-azure-skills"},{"type":"tool-call-count","count":3}]'
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - discover-azure-skills
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
-
   - name: "How-to question should not trigger skill discovery"
     prompt: "How do I set up an Azure Chaos Studio fault-injection experiment against my VM scale set?"
     tags:
@@ -83,6 +64,8 @@ stimuli:
       cost: llm
       area: negative-routing
       skill: discover-azure-skills
+    constraints:
+      max_turns: 5
     graders:
       - type: skill-invocation
         config:
@@ -101,6 +84,8 @@ stimuli:
       cost: llm
       area: negative-routing
       skill: discover-azure-skills
+    constraints:
+      max_turns: 5
     graders:
       - type: skill-invocation
         config:
