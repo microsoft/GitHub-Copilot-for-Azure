@@ -77,6 +77,15 @@ If the user supplied only a **Foundry project endpoint** (not an ARM ID), resolv
 
 Use the returned `id` value. Never guess or construct the ARM ID from the endpoint.
 
+When creating a new agent in an existing Foundry project, verify that the selected Foundry model deployment exists by running:
+
+```bash
+az cognitiveservices account deployment list \
+  --resource-group "<rg-name>" \
+  --name "<foundry-account-name>" \
+  --output table
+```
+
 ### Step 3 — Pick the sample
 
 ```bash

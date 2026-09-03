@@ -107,7 +107,7 @@ Populate each question with the default option below.
 | Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | Active Azure subscription: `<subscription-name>` (`<subscription-id>`) | Resolve both values with `az account show --query "{name:name,id:id}" -o json`; the ID must be a subscription GUID. |
 | Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
 | Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
-| Foundry model deployment | The user provided one; it is already resolved from `azure.yaml` or the active azd environment; or the requested change does not affect model selection. | Official sample's model selection | If the user specifies a model deployment, collect its deployment name. |
+| Foundry model deployment | The user provided one; it is already resolved from `azure.yaml` or the active azd environment; or the requested change does not affect model selection. | Official sample's model selection | If the user specifies a model deployment, collect its deployment name.|
 | Deploy mode | Always — resolve without asking. | `code` | Priority: explicit user request → existing configuration → `code` for a new agent. Use `container` only when explicitly requested or already configured. |
 | ACR | Deploy mode is `code`, or the ACR choice is already determined in the existing configs. | New Azure Container Registry | Offer a new or existing registry. When creating a new ACR, leave `AZURE_CONTAINER_REGISTRY_NAME`, `AZURE_CONTAINER_REGISTRY_ENDPOINT`, and `AZURE_CONTAINER_REGISTRY_RESOURCE_ID` unset; `azd provision` will create one. |
 
@@ -122,6 +122,15 @@ resolve the project ARM resource ID with the bundled script:
 Do not guess, derive, or construct the project ID from the endpoint. For `--project-id`, pass either the user-supplied project ARM resource ID or the `id` returned by Azure lookup / the bundled resolve script.
 
 > `azd ai agent init` initializes both the azd project and its environment. Run it directly in the target directory. For an existing Foundry project, also pass `--project-id <arm-id>`.
+
+When creating a new agent in an existing Foundry project, verify that the selected Foundry model deployment exists by running:
+
+```bash
+az cognitiveservices account deployment list \
+  --resource-group "<rg-name>" \
+  --name "<foundry-account-name>" \
+  --output table
+```
 
 ### Step 3 -- Choose the starting point
 
