@@ -259,9 +259,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Azure Cost Forecast Request"
     prompt: "Forecast my Azure subscription cost for next month and explain the assumptions."
@@ -290,9 +287,6 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Cross-Subscription Resource Listing"
     prompt: "List every virtual machine across my accessible Azure subscriptions."
@@ -318,9 +312,6 @@ stimuli:
             - azure-validate
       - type: max-repeat
         config: { max: 1, match: name, tools: ["^skill$"] }
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
