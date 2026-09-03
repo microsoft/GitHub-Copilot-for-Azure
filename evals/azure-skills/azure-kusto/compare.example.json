@@ -5,7 +5,7 @@
   },
   "evaluationPath": "evals/azure-skills/azure-kusto",
   "branches": [
-    "skaluvak/kusto-evaluations"
+    "skaluvak-microsoft-azure-kusto-eval-pilot"
   ],
   "compareOptions": [
     {
