@@ -35,6 +35,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   sku: {
     name: 'Standard_LRS'
   }
+  properties: {
+    allowSharedKeyAccess: false
+  }
 }
 
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
@@ -131,7 +134,10 @@ resource storageTableDataContributorRole 'Microsoft.Authorization/roleAssignment
   name: guid(storageAccount.id, ciTestIdentityPrincipalId, storageTableDataContributorRoleId)
   scope: storageAccount
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', storageTableDataContributorRoleId)
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      storageTableDataContributorRoleId
+    )
     principalId: ciTestIdentityPrincipalId
     principalType: 'ServicePrincipal'
   }
