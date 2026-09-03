@@ -3,7 +3,6 @@
     "pluginDirname": "azure-skills",
     "name": "azure-kusto"
   },
-  "evaluationPath": "evals/azure-skills/azure-kusto",
   "branches": [
     "skaluvak-microsoft-azure-kusto-eval-pilot"
   ],
