@@ -1,13 +1,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getBlobContent } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the raw content of a specific blob for download.
  * GET /api/download?path={blobPath}
  */
 async function downloadBlob(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "downloadBlob");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "downloadBlob");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const blobPath = request.query.get("path");
     if (!blobPath) {
