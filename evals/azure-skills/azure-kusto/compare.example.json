@@ -1,0 +1,62 @@
+{
+  "skill": {
+    "pluginDirname": "azure-skills",
+    "name": "azure-kusto"
+  },
+  "evaluationPath": "evals/azure-skills/azure-kusto",
+  "branches": [
+    "skaluvak/kusto-evaluations"
+  ],
+  "compareOptions": [
+    {
+      "model": "claude-sonnet-5",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-sonnet-5",
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-opus-4.8",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "claude-opus-4.8",
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "gpt-5.6-terra",
+      "withSkill": false,
+      "withAzureMcp": true
+    },
+    {
+      "model": "gemini-3.6-flash",
+      "withSkill": true,
+      "withAzureMcp": true
+    },
+    {
+      "model": "gemini-3.6-flash",
+      "withSkill": false,
+      "withAzureMcp": true
+    }
+  ]
+}

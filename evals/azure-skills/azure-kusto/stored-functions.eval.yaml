@@ -1,0 +1,39 @@
+name: azure-kusto-stored-functions
+description: Synthetic restricted-telemetry-aligned scenarios for discovering and troubleshooting stored Kusto functions.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Discover stored functions safely"
+    prompt: "List the functions in this Kusto database and show me how to inspect one before I call it."
+    rubric: &rubric
+      - The response gives a plausible read-only workflow to enumerate stored functions and inspect a selected function's definition, parameters, and body before invocation.
+      - The response explains how to validate required arguments and dependencies and uses placeholders or requests cluster and database context instead of fabricating results.
+      - The response avoids altering, creating, or invoking an unknown function before its definition and inputs are understood.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Troubleshoot stored function schema drift"
+    prompt: "A stored Kusto function started failing after its source table changed. Help me compare the function definition with the current schema and propose a safe fix."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

@@ -1,0 +1,84 @@
+name: azure-kusto-production-like-prompts
+description: Concise, incomplete, and multi-turn synthetic prompts derived from restricted telemetry aggregates.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Troubleshoot empty results with limited context"
+    prompt: "This KQL returns no rows even though the table has data today. Help me check the time filter and field types."
+    rubric:
+      - The response identifies likely time-boundary, time-zone, datetime-type, field-type, and predicate issues without assuming an unseen schema.
+      - The response gives a bounded diagnostic progression and plausible KQL patterns while clearly marking table and column placeholders.
+      - The response asks for the query and schema needed for an exact correction and does not claim to have inspected the environment.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Optimize underspecified join"
+    prompt: "My Kusto query became slow after I added a join. Help me reduce the data before joining and choose a safer join strategy."
+    rubric:
+      - The response recommends applying time and selective filters plus projections to both inputs before the join and explains why this reduces work.
+      - The response discusses choosing join kind and strategy from table size, key cardinality, and desired semantics rather than prescribing one strategy blindly.
+      - The response requests the query, schemas, row volumes, and expected output needed for a precise rewrite and avoids inventing performance measurements.
+    tags: *tags
+    graders: *graders
+  - name: "Explain summarize grouping error"
+    prompt: "Why does my summarize query say a column must be in the group-by clause? Help me fix it."
+    rubric:
+      - The response correctly explains that non-aggregated output columns must appear in the `by` clause or be aggregated.
+      - The response gives concise, syntactically plausible correction patterns for grouping or selecting a representative value.
+      - The response asks for the original query when needed and avoids inventing its columns or intended grouping.
+    tags: *tags
+    graders: *graders
+  - name: "Handle short recent-errors request"
+    prompt: "Show recent errors from my Kusto database."
+    rubric:
+      - The response recognizes that cluster, database, table, schema, error indicator, and time range are missing and asks for or safely discovers them.
+      - The response provides a bounded template or discovery-first workflow without fabricating a table or column as if it were known.
+      - The response prioritizes read-only schema discovery and limits returned rows before presenting or executing a query.
+    tags: *tags
+    graders: *graders
+  - name: "Discover from only a cluster URL"
+    prompt: "I only have the ADX cluster URL. Find the database and tables I can query."
+    rubric:
+      - The response validates the cluster URI and proposes read-only database then table or schema discovery in the correct order.
+      - The response accounts for authentication, tenant, network, and permission boundaries and does not claim access without evidence.
+      - The response requests the URL or uses placeholders and avoids guessing database or table names.
+    tags: *tags
+    graders: *graders
+  - name: "Optimize short dashboard request"
+    prompt: "Make my dashboard query cheaper without changing the five-minute chart."
+    rubric:
+      - The response asks for the current query, source schema, time range, and workload evidence needed to preserve semantics.
+      - The response suggests relevant optimizations such as early time filters, projection, pre-aggregation, avoiding repeated scans, and preserving five-minute bins.
+      - The response does not promise lower cost or rewrite unseen KQL as though its semantics were known.
+    tags: *tags
+    graders: *graders
+  - name: "Discover then analyze request failures"
+    turns:
+      - "Find the table that contains request failures in my Kusto database and write a bounded query for the last hour."
+      - "Use that result to compare failure rate by region and explain the largest difference."
+    rubric:
+      - The first response uses or proposes schema discovery before selecting a table and produces a bounded one-hour query without fabricating discovered metadata.
+      - The follow-up preserves the discovered or explicitly assumed context and computes failures and total requests by region with a guarded failure-rate calculation.
+      - The interpretation distinguishes observed differences from causes, notes sample-size concerns, and proposes focused follow-up checks.
+    tags: *tags
+    graders: *graders
