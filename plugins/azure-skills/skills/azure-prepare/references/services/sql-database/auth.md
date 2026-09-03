@@ -29,19 +29,21 @@ resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
 
 > ⚠️ **Warning:** If deploying from CI/CD with a service principal, set `principalType` to `'Application'`. The default `'User'` only works for interactive (human) deployments.
 
-**Get signed-in user info:**
+**Set the signed-in user as the SQL administrator after `azd init`:**
+
+Run the following script. It will set `AZURE_PRINCIPAL_ID` and `AZURE_PRINCIPAL_NAME` in the azd environment based on the current user.
+
+**Bash** — [`scripts/set-sql-principal.sh`](scripts/set-sql-principal.sh):
 ```bash
-az ad signed-in-user show --query "{id:id, name:displayName}" -o json
+./references/services/sql-database/scripts/set-sql-principal.sh
 ```
 
-**Set as azd environment variables:**
-```bash
-PRINCIPAL_INFO=$(az ad signed-in-user show --query "{id:id, name:displayName}" -o json)
-azd env set AZURE_PRINCIPAL_ID $(echo $PRINCIPAL_INFO | jq -r '.id')
-azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
+**PowerShell** — [`scripts/set-sql-principal.ps1`](scripts/set-sql-principal.ps1):
+```powershell
+.\references\services\sql-database\scripts\set-sql-principal.ps1
 ```
 
-> 💡 **Tip:** Set these immediately after `azd init` to avoid deployment failures.
+To target a non-default azd environment, use `--environment <azd-env-name>` in Bash or `-Environment <azd-env-name>` in PowerShell. Run the script before `azd provision` to avoid deployment failures.
 
 ## Entra ID Admin Configuration (Group)
 

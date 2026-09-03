@@ -285,6 +285,12 @@ stimuli:
         config:
           path: "**/*"
           pattern: "(?i)Authentication\\s*=\\s*Active\\s+Directory\\s+(Default|Managed\\s+Identity)"
+      # Must set the signed-in user's SQL principal values through the shared script
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh)$"
+              command: "(?i)set-sql-principal\\.(sh|ps1)"
       # Must NOT propose legacy SQL admin password auth
       - type: output-not-matches
         config:

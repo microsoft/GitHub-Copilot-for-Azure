@@ -52,23 +52,23 @@ resource sqlFirewallAzure 'Microsoft.Sql/servers/firewallRules@2022-05-01-previe
 }
 ```
 
-**Set Entra admin parameters:**
+**Set Entra admin parameters after `azd init`:**
 
-1. Get current user info:
+**Bash** — [`scripts/set-sql-principal.sh`](scripts/set-sql-principal.sh):
 ```bash
-az ad signed-in-user show --query "{id:id, name:displayName}" -o json
+./references/services/sql-database/scripts/set-sql-principal.sh
 ```
 
-> ⚠️ **Warning:** If deploying from CI/CD with a service principal, set `principalType` to `'Application'`. The default `'User'` only works for interactive (human) deployments. Mismatched `principalType` causes `UnmatchedPrincipalType` errors during provisioning.
-
-2. Set as azd environment variables:
-```bash
-PRINCIPAL_INFO=$(az ad signed-in-user show --query "{id:id, name:displayName}" -o json)
-azd env set AZURE_PRINCIPAL_ID $(echo $PRINCIPAL_INFO | jq -r '.id')
-azd env set AZURE_PRINCIPAL_NAME $(echo $PRINCIPAL_INFO | jq -r '.name')
+**PowerShell** — [`scripts/set-sql-principal.ps1`](scripts/set-sql-principal.ps1):
+```powershell
+.\references\services\sql-database\scripts\set-sql-principal.ps1
 ```
 
-> 💡 **Tip:** Set these variables immediately after `azd init` to avoid deployment failures. The Bicep `principalId` and `principalName` parameters will automatically use these environment variables.
+Run one of the following scripts. It will set `AZURE_PRINCIPAL_ID` and `AZURE_PRINCIPAL_NAME` in the azd environment based on the current user. For a named azd environment, use `--environment <azd-env-name>` in Bash or `-Environment <azd-env-name>` in PowerShell.
+
+> ⚠️ **Warning:** For CI/CD service principals, set `principalType` to `'Application'`; the default `'User'` causes `UnmatchedPrincipalType`.
+
+Run the script before `azd provision`; Bicep automatically uses these variables for `principalId` and `principalName`.
 
 ## ⚠️ MANDATORY: Connection String with Entra Auth Parameter
 
