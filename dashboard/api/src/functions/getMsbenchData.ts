@@ -1,13 +1,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateMsbenchBlobs } from "../msbenchBlobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the blob tree for a given date from the msbench storage account.
  * GET /api/msbench-data/{date}
  */
 async function getMsbenchData(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getMsbenchData");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getMsbenchData");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const date = request.params.date;
     if (!date) {

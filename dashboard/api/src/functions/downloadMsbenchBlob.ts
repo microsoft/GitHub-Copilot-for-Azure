@@ -1,13 +1,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getMsbenchBlobContent } from "../msbenchBlobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the raw content of a specific blob from the msbench storage account.
  * GET /api/msbench-download?path={blobPath}
  */
 async function downloadMsbenchBlob(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "downloadMsbenchBlob");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "downloadMsbenchBlob");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const blobPath = request.query.get("path");
     if (!blobPath) {

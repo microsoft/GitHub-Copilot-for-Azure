@@ -51,25 +51,6 @@ async function fetchPluginSkills() {
   }
 }
 
-async function logClientPrincipal() {
-  try {
-    const response = await fetch("/api/getUser");
-    if (!response.ok) {
-      console.error(
-        "Failed to fetch client principal: HTTP " +
-        response.status +
-        " " +
-        response.statusText,
-      );
-      return;
-    }
-    const clientPrincipal = await response.json();
-    console.log("Client principal:", clientPrincipal);
-  } catch (error) {
-    console.error("Failed to fetch or parse client principal:", error);
-  }
-}
-
 /**
  * Fetch the sorted list of available plugin directory names.
  * @returns {Promise<string[]>}
@@ -1902,8 +1883,6 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
-  logClientPrincipal();
-
   // Populate the plugin selector (and cache the plugin-container map) before
   // kicking off the data loads, so their API calls can include the selected
   // plugin's container fallback on the very first page load.

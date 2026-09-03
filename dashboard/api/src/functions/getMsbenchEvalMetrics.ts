@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 const MSBENCH_STORAGE_ACCOUNT = process.env.MSBENCH_STORAGE_ACCOUNT;
 const EVAL_TABLE_NAME = process.env.MSBENCH_EVAL_TABLE_NAME;
@@ -34,7 +34,10 @@ function escapeOdataQuotes(value: string): string {
  * Query params: benchmark (optional), model (optional)
  */
 async function getMsbenchEvalMetrics(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getMsbenchEvalMetrics");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getMsbenchEvalMetrics");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const filterBenchmark = request.query.get("benchmark") || undefined;
     const filterModel = request.query.get("model") || undefined;
@@ -83,7 +86,10 @@ async function getMsbenchEvalMetrics(request: HttpRequest, context: InvocationCo
  * GET /api/msbench-eval-metrics/filters
  */
 async function getMsbenchEvalFilters(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getMsbenchEvalFilters");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getMsbenchEvalFilters");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     try {
         const tableClient = getEvalTableClient();
