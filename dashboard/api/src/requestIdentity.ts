@@ -85,12 +85,14 @@ export function validateRequestIdentity(
         }),
     );
 
-    if (identity.userDetails?.toLowerCase().endsWith("@microsoft.com")) {
+    const userDetails = identity.userDetails?.trim();
+    if (userDetails?.toLowerCase().endsWith("@microsoft.com")) {
         return undefined;
     }
 
+    const hasIdentity = identity.authSource !== "unknown";
     return {
-        status: 401,
-        jsonBody: { error: "Unauthorized" },
+        status: hasIdentity ? 403 : 401,
+        jsonBody: { error: hasIdentity ? "Forbidden" : "Unauthorized" },
     };
 }
