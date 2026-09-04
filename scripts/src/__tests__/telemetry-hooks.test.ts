@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdtempSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -47,6 +48,7 @@ const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
+const RAW_INPUT_DIR = join(LOG_DIR, "raw-input");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const PLUGIN_ROOT = join(
@@ -116,13 +118,18 @@ function pathForShell(shell: ShellCase, filePath: string): string {
 }
 
 // Runs a telemetry hook with the payload and returns its captured npx arguments.
-function runHook(shell: ShellCase, payload: Record<string, unknown>): string[] {
+function runHook(
+  shell: ShellCase,
+  payload: Record<string, unknown>,
+  inputPrefix = "",
+): string[] {
   rmSync(CAPTURE_FILE, { force: true });
+  rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const extension = shell.name === "Bash" ? "sh" : "ps1";
   const scriptPath = join(HOOKS_DIR, `track-telemetry.${extension}`);
   const result = spawnSync(shell.command, shell.args(scriptPath), {
     encoding: "utf8",
-    input: JSON.stringify(payload),
+    input: `${inputPrefix}${JSON.stringify(payload)}`,
     env: {
       ...process.env,
       PATH: `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
@@ -142,11 +149,12 @@ function runHook(shell: ShellCase, payload: Record<string, unknown>): string[] {
 }
 
 // Runs telemetry through the Node dispatcher using the current platform's shell.
-function runDispatcher(payload: Record<string, unknown>): string[] {
+function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): string[] {
   rmSync(CAPTURE_FILE, { force: true });
+  rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const result = spawnSync(process.execPath, [DISPATCHER_PATH], {
     encoding: "utf8",
-    input: JSON.stringify(payload),
+    input: `${inputPrefix}${JSON.stringify(payload)}`,
     env: {
       ...process.env,
       PATH: `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
@@ -160,6 +168,12 @@ function runDispatcher(payload: Record<string, unknown>): string[] {
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout.trim()).toBe('{"continue":true}');
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
+}
+
+function readRawInput(): string {
+  const files = readdirSync(RAW_INPUT_DIR);
+  expect(files).toHaveLength(1);
+  return readFileSync(join(RAW_INPUT_DIR, files[0]), "utf8");
 }
 
 // Verifies that a named command argument is followed by the expected value.
@@ -234,8 +248,24 @@ describe("Cursor telemetry dispatcher", () => {
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--event-type", "tool_invocation");
     expectArg(args, "--session-id", SESSION_ID);
-    expectArg(args, "--tool-name", "MCP:get_azure_bestpractices");
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
   });
+
+  it.skipIf(process.platform !== "win32")(
+    "normalizes BOM-prefixed UTF-8 input on Windows",
+    () => {
+      const payload = {
+        ...fixture("cursor-mcp-invocation.json"),
+        unicode_probe: "café \u2603",
+      };
+
+      const args = runDispatcher(payload, "\uFEFF");
+
+      expectArg(args, "--client-name", "cursor");
+      expectArg(args, "--tool-name", "get_azure_bestpractices");
+      expect(readRawInput()).toBe(JSON.stringify(payload));
+    },
+  );
 });
 
 describe.each(shells)("Cursor telemetry hook ($name)", shell => {
@@ -273,14 +303,19 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expect(args).not.toContain("--skill-name");
   });
 
-  it("reports an Azure MCP invocation", () => {
-    const args = runHook(shell, fixture("cursor-mcp-invocation.json"));
+  it.each(["get_azure_bestpractices", "MCP:get_azure_bestpractices"])(
+    "reports an Azure MCP invocation without Cursor's display prefix: %s",
+    toolName => {
+      const payload = fixture("cursor-mcp-invocation.json");
+      payload.tool_name = toolName;
+      const args = runHook(shell, payload);
 
-    expectArg(args, "--client-name", "cursor");
-    expectArg(args, "--event-type", "tool_invocation");
-    expectArg(args, "--session-id", SESSION_ID);
-    expectArg(args, "--tool-name", "MCP:get_azure_bestpractices");
-  });
+      expectArg(args, "--client-name", "cursor");
+      expectArg(args, "--event-type", "tool_invocation");
+      expectArg(args, "--session-id", SESSION_ID);
+      expectArg(args, "--tool-name", "get_azure_bestpractices");
+    },
+  );
 
   it("does not report a non-Azure MCP invocation", () => {
     const payload = fixture("cursor-mcp-invocation.json");
@@ -296,5 +331,25 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     delete payload.mcp_server_name;
 
     expect(runHook(shell, payload)).toEqual([]);
+  });
+});
+
+const powerShell = shellCandidates.find(shell => shell.name === "PowerShell");
+
+describe.skipIf(!powerShell)("PowerShell telemetry input encoding", () => {
+  it.each([
+    { name: "without a BOM", prefix: "" },
+    { name: "with a BOM", prefix: "\uFEFF" },
+  ])("reads UTF-8 input $name when invoked directly", ({ prefix }) => {
+    const payload = {
+      ...fixture("cursor-mcp-invocation.json"),
+      unicode_probe: "café \u2603",
+    };
+
+    const args = runHook(powerShell!, payload, prefix);
+
+    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expect(readRawInput()).toBe(JSON.stringify(payload));
   });
 });
