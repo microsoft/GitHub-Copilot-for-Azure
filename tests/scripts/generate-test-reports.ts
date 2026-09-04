@@ -277,6 +277,10 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
   // Load the report template once
   const reportTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
   const testResultsPath = path.join(runPath, "testResults.json");
+  if (!fs.existsSync(testResultsPath)) {
+    console.error(`Error: testResults.json not found in: ${runPath}`);
+    process.exit(1);
+  }
   const testResults = JSON.parse(fs.readFileSync(testResultsPath, "utf-8")) as TestResults;
 
   // Find all subdirectories in the test run

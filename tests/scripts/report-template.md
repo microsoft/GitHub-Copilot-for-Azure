@@ -105,10 +105,10 @@ Provide a narrative summary of what happened during each trial, what went well a
     - Did the agent pause at a reasonable place for clarification? 
 - Consistency: (only applicable for tests with more than 1 trial)
     - Did the LLM select the same tools?
-    - Did the LLM passed the same or similar parameters when using the same tools?
-    - Did the LLM generate response following the same text pattern?
+    - Did the LLM pass the same or similar parameters when using the same tools?
+    - Did the LLM generate a response following the same text pattern?
 - Cost:
-    - How many tokens did the test run use? Break the report down to cached input, uncached input (computed by subtracting total input by cached input) and output.
+    - How many tokens did the test run use? Break the report down to cached input, uncached input (computed by subtracting cached input from total input) and output.
 
 **Runs:** [run-count] | **Pass Rate:** [rate]% ([passed]/[total])
 

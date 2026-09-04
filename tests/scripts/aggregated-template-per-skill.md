@@ -8,7 +8,7 @@
 
 ### Tests Executed
 
-List every test that was run against this skill, grouped by test type.
+List every test that was run against this skill.
 
 | # | Test Name | Runs |
 |---|-----------|------|
@@ -34,7 +34,7 @@ Each test's consolidated report includes a summary of its trajectories. Replicat
 
 {Replicated trajectory summary, including what happened, what went well, what went wrong and token usage}
 
-Include this note once after all test results to help reader understand what Credit Score means.
+After all test results, include this note once to help the reader understand what Credit Score means.
 
 > **Credit score formula:** $\text{Credit Score} = (\text{Uncached Input} + 0.1 \times \text{Cached Input}) + 5 \times \text{Output}$. 5 is the estimated cost multiplier for output tokens compared to uncached input tokens. This score estimates relative monetary token cost; the actual monetary token cost depends on the actual price of the model.
 
