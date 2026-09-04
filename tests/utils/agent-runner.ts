@@ -630,13 +630,13 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
             if (result.success && result.content) {
               let content = result.content;
               if (content.length > 500) {
-                content = content.substring(0, 500) + "... (truncated)";
+                content = content.substring(0, 500) + "... (truncated for test report, agent saw full content)";
               }
               lines.push(`response: ${content}`);
             } else if (!result.success && result.error) {
               let error = result.error;
               if (error.length > 500) {
-                error = error.substring(0, 500) + "... (truncated)";
+                error = error.substring(0, 500) + "... (truncated for test report, agent saw full error)";
               }
               lines.push(`error: ${error}`);
             }
@@ -671,7 +671,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
         const error = event.data.error as string;
         let errorMsg = error || "unknown error";
         if (errorMsg.length > 500) {
-          errorMsg = errorMsg.substring(0, 500) + "... (truncated)";
+          errorMsg = errorMsg.substring(0, 500) + "... (truncated for test report, agent saw full error)";
         }
         lines.push("```");
         lines.push(`subagent.failed: ${agentName}`);

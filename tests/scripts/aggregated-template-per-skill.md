@@ -1,67 +1,44 @@
 # Skill Test Report: `{skill-name}`
 
-**Test Run:** `{test-run-name}`  
-**Date:** {test-date}  
-**Report Generated:** {report-date}  
-**Skill Under Test:** `{skill-name}`  
-**Skill Description:** {skill-description}  
+**Test Run:** `{test-run-name}`
+**Date:** {test-date}
+**Report Generated:** {report-date}
+**Skill Under Test:** `{skill-name}`
+**Skill Description:** {skill-description}
 
 ### Tests Executed
 
 List every test that was run against this skill, grouped by test type.
 
-| # | Test Name | Test Type | Runs |
-|---|-----------|-----------|------|
-| {n} | {test-name} | Skill Invocation / Integration / End-to-End | {run-count} |
-| ... | ... | ... | ... |
-
----
+| # | Test Name | Runs |
+|---|-----------|------|
+| {n} | {test-name} | {run-count} |
+| ... | ... | ... |
 
 ## 📊 Overall Statistics
 
 | Metric | Value |
 |--------|-------|
-| **Total Test Cases** | {total-test-cases} |
-| **Total Individual Runs** | {total-runs} |
-| **Skill Invocation Success Rate**¹ | **{rate}%** ({invoked}/{total}) |
 | **Overall Test Pass Rate** | **{rate}%** ({passed}/{total}) |
-| **Average Confidence** | **{avg-confidence}%** |
 
-> ¹ Skill Invocation Success Rate is calculated only from skill-invocation test cases. If no skill-invocation tests were run, mark as **N/A**.
-
----
-
-## Confidence Level Reasoning
-
-Explain why the confidence level is what it is.
-
+The per-test report gives the binary pass/fail result for each test. Compute a pass/fail rate across all tests and present it here.
 
 ## 🔍 Per-Test Case Results
 
-For each test case, provide a narrative summary of what happened during execution, what went well, and what went wrong. One subsection per test case.
+Each test's consolidated report includes a summary of its trajectories. Replicate them here for all the tests.
 
 ### Test {n}: {test-name}
 
-**Type:** Skill Invocation / Integration
 **Prompt:** "{user-prompt-used}"  
-**Runs:** {run-count} | **Pass Rate:** {rate}% ({passed}/{total}) | **Avg Confidence:** {confidence}%  
+**Trials:** {trial-count} | **Pass Rate:** {rate}% ({passed}/{total})
 
-**What Happened:**  
-{Narrative description of the test execution flow. Describe the key steps the agent took, which tools were called, and the final outcome. Be specific — reference actual agent behavior observed in the logs.}
+{Replicated trajectory summary, including what happened, what went well, what went wrong and token usage}
 
-**✅ What Went Well:**  
-- {Positive observation — e.g., "Skill was correctly invoked on all runs", "Agent produced accurate output matching expected response"}
-- ...
+Include this note once after all test results to help reader understand what Credit Score means.
 
-**❌ What Went Wrong:**  
-- {Negative observation — e.g., "Skill was not invoked in 2 of 5 runs; agent used a tool directly instead", "Response was missing required fields"}
-- ...
-
-> Include footnotes for edge cases such as: skill invoked but task failed due to missing workspace files, agent bypassed skill and used a tool directly, or task paused awaiting user input.
+> **Credit score formula:** $\text{Credit Score} = (\text{Uncached Input} + 0.1 \times \text{Cached Input}) + 5 \times \text{Output}$. 5 is the estimated cost multiplier for output tokens compared to uncached input tokens. This score estimates relative monetary token cost; the actual monetary token cost depends on the actual price of the model.
 
 *(Repeat this subsection for each test case)*
-
----
 
 ## 🌍 Environment Changes
 
@@ -103,38 +80,12 @@ List MCP tools that have been used during the tests.
 | `{tool-name}` | {mcp-server-name} | {count} | {brief description of why it was used} | Test {n} |
 | ... | ... | ... | ... | ... |
 
----
+## 🚀 Recommended Actions
 
-## 📈 Token Usage
+Each test's consolidated report includes recommended actions. Replicate them here for all the tests.
 
-Report token usage per test case. Indicate when data is missing or estimated.
+### Test {n}: {test-name}
 
-| # | Test Name | Runs | Input Tokens | Output Tokens | Total Tokens |
-|---|-----------|------|-------------|---------------|--------------|
-| {n} | {test-name} ({run-count} run(s)) | {run-count} | ~{input} | ~{output} | ~{total} |
-| ... | ... | ... | ... | ... | ... |
-
-### Aggregate Token Summary
-
-| Metric | Value |
-|--------|-------|
-| **Total Tokens (all tests)** | **~{total}+** |
-| **Highest Single Run** | ~{value} ({test-name}) |
-| **Lowest Single Run** | ~{value} ({test-name}) |
-| **Average Per Run** | ~{value} |
-
-> ⚠️ Token usage may not be recorded for all runs. Figures above are lower-bound estimates where data is incomplete.
-
----
-
-## 🔑 Areas for Improvement
-
-Actionable suggestions for the skill author based on problems discovered during testing. Each item should identify the problem, cite supporting evidence from test results, and propose a concrete fix or investigation.
-
-1. **{area-title}** — {Description of the problem. Reference specific test cases, pass rates, or agent behaviors that surfaced this issue. Suggest what the skill author could change in the skill definition, prompts, triggers, or instructions to address it.}
-2. **{area-title}** — {Description and suggestion}
-3. ...
-
----
+{recommended actions for this test}
 
 *Per-skill report generated on {report-date} for skill `{skill-name}` — {total-test-cases} test cases across {total-runs} total runs.*

@@ -33,6 +33,12 @@ const agent = useAgentRunner({
   isTest: false
 });
 
+type TestResult = {
+  skillInvocationRate?: number;
+};
+
+type TestResults = Record<string, TestResult>;
+
 /**
  * Parse command-line arguments.
  * Supports: --skill <skill-name> (required)
@@ -59,7 +65,7 @@ function parseArgs(argv: string[]): { skill: string } {
 /**
  * Filter subdirectories belonging to a specific skill.
  */
-function filterSubdirectoriesBySkill(subdirectories: string[], skill: string): string[] {
+function filterSubdirectoriesBySkill(subdirectories: string[], skill: string, testResults: TestResults): string[] {
   return subdirectories.filter(subdir => {
     const subdirName = path.basename(subdir);
 
@@ -67,8 +73,10 @@ function filterSubdirectoriesBySkill(subdirectories: string[], skill: string): s
     // See tests/eslint-rules/integration-test-name.mjs for details.
     const terminatorIndex = subdirName.indexOf("_");
     const skillName = subdirName.substring(0, terminatorIndex);
+    const testResult = testResults[subdirName];
+    const isSkillInvocationTest = testResult && Object.hasOwn(testResult, "skillInvocationRate");
 
-    return skillName === skill;
+    return skillName === skill && !isSkillInvocationTest;
   });
 }
 
@@ -90,7 +98,7 @@ function getMostRecentTestRun(): string | undefined {
 /**
  * Process a single subdirectory - generate ONE consolidated report for all .md files in it
  */
-async function processSubdirectory(subdirPath: string, reportTemplate: string): Promise<string | null> {
+async function processSubdirectory(subdirPath: string, reportTemplate: string, testResult: TestResult): Promise<string | null> {
   const subdirName = path.basename(subdirPath);
 
   // Find all markdown files in this subdirectory (non-recursive)
@@ -138,6 +146,10 @@ ${reportTemplate}
 ---
 
 ## Test Results Data
+
+${JSON.stringify(testResult, null, 2)}
+
+## Test trajectories
 
 ${consolidatedContent}
 
@@ -264,6 +276,8 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
 
   // Load the report template once
   const reportTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
+  const testResultsPath = path.join(runPath, "testResults.json");
+  const testResults = JSON.parse(fs.readFileSync(testResultsPath, "utf-8")) as TestResults;
 
   // Find all subdirectories in the test run
   const entries = fs.readdirSync(runPath, { withFileTypes: true });
@@ -272,7 +286,7 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
     .map(entry => path.join(runPath, entry.name));
 
   // Filter subdirectories by skill
-  subdirectories = filterSubdirectoriesBySkill(subdirectories, skill);
+  subdirectories = filterSubdirectoriesBySkill(subdirectories, skill, testResults);
   if (subdirectories.length === 0) {
     console.error(`Error: No test results found for skill "${skill}" in: ${runPath}`);
     process.exit(1);
@@ -282,7 +296,8 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
   // Process each subdirectory and collect report paths
   const generatedReports: string[] = [];
   for (const subdir of subdirectories) {
-    const reportPath = await processSubdirectory(subdir, reportTemplate);
+    const subdirName = path.basename(subdir);
+    const reportPath = await processSubdirectory(subdir, reportTemplate, testResults[subdirName]);
     if (reportPath) {
       generatedReports.push(reportPath);
     }

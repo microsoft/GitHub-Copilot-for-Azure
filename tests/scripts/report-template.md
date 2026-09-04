@@ -13,14 +13,11 @@
 - Use the exact emojis and formatting shown
 - Omit optional sections only if truly no data is available
 
----
-
 # Test Report: [TEST_NAME]
 
-**Date:** [RUN_DATE]  
-**Duration:** [DURATION]  
-**Status:** [STATUS_EMOJI] [STATUS_TEXT]  
-**Confidence:** [CONFIDENCE_EMOJI] [CONFIDENCE_LEVEL]
+**Date:** [RUN_DATE]
+**Duration:** [DURATION]
+**Status:** [STATUS_EMOJI] [STATUS_TEXT]
 
 ## 📝 Test Prompt
 
@@ -33,21 +30,9 @@
 | Metric | Value |
 |--------|-------|
 | Status | [PASSED/FAILED] |
-| Retries | [NUMBER] |
+| Trials | [NUMBER] |
 | Duration | [MS]ms ([SECONDS]s) |
 | Skill | [SKILL_NAME] |
-| Task Type | [TASK_TYPE] |
-
-## 🎯 Confidence Level
-
-**Overall Confidence:** [EMOJI] [LEVEL] ([PERCENTAGE]%)
-
-| Factor | Impact |
-|--------|--------|
-| [FACTOR] | [+/- NUMBER] |
-
-**Confidence Indicators:**
-- [INDICATOR]
 
 ## ⚠️ Warnings (Non-Blocking)
 
@@ -110,45 +95,54 @@
 |------|------|----------|
 | \`[TOOL]\` | [TYPE] | [CATEGORY] |
 
-## 📈 Token Usage
+## Trajectory Summary
 
-| Metric | Value |
-|--------|-------|
-| Input Tokens | [NUMBER] |
-| Output Tokens | [NUMBER] |
-| Total Tokens | [NUMBER] |
+Provide a narrative summary of what happened during each trial, what went well and what went wrong. Focus on these 3 aspects:
 
-## 🔐 Azure Authentication
+- Quality:
+    - Did the LLM invoke reasonable tools for the task?
+    - Did the LLM present sufficient and accurate information related to the task?
+    - Did the agent pause at a reasonable place for clarification? 
+- Consistency: (only applicable for tests with more than 1 trial)
+    - Did the LLM select the same tools?
+    - Did the LLM passed the same or similar parameters when using the same tools?
+    - Did the LLM generate response following the same text pattern?
+- Cost:
+    - How many tokens did the test run use? Break the report down to cached input, uncached input (computed by subtracting total input by cached input) and output.
 
-- **Azure CLI:** [STATUS]
+**Runs:** [run-count] | **Pass Rate:** [rate]% ([passed]/[total])
 
-> **Note:** [AUTH_NOTES]
+**What Happened:**
+{Narrative description of the test execution flow. Describe the key steps the agent took, which tools were called, and the final outcome. Be specific — reference actual agent behavior observed in the logs.}
 
-## 🚀 Further Optimization
+**✅ What Went Well:**
+- {Positive observation — e.g., "Agent produced accurate output matching expected response", "agent consistently used the same tool", "agent paused for clarification at a reasonable place"}
+- ...
 
-### Recommended Actions
+Be honest. If nothing went well, just say so.
 
-| Priority | Action | Benefit | Effort |
-|----------|--------|---------|--------|
-| [EMOJI] [PRIORITY] | [ACTION] | [BENEFIT] | [EFFORT] |
+**❌ What Went Wrong:**
+- {Negative observation — e.g., "Response was missing required fields","agent didn't invoke the tools in consistent ways", "agent should have paused but moved forward"}
+- ...
 
-### Details
+Be honest. If nothing went wrong, just say so.
 
-1. **[ACTION_TITLE]**
-   - [DETAIL]
+**📈 Token Usage:**
 
-## 📚 Learnings
+| Trial | Cached Input Tokens | Uncached Input Tokens | Output Tokens | Credit Score |
+|-------|---------------------|-----------------------|---------------|--------------|
+| [TRIAL_NUMBER] | [CACHED_INPUT] | [UNCACHED_INPUT] | [OUTPUT] | [CREDIT_SCORE] |
+| ... | ... | ... | ... | ... |
 
-### What Worked
-- [ITEM]
+> **Credit score formula:** $\text{Credit Score} = (\text{Uncached Input} + 0.1 \times \text{Cached Input}) + 5 \times \text{Output}$. 5 is the estimated cost multiplier for output tokens compared to uncached input tokens. This score estimates relative monetary token cost; the actual monetary token cost depends on the actual price of the model.
 
-### Areas for Improvement
-- [ITEM]
+## 🚀 Recommended Actions
 
-### [SECTION_TITLE]
-[Optional section for special notes like "Auth Notes"]
+Suggestions for the skill author based on problems discovered during testing. Each item should identify the problem, cite supporting evidence from test results, and propose a potential fix or investigation. Be honest. If you don't have any recommended action, just say so.
 
-> [NOTE_CONTENT]
+1. **[area-title]** — [Description of the problem. Reference specific test cases, pass rates, or agent behaviors that surfaced this issue. Suggest what the skill author could change in the skill definition, prompts, triggers, or instructions to address it.]
+2. **[area-title]** — [Description and suggestion]
+3. ...
 
 ---
 *Generated at [TIMESTAMP]*
