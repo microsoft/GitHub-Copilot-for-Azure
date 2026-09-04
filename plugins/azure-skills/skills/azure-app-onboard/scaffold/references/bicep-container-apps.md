@@ -22,6 +22,7 @@ module containerApp './modules/containerapp.bicep' = {
 
 // In containerapp.bicep:
 param containerImage string = 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
+param appPort int = 8080  // set from buildRequirements.exposedPort ?? 8080
 var isPlaceholder = containerImage == 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest'
 
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {

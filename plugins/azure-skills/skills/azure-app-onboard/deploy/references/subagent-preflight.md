@@ -31,7 +31,7 @@ Read deploy reference files and distill deployment-specific rules into `deploy-c
 
 Read all 4 session artifacts. Extract: services[], naming, costEstimate, deployCommand, validationResult, deploymentVariables, subscriptionId, sessionId, buildRequirements, warnings[], quotaValidation.
 
-If `deploy-result.json` missing, write skeleton with these EXACT field names (do NOT rename): `{ sessionId, subscriptionId, resourceGroupName, deploymentNames: ["app-onboard-deploy-{first 8 of sessionId}"], status: "in-progress", startedUtc, resourceIds: [], endpoints: [], healthStatus: "unknown", resourceResults: [], healingAttempts: [] }`.
+If `deploy-result.json` missing, write skeleton with these EXACT field names (do NOT rename): `{ sessionId, subscriptionId, resourceGroupName, deploymentNames: ["app-onboard-deploy-{first 8 of sessionId}"], status: "in-progress", duration: { startedUtc }, resourceIds: [], endpoints: [], healthStatus: "unknown", warnings: [], partial: false, resourceResults: [], orphanedResourceGroups: [], healingAttempts: [] }`.
 
 ### Step 2 — Read safety + blocked patterns refs
 
@@ -41,7 +41,7 @@ Read [deploy-safety.md](deploy-safety.md) and [blocked-patterns.md](blocked-patt
 
 Read [preflight-checks.md](preflight-checks.md) and [approval-gate-template.md](approval-gate-template.md).
 
-Bake preflight into checklist: auth token check, resource name availability (real names), RBAC scope pre-check, ⛔ MANDATORY what-if command (pre-filled with real deploymentName, region, subscriptionId), RG existence check, offer restriction check (conditional: if `offerRestrictionsVerified` false AND DB services in plan).
+Bake preflight into checklist: auth token check, resource name availability (real names), RBAC scope pre-check, ⛔ **read `infra/main.bicep`'s `targetScope` FIRST and include ONLY the matching what-if/deploy command block** (subscription vs resource-group — see preflight-checks.md § 1, never include both or guess), RG existence + ownership check (§ 5 — the `ask_user` consent gate for a non-session-owned RG is NOT optional, keep it verbatim), offer restriction check (conditional: if `offerRestrictionsVerified` false AND DB services in plan).
 
 Bake approval gate VERBATIM with real values: subscription, RG, region, service table, cost table, validation status, files list, response handlers with exact CLI commands. If F1/D1 detected, append warning.
 
@@ -71,7 +71,7 @@ Read [../../references/handoff-protocol.md](../../references/handoff-protocol.md
 
 Delete inapplicable sections (e.g., remove App Service section for Container Apps deploys).
 
-> ⛔ **Copy `## Before handoff (Step 8)` and `## Artifact verification (Step 8 — MANDATORY)` from the template VERBATIM.** Do NOT paraphrase, merge, or weaken `⛔` markers. These sections are the compaction-safe finalization anchor — diluting them causes artifact writes to be skipped after compaction.
+> ⛔ **Copy `## Before handoff (Step 8)` and `## Conformance gate (Step 8 — MANDATORY, main thread)` from the template VERBATIM.** Do NOT paraphrase, merge, or weaken `⛔` markers. These sections are the compaction-safe finalization anchor — diluting them causes artifact writes to be skipped after compaction.
 
 ### Step 6 — Return summary
 
