@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  cpSync,
   existsSync,
   mkdtempSync,
   mkdirSync,
@@ -8,10 +9,11 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { delimiter, dirname, join, resolve } from "node:path";
+import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 type CursorPayload = {
   tool_input: {
@@ -25,14 +27,43 @@ type ShellCase = {
   args: (scriptPath: string) => string[];
 };
 
+type DispatcherResult = {
+  error?: Error;
+  status: number | null;
+};
+
+type Dispatcher = {
+  getHookCommand: (platform: string) => {
+    command: string;
+    args: string[];
+  };
+  run: (
+    platform?: string,
+    spawn?: (command: string, args: string[], options: { stdio: string }) => DispatcherResult,
+  ) => number;
+};
+
 const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
+const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
+const PLUGIN_ROOT = join(
+  TEST_DIR,
+  ".cursor",
+  "plugins",
+  "cache",
+  "cursor-public",
+  "azure",
+  "revision",
+);
+const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
+const DISPATCHER_PATH = join(HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
+const require = createRequire(import.meta.url);
+const dispatcher = require(join(SOURCE_HOOKS_DIR, "track-telemetry.js")) as Dispatcher;
 
 const shellCandidates: ShellCase[] = [
   {
@@ -61,17 +92,7 @@ function fixture(name: string): Record<string, unknown> {
 
 // Creates a representative Cursor plugin cache with a versioned test skill.
 function createCursorSkillCache(): string {
-  const skillRoot = join(
-    TEST_DIR,
-    ".cursor",
-    "plugins",
-    "cache",
-    "cursor-public",
-    "azure",
-    "revision",
-    "skills",
-    "azure-cost",
-  );
+  const skillRoot = join(PLUGIN_ROOT, "skills", "azure-cost");
   mkdirSync(join(skillRoot, "cost-query"), { recursive: true });
   writeFileSync(
     join(skillRoot, "SKILL.md"),
@@ -79,6 +100,19 @@ function createCursorSkillCache(): string {
   );
   writeFileSync(join(skillRoot, "cost-query", "guardrails.md"), "# Guardrails\n");
   return skillRoot;
+}
+
+// Converts Windows fixture paths for Bash, which represents the Unix dispatcher branch.
+function pathForShell(shell: ShellCase, filePath: string): string {
+  if (shell.name !== "Bash" || process.platform !== "win32") {
+    return filePath;
+  }
+
+  const result = spawnSync("bash", ["-lc", 'cygpath -u "$1"', "bash", filePath], {
+    encoding: "utf8",
+  });
+  expect(result.status, result.stderr).toBe(0);
+  return result.stdout.trim();
 }
 
 // Runs a telemetry hook with the payload and returns its captured npx arguments.
@@ -107,6 +141,27 @@ function runHook(shell: ShellCase, payload: Record<string, unknown>): string[] {
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
 }
 
+// Runs telemetry through the Node dispatcher using the current platform's shell.
+function runDispatcher(payload: Record<string, unknown>): string[] {
+  rmSync(CAPTURE_FILE, { force: true });
+  const result = spawnSync(process.execPath, [DISPATCHER_PATH], {
+    encoding: "utf8",
+    input: JSON.stringify(payload),
+    env: {
+      ...process.env,
+      PATH: `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
+      AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
+      COPILOT_CLI: "",
+      TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
+    },
+  });
+
+  expect(result.error).toBeUndefined();
+  expect(result.status, result.stderr).toBe(0);
+  expect(result.stdout.trim()).toBe('{"continue":true}');
+  return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
+}
+
 // Verifies that a named command argument is followed by the expected value.
 function expectArg(args: string[], name: string, value: string): void {
   const index = args.indexOf(name);
@@ -116,6 +171,7 @@ function expectArg(args: string[], name: string, value: string): void {
 
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
+  cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
   writeFileSync(
     join(BIN_DIR, "npx"),
     "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"\n",
@@ -131,12 +187,63 @@ afterAll(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
+describe("Cursor telemetry dispatcher", () => {
+  it.each([
+    {
+      platform: "win32",
+      command: "powershell.exe",
+      script: "track-telemetry.ps1",
+      expectedArgs: ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File"],
+    },
+    {
+      platform: "linux",
+      command: "bash",
+      script: "track-telemetry.sh",
+      expectedArgs: [],
+    },
+    {
+      platform: "darwin",
+      command: "bash",
+      script: "track-telemetry.sh",
+      expectedArgs: [],
+    },
+  ])("selects $command on $platform", ({ platform, command, script, expectedArgs }) => {
+    const selected = dispatcher.getHookCommand(platform);
+
+    expect(selected.command).toBe(command);
+    expect(selected.args.slice(0, -1)).toEqual(expectedArgs);
+    expect(basename(selected.args.at(-1) ?? "")).toBe(script);
+  });
+
+  it("propagates the child exit status", () => {
+    expect(dispatcher.run("linux", () => ({ status: 17 }))).toBe(17);
+  });
+
+  it("returns failure when the child process cannot start", () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(dispatcher.run("linux", () => ({ error: new Error("missing shell"), status: null }))).toBe(1);
+    expect(errorSpy).toHaveBeenCalledWith("Failed to run telemetry hook: missing shell");
+
+    errorSpy.mockRestore();
+  });
+
+  it("passes Cursor payloads and responses through the selected shell", () => {
+    const args = runDispatcher(fixture("cursor-mcp-invocation.json"));
+
+    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--session-id", SESSION_ID);
+    expectArg(args, "--tool-name", "MCP:get_azure_bestpractices");
+  });
+});
+
 describe.each(shells)("Cursor telemetry hook ($name)", shell => {
   const skillRoot = createCursorSkillCache();
 
   it("reports a SKILL.md read as a skill invocation", () => {
     const payload = fixture("cursor-skill-read.json") as CursorPayload & Record<string, unknown>;
-    payload.tool_input.file_path = join(skillRoot, "SKILL.md");
+    payload.tool_input.file_path = pathForShell(shell, join(skillRoot, "SKILL.md"));
 
     const args = runHook(shell, payload);
 
@@ -151,7 +258,10 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
-    payload.tool_input.file_path = join(skillRoot, "cost-query", "guardrails.md");
+    payload.tool_input.file_path = pathForShell(
+      shell,
+      join(skillRoot, "cost-query", "guardrails.md"),
+    );
 
     const args = runHook(shell, payload);
 

@@ -138,7 +138,7 @@ jobs:
     with:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
-      no-skills: ${{ inputs.no-skills }}
+      no-skills: ${{ inputs.no-skills || false }}
 
   test:
     name: Integration – ${{ matrix.skill }}
