@@ -2,6 +2,7 @@
  * Helper functions for extracting test related metadata from stimuli tags.
  */
 import type { SystemMessageConfig } from "@github/copilot-sdk";
+import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
@@ -232,4 +233,25 @@ export function getRequiredSkillsCondition(tags: Record<string, string[] | strin
     console.error("Failed to get requiredSkills from tags", value);
     return undefined;
   }
+}
+
+export function getAzureFixtureManifestPath(tags: Record<string, string[] | string> | undefined): string | undefined {
+  if (!tags) {
+    return undefined;
+  }
+
+  const value = tags["azureFixture"];
+
+  if (!value) {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    console.error("Failed to get azureFixture from tags", value);
+    return undefined;
+  }
+  if (path.isAbsolute(value)) {
+    console.error("azureFixture must be a relative path", value);
+    return undefined;
+  }
+  return value;
 }
