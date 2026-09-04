@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-inventory-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Inventory Azure resources." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | summarize count() by type, location, subscriptionId\"" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "query-1", "content": "scope=sub-a,sub-b; total=27; virtualMachines=12; storageAccounts=9; webSites=6; eastus2=18; westus3=9." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Azure Resource Graph returned 27 resources across accessible subscriptions sub-a and sub-b. By type: 12 virtual machines, 9 storage accounts, and 6 web sites. By location: eastus2 has 18 and westus3 has 9. Counts are grouped from query results rather than inferred from the prompt."
+    }
+  ]
+}

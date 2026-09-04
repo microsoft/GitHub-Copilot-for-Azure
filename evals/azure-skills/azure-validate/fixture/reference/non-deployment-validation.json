@@ -1,0 +1,9 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-validate-non-deployment-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Validate an email address format." },
+    { "step_id": 2, "source": "agent", "message": "The address user@example.com has a syntactically valid email format. This request does not require Azure deployment validation." }
+  ]
+}

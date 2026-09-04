@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-vm-rightsizing-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Recommend a safe VM rightsize." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $vmCostQuery" } },
+        { "tool_call_id": "metrics-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource $vmId --metric 'Percentage CPU,Available Memory Bytes' --start-time 2026-08-04 --end-time 2026-09-02" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "vm-api-02 D8s_v5 to D4s_v5 savings USD 900 monthly." },
+          { "source_call_id": "metrics-1", "content": "2026-08-04/2026-09-02 CPU p95=22%; available memory p05=9 GB." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Recommend vm-api-02 from D8s_v5 to D4s_v5 based on August 4 through September 2 CPU p95 22% and memory p05 9 GB, saving USD 900 monthly. Before resizing, validate workload latency and throughput, D4s_v5 quota and capacity, performance headroom, maintenance timing, rollback to D8s_v5, and explicit owner approval."
+    }
+  ]
+}

@@ -14,11 +14,12 @@
 
 name: azure-resource-lookup-integration-eval
 description: |
-  Integration evaluation for azure-resource-lookup skill — migrated from Jest integration tests.
-  Tests skill routing for cross-subscription resource queries, orphaned resource discovery,
-  tag compliance, App Service listing, and resource health prompts
-  using invocation rate measurement (5 runs, 80% threshold), plus response quality checks
-  for keyword presence in assistant output.
+  Decides whether azure-resource-lookup is ready to return accurate, scoped Azure
+  inventories and health results across subscriptions. Ship only when routing,
+  grounded counts, explicit tag policy, empty results, access failures, partial
+  visibility, and paginated Resource Graph results are handled correctly. Paired
+  routing and outcome probes intentionally require both selection stability and
+  grounded result quality; failure and scale cases cover distinct risks.
 
 tags:
   type: integration
@@ -31,7 +32,7 @@ defaults:
   model: claude-sonnet-4.6
 
 scoring:
-  threshold: 0.8
+  threshold: 1.0
 
 stimuli:
   # ═══════════════════════════════════════════
@@ -41,19 +42,33 @@ stimuli:
   # ── cross-subscription-resource-inventory ──
   # Jest: "handles cross-subscription resource inventory"
   # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
-  - name: "Cross-subscription resource inventory"
-    prompt: "How many resources do I have by type across all subscriptions?"
+  - name: "Cross-subscription resource inventory route and outcome"
+    prompt: "How much cloud stuff do I have by type across all the subscriptions I can access?"
     tags:
       type: integration
       tier: smoke
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    golden_trajectory:
+      path: fixture/reference/inventory.json
+    rubric:
+      - "Pass only if the response returns a scoped cross-subscription inventory grouped by resource type with query-derived counts."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+              result: "(?i)scope=.*total=.*virtualMachines=.*storageAccounts=.*webSites="
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -62,18 +77,35 @@ stimuli:
   # Jest: "finds resources by location"
   # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Resources by location across subscriptions"
-    prompt: "Show me resources by location across subscriptions"
+    prompt: "Return a JSON object containing only eastus2 and westus3 resource counts across subscriptions sub-a and sub-b."
     tags:
       type: integration
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    golden_trajectory:
+      path: fixture/reference/location-counts.json
+    rubric:
+      - "Pass only if the output is exactly the two-key JSON object returned by tool evidence, with no extra location or count."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?is)(?=.*summarize count\\(\\) by location)(?=.*sub-a)(?=.*sub-b)"
+              result: "^(?:\\{\"eastus2\":18,\"westus3\":9\\}|\\{\"westus3\":9,\"eastus2\":18\\})$"
+      - type: output-matches
+        config:
+          pattern: "^(?:\\{\"eastus2\":18,\"westus3\":9\\}|\\{\"westus3\":9,\"eastus2\":18\\})$"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -82,18 +114,39 @@ stimuli:
   # Jest: "finds orphaned disks"
   # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Find orphaned or unattached disks"
-    prompt: "Find orphaned or unattached disks in my subscription"
+    prompt: "Which managed disks in subscription 22222222-2222-2222-2222-222222222222 are unattached?"
     tags:
       type: integration
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    golden_trajectory:
+      path: fixture/reference/orphaned-disks.json
+    rubric:
+      - "Pass only if the response identifies concrete unattached managed disks from queried Azure state and does not mutate them."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?is)(?=.*microsoft\\.compute/disks)(?=.*managedBy)(?=.*managedByExtended)(?=.*isempty)(?=.*22222222-2222-2222-2222-222222222222)"
+              result: "(?is)(?=.*disk-old-01.*rg-legacy)(?=.*disk-test-02.*rg-test)(?=.*managedBy empty)(?=.*managedByExtended empty)"
+          disallowed:
+            - name: "(?i).*(delete|remove|destroy|update|create|deploy|apply).*"
+            - name: "(?i).*"
+              pattern: "(?i)\"method\"\\s*:\\s*\"?(DELETE|PATCH|PUT|POST)\"?"
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*disk-old-01.*rg-legacy)(?=.*disk-test-02.*rg-test)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -102,18 +155,38 @@ stimuli:
   # Jest: "finds resources missing tags"
   # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Find resources missing required tags"
-    prompt: "Find resources missing required tags in my subscription"
+    prompt: "Use policy assignment Corp-Required-Tags to find resources missing Owner, CostCenter, or Environment in my subscription."
     tags:
       type: integration
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    golden_trajectory:
+      path: fixture/reference/missing-tags.json
+    rubric:
+      - "Pass only if the response evaluates Owner, CostCenter, and Environment against Corp-Required-Tags and identifies each missing tag."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)Corp-Required-Tags|policy assignment"
+              result: "(?is)(?=.*Owner)(?=.*CostCenter)(?=.*Environment)"
+            - name: "(?i).*"
+              pattern: "(?is)(?=.*isempty\\(tags\\.Owner\\))(?=.*isempty\\(tags\\.CostCenter\\))(?=.*isempty\\(tags\\.Environment\\))(?=.*\\bor\\b)"
+              result: "(?is)(?=.*vm-api-01.*Owner)(?=.*stlogs.*CostCenter)(?=.*app-prod.*Environment)"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*vm-api-01.*Owner)(?=.*stlogs.*CostCenter)(?=.*app-prod.*Environment)"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -122,18 +195,32 @@ stimuli:
   # Jest: "lists websites in subscription" + "skill should be invoked for resource listing prompts"
   # Vally: checks skill invocation (preserves original Jest isSkillInvoked assertion)
   - name: "List websites in subscription"
-    prompt: "List the websites in my subscription"
+    prompt: "List Microsoft App Service websites in subscription 22222222-2222-2222-2222-222222222222 with name, resource group, and location."
     tags:
       type: integration
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    golden_trajectory:
+      path: fixture/reference/websites.json
+    rubric:
+      - "Pass only if the response lists query-returned App Service sites for the requested subscription with identifying details."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?is)(?=.*microsoft\\.web/sites)(?=.*22222222-2222-2222-2222-222222222222)"
+              result: "(?is)(?=.*api-prod.*rg-apps.*eastus2)(?=.*portal-prod.*rg-web.*westus3)"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -142,18 +229,35 @@ stimuli:
   # Jest: "checks resource health status"
   # Vally: checks skill invocation (routing coverage added beyond original Jest keyword check)
   - name: "Find unhealthy or degraded resources"
-    prompt: "Find resources in unhealthy or degraded state"
+    prompt: "Across all accessible subscriptions, query Resource Health for unhealthy or degraded resources. Report matching resources, or state clearly when the query returns none."
     tags:
       type: integration
       tier: full
       cost: llm
       area: routing
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-resource-lookup"},{"type":"tool-call-count","count":3}]'
+    golden_trajectory:
+      path: fixture/reference/health.json
+    rubric:
+      - "Pass only if the response uses Resource Health evidence and reports matching resources when present or a clear query-derived empty state when none are present."
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)HealthResources|availabilityState|Resource Health"
+              result: "(?is)(?=.*vm-api-01\\s+Unavailable)(?=.*db-orders\\s+Degraded)"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*vm-api-01.*Unavailable)(?=.*db-orders.*Degraded)"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -165,8 +269,8 @@ stimuli:
   # ── cross-subscription-resource-quality ──
   # Jest: "handles cross-subscription resource inventory"
   # Assertions: assistant output mentions "resource"
-  - name: "Cross-subscription inventory mentions resources"
-    prompt: "How many resources do I have by type across all subscriptions?"
+  - name: "Resource group inventory by type"
+    prompt: "For resource group rg-apps, return one compact JSON object in this key order: resourceGroup, Microsoft.Web/sites, Microsoft.Storage/storageAccounts, Microsoft.Insights/components, total."
     config:
       runs: 1
     tags:
@@ -174,10 +278,31 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+    golden_trajectory:
+      path: fixture/reference/resource-group.json
+    rubric:
+      - "Pass only if the JSON object exactly binds each resource type to its Resource Graph count and total."
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)resource"
+          pattern: "^\\{\"resourceGroup\":\"rg-apps\",\"Microsoft\\.Web/sites\":3,\"Microsoft\\.Storage/storageAccounts\":2,\"Microsoft\\.Insights/components\":1,\"total\":6\\}$"
+      - type: output-matches
+        config:
+          pattern: "(?i)\"total\"\\s*:\\s*6"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)resourceGroup\\s*=~?\\s*['\"]rg-apps|resource group.*rg-apps"
+              result: "(?is)(?=.*rg-apps)(?=.*total\\s*[:=]\\s*6)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: completed
       - type: output-not-matches
         config:
@@ -186,8 +311,8 @@ stimuli:
   # ── resources-by-location-quality ──
   # Jest: "finds resources by location"
   # Assertions: assistant output mentions "location"
-  - name: "Resources by location mentions location"
-    prompt: "Show me resources by location across subscriptions"
+  - name: "Resources matching exact tags"
+    prompt: "Return compact JSON with no whitespace. Order resources api-prod then db-prod; within each, order Environment, Owner, resourceGroup, location. Include only resources matching Environment=prod AND Owner=team-a."
     config:
       runs: 1
     tags:
@@ -195,10 +320,28 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+    golden_trajectory:
+      path: fixture/reference/tag-filter.json
+    rubric:
+      - "Pass only if the JSON contains exactly the two tool-returned resources with both tags, group, and location."
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)location"
+          pattern: "^\\{\"api-prod\":\\{\"Environment\":\"prod\",\"Owner\":\"team-a\",\"resourceGroup\":\"rg-apps\",\"location\":\"eastus2\"\\},\"db-prod\":\\{\"Environment\":\"prod\",\"Owner\":\"team-a\",\"resourceGroup\":\"rg-data\",\"location\":\"westus3\"\\}\\}$"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?is)(?=.*Environment.*prod)(?=.*Owner.*team-a)(?=.*\\band\\b)"
+              result: "(?is)(?=.*api-prod.*rg-apps.*eastus2)(?=.*db-prod.*rg-data.*westus3)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: completed
       - type: output-not-matches
         config:
@@ -207,8 +350,8 @@ stimuli:
   # ── orphaned-disks-quality ──
   # Jest: "finds orphaned disks"
   # Assertions: assistant output mentions "disk"
-  - name: "Orphaned disks response mentions disk"
-    prompt: "Find orphaned or unattached disks in my subscription"
+  - name: "Orphaned public IPs and NICs"
+    prompt: "Find public IPs without ipConfiguration and NICs without virtualMachine attachments. Return names and attachment evidence without changing resources."
     config:
       runs: 1
     tags:
@@ -216,10 +359,37 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+    golden_trajectory:
+      path: fixture/reference/orphaned-network.json
+    rubric:
+      - "Pass only if each network candidate and missing attachment field exactly match tool evidence and no mutation occurs."
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)disk"
+          pattern: "(?i)public IP|NIC|network"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*pip-old.*ipConfiguration)(?=.*nic-old.*virtualMachine)"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?is)(?=.*microsoft\\.network/publicipaddresses)(?=.*microsoft\\.network/networkinterfaces)(?=.*isempty)"
+              result: "(?is)(?=.*pip-old.*ipConfiguration empty)(?=.*nic-old.*virtualMachine empty)"
+          disallowed:
+            - name: "(?i).*(delete|remove|destroy|update|create|deploy|apply).*"
+            - name: "(?i).*"
+              pattern: "(?i)\"method\"\\s*:\\s*\"?(DELETE|PATCH|PUT|POST)\"?"
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)\\b(delete|remove|destroy|update|create|deploy|apply)\\b"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: completed
       - type: output-not-matches
         config:
@@ -228,8 +398,8 @@ stimuli:
   # ── missing-tags-quality ──
   # Jest: "finds resources missing tags"
   # Assertions: assistant output mentions "tag"
-  - name: "Missing tags response mentions tag"
-    prompt: "Find resources missing required tags in my subscription"
+  - name: "Resources with failed provisioning"
+    prompt: "List resources whose provisioningState is Failed with name, type, and resource group."
     config:
       runs: 1
     tags:
@@ -237,10 +407,37 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+    golden_trajectory:
+      path: fixture/reference/failed-provisioning.json
+    rubric:
+      - "Pass only if each reported resource has Failed provisioning state and its name, type, and group match tool evidence."
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)tag"
+          pattern: "(?i)provisioningState.*Failed|Failed.*provisioningState"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*api-broken.*Microsoft\\.Web/sites.*rg-apps)(?=.*vm-broken.*Microsoft\\.Compute/virtualMachines.*rg-vms)"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*api-broken)(?=.*vm-broken)(?=.*Failed)"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)provisioningState\\s*=~?\\s*['\"]Failed|provisioningState.*Failed"
+              result: "(?is)(?=.*api-broken.*Failed)(?=.*vm-broken.*Failed)"
+            - name: "(?i).*"
+              pattern: "(?i)Resources"
+              result: "(?is)(?=.*Microsoft\\.Web/sites)(?=.*Microsoft\\.Compute/virtualMachines)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: completed
       - type: output-not-matches
         config:
@@ -249,8 +446,8 @@ stimuli:
   # ── list-websites-quality ──
   # Jest: "lists websites in subscription"
   # Assertions: assistant output mentions "web", "app", or "site"
-  - name: "List websites response mentions web/app/site"
-    prompt: "List the websites in my subscription"
+  - name: "List Azure Container Apps"
+    prompt: "List Microsoft.App/containerApps with each app name, resource group, and location."
     config:
       runs: 1
     tags:
@@ -258,10 +455,31 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+    golden_trajectory:
+      path: fixture/reference/container-apps.json
+    rubric:
+      - "Pass only if every Container App name, resource group, and location exactly match Resource Graph results."
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)web|app|site"
+          pattern: "(?i)Microsoft\\.App/containerApps|Container Apps?"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*orders-api.*rg-containers.*eastus2)(?=.*jobs-worker.*rg-containers.*eastus2)"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)microsoft\\.app/containerapps"
+              result: "(?is)(?=.*orders-api.*rg-containers.*eastus2)(?=.*jobs-worker.*rg-containers.*eastus2)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: completed
       - type: output-not-matches
         config:
@@ -270,8 +488,8 @@ stimuli:
   # ── resource-health-quality ──
   # Jest: "checks resource health status"
   # Assertions: assistant output mentions "health", "available", or "resource"
-  - name: "Resource health response mentions health/available/resource"
-    prompt: "Find resources in unhealthy or degraded state"
+  - name: "Lookup resource by exact ID"
+    prompt: "Find the resource with ID /subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-apps/providers/Microsoft.Web/sites/api-prod and report its name, type, group, location, and provisioning state."
     config:
       runs: 1
     tags:
@@ -279,11 +497,621 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
+    golden_trajectory:
+      path: fixture/reference/exact-id.json
+    rubric:
+      - "Pass only if the exact resource ID is queried and every reported identity and state field matches its Resource Graph result."
     graders:
       - type: output-matches
         config:
-          pattern: "(?i)health|available|resource"
+          pattern: "(?is)(?=.*api-prod)(?=.*Microsoft\\.Web/sites)(?=.*rg-apps)(?=.*eastus2)(?=.*Succeeded)"
+      - type: output-matches
+        config:
+          pattern: "22222222-2222-2222-2222-222222222222"
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)/subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-apps/providers/Microsoft\\.Web/sites/api-prod"
+              result: "(?is)(?=.*api-prod)(?=.*Microsoft\\.Web/sites)(?=.*rg-apps)(?=.*eastus2)(?=.*Succeeded)"
+      - type: output-matches
+        config:
+          pattern: "(?i)provisioningState.*Succeeded|Succeeded.*provisioningState"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # Failure and scale coverage
+  - name: "Resource Graph permission failure"
+    prompt: "Use azure-resource-lookup to inventory subscription 00000000-0000-0000-0000-000000000001. If access fails, state the limitation and least-privilege role needed to retry."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/permission-failure.json
+    rubric:
+      - "Pass only if the response states that the inventory is incomplete, names the inaccessible subscription, requests least-privilege Reader access, and avoids fabricated results."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "00000000-0000-0000-0000-000000000001"
+              result: "(?i)AuthorizationFailed|access denied"
+      - type: output-matches
+        config:
+          pattern: "(?i)AuthorizationFailed|access denied|permission"
+      - type: output-matches
+        config:
+          pattern: "(?i)Reader"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*00000000-0000-0000-0000-000000000001)(?=.*cannot report|incomplete|partial)"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(^|[.!?]\\s*)(complete inventory|all subscriptions total|tenant-wide total)\\s*[:=]?\\s*[0-9]"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Empty resource inventory"
+    prompt: "Query the current subscription for resources tagged EvaluationSentinel=8fbdc6d1-no-match. Report the observed result distinctly from a query failure."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: medium
+    golden_trajectory:
+      path: fixture/reference/empty-inventory.json
+    rubric:
+      - "Pass only if zero results are reported distinctly from query failure and the response verifies the current subscription scope and exact tag filter."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)EvaluationSentinel.*8fbdc6d1-no-match"
+              result: "(?i)0 results|zero results|\\[\\]"
+      - type: output-matches
+        config:
+          pattern: "(?i)zero|no matching resources|empty"
+      - type: output-matches
+        config:
+          pattern: "(?i)subscription|scope"
+      - type: output-matches
+        config:
+          pattern: "(?i)EvaluationSentinel|tag filter"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Partial cross-subscription access"
+    prompt: "Count resources in my current subscription and in subscription 00000000-0000-0000-0000-000000000001 separately. Report any accessible count and any access failure without calling the result tenant-wide."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/partial-access.json
+    rubric:
+      - "Pass only if the response reports scoped partial counts, names successful and inaccessible subscriptions, and does not label the result complete."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+              result: "(?i)[0-9,]+\\s+resources"
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+              result: "(?i)AuthorizationFailed|access denied"
+      - type: output-matches
+        config:
+          pattern: "(?i)partial|incomplete|excluded"
+      - type: output-matches
+        config:
+          pattern: "00000000-0000-0000-0000-000000000001"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(tenant-wide|all subscriptions|complete total)\\s*[:=]?\\s*[0-9]"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Paginated Resource Graph inventory"
+    prompt: "List all resources in subscription 22222222-2222-2222-2222-222222222222, consume every Resource Graph continuation token, deduplicate IDs, and report the final count."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scale
+      polarity: positive
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/pagination.json
+    rubric:
+      - "Pass only if tool evidence shows every continuation token was consumed, IDs were deduplicated, and the final count is 2,500."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)(--first|first|pageSize).{0,20}1000"
+              result: "(?is)(?=.*\"count\"\\s*:\\s*1000)(?=.*\"skipToken\"\\s*:\\s*\"page-2-token\")(?=.*\"lastId\"\\s*:\\s*\"resource-1000\")(?=.*\"idsDigest\"\\s*:\\s*\"sha256-page1\")"
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)page-2-token|skipToken.{0,20}\\$\\{?skipToken\\}?"
+              result: "(?is)(?=.*\"count\"\\s*:\\s*1000)(?=.*\"skipToken\"\\s*:\\s*\"page-3-token\")(?=.*\"firstId\"\\s*:\\s*\"resource-1000\")(?=.*\"lastId\"\\s*:\\s*\"resource-1999\")(?=.*\"idsDigest\"\\s*:\\s*\"sha256-page2\")"
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)page-3-token|skipToken.{0,20}\\$\\{?skipToken\\}?"
+              result: "(?is)(?=.*\"count\"\\s*:\\s*502)(?=.*\"skipToken\"\\s*:\\s*null)(?=.*\"firstId\"\\s*:\\s*\"resource-1999\")(?=.*\"lastId\"\\s*:\\s*\"resource-2500\")(?=.*\"rawIds\"\\s*:\\s*2502)(?=.*\"uniqueIds\"\\s*:\\s*2500)(?=.*\"duplicateIds\"\\s*:\\s*\"resource-1000,resource-1999\")(?=.*\"uniqueIdsDigest\"\\s*:\\s*\"sha256-unique-2500\")"
+          sequence:
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)(--first|first|pageSize).{0,20}1000"
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)page-2-token|skipToken"
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)page-3-token|skipToken"
+      - type: output-matches
+        config:
+          pattern: "(?i)skipToken|continuation token|next page|pagination"
+      - type: output-matches
+        config:
+          pattern: "(?i)deduplicat.*resource ID|resource ID.*deduplicat|duplicate.*resource ID|resource ID.*duplicate|resource-1000.*duplicate|duplicate.*resource-1000"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*2,?500\\s+unique resources)(?=.*skipToken.*null|null.*skipToken)"
+      - type: output-matches
+        config:
+          pattern: "(?i)2,?500\\s+unique resources"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Duplicate subscription names require IDs"
+    prompt: "Two subscriptions are both named Production. Count resources only in subscription ID 11111111-1111-1111-1111-111111111111 and do not select by display name."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      polarity: positive
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/subscription-id.json
+    rubric:
+      - "Pass only if the query and result are scoped by the exact subscription ID, not the duplicate display name, and report a query-derived count."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)--subscriptions\\s+11111111-1111-1111-1111-111111111111|\"subscriptions\"\\s*:\\s*\\[?\"11111111-1111-1111-1111-111111111111\"|/subscriptions/11111111-1111-1111-1111-111111111111"
+              result: "(?i)[0-9,]+\\s+resources"
+      - type: output-matches
+        config:
+          pattern: "11111111-1111-1111-1111-111111111111"
+      - type: output-matches
+        config:
+          pattern: "(?i)[0-9,]+\\s+resources"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)selected subscription by (display )?name"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Resource Health partial visibility"
+    prompt: "Check Resource Health for subscriptions 33333333-3333-3333-3333-333333333333, 44444444-4444-4444-4444-444444444444, and 55555555-5555-5555-5555-555555555555. Preserve Unknown and report access failures."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/health-partial.json
+    rubric:
+      - "Pass only if Unknown remains distinct, accessible health results are scoped, the denied subscription is named, and the response does not claim organization-wide completeness."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|resource.?graph).*"
+              pattern: "(?is)(?=.*HealthResources)(?=.*33333333-3333-3333-3333-333333333333)"
+              result: "(?is)(?=.*33333333-3333-3333-3333-333333333333.*Unknown)"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|resource.?graph).*"
+              pattern: "(?is)(?=.*HealthResources)(?=.*44444444-4444-4444-4444-444444444444)"
+              result: "(?is)(?=.*44444444-4444-4444-4444-444444444444.*Available)"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|resource.?graph).*"
+              pattern: "(?is)(?=.*HealthResources)(?=.*55555555-5555-5555-5555-555555555555)"
+              result: "(?is)(?=.*55555555-5555-5555-5555-555555555555.*AuthorizationFailed)"
+      - type: output-matches
+        config:
+          pattern: "(?i)Unknown"
+      - type: output-matches
+        config:
+          pattern: "(?i)AuthorizationFailed|access denied"
+      - type: output-matches
+        config:
+          pattern: "(?i)partial|incomplete|not.*organization-wide"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*33333333-3333-3333-3333-333333333333.*vm-api.*Unknown)(?=.*44444444-4444-4444-4444-444444444444.*storage-01.*Available)(?=.*55555555-5555-5555-5555-555555555555.*AuthorizationFailed)"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Resource Health empty result"
+    prompt: "Are any resources unhealthy or degraded in subscription 22222222-2222-2222-2222-222222222222? Name the queried scope."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      polarity: positive
+      risk: medium
+    golden_trajectory:
+      path: fixture/reference/health-empty.json
+    rubric:
+      - "Pass only if the empty health result comes from the tool result, names the accessible scope, and does not imply inaccessible subscriptions are healthy."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|resource.?graph|Search-AzGraph).*"
+              pattern: "(?is)(?=.*(?:HealthResources|availabilityState|Resource Health))(?=.*22222222-2222-2222-2222-222222222222)"
+              result: "(?i)0 results|zero results|\\[\\]"
+      - type: output-matches
+        config:
+          pattern: "(?i)zero|none|no (unhealthy|unavailable|degraded) resources"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Aggregate large inventory count"
+    prompt: "Count all resources in subscription 22222222-2222-2222-2222-222222222222 without listing individual resources."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scale
+      polarity: positive
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/aggregate-count.json
+    rubric:
+      - "Pass only if one server-side aggregate query returns the exact subscription count and no pagination is used."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?is)(?=.*summarize\\s+total\\s*=\\s*count\\(\\))(?=.*22222222-2222-2222-2222-222222222222)"
+              result: "(?i)\"total\"\\s*:\\s*2500"
+          disallowed:
+            - name: "(?i).*(resource.?graph|Search-AzGraph|bash|powershell|pwsh|run_in_terminal|sdk|client).*"
+              pattern: "(?i)skip.?token|pageSize"
+      - type: output-matches
+        config:
+          pattern: "(?is)(?=.*22222222-2222-2222-2222-222222222222)(?=.*2,?500\\s+resources)"
+      - type: output-matches
+        config:
+          pattern: "(?i)one query|server-side aggregate|no pagination"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Later page timeout remains partial"
+    prompt: "Retrieve a multi-page Resource Graph inventory with separate page requests. If a continuation request times out, retry the identical token exactly three times with separate observable waits of 1, 2, and 4 seconds, then report a terminal incomplete result."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/later-page-timeout.json
+    rubric:
+      - "Pass only if a later-page timeout is observed, collected rows are labeled partial, the failed token is retained for bounded retry, and no final count is claimed."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+              result: "(?i)[0-9,]+\\s+resources.*skipToken"
+            - name: "(?i).*"
+              pattern: "(?i)page-2-token"
+              result: "(?i)GatewayTimeout|timed out|timeout"
+              min_count: 4
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+1\\b|\\bsleep\\s+1\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?1"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+2\\b|\\bsleep\\s+2\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?2"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+4\\b|\\bsleep\\s+4\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?4"
+          sequence:
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+            - name: "(?i).*"
+              pattern: "(?i)skip.?token|continuation|next.?page|\\$skipToken"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+1\\b|\\bsleep\\s+1\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?1"
+            - name: "(?i).*"
+              pattern: "(?i)page-2-token"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+2\\b|\\bsleep\\s+2\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?2"
+            - name: "(?i).*"
+              pattern: "(?i)page-2-token"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+4\\b|\\bsleep\\s+4\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?4"
+            - name: "(?i).*"
+              pattern: "(?i)page-2-token"
+      - type: max-repeat
+        config:
+          max: 4
+          match: name-args
+          tools:
+            - "(?i)^(bash|powershell|pwsh|run_in_terminal|resource.?graph.*)$"
+      - type: output-matches
+        config:
+          pattern: "(?i)partial|incomplete"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)final count\\s*[:=]\\s*[0-9]"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Resource Graph throttling"
+    prompt: "Run a Resource Graph inventory. If the query returns HTTP 429, use a separate observable wait for Retry-After plus jitter, retry with a bounded limit, and report either the retrieved count or an incomplete result."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/throttling.json
+    rubric:
+      - "Pass only if separate retry tool events are observable, their timestamps or telemetry prove a delay at least as long as Retry-After with jitter, retries are bounded, and incomplete data is not final."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*(resource.?graph|powershell|bash|pwsh).*"
+              result: "(?i)(429|Too Many Requests|throttl).*Retry-After\\s*[:=]\\s*3|Retry-After\\s*[:=]\\s*3.*(429|Too Many Requests|throttl)"
+            - name: "(?i).*(bash|powershell|pwsh|run_in_terminal|wait|sleep|delay).*"
+              pattern: "(?i)Start-Sleep\\s+-Seconds\\s+(?:3\\.0*[1-9][0-9]*|[4-9](?:\\.[0-9]+)?|[1-9][0-9]+(?:\\.[0-9]+)?)\\b|\\bsleep\\s+(?:3\\.0*[1-9][0-9]*|[4-9](?:\\.[0-9]+)?|[1-9][0-9]+(?:\\.[0-9]+)?)\\b|\"(?:seconds|duration)\"\\s*:\\s*\"?(?:3\\.0*[1-9][0-9]*|[4-9](?:\\.[0-9]+)?|[1-9][0-9]+(?:\\.[0-9]+)?)"
+              result: "(?is)(?=.*startedAt)(?=.*completedAt)(?=.*delaySeconds\\s*[:=]\\s*(?:3\\.0*[1-9][0-9]*|[4-9](?:\\.[0-9]+)?|[1-9][0-9]+(?:\\.[0-9]+)?))"
+            - name: "(?i).*(resource.?graph|powershell|bash|pwsh).*"
+              result: "(?i)attempts\\s*[:=]\\s*[2-9][0-9]*.*retryAfterSeconds\\s*[:=]\\s*[0-9]+.*delaySeconds\\s*[:=]\\s*[0-9]+.*jitterSeconds\\s*[:=]\\s*[0-9]+.*(succeeded|retryLimitReached)\\s*[:=]\\s*(true|false)"
+          sequence:
+            - name: "(?i).*(resource.?graph|powershell|bash|pwsh).*"
+            - name: "(?i).*(wait|sleep|delay|bash|powershell|pwsh|run_in_terminal).*"
+            - name: "(?i).*(resource.?graph|powershell|bash|pwsh).*"
+      - type: output-matches
+        config:
+          pattern: "(?i)Retry-After|backoff"
+      - type: output-matches
+        config:
+          pattern: "(?i)bounded|retry limit|incomplete|[0-9,]+\\s+resources"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Resource Graph query timeout"
+    prompt: "Run a broad Resource Graph inventory. If it times out, report that no complete count exists and propose narrower scoped, projected, bounded queries."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/timeout.json
+    rubric:
+      - "Pass only if the timeout is observed, partial data is not called complete, and the retry plan narrows scope and projection with bounded batches."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+              result: "(?i)GatewayTimeout|timed out|timeout"
+      - type: output-matches
+        config:
+          pattern: "(?i)narrow|scope|project.*column|batch"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(complete|final) (inventory|count)\\s*[:=]\\s*[0-9]"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Expired Azure credential"
+    prompt: "Run a Resource Graph lookup. If the Azure credential is expired, report the authentication failure, require reauthentication for the intended tenant, verify context, and avoid stale results."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failure-handling
+      polarity: negative
+      risk: high
+    golden_trajectory:
+      path: fixture/reference/expired-credential.json
+    rubric:
+      - "Pass only if the expired credential is observed, reauthentication targets the intended tenant, subscription context is rechecked, and no stale result is reported."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-resource-lookup
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i).*"
+              pattern: "(?i)graph query|ResourceGraph|Microsoft\\.ResourceGraph"
+              result: "(?i)AADSTS700082|credential.*expired|token.*expired"
+      - type: output-matches
+        config:
+          pattern: "(?i)az login|reauthenticat"
+      - type: output-matches
+        config:
+          pattern: "(?i)tenant|subscription context"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(cached|stale) (inventory|result)\\s*[:=]"
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"

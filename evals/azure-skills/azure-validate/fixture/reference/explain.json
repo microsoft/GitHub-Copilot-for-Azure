@@ -1,0 +1,13 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-validate-explain-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Explain a Bicep declaration without validation." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "This Bicep resource declaration defines an Azure Storage account. The parent property associates the resource with another declared resource. No validation or deployment was requested."
+    }
+  ]
+}

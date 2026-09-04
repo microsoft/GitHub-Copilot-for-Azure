@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-health-empty-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Check Resource Health." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "health-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"HealthResources | where properties.availabilityState in~ ('Unavailable','Degraded')\" --subscriptions 22222222-2222-2222-2222-222222222222" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "health-1", "content": "0 results." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Resource Health returned zero unavailable or degraded resources for subscription 22222222-2222-2222-2222-222222222222. This does not claim anything about inaccessible subscriptions."
+    }
+  ]
+}

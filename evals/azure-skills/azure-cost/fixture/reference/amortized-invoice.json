@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-amortized-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Reconcile amortized costs with an invoice." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri '/subscriptions/22222222-2222-2222-2222-222222222222/providers/Microsoft.CostManagement/query' -Body $amortizedQuery" } },
+        { "tool_call_id": "invoice-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Get -Uri $invoiceUri" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "ActualCost USD 9,800; AmortizedCost USD 11,250; reservation allocation USD 1,450." },
+          { "source_call_id": "invoice-1", "content": "Invoice total USD 10,120; tax USD 420; credit USD 100." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "March 2026 ActualCost is USD 9,800 and AmortizedCost is USD 11,250. Reservation purchase allocation is USD 1,450 across benefited resources. The invoice total is USD 10,120 because it includes tax of USD 420 and credit of USD 100."
+    }
+  ]
+}

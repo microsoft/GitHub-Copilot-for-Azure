@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-pricing-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Compare public and effective Azure prices." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri '/billingAccounts/contoso/providers/Microsoft.CostManagement/query' -Body 'Standard_D4s_v5 Linux eastus2 pay-as-you-go'" } },
+        { "tool_call_id": "query-2", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Get -Uri \"$retailPricesUri&armSkuName=Standard_D4s_v5&armRegionName=eastus2&productName=Linux&priceType=Consumption\"" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "Effective negotiated price USD 0.154 per hour." },
+          { "source_call_id": "query-2", "content": "Public retail price USD 0.192 per hour." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The public retail price is USD 0.192 per hour, while Cost Management reports an effective negotiated price of USD 0.154 per hour for this billing account and period. Use USD 0.154 for the account-specific estimate. The retail price is only a public comparison and excludes negotiated discounts, reservation benefits, taxes, and currency conversion."
+    }
+  ]
+}
