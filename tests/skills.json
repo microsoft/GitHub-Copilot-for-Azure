@@ -13,7 +13,6 @@
                 "azure-cloud-migrate",
                 "azure-compliance",
                 "azure-compute",
-                "azure-cost",
                 "azure-deploy",
                 "azure-diagnostics",
                 "azure-enterprise-infra-planner",
@@ -36,7 +35,7 @@
             "integrationTestSchedule": {
                 "0 5 * * 2-6": "microsoft-foundry",
                 "0 8 * * 2-6": "azure-deploy",
-                "0 12 * * 2-6": "airunway-aks-setup,appinsights-instrumentation,azure-ai,azure-aigateway,azure-cloud-migrate,azure-compliance,azure-compute,azure-cost,azure-diagnostics,azure-enterprise-infra-planner,azure-kubernetes,azure-kusto,azure-messaging,azure-prepare,azure-quotas,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-upgrade,azure-validate,entra-agent-id,entra-app-registration,azure-reliability,python-appservice-deploy,azure-app-onboard,azure-app-onboard-prereq"
+                "0 12 * * 2-6": "airunway-aks-setup,appinsights-instrumentation,azure-ai,azure-aigateway,azure-cloud-migrate,azure-compliance,azure-compute,azure-diagnostics,azure-enterprise-infra-planner,azure-kubernetes,azure-kusto,azure-messaging,azure-prepare,azure-quotas,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-upgrade,azure-validate,entra-agent-id,entra-app-registration,azure-reliability,python-appservice-deploy,azure-app-onboard,azure-app-onboard-prereq"
             }
         },
         {
@@ -49,6 +48,19 @@
             ],
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-kusto-graph,azure-kusto-irql,azure-kusto-irql-graph"
+            }
+        },
+        {
+            "name": "azure-cost",
+            "dirname": "azure-cost",
+            "skills": [
+                "cost-analysis",
+                "cost-estimation",
+                "cost-governance",
+                "cost-optimization"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "cost-analysis,cost-estimation,cost-governance,cost-optimization"
             }
         }
     ]
