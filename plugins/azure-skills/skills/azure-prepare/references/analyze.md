@@ -10,6 +10,7 @@ If matched, invoke the corresponding skill **immediately** — it has tested tem
 | User prompt mentions | Action |
 |---------------------|--------|
 | Azure Functions, function app, serverless function, timer trigger, func new | Stay in **azure-prepare**. When selecting compute, **prefer Azure Functions** templates and best practices, then continue from Step 4. |
+| Container Apps, microservice, Dapr, KEDA, containerized worker/job | Stay in **azure-prepare**. When selecting compute, **prefer Container Apps** base templates + recipes, then continue from Step 4. |
 
 > ⚠️ Check the user's **prompt text** — not just existing code. This is critical for greenfield projects with no codebase. See [full routing table](specialized-routing.md).
 
@@ -96,4 +97,14 @@ Converting an existing application to run on Azure.
 
 > ⚠️ **Critical**: The Functions `bicep.md` and `terraform.md` files are **REFERENCE DOCUMENTATION**, not templates to copy. Hand-writing infrastructure from these patterns results in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
 
-For other compute targets (Container Apps, App Service, Static Web Apps), load their respective README files in `services/` for guidance.
+## ⛔ MANDATORY for Container Apps: Load Composition Rules BEFORE Execution
+
+**If the target compute is Azure Container Apps**, you MUST load the composition algorithm before generating ANY infrastructure:
+
+1. Load `services/container-apps/templates/selection.md` — decision tree for base template (web-app, api, microservice, worker, job, functions-on-aca) + recipe layering (Dapr, Cosmos DB, Service Bus, Redis, ACR, PostgreSQL)
+2. Load `services/container-apps/templates/composition.md` — the exact algorithm to follow
+3. Generate from the selected base guide and compose each required recipe; these Markdown files are not valid `azd init -t` identifiers
+
+> ⚠️ **Critical**: The Container Apps `bicep.md` and `terraform.md` files are **REFERENCE DOCUMENTATION**, not templates to copy. Hand-writing infrastructure from these patterns results in missing RBAC, incorrect managed identity configuration, and security vulnerabilities.
+
+For other compute targets (App Service, Static Web Apps), load their respective README files in `services/` for guidance.
