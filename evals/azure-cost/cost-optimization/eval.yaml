@@ -172,6 +172,8 @@ stimuli:
       tier: full
       cost: llm
       area: negative-routing
+    constraints:
+      max_turns: 1
     graders:
       - type: skill-invocation
         config:
@@ -185,6 +187,8 @@ stimuli:
       tier: full
       cost: llm
       area: negative-routing
+    constraints:
+      max_turns: 1
     graders:
       - type: skill-invocation
         config:
@@ -198,6 +202,8 @@ stimuli:
       tier: full
       cost: llm
       area: negative-routing
+    constraints:
+      max_turns: 1
     graders:
       - type: skill-invocation
         config:

@@ -35,15 +35,16 @@ metadata:
 | Scenario | Use Instead |
 |----------|-------------|
 | Run `azd up` or execute an existing deployment | `azure-deploy` |
-| Optimize existing Azure spend | `cost-optimization` from the separately installed `azure-cost` plugin |
+| Optimize existing Azure spend | `cost-optimization` from the optional `azure-cost` plugin |
 | Generate Bicep/Terraform for a known architecture | `azure-prepare` |
 | Validate infrastructure or run preflight checks | `azure-validate` |
 | Troubleshoot a running Azure deployment | `azure-diagnostics` |
 | Deploy to or manage AKS/Kubernetes directly | `azure-kubernetes` |
 | Look up or list existing Azure resources | `azure-resource-lookup` |
 
-If `cost-optimization` is unavailable, explain that it requires
-`/plugin install azure-cost@azure-skills`; do not imply the handoff completed.
+If `cost-optimization` is unavailable, explain that it is provided by the
+optional `azure-cost` plugin and direct the user to their client's supported
+plugin installation flow; do not imply the handoff completed.
 
 ## Pipeline Rules
 
