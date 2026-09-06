@@ -207,15 +207,17 @@ stimuli:
 
   - name: "Route out: non-AKS LinkedAuthorizationFailed"
     prompt: |
+      This is a supplied-context routing exercise. Do not access any real
+      subscription or resource, run commands, or retrieve Activity Log data.
       A standalone Azure virtual network deployment failed with
-      LinkedAuthorizationFailed on a linked DDoS plan. Debug this Azure
-      production deployment failure, analyze the relevant Activity Log
-      evidence, and identify the root cause.
+      LinkedAuthorizationFailed on a linked DDoS plan. Based only on this
+      supplied context, select the appropriate diagnostic skill.
     tags:
       type: integration
       tier: full
       cost: llm
       area: coexistence-negative
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^skill$","argsPattern":".*"}]'
       requiredSkills:
         - aks-known-issues
         - aks-troubleshooting
