@@ -1,8 +1,7 @@
 name: aks-troubleshooting-public-canary-eval
 description: |
-  Routing and customer-decision evaluation for the two accepted public AKS
-  troubleshooting canaries in broad-only, focused-only, and coexistence modes,
-  plus boundaries with incumbent setup and cost skills.
+  Routing and customer-decision evaluation for focused AKS troubleshooting,
+  incumbent broad-skill baselines, and setup, cost, and non-AKS boundaries.
 
 tags:
   type: integration
@@ -34,7 +33,7 @@ stimuli:
       tier: full
       cost: llm
       area: broad-only
-      case_id: public-canary-quota-exceeded
+      case_id: incumbent-baseline-quota
       source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
       requiredSkills:
         - azure-diagnostics
@@ -83,6 +82,12 @@ stimuli:
             - aks-troubleshooting
           disallowed:
             - aks-network-capture
+            - aks-known-issues
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "node-issues\\.md"
       - type: prompt
         config:
           scoring: binary
@@ -128,6 +133,12 @@ stimuli:
           disallowed:
             - azure-diagnostics
             - azure-quotas
+            - aks-known-issues
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "node-issues\\.md"
       - type: prompt
         config:
           scoring: binary
@@ -143,7 +154,7 @@ stimuli:
       tier: full
       cost: llm
       area: negative-routing
-      case_id: public-canary-quota-exceeded
+      case_id: quota-routing-boundary
       source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
       requiredSkills:
         - aks-troubleshooting

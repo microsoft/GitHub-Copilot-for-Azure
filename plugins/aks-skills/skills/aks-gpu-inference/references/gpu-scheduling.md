@@ -33,7 +33,7 @@ az aks nodepool show --subscription <subscription> -g <resource-group> \
 
 | Observed profile | AKS responsibility | Day-2 interpretation |
 |---|---|---|
-| `managementMode: Managed`, `driver: Install` | Driver, device plugin, DCGM exporter, GPU health | Missing `nvidia.com/gpu` is evidence of a managed-stack or node-health fault; collect component and node-condition status |
+| `managementMode: Managed`, `driver: Install` | Driver, device plugin, DCGM exporter, GPU health | The profile establishes AKS ownership, but missing `nvidia.com/gpu` remains an unconfirmed incident cause until component status and node conditions support a managed-stack or node-health fault |
 | `managementMode: Unmanaged`, `driver: Install` | Driver only | Verify the customer-managed device plugin; the driver alone does not advertise `nvidia.com/gpu` |
 | `managementMode: Unmanaged`, `driver: None` | None | Verify the BYO driver and device plugin owners and status |
 | Missing or contradictory | Unknown | Do not guess; preserve outputs and hand off |
@@ -43,6 +43,11 @@ Changing profile means a new pool and requires authorization. Managed GPU pools
 are preview and **do not support cluster autoscaler**; never recommend
 cluster-autoscaler scale-to-zero for them. For a non-managed profile, inspect
 the actual autoscaler setting before discussing node scaling.
+
+Treat the managed-pool autoscaler restriction as a supported platform fact, not
+as the observed cause of a Pending pod. It may be a relevant configuration
+hypothesis, but the incident cause stays unconfirmed until managed component
+status and node-condition evidence support it.
 
 Sources:
 [AKS-managed GPU node pools](https://learn.microsoft.com/azure/aks/aks-managed-gpu-nodes),

@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "0.0.0-placeholder"
-description: "Use only for an exact, fully qualified AKS operation-failure signature from this catalog. MATCHES: VMCannotFitEphemeralOSDisk; NodePoolMcVersionIncompatible; 'NodeImageVersion is not accepted'; SkuNotAvailable naming AKS placement; ZonalAllocationFailed or OverconstrainedAllocationRequest with documented qualifiers; nested AKS vmssCSE/CSE signatures VMExtensionError_OutboundConnFail, VMExtensionError_K8SAPIServerConnFail, or VMExtensionError_K8SAPIServerDNSLookupFail; an authorization failure explicitly naming an AKS linked resource and action; or a node-pool allocation whose full nested message states 'The VM allocation failed due to an internal error' or 'We do not have sufficient capacity for the requested VM size in this region.' Every AKS, operation, and nested-message qualifier must be present. Route incomplete or uncataloged AKS failures to aks-troubleshooting and non-AKS Azure failures to azure-diagnostics."
+description: "Match only exact cataloged AKS operation failures to documented causes and fixes. WHEN: VMCannotFitEphemeralOSDisk; NodePoolMcVersionIncompatible; 'NodeImageVersion is not accepted'; AKS SkuNotAvailable, ZonalAllocationFailed, or OverconstrainedAllocationRequest with the cataloged placement qualifiers; nested AKS vmssCSE/CSE VMExtensionError_OutboundConnFail, VMExtensionError_K8SAPIServerConnFail, or VMExtensionError_K8SAPIServerDNSLookupFail; an authorization failure naming an AKS linked resource and action; or a node-pool allocation whose full nested message exactly identifies the cataloged internal-error or insufficient-regional-capacity cause. EXCLUDES: quota errors, bare wrappers, generic AKS symptoms, and incomplete signatures (use aks-troubleshooting); errors outside AKS (use azure-diagnostics)."
 ---
 
 # AKS Known Issues
@@ -24,6 +24,8 @@ Named catalog signatures only. Generic AKS â†’ `aks-troubleshooting`; non-AKS â†
 no AKS skill.
 
 If every qualifier for a catalog row is not present, do not use this skill.
+This catalog has no quota-error rows; route AKS quota incidents to
+`aks-troubleshooting`.
 
 ## MCP Tools
 
