@@ -118,9 +118,23 @@ az aks nodepool show -g <rg> --cluster-name <cluster> -n <nodepool> \
 **Autoscaler won't scale up - common reasons:**
 
 - Node pool already at `maxCount`
-- VM quota exhausted: `az vm list-usage -l <region> -o table | grep -i "DSv3\|quota"`
+- VM quota exhausted (confirm the binding tier and operation evidence below)
 - Pod `nodeAffinity` is unsatisfiable on any new node template
 - A recent autoscaler decision is still governed by the cluster's configured autoscaler profile; compare the status ConfigMap timestamps and profile settings before concluding scaling is stuck
+
+#### Quota evidence and owner action
+
+Stay read-only by default. Do not conclude that quota is exhausted from an autoscaler symptom or a quota-usage listing alone. Require the failed activity or operation error plus the quota evidence exposed by that error for the same subscription and region. `QuotaExceeded` records provide `Current Usage`, `Current Limit`, and `Additional Required`; `ErrCode_InsufficientVCPUQuota` records provide requested and remaining vCPUs. Record the subscription ID, region, intended node-pool scale target, VM size and family, and other quota consumers. Report any missing item as an evidence gap.
+
+Standard vCPU quota is enforced at two tiers per subscription and region: total regional vCPUs and VM-family vCPUs. Identify the binding tier from the exact error and usage evidence. `Total Regional Cores` identifies the regional tier, while a named family such as `standardDSv5Family` identifies the family tier. A scale operation must fit within both tiers.
+
+If stating a minimum new limit for `QuotaExceeded`, calculate only `Current Limit + Additional Required`. Do not add unrequested headroom. Leave any larger request to the owner based on planned capacity.
+
+For a binding quota limit, direct an authorized owner to the Azure portal **Quotas** flow for **Compute** and the affected region and VM family or regional tier. Submitting the request changes subscription quota state, so it requires owner approval and suitable subscription-scope permission. A request is reviewed; do not promise approval, timing, or retries, and do not submit quota changes by default.
+
+After any approved quota change, re-read the AKS operation, node-pool state, and activity evidence before proposing a follow-up action. Do not assume the failed operation will or will not self-heal, and do not prescribe a retry without observing the post-approval state. Suggest another VM family, SKU, region, or scale target only after verifying support, quota, and capacity for the exact subscription and target; that choice belongs to the workload owner.
+
+Sources: [AKS `QuotaExceeded` troubleshooting](https://learn.microsoft.com/en-us/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade), [VM-family vCPU quota requests](https://learn.microsoft.com/en-us/azure/quotas/per-vm-quota-requests), and the [`az quota` reference](https://learn.microsoft.com/en-us/cli/azure/quota?view=azure-cli-latest). The portal is preferred for requests; CLI `create` and `update` operations are writes and must remain owner-executed.
 
 **Autoscaler won't scale down - common reasons:**
 

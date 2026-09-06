@@ -207,10 +207,10 @@ stimuli:
 
   - name: "Route out: non-AKS LinkedAuthorizationFailed"
     prompt: |
-      A standalone Azure virtual network deployment, unrelated to AKS or
-      Kubernetes, failed with LinkedAuthorizationFailed on a linked DDoS plan.
-      Debug this Azure production deployment failure, analyze the relevant
-      Activity Log evidence, and identify the root cause.
+      A standalone Azure virtual network deployment failed with
+      LinkedAuthorizationFailed on a linked DDoS plan. Debug this Azure
+      production deployment failure, analyze the relevant Activity Log
+      evidence, and identify the root cause.
     tags:
       type: integration
       tier: full

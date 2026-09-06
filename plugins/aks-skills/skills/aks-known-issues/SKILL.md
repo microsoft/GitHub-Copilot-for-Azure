@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "0.0.0-placeholder"
-description: "Match exact AKS operation-failure signatures to documented causes and fixes. WHEN: an AKS create, scale, upgrade, node-image, or image-pull failure names VMCannotFitEphemeralOSDisk, AKS-scoped LinkedAuthorizationFailed, NodePoolMcVersionIncompatible, 'NodeImageVersion is not accepted', SkuNotAvailable, ZonalAllocationFailed, OverconstrainedAllocationRequest, or an AKS vmssCSE/CSE nested signature: VMExtensionError_OutboundConnFail (exit 50), VMExtensionError_K8SAPIServerConnFail (exit 51), or VMExtensionError_K8SAPIServerDNSLookupFail (exit 52); also requests to explain a named AKS error, and AllocationFailed only when its nested message says internal error or insufficient capacity. DO NOT USE FOR: bare VMExtensionProvisioningError or AllocationFailed wrappers, or numeric exits without AKS vmssCSE/CSE context (use aks-troubleshooting); generic AKS incidents without a cataloged signature (use aks-troubleshooting); non-AKS LinkedAuthorizationFailed or Azure failures (use azure-diagnostics)."
+description: "Use only for an exact, fully qualified AKS operation-failure signature from this catalog. MATCHES: VMCannotFitEphemeralOSDisk; NodePoolMcVersionIncompatible; 'NodeImageVersion is not accepted'; SkuNotAvailable naming AKS placement; ZonalAllocationFailed or OverconstrainedAllocationRequest with documented qualifiers; nested AKS vmssCSE/CSE signatures VMExtensionError_OutboundConnFail, VMExtensionError_K8SAPIServerConnFail, or VMExtensionError_K8SAPIServerDNSLookupFail; an authorization failure explicitly naming an AKS linked resource and action; or a node-pool allocation whose full nested message states 'The VM allocation failed due to an internal error' or 'We do not have sufficient capacity for the requested VM size in this region.' Every AKS, operation, and nested-message qualifier must be present. Route incomplete or uncataloged AKS failures to aks-troubleshooting and non-AKS Azure failures to azure-diagnostics."
 ---
 
 # AKS Known Issues
@@ -22,6 +22,8 @@ Use the [catalog](references/error-code-map.md).
 
 Named catalog signatures only. Generic AKS → `aks-troubleshooting`; non-AKS →
 no AKS skill.
+
+If every qualifier for a catalog row is not present, do not use this skill.
 
 ## MCP Tools
 

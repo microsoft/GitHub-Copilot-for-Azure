@@ -23,11 +23,16 @@ stimuli:
       tier: smoke
       cost: llm
       area: routing
+      requiredSkills:
+        - aks-network-capture
+        - aks-troubleshooting
     graders:
       - type: skill-invocation
         config:
           required:
             - aks-network-capture
+          disallowed:
+            - aks-troubleshooting
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
@@ -39,9 +44,14 @@ stimuli:
       tier: smoke
       cost: llm
       area: negative-routing
+      requiredSkills:
+        - aks-network-capture
+        - aks-troubleshooting
     graders:
       - type: skill-invocation
         config:
+          required:
+            - aks-troubleshooting
           disallowed:
             - aks-network-capture
       - type: output-not-matches
