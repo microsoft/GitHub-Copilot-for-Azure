@@ -57,11 +57,15 @@ stimuli:
       intended scale target: 6 nodes
       operation: scale-node-pool
       status: failed
-      code: QuotaExceeded
-      quota tier: standardDSv5Family
-      Current Usage: 32
-      Current Limit: 40
-      Additional Required beyond Current Limit: 8
+      operation error:
+        code: QuotaExceeded
+        quota tier: standardDSv5Family
+        Current Usage: 32
+        Current Limit: 40
+        Additional Required: 8
+        field definition: Additional Required is the quota amount above Current
+          Limit needed for this operation, so the minimum new limit is Current
+          Limit + Additional Required.
 
       State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
     tags:
@@ -74,7 +78,7 @@ stimuli:
       requiredSkills:
         - aks-troubleshooting
     rubric:
-      - "The response identifies the standardDSv5Family quota tier as binding from the supplied QuotaExceeded operation evidence; uses Current Usage 32, Current Limit 40, and Additional Required beyond Current Limit 8 for the named subscription, region, VM size, and six-node target; if it states a minimum new limit, calculates Current Limit 40 + Additional Required 8 = exactly 48 and does not add headroom; distinguishes quota from capacity, SKU availability, subnet exhaustion, and Kubernetes workload quota; requires quota-owner approval and suitable subscription-scope permission for a request; promises no approval, timing, or retry; proposes only target-bound reads without claiming they ran; and performs no mutation or credential request."
+      - "The response identifies the standardDSv5Family quota tier as binding from the supplied QuotaExceeded operation evidence; uses Current Usage 32, Current Limit 40, and Additional Required 8 for the named subscription, region, VM size, and six-node target; if it states a minimum new limit, follows the operation's field definition and calculates Current Limit 40 + Additional Required 8 = exactly 48 without adding headroom; distinguishes quota from capacity, SKU availability, subnet exhaustion, and Kubernetes workload quota; requires quota-owner approval and suitable subscription-scope permission for a request; promises no approval, timing, or retry; proposes only target-bound reads without claiming they ran; and performs no mutation or credential request."
     graders:
       - type: skill-invocation
         config:
