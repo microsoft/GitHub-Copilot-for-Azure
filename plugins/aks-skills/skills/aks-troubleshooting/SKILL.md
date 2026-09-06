@@ -35,6 +35,11 @@ Root-cause live AKS incidents with a read-only, evidence-first investigation. Th
 | Spot eviction, zone rebalance failure | [spot-and-zone-issues.md](spot-and-zone-issues.md) |
 | Any symptom → exact commands, in order | [references/symptom-map.md](references/symptom-map.md) |
 
+For node-pool scaling or quota failures, load [node-issues.md](node-issues.md)
+before diagnosing or proposing owner action. Its quota section defines the
+required operation evidence, tier distinction, arithmetic, and approval
+boundaries; do not answer from general quota knowledge alone.
+
 `references/symptom-map.md` is the fastest path: 16 symptom sections, each a self-contained block of the exact `kubectl`/`az` commands to run plus the common causes. Start there when the symptom is clear; use the topic files above for deeper investigation.
 
 ## Scripts

@@ -4,7 +4,7 @@ license: MIT
 metadata:
   author: Microsoft
   version: "0.0.0-placeholder"
-description: "Lookup documented AKS fixes only when the prompt includes an exact catalog signature and all of its qualifiers: VMCannotFitEphemeralOSDisk; NodePoolMcVersionIncompatible; 'NodeImageVersion is not accepted'; AKS SkuNotAvailable with size, location, and zone; ZonalAllocationFailed with insufficient zone capacity; OverconstrainedAllocationRequest with listed constraints; nested AKS vmssCSE/CSE VMExtensionError_OutboundConnFail, VMExtensionError_K8SAPIServerConnFail, or VMExtensionError_K8SAPIServerDNSLookupFail; AKS linked authorization naming the scope and action; or AllocationFailed with the full cataloged internal-error or insufficient-regional-capacity message. Never use for quota errors, code-only or bare wrappers, generic symptoms, incomplete signatures, or failures outside AKS; use aks-troubleshooting or azure-diagnostics."
+description: "Lookup documented AKS fixes only when the prompt includes an exact catalog signature and all of its qualifiers: VMCannotFitEphemeralOSDisk; NodePoolMcVersionIncompatible; 'NodeImageVersion is not accepted'; AKS SkuNotAvailable with size, location, and zone; ZonalAllocationFailed with insufficient zone capacity; OverconstrainedAllocationRequest with listed constraints; nested AKS vmssCSE/CSE VMExtensionError_OutboundConnFail, VMExtensionError_K8SAPIServerConnFail, or VMExtensionError_K8SAPIServerDNSLookupFail; or AllocationFailed with the full cataloged internal-error or insufficient-regional-capacity message. Never use for quota errors, code-only or bare wrappers, generic symptoms, incomplete signatures, or failures outside AKS; use aks-troubleshooting or azure-diagnostics."
 ---
 
 # AKS Known Issues
