@@ -342,3 +342,137 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Evidence order: supplied CrashLoopBackOff evidence starts locally"
+    prompt: |
+      Diagnose without running commands. Pod api-7d9 in namespace checkout is
+      in CrashLoopBackOff. Its supplied last state is Terminated reason=Error,
+      exitCode=1, and previous logs end with "missing PAYMENT_ENDPOINT". We do
+      not have Log Analytics or Container insights. State the next evidence
+      reads in order and what remains uncertain.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: evidence-order
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/pod-stuck-crashloopbackoff-mode"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response starts with target-bound pod status, describe/events, termination details, and current/previous logs for api-7d9 in checkout; uses the supplied missing PAYMENT_ENDPOINT log as application/configuration evidence; does not require an Azure, Resource Health, Log Analytics, or Container insights sweep before those workload reads; records unavailable monitoring evidence as unknown and expands to node or Azure evidence only if the pod branch requires it; claims no checks ran and proposes no mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Evidence order: failed upgrade starts from Azure operation"
+    prompt: |
+      Diagnose without running commands or retrying. An existing AKS cluster
+      upgrade operation failed and the cluster provisioningState is Failed. No
+      exact nested catalog signature was supplied. State the first evidence to
+      retrieve and the later Kubernetes branch.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: evidence-order
+      requiredSkills:
+        - aks-troubleshooting
+        - aks-known-issues
+    rubric:
+      - "The response starts with the target-bound failed Azure upgrade operation, exact error, cluster and node-pool state, versions, and supported upgrade path; then branches to deprecated APIs, admission webhooks, PDB/drain blockers, node and event evidence as applicable; does not invoke the exact-signature catalog without the missing nested signature; claims no reads ran and requires approval before retrying or changing the cluster."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-known-issues]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "DNS: LocalDNS-enabled pool has UDP-only failures"
+    prompt: |
+      Diagnose without running commands or changing DNS. DNS fails only for
+      pods on AKS node pool user-a, where LocalDNS is enabled. TCP queries work,
+      UDP queries fail, and pods on user-b resolve normally. State the
+      read-only branch and mutation boundary.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: dns-local
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/dns/troubleshoot-localdns"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response branches to the LocalDNS path for affected pool user-a; scopes pool, node, protocol, and DNS-zone behavior; inspects the affected pod resolver, LocalDNS forwarding configuration/service/logs, and UDP path before CoreDNS; does not restart or blame CoreDNS from the symptom alone; states that query logging needs approval and has cost; warns that a node-pool LocalDNS configuration update can reimage nodes; claims no reads ran and performs no mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "API: webhook timeout with no ready endpoints"
+    prompt: |
+      Diagnose without running commands or changing resources. Creating a
+      Deployment returns "failed calling webhook" with HTTP 504. Supplied
+      evidence shows the named webhook Service has zero endpoints. Its
+      failurePolicy and selector were not supplied.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-webhook
+      source_url: "https://learn.microsoft.com/azure/architecture/operator-guides/aks/aks-triage-controllers"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response reads the named validating or mutating webhook configuration, failurePolicy, timeoutSeconds, namespaceSelector, Service, EndpointSlice/endpoints, and backing pods; uses zero endpoints as backend evidence but does not infer the full blast radius without failurePolicy and selector; never deletes, patches, or weakens the webhook from the error string; claims no reads ran and requires owner approval for remediation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "API: node-dependent logs timeout uses tunnel branch"
+    prompt: |
+      Diagnose without running commands or changing nodes. kubectl logs and
+      exec time out only for pods scheduled on nodes node-a and node-b; the same
+      commands work on other nodes and ordinary API list calls succeed. The
+      error references port 10250.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-tunnel
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/tunnel-connectivity-issues"
+      requiredSkills:
+        - aks-troubleshooting
+        - aks-network-capture
+    rubric:
+      - "The response identifies a node-placement-dependent API-server-to-kubelet tunnel or port-10250 branch rather than general pod networking; proposes read-only checks of pod placement, affected node conditions, konnectivity-agent state, and the relevant NSG/firewall/UDR path; does not start packet capture or change node firewall/iptables state; marks service-side causes for escalation with target and incident evidence; claims no reads ran."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-network-capture]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1

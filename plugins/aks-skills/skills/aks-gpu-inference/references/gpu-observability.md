@@ -1,9 +1,11 @@
 # GPU observability and model-load OOM
 
 Bind telemetry to the affected cluster, namespace, pod, container, GPU, and
-incident window. A Kubernetes OOM symptom alone does not prove GPU-memory
-exhaustion. Keep this diagnosis to pod/model logs and DCGM evidence: exclude
-CPU-memory limits, model-size calculations, and GPU SKU-sizing tables.
+incident window. Keep host/container-memory OOM and CUDA device-allocator OOM
+as separate live hypotheses. A Kubernetes OOM symptom alone does not prove GPU
+memory exhaustion, and a CUDA allocator error does not prove which workload
+condition exhausted the device. Exclude model-size calculations and GPU
+SKU-sizing tables, not container or host memory evidence.
 
 ## Correlate the evidence
 
@@ -28,11 +30,15 @@ Correlate the model-load timestamp and container termination with:
 | `DCGM_FI_DEV_FB_USED` | Frame-buffer memory consumed before failure |
 | `DCGM_FI_DEV_FB_FREE` | Remaining frame-buffer memory before failure |
 | `DCGM_FI_DEV_GPU_UTIL` | Kernel-active time; not an efficiency score |
+| Termination reason `OOMKilled` (often exit 137) | Supports a container-memory path; exit 137 alone is insufficient |
+| `torch.cuda.OutOfMemoryError` or CUDA allocation failure in model logs | Supports a device-allocation path; correlate with per-GPU incident-window telemetry |
 
 If `FB_USED` rises while `FB_FREE` approaches exhaustion in the same GPU and
-incident window, the evidence supports VRAM pressure. If historical telemetry
-is absent, report GPU OOM as unconfirmed; do not substitute Kubernetes memory
-limits or generic node OOM guidance.
+incident window, the evidence supports VRAM pressure. Healthy aggregate
+frame-buffer values outside that GPU and incident window do not establish a
+cause. If historical telemetry is absent, keep device exhaustion unconfirmed.
+If the container was `OOMKilled`, inspect its memory limit/usage and node
+memory conditions rather than discarding the host-memory path.
 
 When the user supplied evidence and prohibited commands, state that no reads
 ran. Require explicit authorization before monitoring mutation, restart,
@@ -41,4 +47,5 @@ collection plan instead.
 
 Sources:
 [managed exporter port](https://learn.microsoft.com/azure/aks/aks-managed-gpu-nodes),
-[GPU observability](https://learn.microsoft.com/azure/aks/best-practices-gpu-observability).
+[GPU observability](https://learn.microsoft.com/azure/aks/best-practices-gpu-observability),
+[PyTorch CUDA OOM](https://docs.pytorch.org/docs/2.14/generated/torch.cuda.OutOfMemoryError.html).

@@ -43,15 +43,39 @@ See [references/inspektor-gadget.md](references/inspektor-gadget.md).
 
 Use the affected pod; do not create a test pod or change DNS, NetworkPolicy, NSG, route, or firewall configuration without explicit approval.
 
-### Mandatory ordered read-only evidence
+### Select the resolver path first
 
-A DNS diagnosis is incomplete until every step below is collected, or the inability to collect it is recorded. Do not skip resolver inputs, a query through kube-dns, direct upstream behavior, or the CoreDNS-to-upstream UDP/TCP 53 network path.
+Inspect the affected pod's resolver inputs and determine whether its node pool
+uses LocalDNS before assuming every query goes directly through kube-dns and
+CoreDNS. AKS Automatic preconfigures LocalDNS; AKS Standard can enable it per
+node pool.
 
 ```bash
 # 1. Preserve and explicitly inspect every nameserver, search suffix, and option
 kubectl exec <affected-pod> -n <ns> -- cat /etc/resolv.conf
 
-# 2. Check the kube-dns Service, backends, CoreDNS pods, logs, and config
+# 2. Inspect the affected node pool and resolver path
+kubectl get pod <affected-pod> -n <ns> -o wide
+az aks nodepool show \
+  --resource-group <cluster-resource-group> \
+  --cluster-name <cluster-name> \
+  --name <affected-node-pool> -o json
+```
+
+If LocalDNS is enabled, scope the failure before changing anything: all pools
+or one pool, all nodes or one node, UDP or TCP, and cluster zones or external
+zones. Inspect the effective LocalDNS forwarding configuration and logs on the
+affected node using an approved node-access method. LocalDNS forwards different
+zones to CoreDNS or VNet DNS, so a node-, pool-, protocol-, or zone-specific
+failure can be local even when CoreDNS is healthy. Query logging has resource
+cost and requires approval. Updating a node pool's LocalDNS configuration can
+reimage nodes; disclose that impact before proposing it.
+
+If LocalDNS is disabled, or once its forwarding path reaches CoreDNS, continue
+with the CoreDNS branch:
+
+```bash
+# 3. Check the kube-dns Service, backends, CoreDNS pods, logs, and config
 kubectl get service kube-dns -n kube-system -o wide
 kubectl get endpoints kube-dns -n kube-system -o wide
 kubectl get endpointslice -n kube-system \
@@ -62,7 +86,7 @@ kubectl logs -n kube-system -l k8s-app=kube-dns \
 kubectl get configmap coredns -n kube-system -o yaml
 kubectl get configmap -n kube-system
 
-# 3. Prove CoreDNS query health through the kube-dns ClusterIP, then compare
+# 4. Prove CoreDNS query health through the kube-dns ClusterIP, then compare
 # direct UDP and TCP 53 behavior for every configured upstream forwarder.
 # Use clients already present in the affected pod; do not install packages.
 kubectl exec <affected-pod> -n <ns> -- \
@@ -74,7 +98,7 @@ kubectl exec <affected-pod> -n <ns> -- \
   dig +tcp +time=<timeout-seconds> +tries=<attempt-count> \
   @<custom-forwarder-ip> <failing-fqdn>
 
-# 4. Preserve policy plus the node-NIC NSG/route path used by each CoreDNS pod
+# 5. Preserve policy plus the node-NIC NSG/route path used by each CoreDNS pod
 kubectl get networkpolicy -n <ns> -o yaml
 kubectl get networkpolicy -n kube-system -o yaml
 kubectl get pods -n kube-system -l k8s-app=kube-dns \
@@ -179,6 +203,9 @@ For a custom NVA, collect equivalent network-rule and log evidence filtered to t
 
 If CoreDNS imports a custom ConfigMap, retrieve the named ConfigMap shown by the inventory before evaluating its forwarding rules. A successful direct query to a custom forwarder with a failed query through kube-dns points to CoreDNS configuration or service-path evidence; failure to reach the forwarder points to routing, NSG, firewall, or NetworkPolicy evidence.
 
+Do not name UDP source-port reuse as the cause of CoreDNS imbalance until logs
+show the same client source IP and port repeatedly reaching one replica.
+
 **DNS failure patterns:**
 
 | Symptom | Evidence boundary |
@@ -190,6 +217,10 @@ If CoreDNS imports a custom ConfigMap, retrieve the named ConfigMap shown by the
 | `i/o timeout` | Inspect NetworkPolicy plus effective node-NIC NSG, route, and present firewall rules for both UDP and TCP 53 |
 
 Changing CoreDNS replicas/configuration, custom forwarders, NetworkPolicy, NSGs, routes, or firewall rules is remediation and requires explicit approval.
+
+Sources: [LocalDNS troubleshooting](https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/dns/troubleshoot-localdns),
+[LocalDNS configuration](https://learn.microsoft.com/azure/aks/localdns-custom),
+and [CoreDNS troubleshooting](https://learn.microsoft.com/azure/aks/coredns-troubleshoot).
 
 **Deep diagnostics with Inspektor Gadget** (when the above checks are inconclusive):
 

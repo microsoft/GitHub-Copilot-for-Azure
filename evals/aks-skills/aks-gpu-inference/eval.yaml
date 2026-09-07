@@ -91,14 +91,15 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Model-load OOM: managed DCGM VRAM evidence"
+  - name: "Model-load OOM: distinguish container memory from VRAM"
     prompt: |
       Diagnose without running commands or changing monitoring. An existing
       model server on an AKS pool with gpuProfile driver=Install and
       managementMode=Managed terminated during weight loading. Kubernetes shows
-      OOMKilled at 14:03Z. No node-memory-pressure condition exists, and no DCGM
-      samples were supplied. State the evidence needed to decide whether this
-      was GPU VRAM exhaustion.
+      OOMKilled at 14:03Z. The container memory limit is 16Gi, node memory
+      pressure is false, and DCGM FB_USED stayed flat in the supplied
+      incident-window samples. State the evidence needed to distinguish
+      container or host memory exhaustion from GPU VRAM exhaustion.
     tags:
       type: integration
       tier: full
@@ -110,12 +111,45 @@ stimuli:
         - aks-troubleshooting
         - azure-diagnostics
     rubric:
-      - "The response does not treat OOMKilled or absent Kubernetes node memory pressure as proof of VRAM exhaustion; identifies managed DCGM exporter port 19400 for the observed Managed+Install profile; asks for target-bound DCGM_FI_DEV_FB_USED and DCGM_FI_DEV_FB_FREE samples for the affected GPU and incident window correlated with pod/container termination and model-load logs; explains that rising FB_USED and exhausted FB_FREE would support VRAM pressure; marks the conclusion unconfirmed if historical telemetry is absent; avoids generic CPU-memory limit advice and model/SKU sizing tables; claims no reads ran and requires explicit authorization before monitoring mutation, scaling, restart, cordon/drain, or pool changes."
+      - "The response keeps container or host memory exhaustion separate from CUDA device-memory exhaustion; treats OOMKilled plus a 16Gi container limit as evidence requiring container memory usage/limit and node-condition correlation, not proof of VRAM exhaustion; uses the flat incident-window FB_USED evidence against a supported VRAM-pressure conclusion without claiming it proves the final cause; identifies managed DCGM exporter port 19400 only for the observed Managed+Install profile; asks for target-bound FB_USED/FB_FREE plus pod termination and model logs; avoids model/SKU sizing tables; claims no reads ran and requires authorization before mutation."
     graders:
       - type: skill-invocation
         config:
           required: [aks-gpu-inference]
           disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Model-load OOM: CUDA allocator path with healthy aggregate"
+    prompt: |
+      Diagnose without running commands or changing monitoring. A model server
+      log contains torch.cuda.OutOfMemoryError during allocation on GPU 1 at
+      09:17Z. A dashboard shows healthy aggregate framebuffer for the whole
+      node, but no per-GPU samples for GPU 1 in that incident window. The
+      container was not OOMKilled. State what this proves and what remains
+      unconfirmed.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: cuda-allocator-oom
+      source_url: "https://docs.pytorch.org/docs/2.14/generated/torch.cuda.OutOfMemoryError.html"
+      requiredSkills:
+        - aks-gpu-inference
+        - aks-troubleshooting
+    rubric:
+      - "The response treats torch.cuda.OutOfMemoryError as evidence of a CUDA device-allocation failure and distinguishes it from a container or host OOM because the container was not OOMKilled; does not use healthy node-wide aggregate framebuffer to claim GPU 1 was healthy or to name a final cause; requests per-GPU incident-window FB_USED/FB_FREE and correlated model logs; keeps the cause unconfirmed without that evidence; claims no reads ran and requires authorization before monitoring or workload mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-gpu-inference]
+          disallowed: [aks-troubleshooting]
       - type: prompt
         config:
           scoring: binary

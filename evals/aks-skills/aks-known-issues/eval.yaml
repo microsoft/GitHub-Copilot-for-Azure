@@ -77,6 +77,37 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  - name: "Known issue: nested CSE API-server connection exit 51"
+    prompt: |
+      An AKS node provisioning operation returned
+      VMExtensionProvisioningError from vmssCSE with nested
+      VMExtensionError_K8SAPIServerConnFail and exit status 51. Diagnose and
+      advise without running checks or making changes.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/error-codes/vmextensionerror-k8sapiserverconnfail"
+      requiredSkills:
+        - aks-known-issues
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response uses the complete AKS vmssCSE VMExtensionError_K8SAPIServerConnFail and exit-51 signature to identify a node-to-API-server TCP 443 path failure; cites the Microsoft Learn API-server connection article; proposes read-only checks of the API FQDN, NSG, UDR, firewall or proxy, authorized IP, private endpoint, and TLS inspection; does not misroute it to the generic tunnel branch, claim checks ran, or mutate resources; and requires approval before network correction or retry."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-known-issues]
+          disallowed: [aks-troubleshooting, azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   - name: "Known issue: message-qualified AllocationFailed"
     prompt: |
       An AKS node-pool scale operation returned code AllocationFailed with the

@@ -216,12 +216,12 @@ az aks show -g <rg> -n <cluster> --query '{fqdn:fqdn, privateFqdn:privateFqdn, p
 FQDN=$(az aks show -g <rg> -n <cluster> --query fqdn -o tsv)
 nslookup "$FQDN"                           # DNS resolution of API server
 curl -k -Iv "https://$FQDN"               # TCP + TLS connectivity
-kubectl version --client                    # kubectl version (must be within ±2 minor versions of cluster)
+kubectl version --client                    # Must be within ±1 minor of every reachable API server
 az aks show -g <rg> -n <cluster> --query kubernetesVersion -o tsv
 az aks show -g <rg> -n <cluster> --query "apiServerAccessProfile" # Authorized IP ranges / private cluster
 ```
 
-Common causes: cluster stopped (power state not Running), private cluster accessed from outside VNet, client IP not in authorized IP ranges, API server FQDN DNS changed after stop/start, kubectl version skew > 2 minor versions, expired kubeconfig (`az aks get-credentials` to refresh).
+Common causes: cluster stopped (power state not Running), private cluster accessed from outside VNet, client IP not in authorized IP ranges, API server FQDN DNS changed after stop/start, `kubectl` more than one minor from a reachable API server, expired kubeconfig (`az aks get-credentials` to refresh). In an HA control plane with API-server version skew, use a `kubectl` version supported by every reachable API server.
 
 ---
 

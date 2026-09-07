@@ -9,6 +9,7 @@ param(
     [string]$SourceNamespace = "default",
     [string]$Duration = "30s",
     [string]$Interval = "1",
+    [switch]$AllowDebugContainer,
     [switch]$Help
 )
 
@@ -24,6 +25,7 @@ Options:
   -SourceNamespace <ns>   Source namespace (default: default)
   -Duration <Ns|Nm|Nh>    Duration (default: 30s; maximum: 1h)
   -Interval <seconds>     Whole seconds between attempts (default: 1)
+  -AllowDebugContainer    Use an ephemeral debug container after separate approval
 "@
 }
 
@@ -128,6 +130,9 @@ if ($directExecAvailable) {
         Stop-Failure "traffic generation failed in the source pod"
     }
 } else {
+    if (-not $AllowDebugContainer) {
+        Stop-Failure "direct pod exec is unavailable; obtain separate approval before retrying with -AllowDebugContainer"
+    }
     $targetContainer = (& kubectl get pod -n $SourceNamespace $SourcePod `
         -o 'jsonpath={.spec.containers[0].name}' 2>&1) -join "`n"
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($targetContainer)) {

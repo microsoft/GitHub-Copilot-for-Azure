@@ -12,6 +12,7 @@ SOURCE_POD=""
 SOURCE_NAMESPACE="default"
 DURATION="30s"
 INTERVAL="1"
+ALLOW_DEBUG_CONTAINER=0
 
 usage() {
   cat <<EOF
@@ -27,6 +28,7 @@ Options:
   --source-namespace <ns>   Source namespace (default: default)
   --duration <Ns|Nm|Nh>     Duration (default: 30s; maximum: 1h)
   --interval <seconds>      Whole seconds between attempts (default: 1)
+  --allow-debug-container   Use an ephemeral debug container after separate approval
   -h, --help                Show this help
 EOF
 }
@@ -99,6 +101,8 @@ while [ "$#" -gt 0 ]; do
       require_value "$@"; DURATION="$2"; shift 2 ;;
     --interval)
       require_value "$@"; INTERVAL="$2"; shift 2 ;;
+    --allow-debug-container)
+      ALLOW_DEBUG_CONTAINER=1; shift ;;
     -h|--help)
       usage; exit 0 ;;
     *)
@@ -157,6 +161,8 @@ if kubectl exec -n "$SOURCE_NAMESPACE" "$SOURCE_POD" -- sh -c 'exit 0' >/dev/nul
   kubectl exec -n "$SOURCE_NAMESPACE" "$SOURCE_POD" -- \
     sh -c "$POD_SCRIPT" _ "$TARGET" "$TARGET_PORT" "$DURATION_SECONDS" "$INTERVAL" "$TRAFFIC_TYPE"
 else
+  [ "$ALLOW_DEBUG_CONTAINER" -eq 1 ] || die \
+    "direct pod exec is unavailable; obtain separate approval before retrying with --allow-debug-container"
   if ! target_container="$(kubectl get pod -n "$SOURCE_NAMESPACE" "$SOURCE_POD" \
     -o jsonpath='{.spec.containers[0].name}')"; then
     die "could not resolve the source pod container"

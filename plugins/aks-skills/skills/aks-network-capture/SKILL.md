@@ -25,21 +25,16 @@ None. Run scripts from the skill root.
 
 ## Workflow/Steps
 
+0. Complete [authorization and target binding](references/capture-authorization.md).
+   Capture intent is not mutation consent. Stop for separate approval before
+   any debug-container fallback.
 1. Install [Bash](scripts/setup-capture-configmap.sh) / [PowerShell](scripts/setup-capture-configmap.ps1).
 2. Capture nodes or pods with [Bash](scripts/create-capture.sh) / [PowerShell](scripts/create-capture.ps1).
-3. Generate traffic if needed with [Bash](scripts/generate-test-traffic.sh) / [PowerShell](scripts/generate-test-traffic.ps1).
+3. Generate traffic if approved with [Bash](scripts/generate-test-traffic.sh) / [PowerShell](scripts/generate-test-traffic.ps1).
 4. Retrieve the exact run with [Bash](scripts/retrieve-captures.sh) / [PowerShell](scripts/retrieve-captures.ps1).
 5. Gather Azure evidence with [Bash](scripts/collect-azure-network-info.sh) / [PowerShell](scripts/collect-azure-network-info.ps1).
 
 The ConfigMap runs [run-capture.sh](scripts/run-capture.sh) inside its pinned Linux image.
-
-```bash
-./scripts/create-capture.sh --name dns-debug --tcpdump-filter "udp port 53" --duration 120s
-```
-
-```powershell
-./scripts/create-capture.ps1 -Name dns-debug -TcpdumpFilter "udp port 53" -Duration 120s
-```
 
 ## Error Handling
 

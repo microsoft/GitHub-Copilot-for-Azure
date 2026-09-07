@@ -19,7 +19,7 @@ Root-cause live AKS incidents with a read-only, evidence-first investigation. Th
 
 **Tool preference.** Inspect the host's available tools and advertised schemas. Azure MCP Server's AKS area can supply cluster and node-pool metadata. AppLens, Azure Monitor, and Resource Health are separate Azure MCP areas; use each only when its host-advertised schema fits the read. Never treat a specific prefix or spelling as an availability check, and do not invent a name-mapping layer. Use the portable `az` and `kubectl` flows for checks outside those surfaces or whenever the matching capability is unavailable. See [references/azure-mcp.md](references/azure-mcp.md).
 
-**Evidence order.** Gather Azure-side state first (cluster state, resource health, recent operations, node-pool state, detector/monitoring output), then Kubernetes-side state (reachability, nodes, `kube-system`, events, the affected namespace, pod detail, logs). This ordering catches platform-level causes — a failed upgrade operation, a stopped cluster, a quota block — before you spend time inside the cluster.
+**Evidence order.** Bind the subscription, cluster, kube context, namespace, and affected resource before collecting evidence. Let the supplied symptom select the first decisive read: for a workload-local crash, preserve pod state, termination details, events, and current/previous logs before expanding outward; for control-plane, provisioning, scaling, quota, stopped-cluster, or upgrade symptoms, start with the relevant Azure operation and cluster/node-pool state. Then follow the causal branch across Kubernetes, Azure, application, network, or customer-supplied evidence. Do not require Azure Monitor when the decisive evidence exists elsewhere, and do not run a broad Azure sweep before reading a clearly identified workload failure.
 
 ## Route by symptom
 
@@ -31,6 +31,7 @@ Root-cause live AKS incidents with a read-only, evidence-first investigation. Th
 | Service connectivity, DNS, pod-to-pod networking | [networking.md](networking.md) |
 | Ingress 502/503, load-balancer health probe, external access | [load-balancer-and-ingress.md](load-balancer-and-ingress.md) |
 | Network policy blocking traffic | [network-policy.md](network-policy.md) |
+| API latency/429/timeouts, webhook failures, node-dependent logs/exec/port-forward failures | [references/api-server-webhooks-tunnel.md](references/api-server-webhooks-tunnel.md) |
 | Upgrade stuck, cordon/drain failure | [upgrade-operations.md](upgrade-operations.md) |
 | Spot eviction, zone rebalance failure | [spot-and-zone-issues.md](spot-and-zone-issues.md) |
 | Any symptom → exact commands, in order | [references/symptom-map.md](references/symptom-map.md) |
@@ -64,7 +65,7 @@ The highest-signal failure patterns that are specific to AKS — a frontier mode
 - **NSG/firewall egress blocks surface as VM extension errors.** AKS nodes need outbound access to required FQDNs (AKS API, MCR, `management.azure.com`, and others). A restrictive NSG or firewall causes VM extension errors during create/upgrade — error codes 50 (`OutboundConnFailVMExtensionError`), 51 (`K8SAPIServerConnFailVMExtensionError`), 52 (`K8SAPIServerDNSLookupFailVMExtensionError`). Check `az network nsg rule list` and firewall logs.
 - **SNAT port exhaustion appears past a few hundred nodes.** Large clusters using the Azure Load Balancer for outbound can exhaust SNAT ports, causing intermittent egress failures. Check `az network lb show --query outboundRules`; fix by moving to a NAT gateway (`az aks update --outbound-type managedNATGateway`).
 - **Upgrade `max-surge` defaults to one node at a time.** Large-cluster upgrades take hours at the default. Check `az aks nodepool show --query upgradeSettings` and raise `--max-surge` if the workload tolerates it.
-- **`kubectl` must be within two minor versions of the cluster.** A stale client produces confusing errors. Compare `kubectl version --client` with `az aks show --query kubernetesVersion`.
+- **`kubectl` must be within one minor version of every API server it can reach.** A stale or too-new client produces confusing errors. In an HA control plane with API-server version skew, the valid overlap can narrow further. Compare `kubectl version --client` with the cluster API-server version. This is separate from the AKS node-pool version rule.
 
 ## Log discipline
 
