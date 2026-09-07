@@ -84,7 +84,7 @@ kubectl describe quota -n <namespace>
 Standard diagnostics inconclusive -> prove the AKS/kube target -> select one symptom-specific gadget -> obtain privileged-debug approval -> run the digest-pinned command with finite bounds -> clean up the exact debug pod -> correlate output with prior evidence
 ```
 
-Use when steps 1–3 of the evidence order (Azure-side, Kubernetes-side, and detector evidence) do not reveal root cause. See [inspektor-gadget.md](inspektor-gadget.md) for the pinned command pattern and gadget catalog.
+Use when the standard checks relevant to the symptom do not reveal root cause; collect Azure-side, Kubernetes-side, or detector evidence as the investigation requires, not in a mandatory cross-platform sequence. See [inspektor-gadget.md](inspektor-gadget.md) for the pinned command pattern and gadget catalog.
 
 ## Safety Boundary
 

@@ -33,8 +33,10 @@ Use a fitting host-advertised Azure read or the references' read-only queries.
    [observability](references/gpu-observability.md),
    [KAITO](references/kaito-workspaces.md), or
    [scaling](references/gpu-cost-and-scaling.md).
-4. For Managed+Install OOM, require port 19400 and incident-window
-   `FB_USED`/`FB_FREE`; do not substitute CPU-memory or SKU-sizing advice.
+4. Separate container/host OOM from device-allocation failures. For `OOMKilled`,
+   correlate container memory limits/usage and node conditions. For
+   Managed+Install device-memory evidence, use the exporter on port 19400 and
+   incident-window `FB_USED`/`FB_FREE`; sizing tables do not establish a cause.
 5. For KAITO not-ready, warn that Workspace deletion leaves its GPU pools;
    cleanup is separate and needs explicit authorization.
 6. Report evidence, confidence, missing evidence, and owner handoff.
