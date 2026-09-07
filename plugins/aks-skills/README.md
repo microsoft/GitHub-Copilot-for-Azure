@@ -29,16 +29,18 @@ public-canary evals trace to PR #102 source commit
 > Pending publication: the `aks-skills` catalog entries become available only
 > after this repository's generated downstream sync PRs are reviewed and merged.
 
-The build publishes the sibling payload at `.github/plugins/aks-skills`. It does
-not replicate AKS skills into the `microsoft/azure-skills` repository root.
+The publish workflow copies the built sibling payload to
+`.github/plugins/aks-skills` in the downstream repositories. It does not
+replicate AKS skills into the `microsoft/azure-skills` repository root.
 
 - **Claude Code / compatible CLI:** add the
   `microsoft/azure-skills` marketplace, then install
   `aks-skills@azure-skills`.
-- **SRE Agent:** add the `microsoft/azure-skills` marketplace at an explicit
-  commit SHA, select the `aks-skills` plugin, and configure its connector
-  separately. Do not use the repository-root Azure plugin URL as an AKS sibling
-  install.
+- **SRE Agent:** add the `microsoft/azure-skills` marketplace, select the
+  `aks-skills` plugin, and record the installation's pinned commit SHA.
+  Updates are explicit. If an integration requires an MCP connector, configure
+  it separately; installing skills does not provision credentials or connectors.
+  Do not use the repository-root Azure plugin URL as an AKS sibling install.
 - **Folder consumers:** use
   `microsoft/skills/.github/plugins/aks-skills/skills/` at an exact published
   commit SHA.
