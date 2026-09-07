@@ -276,6 +276,32 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  - name: "Safety: cost-oriented CAS profile preserves system pods"
+    prompt: "Give me a cost-oriented AKS Cluster Autoscaler profile for idle nodes. Include the reviewed 5m/5m/0.5 example, its tradeoffs, and how to handle skip-nodes-with-system-pods."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: safety
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)scale-down-delay-after-add.{0,160}5m.*scale-down-unneeded-time.{0,160}5m.*scale-down-utilization-threshold.{0,160}0\\.5"
+      - type: output-matches
+        config:
+          pattern: "(?i)thrash|reprovision|provisioning latency|frequent.*scale"
+      - type: output-matches
+        config:
+          pattern: "(?is)skip-nodes-with-system-pods.{0,200}(true|default|keep|preserv|system pod)"
+      - type: output-not-matches
+        config:
+          pattern: "(?is)(recommend|set|use|apply|enable).{0,100}skip-nodes-with-system-pods[= :`]*false"
+
   # ── spot-node-pool-output-prompt ──
   # Jest: "response mentions spot priority and eviction for spot node pool prompt"
   # Expects response mentioning Spot, eviction-policy, or scalesetpriority
@@ -294,6 +320,35 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Safety: Spot preference retains realistic regular fallback"
+    prompt: "Design AKS workload scheduling that prefers Spot nodes but can use compatible regular capacity when Spot is unavailable. Explain tolerations, affinity, replicas, failure domains, and what PDBs do and do not protect."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: safety
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?is)toleration.{0,800}preferredDuringSchedulingIgnoredDuringExecution|preferredDuringSchedulingIgnoredDuringExecution.{0,800}toleration"
+      - type: output-matches
+        config:
+          pattern: "(?is)regular.{0,300}(fallback|eligible|capacity|schedule)"
+      - type: output-matches
+        config:
+          pattern: "(?is)(replica|failure domain).{0,400}(replica|failure domain|node|zone)"
+      - type: output-matches
+        config:
+          pattern: "(?is)(PDB|PodDisruptionBudget).{0,400}(voluntary|Eviction API).{0,500}(not|does not|cannot).{0,160}(Spot|reclamation|involuntary)"
+      - type: output-not-matches
+        config:
+          pattern: "(?is)(PDB|PodDisruptionBudget).{0,160}(prevent|protect|guarantee).{0,160}(Spot eviction|Spot reclamation)"
 
   # ── vpa-setup-output-prompt ──
   # Jest: "response mentions VPA and recommendation mode for VPA setup prompt"
