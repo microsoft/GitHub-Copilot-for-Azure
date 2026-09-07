@@ -77,6 +77,23 @@ jobs:
             rsync --archive --delete --verbose "$child_dir/" "$target_dir"
           done
 
+      - name: Register AKS plugin in marketplace catalogs
+        working-directory: source-repo
+        run: |
+          REGISTER="scripts/src/register-marketplace-plugin.ts"
+          MANIFEST="output/aks-skills/.claude-plugin/plugin.json"
+          SOURCE="./.github/plugins/aks-skills"
+
+          node --experimental-strip-types "$REGISTER" \
+            --catalog "../target-repo/.claude-plugin/marketplace.json" \
+            --plugin-manifest "$MANIFEST" \
+            --source "$SOURCE" \
+            --homepage "https://github.com/microsoft/skills"
+          node --experimental-strip-types "$REGISTER" \
+            --catalog "../target-repo/.github/plugin/marketplace.json" \
+            --plugin-manifest "$MANIFEST" \
+            --source "$SOURCE"
+
       # 5. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
@@ -220,6 +237,23 @@ jobs:
               fi
             fi
           done
+
+      - name: Register AKS plugin in marketplace catalogs
+        working-directory: source-repo
+        run: |
+          REGISTER="scripts/src/register-marketplace-plugin.ts"
+          MANIFEST="output/aks-skills/.claude-plugin/plugin.json"
+          SOURCE="./.github/plugins/aks-skills"
+
+          node --experimental-strip-types "$REGISTER" \
+            --catalog "../target-repo/.claude-plugin/marketplace.json" \
+            --plugin-manifest "$MANIFEST" \
+            --source "$SOURCE" \
+            --homepage "https://github.com/microsoft/azure-skills"
+          node --experimental-strip-types "$REGISTER" \
+            --catalog "../target-repo/.cursor-plugin/marketplace.json" \
+            --plugin-manifest "$MANIFEST" \
+            --source "$SOURCE"
 
       # 7. Commit changes and create a PR
       - name: Commit and push changes

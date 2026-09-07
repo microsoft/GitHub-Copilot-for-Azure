@@ -23,3 +23,27 @@ public-canary evals trace to PR #102 source commit
 - Preserve missing or inaccessible data as unknown; never convert it to absence.
 - Use public first-party sources for factual guidance and keep examples distinct
   from required customer evidence.
+
+## Publication and installation
+
+> Pending publication: the `aks-skills` catalog entries become available only
+> after this repository's generated downstream sync PRs are reviewed and merged.
+
+The build publishes the sibling payload at `.github/plugins/aks-skills`. It does
+not replicate AKS skills into the `microsoft/azure-skills` repository root.
+
+- **Claude Code / compatible CLI:** add the
+  `microsoft/azure-skills` marketplace, then install
+  `aks-skills@azure-skills`.
+- **SRE Agent:** add the `microsoft/azure-skills` marketplace at an explicit
+  commit SHA, select the `aks-skills` plugin, and configure its connector
+  separately. Do not use the repository-root Azure plugin URL as an AKS sibling
+  install.
+- **Folder consumers:** use
+  `microsoft/skills/.github/plugins/aks-skills/skills/` at an exact published
+  commit SHA.
+
+Merging the GHCP source change alone is not an archive signal. Before retiring
+the source, verify that both payload and catalog entries are published, run a
+supported-client installation smoke test, publish an explicit migration notice
+with an accountable owner, and resolve all remaining source-only behavior.
