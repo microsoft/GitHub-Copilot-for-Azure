@@ -185,6 +185,5 @@ export function deleteResourceGroup(resourceGroupName: string) {
  * Reads a fixture manifest from disk.
  */
 export function readManifest(manifestPath: string): FixtureManifest {
-  // Un-validated cast. Schema validation happens before provisioning.
   return JSON.parse(readFileSync(manifestPath, "utf8")) as FixtureManifest;
 }

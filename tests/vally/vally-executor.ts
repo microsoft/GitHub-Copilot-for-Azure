@@ -50,11 +50,10 @@ export class IntegrationTestAgentRunner implements Executor {
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
     const requiredSkillRefs: SkillRef[] = [];
-    let plugin: Plugin | undefined;
+    const plugin: Plugin | undefined = plugins.find(plugin => plugin.skills.some(skillRef => skillRef.name === skillName));
     (requiredSkills ?? [skillName]).forEach(s => {
-      const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === s)).at(0);
+      const owningPlugin = plugins.find(plugin => plugin.skills.some(skillRef => skillRef.name === s));
       if (owningPlugin) {
-        plugin = owningPlugin;
         requiredSkillRefs.push({
           pluginDirname: owningPlugin.dirname,
           name: s
@@ -97,7 +96,12 @@ export class IntegrationTestAgentRunner implements Executor {
     const relativeManifestPath = getAzureFixtureManifestPath(tags);
     if (relativeManifestPath && plugin?.dirname) {
       // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
-      const absoluteManifestPath = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`, relativeManifestPath);
+      const fixtureBaseDir = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`);
+      const absoluteManifestPath = path.resolve(fixtureBaseDir, relativeManifestPath);
+      const rel = path.relative(fixtureBaseDir, absoluteManifestPath);
+      if (rel.startsWith("..") || path.isAbsolute(rel)) {
+        throw new Error(`azureFixture must resolve under ${fixtureBaseDir}: ${relativeManifestPath}`);
+      }
       const provisionScriptPath = path.resolve(__dirname, "../azure-fixtures/provision-fixture.ts");
       const provisionOutput = execFileSync(
         NPX_COMMAND,

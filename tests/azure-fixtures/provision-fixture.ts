@@ -132,7 +132,7 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
     try {
       const stdout = execFileSync(
         NPX_COMMAND,
-        ["tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
+        ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
         { encoding: "utf8", timeout: remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
       output.push({ path: scriptConfig.path, stdout: stdout });
