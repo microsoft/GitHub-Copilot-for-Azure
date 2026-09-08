@@ -10,9 +10,9 @@ requires the image to be built locally.
 
 | Build path | When to use | `azure.yaml` |
 |------------|-------------|--------------|
-| Remote build | Existing configuration selects it, or no build path is configured | Set `docker.remoteBuild: true`. |
-| Local build | Existing configuration selects it, or the user explicitly requires local build | Set `docker.remoteBuild: false`. |
-| Pre-built image | The user supplies an existing image | Set a fully qualified `image:` and `docker.imagePassthrough: true`. |
+| Remote build | Existing configuration selects it, or no build path is configured | Under the service's `docker` block, set `remoteBuild: true`. |
+| Local build | Existing configuration selects it, or the user explicitly requires local build | Under the service's `docker` block, set `remoteBuild: false`. |
+| Pre-built image | The user supplies an existing image | Set the service-level `image` to a fully qualified image reference. Under the service's `docker` block, set `imagePassthrough: true` and `remoteBuild: false`. |
 
 ## 2. Validate `azure.yaml`
 
