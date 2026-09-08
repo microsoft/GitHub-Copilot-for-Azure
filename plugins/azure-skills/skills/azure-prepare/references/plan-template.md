@@ -105,23 +105,24 @@ List all resources to be deployed with their types and quantities. Leave quota/l
 
 ### Phase 2: Fetch Quotas and Validate Capacity
 
-**Action:** **MUST invoke azure-quotas skill first** to populate the remaining columns with actual quota data using Azure quota CLI. Only use fallback methods if quota CLI is not supported.
+**Action:** **MUST invoke azure-quotas for guidance**, then run the bundled [Bash](../scripts/check-quota.sh) or [PowerShell](../scripts/check-quota.ps1) script with one requirements file covering every resource in Phase 1.
 
-> **⚠️ IMPORTANT:** Process **ONE resource type at a time**. Do NOT try to apply all steps to all resources at once. Complete steps 1-7 for the first resource, then move to the next resource, and so on.
-
-For each resource type:
-
-1. **Check if quota CLI is supported** - Run `az quota list --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}` to verify the provider is supported. If you encounter issues or need help finding the correct resource name, invoke the azure-quotas skill for troubleshooting.
-2. **Get current usage and limit**:
-   - **If quota CLI is supported**:
-     - Get limit: `az quota show --resource-name {quota-resource-name} --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}`
-     - Get current usage: `az quota usage show --resource-name {quota-resource-name} --scope /subscriptions/{subscription-id}/providers/{ProviderNamespace}/locations/{region}`
-   - **If quota CLI is NOT supported** (returns `BadRequest`):
-     - Get current usage: `az graph query -q "resources | where type == '{resource-type}' and location == '{location}' | count"` (requires `az extension add --name resource-graph`)
-     - Get limit: [Azure service limits documentation](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/azure-subscription-service-limits)
-3. **Calculate total** - Add "Number to Deploy" + current usage = "Total After Deployment"
-4. **Verify capacity** - Ensure "Total After Deployment" ≤ "Limit/Quota"
-5. **Document source** - Note whether data came from "azure-quotas (resource-name)" or "Azure Resource Graph + Official docs"
+1. Create a JSON array containing `provider`, `resourceName`, and `requested` for each resource. For a provider that does not support quota API, also include `resourceType` and its `documentedLimit` from official service documentation.
+   ```json
+   [
+     {"provider":"Microsoft.App","resourceName":"ManagedEnvironmentCount","requested":1},
+     {"provider":"Microsoft.DocumentDB","resourceName":"databaseAccounts","requested":1,"resourceType":"Microsoft.DocumentDB/databaseAccounts","documentedLimit":50}
+   ]
+   ```
+2. From the `azure-prepare` skill root, run one of:
+   ```bash
+   ./scripts/check-quota.sh --region <region> --subscription-id <subscription-id> --requirements-file <requirements.json>
+   ```
+   ```powershell
+   .\scripts\check-quota.ps1 -Region <region> -SubscriptionId <subscription-id> -RequirementsFile <requirements.json>
+   ```
+3. Copy current usage, projected usage, limit, available capacity, status, and source into the checklist.
+4. Treat `insufficient` as blocking. Treat `near-limit` (projected usage at least 80%) as a warning that requires documented mitigation.
 
 **Completed example:**
 

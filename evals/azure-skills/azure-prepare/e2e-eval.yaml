@@ -43,21 +43,29 @@ stimuli:
   # Jest: "creates project files for static whiteboard web app before validation"
   - name: "Whiteboard App Plan Ready"
     turns:
-      - "Create a static whiteboard web app and deploy it to Azure using azd."
+      - "Create a static whiteboard web app and prepare it for Azure deployment using azd in eastus2 with my current subscription."
       - "Continue with recommended options until complete."
     tags:
       type: integration
       tier: smoke
       cost: llm
-      area: output
+      area: behavior
       skill: azure-prepare
-      systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      requiredSkills:
+        - azure-prepare
+        - azure-quotas
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"bash|powershell|pwsh|run_in_terminal|run_command|shell|terminal","argsPattern":"check-quota\\.(sh|ps1)"},{"type":"tool-call-count","count":40}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-prepare
+            - azure-quotas
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: "(?i)azure-prepare[/\\\\]scripts[/\\\\]check-quota\\.(sh|ps1)|scripts[/\\\\]check-quota\\.(sh|ps1)"
+              description: "agent ran the azure-prepare quota-check script"
       - type: file-exists
         config:
           path: ".azure/deployment-plan.md"

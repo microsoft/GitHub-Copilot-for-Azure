@@ -1,0 +1,16 @@
+{
+  "skill": {
+    "pluginDirname": "azure-skills",
+    "name": "azure-prepare"
+  },
+  "branches": [
+    "main",
+    "tmeschter-review-azure-prepare-evals"
+  ],
+  "compareOptions": [
+    {
+      "model": "claude-sonnet-4.6",
+      "withSkill": true
+    }
+  ]
+}
