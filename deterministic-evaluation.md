@@ -23,7 +23,7 @@ Without fixture, our evaluations are limited in the following ways:
 
 2. We cannot compare the agent outcome with a ground truth answer. For example, azure-resource-lookup and azure-resource-visualizer have open ended test cases where the agent picks some resource group to enumerate the resources or generate mermaid diagram. If we can limit the agent to operate on fixture, we can pre-compute the ground truth answer and check if the agent got it correctly.
 
-3. Comparing token usage becomes hard. We can only meaningfully compare token usage when the agent operate on the same set of resources and result in the same outcome.
+3. Comparing token usage becomes hard. We can only meaningfully compare token usage when the agent operates on the same set of resources and results in the same outcome.
 
 ## Types of fixtures
 
@@ -46,6 +46,9 @@ A test case (vally stimuli) defines its Azure fixtures in the following files.
 - A manifest.json file, called "manifest" below.
 - One or more .bicep templates. Each templates are written at the "resource group scope".
 - An 'azureFixture' tag in the stimuli with relative path to the manifest (path relative to the stimuli file).
+
+Two shared scripts.
+
 - A provision-fixture script that handles provisioning fixtures.
 - A clean up script that can delete fixtures from a manifest.
 
@@ -74,7 +77,7 @@ A manifest has an optional array of postProvision scripts. Each postProvision sc
 
 ### Bicep config
 
-A fresh provision task of each Bicep config will create a resource group and Azure resources created in it.
+A fresh provision task of each Bicep config will create a resource group and Azure resources in it.
 
 A Bicep config has a required "fixtureId". It's the unique identifier that identifies the resource group and all the child resources in it. Provisioned fixtures will have a tag carrying the fixtureId so people can search for provisioned fixtures for this Bicep config.
 
@@ -82,13 +85,13 @@ A Bicep config has a required "path". It is the relative path to the Bicep templ
 
 A Bicep config has a required "location". It determines which Azure Location to create the resource group and provision the child resources to, such as eastus.
 
-A Bicep config has a required "resourceGroupNameBase". This piece of text will give the representative portion of the resource group name. The actual resource group name will be computed from the manifest data.
+A Bicep config has a required "resourceGroupNameBase". This piece of text will give the representative portion of the resource group name. The actual resource group name will be computed for each run.
 
 A Bicep config has an optional "parameters" array. This array provides parameter values to be passed to the Bicep template when provisioning it. The author can define parameters with explicit values, which will be passed as is, or define "substitution" parameters (e.g. known keys without value) that resolves to values at provisioning time. The provision-fixture script supports a fixed set of substitution parameters.
 
 ### Provision-fixture script
 
-The provision-fixture script manages the lifecycle of all the fixtures and makes sure it's 
+The provision-fixture script manages provisioning a new instance of the fixture.
 
 #### Context
 
@@ -125,7 +128,7 @@ As an optimization, the vally executor will attempt to delete the provisioned fi
 
 #### PostProvision script
 
-After provisioning all the Bicep configs, the script iteratively execute every postProvision script using tsx.
+After provisioning all the Bicep configs, the script iteratively executes every postProvision script using tsx.
 
 The postProvision script can be used for these purposes:
 
@@ -169,14 +172,14 @@ Here are how operations look like with the process in place:
 - Write the test prompt with the fixture in mind
 - Add environment command to call the provision script with the manifest
 
-The user needs to be aware that fixture context are injected to not provide conflicting instructions in the original test prompt. A rule can be added to copilot-instructions.md to catch these issues in Copilot code review. A new section in vally-eval skill can be added to help user create fixtures for a test case.
+The user needs to be aware that fixture context are injected to at least not provide conflicting instructions in the original test prompt. A rule can be added to copilot-instructions.md to catch these issues in Copilot code review. A new section in vally-eval skill can be added to help user create fixtures for a test case with the help of a coding agent.
 
 2. Update fixture for a test case
 
 - Modify the manifest and the Bicep template
 - Bump the version of the manifest
 
-The next run of the provision script will delete the stale readOnly fixture and provision a new one, or provision a new one for readWrite fixture.
+Future runs of the provision script will provision the updated version of the fixture.
 
 3. Remove a test case
 
@@ -189,7 +192,7 @@ Q: Why do we require postProvision scripts to be written in Typescript?
 A: This is mostly for cross-platform dev experience. Windows dev machines usually don't have bash. Non-Windows dev machines usually don't have powershell. Developing in the repo already requires Typescript so this will work for everyone working in this repo.
 
 Q: Why do we make the custom vally executor run the provision script?
-A: Vally runs the environment commands from the test workspace, which is a directory in the system's temporary directory. It makes it hard to use external scripts since it's hard to navigate the file system to find the script. The custom vally executor has the full knowledge of the test repo and can locate the script file more easily.
+A: Vally runs the environment commands from the test workspace, which is a directory in the system's temporary directory. It makes it hard to use external scripts since it's hard to navigate the file system to find the script. The custom vally executor has the full knowledge of the test repo so it can locate the script file more easily.
 
 Q: Why don't we persist fixtures for readOnly fixtures?
 A: I decided to not include this optimization in the design to simplify fixture lifecycle management. Besides, some types of resources can incur significant amount of cost over time, such as database servers and provisioned compute. For those fixtures, we still want to provision and delete them on demand. We can revisit this optimization later.
