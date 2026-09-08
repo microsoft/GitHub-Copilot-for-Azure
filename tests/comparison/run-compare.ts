@@ -87,7 +87,7 @@ const repo = "microsoft/GitHub-Copilot-for-Azure";
 // Id of the "Integration Tests - all" workflow
 const integrationTestWorkflowId = "233698760";
 
-async function queueComparisonRun(
+async function queueComparisonRunOnce(
   branch: string,
   skill: SkillRef,
   option: CompareOption,
@@ -128,6 +128,36 @@ async function queueComparisonRun(
 
     child.stdin.end(inputs);
   });
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+async function queueComparisonRun(
+  branch: string,
+  skill: SkillRef,
+  option: CompareOption,
+  evalFiles: string[],
+): Promise<string> {
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await queueComparisonRunOnce(branch, skill, option, evalFiles);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const safeToRetry = /^Get ".*\/actions\/workflows\//.test(message);
+      if (!safeToRetry || attempt === attempts) {
+        throw error;
+      }
+      const delaySeconds = attempt * 10;
+      console.warn(
+        `GitHub workflow lookup failed (${attempt}/${attempts}); retrying in ${delaySeconds} seconds.`
+      );
+      await sleep(delaySeconds * 1_000);
+    }
+  }
+  throw new Error("Unreachable: comparison run retry loop completed without a result.");
 }
 
 export function readCompareInput(filePath: string): CompareInput {
