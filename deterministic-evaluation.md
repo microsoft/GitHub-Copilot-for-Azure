@@ -121,7 +121,7 @@ The script first creates the target resource group using Azure CLI. The Azure CL
 
 Then it uses Azure CLI to provision the Bicep template to this resource group. All the declared parameters are resolved before invoking Azure CLI and passed as parameters to the Bicep template.
 
-As an optimization, the vally executor will attempt to delete the readWrite fixtures after the test finishes. The DeleteAfter tag is added so the external clean up script can pick them up in case this attempt failed.
+As an optimization, the vally executor will attempt to delete the provisioned fixtures after the test finishes. The DeleteAfter tag is added so the external clean up script can pick them up in case this attempt failed.
 
 #### PostProvision script
 
