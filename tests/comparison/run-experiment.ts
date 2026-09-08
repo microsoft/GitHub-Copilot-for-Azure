@@ -77,10 +77,19 @@ async function waitForRuns(
   while (Date.now() < deadline) {
     let completed = 0;
     for (const runId of runIds) {
-      const state = getWorkflowState(runId);
-      states[runId] = state;
-      if (state.status === "completed") {
+      if (states[runId]?.status === "completed") {
         completed += 1;
+        continue;
+      }
+      try {
+        const state = getWorkflowState(runId);
+        states[runId] = state;
+        if (state.status === "completed") {
+          completed += 1;
+        }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Could not read workflow run ${runId}; retrying on the next poll: ${message}`);
       }
     }
     console.log(`Completed ${completed}/${runIds.length} workflow runs.`);
@@ -141,27 +150,46 @@ async function collectWithRetry(manifestPath: string, artifactRoot: string): Pro
 }
 
 async function main(): Promise<void> {
-  const inputPath = process.argv[2];
-  if (!inputPath) {
-    throw new Error("Usage: npm run experiment:run -- <experiment.json>");
+  const args = process.argv.slice(2);
+  const resume = args[0] === "--resume";
+  const sourcePath = resume ? args[1] : args[0];
+  if (!sourcePath || args.length !== (resume ? 2 : 1)) {
+    throw new Error(
+      "Usage: npm run experiment:run -- <experiment.json>\n"
+      + "   or: npm run experiment:run -- --resume <comparison-runs.json>"
+    );
   }
 
-  const input = readCompareInput(inputPath) as ExperimentInput;
-  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const experimentName = slug(input.name ?? input.skill.name);
-  const outputDirectory = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "..",
-    "comparison-experiments",
-    `${experimentName}-${timestamp}`
-  );
-  const artifactRoot = path.join(outputDirectory, "artifacts");
-  fs.mkdirSync(outputDirectory, { recursive: true });
-  fs.copyFileSync(inputPath, path.join(outputDirectory, "experiment.json"));
+  const resolvedSourcePath = path.resolve(sourcePath);
+  let outputDirectory: string;
+  let input: ExperimentInput;
+  let manifest: CompareRunOutput;
+  let manifestPath: string;
 
-  console.log("Queueing comparison runs...");
-  const manifest = await runComparison(input);
-  const manifestPath = writeComparisonOutput(manifest, outputDirectory);
+  if (resume) {
+    outputDirectory = path.dirname(resolvedSourcePath);
+    manifestPath = resolvedSourcePath;
+    manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as CompareRunOutput;
+    input = readCompareInput(path.join(outputDirectory, "experiment.json")) as ExperimentInput;
+    console.log(`Resuming experiment from ${manifestPath}`);
+  } else {
+    input = readCompareInput(resolvedSourcePath) as ExperimentInput;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const experimentName = slug(input.name ?? input.skill.name);
+    outputDirectory = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "..",
+      "comparison-experiments",
+      `${experimentName}-${timestamp}`
+    );
+    fs.mkdirSync(outputDirectory, { recursive: true });
+    fs.copyFileSync(resolvedSourcePath, path.join(outputDirectory, "experiment.json"));
+
+    console.log("Queueing comparison runs...");
+    manifest = await runComparison(input);
+    manifestPath = writeComparisonOutput(manifest, outputDirectory);
+  }
+  const artifactRoot = path.join(outputDirectory, "artifacts");
 
   console.log("Waiting for GitHub Actions...");
   const states = await waitForRuns(
