@@ -338,6 +338,9 @@ StyleCopReport.xml
 TestResult.xml
 tests/reports/
 tests/reports/.DS_Store
+tests/comparison/comparison-runs-*.json
+tests/comparison-artifacts/
+tests/comparison-experiments/
 token-metadata.json
 UpgradeLog*.htm
 UpgradeLog*.XML

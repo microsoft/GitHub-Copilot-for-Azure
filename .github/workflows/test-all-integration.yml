@@ -45,6 +45,11 @@ on:
         required: false
         type: string
         default: ""
+      eval-files:
+        description: "Optional: comma-separated YAML filenames to run from the skill eval directory"
+        required: false
+        type: string
+        default: ""
       skill-test-pattern:
         description: "Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests"
         required: false
@@ -260,12 +265,19 @@ jobs:
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
           EVALUATION_PATH: ${{ inputs.evaluation-path }}
+          EVAL_FILES: ${{ inputs.eval-files }}
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
           EVAL_ARGS=()
           if [[ -n "$EVALUATION_PATH" ]]; then
             EVAL_ARGS+=(--eval-dir "$EVALUATION_PATH")
+          fi
+          if [[ -n "$EVAL_FILES" ]]; then
+            IFS=',' read -ra FILES <<< "$EVAL_FILES"
+            for FILE in "${FILES[@]}"; do
+              EVAL_ARGS+=(--eval-file "$FILE")
+            done
           fi
           npm run test:vally -- --plugin "$PLUGIN_DIR" --skill "$SKILL_NAME" --workers 2 "${EVAL_ARGS[@]}"
 

@@ -12,11 +12,12 @@
 import fs from "fs";
 import path from "path";
 import { execFileSync } from "child_process";
+import { fileURLToPath } from "url";
 import type { CompareRunOutput } from "./run-compare";
 
 const STORAGE_ACCOUNT = "strdashboarddevveobvk";
 const CONTAINER = "manual-integration-reports";
-const OUTPUT_ROOT = "comparison-artifacts";
+const DEFAULT_OUTPUT_ROOT = "comparison-artifacts";
 const AZ_COMMAND = process.platform === "win32"
   ? process.env.ComSpec ?? "cmd.exe"
   : "az";
@@ -28,7 +29,7 @@ function azArgs(args: string[]): string[] {
 }
 
 function usage(): void {
-  console.log(`Usage: collect-artifacts.ts <input.json>
+  console.log(`Usage: collect-artifacts.ts <input.json> [output-directory]
 
 Exit codes:
   0 = success (all runs collected)
@@ -40,27 +41,10 @@ function encodeBranchName(branch: string) {
   return branch.replaceAll("/", "_");
 }
 
-function run(): void {
-  const args = process.argv.slice(2);
-
-  if (args.length === 1 && (args[0] === "-h" || args[0] === "--help")) {
-    usage();
-    process.exit(0);
-  }
-
-  if (args.length !== 1) {
-    console.error(
-      "Error: expected exactly one argument (path to the input JSON file)."
-    );
-    usage();
-    process.exit(2);
-  }
-
-  const inputFile = args[0];
-
+export function collectArtifacts(inputFile: string, outputRoot = DEFAULT_OUTPUT_ROOT): number {
   if (!fs.existsSync(inputFile)) {
     console.error(`Error: input file not found: ${inputFile}`);
-    process.exit(2);
+    return 2;
   }
 
   let input: CompareRunOutput;
@@ -70,7 +54,7 @@ function run(): void {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "unknown error";
     console.error(`Error: failed to parse input JSON: ${msg}`);
-    process.exit(2);
+    return 2;
   }
 
   const date = input.date || "";
@@ -78,17 +62,17 @@ function run(): void {
 
   if (!date || !skillName) {
     console.error("Error: input JSON must define 'date' and 'skill.name'.");
-    process.exit(2);
+    return 2;
   }
 
   if (!input.results || input.results.length === 0) {
     console.error("Error: input JSON contains no runs.");
-    process.exit(2);
+    return 2;
   }
 
   // Create output directory
-  if (!fs.existsSync(OUTPUT_ROOT)) {
-    fs.mkdirSync(OUTPUT_ROOT, { recursive: true });
+  if (!fs.existsSync(outputRoot)) {
+    fs.mkdirSync(outputRoot, { recursive: true });
   }
 
   let failed = 0;
@@ -117,7 +101,8 @@ function run(): void {
         ? ""
         : withAzureMcp ? "-with-mcp" : "-without-mcp";
       const conditionName = `${model}-${skillSuffix}${mcpSuffix}`;
-      const runPrefix = `${date}/${runId}/${skillName}/`;
+      const artifactDate = run.artifactDate ?? date;
+      const runPrefix = `${artifactDate}/${runId}/${skillName}/`;
 
       // Download run-level grader results and summaries once per workflow run.
       try {
@@ -146,7 +131,7 @@ function run(): void {
                 || relativePath.endsWith("-SKILL-REPORT.md"));
           });
         const runOutputDir = path.join(
-          OUTPUT_ROOT,
+          outputRoot,
           encodeBranchName(branch),
           "_run-results",
           conditionName,
@@ -172,7 +157,7 @@ function run(): void {
       }
 
       // Discover stimuli for this run
-      const prefix = `${date}/${runId}/${skillName}/${skillName}_`;
+      const prefix = `${artifactDate}/${runId}/${skillName}/${skillName}_`;
       console.log(
         `Discovering stimuli for run ${runId} under ${CONTAINER}/${prefix} ...`
       );
@@ -222,12 +207,12 @@ function run(): void {
 
       for (const stimuliPart of stimuliSet) {
         const stimuliOutputDir = path.join(
-          OUTPUT_ROOT,
+          outputRoot,
           encodeBranchName(branch),
           stimuliPart,
           conditionName
         );
-        const blobPrefix = `${date}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
+        const blobPrefix = `${artifactDate}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
 
         console.log(
           `Listing blobs for stimuli '${stimuliPart}' in run ${runId} ...`
@@ -296,13 +281,35 @@ function run(): void {
 
   if (failed !== 0) {
     console.error(
-      `Completed with errors. Partial artifacts are in ${OUTPUT_ROOT}`
+      `Completed with errors. Partial artifacts are in ${outputRoot}`
     );
-    process.exit(1);
+    return 1;
   }
 
-  console.log(`Artifacts collected in ${OUTPUT_ROOT}`);
-  process.exit(0);
+  console.log(`Artifacts collected in ${outputRoot}`);
+  return 0;
 }
 
-run();
+function runCli(): void {
+  const args = process.argv.slice(2);
+
+  if (args.length === 1 && (args[0] === "-h" || args[0] === "--help")) {
+    usage();
+    return;
+  }
+
+  if (args.length < 1 || args.length > 2) {
+    console.error(
+      "Error: expected an input JSON path and optional output directory."
+    );
+    usage();
+    process.exitCode = 2;
+    return;
+  }
+
+  process.exitCode = collectArtifacts(args[0], args[1]);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runCli();
+}
