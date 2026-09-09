@@ -31,11 +31,6 @@ metadata:
 
 Keep the main SKILL.md concise. Move detailed documentation to files under the `references/` subfolder.
 
-## Required Sections
-
-1. **Quick Reference** - Summary table with key properties (MCP tools, CLI commands, best for)
-2. **Workflow/Steps** - Numbered or phased step-by-step processes
-
 ## Optional Sections
 
 1. **Prerequisite** - Expected environmental conditions for the skill to operate (e.g. files in the workspace, local CLI tools, type of projects, etc.)
