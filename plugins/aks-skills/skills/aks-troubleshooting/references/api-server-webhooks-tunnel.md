@@ -20,7 +20,7 @@ read-only checks.
 kubectl get flowschemas
 kubectl get prioritylevelconfigurations
 kubectl get flowschema aks-managed-apiserver-guard -o yaml
-kubectl get events -n kube-system --field-selector reason!=Normal --sort-by=.lastTimestamp
+kubectl get events -n kube-system --field-selector type=Warning --sort-by=.lastTimestamp
 ```
 
 - A `FlowSchema` and `PriorityLevelConfiguration` named

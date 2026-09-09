@@ -30,8 +30,7 @@ interface Projected {
   selectorDuplicateCount?: number;
 }
 
-function runFilter(): { raw: string; items: Projected[] } {
-  const input = fs.readFileSync(fixturePath, "utf8");
+function runFilter(input = fs.readFileSync(fixturePath, "utf8")): { raw: string; items: Projected[] } {
   const result = spawnSync("jq", ["-f", filterPath], { input, encoding: "utf8" });
   if (result.error) {
     throw new Error(`jq is required to run the readiness sanitizer contract test: ${result.error.message}`);
@@ -110,6 +109,62 @@ describe("sanitize-readiness-input.jq", () => {
       { container: "web", valid: true },
       { container: "invalid", valid: false },
     ]);
+  });
+
+  test.each([
+    ["runtime/default", true],
+    ["localhost/PRIVATE_PROFILE_SENTINEL", true],
+    ["unconfined", false],
+    ["localhost-unconfined", false],
+    [null, true],
+    [42, false],
+  ])("projects AppArmor value %s to validity without retaining it", (value, valid) => {
+    const projected = runFilter(JSON.stringify({
+      kind: "List",
+      items: [{
+        kind: "Pod",
+        metadata: {
+          name: "apparmor-case",
+          annotations: {
+            "container.apparmor.security.beta.kubernetes.io/app": value,
+          },
+        },
+        spec: { containers: [{ name: "app", image: "example:v1" }] },
+      }],
+    }));
+    expect(projected.items[0].metadata.legacyAppArmorProfiles).toEqual([{ container: "app", valid }]);
+    expect(projected.raw).not.toContain("PRIVATE_PROFILE_SENTINEL");
+  });
+
+  test.each([
+    [{}, false, false],
+    [{ user: null, role: null }, false, false],
+    [{ user: "", role: "" }, false, false],
+    [{ user: "SELINUX_USER_SENTINEL" }, true, false],
+    [{ role: "SELINUX_ROLE_SENTINEL" }, false, true],
+    [{ user: "SELINUX_USER_SENTINEL", role: "SELINUX_ROLE_SENTINEL" }, true, true],
+  ])("preserves SELinux rule evidence without retaining raw user/role %j", (values, userConfigured, roleConfigured) => {
+    const seLinuxOptions = { type: "container_t", ...values };
+    const projected = runFilter(JSON.stringify({
+      kind: "List",
+      items: [{
+        kind: "Pod",
+        metadata: { name: "selinux-case" },
+        spec: {
+          securityContext: { seLinuxOptions },
+          containers: [{ name: "app", image: "example:v1", securityContext: { seLinuxOptions } }],
+        },
+      }],
+    }));
+    const spec = projected.items[0].spec as {
+      securityContext: { seLinuxOptions: unknown };
+      containers: { securityContext: { seLinuxOptions: unknown } }[];
+    };
+    const expected = { type: "container_t", userConfigured, roleConfigured };
+    expect(spec.securityContext.seLinuxOptions).toEqual(expected);
+    expect(spec.containers[0].securityContext.seLinuxOptions).toEqual(expected);
+    expect(projected.raw).not.toContain("SELINUX_USER_SENTINEL");
+    expect(projected.raw).not.toContain("SELINUX_ROLE_SENTINEL");
   });
 
   test("computes duplicate Service selectors per namespace and keeps StorageClass provisioner", () => {

@@ -44,7 +44,14 @@ def metadata_projection:
                 "container.apparmor.security.beta.kubernetes.io/"
               )
           ),
-          valid: (.value == "runtime/default")
+          valid: (
+            .value == null
+            or .value == "runtime/default"
+            or (if (.value | type) == "string"
+                then (.value | startswith("localhost/"))
+                else false
+                end)
+          )
         }
     ]
   }
@@ -63,7 +70,11 @@ def security_context_projection:
     },
     seccompProfile: {type: .seccompProfile.type},
     appArmorProfile: {type: .appArmorProfile.type},
-    seLinuxOptions: {type: .seLinuxOptions.type},
+    seLinuxOptions: {
+      type: .seLinuxOptions.type,
+      userConfigured: (.seLinuxOptions.user != null and .seLinuxOptions.user != ""),
+      roleConfigured: (.seLinuxOptions.role != null and .seLinuxOptions.role != "")
+    },
     windowsOptions: {
       hostProcess: .windowsOptions.hostProcess,
       runsAsContainerAdministrator:

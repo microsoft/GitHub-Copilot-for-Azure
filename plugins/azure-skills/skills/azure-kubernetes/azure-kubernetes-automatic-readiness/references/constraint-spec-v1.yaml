@@ -350,6 +350,11 @@ safeguards:
     category: podSecurity
     check: |
       SELinux settings are restricted to specific types, and custom user or role values are forbidden.
+      Sanitized input represents non-empty user and role values as
+      seLinuxOptions.userConfigured and seLinuxOptions.roleConfigured booleans;
+      true violates the corresponding empty-value requirement. The raw values
+      are deliberately not retained. If these booleans are absent from an older
+      projection, report that portion of the check as unavailable, not compliant.
       Check the following fields:
       - spec.securityContext.seLinuxOptions.type
       - spec.containers[*].securityContext.seLinuxOptions.type
@@ -588,4 +593,3 @@ mutations:
     policyId: implicit
     target: containers
     effect: "Sets resources.requests+limits defaults cpu=500m, memory=2Gi. Minimums cpu=100m, memory=100Mi. If only limits set, requests=limits. If requests > limits, requests capped at limits (QoS fix)."
-
