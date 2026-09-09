@@ -35,6 +35,11 @@ jobs:
           npm ci --ignore-scripts
           npm run build
 
+      - name: Install scripts dependencies
+        working-directory: source-repo/scripts
+        run: |
+          npm ci --ignore-scripts
+
       # Generate a short-lived token from the GitHub App for microsoft/skills
       - name: Generate token for microsoft/skills
         id: skills-token
@@ -151,6 +156,11 @@ jobs:
         run: |
           npm ci --ignore-scripts
           npm run build
+
+      - name: Install scripts dependencies
+        working-directory: source-repo/scripts
+        run: |
+          npm ci --ignore-scripts
 
       # Generate a short-lived token from the GitHub App for microsoft/azure-skills
       - name: Generate token for microsoft/azure-skills

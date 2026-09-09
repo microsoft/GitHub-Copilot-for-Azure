@@ -8,23 +8,23 @@ const MARKETPLACE_PATHS = [
 ] as const;
 
 interface PluginManifest {
-    name: string;
-    description: string;
-    version: string;
-    author: unknown;
-    homepage: string;
+  name: string;
+  description: string;
+  version: string;
+  author: unknown;
+  homepage: string;
 }
 
 interface Marketplace {
-    plugins: Record<string, unknown>[];
-    [key: string]: unknown;
+  plugins: Record<string, unknown>[];
+  [key: string]: unknown;
 }
 
 export interface SyncMarketplaceOptions {
-    sourceRoot: string;
-    targetRoot: string;
-    repository: string;
-    homepage: string;
+  sourceRoot: string;
+  targetRoot: string;
+  repository: string;
+  homepage: string;
 }
 
 function readJson(filePath: string): unknown {
@@ -35,11 +35,11 @@ function readPluginManifest(filePath: string): PluginManifest {
   const value = readJson(filePath);
   if (
     typeof value !== "object" || value === null ||
-        !("name" in value) || typeof value.name !== "string" ||
-        !("description" in value) || typeof value.description !== "string" ||
-        !("version" in value) || typeof value.version !== "string" ||
-        !("author" in value) ||
-        !("homepage" in value) || typeof value.homepage !== "string"
+    !("name" in value) || typeof value.name !== "string" ||
+    !("description" in value) || typeof value.description !== "string" ||
+    !("version" in value) || typeof value.version !== "string" ||
+    !("author" in value) ||
+    !("homepage" in value) || typeof value.homepage !== "string"
   ) {
     throw new Error(`Invalid plugin manifest: ${filePath}`);
   }
@@ -51,8 +51,8 @@ function readMarketplace(filePath: string): Marketplace {
   const value = readJson(filePath);
   if (
     typeof value !== "object" || value === null ||
-        !("plugins" in value) || !Array.isArray(value.plugins) ||
-        value.plugins.some(plugin => typeof plugin !== "object" || plugin === null)
+    !("plugins" in value) || !Array.isArray(value.plugins) ||
+    value.plugins.some((plugin) => typeof plugin !== "object" || plugin === null || Array.isArray(plugin) || typeof (plugin as { name?: unknown }).name !== "string")
   ) {
     throw new Error(`Invalid marketplace manifest: ${filePath}`);
   }
