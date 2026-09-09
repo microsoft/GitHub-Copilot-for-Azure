@@ -1,3 +1,9 @@
+# Baseline model pair (recorded 2026-09): solver `model` and LLM judge are both
+# claude-sonnet-4.6 (the judge falls back to vally's default, also
+# claude-sonnet-4.6, when `judge_model` is omitted). Judge/solver separation is
+# pending an owner decision on which alternate model the CI runner exposes;
+# override per run with `--judge-model <id>` or `EVAL_JUDGE_MODEL`. Changing
+# either model is a new baseline: record it here, do not compare across.
 name: aks-gpu-inference-day2-eval
 description: |
   Routing and evidence-contract evaluation for AKS GPU and KAITO Day-2

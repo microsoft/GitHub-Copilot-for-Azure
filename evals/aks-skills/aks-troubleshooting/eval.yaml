@@ -1,3 +1,9 @@
+# Baseline model pair (recorded 2026-09): solver `model` and LLM judge are both
+# claude-sonnet-4.6 (the judge falls back to vally's default, also
+# claude-sonnet-4.6, when `judge_model` is omitted). Judge/solver separation is
+# pending an owner decision on which alternate model the CI runner exposes;
+# override per run with `--judge-model <id>` or `EVAL_JUDGE_MODEL`. Changing
+# either model is a new baseline: record it here, do not compare across.
 name: aks-troubleshooting-public-canary-eval
 description: |
   Routing and customer-decision evaluation for focused AKS troubleshooting,
@@ -472,6 +478,238 @@ stimuli:
         config:
           required: [aks-troubleshooting]
           disallowed: [aks-network-capture]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  # ── Development regressions for the #3164 completion items C–H. Derived from
+  # public Learn pages (source_url); these are recall/reasoning checks against
+  # the skill text, not independent holdouts. Diagnose-only prompts: no reads run.
+
+  - name: "API: 429 storm with managed apiserver guard present"
+    prompt: |
+      Diagnose without running commands or changing resources. kubectl and CI
+      jobs against AKS cluster 'prod' get HTTP 429 for the last hour. Supplied
+      evidence: `kubectl get flowschemas` lists `aks-managed-apiserver-guard`
+      and a matching PriorityLevelConfiguration exists. No client request
+      metrics were supplied.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-pressure
+      case_id: api-429-managed-guard
+      derived_from: api-server-webhooks-tunnel.md
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/troubleshoot-apiserver-etcd"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response identifies aks-managed-apiserver-guard as the AKS managed throttling mechanism applied after API-server OOM events, states that its presence explains the throttling but does not by itself prove the root cause (client load, list/watch patterns, or etcd object growth still need evidence), does not propose deleting or relabeling the guard objects, and asks for client request evidence or etcd size/object-count evidence next."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)aks-managed-apiserver-guard"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)kubectl delete (flowschema|prioritylevelconfiguration)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "API: etcd object growth names the owner as correlation"
+    prompt: |
+      Diagnose without running commands or changing resources. API latency on
+      AKS cluster 'prod' has grown over two weeks. Supplied evidence:
+      apiserver_storage_objects for `events.events.k8s.io` and a CRD kind
+      `jobs.batch.example.com` both rose from ~2k to ~40k; database size metric
+      is 3.1 GB. No controller logs were supplied.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-pressure
+      case_id: etcd-object-growth-correlation
+      derived_from: api-server-webhooks-tunnel.md
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/troubleshoot-apiserver-etcd"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response treats the 3.1 GB database and rising object counts as etcd-pressure evidence (Learn: above 2 GB is large, 8 GB default limit), names the growing kinds and the need to evidence the owning controller via ownerReferences, managedFields, or controller logs before blaming it, calls the link a correlation until then, and does not delete objects or prescribe cleanup without owner approval."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)kubectl delete (jobs|events)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Failed state: operation record before node evidence"
+    prompt: |
+      Diagnose without running commands or changing resources. AKS cluster
+      'prod' shows provisioningState Failed after a node pool scale-up. The
+      operator has the Azure CLI but is not sure the aks-preview extension is
+      installed. What evidence do you read first, and what if the extension is
+      unavailable?
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failed-state
+      case_id: failed-state-operation-record-first
+      derived_from: node-issues.md
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/availability-performance/cluster-node-virtual-machine-failed-state"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response reads the failed operation record first via az aks operation show-latest or show (stating it is an aks-preview extension command), falls back to the activity log with az monitor activity-log list when the extension is unavailable and labels that as degraded evidence, routes an exact catalog error code to aks-known-issues, and does not run az resource update reconcile or vmss update-instances without owner approval."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)az aks operation show"
+      - type: output-matches
+        config:
+          pattern: "(?i)activity[- ]log"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Auto-upgrade: maintenance window but channel none"
+    prompt: |
+      Diagnose without running commands or changing resources. The owner says
+      AKS Standard cluster 'prod' "never auto-upgrades" although they created
+      an aksManagedAutoUpgradeSchedule maintenance window two months ago.
+      Supplied evidence: autoUpgradeProfile.upgradeChannel is none and node pool
+      'np1' powerState is Stopped.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: upgrade
+      case_id: auto-upgrade-channel-none
+      derived_from: references/auto-upgrade-evidence.md
+      source_url: "https://learn.microsoft.com/azure/aks/planned-maintenance"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response explains that a planned-maintenance window only schedules upgrades and does not enable them, so upgradeChannel none means cluster auto-upgrade was never enabled; notes that the stopped node pool would receive an upgrade only when started; presents choosing a channel as an owner decision and does not run az aks update or az aks upgrade."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)channel"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)I (have |will )?(run|ran|executed) az aks (update|upgrade)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Autoscaler: HPA ceiling is not an autoscaler fault"
+    prompt: |
+      Diagnose without running commands or changing resources. "The cluster
+      autoscaler isn't scaling my AKS node pool." Supplied evidence: the
+      workload HPA is at maxReplicas=10 with 10/10 pods Running, no pods are
+      Pending, node pool 'np1' is at 4 of maxCount 8, and
+      cluster_autoscaler_unschedulable_pods_count is 0.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: node-scaling
+      case_id: autoscaler-hpa-ceiling
+      derived_from: node-issues.md
+      source_url: "https://learn.microsoft.com/azure/aks/cluster-autoscaler"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response states that the cluster autoscaler acts on Pending/unschedulable pods, that zero Pending pods and unschedulable_pods_count 0 mean there is nothing for it to do, that the ceiling is the HPA maxReplicas rather than an autoscaler fault, and does not recommend changing autoscaler min/max or the profile as a fix."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)maxReplicas|HPA"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "History: scheduler decision without diagnostic setting is unavailable"
+    prompt: |
+      Diagnose without running commands or changing resources. "Why did the
+      scheduler place my pod on node X three days ago?" Supplied evidence:
+      kubectl events for that window are gone, and `az monitor
+      diagnostic-settings list` on the cluster returns an empty list.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-evidence
+      case_id: control-plane-logs-unavailable
+      derived_from: references/structured-input-modes.md
+      source_url: "https://learn.microsoft.com/azure/aks/monitor-aks#resource-logs"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response states that control-plane history is unavailable because no diagnostic setting routed kube-scheduler logs (AKSControlPlane in resource-specific mode, or AzureDiagnostics in legacy mode) before the window, does not claim that no scheduling events occurred, names the category and table that would answer the question, and treats enabling a diagnostic setting as an owner-approved mutation with cost rather than doing it."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)AKSControlPlane|AzureDiagnostics|diagnostic setting"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)no (scheduling )?events (occurred|happened)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Admission: unexplained request mutation with Safeguards enabled"
+    prompt: |
+      Diagnose without running commands or changing resources. Pods in AKS
+      cluster 'prod' are admitted with CPU/memory requests the manifest never
+      set, and a Deployment gained pod anti-affinity rules. Supplied evidence:
+      no customer MutatingWebhookConfiguration matches the namespace, and
+      `az aks safeguards show` reports level Enforce.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-webhook
+      case_id: admission-safeguards-mutator
+      derived_from: api-server-webhooks-tunnel.md
+      source_url: "https://learn.microsoft.com/azure/aks/deployment-safeguards"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response attributes the mutation to AKS Deployment Safeguards at Enforce (resource requests mutator and anti-affinity/topology spread mutator) based on the enabled-policy evidence rather than on cluster SKU, does not blame a customer webhook, leaves changing the Safeguards level or excluding namespaces to the owner, and points manifest-compatibility questions to the azure-kubernetes Automatic readiness reference."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)Deployment Safeguards"
       - type: prompt
         config:
           scoring: binary
