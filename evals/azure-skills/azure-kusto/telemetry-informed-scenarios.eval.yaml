@@ -1,5 +1,7 @@
-name: azure-kusto-production-like-prompts
-description: Concise, incomplete, and multi-turn synthetic prompts derived from restricted telemetry aggregates.
+# Broad coverage: short and incomplete requests, missing environmental context,
+# troubleshooting, optimization, schema discovery, and one multi-turn scenario.
+name: azure-kusto-telemetry-informed-scenarios
+description: Synthetic scenarios informed by aggregate telemetry patterns without using customer prompt content.
 tags:
   type: integration
   skill: azure-kusto
