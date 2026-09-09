@@ -33,7 +33,7 @@ For Python agents, prepare the environment from the **agent's service source dir
 
 ## Start the agent locally
 
-Confirm the target port is free (default `8088`); if occupied, choose another port and pass the same `--port <n>` to both `run` and `invoke --local`. Activate the service-dir `.venv`, then in that venv run:
+The examples below use the default port `8088`. Confirm it is free; if occupied, choose another port and add the same `--port <n>` to both `run` and `invoke --local`. Activate the service-dir `.venv`, then in that venv run:
 
 ```bash
 azd ai agent run --no-client
