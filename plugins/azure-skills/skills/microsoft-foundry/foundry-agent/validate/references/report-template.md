@@ -21,11 +21,20 @@
 | Inconclusive | [inconclusive count] |
 | Not applicable | [not applicable count] |
 
+## Failed rules
+
+[Omit if empty. Include every failed result.]
+
+| Level | Rule ID | Title |
+|---|---|---|
+| [error | warning | recommendation] | `[rule ID]` | [rule title] |
+
 ## Feedbacks
 
 [Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
 
-### [rule title]
+<details>
+<summary>[rule title]</summary>
 
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
@@ -47,12 +56,15 @@
 [Repeat each item.]
 
 - [guidance title](<[guidance link]>)
+
+</details>
 
 ## Passed checks
 
 [Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
 
-### [rule title]
+<details>
+<summary>[rule title]</summary>
 
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
@@ -74,12 +86,15 @@
 [Repeat each item.]
 
 - [guidance title](<[guidance link]>)
+
+</details>
 
 ## Inconclusive
 
 [Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
 
-### [rule title]
+<details>
+<summary>[rule title]</summary>
 
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
@@ -101,12 +116,15 @@
 [Repeat each item.]
 
 - [guidance title](<[guidance link]>)
+
+</details>
 
 ## Not applicable
 
 [Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
 
-### [rule title]
+<details>
+<summary>[rule title]</summary>
 
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
@@ -128,6 +146,8 @@
 [Repeat each item.]
 
 - [guidance title](<[guidance link]>)
+
+</details>
 
 ## Limitation
 
