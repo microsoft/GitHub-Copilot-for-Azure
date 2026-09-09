@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__plugin_azure_azure__get_azure_bestpractices",
+  "tool_input": {},
+  "tool_use_id": "tool-mcp",
+  "session_id": "73e52424-a95d-4e21-b70c-2dffe48fdd86",
+  "hook_event_name": "PostToolUse"
+}

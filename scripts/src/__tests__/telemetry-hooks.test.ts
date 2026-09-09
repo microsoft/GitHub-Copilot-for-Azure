@@ -16,12 +16,6 @@ import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-type CursorPayload = {
-  tool_input: {
-    file_path?: string;
-  };
-};
-
 type ShellCase = {
   name: string;
   command: string;
@@ -44,6 +38,15 @@ type Dispatcher = {
   ) => number;
 };
 
+type ClientCase = {
+  id: "copilot" | "claude" | "cursor" | "vscode";
+  expectedClientName: string;
+  pluginRoot: string;
+  inputContainer: "toolArgs" | "tool_input";
+  pathField: "path" | "file_path" | "filePath";
+  expectedToolName: string;
+};
+
 const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
@@ -51,21 +54,88 @@ const LOG_DIR = join(TEST_DIR, "logs");
 const RAW_INPUT_DIR = join(LOG_DIR, "raw-input");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
-const PLUGIN_ROOT = join(
+const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
+const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
+const PLUGIN_VERSION = "4.5.6";
+const require = createRequire(import.meta.url);
+const dispatcher = require(join(SOURCE_HOOKS_DIR, "track-telemetry.js")) as Dispatcher;
+
+const clientCases: ClientCase[] = [
+  {
+    id: "copilot",
+    expectedClientName: "copilot-cli",
+    pluginRoot: join(TEST_DIR, ".copilot", "installed-plugins", "test-catalog", "azure"),
+    inputContainer: "toolArgs",
+    pathField: "path",
+    expectedToolName: "azure-get_azure_bestpractices",
+  },
+  {
+    id: "claude",
+    expectedClientName: "claude-code",
+    pluginRoot: join(
+      TEST_DIR,
+      ".claude",
+      "plugins",
+      "cache",
+      "azure-skills",
+      "azure",
+      "1.2.3",
+    ),
+    inputContainer: "tool_input",
+    pathField: "file_path",
+    expectedToolName: "mcp__plugin_azure_azure__get_azure_bestpractices",
+  },
+  {
+    id: "cursor",
+    expectedClientName: "cursor",
+    pluginRoot: join(
+      TEST_DIR,
+      ".cursor",
+      "plugins",
+      "cache",
+      "cursor-public",
+      "azure",
+      "revision",
+    ),
+    inputContainer: "tool_input",
+    pathField: "file_path",
+    expectedToolName: "get_azure_bestpractices",
+  },
+  {
+    id: "vscode",
+    expectedClientName: "Visual Studio Code",
+    pluginRoot: join(
+      TEST_DIR,
+      ".vscode",
+      "agent-plugins",
+      "github.com",
+      "microsoft",
+      "azure-skills",
+      ".github",
+      "plugins",
+      "azure-skills",
+    ),
+    inputContainer: "tool_input",
+    pathField: "filePath",
+    expectedToolName: "mcp_azure_mcp_get_azure_bestpractices",
+  },
+];
+
+const cursorCase = clientCases.find(client => client.id === "cursor")!;
+const crossClientInstallationCases = clientCases.map((client, index) => ({
+  client,
+  installation: clientCases[(index + 1) % clientCases.length],
+}));
+const DISPATCHER_PATH = join(cursorCase.pluginRoot, "hooks", "scripts", "track-telemetry.js");
+const FOREIGN_CURSOR_ROOT = join(
   TEST_DIR,
   ".cursor",
   "plugins",
   "cache",
   "cursor-public",
   "azure",
-  "revision",
+  "other-revision",
 );
-const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
-const DISPATCHER_PATH = join(HOOKS_DIR, "track-telemetry.js");
-const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
-const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
-const require = createRequire(import.meta.url);
-const dispatcher = require(join(SOURCE_HOOKS_DIR, "track-telemetry.js")) as Dispatcher;
 
 const shellCandidates: ShellCase[] = [
   {
@@ -80,31 +150,32 @@ const shellCandidates: ShellCase[] = [
   },
 ];
 
-// Returns whether the shell executable can be launched in the current environment.
 function isCommandAvailable(command: string): boolean {
   return spawnSync(command, ["--version"], { stdio: "ignore" }).error === undefined;
 }
 
 const shells = shellCandidates.filter(shell => isCommandAvailable(shell.command));
 
-// Loads a Cursor hook payload fixture by file name.
 function fixture(name: string): Record<string, unknown> {
   return JSON.parse(readFileSync(join(FIXTURES_DIR, name), "utf8")) as Record<string, unknown>;
 }
 
-// Creates a representative Cursor plugin cache with a versioned test skill.
-function createCursorSkillCache(): string {
-  const skillRoot = join(PLUGIN_ROOT, "skills", "azure-cost");
+function createPluginCache(pluginRoot: string): string {
+  const skillRoot = join(pluginRoot, "skills", "azure-cost");
   mkdirSync(join(skillRoot, "cost-query"), { recursive: true });
+  mkdirSync(join(pluginRoot, ".plugin"), { recursive: true });
   writeFileSync(
     join(skillRoot, "SKILL.md"),
     "---\nmetadata:\n  version: \"1.2.3\"\n---\n# Azure Cost\n",
   );
   writeFileSync(join(skillRoot, "cost-query", "guardrails.md"), "# Guardrails\n");
+  writeFileSync(
+    join(pluginRoot, ".plugin", "plugin.json"),
+    JSON.stringify({ version: PLUGIN_VERSION }),
+  );
   return skillRoot;
 }
 
-// Converts Windows fixture paths for Bash, which represents the Unix dispatcher branch.
 function pathForShell(shell: ShellCase, filePath: string): string {
   if (shell.name !== "Bash" || process.platform !== "win32") {
     return filePath;
@@ -117,16 +188,27 @@ function pathForShell(shell: ShellCase, filePath: string): string {
   return result.stdout.trim();
 }
 
-// Runs a telemetry hook with the payload and returns its captured npx arguments.
+function setPayloadPath(
+  shell: ShellCase,
+  client: ClientCase,
+  payload: Record<string, unknown>,
+  filePath: string,
+): void {
+  const toolInput = payload[client.inputContainer] as Record<string, unknown>;
+  toolInput[client.pathField] = pathForShell(shell, filePath);
+}
+
 function runHook(
   shell: ShellCase,
+  client: ClientCase,
   payload: Record<string, unknown>,
   inputPrefix = "",
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const extension = shell.name === "Bash" ? "sh" : "ps1";
-  const scriptPath = join(HOOKS_DIR, `track-telemetry.${extension}`);
+  const nativeScriptPath = join(client.pluginRoot, "hooks", "scripts", `track-telemetry.${extension}`);
+  const scriptPath = pathForShell(shell, nativeScriptPath);
   const result = spawnSync(shell.command, shell.args(scriptPath), {
     encoding: "utf8",
     input: `${inputPrefix}${JSON.stringify(payload)}`,
@@ -148,7 +230,6 @@ function runHook(
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
 }
 
-// Runs telemetry through the Node dispatcher using the current platform's shell.
 function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
@@ -171,21 +252,48 @@ function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): stri
 }
 
 function readRawInput(): string {
-  const files = readdirSync(RAW_INPUT_DIR);
+  const files = readFileNames(RAW_INPUT_DIR);
   expect(files).toHaveLength(1);
   return readFileSync(join(RAW_INPUT_DIR, files[0]), "utf8");
 }
 
-// Verifies that a named command argument is followed by the expected value.
+function readFileNames(path: string): string[] {
+  return existsSync(path) ? readdirSync(path) : [];
+}
+
 function expectArg(args: string[], name: string, value: string): void {
   const index = args.indexOf(name);
   expect(index).toBeGreaterThan(-1);
   expect(args[index + 1]).toBe(value);
 }
 
+function makeNonAzurePayload(client: ClientCase): Record<string, unknown> {
+  const payload = fixture(`${client.id}-mcp-invocation.json`);
+  switch (client.id) {
+    case "copilot":
+      payload.toolName = "github-search";
+      break;
+    case "claude":
+      payload.tool_name = "mcp__plugin_github_github__search";
+      break;
+    case "cursor":
+      payload.mcp_server_name = "github";
+      break;
+    case "vscode":
+      payload.tool_name = "mcp_github_search";
+      break;
+  }
+  return payload;
+}
+
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
-  cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
+  for (const client of clientCases) {
+    createPluginCache(client.pluginRoot);
+    cpSync(SOURCE_HOOKS_DIR, join(client.pluginRoot, "hooks", "scripts"), { recursive: true });
+  }
+  createPluginCache(FOREIGN_CURSOR_ROOT);
+
   writeFileSync(
     join(BIN_DIR, "npx"),
     "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"\n",
@@ -268,34 +376,35 @@ describe("Cursor telemetry dispatcher", () => {
   );
 });
 
-describe.each(shells)("Cursor telemetry hook ($name)", shell => {
-  const skillRoot = createCursorSkillCache();
+describe.each(shells)("Telemetry hook ($name)", shell => {
+  it.each(clientCases)("reports a $id SKILL.md read as a skill invocation", client => {
+    const payload = fixture(`${client.id}-skill-read.json`);
+    setPayloadPath(shell, client, payload, join(client.pluginRoot, "skills", "azure-cost", "SKILL.md"));
 
-  it("reports a SKILL.md read as a skill invocation", () => {
-    const payload = fixture("cursor-skill-read.json") as CursorPayload & Record<string, unknown>;
-    payload.tool_input.file_path = pathForShell(shell, join(skillRoot, "SKILL.md"));
-
-    const args = runHook(shell, payload);
+    const args = runHook(shell, client, payload);
 
     expect(args.slice(0, 4)).toEqual(["-y", "@azure/mcp@latest", "server", "plugin-telemetry"]);
-    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--client-name", client.expectedClientName);
     expectArg(args, "--event-type", "skill_invocation");
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-name", "azure-cost");
     expectArg(args, "--skill-version", "1.2.3");
+    expectArg(args, "--plugin-version", PLUGIN_VERSION);
     expect(args).not.toContain("--file-reference");
   });
 
-  it("reports a bundled file read as a reference read", () => {
-    const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
-    payload.tool_input.file_path = pathForShell(
+  it.each(clientCases)("reports a $id bundled file read as a reference read", client => {
+    const payload = fixture(`${client.id}-reference-read.json`);
+    setPayloadPath(
       shell,
-      join(skillRoot, "cost-query", "guardrails.md"),
+      client,
+      payload,
+      join(client.pluginRoot, "skills", "azure-cost", "cost-query", "guardrails.md"),
     );
 
-    const args = runHook(shell, payload);
+    const args = runHook(shell, client, payload);
 
-    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--client-name", client.expectedClientName);
     expectArg(args, "--event-type", "reference_file_read");
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-version", "1.2.3");
@@ -303,34 +412,72 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expect(args).not.toContain("--skill-name");
   });
 
-  it.each(["get_azure_bestpractices", "MCP:get_azure_bestpractices"])(
-    "reports an Azure MCP invocation without Cursor's display prefix: %s",
-    toolName => {
-      const payload = fixture("cursor-mcp-invocation.json");
-      payload.tool_name = toolName;
-      const args = runHook(shell, payload);
+  it.each(crossClientInstallationCases)(
+    "reports a $client.id skill read from a $installation.id installation",
+    ({ client, installation }) => {
+      const payload = fixture(`${client.id}-skill-read.json`);
+      setPayloadPath(
+        shell,
+        client,
+        payload,
+        join(installation.pluginRoot, "skills", "azure-cost", "SKILL.md"),
+      );
 
-      expectArg(args, "--client-name", "cursor");
-      expectArg(args, "--event-type", "tool_invocation");
-      expectArg(args, "--session-id", SESSION_ID);
-      expectArg(args, "--tool-name", "get_azure_bestpractices");
+      const args = runHook(shell, installation, payload);
+
+      expectArg(args, "--client-name", client.expectedClientName);
+      expectArg(args, "--event-type", "skill_invocation");
+      expectArg(args, "--skill-name", "azure-cost");
+      expectArg(args, "--skill-version", "1.2.3");
     },
   );
 
-  it("does not report a non-Azure MCP invocation", () => {
-    const payload = fixture("cursor-mcp-invocation.json");
-    payload.mcp_server_name = "github";
+  it.each(clientCases)("reports a $id Azure MCP invocation", client => {
+    const args = runHook(shell, client, fixture(`${client.id}-mcp-invocation.json`));
 
-    expect(runHook(shell, payload)).toEqual([]);
+    expectArg(args, "--client-name", client.expectedClientName);
+    expectArg(args, "--event-type", "tool_invocation");
+    expectArg(args, "--session-id", SESSION_ID);
+    expectArg(args, "--tool-name", client.expectedToolName);
   });
 
-  it("does not report MCP calls from the generic postToolUse event", () => {
-    const payload = fixture("cursor-mcp-invocation.json");
-    payload.hook_event_name = "postToolUse";
-    payload.tool_name = "MCP:get_azure_bestpractices";
-    delete payload.mcp_server_name;
+  it.each(clientCases)("does not report a non-Azure $id tool invocation", client => {
+    expect(runHook(shell, client, makeNonAzurePayload(client))).toEqual([]);
+  });
 
-    expect(runHook(shell, payload)).toEqual([]);
+  it("strips Claude's skill namespace for direct skill calls", () => {
+    const claude = clientCases.find(client => client.id === "claude")!;
+    const payload = {
+      tool_name: "Skill",
+      tool_input: { skill: "azure:azure-cost" },
+      tool_use_id: "tool-skill",
+      session_id: SESSION_ID,
+      hook_event_name: "PostToolUse",
+    };
+
+    const args = runHook(shell, claude, payload);
+
+    expectArg(args, "--client-name", "claude-code");
+    expectArg(args, "--skill-name", "azure-cost");
+    expectArg(args, "--skill-version", "1.2.3");
+  });
+
+  it("distinguishes VS Code Insiders", () => {
+    const vscode = clientCases.find(client => client.id === "vscode")!;
+    const payload = fixture("vscode-mcp-invocation.json");
+    payload.transcript_path =
+      "C:\\Users\\test\\AppData\\Roaming\\Code - Insiders\\User\\workspaceStorage\\transcript.json";
+
+    const args = runHook(shell, vscode, payload);
+
+    expectArg(args, "--client-name", "Visual Studio Code - Insiders");
+  });
+
+  it("does not report paths owned by another installed copy", () => {
+    const payload = fixture("cursor-skill-read.json");
+    setPayloadPath(shell, cursorCase, payload, join(FOREIGN_CURSOR_ROOT, "skills", "azure-cost", "SKILL.md"));
+
+    expect(runHook(shell, cursorCase, payload)).toEqual([]);
   });
 });
 
@@ -346,7 +493,7 @@ describe.skipIf(!powerShell)("PowerShell telemetry input encoding", () => {
       unicode_probe: "café \u2603",
     };
 
-    const args = runHook(powerShell!, payload, prefix);
+    const args = runHook(powerShell!, cursorCase, payload, prefix);
 
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--tool-name", "get_azure_bestpractices");
