@@ -40,16 +40,13 @@
 
 #### Details
 
-[details]
+[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
 
 #### Guidance
 
 [Repeat each item.]
 
-- [guidance title]([guidance link])
-- [View guidance]([URL])
-
-[First form: objects. Second: strings. Number only multiple strings.]
+- [guidance title](<[guidance link]>)
 
 ## Passed checks
 
@@ -70,16 +67,13 @@
 
 #### Details
 
-[details]
+[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
 
 #### Guidance
 
 [Repeat each item.]
 
-- [guidance title]([guidance link])
-- [View guidance]([URL])
-
-[First form: objects. Second: strings. Number only multiple strings.]
+- [guidance title](<[guidance link]>)
 
 ## Inconclusive
 
@@ -100,16 +94,13 @@
 
 #### Details
 
-[details]
+[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
 
 #### Guidance
 
 [Repeat each item.]
 
-- [guidance title]([guidance link])
-- [View guidance]([URL])
-
-[First form: objects. Second: strings. Number only multiple strings.]
+- [guidance title](<[guidance link]>)
 
 ## Not applicable
 
@@ -130,16 +121,13 @@
 
 #### Details
 
-[details]
+[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
 
 #### Guidance
 
 [Repeat each item.]
 
-- [guidance title]([guidance link])
-- [View guidance]([URL])
-
-[First form: objects. Second: strings. Number only multiple strings.]
+- [guidance title](<[guidance link]>)
 
 ## Limitation
 
