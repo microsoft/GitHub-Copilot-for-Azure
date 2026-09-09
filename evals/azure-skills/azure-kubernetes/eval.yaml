@@ -457,6 +457,50 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── readiness-supported-journey (development regression, added with spec v1.2.0) ──
+  # Learn documents only Automatic (managed system pool) -> Standard (--sku base) in place;
+  # Standard -> Automatic in place is "coming soon". The skill must not script an in-place switch.
+  - name: "Regression: no in-place Standard to Automatic SKU switch"
+    prompt: "My AKS Standard cluster passed the AKS Automatic readiness check. Give me the exact az command to switch this existing cluster to the Automatic SKU in place."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      case_id: readiness-supported-journey
+      source_url: "https://learn.microsoft.com/azure/aks/automatic/aks-automatic-sku-migration"
+    graders:
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)new (AKS Automatic |Automatic )?cluster|not (yet )?(documented|supported|available)|coming soon"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)az aks update[^\\n]*--sku automatic"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  # ── readiness-conditional-rules (development regression, added with spec v1.2.0) ──
+  # Learn marks privilege escalation / run-as-non-root / volume types as "PSS Restricted Only".
+  - name: "Regression: Restricted-only rules are not default Automatic blockers"
+    prompt: "For AKS Automatic readiness, is a Deployment that does not set allowPrivilegeEscalation: false and runs as root going to be denied by default? Answer from the Deployment Safeguards baseline, without touching any cluster."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+      case_id: readiness-conditional-rules
+      source_url: "https://learn.microsoft.com/azure/aks/deployment-safeguards"
+    graders:
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)Restricted"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ────────────────────────────────────────────────────────────────────────────
   # azure-kubernetes-app-deploy stimuli
   # Sub-skill: deploy an existing app to an existing AKS cluster.
