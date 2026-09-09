@@ -74,6 +74,12 @@
 #                             root of the skill folder the reference lives in
 #    - Example: azure-validate/references/recipes/azd/README.md
 #
+# === Plugin Identity ===
+#
+# Every tracked event includes the plugin name and version read from the
+# installed copy's .plugin/plugin.json manifest. This lets the existing
+# telemetry receiver attribute sibling-plugin events without adding fields.
+#
 # === Reference File Detection ===
 #
 # When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
@@ -515,6 +521,7 @@ fi
 # === STEP 3: Publish event via azmcp ===
 
 if [ "$shouldTrack" = true ]; then
+    pluginName=$(get_plugin_name)
     pluginVersion=$(get_plugin_version)
 
     # Build MCP command arguments (using array for proper quoting)
@@ -528,6 +535,7 @@ if [ "$shouldTrack" = true ]; then
     [ -n "$sessionId" ] && mcpArgs+=("--session-id" "$sessionId")
     [ -n "$skillName" ] && mcpArgs+=("--skill-name" "$skillName")
     [ -n "$skillVersion" ] && mcpArgs+=("--skill-version" "$skillVersion")
+    [ -n "$pluginName" ] && mcpArgs+=("--plugin-name" "$pluginName")
     [ -n "$pluginVersion" ] && mcpArgs+=("--plugin-version" "$pluginVersion")
     [ -n "$azureToolName" ] && mcpArgs+=("--tool-name" "$azureToolName")
     # Convert forward slashes to backslashes for azmcp allowlist compatibility

@@ -380,6 +380,7 @@ describe("Cursor telemetry dispatcher", () => {
     expectArg(args, "--event-type", "tool_invocation");
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--tool-name", "MCP:get_azure_bestpractices");
+    expectArg(args, "--plugin-name", "azure");
   });
 });
 
@@ -399,6 +400,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-name", "azure-cost");
     expectArg(args, "--skill-version", "1.2.3");
+    expectArg(args, "--plugin-name", "azure");
     expectArg(args, "--plugin-version", "9.8.7");
     expect(args).not.toContain("--file-reference");
   });
@@ -416,6 +418,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--event-type", "reference_file_read");
     expectArg(args, "--session-id", SESSION_ID);
     expectArg(args, "--skill-version", "1.2.3");
+    expectArg(args, "--plugin-name", "azure");
     expectArg(args, "--plugin-version", "9.8.7");
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
     expect(args).not.toContain("--skill-name");
@@ -477,6 +480,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
       expectArg(args, "--event-type", "skill_invocation");
       expectArg(args, "--skill-name", "aks-troubleshooting");
       expectArg(args, "--skill-version", "5.6.7");
+      expectArg(args, "--plugin-name", "aks-skills");
       expectArg(args, "--plugin-version", "2.3.4");
     }
   });
@@ -493,6 +497,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--event-type", "reference_file_read");
     expectArg(args, "--skill-version", "5.6.7");
+    expectArg(args, "--plugin-name", "aks-skills");
     expectArg(args, "--plugin-version", "2.3.4");
     expectArg(
       args,
@@ -519,6 +524,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--event-type", "skill_invocation");
     expectArg(args, "--skill-name", "aks-troubleshooting");
     expectArg(args, "--skill-version", "5.6.7");
+    expectArg(args, "--plugin-name", "aks-skills");
     expectArg(args, "--plugin-version", "2.3.4");
   });
 
@@ -536,6 +542,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
     expectArg(azureArgs, "--skill-name", "azure-cost");
     expectArg(azureArgs, "--skill-version", "1.2.3");
+    expectArg(azureArgs, "--plugin-name", "azure");
     expectArg(azureArgs, "--plugin-version", "9.8.7");
     expect(
       runHook(shell, payload, { hooksDir: aksCursorInstall.hooksDir }),
@@ -606,12 +613,14 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(azureArgs, "--event-type", "tool_invocation");
     expectArg(azureArgs, "--session-id", SESSION_ID);
     expectArg(azureArgs, "--tool-name", "MCP:get_azure_bestpractices");
+    expectArg(azureArgs, "--plugin-name", "azure");
     expectArg(azureArgs, "--plugin-version", "9.8.7");
 
     const kustoArgs = runHook(shell, payload, {
       hooksDir: kustoCursorInstall.hooksDir,
     });
     expectArg(kustoArgs, "--tool-name", "MCP:get_azure_bestpractices");
+    expectArg(kustoArgs, "--plugin-name", "azure-kusto-graph-skills");
     expectArg(kustoArgs, "--plugin-version", "8.7.6");
 
     expect(
