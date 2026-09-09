@@ -54,31 +54,28 @@ Process discovered agents in their deterministic order. For each agent, use only
 ### Step 4: Generate Reports for Each Agent
 
 1. Read the [report schema](references/report-schema.json) and [report template](references/report-template.md).
-2. Reserve one batch-unique UTC `reportId` in `YYYYMMDDTHHMMSSZ` format for every agent that reached report generation. If two reports would use the same second, assign the next unused second and use that assigned timestamp consistently for `reportId` and `generatedAt`. This prevents collisions when services share an agent root and gives every report Canvas a unique stable ID.
-3. For each agent, build the JSON report from its completed rule results. Include every active rule exactly once, set `target.serviceName` to that `azure.yaml` service name, set `target.agentRoot` to that hosted-agent root, set `markdownPath` to `.foundry/results/validation-<reportId>.md`, and follow the report schema.
-4. Build that agent's Markdown report from the same results and follow the report template. Derive status counts from the results; omit zero-count summary rows and detailed sections; group results in this display order: Feedbacks (`fail`), Passed checks (`pass`), Inconclusive (`inconclusive`), Not applicable (`skipped`). Keep its meaning consistent with the JSON report.
-5. Write one report pair under each hosted-agent root:
+2. Resolve the report directory:
+   - If the caller provides `outputPath`, use an absolute path as supplied or resolve a relative path from the supplied input-code root. Use this one directory for every report in the batch. Create it when it does not exist. If it cannot be created or is not a writable directory, stop report generation and report the error.
+   - Otherwise, use `<agent-root>/.foundry/results` for each agent and create it when it does not exist.
+3. Reserve one batch-unique UTC `reportId` in `YYYYMMDDTHHMMSSZ` format for every agent that reached report generation. If two reports would use the same second, assign the next unused second and use that assigned timestamp consistently for `reportId` and `generatedAt`. This prevents collisions when services share an agent root or use one custom output directory and gives every report Canvas a unique stable ID.
+4. For each agent, build the JSON report from its completed rule results. Include every active rule exactly once, set `target.serviceName` to that `azure.yaml` service name, and set `target.agentRoot` to that hosted-agent root. When `outputPath` is absent, set `markdownPath` to `.foundry/results/validation-<reportId>.md`; when `outputPath` is present, set `markdownPath` to the resolved absolute path of `<outputPath>/validation-<reportId>.md`. Follow the report schema.
+5. Build that agent's Markdown report from the same results and follow the report template. Derive status counts from the results; omit zero-count summary rows and detailed sections; group results in this display order: Feedbacks (`fail`), Passed checks (`pass`), Inconclusive (`inconclusive`), Not applicable (`skipped`). Keep its meaning consistent with the JSON report.
+6. Write one report pair to the resolved report directory. Without `outputPath`, the paths are:
 
    ```text
-   .foundry/results/validation-<reportId>.json
-   .foundry/results/validation-<reportId>.md
+   <agent-root>/.foundry/results/validation-<reportId>.json
+   <agent-root>/.foundry/results/validation-<reportId>.md
    ```
 
-6. If report generation fails for one agent, record the error and continue with the remaining agents. Do not remove report pairs already written successfully.
+   With `outputPath`, the paths are:
 
-### Step 5: Return the Batch Summary
+   ```text
+   <resolved-output-path>/validation-<reportId>.json
+   <resolved-output-path>/validation-<reportId>.md
+   ```
 
-Return a summary that includes:
-
-- One batch outcome: `completed` when every discovered agent produced reports, `partial` when at least one agent produced reports and at least one was skipped or failed, or `no-reports` when hosted agents were discovered but none produced reports. Preserve the earlier `invalid-input` and `no-hosted-agents` outcomes when discovery stops in Step 1.
-- The supplied input-code root.
-- Every discovered hosted agent with its service name, `azure.yaml` path, and agent root.
-- The JSON and Markdown report paths for every successful agent, relative to its agent root.
-- Every skipped or failed agent and its reason.
-- Every manifest parse error and rejected hosted-agent service discovered during classification.
-- An explicit statement when no reports were generated.
-
-This workflow returns discovery and report results only. The caller decides whether to prompt, open UI, or assign CI/CD status.
+7. If report generation fails for one agent while using the default per-agent directory, record the error and continue with the remaining agents. Do not remove report pairs already written successfully.
+8. Present every generated JSON and Markdown report path, plus skipped or failed agents and their reasons. State explicitly when no reports were generated. The caller decides whether to open UI or assign CI/CD status.
 
 ## Behavioral Rules
 
