@@ -26,7 +26,7 @@ public-canary evals trace to PR #102 source commit
 
 ## Publication and installation
 
-> Pending catalog registration: the [publish workflow](../../.github/workflows/publish-to-marketplace.yml)
+> Pending catalog registration: the [publish workflow](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/publish-to-marketplace.yml)
 > syncs the built
 > `aks-skills` payload into downstream `.github/plugins/aks-skills` directories,
 > but it does not add marketplace catalog entries. Those entries require
@@ -81,7 +81,7 @@ they validate event construction, plugin ownership, and opt-out behavior, but
 do not prove that the telemetry receiver accepts or records an event.
 
 After this plugin merges, the existing
-[Azure MCP allowlist sync workflow](../../.github/workflows/sync-to-azure-mcp.yml)
+[Azure MCP allowlist sync workflow](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/sync-to-azure-mcp.yml)
 generates skill-name and reference-path allowlists from every
 `plugins/*/skills` directory. AKS ingestion is not ready until the resulting
 `microsoft/mcp` synchronization PR is merged by an MCP maintainer and a
