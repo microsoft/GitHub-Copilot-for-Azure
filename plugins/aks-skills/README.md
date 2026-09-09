@@ -26,7 +26,8 @@ public-canary evals trace to PR #102 source commit
 
 ## Publication and installation
 
-> Pending catalog registration: the publish workflow syncs the built
+> Pending catalog registration: the [publish workflow](../../.github/workflows/publish-to-marketplace.yml)
+> syncs the built
 > `aks-skills` payload into downstream `.github/plugins/aks-skills` directories,
 > but it does not add marketplace catalog entries. Those entries require
 > separate maintainer-approved manual changes. The install name below becomes
@@ -35,6 +36,21 @@ public-canary evals trace to PR #102 source commit
 The publish workflow copies the built sibling payload to
 `.github/plugins/aks-skills` in the downstream repositories. It does not
 replicate AKS skills into the `microsoft/azure-skills` repository root.
+
+The current catalogs do not contain an AKS entry. At publication time,
+maintainers must add `aks-skills` manually to all four downstream catalogs:
+
+- `microsoft/azure-skills/.claude-plugin/marketplace.json`
+- `microsoft/azure-skills/.cursor-plugin/marketplace.json`
+- `microsoft/skills/.claude-plugin/marketplace.json`
+- `microsoft/skills/.github/plugin/marketplace.json`
+
+Each entry uses the name `aks-skills`, source
+`./.github/plugins/aks-skills`, and the description from the built plugin
+manifest. Merge the payload synchronization before, or atomically with, a
+catalog entry so the catalog never points to a missing payload. No separate
+portal or application registration step is part of this repository's
+publication procedure.
 
 - **Claude Code / compatible CLI (after catalog registration):** add the
   `microsoft/azure-skills` marketplace, then install
@@ -56,6 +72,22 @@ replicate AKS skills into the `microsoft/azure-skills` repository root.
 - **Folder consumers:** use
   `microsoft/skills/.github/plugins/aks-skills/skills/` at an exact published
   commit SHA.
+
+## Telemetry readiness
+
+The bundled hooks use the existing Azure MCP plugin-telemetry command and honor
+`AZURE_MCP_COLLECT_TELEMETRY=false`. Local hook tests replace `npx` with a mock;
+they validate event construction, plugin ownership, and opt-out behavior, but
+do not prove that the telemetry receiver accepts or records an event.
+
+After this plugin merges, the existing
+[Azure MCP allowlist sync workflow](../../.github/workflows/sync-to-azure-mcp.yml)
+generates skill-name and reference-path allowlists from every
+`plugins/*/skills` directory. AKS ingestion is not ready until the resulting
+`microsoft/mcp` synchronization PR is merged by an MCP maintainer and a
+containing `@azure/mcp` package is released. Until then, the receiver's
+Azure/Kusto-only allowlists reject AKS names and paths. Installing the plugin or
+passing local hook tests must not be reported as completed telemetry ingestion.
 
 Merging the GHCP source change alone is not an archive signal. Before retiring
 the source, verify that both payload and catalog entries are published, run a
