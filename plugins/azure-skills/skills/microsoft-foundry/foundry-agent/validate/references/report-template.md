@@ -23,10 +23,10 @@ Render a two-column table with one row for each status whose count is greater th
 
 Create detailed status sections using the same order and display mapping as the summary. Omit a status section when its count is zero. Within each status, order results by level (`error`, `warning`, `recommendation`) while preserving original rule order for results with the same level.
 
-Use a second-level heading containing the display label and count, for example:
+Use a second-level heading containing only the display label. Do not append the count, for example:
 
 ```markdown
-## Feedbacks (3)
+## Feedbacks
 ```
 
 Render each result in that section as:
