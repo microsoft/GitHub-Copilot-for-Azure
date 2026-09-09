@@ -21,11 +21,99 @@
 | Inconclusive | [inconclusive count] |
 | Not applicable | [not applicable count] |
 
-[Repeat nonzero statuses in order. Use labels without counts.]
-
 ## Feedbacks
 
-[Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
+[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
+
+### [rule title]
+
+- **Rule:** `[rule ID]`
+- **Level:** [error | warning | recommendation]
+
+#### Source code
+
+[Omit if absent. Preserve lines. Plain text only.]
+
+```text
+[sourceCode]
+```
+
+#### Details
+
+[details]
+
+#### Guidance
+
+[Repeat each item.]
+
+- [guidance title]([guidance link])
+- [View guidance]([URL])
+
+[First form: objects. Second: strings. Number only multiple strings.]
+
+## Passed checks
+
+[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
+
+### [rule title]
+
+- **Rule:** `[rule ID]`
+- **Level:** [error | warning | recommendation]
+
+#### Source code
+
+[Omit if absent. Preserve lines. Plain text only.]
+
+```text
+[sourceCode]
+```
+
+#### Details
+
+[details]
+
+#### Guidance
+
+[Repeat each item.]
+
+- [guidance title]([guidance link])
+- [View guidance]([URL])
+
+[First form: objects. Second: strings. Number only multiple strings.]
+
+## Inconclusive
+
+[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
+
+### [rule title]
+
+- **Rule:** `[rule ID]`
+- **Level:** [error | warning | recommendation]
+
+#### Source code
+
+[Omit if absent. Preserve lines. Plain text only.]
+
+```text
+[sourceCode]
+```
+
+#### Details
+
+[details]
+
+#### Guidance
+
+[Repeat each item.]
+
+- [guidance title]([guidance link])
+- [View guidance]([URL])
+
+[First form: objects. Second: strings. Number only multiple strings.]
+
+## Not applicable
+
+[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
 
 ### [rule title]
 
