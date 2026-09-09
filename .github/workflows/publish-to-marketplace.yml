@@ -77,7 +77,22 @@ jobs:
             rsync --archive --delete --verbose "$child_dir/" "$target_dir"
           done
 
-      # 5. Commit changes and create a PR
+      # 5. Update marketplace.json
+      - name: Update marketplace.json
+        id: update-marketplace
+        working-directory: source-repo/scripts
+        env:
+          # microsoft/skills had already set repository and homepage of azure plugins to github-copilot-for-azure.
+          TARGET_REPOSITORY: https://github.com/microsoft/github-copilot-for-azure
+          TARGET_HOMEPAGE: https://github.com/microsoft/github-copilot-for-azure
+        run: >-
+          npm run plugin:sync-marketplace --
+          "$GITHUB_WORKSPACE/source-repo/output"
+          "$GITHUB_WORKSPACE/target-repo"
+          "$TARGET_REPOSITORY"
+          "$TARGET_HOMEPAGE"
+
+      # 6. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
@@ -221,7 +236,22 @@ jobs:
             fi
           done
 
-      # 7. Commit changes and create a PR
+      # 7. Update marketplace.json
+      - name: Update marketplace.json
+        id: update-marketplace
+        working-directory: source-repo/scripts
+        env:
+          # microsoft/azure-skills had already set homepage to azure-skills.
+          TARGET_REPOSITORY: https://github.com/microsoft/github-copilot-for-azure
+          TARGET_HOMEPAGE: https://github.com/microsoft/azure-skills
+        run: >-
+          npm run plugin:sync-marketplace --
+          "$GITHUB_WORKSPACE/source-repo/output"
+          "$GITHUB_WORKSPACE/target-repo"
+          "$TARGET_REPOSITORY"
+          "$TARGET_HOMEPAGE"
+
+      # 8. Commit changes and create a PR
       - name: Commit and push changes
         id: commit
         working-directory: target-repo
