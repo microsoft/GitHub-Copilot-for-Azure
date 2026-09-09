@@ -99,6 +99,11 @@
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
 #     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     aks-skills:
+#     - .copilot/installed-plugins/<catalog-name>/aks-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/aks-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/aks-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/aks-skills/skills/...
 #     shared:
 #     - .agents/skills/...
 #
@@ -199,6 +204,43 @@ get_plugin_version() {
             if (typeof manifest.version === "string" && manifest.version) process.stdout.write(manifest.version);
         } catch { }
     ' "$pluginManifestPath" 2>/dev/null
+}
+
+# Extract the plugin name from the top-level .plugin/plugin.json manifest.
+# Prints nothing if the file or expected JSON value cannot be read.
+get_plugin_name() {
+    local pluginManifestPath
+    pluginManifestPath="$(dirname "$SKILLS_DIR")/.plugin/plugin.json"
+    [ -f "$pluginManifestPath" ] || return 0
+    node -e '
+        try {
+            const manifest = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            if (typeof manifest.name === "string" && manifest.name) process.stdout.write(manifest.name);
+        } catch { }
+    ' "$pluginManifestPath" 2>/dev/null
+}
+
+# Return true only when this hook's plugin configures the named MCP server.
+# The shared hook is copied into every plugin, so an empty .mcp.json must not
+# report MCP calls owned by a co-installed plugin.
+owns_mcp_server() {
+    local serverName="$1"
+    local mcpConfigPath
+    mcpConfigPath="$(dirname "$SKILLS_DIR")/.mcp.json"
+    [ -f "$mcpConfigPath" ] || return 1
+    node -e '
+        try {
+            const config = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            process.exit(
+                config.mcpServers
+                && Object.prototype.hasOwnProperty.call(config.mcpServers, process.argv[2])
+                    ? 0
+                    : 1
+            );
+        } catch {
+            process.exit(1);
+        }
+    ' "$mcpConfigPath" "$serverName" 2>/dev/null
 }
 
 # === JSON Parsing Functions (using sed - portable across platforms) ===
@@ -350,6 +392,12 @@ is_azure_skills_path() {
     [[ "$p" == *".cursor/plugins/cache/"*"/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/"* ]] && return 0
 
+    # --- aks-skills plugin ---
+    [[ "$p" == *".copilot/installed-plugins/"*"/aks-skills/skills/"* ]] && return 0
+    [[ "$p" == *".claude/plugins/cache/azure-skills/aks-skills/"*"/skills/"* ]] && return 0
+    [[ "$p" == *".cursor/plugins/cache/"*"/aks-skills/"*"/skills/"* ]] && return 0
+    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/aks-skills/skills/"* ]] && return 0
+
     # --- shared across all plugins ---
     [[ "$p" == *".agents/skills/"* ]] && return 0
 
@@ -372,10 +420,18 @@ filePath=""
 
 # Check for skill invocation via 'skill'/'Skill' tool
 if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
-    skillName=$(extract_toolargs_field "$rawInput" "skill")
-    # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
-    # Strip it to get the actual skill name for the allowlist
-    skillName="${skillName#azure:}"
+    requestedSkillName=$(extract_toolargs_field "$rawInput" "skill")
+    pluginName=$(get_plugin_name)
+    skillName="$requestedSkillName"
+    # Native plugin invocations use "<plugin-name>:<skill-name>". Strip only
+    # this hook copy's own namespace so another plugin cannot claim the call.
+    if [[ "$requestedSkillName" == *:* ]]; then
+        if [ -n "$pluginName" ] && [[ "$requestedSkillName" == "$pluginName:"* ]]; then
+            skillName="${requestedSkillName#*:}"
+        else
+            skillName=""
+        fi
+    fi
     skillMdPath="$SKILLS_DIR/$skillName/SKILL.md"
     if [ -n "$skillName" ] && [ -f "$skillMdPath" ] && is_owned_skill_path "$skillMdPath"; then
         eventType="skill_invocation"
@@ -411,7 +467,7 @@ fi
 # Cursor:       afterMCPExecution with mcp_server_name "azure"; normalize the
 #               raw tool name to the postToolUse form (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
-if [ -n "$toolName" ]; then
+if [ -n "$toolName" ] && owns_mcp_server "azure"; then
     if [ "$clientName" = "cursor" ] && [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
         azureToolName="$toolName"
         [[ "$azureToolName" == MCP:* ]] || azureToolName="MCP:$azureToolName"

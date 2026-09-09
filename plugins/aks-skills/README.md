@@ -26,14 +26,17 @@ public-canary evals trace to PR #102 source commit
 
 ## Publication and installation
 
-> Pending publication: the `aks-skills` catalog entries become available only
-> after this repository's generated downstream sync PRs are reviewed and merged.
+> Pending catalog registration: the publish workflow syncs the built
+> `aks-skills` payload into downstream `.github/plugins/aks-skills` directories,
+> but it does not add marketplace catalog entries. Those entries require
+> separate maintainer-approved manual changes. The install name below becomes
+> available only after the corresponding catalog entry is merged.
 
 The publish workflow copies the built sibling payload to
 `.github/plugins/aks-skills` in the downstream repositories. It does not
 replicate AKS skills into the `microsoft/azure-skills` repository root.
 
-- **Claude Code / compatible CLI:** add the
+- **Claude Code / compatible CLI (after catalog registration):** add the
   `microsoft/azure-skills` marketplace, then install
   `aks-skills@azure-skills`.
 - **SRE Agent:** add the `microsoft/azure-skills` marketplace, select the

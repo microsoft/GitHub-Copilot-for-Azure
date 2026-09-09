@@ -17,6 +17,19 @@ CONTEXT="${3:-${AKS_KUBE_CONTEXT:-}}"
   exit 2
 }
 
+command -v az >/dev/null 2>&1 || {
+  echo "Azure CLI (az) is required. Install it from https://aka.ms/installazurecli and retry." >&2
+  exit 2
+}
+command -v kubectl >/dev/null 2>&1 || {
+  echo "kubectl is required. Install it from https://kubernetes.io/docs/tasks/tools/ and retry." >&2
+  exit 2
+}
+command -v jq >/dev/null 2>&1 || {
+  echo "jq is required. Install it from https://jqlang.github.io/jq/download/ and retry." >&2
+  exit 2
+}
+
 if [ -n "${AKS_SUBSCRIPTION_ID:-}" ]; then
   aks_json=$(az aks show --subscription "$AKS_SUBSCRIPTION_ID" \
     -g "$RG" -n "$CLUSTER" -o json 2>/dev/null)

@@ -20,6 +20,20 @@ LOG_LINES=50
   echo "invalid artifacts directory" >&2
   exit 2
 }
+
+command -v az >/dev/null 2>&1 || {
+  echo "Azure CLI (az) is required. Install it from https://aka.ms/installazurecli and retry." >&2
+  exit 2
+}
+command -v kubectl >/dev/null 2>&1 || {
+  echo "kubectl is required. Install it from https://kubernetes.io/docs/tasks/tools/ and retry." >&2
+  exit 2
+}
+command -v jq >/dev/null 2>&1 || {
+  echo "jq is required. Install it from https://jqlang.github.io/jq/download/ and retry." >&2
+  exit 2
+}
+
 mkdir -p "$ARTIFACTS"
 chmod 700 "$ARTIFACTS"
 
