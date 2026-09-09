@@ -58,14 +58,38 @@
             "minLength": 1,
             "description": "Status rationale, repository evidence, and remediation or missing-evidence guidance."
           },
+          "sourceCode": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Plain-text source locations relevant to the result. Multiple locations are separated by newlines."
+          },
           "guidance": {
             "type": "array",
             "minItems": 1,
             "items": {
-              "type": "string",
-              "format": "uri"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "uri"
+                },
+                {
+                  "type": "object",
+                  "required": ["title", "link"],
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "link": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
             },
-            "description": "Guidance URLs copied from the rule."
+            "description": "Guidance links copied from the rule as URL strings or titled link objects."
           }
         },
         "additionalProperties": false

@@ -2,26 +2,58 @@
 
 | Field | Value |
 |---|---|
-| Report ID | `YYYYMMDDTHHMMSSZ` |
-| Service | service name |
-| Hosted Agent Root | hosted-agent root directory |
+| Hosted agent | service name |
+| Agent root | hosted-agent root directory |
 | Generated | ISO date-time |
+| Report ID | `YYYYMMDDTHHMMSSZ` |
 
-## Rule results
+Follow the metadata table with exactly one summary sentence:
 
-Create one subsection for each active rule:
+- When one or more results have status `fail`: `Your agent code was evaluated against Microsoft Foundry best practices for security, reliability, observability, and deployment readiness.`
+- Otherwise, when one or more results have status `inconclusive`: `No feedbacks were found. Review inconclusive checks before deployment.`
+- Otherwise, when one or more results have status `pass`: `All evaluated checks passed. This agent is ready for deployment review.`
+- Otherwise: `No feedbacks were found. All checks were not applicable.`
 
-### `RULE-ID`: Rule title
+## Summary
 
+Render a two-column table with one row for each status whose count is greater than zero. Omit zero-count statuses. Use this order and display mapping:
+
+1. `fail` -> Feedbacks
+2. `pass` -> Passed checks
+3. `inconclusive` -> Inconclusive
+4. `skipped` -> Not applicable
+
+| Status | Count |
+|---|---:|
+| Feedbacks | failure count |
+| Passed checks | pass count |
+
+Create detailed status sections using the same order and display mapping as the summary. Omit a status section when its count is zero. Within each status, order results by level (`error`, `warning`, `recommendation`) while preserving original rule order for results with the same level.
+
+Use a second-level heading containing the display label and count, for example:
+
+```markdown
+## Feedbacks (3)
+```
+
+Render each result in that section as:
+
+### Rule title
+
+- **Rule:** `RULE-ID`
 - **Level:** error / warning / recommendation
-- **Status:** pass / fail / inconclusive / skipped
-- **Guidance:** Render every URL from the rule's `guidance` array as a Markdown link.
+
+#### Source code
+
+When `sourceCode` is present, render it as a plain-text fenced code block. Preserve every line exactly and do not turn locations into links. Omit this section when `sourceCode` is absent.
 
 #### Details
 
 Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.
 
-Use `inconclusive` when evidence cannot establish either `pass` or `fail`.
+#### Guidance
+
+Render every entry from the rule's `guidance` array as a Markdown list item. For a `{ title, link }` object, use `title` as the link text and `link` as the destination. For a URL string, use `View guidance` as the link text, adding a numeric suffix when more than one URL string needs a fallback label.
 
 ## Limitation
 
