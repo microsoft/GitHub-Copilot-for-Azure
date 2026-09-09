@@ -1,6 +1,6 @@
 # Upgrade Operations
 
-Use this guide when node image rotation, Kubernetes version changes, or node-pool upgrade settings appear to be the failure domain.
+Use this guide when node image rotation, Kubernetes version changes, or node-pool upgrade settings appear to be the failure domain. If the complaint is that an *automatic* upgrade or node image update did not happen, use [references/auto-upgrade-evidence.md](references/auto-upgrade-evidence.md) first.
 
 ## Stuck or Failed Upgrade: Mandatory Read-only Evidence
 

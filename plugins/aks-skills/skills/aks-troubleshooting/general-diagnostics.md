@@ -21,6 +21,8 @@ AKS_SUBSCRIPTION_ID=<subscription-id> \
 
 The script stops before Kubernetes API reads unless the kube context endpoint matches the named AKS resource. Continue with affected-namespace pod detail and logs only after the cluster, node, `kube-system`, and event evidence is complete.
 
+Kubernetes events are short-lived. For anything older than the event retention window, control-plane history exists only if a diagnostic setting routed it to `AKSAudit`/`AKSAuditAdmin`/`AKSControlPlane` (or legacy `AzureDiagnostics`); see [references/structured-input-modes.md](references/structured-input-modes.md). Missing history is unavailable evidence, not proof that nothing happened.
+
 ---
 
 ## AKS CLI Tools

@@ -201,11 +201,13 @@ Common causes: kubelet identity missing role, federated credential subject misma
 ```bash
 az aks nodepool list -g <rg> --cluster-name <cluster> -o table
 az aks nodepool show -g <rg> --cluster-name <cluster> -n <pool> --query provisioningState
+# Failed state: read the operation record first (aks-preview extension), then the activity log
+az aks operation show-latest -g <rg> -n <cluster> --nodepool-name <pool>
 az monitor activity-log list -g <rg> --offset 1h --query "[?status.value=='Failed']"
 az vm list-usage -l <region> -o table | grep -i "Total Regional vCPUs\|Standard.*Family"
 ```
 
-Common causes: vCPU quota exhaustion, subnet IP exhaustion, VM SKU not available in region, system pool min-count prevents scale-down.
+Common causes: vCPU quota exhaustion, subnet IP exhaustion, VM SKU not available in region, system pool min-count prevents scale-down. For `provisioningState: Failed`, follow the Failed-state branch in [node-issues.md](../node-issues.md).
 
 ---
 
@@ -229,12 +231,15 @@ Common causes: cluster stopped (power state not Running), private cluster access
 
 ```bash
 az aks show -g <rg> -n <cluster> --query provisioningState -o tsv
+az aks operation show-latest -g <rg> -n <cluster>   # aks-preview extension; exact failing operation and error
 az monitor activity-log list -g <rg> --offset 1h --query "[?status.value=='Failed']" -o table
 # Check egress connectivity from node's perspective
 az aks show -g <rg> -n <cluster> --query "networkProfile.outboundType" -o tsv
 az network nsg list -g MC_<rg>_<cluster>_<region> -o table
 az network nsg rule list -g MC_<rg>_<cluster>_<region> --nsg-name <nsg> -o table
 ```
+
+Read the operation record or activity-log error before interpreting node evidence; an exact catalog error code in the record routes to `aks-known-issues`. If the `aks-preview` extension is unavailable and cannot be installed, record the activity log as the only (degraded) operation evidence. See the Failed-state branch in [node-issues.md](../node-issues.md).
 
 Common causes:
 - **Error 50 (OutboundConnFailVMExtensionError):** Node can't reach required endpoints. NSG or firewall blocks outbound to MCR, management.azure.com, or packages.microsoft.com.
@@ -254,6 +259,20 @@ az monitor activity-log list -g <rg> --offset 2h --query "[?contains(operationNa
 ```
 
 Common causes: PDB blocking pod eviction (especially system pods), max-surge set to 1 (default — slow for large clusters), node with pods that have `terminationGracePeriodSeconds` > 30m, insufficient subnet IPs to surge new nodes.
+
+---
+
+## Auto-Upgrade Didn't Happen / Node Image Stale
+
+```bash
+az aks show -g <rg> -n <cluster> --query '{sku:sku, autoUpgradeProfile:autoUpgradeProfile, kubernetesVersion:kubernetesVersion}'
+az aks nodepool list -g <rg> --cluster-name <cluster> --query '[].{name:name, powerState:powerState.code, orchestratorVersion:orchestratorVersion, nodeImageVersion:nodeImageVersion}' -o table
+az aks maintenanceconfiguration list -g <rg> --cluster-name <cluster> -o table
+az aks nodepool get-upgrades -g <rg> --cluster-name <cluster> -n <pool>
+az aks operation show-latest -g <rg> -n <cluster>   # aks-preview extension
+```
+
+Common causes: `upgradeChannel: none`/`nodeOSUpgradeChannel` not set (a maintenance window schedules upgrades but does not enable them), channel change made less than 24 hours ago, maintenance is best effort and the window has not yet been used, stopped node pools receive the upgrade only when started, cluster already on the channel's target version. Decision block: [auto-upgrade-evidence.md](auto-upgrade-evidence.md).
 
 ---
 

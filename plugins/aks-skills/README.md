@@ -41,6 +41,15 @@ replicate AKS skills into the `microsoft/azure-skills` repository root.
   Updates are explicit. If an integration requires an MCP connector, configure
   it separately; installing skills does not provision credentials or connectors.
   Do not use the repository-root Azure plugin URL as an AKS sibling install.
+
+  **Stable identifiers.** The skill ids `aks-troubleshooting`,
+  `aks-known-issues`, `aks-network-capture`, and `aks-gpu-inference` and the
+  `references/` paths inside each skill are stable identifiers that consumers
+  may pin to. Renaming or removing one goes through a deprecation note in this
+  README and the plugin `CHANGELOG.md` before the old id or path disappears. The
+  published git commit SHA is the immutable identity of an installation; the
+  per-skill and plugin `version.json` versions are semantic, stamped by NBGV at
+  build time from commit history, and never hand-edited.
 - **Folder consumers:** use
   `microsoft/skills/.github/plugins/aks-skills/skills/` at an exact published
   commit SHA.

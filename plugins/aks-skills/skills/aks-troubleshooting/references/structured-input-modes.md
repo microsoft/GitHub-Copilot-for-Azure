@@ -44,6 +44,45 @@ Expected output:
 - likely failure domain
 - next evidence-collection steps
 
+## Control-Plane Resource Logs (Historical Evidence)
+
+Use when the question is about *past* API-server, scheduler, controller-manager,
+or cluster-autoscaler behavior. AKS control-plane logs are Azure Monitor
+resource logs: they exist only if a diagnostic setting routed the category to a
+destination before the incident window. Missing setting or history means the
+evidence is **unavailable**, never "no events occurred."
+
+Category → table mapping (resource-specific mode; legacy Azure diagnostics mode
+lands everything in `AzureDiagnostics` with a `Category` column):
+
+| Diagnostic category | Resource-specific table | Content |
+|---|---|---|
+| `kube-audit` | `AKSAudit` | All API-server audit events, including `get`/`list` |
+| `kube-audit-admin` | `AKSAuditAdmin` | Audit events excluding `get`/`list` (modifying requests) |
+| `kube-apiserver`, `kube-scheduler`, `kube-controller-manager`, `cluster-autoscaler`, `cloud-controller-manager`, `guard`, `csi-*-controller` | `AKSControlPlane` (filter on `Category`) | Component logs |
+
+```bash
+az monitor diagnostic-settings list --resource <cluster-resource-id> -o table
+az monitor diagnostic-settings show --resource <cluster-resource-id> -n <setting> --query '{logs:logs,workspace:workspaceId,resourceSpecific:logAnalyticsDestinationType}'
+```
+
+Decision rules:
+
+- Query `AKSControlPlane | where Category == "kube-scheduler"` (or the matching
+  `AzureDiagnostics` filter) only after the setting shows that category enabled
+  for the incident window and the workspace is readable to the user.
+- If the category is disabled, the setting is absent, or the workspace retention
+  does not cover the window, report the evidence as unavailable and name the
+  exact category and table that would have answered it.
+- Enabling or changing a diagnostic setting is a mutation with ingestion and
+  retention cost (`kube-audit` in particular); propose it for owner approval,
+  never apply it as part of diagnosis.
+
+Sources: [Monitor AKS — resource logs](https://learn.microsoft.com/azure/aks/monitor-aks#resource-logs),
+[AKS monitoring data reference](https://learn.microsoft.com/azure/aks/monitor-aks-reference),
+[AKSAudit](https://learn.microsoft.com/azure/azure-monitor/reference/tables/aksaudit),
+[AKSControlPlane](https://learn.microsoft.com/azure/azure-monitor/reference/tables/akscontrolplane).
+
 ## Learn Grounding Fallback
 
 If the first troubleshooting pass is incomplete, search Microsoft Learn using:

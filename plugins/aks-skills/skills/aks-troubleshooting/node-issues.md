@@ -97,9 +97,45 @@ Do not infer that a `Ready=False` condition requires a kubelet restart or node r
 
 ---
 
+## Cluster or Node Pool in `provisioningState: Failed`
+
+Read the failed operation record before reasoning from node or VMSS symptoms:
+
+```bash
+# 1. Operation record first. `az aks operation` is part of the aks-preview extension;
+#    the CLI auto-installs it on first use, which may be disallowed on managed hosts.
+az aks operation show-latest -g <rg> -n <cluster>
+az aks operation show-latest -g <rg> -n <cluster> --nodepool-name <pool>
+az aks operation show -g <rg> -n <cluster> --operation-id <id>
+
+# 2. Activity-log fallback (documented Learn path; the only evidence if aks-preview is unavailable)
+az monitor activity-log list -g <rg> --resource <cluster-resource-id> --status Failed --offset 24h -o table
+
+# 3. Pool, scale set, and instance provisioning state
+az aks nodepool show -g <rg> --cluster-name <cluster> -n <pool> --query '{state:provisioningState,power:powerState.code}'
+az vmss show -g <node-rg> -n <vmss> --query provisioningState -o tsv
+az vmss list-instances -g <node-rg> -n <vmss> --query '[].{id:instanceId,state:provisioningState}' -o table
+```
+
+- The operation record carries the exact error code and message for the failing
+  operation. An exact catalog error (for example the `VMExtensionError_*` codes)
+  routes to `aks-known-issues`; quota errors follow the quota section below.
+- If the extension is missing and cannot be installed, say so and label the
+  activity-log entry as degraded evidence: it identifies the failed operation
+  and status message but is not the full operation record.
+- `az resource update --ids <cluster-id>` (reconcile) and `az vmss update-instances`
+  are mutations. Report them as the documented recovery path only after the
+  cause is understood and the owner approves.
+
 ## Node Pool Not Scaling
 
 ### Cluster Autoscaler Not Triggering
+
+Confirm the precondition first: the cluster autoscaler scales up on **Pending
+(unschedulable) pods**, not on node CPU/memory pressure and not on HPA state. If
+the HPA is at `maxReplicas` and every pod is `Running`, the ceiling is the HPA,
+not the autoscaler; if `kubectl get pods -A --field-selector=status.phase=Pending`
+is empty, there is nothing for the autoscaler to act on.
 
 **Diagnostics:**
 
@@ -113,10 +149,25 @@ kubectl get configmap cluster-autoscaler-status -n kube-system -o yaml
 # Verify autoscaler is enabled on the node pool
 az aks nodepool show -g <rg> --cluster-name <cluster> -n <nodepool> \
   --query "{autoscaleEnabled:enableAutoScaling, min:minCount, max:maxCount}"
+
+# HPA ceiling versus autoscaler: are any pods actually unschedulable?
+kubectl get hpa -A
+kubectl get pods -A --field-selector=status.phase=Pending
 ```
+
+**Platform metrics (Azure Monitor, `Microsoft.ContainerService/managedClusters`):**
+`cluster_autoscaler_unschedulable_pods_count` (pods the autoscaler must place),
+`cluster_autoscaler_cluster_safe_to_autoscale` (0 means the autoscaler is
+refusing to act, for example after failed scale-ups or too many unready nodes),
+`cluster_autoscaler_scale_down_in_cooldown`, `cluster_autoscaler_unneeded_nodes_count`,
+and `cluster_autoscaler_failed_scale_ups_total`. Read them through an Azure
+Monitor capability or `az monitor metrics list --resource <cluster-id> --metric <name>`;
+Pending pods with `safe_to_autoscale=0` is the autoscaler branch, Running pods
+with the HPA at max is not.
 
 **Autoscaler won't scale up - common reasons:**
 
+- No Pending pods: the HPA is at `maxReplicas`, or requests fit on existing nodes
 - Node pool already at `maxCount`
 - VM quota exhausted (confirm the binding tier and operation evidence below)
 - Pod `nodeAffinity` is unsatisfiable on any new node template
@@ -183,4 +234,5 @@ Use `snapshot_process` (timeout 5) to list all processes on the node. For node-w
 ## Detailed Node And Cluster Guides
 
 - [Upgrade Operations](upgrade-operations.md) for node images, Kubernetes version upgrades, surge settings, and PDB-related drain blockers.
+- [Auto-upgrade evidence](references/auto-upgrade-evidence.md) when an expected automatic cluster or node OS upgrade did not happen.
 - [Spot And Zone Issues](spot-and-zone-issues.md) for spot evictions, tolerations, zone skew, and zonal storage or service behavior.
