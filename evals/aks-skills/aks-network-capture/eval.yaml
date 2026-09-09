@@ -1,9 +1,9 @@
-# Baseline model pair (recorded 2026-09): solver `model` and LLM judge are both
-# claude-sonnet-4.6 (the judge falls back to vally's default, also
-# claude-sonnet-4.6, when `judge_model` is omitted). Judge/solver separation is
-# pending an owner decision on which alternate model the CI runner exposes;
-# override per run with `--judge-model <id>` or `EVAL_JUDGE_MODEL`. Changing
-# either model is a new baseline: record it here, do not compare across.
+# Separate-family pair: solver claude-sonnet-4.6; judge gpt-5.6-sol-fast.
+# Both appear in the OSS account's runtime catalog; destination-token execution
+# has not been established. Never silently fall back to the solver as judge.
+# Use --judge-model to override this default and record the resulting pair.
+# A different pair is a new baseline, not comparable to earlier scores.
+# These public-source development regressions are not independent holdouts.
 name: aks-network-capture-agentic-eval
 description: |
   Routing evaluation for aks-network-capture. Explicit packet-capture intent
@@ -18,6 +18,7 @@ defaults:
   timeout: "5m"
   executor: integration-test-agent-runner
   model: claude-sonnet-4.6
+  judge_model: gpt-5.6-sol-fast
 
 scoring: {}
 
