@@ -16,10 +16,10 @@
 
 | Status | Count |
 |---|---:|
-| Feedbacks | [count] |
-| Passed checks | [count] |
-| Inconclusive | [count] |
-| Not applicable | [count] |
+| Feedbacks | [failed count] |
+| Passed checks | [passed count] |
+| Inconclusive | [inconclusive count] |
+| Not applicable | [not applicable count] |
 
 [Repeat nonzero statuses in order. Use labels without counts.]
 
