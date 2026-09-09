@@ -126,6 +126,11 @@ const crossClientInstallationCases = clientCases.map((client, index) => ({
   client,
   installation: clientCases[(index + 1) % clientCases.length],
 }));
+const LOCAL_PLUGIN_ROOT = join(TEST_DIR, "local-plugin");
+const localPluginCase: ClientCase = {
+  ...cursorCase,
+  pluginRoot: LOCAL_PLUGIN_ROOT,
+};
 const DISPATCHER_PATH = join(cursorCase.pluginRoot, "hooks", "scripts", "track-telemetry.js");
 const FOREIGN_CURSOR_ROOT = join(
   TEST_DIR,
@@ -203,6 +208,7 @@ function runHook(
   client: ClientCase,
   payload: Record<string, unknown>,
   inputPrefix = "",
+  extraEnv: NodeJS.ProcessEnv = {},
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
@@ -218,6 +224,7 @@ function runHook(
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
       COPILOT_CLI: "",
       TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
+      ...extraEnv,
     },
   });
 
@@ -292,6 +299,8 @@ beforeAll(() => {
     createPluginCache(client.pluginRoot);
     cpSync(SOURCE_HOOKS_DIR, join(client.pluginRoot, "hooks", "scripts"), { recursive: true });
   }
+  createPluginCache(LOCAL_PLUGIN_ROOT);
+  cpSync(SOURCE_HOOKS_DIR, join(LOCAL_PLUGIN_ROOT, "hooks", "scripts"), { recursive: true });
   createPluginCache(FOREIGN_CURSOR_ROOT);
 
   writeFileSync(
@@ -478,6 +487,28 @@ describe.each(shells)("Telemetry hook ($name)", shell => {
     setPayloadPath(shell, cursorCase, payload, join(FOREIGN_CURSOR_ROOT, "skills", "azure-cost", "SKILL.md"));
 
     expect(runHook(shell, cursorCase, payload)).toEqual([]);
+  });
+
+  it.each([
+    { name: "forward slash", separator: "/" },
+    { name: "backslash", separator: "\\" },
+  ])("recognizes a local plugin root ending with a $name", ({ separator }) => {
+    const payload = fixture("cursor-skill-read.json");
+    setPayloadPath(
+      shell,
+      cursorCase,
+      payload,
+      join(LOCAL_PLUGIN_ROOT, "skills", "azure-cost", "SKILL.md"),
+    );
+    const configuredRoot = `${pathForShell(shell, LOCAL_PLUGIN_ROOT)}${separator}`;
+
+    const args = runHook(shell, localPluginCase, payload, "", {
+      AZURE_SKILLS_PLUGIN_ROOT: configuredRoot,
+    });
+
+    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--event-type", "skill_invocation");
+    expectArg(args, "--skill-name", "azure-cost");
   });
 });
 

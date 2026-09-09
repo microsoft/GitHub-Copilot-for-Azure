@@ -176,7 +176,7 @@ function Test-OwnedSkillPath {
 function Test-LocalSkillPath {
     param([string]$NormalizedPath)
     if (-not $NormalizedPath -or -not $env:AZURE_SKILLS_PLUGIN_ROOT) { return $false }
-    $localRoot = Normalize-PathLower $env:AZURE_SKILLS_PLUGIN_ROOT
+    $localRoot = (Normalize-PathLower $env:AZURE_SKILLS_PLUGIN_ROOT).TrimEnd('/')
     return $NormalizedPath.Contains("$localRoot/skills/")
 }
 

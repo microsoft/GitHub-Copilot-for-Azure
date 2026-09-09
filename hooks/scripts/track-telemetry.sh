@@ -169,7 +169,7 @@ is_local_skill_path() {
     local normalized_path="$1"
     [ -n "$AZURE_SKILLS_PLUGIN_ROOT" ] || return 1
     local local_root
-    local_root=$(normalize_path_lower "$AZURE_SKILLS_PLUGIN_ROOT")
+    local_root=$(normalize_path_lower "$AZURE_SKILLS_PLUGIN_ROOT" | sed 's|/*$||')
     [[ "$normalized_path" == *"${local_root}/skills/"* ]]
 }
 
