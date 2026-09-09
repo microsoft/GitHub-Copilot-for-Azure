@@ -3,6 +3,9 @@
  */
 
 import { jest } from "@jest/globals";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { truncateSkills, loadSkill, getFormattedSkillDescription, getSkillsForTest, SkillRef } from "../skill-loader.js";
 
 describe("truncateSkills", () => {
@@ -32,6 +35,10 @@ describe("truncateSkills", () => {
 });
 
 describe("getSkillsForTest", () => {
+  afterEach(() => {
+    delete process.env.VALLY_PLUGIN_OUTPUT_ROOT;
+  });
+
   test("gets skills from the required plugin", async () => {
     const requiredSkills: SkillRef[] = [{ pluginDirname: "azure-skills", name: "azure-ai" }];
     const result = await getSkillsForTest(requiredSkills);
@@ -45,5 +52,25 @@ describe("getSkillsForTest", () => {
     const result = await getSkillsForTest(requiredSkills, includeSkills);
     expect(result.skillsLoaded.some(ref => ref.name === "azure-ai" && ref.pluginDirname === "azure-skills")).toBe(true);
     expect(result.skillsLoaded.some(ref => ref.name === "azure-prepare" && ref.pluginDirname === "azure-skills")).toBe(false);
+  });
+
+  test("loads skills from an overridden plugin output root", async () => {
+    const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), "skill-output-"));
+    const skillDirectory = path.join(outputRoot, "example-plugin", "skills", "example-skill");
+    fs.mkdirSync(skillDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(skillDirectory, "SKILL.md"),
+      "---\nname: example-skill\ndescription: Example\n---\n\nCandidate content.\n",
+      "utf8"
+    );
+    process.env.VALLY_PLUGIN_OUTPUT_ROOT = outputRoot;
+
+    const skill = await loadSkill({
+      pluginDirname: "example-plugin",
+      name: "example-skill",
+    });
+
+    expect(skill.content).toBe("Candidate content.");
+    expect(skill.path).toBe(skillDirectory);
   });
 });

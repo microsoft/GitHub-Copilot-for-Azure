@@ -17,7 +17,8 @@
     "compare:run": "npx tsx ./comparison/run-compare.ts",
     "compare:collect": "npx tsx ./comparison/collect-artifacts.ts",
     "compare:report": "npx tsx ./comparison/generate-report.ts",
-    "experiment:run": "npx tsx ./comparison/run-experiment.ts"
+    "experiment:run": "npx tsx ./comparison/run-experiment.ts",
+    "skill-improvement": "npx tsx ./skill-improvement/cli.ts"
   },
   "engines": {
     "node": "^22.14.0 || >=24"
@@ -43,7 +44,8 @@
     "ts-jest": "^29.4.9",
     "ts-node": "^10.9.2",
     "typescript": "6.0.2",
-    "typescript-eslint": "^8.67.0"
+    "typescript-eslint": "^8.67.0",
+    "yaml": "^2.9.0"
   },
   "jest-junit": {
     "outputDirectory": "./reports",

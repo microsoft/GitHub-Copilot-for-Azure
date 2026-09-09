@@ -1,0 +1,246 @@
+name: Skill Improvement
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+  copilot-requests: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-spec:
+        description: "Repository-relative skill improvement run specification"
+        required: true
+        type: string
+        default: "tests/skill-improvement/specs/azure-kusto.yaml"
+      baseline-ref:
+        description: "Optional baseline branch, tag, or commit; defaults to the workflow branch"
+        required: false
+        type: string
+        default: ""
+      create-draft-pr:
+        description: "Create a draft PR when a candidate passes every acceptance rule"
+        required: false
+        type: boolean
+        default: false
+      pr-base:
+        description: "Base branch for an optional draft PR"
+        required: false
+        type: string
+        default: "main"
+
+concurrency:
+  group: skill-improvement-${{ inputs.run-spec }}-${{ inputs.baseline-ref }}
+  cancel-in-progress: false
+
+jobs:
+  improve:
+    name: Improve skill
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    environment: cideploytest
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      RUN_OUTPUT: tests/skill-improvement-runs/${{ github.run_id }}
+      BASELINE_REF: ${{ inputs.baseline-ref || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout workflow source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Install azd
+        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
+
+      - name: Log in with Azure
+        shell: pwsh
+        run: |
+          azd auth login `
+            --client-id "$Env:AZURE_CLIENT_ID" `
+            --federated-credential-provider "github" `
+            --tenant-id "$Env:AZURE_TENANT_ID"
+
+      - name: Azure login
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Refresh Azure OIDC token
+        shell: bash
+        run: |
+          while true; do
+            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
+            az login --service-principal \
+              -u "$AZURE_CLIENT_ID" \
+              -t "$AZURE_TENANT_ID" \
+              --federated-token "$token" \
+              --output none
+            sleep 240
+          done &
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: |
+            package-lock.json
+            tests/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd tests
+          npm ci
+
+      - name: Setup Copilot CLI
+        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+        with:
+          token: ${{ github.token }}
+
+      - name: Validate run specification
+        working-directory: tests
+        run: |
+          npm run skill-improvement -- validate \
+            --config "../${{ inputs.run-spec }}"
+
+      - name: Run skill improvement
+        id: run
+        continue-on-error: true
+        working-directory: tests
+        run: |
+          npm run skill-improvement -- execute \
+            --config "../${{ inputs.run-spec }}" \
+            --baseline-ref "${BASELINE_REF}" \
+            --output "../${RUN_OUTPUT}"
+
+      - name: Ensure a report exists
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p "$RUN_OUTPUT"
+          if [[ ! -f "$RUN_OUTPUT/report.md" ]]; then
+            cat > "$RUN_OUTPUT/report.md" <<EOF
+          # Skill improvement run failed
+
+          The workflow failed before the TypeScript engine could create its detailed report.
+
+          - Workflow: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          - Run specification: \`${{ inputs.run-spec }}\`
+          - Baseline ref: \`${{ inputs.baseline-ref }}\`
+          EOF
+          fi
+          if [[ ! -f "$RUN_OUTPUT/issue-summary.md" ]]; then
+            cp "$RUN_OUTPUT/report.md" "$RUN_OUTPUT/issue-summary.md"
+          fi
+
+      - name: Read workflow outputs
+        if: always()
+        id: metadata
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
+
+          const output = process.env.RUN_OUTPUT;
+          const metadataPath = path.join(output, "workflow-outputs.json");
+          const metadata = fs.existsSync(metadataPath)
+            ? JSON.parse(fs.readFileSync(metadataPath, "utf8"))
+            : {
+                accepted: false,
+                issueMode: "always",
+                draftPullRequestMode: "never",
+                skill: "unknown",
+                finalPatchPath: null,
+              };
+          const lines = [
+            `accepted=${metadata.accepted}`,
+            `issue-mode=${metadata.issueMode}`,
+            `draft-pr-mode=${metadata.draftPullRequestMode}`,
+            `skill=${metadata.skill}`,
+            `patch=${metadata.finalPatchPath ?? ""}`,
+          ];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join("\n")}\n`);
+          NODE
+      - name: Upload run artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: skill-improvement-${{ github.run_id }}
+          path: ${{ env.RUN_OUTPUT }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create result issue
+        if: always() && steps.metadata.outputs.issue-mode == 'always'
+        id: issue
+        shell: bash
+        run: |
+          cat >> "$RUN_OUTPUT/issue-summary.md" <<EOF
+
+          Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          EOF
+          issue_url=$(gh issue create \
+            --title "Skill improvement: ${{ steps.metadata.outputs.skill }} (run $GITHUB_RUN_ID)" \
+            --body-file "$RUN_OUTPUT/issue-summary.md")
+          echo "url=$issue_url" >> "$GITHUB_OUTPUT"
+          echo "Result issue: $issue_url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create accepted candidate branch
+        if: >-
+          steps.metadata.outputs.accepted == 'true'
+          && steps.metadata.outputs.draft-pr-mode == 'accepted-candidate-only'
+          && inputs.create-draft-pr
+        id: candidate
+        shell: bash
+        run: |
+          branch="skill-improvement/${{ steps.metadata.outputs.skill }}-${GITHUB_RUN_ID}"
+          git checkout -b "$branch" "$BASELINE_REF"
+          git apply --index "${{ steps.metadata.outputs.patch }}"
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "feat: improve ${{ steps.metadata.outputs.skill }} from evaluations" \
+            -m "Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>"
+          git push origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft pull request
+        if: steps.candidate.outputs.branch != ''
+        id: pr
+        shell: bash
+        run: |
+          pr_url=$(gh pr create \
+            --draft \
+            --base "${{ inputs.pr-base }}" \
+            --head "${{ steps.candidate.outputs.branch }}" \
+            --title "feat: improve ${{ steps.metadata.outputs.skill }} from evaluations" \
+            --body "Automated candidate from skill improvement run $GITHUB_RUN_ID.
+
+          Result issue: ${{ steps.issue.outputs.url }}
+
+          This pull request is intentionally a draft and requires human review.")
+          echo "url=$pr_url" >> "$GITHUB_OUTPUT"
+          echo "Draft pull request: $pr_url" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Link draft pull request from issue
+        if: steps.issue.outputs.url != '' && steps.pr.outputs.url != ''
+        shell: bash
+        run: |
+          issue_number="${{ steps.issue.outputs.url }}"
+          issue_number="${issue_number##*/}"
+          gh issue comment "$issue_number" \
+            --body "Accepted candidate draft pull request: ${{ steps.pr.outputs.url }}"
+
+      - name: Fail when the engine failed
+        if: steps.run.outcome == 'failure'
+        run: exit 1

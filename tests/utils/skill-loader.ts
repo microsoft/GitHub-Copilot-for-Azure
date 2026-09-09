@@ -15,6 +15,12 @@ const __dirname = path.dirname(__filename);
 
 export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
 
+function outputRoot(): string {
+  return process.env.VALLY_PLUGIN_OUTPUT_ROOT
+    ? path.resolve(process.env.VALLY_PLUGIN_OUTPUT_ROOT)
+    : path.resolve(__dirname, "../../output");
+}
+
 export type SkillMetadata = {
   /**
    * The directory name containing the plugin files in the shared plugins directory.
@@ -69,7 +75,9 @@ export type Plugin = {
  */
 export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
   const skillPath = path.join(
-    path.resolve(__dirname, `../../output/${skillRef.pluginDirname}/skills`),
+    outputRoot(),
+    skillRef.pluginDirname,
+    "skills",
     skillRef.name
   );
   const skillFile = path.join(skillPath, "SKILL.md");
@@ -98,7 +106,7 @@ export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
  * @returns SkillRef objects in a given plugin.
  */
 export function listSkills(pluginDirname: string): SkillRef[] {
-  const skillsDir = path.resolve(__dirname, `../../output/${pluginDirname}/skills`);
+  const skillsDir = path.join(outputRoot(), pluginDirname, "skills");
 
   const items = fs.readdirSync(skillsDir, { withFileTypes: true });
   return items
@@ -116,7 +124,7 @@ export function listSkills(pluginDirname: string): SkillRef[] {
 }
 
 export function listPlugins(): Plugin[] {
-  const pluginsDir = path.resolve(__dirname, "../../output/");
+  const pluginsDir = outputRoot();
 
   const items = fs.readdirSync(pluginsDir, { withFileTypes: true });
   return items
@@ -157,7 +165,7 @@ export async function getSkillsForTest(
     });
     const pluginDirnamesList = [...pluginDirnames.values()];
     const skillDirectories = pluginDirnamesList.map(pluginDir => {
-      return path.resolve(__dirname, `../../output/${pluginDir}/skills`)
+      return path.join(outputRoot(), pluginDir, "skills")
     });
 
     // When includeSkills is defined, we load the exact skills present in the list from plugins inferred from required skills.
