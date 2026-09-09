@@ -27,11 +27,12 @@ The caller must supply one resolved input-code root. This workflow does not choo
 
 ### Step 2: Load and Validate Rules
 
-For each agent, select exactly one rules file:
-
-1. If the caller provides `rulesFile`, use an absolute path as supplied or resolve a relative path from the input-code root. Validate it once against [rules-schema.json](references/rules-schema.json). If it is invalid, list all errors and stop without validating agents or writing reports.
-2. Otherwise, use `<agent-root>/foundry/agent-validation-rules.yaml` when it exists, or [default-rules.yaml](references/default-rules.yaml). Validate an agent-local rules file against the schema; if it is invalid, record all errors, skip that agent, and continue without falling back to defaults.
-3. Record the selected path as that agent's `rulesFile`. Step 3 must use only its `rules`.
+1. One agent can use multiple rule files. Select all applicable files:
+   - Use [default-rules.yaml](references/default-rules.yaml).
+   - Use `<agent-root>/foundry/agent-validation-rules.yaml` when it exists.
+   - Use caller-provided `rulesFile` when supplied. Resolve relative paths from the input-code root.
+2. **Custom rules only:** Validate each custom file against [rules-schema.json](references/rules-schema.json). If any file is invalid, list all errors and stop without evaluating rules or writing reports.
+3. Merge rules by `ruleId`. Precedence is `rulesFile` > agent-local rules > default rules. Keep all non-duplicate rules and use the merged rules in Step 3.
 
 ### Step 3: Validate Rules One by One
 
