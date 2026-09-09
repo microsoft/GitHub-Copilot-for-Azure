@@ -114,15 +114,13 @@ Integration tests are authored as vally eval suites. Read `vally-eval` skill to 
    - `version` must be `"0.0.0-placeholder"` — NBGV stamps the real version at build time
    - `description` must be 1-1024 chars, explaining WHAT and WHEN with trigger phrases
 
-4. **Required sections** in SKILL.md: Quick Reference, When to Use This Skill, MCP Tools, Workflow/Steps, Error Handling
+4. **Move detailed content** to `references/` subdirectory — keep SKILL.md under 500 tokens (soft limit)
 
-5. **Move detailed content** to `references/` subdirectory — keep SKILL.md under 500 tokens (soft limit)
+5. **Add to `tests/skills.json`**: Add your skill name to the `skills` array and assign it to an integration test schedule slot
 
-6. **Add to `tests/skills.json`**: Add your skill name to the `skills` array and assign it to an integration test schedule slot
+6. **Scaffold tests**: Copy `tests/_template` to `tests/<your-skill-name>/` and update `SKILL_NAME` in each test file
 
-7. **Scaffold tests**: Copy `tests/_template` to `tests/<your-skill-name>/` and update `SKILL_NAME` in each test file
-
-8. **Validate**:
+7. **Validate**:
    ```bash
    npm run build                              # Verify version stamping works
    cd scripts && npm run frontmatter          # Validate frontmatter
