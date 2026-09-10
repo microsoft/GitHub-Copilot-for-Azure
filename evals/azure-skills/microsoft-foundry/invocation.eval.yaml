@@ -847,6 +847,66 @@ stimuli:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
   # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Loom Experiment Tracking
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Ingest Foundry OpenTelemetry traces"
+    prompt: "Use azd ai loom to upload this OTLP protobuf trace file to my Foundry experiment run"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Query Foundry experiment spans"
+    prompt: "Query detailed spans for a Microsoft Foundry Loom experiment run using a JSON filter"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Send Foundry W&B GraphQL request"
+    prompt: "Use Foundry Loom to send a W&B-compatible GraphQL request to my Microsoft Foundry project"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Prompt Agents
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "Prompt agent creation skill invocation"

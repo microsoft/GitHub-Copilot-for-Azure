@@ -106,6 +106,28 @@ stimuli:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
   # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Loom Experiment Tracking
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Compare Foundry experiment run metrics"
+    prompt: "Use Foundry Loom to compare the loss metric between two Microsoft Foundry experiment runs"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
   # Model Deployment
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "AI model deployment from Foundry catalog"

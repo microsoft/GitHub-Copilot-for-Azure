@@ -209,3 +209,19 @@ stimuli:
         config:
           pattern: "(?i)option|reduce|increase"
       - type: completed
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Loom Response Quality
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Explain Foundry run comparison command"
+    prompt: "What azd ai loom command should I use to compare the loss metric between Foundry experiment runs run-a and run-b?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)azd\\s+ai\\s+loom\\s+run\\s+compare"
+      - type: completed
