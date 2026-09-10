@@ -40,11 +40,6 @@ on:
         required: false
         type: boolean
         default: false
-      evaluation-path:
-        description: "Optional: repo-relative directory containing experimental Vally eval specs"
-        required: false
-        type: string
-        default: ""
       eval-files:
         description: "Optional: comma-separated YAML filenames to run from the skill eval directory"
         required: false
@@ -264,15 +259,11 @@ jobs:
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
-          EVALUATION_PATH: ${{ inputs.evaluation-path }}
           EVAL_FILES: ${{ inputs.eval-files }}
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
           EVAL_ARGS=()
-          if [[ -n "$EVALUATION_PATH" ]]; then
-            EVAL_ARGS+=(--eval-dir "$EVALUATION_PATH")
-          fi
           if [[ -n "$EVAL_FILES" ]]; then
             IFS=',' read -ra FILES <<< "$EVAL_FILES"
             for FILE in "${FILES[@]}"; do
