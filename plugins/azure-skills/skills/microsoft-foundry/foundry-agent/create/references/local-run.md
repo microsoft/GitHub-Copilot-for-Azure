@@ -49,7 +49,11 @@ What this does:
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens no client when `--no-client` is set. Without that flag, azd opens Agent Inspector for the Responses and Invocations protocols, and Microsoft 365 Agents Playground for the Activity protocol.
 
-> **Important:** After starting the agent in the background, check whether localhost:<port> accepts a TCP connection every 2–5 seconds. As soon as the connection succeeds, proceed to the smoke test. If the agent process exits or the startup timeout is reached before a connection succeeds, inspect the server logs and resolve the cause before retrying.
+> **Readiness gate — required before local invocation.**
+> - Start checking TCP connections to `localhost:<port>` immediately after launching the agent in the background; retry failed connections every 2–5 seconds.
+> - **Keep each startup wait at 5 seconds or less**, including sleeps and shell-tool output reads.
+> - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
+> - If the agent process exits or the startup timeout expires before a connection succeeds, inspect the server logs and resolve the cause before retrying.
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
