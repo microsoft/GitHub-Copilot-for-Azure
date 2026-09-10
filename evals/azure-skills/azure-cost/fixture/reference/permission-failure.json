@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-permission-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle a cost permission failure." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri '/subscriptions/00000000-0000-0000-0000-000000000001/providers/Microsoft.CostManagement/query' -Body $query" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "AuthorizationFailed." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The cost query returned AuthorizationFailed for subscription 00000000-0000-0000-0000-000000000001, so I cannot report a trustworthy amount. Ask an administrator to grant Cost Management Reader at that scope, then rerun the same read-only query. I will not invent or reuse an unrelated cost value."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-unavailable-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle unavailable billing data." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $query" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "No rows returned." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Billing data is unavailable for the requested period, so no total or forecast can be supported. Confirm that the subscription is billable, allow for Cost Management ingestion delay, verify the date range and scope, then retry. I will report a number only after the service returns source data."
+    }
+  ]
+}

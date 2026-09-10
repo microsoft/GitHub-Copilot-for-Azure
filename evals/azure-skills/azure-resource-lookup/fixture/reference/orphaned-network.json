@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-orphaned-network-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Find orphaned network resources." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | where type in~ ('microsoft.network/publicipaddresses','microsoft.network/networkinterfaces') | where isempty(properties.ipConfiguration) or isempty(properties.virtualMachine)\"" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." }, { "source_call_id": "query-1", "content": "pip-old public IP ipConfiguration empty; nic-old NIC virtualMachine empty." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Two orphaned network candidates were returned: public IP pip-old has no ipConfiguration, and NIC nic-old has no virtualMachine attachment." }
+  ]
+}

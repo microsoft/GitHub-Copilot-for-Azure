@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-unavailable-utilization-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle missing utilization telemetry." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "metrics-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource $vmId --metric 'Percentage CPU,Available Memory Bytes'" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "metrics-1", "content": "DataUnavailable: no metrics returned for the requested 30-day window." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Utilization telemetry is unavailable for the requested 30-day window, so I cannot support a VM size recommendation or quantified savings. Restore or extend metric retention, collect CPU and memory evidence, then rerun the read-only assessment before proposing any resize."
+    }
+  ]
+}

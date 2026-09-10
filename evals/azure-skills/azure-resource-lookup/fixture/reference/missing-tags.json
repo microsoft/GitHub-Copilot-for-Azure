@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-tags-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Find resources missing policy tags." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "policy-1", "function_name": "powershell", "arguments": { "command": "az policy assignment show --name Corp-Required-Tags" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | where isempty(tags.Owner) or isempty(tags.CostCenter) or isempty(tags.Environment) | project name, missingOwner=isempty(tags.Owner), missingCostCenter=isempty(tags.CostCenter), missingEnvironment=isempty(tags.Environment)\"" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "policy-1", "content": "Required tags: Owner, CostCenter, Environment." },
+          { "source_call_id": "query-1", "content": "vm-api-01 Owner; stlogs CostCenter; app-prod Environment." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Using policy assignment Corp-Required-Tags as the source of truth, vm-api-01 is missing Owner, stlogs is missing CostCenter, and app-prod is missing Environment. The query checked the named required tags against each resource."
+    }
+  ]
+}

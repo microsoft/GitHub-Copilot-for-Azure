@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-forecast-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Forecast Azure spending." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $forecastUri -Body $forecastQuery" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "scope=subscription/Production; sourceActualsEnd=2026-09-02; forecastStart=2026-10-01; forecastEnd=2026-10-31; forecastUsd=14200; forecastLowerUsd=13000; forecastUpperUsd=15500; quarterStart=2026-10-01; quarterEnd=2026-12-31; quarterUsd=40600; next90DaysStart=2026-09-02T00:00:00Z; next90DaysEnd=2026-11-30T23:59:59Z; next90DaysUsd=42600." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Using actuals through September 2, 2026 and assuming current workloads and prices remain unchanged, Azure Cost Management forecasts USD 14,200 from October 1 through October 31, with an uncertainty range of USD 13,000 to USD 15,500. The October 1 through December 31 quarter is USD 40,600. The September 2 through November 30 UTC forecast is USD 42,600."
+    }
+  ]
+}

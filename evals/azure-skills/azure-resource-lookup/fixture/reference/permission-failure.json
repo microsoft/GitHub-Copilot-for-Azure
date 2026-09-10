@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-permission-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle Resource Graph access failure." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | summarize count()\" --subscriptions 00000000-0000-0000-0000-000000000001" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "query-1", "content": "AuthorizationFailed for subscription 00000000-0000-0000-0000-000000000001." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The query returned AuthorizationFailed for subscription 00000000-0000-0000-0000-000000000001, so I cannot report its inventory. Request Reader access at that subscription scope or provide an accessible subscription ID, then rerun the read-only query."
+    }
+  ]
+}

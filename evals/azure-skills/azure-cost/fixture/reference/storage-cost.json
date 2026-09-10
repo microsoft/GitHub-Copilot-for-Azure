@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-storage-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Optimize storage costs." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $storageCostQuery" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "account=starchive; periodStart=2026-08-01; periodEnd=2026-08-31; logs eligible=true lastAccessAgeDays=120 targetTier=cool afterDays=30 archiveAfterDays=180 hotCostUsd=800 projectedCostUsd=180; backups eligible=false lastAccessAgeDays=7; legal-archive eligible=false currentTier=archive; retrievalLatencyHours=15; minimumRetentionDays=180; stdev GRS costUsd=500; stdev LRS costUsd=350; recoveryRequirement=local redundancy acceptable only after owner approval." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Preview: on starchive, logs is eligible for cool after 30 days and archive after 180 days; projected cost drops from USD 800 to USD 180. Backups is not eligible after 7 days, and legal-archive is already archived. Retrieval latency is 15 hours and minimum retention is 180 days. No policy was applied. Account stdev costs USD 500 on GRS and USD 350 on LRS; recovery requirements, owner approval, and rollback are required."
+    }
+  ]
+}

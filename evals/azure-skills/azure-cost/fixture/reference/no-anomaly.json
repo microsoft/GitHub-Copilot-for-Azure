@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-no-anomaly-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Check for subscription cost anomalies." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "cost-management-client", "arguments": { "scope": "subscription/Production", "period": "2026-07-25/2026-08-31", "groupBy": "day" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-cost." }, { "source_call_id": "query-1", "content": "coverageStart=2026-07-25; coverageEnd=2026-08-31; daysEvaluated=31; allDaysEvaluated=true; baselineMethod=preceding7DayAverage; baselineDailyUsd=400; maximumDailyUsd=428; thresholdPercent=20; maximumChangePercent=7." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "No cost anomaly exceeds the 20% threshold. The largest daily change is 7%, from the USD 400 baseline to USD 428, so no contributor is labeled anomalous." }
+  ]
+}

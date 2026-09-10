@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-validate-then-deploy-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Validate and then deploy." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will validate first, then hand off to deployment.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-validate" } },
+        { "tool_call_id": "skill-2", "function_name": "skill", "arguments": { "skill": "azure-deploy" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Validation passed." }, { "source_call_id": "skill-2", "content": "Deployment workflow loaded." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Validation passed before the deployment workflow started." }
+  ]
+}

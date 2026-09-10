@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-subscription-anomaly-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Investigate a subscription cost anomaly." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "cost-management-client", "arguments": { "scope": "subscription/Production", "period": "2026-08-08/2026-08-15", "groupBy": "day,service,resource" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-cost." }, { "source_call_id": "query-1", "content": "dailyRows=[2026-08-08:400,2026-08-09:400,2026-08-10:400,2026-08-11:400,2026-08-12:400,2026-08-13:400,2026-08-14:400,2026-08-15:920]; 2026-08-15 service=Storage resource=stbackup." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "On August 15, 2026, daily cost increased from USD 400 to USD 920, a 130% anomaly. Storage account stbackup is the largest changed contributor." }
+  ]
+}

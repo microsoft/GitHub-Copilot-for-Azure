@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-container-apps-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "List Container Apps." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | where type =~ 'microsoft.app/containerapps'\"" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." }, { "source_call_id": "query-1", "content": "orders-api rg-containers eastus2; jobs-worker rg-containers eastus2." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Two Microsoft.App/containerApps resources were returned: orders-api and jobs-worker in rg-containers, eastus2." }
+  ]
+}

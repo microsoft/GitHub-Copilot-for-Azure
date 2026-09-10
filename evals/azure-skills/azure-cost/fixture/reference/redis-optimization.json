@@ -1,0 +1,30 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-redis-optimization-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Recommend a safe Redis optimization." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $redisCostQuery" } },
+        { "tool_call_id": "metrics-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource /subscriptions/22222222-2222-2222-2222-222222222222/resourceGroups/rg-cache/providers/Microsoft.Cache/Redis/cache-dev --metric 'usedmemorypercentage,connectedclients,serverLoad' --start-time 2026-08-04 --end-time 2026-09-02" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "cache-dev current SKU USD 500 monthly; supported smaller SKU USD 300 monthly." },
+          { "source_call_id": "metrics-1", "content": "usedmemorypercentage p95=28%; connectedclients p95=14; serverLoad p95=19%." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Cache cache-dev costs USD 500 on the current SKU and USD 300 on the smaller supported SKU, saving USD 200 monthly. Before changing it, validate memory capacity, client limits, server load, latency, throughput, availability and SLA requirements, maintenance timing, rollback, and explicit owner approval."
+    }
+  ]
+}

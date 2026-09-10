@@ -1,0 +1,32 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-health-partial-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Report Resource Health with partial visibility." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "health-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"HealthResources | project name, availabilityState\" --subscriptions 33333333-3333-3333-3333-333333333333" } },
+        { "tool_call_id": "health-2", "function_name": "powershell", "arguments": { "command": "az graph query -q \"HealthResources | project name, availabilityState\" --subscriptions 44444444-4444-4444-4444-444444444444" } },
+        { "tool_call_id": "health-3", "function_name": "powershell", "arguments": { "command": "az graph query -q \"HealthResources | project name, availabilityState\" --subscriptions 55555555-5555-5555-5555-555555555555" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "health-1", "content": "33333333-3333-3333-3333-333333333333 vm-api Unknown." },
+          { "source_call_id": "health-2", "content": "44444444-4444-4444-4444-444444444444 storage-01 Available." },
+          { "source_call_id": "health-3", "content": "55555555-5555-5555-5555-555555555555 AuthorizationFailed." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Resource Health is partial: subscription 33333333-3333-3333-3333-333333333333 returned vm-api Unknown, 44444444-4444-4444-4444-444444444444 returned storage-01 Available, and 55555555-5555-5555-5555-555555555555 returned AuthorizationFailed."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-later-page-timeout-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle a later-page timeout." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q $inventoryQuery --subscriptions 22222222-2222-2222-2222-222222222222 --first 1000" } },
+        { "tool_call_id": "query-2", "function_name": "powershell", "arguments": { "command": "az graph query -q $inventoryQuery --subscriptions 22222222-2222-2222-2222-222222222222 --skip-token page-2-token" } },
+        { "tool_call_id": "wait-1", "function_name": "powershell", "arguments": { "command": "Start-Sleep -Seconds 1" } },
+        { "tool_call_id": "query-3", "function_name": "powershell", "arguments": { "command": "az graph query -q $inventoryQuery --subscriptions 22222222-2222-2222-2222-222222222222 --skip-token page-2-token" } },
+        { "tool_call_id": "wait-2", "function_name": "powershell", "arguments": { "command": "Start-Sleep -Seconds 2" } },
+        { "tool_call_id": "query-4", "function_name": "powershell", "arguments": { "command": "az graph query -q $inventoryQuery --subscriptions 22222222-2222-2222-2222-222222222222 --skip-token page-2-token" } },
+        { "tool_call_id": "wait-3", "function_name": "powershell", "arguments": { "command": "Start-Sleep -Seconds 4" } },
+        { "tool_call_id": "query-5", "function_name": "powershell", "arguments": { "command": "az graph query -q $inventoryQuery --subscriptions 22222222-2222-2222-2222-222222222222 --skip-token page-2-token" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "query-1", "content": "First page returned 1000 resources and skipToken=page-2-token." },
+          { "source_call_id": "query-2", "content": "GatewayTimeout on initial continuation attempt." },
+          { "source_call_id": "wait-1", "content": "Waited 1 second before retry 1." },
+          { "source_call_id": "query-3", "content": "GatewayTimeout on retry 1." },
+          { "source_call_id": "wait-2", "content": "Waited 2 seconds before retry 2." },
+          { "source_call_id": "query-4", "content": "GatewayTimeout on retry 2." },
+          { "source_call_id": "wait-3", "content": "Waited 4 seconds before retry 3." },
+          { "source_call_id": "query-5", "content": "GatewayTimeout on retry 3; retryLimitReached=true." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "The first page returned 1,000 resources, but three bounded continuation attempts timed out. The terminal inventory is partial and no final count is available. Report a complete count only after skipToken is null."
+    }
+  ]
+}

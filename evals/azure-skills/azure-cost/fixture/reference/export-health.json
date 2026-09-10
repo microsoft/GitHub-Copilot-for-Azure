@@ -1,0 +1,28 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-export-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Check an existing Cost Management export." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Get -Uri $exportUri" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "Export daily-costs: Active, Daily, ActualCost, destination stexports/cost, last run Succeeded at 2026-09-02T03:00:00Z; coverageScope=subscription/Production; coverageStart=2026-09-01; coverageEnd=2026-09-01; rowCount=1250; columns=Date,ResourceId,ServiceName,Cost,Currency; missingPartitions=0." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Export daily-costs is Active with Daily recurrence and ActualCost data at destination stexports/cost. The latest run Succeeded at 2026-09-02T03:00:00Z. The September 1 partition covers subscription Production with 1,250 rows, required Date, ResourceId, ServiceName, Cost, and Currency columns, and zero missing partitions."
+    }
+  ]
+}

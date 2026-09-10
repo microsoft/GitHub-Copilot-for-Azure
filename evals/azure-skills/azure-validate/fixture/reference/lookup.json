@@ -1,0 +1,18 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-validate-lookup-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "List Azure resources." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Resource inventory workflow selected." }
+  ]
+}

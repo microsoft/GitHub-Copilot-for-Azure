@@ -1,0 +1,32 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "azure-cost-orphaned-unused-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Find orphaned and inactive cost candidates." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use the Azure cost workflow.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-cost" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "Invoke-RestMethod -Method Post -Uri $costQueryUri -Body $candidateCostQuery" } },
+        { "tool_call_id": "disk-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | where id =~ 'orphan-01' | project managedBy, managedByExtended\"" } },
+        { "tool_call_id": "storage-1", "function_name": "powershell", "arguments": { "command": "az monitor metrics list --resource $storageId --metric 'Transactions,Egress' --start-time 2026-06-05 --end-time 2026-09-02" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-cost." },
+          { "source_call_id": "query-1", "content": "orphan-01 USD 440 monthly; stlegacy USD 300 monthly." },
+          { "source_call_id": "disk-1", "content": "orphan-01 managedBy empty; managedByExtended empty." },
+          { "source_call_id": "storage-1", "content": "stlegacy 90-day transactions=0 reads=0 writes=0 egressBytes=0." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Disk orphan-01 has empty managedBy and managedByExtended fields and costs USD 440 monthly. Storage account stlegacy has zero transactions, reads, writes, and egress during the 90-day window and costs USD 300 monthly. Confirm ownership, dependencies, retention, and rollback."
+    }
+  ]
+}

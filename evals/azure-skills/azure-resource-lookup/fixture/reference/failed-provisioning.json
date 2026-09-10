@@ -1,0 +1,19 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-failed-provisioning-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Find failed provisioning states." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q \"Resources | where properties.provisioningState =~ 'Failed'\"" } }
+      ],
+      "observation": { "results": [{ "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." }, { "source_call_id": "query-1", "content": "api-broken Microsoft.Web/sites rg-apps Failed; vm-broken Microsoft.Compute/virtualMachines rg-vms Failed." }] }
+    },
+    { "step_id": 3, "source": "agent", "message": "Two resources have provisioningState Failed: api-broken, Microsoft.Web/sites in rg-apps, and vm-broken, Microsoft.Compute/virtualMachines in rg-vms." }
+  ]
+}

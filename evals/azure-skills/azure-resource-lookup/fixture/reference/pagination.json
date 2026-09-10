@@ -1,0 +1,32 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-pagination-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Return a large inventory." },
+    {
+      "step_id": 2,
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "powershell", "arguments": { "command": "az graph query -q $query --subscriptions 22222222-2222-2222-2222-222222222222 --first 1000" } },
+        { "tool_call_id": "query-2", "function_name": "powershell", "arguments": { "command": "az graph query -q $query --subscriptions 22222222-2222-2222-2222-222222222222 --skip-token page-2-token" } },
+        { "tool_call_id": "query-3", "function_name": "powershell", "arguments": { "command": "az graph query -q $query --subscriptions 22222222-2222-2222-2222-222222222222 --skip-token page-3-token" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "query-1", "content": "{\"count\":1000,\"skipToken\":\"page-2-token\",\"firstId\":\"resource-0001\",\"lastId\":\"resource-1000\",\"idsDigest\":\"sha256-page1\"}" },
+          { "source_call_id": "query-2", "content": "{\"count\":1000,\"skipToken\":\"page-3-token\",\"firstId\":\"resource-1000\",\"lastId\":\"resource-1999\",\"idsDigest\":\"sha256-page2\"}" },
+          { "source_call_id": "query-3", "content": "{\"count\":502,\"skipToken\":null,\"firstId\":\"resource-1999\",\"lastId\":\"resource-2500\",\"idsDigest\":\"sha256-page3\",\"rawIds\":2502,\"uniqueIds\":2500,\"duplicateIds\":\"resource-1000,resource-1999\",\"uniqueIdsDigest\":\"sha256-unique-2500\"}" }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "source": "agent",
+      "message": "Page 1 spans resource-0001 to resource-1000, page 2 spans resource-1000 to resource-1999, and page 3 spans resource-1999 to resource-2500. Pagination stopped when skipToken became null. I removed duplicate IDs resource-1000 and resource-1999 from 2,502 raw IDs, producing 2,500 unique resources with digest sha256-unique-2500."
+    }
+  ]
+}

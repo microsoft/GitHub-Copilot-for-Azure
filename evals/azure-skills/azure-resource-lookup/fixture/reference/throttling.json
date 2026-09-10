@@ -1,0 +1,46 @@
+{
+  "schema_version": "ATIF-v1.6",
+  "session_id": "resource-throttling-reference",
+  "agent": { "name": "reference", "version": "1.0.0" },
+  "steps": [
+    { "step_id": 1, "source": "user", "message": "Handle Resource Graph throttling." },
+    {
+      "step_id": 2,
+      "timestamp": "2026-09-02T16:00:00Z",
+      "source": "agent",
+      "message": "I will use Azure Resource Lookup.",
+      "tool_calls": [
+        { "tool_call_id": "skill-1", "function_name": "skill", "arguments": { "skill": "azure-resource-lookup" } },
+        { "tool_call_id": "query-1", "function_name": "resource-graph-client", "arguments": { "query": "Resources | summarize count()" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "skill-1", "content": "Loaded azure-resource-lookup." },
+          { "source_call_id": "query-1", "content": "HTTP 429 Too Many Requests; Retry-After: 3." }
+        ]
+      }
+    },
+    {
+      "step_id": 3,
+      "timestamp": "2026-09-02T16:00:04Z",
+      "source": "agent",
+      "message": "Waiting for Retry-After plus jitter, then retrying.",
+      "tool_calls": [
+        { "tool_call_id": "wait-1", "function_name": "powershell", "arguments": { "command": "Start-Sleep -Seconds 4" } },
+        { "tool_call_id": "query-2", "function_name": "resource-graph-client", "arguments": { "query": "Resources | summarize count()" } }
+      ],
+      "observation": {
+        "results": [
+          { "source_call_id": "wait-1", "content": "startedAt=2026-09-02T16:00:00Z; completedAt=2026-09-02T16:00:04Z; delaySeconds=4." },
+          { "source_call_id": "query-2", "content": "attempts=2; retryAfterSeconds=3; delaySeconds=4; jitterSeconds=1; succeeded=true; resources=42." }
+        ]
+      }
+    },
+    {
+      "step_id": 4,
+      "timestamp": "2026-09-02T16:00:05Z",
+      "source": "agent",
+      "message": "Azure Resource Graph returned HTTP 429 with Retry-After 3 seconds. I waited 4 seconds including jitter, retried once, and received 42 resources. The retry policy is bounded and stops with an incomplete result if the limit is exhausted."
+    }
+  ]
+}
