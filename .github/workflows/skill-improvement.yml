@@ -58,13 +58,13 @@ jobs:
       - name: Install azd
         uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
 
-      - name: Log in with Azure
-        shell: pwsh
+      - name: Log in with Azure (Federated Credentials)
         run: |
           azd auth login `
             --client-id "$Env:AZURE_CLIENT_ID" `
             --federated-credential-provider "github" `
             --tenant-id "$Env:AZURE_TENANT_ID"
+        shell: pwsh
 
       - name: Azure login
         uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
@@ -73,17 +73,21 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Refresh Azure OIDC token
+      # azure/login only fetches the OIDC access token once.
+      # If a test starts after the token expires, it will fail with authentication errors.
+      # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
+      # Learn more at https://github.com/Azure/login/issues/372
+      # Refresh interval is sub-5-minutes because the OIDC token's lifetime is
+      # 5 minutes. Using 240s avoids seeing invalid tokens due to clock skew.
+      - name: Fetch OIDC token every 240 seconds
         shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
         run: |
           while true; do
-            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
-              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
-            az login --service-principal \
-              -u "$AZURE_CLIENT_ID" \
-              -t "$AZURE_TENANT_ID" \
-              --federated-token "$token" \
-              --output none
+            token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
+            az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
             sleep 240
           done &
 
