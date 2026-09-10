@@ -268,6 +268,23 @@ function writeCandidatePatch(worktree: string, iterationDirectory: string): stri
   return patchPath;
 }
 
+function copyCandidateSkill(
+  worktree: string,
+  iterationDirectory: string,
+  spec: SkillImprovementRunSpec,
+): string {
+  const source = path.join(
+    worktree,
+    "plugins",
+    spec.target.plugin,
+    "skills",
+    spec.target.skill
+  );
+  const destination = path.join(iterationDirectory, "candidate-skill");
+  fs.cpSync(source, destination, { recursive: true });
+  return destination;
+}
+
 function filterComparableTrials(trials: AggregatedTrial[]): AggregatedTrial[] {
   return trials.filter(trial => trial.condition.skill === "enabled");
 }
@@ -383,6 +400,11 @@ export async function executeSkillImprovement(
             iterationReport.candidatePatchPath = writeCandidatePatch(
               worktree,
               iterationDirectory
+            );
+            iterationReport.candidateSkillPath = copyCandidateSkill(
+              worktree,
+              iterationDirectory,
+              spec
             );
           }
           if (iterationReport.validationErrors.length === 0) {

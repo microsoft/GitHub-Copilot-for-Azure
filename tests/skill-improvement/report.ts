@@ -71,6 +71,7 @@ export type IterationReport = {
   iteration: number;
   candidateCommit?: string;
   candidatePatchPath?: string;
+  candidateSkillPath?: string;
   changedFiles: string[];
   validationErrors: string[];
   decision?: AcceptanceDecision;
@@ -510,6 +511,9 @@ export function renderReport(report: SkillImprovementReport): string {
     }
     if (iteration.candidatePatchPath) {
       lines.push(`Candidate patch: \`${iteration.candidatePatchPath}\``, "");
+    }
+    if (iteration.candidateSkillPath) {
+      lines.push(`Candidate skill copy: \`${iteration.candidateSkillPath}\``, "");
     }
     if (iteration.validationErrors.length > 0) {
       lines.push(

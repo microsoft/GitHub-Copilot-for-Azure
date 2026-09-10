@@ -107,3 +107,8 @@ answers.
 The improvement agent receives development failures, judge evidence, answer
 excerpts, and rejection reasons from earlier iterations. Held-out results are
 not included in that failure packet.
+
+Each iteration preserves both `candidate.patch` and a complete
+`candidate-skill/` copy before validation and acceptance. Rejected candidates
+therefore remain available for inspection after the temporary worktree is
+removed.
