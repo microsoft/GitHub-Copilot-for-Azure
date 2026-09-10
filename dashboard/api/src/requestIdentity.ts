@@ -85,7 +85,9 @@ export function validateRequestIdentity(
         }),
     );
 
-    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development") {
+    const hostname = new URL(request.url).hostname.toLowerCase();
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development" && isLocalHost) {
         return undefined;
     }
 
