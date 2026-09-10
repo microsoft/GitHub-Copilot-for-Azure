@@ -49,6 +49,10 @@ type VallyRecord = {
   };
 };
 
+export function isGradedVallyRecord(record: VallyRecord): boolean {
+  return record.gradeResult !== undefined;
+}
+
 export type JudgedTrial = {
   phase: string;
   iteration?: number;
@@ -281,7 +285,7 @@ async function gradeAnswers(
   });
 
   return readJsonl(judgmentFile)
-    .filter(record => record.type === "trial-result" && record.gradeResult)
+    .filter(isGradedVallyRecord)
     .map(record => ({
       phase,
       iteration,

@@ -1,7 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { findVallyRunDirectory } from "../evaluation.ts";
+import {
+  findVallyRunDirectory,
+  isGradedVallyRecord,
+} from "../evaluation.ts";
 
 describe("findVallyRunDirectory", () => {
   test("finds the timestamped directory containing eval results", () => {
@@ -16,5 +19,13 @@ describe("findVallyRunDirectory", () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+
+  test("recognizes Vally 0.14 grade records without a type field", () => {
+    expect(isGradedVallyRecord({
+      status: "success",
+      trajectory: { output: "answer" },
+      gradeResult: { passed: true, score: 1 },
+    })).toBe(true);
   });
 });
