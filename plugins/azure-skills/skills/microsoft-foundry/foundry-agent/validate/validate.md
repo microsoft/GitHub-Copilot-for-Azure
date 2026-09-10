@@ -25,7 +25,8 @@ Define these variables:
 2. `outputPath`
    - Default: `<workspacePath>/.foundry/validation`.
    - If the caller provides `outputPath`, use it instead. Resolve a relative path from `workspacePath`.
-3. `baseReportId`
+   - Create `outputPath` if it does not exist. If it cannot be written, report the error and stop.
+3. `reportId`
    - Default: current UTC timestamp in `YYYYMMDDTHHMMSSZ` format.
    - If the caller provides `reportId`, use it instead.
 
@@ -33,11 +34,11 @@ Define these variables:
 
 1. Search `workspacePath` recursively for `azure.yaml`.
 2. Select every service whose `host` is exactly `azure.ai.agent`. Treat each selected service as one agent.
-3. For each agent:
-   - Set `agentName` from the top-level `name` in its `azure.yaml`.
-   - Convert `agentName` to lowercase, replace non-alphanumeric sequences with `-`, and trim leading or trailing `-`.
-   - If normalized names are duplicated, use `<agentName>-1`, `<agentName>-2`, and so on.
-   - Set `reportId` to `<baseReportId>-<agentName>`.
+3. Sort the selected agents by `azure.yaml` path, then by their key under `services`.
+4. For each agent:
+   - Set `agentName` from the selected `azure.ai.agent` service's `name`. If `name` is absent, use its key under `services`.
+   - Set `normalizedAgentName` by converting `agentName` to lowercase, replacing non-alphanumeric sequences with `-`, and trimming leading or trailing `-`.
+   - If `<normalizedAgentName>` is duplicated, use `<normalizedAgentName>-1`, `<normalizedAgentName>-2`, and so on.
 
 ### Step 3: Prepare Rules
 
@@ -56,13 +57,13 @@ Define these variables:
    Precedence: `customCallerRules` > `customWorkspaceRules` > `defaultRules`.
 
    > **Note:** A workspace or caller-provided custom rule can skip a default rule by using the same `id` and a `when` condition that never applies.
-4. Generate the merged rules according to [rules-schema.json](references/rules-schema.json) and write them to `<outputPath>/agent-validation-<baseReportId>-rules.yaml`.
+4. Generate the merged rules according to [rules-schema.json](references/rules-schema.json) and write them to `<outputPath>/agent-validation-<reportId>-rules.yaml`.
 
 ### Step 4: Validate Rules One by One
 
 For every agent, process the merged rules in order:
 
-1. If `when` does not apply, use `skipped`. Otherwise, perform `checks` using only relevant files for that agent under `workspacePath`.
+1. If `when` does not apply, use `skipped`. Otherwise, perform `checks` using code, configuration, infrastructure, and shared dependencies related to that agent within `workspacePath`.
 2. Exclude environments, dependency caches, build output, generated results, and unrelated files.
 3. Compare the evidence with `statusCriteria`: use `pass` or `fail` only when proved; otherwise use `inconclusive`.
 4. Create one result with:
@@ -75,11 +76,22 @@ For every agent, process the merged rules in order:
 
 ### Step 5: Generate Reports
 
-1. Read the [report schema](references/report-schema.json) and [report template](references/report-template.md).
-2. Build each JSON report from that agent's completed results. Include every merged rule exactly once, use the `reportId` from Step 2, set `target.serviceName` to the original `azure.yaml` service name, set `target.agentRoot` to the service's `project` directory or the `azure.yaml` directory when absent, set `markdownPath` to the Markdown report path, and follow the report schema.
-3. Build the Markdown report from the same results and follow the report template. Keep its meaning consistent with the JSON report.
-4. Write each pair to `<outputPath>/validation-<reportId>.(json|md)`. If writing fails for one agent, record the error and continue with the others.
-5. Present the merged rules path and every generated JSON and Markdown path. The caller decides whether to open UI or assign CI/CD status.
+For each agent, in the order established in Step 2:
+
+1. Set `generatedAt` to the current UTC date-time.
+2. Generate the JSON report from the Step 4 results according to [report-schema.json](references/report-schema.json). Include every merged rule exactly once and set:
+   - `reportId` to `<reportId>-<normalizedAgentName>`.
+   - `generatedAt` to the value above.
+   - `target.serviceName` to the agent's `agentName`.
+   - `target.agentRoot` to the directory containing the agent's `azure.yaml`.
+   - `results` to the agent's completed results.
+   - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`.
+3. Generate the Markdown report from the same data according to [report-template.md](references/report-template.md).
+4. Write the report pair:
+   - `<outputPath>/validation-<reportId>-<normalizedAgentName>.json`
+   - `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`
+5. If either file cannot be written, record the error for that agent and continue. Present a report pair only when both files were written.
+6. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
 
 ## Behavioral Rules
 
