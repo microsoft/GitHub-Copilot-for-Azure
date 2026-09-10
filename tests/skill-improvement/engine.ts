@@ -214,13 +214,16 @@ async function runImprovementAgent(
     "Do not use network tools, do not push commits, and do not create branches.",
     "Make a general improvement that addresses the failure pattern instead of copying prompt wording.",
     "Keep the skill concise and preserve its existing structure and conventions.",
-    "Read the attached development evaluation failure packet before making changes.",
+    "Read .skill-improvement-failure-packet.md before making changes, but do not edit it.",
   ].join("\n");
+  const localFailurePacketPath = path.join(
+    skillDirectory,
+    ".skill-improvement-failure-packet.md"
+  );
+  fs.copyFileSync(failurePacketPath, localFailurePacketPath);
   const args = [
     "-p",
     prompt,
-    "--attachment",
-    failurePacketPath,
     "--model",
     spec.improvementAgent.model,
     "--mode",
@@ -241,12 +244,16 @@ async function runImprovementAgent(
   if (spec.improvementAgent.maxAiCredits !== undefined) {
     args.push("--max-ai-credits", String(spec.improvementAgent.maxAiCredits));
   }
-  await runProcess("copilot", args, {
-    cwd: skillDirectory,
-    stdoutFile: path.join(outputDirectory, `iteration-${iteration}-agent.jsonl`),
-    stderrFile: path.join(outputDirectory, `iteration-${iteration}-agent.stderr.log`),
-    timeoutMs: Math.max(deadline - Date.now(), 1),
-  });
+  try {
+    await runProcess("copilot", args, {
+      cwd: skillDirectory,
+      stdoutFile: path.join(outputDirectory, `iteration-${iteration}-agent.jsonl`),
+      stderrFile: path.join(outputDirectory, `iteration-${iteration}-agent.stderr.log`),
+      timeoutMs: Math.max(deadline - Date.now(), 1),
+    });
+  } finally {
+    fs.rmSync(localFailurePacketPath, { force: true });
+  }
 }
 
 function commitCandidate(worktree: string, iteration: number): string {
