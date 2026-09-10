@@ -120,7 +120,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ### Step 6: Next Steps
 
-> **Next:** Create a hosted agent in the project with the [agent creation workflow](../../foundry-agent/create/quick-start-hosted.md), which covers sample selection, `azd ai agent init`, model configuration, and deployment.
+> **Next — azd Golden Path:** create a hosted agent with [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md).
 >
 > Use [models/deploy-model](../../models/deploy-model/SKILL.md) **only** for out-of-band scenarios: adding models to a Foundry project that is not managed by this azd project, or ad-hoc deployments outside the azd lifecycle.
 
