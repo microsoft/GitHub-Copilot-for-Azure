@@ -5,7 +5,7 @@
 # Global graders (evaluate#125 workaround): has_output, plan_first,
 # security_posture, and nodejs_entry_point are duplicated into every
 # stimulus block below.
-# Global efficiency constraint (max_tool_calls: 40) → constraints.max_turns: 40.
+# Global efficiency constraint (max_tool_calls: 100) → constraints.max_turns: 100.
 #
 # NOTE on nodejs_entry_point: Waza used skip_if_no_match: true to make this
 # informational for non-Node tasks.  Vally has no equivalent — the grader is
@@ -35,10 +35,11 @@ defaults:
 scoring:
   threshold: 0.8
   weights:
-    output-contains: 0.5
-    output-matches: 0.5
-    output-not-matches: 2.0
-    completed: 1.0
+    output-contains: 0.1
+    output-matches: 0.1
+    output-not-matches: 0.4
+    completed: 0.2
+    skill-invocation: 0.2
 
 stimuli:
   # ── cosmosdb-dotnet-bicep-001 ──
@@ -55,7 +56,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -120,7 +121,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -184,7 +185,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -236,7 +237,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -293,7 +294,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -338,7 +339,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -391,7 +392,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -444,7 +445,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -498,7 +499,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains
@@ -551,7 +552,7 @@ stimuli:
       area: output
       skill: azure-prepare
     constraints:
-      max_turns: 40
+      max_turns: 100
     graders:
       # Task: expected.output_contains
       - type: output-contains

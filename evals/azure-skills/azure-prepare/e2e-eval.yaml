@@ -52,7 +52,7 @@ stimuli:
       area: output
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -77,7 +77,7 @@ stimuli:
       area: output
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -111,7 +111,7 @@ stimuli:
       area: output
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -142,7 +142,7 @@ stimuli:
       area: output
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -188,7 +188,7 @@ stimuli:
       cost: llm
       area: output
       skill: azure-prepare
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -230,7 +230,7 @@ stimuli:
       cost: llm
       area: output
       skill: azure-prepare
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -266,7 +266,7 @@ stimuli:
       area: output
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands or invoking the azure-quotas skill. Focus your effort on generating the infrastructure and application files."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -309,7 +309,7 @@ stimuli:
       cost: llm
       area: output
       skill: azure-prepare
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -373,7 +373,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -402,7 +402,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -431,7 +431,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -464,7 +464,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -497,7 +497,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -530,7 +530,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'      
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -563,7 +563,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -596,7 +596,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -629,7 +629,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -658,7 +658,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -687,7 +687,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -720,7 +720,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -749,7 +749,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
@@ -782,7 +782,7 @@ stimuli:
       area: behavior
       skill: azure-prepare
       systemPrompt: '{"mode":"append","content":"Skip the Provisioning Limit Checklist (Step 6 in the plan template). Use reasonable default values for quota/limit columns instead of running az quota commands. Focus on generating the function code and infrastructure files. Use the functions_template_get MCP tool to discover and fetch templates. Do not ask clarifying questions — pick sensible defaults and proceed."}'
-      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":40}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-validate"},{"type":"tool-call-count","count":100}]'
     graders:
       - type: skill-invocation
         config:
