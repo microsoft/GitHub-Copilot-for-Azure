@@ -58,10 +58,6 @@ const defaultCompareOptions: CompareOption[] = [
   { model: "claude-sonnet-5", withSkill: false },
   { model: "claude-opus-4.8", withSkill: true },
   { model: "claude-opus-4.8", withSkill: false },
-  { model: "claude-sonnet-5", withSkill: true },
-  { model: "claude-sonnet-5", withSkill: false },
-  { model: "claude-opus-4.8", withSkill: true },
-  { model: "claude-opus-4.8", withSkill: false },
   // OpenAI
   { model: "gpt-5.6-sol", withSkill: true },
   { model: "gpt-5.6-sol", withSkill: false },
