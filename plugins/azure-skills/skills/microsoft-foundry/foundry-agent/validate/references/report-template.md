@@ -12,17 +12,15 @@
 
 **Results:** [failed count] feedbacks · [passed count] passed · [inconclusive count] inconclusive · [not applicable count] not applicable
 
-[Omit zero-count statuses.]
-
-[Omit this table when there are no failed results.]
+[Omit zero-count statuses. Omit this table when there are no failed results.]
 
 | Level | Rule ID | Failed rule |
 |---|---|---|
 | [error | warning | recommendation] | `[rule ID]` | [rule title] |
 
-## Feedbacks
+[Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`.]
 
-[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
+[In each section, sort levels: error, warning, recommendation. Keep rule order for ties. Repeat this collapsed block for each result.]
 
 <details>
 <summary>[rule title]</summary>
@@ -44,113 +42,11 @@
 
 #### Details
 
-[Explain the result and cite redacted `file:line` evidence when available.]
+[For `fail`, explain the result and cite redacted `file:line` evidence when available. For `pass`, explain the evidence that proves the check passed. For `inconclusive`, explain why evidence cannot prove pass or fail and what is missing. For `skipped`, explain why the rule does not apply.]
 
 #### Recommended action
 
-[State the concrete action required to resolve this finding.]
-
-#### Guidance
-
-[Repeat each item.]
-
-- [guidance title](<[guidance link]>)
-
-</details>
-
-## Passed checks
-
-[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
-
-<details>
-<summary>[rule title]</summary>
-
-- **Rule:** `[rule ID]`
-- **Level:** [error | warning | recommendation]
-
-#### Rationale
-
-[Copy `rationale` from the rule.]
-
-#### Source code
-
-[Omit if absent. Render each array item on its own line. Plain text only.]
-
-```text
-[sourceCode item]
-```
-
-#### Details
-
-[Explain the evidence that proves this check passed.]
-
-#### Guidance
-
-[Repeat each item.]
-
-- [guidance title](<[guidance link]>)
-
-</details>
-
-## Inconclusive
-
-[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
-
-<details>
-<summary>[rule title]</summary>
-
-- **Rule:** `[rule ID]`
-- **Level:** [error | warning | recommendation]
-
-#### Rationale
-
-[Copy `rationale` from the rule.]
-
-#### Source code
-
-[Omit if absent. Render each array item on its own line. Plain text only.]
-
-```text
-[sourceCode item]
-```
-
-#### Details
-
-[Explain why the evidence cannot prove pass or fail and what evidence is missing.]
-
-#### Guidance
-
-[Repeat each item.]
-
-- [guidance title](<[guidance link]>)
-
-</details>
-
-## Not applicable
-
-[Omit if empty. Repeat results. Sort levels: error, warning, recommendation. Keep rule order for ties.]
-
-<details>
-<summary>[rule title]</summary>
-
-- **Rule:** `[rule ID]`
-- **Level:** [error | warning | recommendation]
-
-#### Rationale
-
-[Copy `rationale` from the rule.]
-
-#### Source code
-
-[Omit if absent. Render each array item on its own line. Plain text only.]
-
-```text
-[sourceCode item]
-```
-
-#### Details
-
-[Explain why this rule does not apply.]
+[For `fail` only, state the concrete action required. Otherwise omit.]
 
 #### Guidance
 
