@@ -70,6 +70,7 @@ export type AcceptanceDecision = {
 export type IterationReport = {
   iteration: number;
   candidateCommit?: string;
+  candidatePatchPath?: string;
   changedFiles: string[];
   validationErrors: string[];
   decision?: AcceptanceDecision;
@@ -506,6 +507,9 @@ export function renderReport(report: SkillImprovementReport): string {
     lines.push(`## Iteration ${iteration.iteration}`, "");
     if (iteration.changedFiles.length > 0) {
       lines.push("Changed files:", "", ...iteration.changedFiles.map(file => `- \`${file}\``), "");
+    }
+    if (iteration.candidatePatchPath) {
+      lines.push(`Candidate patch: \`${iteration.candidatePatchPath}\``, "");
     }
     if (iteration.validationErrors.length > 0) {
       lines.push(

@@ -254,6 +254,20 @@ function commitCandidate(worktree: string, iteration: number): string {
   }).trim();
 }
 
+function writeCandidatePatch(worktree: string, iterationDirectory: string): string {
+  execFileSync("git", ["add", "--all"], { cwd: worktree, stdio: "ignore" });
+  const patchPath = path.join(iterationDirectory, "candidate.patch");
+  fs.writeFileSync(
+    patchPath,
+    execFileSync("git", ["diff", "--cached", "--binary", "HEAD"], {
+      cwd: worktree,
+      encoding: "utf8",
+    }),
+    "utf8"
+  );
+  return patchPath;
+}
+
 function filterComparableTrials(trials: AggregatedTrial[]): AggregatedTrial[] {
   return trials.filter(trial => trial.condition.skill === "enabled");
 }
@@ -365,6 +379,11 @@ export async function executeSkillImprovement(
           );
           if (iterationReport.changedFiles.length === 0) {
             iterationReport.validationErrors.push("Improvement agent made no file changes.");
+          } else {
+            iterationReport.candidatePatchPath = writeCandidatePatch(
+              worktree,
+              iterationDirectory
+            );
           }
           if (iterationReport.validationErrors.length === 0) {
             iterationReport.validationErrors.push(
