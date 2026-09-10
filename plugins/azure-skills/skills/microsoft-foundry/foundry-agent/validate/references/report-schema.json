@@ -35,7 +35,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["ruleId", "title", "level", "status", "details", "guidance"],
+        "required": ["ruleId", "title", "level", "rationale", "status", "details", "guidance"],
         "properties": {
           "ruleId": {
             "type": "string",
@@ -49,6 +49,11 @@
             "type": "string",
             "enum": ["error", "warning", "recommendation"]
           },
+          "rationale": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Reason the rule matters, copied from the validation rule."
+          },
           "status": {
             "type": "string",
             "enum": ["pass", "fail", "inconclusive", "skipped"]
@@ -56,7 +61,7 @@
           "details": {
             "type": "string",
             "minLength": 1,
-            "description": "Status rationale and repository evidence."
+            "description": "Result-specific status explanation and repository evidence."
           },
           "recommendedAction": {
             "type": "string",
@@ -71,7 +76,7 @@
               "type": "string",
               "minLength": 1
             },
-            "description": "Plain-text source locations relevant to the result."
+            "description": "Plain-text, workspace-relative source locations relevant to the result."
           },
           "guidance": {
             "type": "array",

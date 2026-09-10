@@ -30,6 +30,10 @@
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
 
+#### Rationale
+
+[Copy `rationale` from the rule.]
+
 #### Source code
 
 [Omit if absent. Render each array item on its own line. Plain text only.]
@@ -64,6 +68,10 @@
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
 
+#### Rationale
+
+[Copy `rationale` from the rule.]
+
 #### Source code
 
 [Omit if absent. Render each array item on its own line. Plain text only.]
@@ -74,7 +82,7 @@
 
 #### Details
 
-[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
+[Explain the evidence that proves this check passed.]
 
 #### Guidance
 
@@ -94,6 +102,10 @@
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
 
+#### Rationale
+
+[Copy `rationale` from the rule.]
+
 #### Source code
 
 [Omit if absent. Render each array item on its own line. Plain text only.]
@@ -104,7 +116,7 @@
 
 #### Details
 
-[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
+[Explain why the evidence cannot prove pass or fail and what evidence is missing.]
 
 #### Guidance
 
@@ -124,6 +136,10 @@
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
 
+#### Rationale
+
+[Copy `rationale` from the rule.]
+
 #### Source code
 
 [Omit if absent. Render each array item on its own line. Plain text only.]
@@ -134,7 +150,7 @@
 
 #### Details
 
-[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
+[Explain why this rule does not apply.]
 
 #### Guidance
 
