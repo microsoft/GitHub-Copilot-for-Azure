@@ -1,4 +1,4 @@
-[Use this Markdown structure. Replace bracketed text.]
+[Use this Markdown structure. Replace bracketed text using only the finalized JSON report reread from disk.]
 
 ````markdown
 # Microsoft Foundry Agent Validation
@@ -48,9 +48,7 @@
 
 #### Guidance
 
-[Repeat each item.]
-
-- [guidance title](<[guidance link]>)
+[Repeat each item as a Markdown link. For an object, use its `title` and `link`. For a legacy URL string, use the unchanged URL as both label and destination.]
 
 </details>
 
