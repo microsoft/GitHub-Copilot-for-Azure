@@ -1,0 +1,65 @@
+{
+  "skill": {
+    "pluginDirname": "azure-skills",
+    "name": "azure-kusto"
+  },
+  "evaluationPath": "evaluations/azure-kusto",
+  "date": "2026-09-01",
+  "results": [
+    {
+      "branch": "skaluvak/kusto-evaluations",
+      "runs": [
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555518135"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555523307"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555527109"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555530405"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555533846"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555538131"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555541501"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555544794"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555547610"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33555551396"
+        }
+      ]
+    }
+  ]
+}

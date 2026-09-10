@@ -1,0 +1,75 @@
+{
+  "skill": {
+    "pluginDirname": "azure-skills",
+    "name": "azure-kusto"
+  },
+  "evaluationPath": "evaluations/azure-kusto",
+  "date": "2026-09-01",
+  "results": [
+    {
+      "branch": "skaluvak/kusto-evaluations",
+      "runs": [
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562106414"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562110406"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562114010"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562117225"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562120606"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562123956"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562126773"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562129998"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": true,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562133566"
+        },
+        {
+          "model": "claude-sonnet-4.6",
+          "withSkill": false,
+          "withAzureMcp": false,
+          "run": "https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/33562136925"
+        }
+      ]
+    }
+  ]
+}

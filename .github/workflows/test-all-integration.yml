@@ -35,16 +35,6 @@ on:
         required: false
         type: boolean
         default: false
-      no-azure-mcp:
-        description: "Optional: whether to run without Azure MCP tools"
-        required: false
-        type: boolean
-        default: false
-      eval-files:
-        description: "Optional: comma-separated YAML filenames to run from the skill eval directory"
-        required: false
-        type: string
-        default: ""
       skill-test-pattern:
         description: "Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests"
         required: false
@@ -255,22 +245,13 @@ jobs:
       - name: Run integration tests (vally) - ${{ matrix.skill }}
         env:
           NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
-          VALLY_RUNNER_DISABLE_AZURE_MCP: ${{ inputs.no-azure-mcp && 'true' || '' }}
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}
-          EVAL_FILES: ${{ inputs.eval-files }}
         run: |
           PLUGIN_DIR="${SKILL%%/*}"
           SKILL_NAME="${SKILL##*/}"
-          EVAL_ARGS=()
-          if [[ -n "$EVAL_FILES" ]]; then
-            IFS=',' read -ra FILES <<< "$EVAL_FILES"
-            for FILE in "${FILES[@]}"; do
-              EVAL_ARGS+=(--eval-file "$FILE")
-            done
-          fi
-          npm run test:vally -- --plugin "$PLUGIN_DIR" --skill "$SKILL_NAME" --workers 2 "${EVAL_ARGS[@]}"
+          npm run test:vally -- --plugin $PLUGIN_DIR --skill $SKILL_NAME --workers 2
 
       - name: Generate skill report
         if: always()
