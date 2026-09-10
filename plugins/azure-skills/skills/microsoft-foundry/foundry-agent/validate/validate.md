@@ -24,6 +24,8 @@ The caller must supply one resolved input-code root. This workflow does not choo
 3. For every hosted-agent service, use its `service.project` directory relative to `azure.yaml`, or the `azure.yaml` directory when `project` is absent. Skip and record any agent root that is unreadable, missing, or outside the input-code root.
 4. If no hosted-agent services were found, return `no-hosted-agents`. If services were found but none has a valid agent root, return `no-reports`. Include all discovery errors with either result.
 5. Validate every valid `(azure.yaml, service)` match independently, including services that share an agent root.
+6. Resolve one output directory for all agents. Use caller-provided `outputPath`, resolving a relative path from the input-code root, or default to `<input-code-root>/.foundry/results`. Create it if needed; if it cannot be written, report the error and stop.
+7. Calculate each agent's `reportId`. Convert its service name to lowercase, replace non-alphanumeric sequences with `-`, and trim leading or trailing `-`. If the caller provides `reportId`, require it to match the report schema and use `<provided-reportId>-<agent-name>`; otherwise use one batch UTC timestamp as `<YYYYMMDDTHHMMSSZ>-<agent-name>`. Use a numeric suffix when needed to keep IDs unique.
 
 ### Step 2: Load and Validate Rules
 
@@ -32,11 +34,12 @@ The caller must supply one resolved input-code root. This workflow does not choo
    - Use `<agent-root>/foundry/agent-validation-rules.yaml` when it exists.
    - Use caller-provided `rulesFile` when supplied. Resolve relative paths from the input-code root.
 2. **Custom rules only:** Validate each custom file against [rules-schema.json](references/rules-schema.json). If any file is invalid, list all errors and stop without evaluating rules or writing reports.
-3. Merge rules by `ruleId`. Precedence is `rulesFile` > agent-local rules > default rules. Keep all non-duplicate rules and use the merged rules in Step 3.
+3. Merge rules by `ruleId`. Precedence is `rulesFile` > agent-local rules > default rules. Keep all non-duplicate rules.
+4. Validate the merged rules against [rules-schema.json](references/rules-schema.json), then write `<output-path>/validation-<reportId>-rules.yaml`. Step 3 must use this merged rules file. If validation or writing fails, report the errors and stop.
 
 ### Step 3: Validate Rules One by One
 
-For every agent, process the selected rules in order:
+For every agent, process its merged rules in order:
 
 1. If `when` does not apply, use `skipped`. Otherwise, perform `checks` using only the agent root, its owning `azure.yaml`, and directly referenced files that remain inside the input-code root.
 2. Exclude environments, dependency caches, build output, generated results, and unrelated files.
@@ -51,12 +54,10 @@ For every agent, process the selected rules in order:
 ### Step 4: Generate Reports
 
 1. Read the [report schema](references/report-schema.json) and [report template](references/report-template.md).
-2. Create one unique UTC `reportId` in `YYYYMMDDTHHMMSSZ` format for each agent and use it for both report filenames.
-3. Build each JSON report from that agent's completed results. Include every active rule exactly once, set `target.serviceName` and `target.agentRoot`, set `markdownPath` to the Markdown report path, and follow the report schema.
-4. Build the Markdown report from the same results and follow the report template. Keep its meaning consistent with the JSON report.
-5. If the caller provides `outputPath`, use an absolute path as supplied or resolve a relative path from the input-code root. Write every report pair to `<outputPath>/validation-<reportId>.(json|md)`. If the directory cannot be created or written, stop report generation and report the error.
-6. Otherwise, write each pair to `<agent-root>/.foundry/results/validation-<reportId>.(json|md)`. If writing fails for one agent, record the error and continue with the others.
-7. Present every generated JSON and Markdown path and every skipped or failed agent with its reason. State when no reports were generated. The caller decides whether to open UI or assign CI/CD status.
+2. Build each JSON report from that agent's completed results. Include every merged rule exactly once, reuse the `reportId` from Step 1, set `target.serviceName` and `target.agentRoot`, set `markdownPath` to the Markdown report path, and follow the report schema.
+3. Build the Markdown report from the same results and follow the report template. Keep its meaning consistent with the JSON report.
+4. Write each pair to `<output-path>/validation-<reportId>.(json|md)`. If writing fails for one agent, record the error and continue with the others.
+5. Present every generated rules, JSON, and Markdown path and every skipped or failed agent with its reason. State when no reports were generated. The caller decides whether to open UI or assign CI/CD status.
 
 ## Behavioral Rules
 

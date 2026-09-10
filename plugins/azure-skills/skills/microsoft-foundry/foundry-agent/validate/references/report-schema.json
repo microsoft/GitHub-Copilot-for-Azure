@@ -12,7 +12,7 @@
   "properties": {
     "reportId": {
       "type": "string",
-      "pattern": "^[0-9]{8}T[0-9]{6}Z$"
+      "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$"
     },
     "generatedAt": {
       "type": "string",
