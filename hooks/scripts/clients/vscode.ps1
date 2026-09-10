@@ -21,7 +21,7 @@ function Get-TelemetryEvent {
 
     $pathToCheck = Get-ToolInputPath $toolInput
     $pathLower = Normalize-PathLower $pathToCheck
-    if ($toolName -eq "read_file" -and $pathToCheck -and
+    if ((Test-FileReadTool $toolName) -and $pathToCheck -and
         (Test-AzureSkillsPath $pathLower) -and $pathLower.EndsWith("/skill.md")) {
         Set-SkillRead -Event $event -TargetPath $pathToCheck
     }

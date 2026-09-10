@@ -261,6 +261,13 @@ function Get-ToolInputPath {
     return $null
 }
 
+# Clients have used more than one file-read tool name over time. Accept the
+# complete compatibility list regardless of which client emitted the payload.
+function Test-FileReadTool {
+    param([string]$ToolName)
+    return $ToolName -eq "view" -or $ToolName -eq "Read" -or $ToolName -eq "read_file"
+}
+
 # Initialize the normalized event contract returned by every client handler.
 function New-TelemetryEvent {
     param([string]$ClientName, [string]$SessionId)

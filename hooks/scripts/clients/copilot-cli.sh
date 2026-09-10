@@ -19,7 +19,7 @@ process_telemetry_event() {
 
     path_to_check=$(extract_toolargs_path "$raw_input" "toolArgs")
     path_lower=$(normalize_path_lower "$path_to_check")
-    if [ "$tool_name" = "view" ] && [ -n "$path_to_check" ] \
+    if is_file_read_tool "$tool_name" && [ -n "$path_to_check" ] \
         && is_azure_skills_path "$path_lower" && [[ "$path_lower" == *"/skill.md" ]]; then
         track_skill_read "$path_to_check"
     fi

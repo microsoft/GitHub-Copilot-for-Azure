@@ -203,6 +203,18 @@ function setPayloadPath(
   toolInput[client.pathField] = pathForShell(shell, filePath);
 }
 
+function setPayloadToolName(
+  client: ClientCase,
+  payload: Record<string, unknown>,
+  toolName: string,
+): void {
+  if (client.id === "copilot") {
+    payload.toolName = toolName;
+  } else {
+    payload.tool_name = toolName;
+  }
+}
+
 function runHook(
   shell: ShellCase,
   client: ClientCase,
@@ -420,6 +432,30 @@ describe.each(shells)("Telemetry hook ($name)", shell => {
     expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
     expect(args).not.toContain("--skill-name");
   });
+
+  it.each(
+    clientCases.flatMap(client =>
+      ["view", "Read", "read_file"].map(toolName => ({ client, toolName })),
+    ),
+  )(
+    "accepts $toolName as a file-read tool for $client.id payloads",
+    ({ client, toolName }) => {
+      const payload = fixture(`${client.id}-reference-read.json`);
+      setPayloadToolName(client, payload, toolName);
+      setPayloadPath(
+        shell,
+        client,
+        payload,
+        join(client.pluginRoot, "skills", "azure-cost", "cost-query", "guardrails.md"),
+      );
+
+      const args = runHook(shell, client, payload);
+
+      expectArg(args, "--client-name", client.expectedClientName);
+      expectArg(args, "--event-type", "reference_file_read");
+      expectArg(args, "--file-reference", "azure-cost\\cost-query\\guardrails.md");
+    },
+  );
 
   it.each(crossClientInstallationCases)(
     "reports a $client.id skill read from a $installation.id installation",

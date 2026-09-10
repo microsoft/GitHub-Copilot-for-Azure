@@ -250,6 +250,13 @@ extract_toolargs_path() {
     echo "$path_value"
 }
 
+# Clients have used more than one file-read tool name over time. Accept the
+# complete compatibility list regardless of which client emitted the payload.
+is_file_read_tool() {
+    local tool_name="$1"
+    [ "$tool_name" = "view" ] || [ "$tool_name" = "Read" ] || [ "$tool_name" = "read_file" ]
+}
+
 # Initialize the normalized event contract populated by each client handler.
 reset_telemetry_event() {
     shouldTrack=false
