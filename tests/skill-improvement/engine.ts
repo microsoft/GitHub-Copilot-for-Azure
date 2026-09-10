@@ -182,7 +182,7 @@ async function runImprovementAgent(
   worktree: string,
   outputDirectory: string,
   spec: SkillImprovementRunSpec,
-  failurePacket: string,
+  failurePacketPath: string,
   iteration: number,
   deadline: number,
 ): Promise<void> {
@@ -200,12 +200,13 @@ async function runImprovementAgent(
     "Do not use network tools, do not push commits, and do not create branches.",
     "Make a general improvement that addresses the failure pattern instead of copying prompt wording.",
     "Keep the skill concise and preserve its existing structure and conventions.",
-    "",
-    failurePacket,
+    "Read the attached development evaluation failure packet before making changes.",
   ].join("\n");
   const args = [
     "-p",
     prompt,
+    "--attachment",
+    failurePacketPath,
     "--model",
     spec.improvementAgent.model,
     "--mode",
@@ -307,12 +308,13 @@ function writeFailurePacket(
   outputDirectory: string,
   iteration: number,
   contents: string,
-): void {
-  fs.writeFileSync(
-    path.join(outputDirectory, `iteration-${iteration}-failure-packet.md`),
-    contents,
-    "utf8"
+): string {
+  const failurePacketPath = path.join(
+    outputDirectory,
+    `iteration-${iteration}-failure-packet.md`
   );
+  fs.writeFileSync(failurePacketPath, contents, "utf8");
+  return failurePacketPath;
 }
 
 export async function executeSkillImprovement(
@@ -380,13 +382,17 @@ export async function executeSkillImprovement(
         try {
           await createWorktree(options.repoRoot, worktree, bestCommit);
           const failurePacket = buildFailurePacket(spec, bestTrials, previousDecision);
-          writeFailurePacket(outputDirectory, iteration, failurePacket);
+          const failurePacketPath = writeFailurePacket(
+            outputDirectory,
+            iteration,
+            failurePacket
+          );
           console.log(`Running improvement agent for iteration ${iteration}...`);
           await runImprovementAgent(
             worktree,
             outputDirectory,
             spec,
-            failurePacket,
+            failurePacketPath,
             iteration,
             deadline
           );
