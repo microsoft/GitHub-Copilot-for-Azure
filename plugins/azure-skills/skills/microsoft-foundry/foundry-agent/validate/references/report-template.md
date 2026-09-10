@@ -34,11 +34,9 @@
 
 #### Source code
 
-[Omit if absent. Render each array item on its own line. Plain text only.]
+[Omit if absent. Render each array item as inline code, separated by `, `. Items use `file:line` or `file:start-end`.]
 
-```text
-[sourceCode item]
-```
+`main.py:7-9`, `infra/main.bicep:44`
 
 #### Details
 

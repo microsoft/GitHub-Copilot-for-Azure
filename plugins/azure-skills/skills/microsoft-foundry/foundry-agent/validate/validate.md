@@ -74,7 +74,7 @@ For every agent, process the merged rules in order:
    - `status` selected above.
    - `details` containing result-specific evidence with `file:line` when available, missing evidence for `inconclusive`, or the reason for `skipped`.
    - `recommendedAction` containing the concrete change needed for `fail`. Omit it for other statuses.
-   - Optional `sourceCode` array containing relevant, redacted, `workspacePath`-relative `file:line` locations as plain strings. Do not use Markdown links.
+   - Optional `sourceCode` array containing relevant, redacted, `workspacePath`-relative source locations as plain strings. Use `file:line` for one line or `file:start-end` for a range. Do not use Markdown links.
    - `guidance` copied to `{ title, link }` objects. When a rule uses a legacy URL string, derive a short title and preserve the URL as `link`.
 
 ### Step 5: Generate Reports

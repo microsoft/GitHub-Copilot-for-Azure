@@ -76,7 +76,7 @@
               "type": "string",
               "minLength": 1
             },
-            "description": "Plain-text, workspace-relative source locations relevant to the result."
+            "description": "Plain-text, workspace-relative source locations using file:line or file:start-end."
           },
           "guidance": {
             "type": "array",
