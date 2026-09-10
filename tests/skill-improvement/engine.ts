@@ -68,6 +68,19 @@ function linkDependencies(repoRoot: string, worktree: string): void {
   );
 }
 
+export function unlinkDependencyLinks(worktree: string): void {
+  for (const relativePath of [
+    "node_modules",
+    path.join("tests", "node_modules"),
+    path.join("scripts", "node_modules"),
+  ]) {
+    const dependencyPath = path.join(worktree, relativePath);
+    if (fs.existsSync(dependencyPath) && fs.lstatSync(dependencyPath).isSymbolicLink()) {
+      fs.unlinkSync(dependencyPath);
+    }
+  }
+}
+
 async function createWorktree(
   repoRoot: string,
   worktree: string,
@@ -84,6 +97,7 @@ async function removeWorktree(repoRoot: string, worktree: string): Promise<void>
   if (!fs.existsSync(worktree)) {
     return;
   }
+  unlinkDependencyLinks(worktree);
   await runProcess("git", ["worktree", "remove", "--force", worktree], {
     cwd: repoRoot,
     allowFailure: true,
