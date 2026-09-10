@@ -85,6 +85,10 @@ export function validateRequestIdentity(
         }),
     );
 
+    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development") {
+        return undefined;
+    }
+
     const userDetails = identity.userDetails?.trim();
     if (userDetails?.toLowerCase().endsWith("@microsoft.com")) {
         return undefined;

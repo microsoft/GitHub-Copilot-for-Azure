@@ -43,6 +43,11 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
         filterBlobTreeBySkills(tree, skillFilter);
     }
 
+    const skill = request.query.get("skill");
+    if (skill) {
+        filterBlobTreeBySkills(tree, new Set([skill]));
+    }
+
     const dateNode = tree[date];
     if (!dateNode) {
         return { status: 404, body: `No reports found for date: ${date}` };

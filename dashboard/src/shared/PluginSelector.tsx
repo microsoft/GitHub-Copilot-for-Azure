@@ -1,13 +1,14 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type ReactNode } from "react";
 import { fetchAvailablePlugins } from "./plugins";
 import { getPersistedPluginSelection, persistPluginSelection } from "./apiUrl";
 
 interface PluginSelectorProps {
     selectedPlugin: string;
     onChange: (plugin: string) => void;
+    children?: ReactNode;
 }
 
-export default function PluginSelector({ selectedPlugin, onChange }: PluginSelectorProps) {
+export default function PluginSelector({ selectedPlugin, onChange, children }: PluginSelectorProps) {
     const [plugins, setPlugins] = useState<string[]>([]);
 
     useEffect(() => {
@@ -69,6 +70,7 @@ export default function PluginSelector({ selectedPlugin, onChange }: PluginSelec
                         )}
                     </select>
                 </label>
+                {children}
             </div>
         </section>
     );
