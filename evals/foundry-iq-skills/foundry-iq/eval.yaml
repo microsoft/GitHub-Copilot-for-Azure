@@ -1,0 +1,158 @@
+name: foundry-iq-routing-eval
+description: |
+  Routing evaluation for foundry-iq search, grounded knowledge, repair,
+  quality, and exclusion intents.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 1
+  timeout: "2m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "Create grounded knowledge from local handbooks"
+    prompt: "Make the employee handbooks in ./policies indexed and retrievable so our assistant can answer questions with citations."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - foundry-iq
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Federate SharePoint and public web knowledge"
+    prompt: "Set up grounded answers across our SharePoint document library and public support website while retaining each employee's source permissions."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - foundry-iq
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Repair a forbidden search request"
+    prompt: "My application gets a 403 from Azure AI Search even though its managed identity has a role. Diagnose and fix the access path."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - foundry-iq
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Measure and improve weak retrieval"
+    prompt: "Our grounded answers omit relevant passages and cite inconsistently. Build a retrieval-quality baseline, then tune one variable at a time."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - foundry-iq
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Lock down a search deployment"
+    prompt: "Take our Azure AI Search prototype to production with private endpoints, firewall restrictions, managed identity, and no public network exposure."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - foundry-iq
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - foundry-iq
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Exclude repository documentation summary"
+    prompt: "Summarize the architecture notes already present under docs/ in this repository."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - foundry-iq
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq
+
+  - name: "Exclude focused source explanation"
+    prompt: "Open src/cache.ts and explain how the existing getOrCreate function handles expiration."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - foundry-iq
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq
+
+  - name: "Exclude ordinary code refactor"
+    prompt: "Rename CustomerRecord to AccountRecord in this project and update all TypeScript imports."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - foundry-iq
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - foundry-iq

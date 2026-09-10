@@ -1,0 +1,24 @@
+{
+  "name": "foundry-iq-skills",
+  "description": "Build Azure AI Search applications and grounded Foundry IQ knowledge: index design, ingestion, enterprise source federation, permission-trimmed retrieval, quality measurement, and production hardening.",
+  "version": "0.0.0-placeholder",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": [
+    "azure",
+    "azure-ai-search",
+    "foundry-iq",
+    "search",
+    "retrieval",
+    "rag",
+    "knowledge"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/cursor-hooks.json"
+}
