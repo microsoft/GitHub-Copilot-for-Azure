@@ -72,121 +72,106 @@ $prepareStatusJson = @{ completedStep = $step.ToString() } | ConvertTo-Json
 
 # Plan-first prerequisite
 if ($step -eq [PrepareStep]::None) {
-    Write-Output 'Action: Create the initial `.azure/deployment-plan.md` skeleton in the workspace root before generating code, infrastructure, or configuration.'
+    Write-Output 'Action: Read `references/plan-template.md`. Create the initial `.azure/deployment-plan.md` skeleton in the workspace root before generating code, infrastructure, or configuration.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep CreatePlanSkeleton after completing the action."
-    Write-Output "Reference: SKILL.md, references/plan-template.md"
     exit 0
 }
 
 # Step 0: Specialized Technology Check
 if ($step -eq [PrepareStep]::CreatePlanSkeleton) {
-    Write-Output "Action: Check the prompt and workspace for specialized technologies. Invoke a matching specialized skill first when required."
+    Write-Output 'Action: Read `references/specialized-routing.md`. Check the prompt and workspace for specialized technologies. Invoke a matching specialized skill first when required.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep SpecializedTechnologyCheck after completing the action."
-    Write-Output "Reference: references/specialized-routing.md"
     exit 0
 }
 
 # Phase 1, Step 1: Analyze Workspace
 if ($step -eq [PrepareStep]::SpecializedTechnologyCheck) {
-    Write-Output "Action: Analyze the workspace and determine whether the mode is NEW, MODIFY, or MODERNIZE."
+    Write-Output 'Action: Read `references/analyze.md`. Analyze the workspace and determine whether the mode is NEW, MODIFY, or MODERNIZE.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep AnalyzeWorkspace after completing the action."
-    Write-Output "Reference: references/analyze.md"
     exit 0
 }
 
 # Phase 1, Step 2: Gather Requirements
 if ($step -eq [PrepareStep]::AnalyzeWorkspace) {
-    Write-Output "Action: Gather the workload classification, scale, and budget requirements."
+    Write-Output 'Action: Read `references/requirements.md`. Gather the workload classification, scale, and budget requirements.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep GatherRequirements after completing the action."
-    Write-Output "Reference: references/requirements.md"
     exit 0
 }
 
 # Phase 1, Step 3: Scan Codebase
 if ($step -eq [PrepareStep]::GatherRequirements) {
-    Write-Output "Action: Scan the codebase to identify components, technologies, and dependencies."
+    Write-Output 'Action: Read `references/scan.md`. Scan the codebase to identify components, technologies, and dependencies.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep ScanCodebase after completing the action."
-    Write-Output "Reference: references/scan.md"
     exit 0
 }
 
 # Phase 1, Step 4: Select Recipe
 if ($step -eq [PrepareStep]::ScanCodebase) {
-    Write-Output "Action: Select the appropriate AZD, AZCLI, Bicep, or Terraform recipe."
+    Write-Output 'Action: Read `references/recipe-selection.md`. Select the appropriate AZD, AZCLI, Bicep, or Terraform recipe.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep SelectRecipe after completing the action."
-    Write-Output "Reference: references/recipe-selection.md"
     exit 0
 }
 
 # Phase 1, Step 5: Plan Architecture
 if ($step -eq [PrepareStep]::SelectRecipe) {
-    Write-Output "Action: Select the application stack and map each component to Azure services."
+    Write-Output 'Action: Read `references/architecture.md`. Select the application stack and map each component to Azure services.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep PlanArchitecture after completing the action."
-    Write-Output "Reference: references/architecture.md"
     exit 0
 }
 
 # Phase 1, Step 6: Finalize Plan
 if ($step -eq [PrepareStep]::PlanArchitecture) {
-    Write-Output 'Action: Finalize `.azure/deployment-plan.md` with all decisions from the planning phase.'
+    Write-Output 'Action: Read `references/plan-template.md`. Finalize `.azure/deployment-plan.md` with all decisions from the planning phase.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep FinalizePlan after completing the action."
-    Write-Output "Reference: references/plan-template.md"
     exit 0
 }
 
 # Phase 1, Step 7: Present Plan and Get Approval
 if ($step -eq [PrepareStep]::FinalizePlan) {
-    Write-Output "Action: Present the completed deployment plan and get explicit user approval before executing it. If the user requests changes, revise and present the plan again."
+    Write-Output 'Action: Read `.azure/deployment-plan.md`. Present the completed deployment plan and get explicit user approval before executing it. If the user requests changes, revise and present the plan again.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep ApprovePlan only after the user approves the plan."
-    Write-Output 'Reference: `.azure/deployment-plan.md'
     exit 0
 }
 
 # Phase 2, Step 1: Research Components
 if ($step -eq [PrepareStep]::ApprovePlan) {
-    Write-Output "Action: Research the approved components by loading service references and invoking related skills."
+    Write-Output 'Action: Read `references/research.md`. Research the approved components by loading service references and invoking related skills.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep ResearchComponents after completing the action."
-    Write-Output "Reference: references/research.md"
     exit 0
 }
 
 # Phase 2, Step 2: Confirm Azure Context
 if ($step -eq [PrepareStep]::ResearchComponents) {
-    Write-Output "Action: Detect and confirm the Azure subscription and location with the user, then check the resource provisioning limit."
+    Write-Output 'Action: Read `references/azure-context.md`. Detect and confirm the Azure subscription and location with the user, then check the resource provisioning limit.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep ConfirmAzureContext after completing the action."
-    Write-Output "Reference: references/azure-context.md"
     exit 0
 }
 
 # Phase 2, Step 3: Generate Artifacts
 if ($step -eq [PrepareStep]::ConfirmAzureContext) {
-    Write-Output "Action: Generate the approved infrastructure and configuration artifacts."
+    Write-Output 'Action: Read `references/generate.md`. Generate the approved infrastructure and configuration artifacts.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep GenerateArtifacts after completing the action."
-    Write-Output "Reference: references/generate.md"
     exit 0
 }
 
 # Phase 2, Step 4: Harden Security
 if ($step -eq [PrepareStep]::GenerateArtifacts) {
-    Write-Output "Action: Apply the required security best practices to the generated artifacts."
+    Write-Output 'Action: Read `references/security.md`. Apply the required security best practices to the generated artifacts.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep HardenSecurity after completing the action."
-    Write-Output "Reference: references/security.md"
     exit 0
 }
 
 # Phase 2, Step 5: Functional Verification
 if ($step -eq [PrepareStep]::HardenSecurity) {
-    Write-Output "Action: Verify that the application UI and backend work locally, when possible."
+    Write-Output 'Action: Read `references/functional-verification.md`. Verify that the application UI and backend work locally, when possible.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep FunctionalVerification after completing the action."
-    Write-Output "Reference: references/functional-verification.md"
     exit 0
 }
 
 # Phase 2, Step 6: Update Status
 if ($step -eq [PrepareStep]::FunctionalVerification) {
-    Write-Output 'Action: Update the status in `.azure/deployment-plan.md` to `Ready for Validation`.'
+    Write-Output 'Action: Read `.azure/deployment-plan.md`. Update its status to `Ready for Validation`.'
     Write-Output "Next: re-run workflow.ps1 with -CompletedStep UpdateStatus after completing the action."
-    Write-Output 'Reference: `.azure/deployment-plan.md'
     exit 0
 }
 
