@@ -255,7 +255,7 @@ Start it in a **managed** background session your shell tool can poll and stop (
 azd ai agent run --no-client
 ```
 
-Poll a TCP connection to `localhost:<port>` every 2–5 seconds while the run session is alive; once connected, proceed to the smoke test. If the process exits or the startup timeout expires, inspect the server logs and resolve the cause before retrying.
+> **Important:** After starting the agent in the background, check whether localhost:<port> accepts a TCP connection every 2–5 seconds. As soon as the connection succeeds, proceed to the smoke test. If the agent process exits or the startup timeout is reached before a connection succeeds, inspect the server logs and resolve the cause before retrying.
 
 Smoke-invoke (local):
 
