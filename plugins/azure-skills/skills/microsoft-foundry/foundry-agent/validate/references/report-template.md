@@ -1,4 +1,4 @@
-[Use this Markdown structure. Replace bracketed text using only the finalized JSON report reread from disk.]
+[Project every finalized JSON result into this structure using only the JSON report reread from disk. Do not inspect the repository, reevaluate rules, add prose, or omit results.]
 
 ````markdown
 # Microsoft Foundry Agent Validation
@@ -40,11 +40,11 @@
 
 #### Details
 
-[For `fail`, explain the result and cite redacted `file:line` evidence when available. For `pass`, explain the evidence that proves the check passed. For `inconclusive`, explain why evidence cannot prove pass or fail and what is missing. For `skipped`, explain why the rule does not apply.]
+[Copy `details` from JSON exactly.]
 
 #### Recommended action
 
-[For `fail` only, state the concrete action required. Otherwise omit.]
+[For `fail`, copy `recommendedAction` exactly. Otherwise omit.]
 
 #### Guidance
 
