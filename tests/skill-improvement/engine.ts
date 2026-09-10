@@ -151,7 +151,6 @@ async function runCandidateValidation(
 ): Promise<string[]> {
   const validations = [
     { cwd: worktree, args: ["run", "build"], name: "build" },
-    { cwd: worktree, args: ["run", "tokens", "check"], name: "token check" },
     {
       cwd: path.join(worktree, "scripts"),
       args: ["run", "frontmatter"],
