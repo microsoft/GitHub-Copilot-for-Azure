@@ -107,20 +107,18 @@ If detection fails and no override is set, `run` errors with the project dir and
 ## Invoke the local agent
 
 ```bash
-azd ai agent invoke --local "hello, are you up?"
+azd ai agent invoke --local "<short representative prompt for the agent's purpose>"
 ```
 
 For a multi-agent project, select the service explicitly:
 
 ```bash
-azd ai agent invoke my-agent --local "hello, are you up?"
+azd ai agent invoke my-agent --local "<short representative prompt for the agent's purpose>"
 ```
 
 Prefer the named form when multiple agent services exist. Keep the unnamed form for a single-agent project.
 
 Do not use `--output json` with invoke. The invoke command supports `default` and `raw` output only.
-
-If the user did not explicitly specify a prompt, use `"hello, are you up"` for the local smoke test; only verify that the agent can return a response.
 
 Run one representative local invocation before deploying. If the local invocation returns a model `404` or wrong deployment error, check `azd env get-values` before changing code; stale azd env values are the most common cause.
 
