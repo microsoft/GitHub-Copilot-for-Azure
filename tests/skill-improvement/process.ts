@@ -35,6 +35,19 @@ export function commandName(name: string): string {
     : name;
 }
 
+function processCommand(
+  command: string,
+  args: string[],
+): { command: string; args: string[] } {
+  if (process.platform !== "win32" || !/\.(cmd|bat)$/i.test(command)) {
+    return { command, args };
+  }
+  return {
+    command: process.env.ComSpec ?? "cmd.exe",
+    args: ["/d", "/s", "/c", command, ...args],
+  };
+}
+
 export async function runProcess(
   command: string,
   args: string[],
@@ -51,7 +64,8 @@ export async function runProcess(
       ? fs.createWriteStream(options.stderrFile, { encoding: "utf8" })
       : undefined;
     const stdinFd = options.stdinFile ? fs.openSync(options.stdinFile, "r") : undefined;
-    const child = spawn(command, args, {
+    const launch = processCommand(command, args);
+    const child = spawn(launch.command, launch.args, {
       cwd: options.cwd,
       env: { ...process.env, ...options.env },
       stdio: [
