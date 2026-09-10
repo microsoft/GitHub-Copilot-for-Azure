@@ -10,17 +10,24 @@ target:
 evaluations:
   development:
     - access-connectivity.eval.yaml
+    - analyze-logs-telemetry.eval.yaml
     - author-run-query.eval.yaml
+    - discover-cluster-database.eval.yaml
+    - discover-schema-table.eval.yaml
+    - eval.yaml
+    - ingestion-health.eval.yaml
+    - stored-functions.eval.yaml
+    - telemetry-informed-scenarios.eval.yaml
     - troubleshoot-query.eval.yaml
+    - troubleshoot-schema-table.eval.yaml
+    - visualize-dashboard.eval.yaml
   heldOut: []
 
 models:
   answers:
-    - claude-sonnet-5
     - gpt-5.6-sol
   judges:
     - claude-opus-4.8
-    - gpt-5.6-terra
 
 experiment:
   repetitions: 1
@@ -45,9 +52,9 @@ acceptance:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 200
-  maxJudgeCalls: 600
-  maxDurationMinutes: 240
+  maxAnswerGenerations: 400
+  maxJudgeCalls: 400
+  maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
 
