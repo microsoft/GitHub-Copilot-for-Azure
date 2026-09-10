@@ -809,7 +809,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
       agentMetadata.skillsLoaded = skillsLoaded;
 
       const disableAzureMcp = process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true";
-      const model = runConfig.model ?? modelOverride ?? "claude-sonnet-4.6";
+      const model = runConfig.model ?? modelOverride ?? "claude-sonnet-5";
       const session = await client.createSession({
         model: model,
         onPermissionRequest: approveAll,
