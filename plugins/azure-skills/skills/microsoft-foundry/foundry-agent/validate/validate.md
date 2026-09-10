@@ -43,17 +43,17 @@ Define these variables:
 
 1. Select all applicable rule files:
    - `defaultRules`: [default-rules.yaml](references/default-rules.yaml).
-   - `workspaceRules`: `<workspacePath>/.foundry/agent-validation-rules.yaml`, when present.
-   - `callerRules`: caller-provided `rulesFile`, when supplied. Resolve it from `workspacePath` when relative.
+   - `customWorkspaceRules`: `<workspacePath>/.foundry/agent-validation-rules.yaml`, when present.
+   - `customCallerRules`: caller-provided `rulesFile`, when supplied. Resolve it from `workspacePath` when relative.
 2. Validate each custom rule file against [rules-schema.json](references/rules-schema.json). If any file is invalid, list all errors and stop.
 3. Merge the selected rules:
    - Create a rule map keyed by `id`.
    - Add `defaultRules` to the map.
-   - Add `workspaceRules`; when an `id` already exists, replace the entire existing rule.
-   - Add `callerRules`; when an `id` already exists, replace the entire existing rule.
+   - Add `customWorkspaceRules`; when an `id` already exists, replace the entire existing rule.
+   - Add `customCallerRules`; when an `id` already exists, replace the entire existing rule.
    - Use the map values as the merged rules, with one rule per `id`.
 
-   Precedence: `callerRules` > `workspaceRules` > `defaultRules`.
+   Precedence: `customCallerRules` > `customWorkspaceRules` > `defaultRules`.
 
    > **Note:** A workspace or caller-provided custom rule can skip a default rule by using the same `id` and a `when` condition that never applies.
 4. Generate the merged rules according to [rules-schema.json](references/rules-schema.json) and write them to `<outputPath>/agent-validation-<baseReportId>-rules.yaml`.
@@ -68,9 +68,10 @@ For every agent, process the merged rules in order:
 4. Create one result with:
    - `ruleId`, `title`, and `level` copied from the rule.
    - `status` selected above.
-   - `details` containing the rationale, evidence with `file:line` when available, remediation for `fail`, missing evidence for `inconclusive`, or the reason for `skipped`.
-   - Optional `sourceCode` containing relevant, redacted, agent-root-relative `file:line` locations as plain text, one per line. Do not use Markdown links.
-   - `guidance` copied from the rule without changing URL strings or `{ title, link }` objects.
+   - `details` containing the rationale and evidence with `file:line` when available, missing evidence for `inconclusive`, or the reason for `skipped`.
+   - `recommendedAction` containing the concrete change needed for `fail`. Omit it for other statuses.
+   - Optional `sourceCode` array containing relevant, redacted, agent-root-relative `file:line` locations as plain strings. Do not use Markdown links.
+   - `guidance` copied to `{ title, link }` objects. When a rule uses a legacy URL string, derive a short title and preserve the URL as `link`.
 
 ### Step 5: Generate Reports
 

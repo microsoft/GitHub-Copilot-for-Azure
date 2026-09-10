@@ -56,12 +56,22 @@
           "details": {
             "type": "string",
             "minLength": 1,
-            "description": "Status rationale, repository evidence, and remediation or missing-evidence guidance."
+            "description": "Status rationale and repository evidence."
           },
-          "sourceCode": {
+          "recommendedAction": {
             "type": "string",
             "minLength": 1,
-            "description": "Plain-text source locations relevant to the result. Multiple locations are separated by newlines."
+            "description": "Concrete action required to resolve a failed result."
+          },
+          "sourceCode": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Plain-text source locations relevant to the result."
           },
           "guidance": {
             "type": "array",
@@ -89,7 +99,7 @@
                 }
               ]
             },
-            "description": "Guidance links copied from the rule as URL strings or titled link objects."
+            "description": "Guidance links as legacy URL strings or titled link objects."
           }
         },
         "additionalProperties": false

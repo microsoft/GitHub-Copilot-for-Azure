@@ -3,29 +3,20 @@
 ````markdown
 # Microsoft Foundry Agent Validation
 
-| Field | Value |
-|---|---|
-| Hosted agent | [service name] |
-| Agent root | [agent root] |
-| Generated | [ISO date-time] |
-| Report ID | `[report ID]` |
-
 ## Summary
 
-[Keep nonzero rows only. Keep this order.]
+**Report ID:** `[report ID]`<br>
+**Hosted agent:** [service name]<br>
+**Agent root:** [agent root]<br>
+**Generated:** [ISO date-time]
 
-| Status | Count |
-|---|---:|
-| Feedbacks | [failed count] |
-| Passed checks | [passed count] |
-| Inconclusive | [inconclusive count] |
-| Not applicable | [not applicable count] |
+**Results:** [failed count] feedbacks · [passed count] passed · [inconclusive count] inconclusive · [not applicable count] not applicable
 
-## Failed rules
+[Omit zero-count statuses.]
 
-[Omit if empty. Include every failed result.]
+[Omit this table when there are no failed results.]
 
-| Level | Rule ID | Title |
+| Level | Rule ID | Failed rule |
 |---|---|---|
 | [error | warning | recommendation] | `[rule ID]` | [rule title] |
 
@@ -41,15 +32,19 @@
 
 #### Source code
 
-[Omit if absent. Preserve lines. Plain text only.]
+[Omit if absent. Render each array item on its own line. Plain text only.]
 
 ```text
-[sourceCode]
+[sourceCode item]
 ```
 
 #### Details
 
-[Explain the result, cite redacted `file:line` evidence when available, and state how to fix failures or what evidence is missing for inconclusive results.]
+[Explain the result and cite redacted `file:line` evidence when available.]
+
+#### Recommended action
+
+[State the concrete action required to resolve this finding.]
 
 #### Guidance
 
@@ -71,10 +66,10 @@
 
 #### Source code
 
-[Omit if absent. Preserve lines. Plain text only.]
+[Omit if absent. Render each array item on its own line. Plain text only.]
 
 ```text
-[sourceCode]
+[sourceCode item]
 ```
 
 #### Details
@@ -101,10 +96,10 @@
 
 #### Source code
 
-[Omit if absent. Preserve lines. Plain text only.]
+[Omit if absent. Render each array item on its own line. Plain text only.]
 
 ```text
-[sourceCode]
+[sourceCode item]
 ```
 
 #### Details
@@ -131,10 +126,10 @@
 
 #### Source code
 
-[Omit if absent. Preserve lines. Plain text only.]
+[Omit if absent. Render each array item on its own line. Plain text only.]
 
 ```text
-[sourceCode]
+[sourceCode item]
 ```
 
 #### Details
