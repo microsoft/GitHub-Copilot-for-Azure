@@ -98,22 +98,16 @@ function readJsonl(filePath: string): VallyRecord[] {
     .map(line => JSON.parse(line) as VallyRecord);
 }
 
-function findResultsJsonl(root: string): string {
-  const candidates: string[] = [];
-  const visit = (directory: string): void => {
-    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
-      const fullPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) {
-        visit(fullPath);
-      } else if (entry.name === "results.jsonl") {
-        candidates.push(fullPath);
-      }
-    }
-  };
-  visit(root);
+export function findVallyRunDirectory(root: string): string {
+  const candidates = fs.readdirSync(root, { withFileTypes: true })
+    .filter(entry =>
+      entry.isDirectory()
+      && fs.existsSync(path.join(root, entry.name, "eval-results.md"))
+    )
+    .map(entry => path.join(root, entry.name));
   if (candidates.length !== 1) {
     throw new Error(
-      `Expected one results.jsonl under ${root}, found ${candidates.length}.`
+      `Expected one Vally run directory under ${root}, found ${candidates.length}.`
     );
   }
   return candidates[0];
@@ -175,7 +169,7 @@ async function generateAnswers(
     slug(task.evalFile)
   );
   fs.mkdirSync(taskDirectory, { recursive: true });
-  const stdoutFile = path.join(taskDirectory, "vally.stdout.log");
+  const answerFile = path.join(taskDirectory, "answers.jsonl");
   const stderrFile = path.join(taskDirectory, "vally.stderr.log");
   const env: NodeJS.ProcessEnv = {
     MODEL_OVERRIDE: "",
@@ -213,14 +207,12 @@ async function generateAnswers(
   ], {
     cwd: testsDirectory,
     env,
-    stdoutFile,
+    stdoutFile: answerFile,
     stderrFile,
     timeoutMs: Math.max(deadline - Date.now(), 1),
   });
 
-  const generatedFile = findResultsJsonl(taskDirectory);
-  const answerFile = path.join(taskDirectory, "answers.jsonl");
-  fs.copyFileSync(generatedFile, answerFile);
+  const runDirectory = findVallyRunDirectory(taskDirectory);
   const count = readJsonl(answerFile)
     .filter(record => record.type === "trial-result" || record.trajectory)
     .length;
@@ -230,7 +222,7 @@ async function generateAnswers(
   return {
     ...task,
     answerFile,
-    runDirectory: path.dirname(generatedFile),
+    runDirectory,
     count,
   };
 }
