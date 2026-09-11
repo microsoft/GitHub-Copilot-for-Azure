@@ -31,7 +31,7 @@ function writeFileIfMissing(filePath: string, content: string, repoRoot: string)
   try {
     const fd = fs.openSync(filePath, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR, 0o600);
     fs.writeFileSync(fd, content);
-  } catch (e) {
+  } catch {
     console.warn(`File already exists, skipping: ${path.relative(repoRoot, filePath)}`);
     return;
   }
