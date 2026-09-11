@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "version": 1,
+  "type": "readOnly",
+  "description": "Three storage accounts in one resource group. Two are tagged foo=true and one has no tags, so a lookup for resources missing the foo tag has exactly one correct answer.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "azure-resource-lookup-missing-tag",
+      "path": "missing-tag.bicep",
+      "location": "eastus2",
+      "resourceGroupNameBase": "rg-fixture-resource-lookup-missing-tag",
+      "parameters": []
+    }
+  ]
+}
