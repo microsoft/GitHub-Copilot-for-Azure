@@ -251,6 +251,7 @@ button.header-status-pill {
 .plugin-toolbar__content {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
 
@@ -1081,6 +1082,11 @@ button.header-status-pill {
     flex-direction: column;
     align-items: stretch;
     gap: 6px;
+  }
+
+  .plugin-toolbar__content {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .plugin-toolbar__select {
