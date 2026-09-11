@@ -37,6 +37,8 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 | `mcp_azure_mcp_wellarchitectedframework` | Per-service WAF guidance |
 | `mcp_azure_mcp_advisor` → `advisor_recommendation_list` | Optimization recommendations |
 
+> Full per-tool parameters + the `⛔ Do NOT use MCP quota` rule: [mcp-tools.md](references/mcp-tools.md).
+
 ## Workflow
 
 | # | Step | Action | Reference |
@@ -45,13 +47,13 @@ Invoked by the `azure-app-onboard` orchestrator at Phase 2 when `prereq-output.j
 | 2 | **Query policy constraints** | Inline MCP: fetch policy + advisor recommendations | `mcp_azure_mcp_policy` + `mcp_azure_mcp_advisor` |
 | 3 | **Map components to services** | Per-component Azure service selection, Dockerfile routing, deploy-as-is | ⛔ **You MUST read [service-mapping.md](references/service-mapping.md) and [deploy-strategy.md](references/deploy-strategy.md)** |
 | 4 | **Select SKUs + WAF analysis** | Budget-aware SKU selection, inline WAF service guidance | ⛔ **You MUST read [sku-matrix.md](references/sku-matrix.md)** |
-| 5 | **Validate quotas + region capacity** | ⛔ Read [`subagent-quota.md`](references/subagent-quota.md) → dispatch as `task` (NEXT action MUST be `task`, ⛔ agent_type: `"task"` — NEVER `"general-purpose"`). Copy the **COMPLETE and UNMODIFIED** template text into the task prompt between `<<<TEMPLATE_START>>>` / `<<<TEMPLATE_END>>>` delimiters — do NOT summarize. Append the caller-provided inputs listed in [`subagent-quota.md`](references/subagent-quota.md)'s Input table AFTER the template block. ⛔ **After dispatching, proceed to Step 6 (cost estimation) while the subagent runs. Do NOT run quota checks yourself — the subagent handles it. Collect subagent results before Step 9 (write plan).** | ⛔ **You MUST read [`subagent-quota.md`](references/subagent-quota.md)** |
+| 5 | **Validate quotas + region capacity** | ⛔ Read [`subagent-quota.md`](references/subagent-quota.md) → dispatch as `task` (NEXT action MUST be `task`, ⛔ agent_type: `"task"` — NEVER `"general-purpose"`). Copy the **COMPLETE and UNMODIFIED** template text into the task prompt between `<<<TEMPLATE_START>>>` / `<<<TEMPLATE_END>>>` delimiters — do NOT summarize. Append the caller-provided inputs listed in [`subagent-quota.md`](references/subagent-quota.md)'s Input table AFTER the template block. ⛔ **After dispatching, proceed to Step 6 (cost estimation) while the subagent runs. Do NOT run quota checks yourself — the subagent handles it. Collect subagent results before Step 10 (write plan).** | ⛔ **You MUST read [`subagent-quota.md`](references/subagent-quota.md)** |
 | 6 | **Estimate costs** | ⛔ **You MUST read [pricing-guide.md](references/pricing-guide.md)** for methodology, then [pricing-guide-services.md](references/pricing-guide-services.md) for per-service filters. Call the pricing router (`mcp_azure_mcp_pricing`/`azure-pricing`) with `command: "pricing_get"` + a `parameters{}` object inline per paid service. If MCP unavailable or fails → ⛔ Read [`subagent-pricing.md`](references/subagent-pricing.md) → dispatch as `task` (NEXT action MUST be `task`, ⛔ agent_type: `"task"` — NEVER `"general-purpose"`). Copy the **COMPLETE and UNMODIFIED** template text into the task prompt between `<<<TEMPLATE_START>>>` / `<<<TEMPLATE_END>>>` delimiters — do NOT summarize. Append data (services[], region, budget tier) AFTER the template block. Write results to `prepare-plan.json.costEstimate`. | [pricing-guide.md](references/pricing-guide.md) |
 | 7 | **Generate naming** | Centralized naming: suffix, prefix, all resource names | ⛔ **You MUST read [naming-patterns.md](references/naming-patterns.md)** |
 | 8 | **Determine IaC format** | Existing non-Azure `.tf` → `ask_user` Bicep vs TF, write to `overrides[].iacFormat`. No `.tf` → default Bicep. | (inline) |
-| 9 | **Write prepare-plan.json** | Per `PreparePlan` schema. Include postDeployRecommendations, deploymentVariables | ⛔ **You MUST read [prepare-schemas.ts](references/prepare-schemas.ts)** for `PreparePlan` schema |
-| 10 | **Return summary** | Structured summary for orchestrator approval gate | (inline — 1 line) |
-| 11 | **Validate plan** | 4-dimension check: Goal Alignment, WAF Alignment, Dependency Completeness, Deployment Viability. Fix inline on failure, document tradeoffs in `assumptions[]`. | All must pass before writing |
+| 9 | **Validate plan** | 4-dimension check: Goal Alignment, WAF Alignment, Dependency Completeness, Deployment Viability. Fix inline on failure, document tradeoffs in `assumptions[]`. | ⛔ **You MUST read [validation-rubric.md](references/validation-rubric.md)** — run BEFORE the Step 10 write |
+| 10 | **Write prepare-plan.json** | Per `PreparePlan` schema. Include postDeployRecommendations, deploymentVariables. ⛔ Complete the Step 9 validation pass BEFORE writing. | ⛔ **You MUST read [prepare-schemas.ts](references/prepare-schemas.ts)** for `PreparePlan` schema |
+| 11 | **Return summary** | Structured summary for orchestrator approval gate | (inline — 1 line) |
 
 ### Step 5 — Post-Quota Validation
 

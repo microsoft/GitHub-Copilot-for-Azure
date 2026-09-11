@@ -50,6 +50,14 @@ if ($mainBicep -match 'module\s+\w*[Dd]iagnostic|Microsoft\.Insights/diagnosticS
   Add-Fail 'DIAG-GATED' 'diagnostic-settings module wired without an enableDiagnostics gate — gate it (module ... = if (enableDiagnostics), default false) or remove it; unconditional wiring blocks the first deploy' 'infra/main.bicep'
 }
 
+# 13. NO-TILDE-LINUXFXVERSION — linuxFxVersion runtime tag must be an exact tag ('NODE|20-lts'). A tilde
+#     ('NODE|~20') is npm-semver, invalid for linuxFxVersion: App Service cannot resolve it, Oryx falls back
+#     to an old default Node, and native-module builds fail because node-gyp compiles against the wrong ABI.
+#     The generated bicep, a nodeVersion param/var, or the params file must never carry a tilde here.
+if ($iac -match "linuxFxVersion:\s*'[A-Za-z]+\|~" -or $iac -match "nodeVersion[^=\r\n]*=\s*'~\d") {
+  Add-Fail 'NO-TILDE-LINUXFXVERSION' "linuxFxVersion uses a tilde (e.g. 'NODE|~20') — invalid for linuxFxVersion; use an exact tag such as 'NODE|20-lts'. A tilde makes App Service fall back to an old default Node and breaks native-module builds." 'infra/modules/app-service.bicep'
+}
+
 # 2. NO-PLAINTEXT-SECRET — secrets are @secure() params passed at deploy, never literals.
 if ($paramsRaw) {
   try {
@@ -156,6 +164,21 @@ if (($iac -match 'Microsoft\.KeyVault/vaults')) {
   $hasParam   = ($paramsRaw -match 'deployerObjectId') -or ($iac -match 'deployerObjectId')
   if (-not ($hasOfficer -and $hasParam)) {
     Add-Fail 'KV-DEPLOYER-ROLE' 'missing deployer Key Vault Secrets Officer role and/or deployerObjectId param' 'infra/modules/role-assignments.bicep'
+  }
+}
+
+# --- App Service / Functions checks ---
+# 18. APPSVC-PUBLISH-POLICIES — every Microsoft.Web/sites app MUST keep BOTH the scm and ftp
+#     basicPublishingCredentialsPolicies child resources. `az bicep build` passes with them missing,
+#     so a dropped policy (e.g. an over-eager BCP121 dedup that deletes both duplicate sets) silently
+#     strips the publishing-credential lockdown from the desired-state IaC — deploy then depends on an
+#     imperative REST toggle that a fresh redeploy will not reapply.
+if ($iac -match 'Microsoft\.Web/sites@') {
+  $hasPubPolicyType = $iac -match 'basicPublishingCredentialsPolicies'
+  $hasScmPolicy     = $iac -match "name:\s*'scm'"
+  $hasFtpPolicy     = $iac -match "name:\s*'ftp'"
+  if (-not ($hasPubPolicyType -and $hasScmPolicy -and $hasFtpPolicy)) {
+    Add-Fail 'APPSVC-PUBLISH-POLICIES' 'App Service/Functions site missing basicPublishingCredentialsPolicies scm+ftp child resources — both MUST exist (a dropped policy removes the publishing-credential lockdown and bicep build will not catch it)' 'infra/modules'
   }
 }
 

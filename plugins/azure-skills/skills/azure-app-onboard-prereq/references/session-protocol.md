@@ -12,6 +12,7 @@ Resolve active session via pointer file.
 >
 > 1. **STOP** — Do not answer the user's question, scan code, or plan architecture yet
 > 2. **CHECK** — Read `.copilot-azure/sessions/active-session.json`.
+>    - ⛔ **First, ensure the repo's `.gitignore` contains `.copilot-azure/`** (append if missing, create the file if absent) — this runs on EVERY path below, BEFORE any branch writes a session file, since session artifacts may hold deploy secrets.
 >    - **Pointer exists** →
 >      1. ⛔ **Read [`session-schemas.ts`](session-schemas.ts)** to get the exact field names and types for `AppOnboardContext`, `PrereqOutput`, and `PreparePlan`. Do not guess field names. Then read the pointed-to session's `context.json`. Display: "Found session from [lastModifiedUtc] — {statusSummary}."
 >      2. ⛔ **MANDATORY `ask_user` GATE — execute this step NOW, before ANY branching.** Call `ask_user`: "Resume this session or start fresh?" **Do NOT auto-resume, do NOT skip ahead to the staleness check, do NOT present cached findings.** Nothing else happens until the user answers. WHY: stale sessions from prior test runs cause the agent to silently reuse outdated results and skip sub-SKILL.md reads. The staleness check alone cannot catch this — only the user knows whether the prior session is still relevant.
@@ -37,13 +38,13 @@ Call `mcp_azure_mcp_extension_cli_install` with `cli-type: "az"` to verify Azure
 
 ## Azure Login Gate
 
-**Azure login gate (mandatory):** Run `az account show --query "{id:id, name:name, tenantId:tenantId}" -o json` with a **5-second timeout** (PowerShell: `Start-Process` with `-Wait` or inline timeout; if command hangs beyond 5s, treat as failure). If it succeeds, merge `subscriptionId`, `subscriptionName`, `tenantId` into `context.json.azure` (use `replace_string_in_file` or rewrite the file — the minimal context.json from Step 1 sub-step 2 may not have the `azure` key yet).
+**Azure login gate (mandatory):** Run `az account show --query "{id:id, name:name, tenantId:tenantId}" -o json` with a **15-second timeout** (PowerShell: `Start-Process` with `-Wait` or inline timeout; if command hangs beyond 15s, treat as failure). Also run `az ad signed-in-user show --query displayName -o tsv` (15-second timeout). After BOTH commands complete, merge ALL azure fields into `context.json.azure` in a **SINGLE update** — `subscriptionId`, `subscriptionName`, `tenantId`, and `userDisplayName`. Do NOT write separate updates for subscription and identity.
 
 > ⛔ **If `az account show` fails or hangs:** ⛔ **You MUST read [`subscription-resolution.md`](subscription-resolution.md)** and follow its fallback procedure. Do NOT proceed to Step 2 without a resolved subscription. Do NOT leave `context.json.azure` empty and continue. Every downstream phase (prepare, scaffold validation, deploy) requires Azure auth — proceeding without it produces incomplete results.
 
 ## User Identity Detection
 
-**User identity detection (for `deployed-by` tag):** If `az account show` succeeded, also run `az ad signed-in-user show --query displayName -o tsv` (5-second timeout). Write the result to `context.json.azure.userDisplayName`. Fallback if `az ad` fails: use `az account show --query user.name -o tsv` (returns UPN/email). If both fail, leave empty — prepare phase will resolve. This value becomes the `deployed-by` tag on ALL resources — resolving it once here prevents inconsistent tag values across resources.
+**User identity detection (for `deployed-by` tag):** Run `az ad signed-in-user show --query displayName -o tsv` (15-second timeout) alongside `az account show`. Fallback if `az ad` fails: use `az account show --query user.name -o tsv` (returns UPN/email). If both fail, leave empty — prepare phase will resolve. This value becomes the `deployed-by` tag on ALL resources — resolving it once here prevents inconsistent tag values across resources. **Merge into the SAME `context.json` update as the azure login gate — do NOT write separately.**
 
 ## Subscription Detection Method
 

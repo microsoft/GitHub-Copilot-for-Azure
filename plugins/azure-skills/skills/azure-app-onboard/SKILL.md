@@ -55,13 +55,13 @@ metadata:
 | # | Step | Action | Reference |
 |---|------|--------|-----------|
 | 1 | **Session check + Azure login** | Create/resume session, verify Azure CLI auth, resolve subscription + user identity | ⛔ **You MUST read [session-protocol.md](references/session-protocol.md)** |
-| 2 | **Scope triage** | Check azd markers, triage question. Empty workspace or code-only (no infra) → Step 3 directly. | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § Scope Triage |
-| 3 | **Prereq scan** | ⛔ Skip if `completedPhases` includes `"prereq"`. Otherwise: invoke `{"skill": "azure-app-onboard-prereq"}`. Write `prereq-output.json`, update `context.json`. **Halt if:** `overallHealth: "blocked"` OR `routeToSkill` set. | |
-| 4 | **Gather intent** | Present prereq results, confirm stack + Azure services, ask remaining questions. | ⛔ Read [intent-gathering.md](references/intent-gathering.md) § After Prereq Returns |
+| 2 | **Scope triage** | Check azd markers, triage question. Empty workspace or code-only (no infra) → Step 3 directly. | ⛔ **You MUST read [intent-gathering.md](references/intent-gathering.md)** § Scope Triage |
+| 3 | **Prereq scan** | ⛔ Skip if `completedPhases` includes `"prereq"`. Otherwise: invoke `{"skill": "azure-app-onboard-prereq"}`. Write all 3 prereq artifacts (`context.json`, `prereq-output.json`, `readiness-report.md`). **Halt if:** `overallHealth: "blocked"` OR `routeToSkill` set. | |
+| 4 | **Gather intent** | Present prereq results, confirm stack + Azure services, ask remaining questions. | ⛔ **You MUST read [intent-gathering.md](references/intent-gathering.md)** § After Prereq Returns |
 | 5 | **Plan architecture** | Write `prepare-plan.json`. | ⛔ **You MUST read [prepare/SKILL.md](prepare/SKILL.md)** |
-| 6 | **Scaffold approval gate** | Display plan for user approval BEFORE generating any files. | ⛔ Read [approval-gates.md](references/approval-gates.md) § Scaffold Gate |
+| 6 | **Scaffold approval gate** | Display plan for user approval BEFORE generating any files. | ⛔ **You MUST read [approval-gates.md](references/approval-gates.md)** § Scaffold Gate |
 | 7 | **Scaffold** | Generate IaC, self-review. Write `scaffold-manifest.json`. Update `context.json`. | ⛔ **You MUST read [scaffold/SKILL.md](scaffold/SKILL.md)** |
-| 8 | **Deploy approval gate** | Display validation summary. ⛔ After approval: FIRST read deploy-checklist.md → deploy/SKILL.md. NEVER `{"skill": "azure-deploy"}`. | ⛔ Read [approval-gates.md](references/approval-gates.md) § Deploy Gate |
+| 8 | **Deploy approval gate** | Display validation summary. ⛔ After approval: FIRST read deploy-checklist.md → deploy/SKILL.md. NEVER `{"skill": "azure-deploy"}`. | ⛔ **You MUST read [approval-gates.md](references/approval-gates.md)** § Deploy Gate |
 | 9 | **Deploy** | Execute IaC, health-check. Write `deploy-result.json`. | ⛔ **You MUST read [deploy/SKILL.md](deploy/SKILL.md)** |
 | 10 | **Handoff** | Surface deployment identity, cleanup commands, next steps. | ⛔ **You MUST read [`handoff-protocol.md`](references/handoff-protocol.md)** |
 
@@ -70,7 +70,7 @@ metadata:
 | Error | Remediation |
 |-------|-------------|
 | Phase fails | Halt, report phase + error. User decides: retry, skip, abort. |
-| MCP server unavailable | Skip affected checks, add disclaimer to `costEstimate.assumptions[]` and every approval gate. |
+| MCP server unavailable | Skip affected checks, add disclaimer to `prepare-plan.json.assumptions[]` (rendered at the scaffold gate) AND `costEstimate.disclaimer` (rendered at the deploy gate). |
 | Missing RBAC | Report required role + `az role assignment` command. |
 
 > **Shared references:** [MCP tools](references/mcp-tool-reference.md) (cross-phase tool parameters) | [IaC resources](references/iac-resources.md) (Azure resource docs for troubleshooting)

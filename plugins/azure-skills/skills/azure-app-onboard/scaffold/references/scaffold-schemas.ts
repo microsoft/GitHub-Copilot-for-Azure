@@ -63,19 +63,19 @@ export interface ValidationResult {
   proof?: string;
 }
 
-/** One BLOCK failure emitted by scaffold-conformance.{ps1,sh} (Step 3c plan-conformance gate). */
+/** One BLOCK failure emitted by scaffold-conformance.{ps1,sh} (SKILL Step 10a-conf plan-conformance gate). */
 export interface ConformanceFailure {
   id: string; // e.g. "TAGS-NO-CAMEL", "NO-PLAINTEXT-SECRET", "DB-TLS-ON"
   detail: string;
   file: string;
 }
 
-/** Result of the deterministic plan-conformance gate (subagent-validate.md Step 3c). */
+/** Result of the deterministic plan-conformance gate (SKILL Step 10a-conf; recorded via subagent-validate.md). */
 export interface ConformanceResult {
   passed: boolean;
   failures: ConformanceFailure[];
-  /** "script" when scaffold-conformance.{ps1,sh} ran; "manual" when the fallback assertion table was used. */
-  source: "script" | "manual";
+  /** Always "script" — scaffold-conformance.{ps1,sh} ran. */
+  source: "script";
 }
 
 export interface ScaffoldManifest {

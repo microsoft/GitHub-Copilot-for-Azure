@@ -44,7 +44,7 @@ If extending existing IaC, MERGE with existing tags using `union()` / `merge()`.
 
 ### Platform Compatibility
 
-- **Line endings:** Generated `.bicep` files need LF, not CRLF — Bicep triple-quoted strings pass content literally to ARM, and `\r` bytes crash `/bin/sh` in containers. The validate subagent runs `mcp_bicep_format_bicep_file` (or `bicep-format_bicep_file`) post-generation to enforce this. If the formatter is unavailable, ensure files use LF manually.
+- **Line endings:** Generated `.bicep` files need LF, not CRLF — Bicep triple-quoted strings pass content literally to ARM, and `\r` bytes crash `/bin/sh` in containers. Step 10a (main thread) runs `mcp_bicep_format_bicep_file` (or `bicep-format_bicep_file`) post-generation to enforce this. If the formatter is unavailable, ensure files use LF manually.
 - **Shell compatibility:** Startup scripts in Bicep multiline strings MUST use `set -eu` (POSIX). Do NOT use `set -euo pipefail` — Container Apps base images use `/bin/sh` (dash), not bash.
 - **Package manager pinning:** When generating or modifying Dockerfiles, pin package manager versions from the project's `packageManager` field (e.g., `pnpm@9.4.0`). Never use `@latest` — major version drift breaks builds on older Node.js base images.
 

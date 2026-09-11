@@ -13,7 +13,7 @@ For each endpoint: HTTPS GET, 30s timeout, 3 retries (10s/20s/40s backoff).
 | 5xx ×3 | `degraded` | |
 | Timeout/DNS ×3 | `unreachable` | |
 
-> ⛔ **DB-backed apps: a 200 on `/` is NOT healthy.** When `prepare-plan.json.services[]` includes a database, probing only `/` (or any non-DB route) just proves the web server booted. Probe at least one **data-backed route** (derive from the app's detected routes, e.g. a REST resource path) and inspect the body for DB errors (`insecure transport`, `Access denied`, `connection refused`, `Unknown database`, `doesn't exist`) → mark `degraded`, not `healthy`.
+> ⛔ **DB-backed OR auth/session apps: a 200 on `/` is NOT healthy.** When `prepare-plan.json.services[]` includes a database, OR prereq detected auth/session middleware (e.g. `express-session`, `passport`, Flask-Login, Django sessions), probing only `/` just proves the web server booted. Probe at least one **data-backed or authenticated route** (derive from the app's detected routes, e.g. a REST resource path) and inspect the body for DB errors (`insecure transport`, `Access denied`, `connection refused`, `Unknown database`, `doesn't exist`). For session apps, verify the session cookie round-trips: a request that sets a cookie followed by an authenticated call must NOT return `401`/`Not authenticated` — that signals a dropped session cookie (missing `trust proxy` behind Azure's TLS-terminating LB). Any of these → mark `degraded`, not `healthy`.
 
 ### HTTP Redirect Handling (Container Apps)
 
