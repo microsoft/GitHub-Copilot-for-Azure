@@ -354,6 +354,10 @@ dashboard/.azure/
 dashboard/dist/
 dashboard/**/dist/
 
+# azure-upgrade skill artifacts (assessment reports, downloaded packages, transient settings JSON).
+# See plugins/azure-skills/skills/azure-upgrade/references/global-rules.md#artifact-output-policy.
+.azure-upgrade/
+
 # C# DevKit (VS Code extension) language server cache files
 *.lscache
 
