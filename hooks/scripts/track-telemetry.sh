@@ -19,6 +19,13 @@
 #   - Skill prefix:   azure:<skill-name>  (e.g., azure:azure-prepare)
 #   - Detection:      has "hook_event_name", tool_use_id does NOT contain "__vscode"
 #
+# Cursor:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     PascalCase for file reads (Read); raw MCP tool name from afterMCPExecution
+#   - Skill paths:    .cursor/plugins/cache/<catalog>/azure/<revision>/skills/<name>/SKILL.md
+#   - Detection:      has "hook_event_name" and "cursor_version"
+#   - MCP detection:  afterMCPExecution event with mcp_server_name "azure"
+#
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
 #   - Tool names:     snake_case (read_file, replace_string_in_file)
@@ -44,7 +51,8 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*)
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*), or when Cursor
+#      sends afterMCPExecution with mcp_server_name "azure"
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read
@@ -68,22 +76,30 @@
 #
 # === Reference File Detection ===
 #
-# When a file read tool is invoked (Copilot CLI: "view", Claude Code: "Read",
-# VS Code: "read_file"), the script extracts the file path from the tool input
+# When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
+# "Read", VS Code: "read_file"), the script extracts the file path from the tool input
 # and checks if it falls within a recognized azure-skills folder:
 #
 #   Path field lookup order:
 #     - toolArgs.path / toolArgs.filePath       (Copilot CLI)
 #     - tool_input.filePath / tool_input.file_path / tool_input.path  (Claude Code / VS Code)
 #
-#   Recognized azure-skills install paths:
+#   Recognized install paths (one set per plugin, see is_azure_skills_path):
+#     azure-skills:
 #     - .copilot/installed-plugins/<catalog-name>/azure/skills/...
 #       (<catalog-name> is the marketplace/catalog folder the plugin was
 #       installed under, e.g. "awesome-copilot" — it does not necessarily
 #       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
+#     azure-kusto-graph-skills:
+#     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     shared:
 #     - .agents/skills/...
 #
 #   If the path matches AND is not a SKILL.md file, the relative path after
@@ -141,6 +157,19 @@ write_telemetry_debug_log() {
 # <script-dir>/../../skills/<name>/SKILL.md is the skill definition.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
+
+# Return true only when a target belongs to this hook's plugin. Since this hook
+# is copied into every plugin, comparing through the skills directory prevents
+# each installed copy from reporting the same skill or reference event.
+is_owned_skill_path() {
+    # targetPath is either path to the SKILL.md or to a reference file
+    local targetPath="$1"
+    local skillsRootNorm
+    local targetPathNorm
+    skillsRootNorm=$(echo "$SKILLS_DIR" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g; s|/$||')
+    targetPathNorm=$(echo "$targetPath" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
+    [[ "$targetPathNorm" == "$skillsRootNorm/"* ]]
+}
 
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Prints nothing if the file or version cannot be read.
@@ -241,6 +270,8 @@ write_raw_input_to_file "$rawInput"
 # Support Copilot CLI (camelCase), Claude Code (snake_case), and VS Code (snake_case) formats
 toolName=$(extract_json_field "$rawInput" "toolName")
 sessionId=$(extract_json_field "$rawInput" "sessionId")
+hookEventName=$(extract_json_field "$rawInput" "hook_event_name")
+mcpServerName=$(extract_json_field "$rawInput" "mcp_server_name")
 
 # Fall back to Claude Code / VS Code snake_case field names
 if [ -z "$toolName" ]; then
@@ -296,15 +327,32 @@ fi
 
 # === STEP 2: Determine what to track for azmcp ===
 
-# Check if a path matches any known azure-skills folder structure
-# Returns 0 (true) if matched, 1 (false) otherwise
+# Check if a path matches any known plugin skills folder structure.
+ # Each plugin has its own block below — when onboarding another plugin, add a new
+ # block by swapping both the catalog/plugin segments (e.g. "azure" and
+ # "azure-skills") for the new plugin. Returns 0 (true) if matched, 1 (false) otherwise.
 is_azure_skills_path() {
     local p="$1"
+
+    # --- azure-skills plugin ---
+    # The Copilot CLI pattern wildcards the catalog/marketplace folder name
+    # (e.g. "awesome-copilot") since it does not necessarily match the
+    # plugin's own name ("azure").
     [[ "$p" == *".copilot/installed-plugins/"*"/azure/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
+    [[ "$p" == *".cursor/plugins/cache/"*"/azure/"*"/skills/"* ]] && return 0
     [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
+
+    # --- azure-kusto-graph-skills plugin ---
+    [[ "$p" == *".copilot/installed-plugins/"*"/azure-kusto-graph-skills/skills/"* ]] && return 0
+    [[ "$p" == *".claude/plugins/cache/azure-skills/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
+    [[ "$p" == *".cursor/plugins/cache/"*"/azure-kusto-graph-skills/"*"/skills/"* ]] && return 0
+    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/"* ]] && return 0
+
+    # --- shared across all plugins ---
     [[ "$p" == *".agents/skills/"* ]] && return 0
+
     # Local plugin development: match paths under AZURE_SKILLS_PLUGIN_ROOT/skills/
     # (e.g. when loading a local plugin via `--plugin-dir`)
     if [ -n "$AZURE_SKILLS_PLUGIN_ROOT" ]; then
@@ -328,10 +376,11 @@ if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
     # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
     # Strip it to get the actual skill name for the allowlist
     skillName="${skillName#azure:}"
-    if [ -n "$skillName" ]; then
+    skillMdPath="$SKILLS_DIR/$skillName/SKILL.md"
+    if [ -n "$skillName" ] && [ -f "$skillMdPath" ] && is_owned_skill_path "$skillMdPath"; then
         eventType="skill_invocation"
         shouldTrack=true
-        skillVersion=$(get_skill_version "$SKILLS_DIR/$skillName/SKILL.md")
+        skillVersion=$(get_skill_version "$skillMdPath")
     fi
 fi
 
@@ -344,7 +393,7 @@ if [ "$toolName" = "view" ] || [ "$toolName" = "Read" ] || [ "$toolName" = "read
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
         # Check for SKILL.md pattern — only match azure-skills paths
-        if is_azure_skills_path "$pathLower" && [[ "$pathLower" == *"/skill.md" ]]; then
+        if is_azure_skills_path "$pathLower" && is_owned_skill_path "$pathToCheck" && [[ "$pathLower" == *"/skill.md" ]]; then
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
             if [[ "$pathNormalized" =~ /skills/([^/]+)/SKILL\.md$ ]]; then
                 skillName="${BASH_REMATCH[1]}"
@@ -359,9 +408,15 @@ fi
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
+#               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if [ -n "$toolName" ]; then
-    if [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]]; then
+    if [ "$clientName" = "cursor" ] && [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
+        azureToolName="${toolName#MCP:}"
+        eventType="tool_invocation"
+        shouldTrack=true
+    elif [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]]; then
         azureToolName="$toolName"
         eventType="tool_invocation"
         shouldTrack=true
@@ -377,7 +432,7 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
         # Check if path matches azure skills folder structure
-        if is_azure_skills_path "$pathLower"; then
+        if is_azure_skills_path "$pathLower" && is_owned_skill_path "$pathToCheck"; then
             # Extract relative path after 'skills/'
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
 

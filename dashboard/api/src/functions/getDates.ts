@@ -1,13 +1,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { listDates } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the list of available date prefixes (yyyy-mm-dd) in descending order.
  * GET /api/dates
  */
 async function getDates(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getDates");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getDates");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const container = request.query.get("container") || undefined;
     const dates = await listDates(container);

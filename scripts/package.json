@@ -20,21 +20,22 @@
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
     "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts",
     "vally": "node --import tsx src/vally/cli.ts",
-    "plugin:new": "node --import tsx src/plugin/bootstrap.ts"
+    "plugin:new": "node --import tsx src/plugin/bootstrap.ts",
+    "plugin:sync-marketplace": "node --import tsx src/plugin/sync-marketplace.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@types/micromatch": "^4.0.10",
     "@types/node": "^25.9.0",
-    "@vitest/coverage-v8": "^4.1.2",
-    "eslint": "^10.5.0",
-    "fast-xml-parser": "^5.9.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "eslint": "^10.9.0",
+    "fast-xml-parser": "^5.11.0",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
-    "tsx": "^4.22.1",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.61.0",
-    "vitest": "^4.0.18"
+    "typescript-eslint": "^8.69.0",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": "^20.19.0 || ^22.13.0 || >=24"

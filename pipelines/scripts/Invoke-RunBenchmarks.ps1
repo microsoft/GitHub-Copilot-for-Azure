@@ -172,7 +172,7 @@
             "--agent", "github-copilot-cli",
             "--benchmark", $Benchmark,
             "--model", $m,
-            "--encrypted-env", "CAPI_INTEGRATION_ID CAPI_HMAC_KEY",
+            "--encrypted-env", "CAPI_INTEGRATION_ID", "CAPI_HMAC_KEY",
             "--env", "USE_COPILOT_CLI_VERSION",
             "--dataset", (Join-Path $targetDir "metadata.csv"),
             "--tag", "org=CoreAI Cloud and Tools",

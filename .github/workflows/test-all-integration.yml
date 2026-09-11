@@ -29,7 +29,7 @@ on:
         description: "Model to use for testing"
         required: false
         type: string
-        default: claude-sonnet-4.6
+        default: claude-sonnet-5
       no-skills:
         description: "Optional: whether to override the run to load no skills"
         required: false
@@ -138,7 +138,7 @@ jobs:
     with:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
-      no-skills: ${{ inputs.no-skills }}
+      no-skills: ${{ inputs.no-skills || false }}
 
   test:
     name: Integration – ${{ matrix.skill }}

@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, getBlobContent, resolveSkillFilter } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 
@@ -336,7 +336,10 @@ function computeSkillStats(allResults: RawTestResults[]): SkillStats {
  * GET /api/test-results/{date}
  */
 async function getTestResults(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getTestResults");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getTestResults");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const date = request.params.date;
     if (!date) {

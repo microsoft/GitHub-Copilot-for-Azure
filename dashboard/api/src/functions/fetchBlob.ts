@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { getBlobBuffer } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the raw bytes of a specific blob (no Content-Disposition).
@@ -8,7 +8,10 @@ import { logRequestIdentity } from "../requestIdentity";
  * GET /api/fetch?path={blobPath}
  */
 async function fetchBlob(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "fetchBlob");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "fetchBlob");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const blobPath = request.query.get("path");
     if (!blobPath) {
