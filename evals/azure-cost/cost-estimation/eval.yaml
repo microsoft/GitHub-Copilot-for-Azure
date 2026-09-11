@@ -1,0 +1,251 @@
+name: cost-estimation-integration-eval
+description: Routing checks for Azure forecasts, retail pricing, and negotiated pricesheets.
+
+tags:
+  type: integration
+  skill: cost-estimation
+
+defaults:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Estimate a periodic container workload"
+    prompt: "I want to run Azure Container Instances with 4 vCPUs and 16 GB of memory in East US for 6 hours. Estimate the hourly running and stopped costs and the total for one job."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Estimate multi-component VM cost"
+    prompt: "Estimate the next 6 months of pay-as-you-go cost for a Standard_D4s_v5 Windows VM, a 256 GB Premium SSD P15 disk, and a Standard public IP in East US."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+
+  - name: "Compare storage tiers"
+    prompt: "I need 5 GB of Blob Storage for backups that are written once and read a few times per year. Compare Hot, Cool, Cold, and Archive monthly costs and recommend a tier."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+
+  - name: "Forecast against a planning target"
+    prompt: "I am planning around a $50,000 quarterly Azure spend target, but I have not configured an Azure budget resource. Based on the last 90 days of spending, forecast the end-of-quarter cost and tell me whether it will exceed my target."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: boundary
+      regression: boundary
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+          disallowed:
+            - cost-governance
+
+  - name: "Forecast future cost drivers"
+    prompt: "Based on recent Azure spending across VMs, Storage, Firewall, App Service, Cognitive Search, Container Apps, and Data Factory, what will likely drive costs up over the next 3 months?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+
+  - name: "Compare regional VM prices"
+    prompt: "Compare Standard_D4s_v5 Linux VM prices in East US, Brazil South, UK South, and Australia East. Show the percentage difference and rank the regions."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+
+  - name: "Use negotiated enterprise pricing"
+    prompt: "Estimate a new VM fleet using our negotiated EA rate card rather than public retail pricing."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-estimation"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+
+  - name: "Forecast response contains relevant keywords"
+    prompt: "What will my Azure costs be next month?"
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: legacy-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+      - type: output-matches
+        config:
+          pattern: "(?i)forecast|projected|estimate"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Retail pricing uses ARM MCP without direct pagination"
+    prompt: "Estimate the public hourly price for a Standard_D4s_v5 Linux VM in East US. Use the supported pricing tool, and if the result is truncated, explain how you will narrow it without calling a returned pagination URL."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: arm-mcp-contract
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)(azure-pricing|.*get_retail_prices$)"
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|web_fetch|fetch|curl|http|rest)$"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace|management\\.azure\\.com|prices\\.azure\\.com/api"
+
+  - name: "Retail capped results are narrowed"
+    prompt: "While estimating Azure VM retail prices, the ARM MCP pricing tool returned Count 5,000 and a NextPageLink for a broad query. Explain the safe next step and whether I can treat those rows as the complete Azure price catalog."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: partial-results
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+      - type: output-matches
+        config:
+          pattern: "(?i)narrow|filter|incomplete|partial|truncat"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)curl|prices\\.azure\\.com/api"
+
+  - name: "Negative historical cost breakdown"
+    prompt: "Show the top 10 most expensive resources in my Azure subscription last month."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-estimation
+
+  - name: "Negative current commitment coverage"
+    prompt: "What percentage of my eligible compute spend is covered by Savings Plans, and which resources have coverage gaps?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-estimation
+
+  - name: "Negative budget setup"
+    prompt: "Set up a $10,000 monthly Azure budget and alert me at 80 and 100 percent."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-estimation
+
+  - name: "Negative configured budget health"
+    prompt: "My configured Azure Cost Management quarterly budget is projected to exceed its limit. Show the budget, current spend, forecast, and active alerts."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: boundary
+      regression: boundary
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - cost-estimation
+          required:
+            - cost-governance
