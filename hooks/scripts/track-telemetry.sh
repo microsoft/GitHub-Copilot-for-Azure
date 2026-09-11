@@ -335,7 +335,7 @@ fi
 is_azure_skills_path() {
     local p="$1"
 
-    . "$PLUGIN_PATH_ALLOW_PATTERN"
+    if . "$PLUGIN_PATH_ALLOW_PATTERN"; then return 0; fi
 
     # --- shared across all plugins ---
     [[ "$p" == *".agents/skills/"* ]] && return 0

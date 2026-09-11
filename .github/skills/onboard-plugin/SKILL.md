@@ -1,6 +1,6 @@
 ---
 name: onboard-plugin
-description: "Scaffold a new plugin and make it for distribution. WHEN: create a new plugin, scaffold a new plugin"
+description: "Scaffold a new plugin and prepare it for distribution. WHEN: 'create a new plugin', 'scaffold a new plugin'"
 license: MIT
 metadata:
   author: Microsoft
@@ -37,7 +37,7 @@ cd scripts
 npm run plugin:new-skill -- --plugin {plugin-name} --skill {skill-name}
 ```
 
-This command creates a `plugins/{plugin-name}/skills/{skill-name}/SKILL.md` file and an `evals/{plugin-name}/eval.yaml` file. Refer to the `Skill Structure` section of [Onboarding.md](../../../docs/Onboarding.md) to understand what each file is for and what files can be added. It adds two placeholder codeowners and Rick Winter as the codeowner of the corresponding directories. Every new plugin must have at least two distinct codeowner and Rick Winter as a fallback owner.
+This command creates a `plugins/{plugin-name}/skills/{skill-name}/SKILL.md` file and an `evals/{plugin-name}/{skill-name}/eval.yaml` file. Refer to the `Skill Structure` section of [Onboarding.md](../../../docs/Onboarding.md) to understand what each file is for and what files can be added. It adds two placeholder codeowners and Rick Winter as the codeowner of the corresponding directories. Every new plugin must have at least two distinct codeowner and Rick Winter as a fallback owner.
 
 This command also adds the skill to `tests/skills.json` nightly integration test schedule.
 
@@ -62,7 +62,7 @@ cd tests
 npm run test:vally -- --plugin {plugin-name} --skill {skill-name}
 ```
 
-The test should pass. Ask the skill author to report a bug to microsoft/github-copilot-for-azure.
+The test should pass. If it fails, ask the skill author to report a bug to microsoft/github-copilot-for-azure.
 
 ## Prepare for release
 
