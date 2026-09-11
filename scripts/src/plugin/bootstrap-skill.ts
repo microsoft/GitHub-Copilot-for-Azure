@@ -28,12 +28,13 @@ function validateName(label: "plugin" | "skill", value: string): void {
 }
 
 function writeFileIfMissing(filePath: string, content: string, repoRoot: string): void {
-  if (fs.existsSync(filePath)) {
+  try {
+    const fd = fs.openSync(filePath, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR, 0o600);
+    fs.writeFileSync(fd, content);
+  } catch (e) {
     console.warn(`File already exists, skipping: ${path.relative(repoRoot, filePath)}`);
     return;
   }
-
-  fs.writeFileSync(filePath, content);
 }
 
 function appendCodeOwnerIfMissing(
