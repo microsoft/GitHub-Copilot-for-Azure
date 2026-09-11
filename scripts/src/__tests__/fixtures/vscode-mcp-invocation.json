@@ -1,0 +1,8 @@
+{
+  "tool_name": "mcp_azure_mcp_get_azure_bestpractices",
+  "tool_input": {},
+  "tool_use_id": "tool-mcp__vscode",
+  "session_id": "73e52424-a95d-4e21-b70c-2dffe48fdd86",
+  "transcript_path": "C:\\Users\\test\\AppData\\Roaming\\Code\\User\\workspaceStorage\\transcript.json",
+  "hook_event_name": "PostToolUse"
+}
