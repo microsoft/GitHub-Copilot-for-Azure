@@ -1,0 +1,169 @@
+name: azure-local-integration-eval
+description: |
+  Integration evaluation for the azure-local skill.
+  Tests skill routing for Azure Local (Azure Stack HCI) deployment planning,
+  lifecycle updates, workload management, SDN, and troubleshooting prompts,
+  plus negative routing for public Azure compute and AKS prompts.
+
+tags:
+  type: integration
+  skill: azure-local
+
+defaults:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Plan an Azure Local deployment"
+    prompt: "Help me plan an Azure Local deployment and identify the prerequisites I need to check first."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Assess Azure Local update readiness"
+    prompt: "How should I assess Azure Local update readiness before scheduling a solution update?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Create an Arc VM on Azure Local"
+    prompt: "How do I create and validate an Azure Local VM enabled by Azure Arc?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Azure Stack HCI prerequisites"
+    prompt: "What are the prerequisites for an Azure Stack HCI cluster before I register it with Arc?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "AKS on Azure Local"
+    prompt: "Set up an AKS cluster on Azure Local and check the networking requirements."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Troubleshoot Arc resource bridge"
+    prompt: "Troubleshoot why the Arc resource bridge for my Azure Local instance is offline."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Read-only investigation before disruptive node action"
+    prompt: "My Azure Local instance has a node that is not responding. What should I do to bring it back?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    config:
+      runs: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local
+      - type: output-matches
+        config:
+          pattern: "(?i)(confirm|before (you )?(restart|reboot|drain|reimage)|read-only|check .*(health|status))"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative: public Azure VM sizing"
+    prompt: "Recommend a VM size for my public Azure workload in eastus and create it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-local
+
+  - name: "Negative: public AKS cluster creation"
+    prompt: "Create a production-ready AKS cluster in Azure with a private API server."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-local

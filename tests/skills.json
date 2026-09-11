@@ -50,6 +50,16 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-kusto-graph,azure-kusto-irql,azure-kusto-irql-graph"
             }
+        },
+        {
+            "name": "azure-local-skills",
+            "dirname": "azure-local-skills",
+            "skills": [
+                "azure-local"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "azure-local"
+            }
         }
     ]
 }

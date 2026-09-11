@@ -73,3 +73,7 @@
 /evals/azure-skills/entra-app-registration/ @JasonYeMSFT @RickWinter
 /evals/azure-skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @RickWinter
 /evals/azure-skills/python-appservice-deploy/ @glaming1 @tmeschter @RickWinter
+
+# azure-local-skills plugin owners
+/plugins/azure-local-skills/ @tfrankland2
+/evals/azure-local-skills/ @tfrankland2

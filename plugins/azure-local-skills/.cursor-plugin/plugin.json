@@ -1,0 +1,24 @@
+{
+  "name": "azure-local-skills",
+  "description": "Azure Local (formerly Azure Stack HCI) planning, deployment, operations, and workload management. Covers cluster sizing and prerequisites, Arc registration, lifecycle updates, Azure Local VMs, AKS on Azure Local, SDN and network security, and troubleshooting.",
+  "version": "0.0.0-placeholder",
+  "author": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+  "repository": "https://github.com/microsoft/GitHub-Copilot-for-Azure",
+  "license": "MIT",
+  "keywords": [
+    "azure",
+    "azure-local",
+    "azure-stack-hci",
+    "hybrid",
+    "arc",
+    "aks-hybrid",
+    "sdn"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "hooks": "./hooks/cursor-hooks.json"
+}
