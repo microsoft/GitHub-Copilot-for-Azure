@@ -29,11 +29,12 @@ function validateName(label: "plugin" | "skill", value: string): void {
 
 function writeFileIfMissing(filePath: string, content: string, repoRoot: string): void {
   try {
-    const fd = fs.openSync(filePath, fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_RDWR, 0o600);
-    fs.writeFileSync(fd, content);
-  } catch {
+    fs.writeFileSync(filePath, content, { flag: "wx", mode: 0o600 });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+      throw error;
+    }
     console.warn(`File already exists, skipping: ${path.relative(repoRoot, filePath)}`);
-    return;
   }
 }
 
