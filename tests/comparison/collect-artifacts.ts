@@ -12,14 +12,24 @@
 import fs from "fs";
 import path from "path";
 import { execFileSync } from "child_process";
+import { fileURLToPath } from "url";
 import type { CompareRunOutput } from "./run-compare";
 
 const STORAGE_ACCOUNT = "strdashboarddevveobvk";
 const CONTAINER = "manual-integration-reports";
-const OUTPUT_ROOT = "comparison-artifacts";
+const DEFAULT_OUTPUT_ROOT = "comparison-artifacts";
+const AZ_COMMAND = process.platform === "win32"
+  ? process.env.ComSpec ?? "cmd.exe"
+  : "az";
+
+function azArgs(args: string[]): string[] {
+  return process.platform === "win32"
+    ? ["/d", "/s", "/c", "az", ...args]
+    : args;
+}
 
 function usage(): void {
-  console.log(`Usage: collect-artifacts.ts <input.json>
+  console.log(`Usage: collect-artifacts.ts <input.json> [output-directory]
 
 Exit codes:
   0 = success (all runs collected)
@@ -31,27 +41,10 @@ function encodeBranchName(branch: string) {
   return branch.replaceAll("/", "_");
 }
 
-function run(): void {
-  const args = process.argv.slice(2);
-
-  if (args.length === 1 && (args[0] === "-h" || args[0] === "--help")) {
-    usage();
-    process.exit(0);
-  }
-
-  if (args.length !== 1) {
-    console.error(
-      "Error: expected exactly one argument (path to the input JSON file)."
-    );
-    usage();
-    process.exit(2);
-  }
-
-  const inputFile = args[0];
-
+export function collectArtifacts(inputFile: string, outputRoot = DEFAULT_OUTPUT_ROOT): number {
   if (!fs.existsSync(inputFile)) {
     console.error(`Error: input file not found: ${inputFile}`);
-    process.exit(2);
+    return 2;
   }
 
   let input: CompareRunOutput;
@@ -61,7 +54,7 @@ function run(): void {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "unknown error";
     console.error(`Error: failed to parse input JSON: ${msg}`);
-    process.exit(2);
+    return 2;
   }
 
   const date = input.date || "";
@@ -69,17 +62,17 @@ function run(): void {
 
   if (!date || !skillName) {
     console.error("Error: input JSON must define 'date' and 'skill.name'.");
-    process.exit(2);
+    return 2;
   }
 
   if (!input.results || input.results.length === 0) {
     console.error("Error: input JSON contains no runs.");
-    process.exit(2);
+    return 2;
   }
 
   // Create output directory
-  if (!fs.existsSync(OUTPUT_ROOT)) {
-    fs.mkdirSync(OUTPUT_ROOT, { recursive: true });
+  if (!fs.existsSync(outputRoot)) {
+    fs.mkdirSync(outputRoot, { recursive: true });
   }
 
   let failed = 0;
@@ -90,6 +83,7 @@ function run(): void {
     for (const run of runs) {
       const model: string = run.model;
       const withSkill: boolean = run.withSkill;
+      const withAzureMcp: boolean | undefined = run.withAzureMcp;
       const runUrl: string = run.run;
 
       if (!model) continue;
@@ -103,16 +97,74 @@ function run(): void {
       }
 
       const skillSuffix = withSkill ? "with-skill" : "without-skill";
+      const mcpSuffix = withAzureMcp === undefined
+        ? ""
+        : withAzureMcp ? "-with-mcp" : "-without-mcp";
+      const conditionName = `${model}-${skillSuffix}${mcpSuffix}`;
+      const artifactDate = run.artifactDate ?? date;
+      const runPrefix = `${artifactDate}/${runId}/${skillName}/`;
+
+      // Download run-level grader results and summaries once per workflow run.
+      try {
+        const runBlobListing = execFileSync(AZ_COMMAND, azArgs([
+          "storage", "blob", "list",
+          "--account-name", STORAGE_ACCOUNT,
+          "--container-name", CONTAINER,
+          "--prefix", runPrefix,
+          "--auth-mode", "login",
+          "--query", "[].name",
+          "-o", "tsv"
+        ]), {
+          encoding: "utf-8",
+          stdio: ["pipe", "pipe", "ignore"]
+        }) as string;
+        const runArtifacts = runBlobListing
+          .trim()
+          .split("\n")
+          .map((blob) => blob.trim())
+          .filter((blob) => blob)
+          .filter((blob) => {
+            const relativePath = blob.slice(runPrefix.length);
+            return !relativePath.includes("/")
+              && (relativePath.endsWith(".jsonl")
+                || relativePath === "testResults.json"
+                || relativePath.endsWith("-SKILL-REPORT.md"));
+          });
+        const runOutputDir = path.join(
+          outputRoot,
+          encodeBranchName(branch),
+          "_run-results",
+          conditionName,
+          runId
+        );
+        fs.mkdirSync(runOutputDir, { recursive: true });
+        for (const blob of runArtifacts) {
+          execFileSync(AZ_COMMAND, azArgs([
+            "storage", "blob", "download",
+            "--account-name", STORAGE_ACCOUNT,
+            "--container-name", CONTAINER,
+            "--name", blob,
+            "--file", path.join(runOutputDir, path.basename(blob)),
+            "--auth-mode", "login",
+            "--overwrite",
+            "--no-progress",
+            "-o", "none"
+          ]), { stdio: "ignore" });
+        }
+      } catch {
+        console.error(`Error: failed to download run-level artifacts for run ${runId}.`);
+        failed = 1;
+      }
 
       // Discover stimuli for this run
-      const prefix = `${date}/${runId}/${skillName}/${skillName}_`;
+      const prefix = `${artifactDate}/${runId}/${skillName}/${skillName}_`;
       console.log(
         `Discovering stimuli for run ${runId} under ${CONTAINER}/${prefix} ...`
       );
 
       let discoveryResult: string;
       try {
-        discoveryResult = execFileSync("az", [
+        discoveryResult = execFileSync(AZ_COMMAND, azArgs([
           "storage", "blob", "list",
           "--account-name", STORAGE_ACCOUNT,
           "--container-name", CONTAINER,
@@ -120,7 +172,7 @@ function run(): void {
           "--auth-mode", "login",
           "--query", "[?ends_with(name, '.md')].name",
           "-o", "tsv"
-        ], {
+        ]), {
           encoding: "utf-8",
           stdio: ["pipe", "pipe", "ignore"]
         }) as string;
@@ -155,12 +207,12 @@ function run(): void {
 
       for (const stimuliPart of stimuliSet) {
         const stimuliOutputDir = path.join(
-          OUTPUT_ROOT,
+          outputRoot,
           encodeBranchName(branch),
           stimuliPart,
-          `${model}-${skillSuffix}`
+          conditionName
         );
-        const blobPrefix = `${date}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
+        const blobPrefix = `${artifactDate}/${runId}/${skillName}/${skillName}_${stimuliPart}/agent-metadata-`;
 
         console.log(
           `Listing blobs for stimuli '${stimuliPart}' in run ${runId} ...`
@@ -168,7 +220,7 @@ function run(): void {
 
         let blobs: string;
         try {
-          blobs = execFileSync("az", [
+          blobs = execFileSync(AZ_COMMAND, azArgs([
             "storage", "blob", "list",
             "--account-name", STORAGE_ACCOUNT,
             "--container-name", CONTAINER,
@@ -176,7 +228,7 @@ function run(): void {
             "--auth-mode", "login",
             "--query", "[?ends_with(name, '.md')].name",
             "-o", "tsv"
-          ], {
+          ]), {
             encoding: "utf-8",
             stdio: ["pipe", "pipe", "ignore"]
           }) as string;
@@ -207,7 +259,7 @@ function run(): void {
 
           try {
             const outputPath = path.join(stimuliOutputDir, fileName);
-            execFileSync("az", [
+            execFileSync(AZ_COMMAND, azArgs([
               "storage", "blob", "download",
               "--account-name", STORAGE_ACCOUNT,
               "--container-name", CONTAINER,
@@ -217,7 +269,7 @@ function run(): void {
               "--overwrite",
               "--no-progress",
               "-o", "none"
-            ], { stdio: "ignore" });
+            ]), { stdio: "ignore" });
           } catch {
             console.error(`Error: failed to download blob ${blob}`);
             failed = 1;
@@ -229,13 +281,35 @@ function run(): void {
 
   if (failed !== 0) {
     console.error(
-      `Completed with errors. Partial artifacts are in ${OUTPUT_ROOT}`
+      `Completed with errors. Partial artifacts are in ${outputRoot}`
     );
-    process.exit(1);
+    return 1;
   }
 
-  console.log(`Artifacts collected in ${OUTPUT_ROOT}`);
-  process.exit(0);
+  console.log(`Artifacts collected in ${outputRoot}`);
+  return 0;
 }
 
-run();
+function runCli(): void {
+  const args = process.argv.slice(2);
+
+  if (args.length === 1 && (args[0] === "-h" || args[0] === "--help")) {
+    usage();
+    return;
+  }
+
+  if (args.length < 1 || args.length > 2) {
+    console.error(
+      "Error: expected an input JSON path and optional output directory."
+    );
+    usage();
+    process.exitCode = 2;
+    return;
+  }
+
+  process.exitCode = collectArtifacts(args[0], args[1]);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  runCli();
+}

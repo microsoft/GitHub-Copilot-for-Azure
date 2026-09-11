@@ -1,0 +1,39 @@
+name: azure-kusto-ingestion-health
+description: Synthetic restricted-telemetry-aligned scenarios for distinguishing query issues from ingestion delay or failure.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Separate missing rows from ingestion failure"
+    prompt: "My Kusto table has historical data but no new rows from the last hour. Help me separate a query-time problem from ingestion delay or failure."
+    rubric: &rubric
+      - The response first validates database, table, schema, event-time field, time zone, and a bounded recent-row query before concluding ingestion is failing.
+      - The response proposes read-only ingestion checks that distinguish source delay, queued or failed ingestion, mapping problems, and data arriving under a different timestamp.
+      - The response requests missing resource context, avoids claiming live observations, and orders checks from low-risk query validation to service diagnostics.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Measure Azure Data Explorer ingestion lag"
+    prompt: "Events are arriving late in ADX. Show me how to measure ingestion lag by comparing event time with ingestion time."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders

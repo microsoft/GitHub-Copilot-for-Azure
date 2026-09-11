@@ -165,6 +165,8 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
 type CliOptions = {
   plugin?: string;
   skill?: string;
+  evalDir?: string;
+  evalFiles: string[];
   passRate?: number;
   forwardedArgs: string[];
 };
@@ -173,6 +175,8 @@ function parseCliOptions(argv: string[]): CliOptions {
   const forwardedArgs: string[] = [];
   let plugin: string | undefined;
   let skill: string | undefined;
+  let evalDir: string | undefined;
+  const evalFiles: string[] = [];
   let passRate: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -213,6 +217,44 @@ function parseCliOptions(argv: string[]): CliOptions {
         throw new Error("Missing value for --skill");
       }
       skill = value;
+      continue;
+    }
+
+    if (arg === "--eval-dir") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --eval-dir");
+      }
+      evalDir = value;
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--eval-dir=")) {
+      const value = arg.slice("--eval-dir=".length);
+      if (!value) {
+        throw new Error("Missing value for --eval-dir");
+      }
+      evalDir = value;
+      continue;
+    }
+
+    if (arg === "--eval-file") {
+      const value = argv[i + 1];
+      if (!value || value.startsWith("--")) {
+        throw new Error("Missing value for --eval-file");
+      }
+      evalFiles.push(value);
+      i += 1;
+      continue;
+    }
+
+    if (arg.startsWith("--eval-file=")) {
+      const value = arg.slice("--eval-file=".length);
+      if (!value) {
+        throw new Error("Missing value for --eval-file");
+      }
+      evalFiles.push(value);
       continue;
     }
 
@@ -263,6 +305,8 @@ function parseCliOptions(argv: string[]): CliOptions {
   return {
     plugin,
     skill,
+    evalDir,
+    evalFiles,
     passRate,
     forwardedArgs,
   };
@@ -275,6 +319,8 @@ function printUsage(): void {
     "Options:",
     "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: azure-skills). Note that a plugin's dirname may be different from its name.",
     "  --skill <name>            Skill name used by this wrapper",
+    "  --eval-dir <path>         Repo-relative directory containing experimental eval specs",
+    "  --eval-file <name>        Run only this YAML file from the skill eval directory (repeatable)",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
     "",
@@ -342,13 +388,30 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
-    const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
-    const evalSpecPaths: string[] = [];
+    const repoRoot = path.resolve(__dirname, "..");
+    const evalSpecDir = options.evalDir
+      ? path.resolve(repoRoot, options.evalDir)
+      : path.join(repoRoot, "evals", pluginDirname, options.skill);
+    const relativeEvalSpecDir = path.relative(repoRoot, evalSpecDir);
+    if (relativeEvalSpecDir.startsWith("..") || path.isAbsolute(relativeEvalSpecDir)) {
+      throw new Error("--eval-dir must resolve within the repository");
+    }
     const allFiles = await fs.readdir(evalSpecDir);
-    for (const file of allFiles) {
-      if (file.endsWith(".yaml")) {
-        evalSpecPaths.push(path.join(evalSpecDir, file));
+    const selectedFiles = options.evalFiles.length > 0
+      ? options.evalFiles
+      : allFiles.filter(file => file.endsWith(".yaml"));
+    const evalSpecPaths: string[] = [];
+    for (const file of selectedFiles) {
+      if (path.basename(file) !== file || !file.endsWith(".yaml")) {
+        throw new Error(`Invalid --eval-file value: ${file}`);
       }
+      if (!allFiles.includes(file)) {
+        throw new Error(`Eval file not found in ${evalSpecDir}: ${file}`);
+      }
+      evalSpecPaths.push(path.join(evalSpecDir, file));
+    }
+    if (evalSpecPaths.length === 0) {
+      throw new Error(`No YAML eval specs found in ${evalSpecDir}`);
     }
 
     forwardedArgs.splice(0, 0, ...evalSpecPaths.map(v => ["--eval-spec", v]).flat());

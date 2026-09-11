@@ -7,7 +7,7 @@ import { type SkillRef } from "../utils/skill-loader";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-type CompareInput = {
+export type CompareInput = {
   /**
    * The skill the stimuli is for.
    */
@@ -17,6 +17,11 @@ type CompareInput = {
    * The branches to run the tests on.
    */
   branches?: string[];
+
+  /**
+   * Optional YAML filenames from the skill's canonical eval directory.
+   */
+  evalFiles?: string[];
 
   /**
    * Environmental variations.
@@ -35,10 +40,16 @@ type CompareOption = {
    * Whether to load the skill.
    */
   withSkill: boolean;
+
+  /**
+   * Whether to register Azure MCP tools. Defaults to true.
+   */
+  withAzureMcp?: boolean;
 };
 
 export type CompareRunOutput = {
   skill: SkillRef;
+  evalFiles?: string[];
   date: string;
   results: Array<BranchOutput>;
 }
@@ -48,7 +59,11 @@ type BranchOutput = {
   runs: Array<{
     model: string;
     withSkill: boolean;
+    withAzureMcp?: boolean;
     run: string;
+    artifactDate?: string;
+    status?: string;
+    conclusion?: string | null;
   }>;
 };
 
@@ -63,24 +78,34 @@ const defaultCompareOptions: CompareOption[] = [
   { model: "gpt-5.6-sol", withSkill: false },
   { model: "gpt-5.6-terra", withSkill: true },
   { model: "gpt-5.6-terra", withSkill: false },
-  // // Google
-  { model: "gemini-3.1-pro-preview", withSkill: true },
-  { model: "gemini-3.1-pro-preview", withSkill: false },
+  // Google
+  { model: "gemini-3.6-flash", withSkill: true },
+  { model: "gemini-3.6-flash", withSkill: false },
 ];
 
 const repo = "microsoft/GitHub-Copilot-for-Azure";
 // Id of the "Integration Tests - all" workflow
 const integrationTestWorkflowId = "233698760";
 
-async function queueComparisonRun(branch: string, skill: SkillRef, option: CompareOption): Promise<string> {
+async function queueComparisonRunOnce(
+  branch: string,
+  skill: SkillRef,
+  option: CompareOption,
+  evalFiles: string[],
+): Promise<string> {
   const skillsInput = `${skill.pluginDirname}/${skill.name}`;
   const args = ["workflow", "run", integrationTestWorkflowId, "--repo", repo, "--ref", branch, "--json"];
-  const inputs = JSON.stringify({
+  const workflowInputs: Record<string, string> = {
     skills: skillsInput,
     "model-override": option.model,
     // Note: gh cli use string values for boolean input
-    "no-skills": !option.withSkill ? "true" : "false"
-  });
+    "no-skills": !option.withSkill ? "true" : "false",
+    "no-azure-mcp": option.withAzureMcp === false ? "true" : "false"
+  };
+  if (evalFiles.length > 0) {
+    workflowInputs["eval-files"] = evalFiles.join(",");
+  }
+  const inputs = JSON.stringify(workflowInputs);
 
   return await new Promise((resolve, reject) => {
     const child = spawn("gh", args, { stdio: ["pipe", "pipe", "pipe"] });
@@ -105,11 +130,53 @@ async function queueComparisonRun(branch: string, skill: SkillRef, option: Compa
   });
 }
 
-function readCompareInput(filePath: string): CompareInput {
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
+}
+
+async function queueComparisonRun(
+  branch: string,
+  skill: SkillRef,
+  option: CompareOption,
+  evalFiles: string[],
+): Promise<string> {
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      return await queueComparisonRunOnce(branch, skill, option, evalFiles);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      const safeToRetry = /^Get ".*\/actions\/workflows\//.test(message);
+      if (!safeToRetry || attempt === attempts) {
+        throw error;
+      }
+      const delaySeconds = attempt * 10;
+      console.warn(
+        `GitHub workflow lookup failed (${attempt}/${attempts}); retrying in ${delaySeconds} seconds.`
+      );
+      await sleep(delaySeconds * 1_000);
+    }
+  }
+  throw new Error("Unreachable: comparison run retry loop completed without a result.");
+}
+
+export function readCompareInput(filePath: string): CompareInput {
   const input = JSON.parse(readFileSync(filePath, "utf8")) as CompareInput;
 
   if (!input.skill) {
     throw new Error("The input JSON must contain skill.");
+  }
+  if (input.evalFiles && input.evalFiles.length === 0) {
+    throw new Error("evalFiles must be omitted or contain at least one YAML filename.");
+  }
+  const uniqueEvalFiles = new Set(input.evalFiles);
+  if (input.evalFiles && uniqueEvalFiles.size !== input.evalFiles.length) {
+    throw new Error("evalFiles must not contain duplicate filenames.");
+  }
+  for (const file of input.evalFiles ?? []) {
+    if (path.basename(file) !== file || !file.endsWith(".yaml")) {
+      throw new Error(`Invalid eval file: ${file}`);
+    }
   }
 
   return input;
@@ -121,19 +188,15 @@ function readCompareInput(filePath: string): CompareInput {
  * Each comparison test run will be scheduled to run in GitHub Actions and persist its artifacts in the manual-integration-reports blob container.
  * An output file will be written to map each comparison test to its scheduled run for locating its published artifacts.
  */
-async function main() {
-  const inputPath = process.argv[2];
-  if (!inputPath) {
-    throw new Error("Usage: npm run compare:run -- <input.json>");
-  }
-
-  const input = readCompareInput(inputPath);
+export async function runComparison(input: CompareInput): Promise<CompareRunOutput> {
   const options = input.compareOptions ?? defaultCompareOptions;
   const branches = input.branches ?? ["main"];
   const skill = input.skill;
+  const evalFiles = input.evalFiles ?? [];
   const date = new Date().toISOString().slice(0, 10); // Get yyyy-mm-dd date string
   const output: CompareRunOutput = {
     skill: input.skill,
+    evalFiles: evalFiles.length > 0 ? evalFiles : undefined,
     date: date,
     results: []
   };
@@ -146,10 +209,11 @@ async function main() {
     for (const option of options) {
       // Each output is a url to the queued run
       // e.g. https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/31218229738
-      const output = await queueComparisonRun(branch, skill, option);
+      const output = await queueComparisonRun(branch, skill, option, evalFiles);
       const entry = {
         model: option.model,
         withSkill: option.withSkill,
+        withAzureMcp: option.withAzureMcp ?? true,
         run: output
       };
       results.push(entry);
@@ -157,8 +221,27 @@ async function main() {
     branchEntry.runs = results;
     output.results.push(branchEntry);
   }
-  const outputFilename = `comparison-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-  writeFileSync(path.resolve(__dirname, outputFilename), JSON.stringify(output, null, 2));
+  return output;
 }
 
-void main();
+export function writeComparisonOutput(output: CompareRunOutput, outputDirectory = __dirname): string {
+  const outputFilename = `comparison-runs-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+  const outputPath = path.resolve(outputDirectory, outputFilename);
+  writeFileSync(outputPath, JSON.stringify(output, null, 2));
+  return outputPath;
+}
+
+async function main() {
+  const inputPath = process.argv[2];
+  if (!inputPath) {
+    throw new Error("Usage: npm run compare:run -- <input.json>");
+  }
+
+  const input = readCompareInput(inputPath);
+  const output = await runComparison(input);
+  writeComparisonOutput(output);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  void main();
+}
