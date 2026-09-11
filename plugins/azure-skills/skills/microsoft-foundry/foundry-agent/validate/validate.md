@@ -28,11 +28,11 @@ Define these variables:
 3. `reportId`
    - Default: current UTC timestamp in `YYYYMMDDTHHMMSSZ` format.
    - If the caller provides `reportId`, use it instead.
-   - Require a caller-provided value to match `^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?$`. If it does not, report the error and stop.
+   - Require a caller-provided value to start and end with an alphanumeric character and contain only alphanumeric characters, `.`, `_`, or `-`. If it does not, report the error and stop.
 
 ### Step 2: Select One Hosted Agent
 
-Complete target selection before loading rules or inspecting agent source.
+Select the target before loading rules or inspecting source.
 
 1. Resolve `agentPath` to a canonical directory.
 2. Search `agentPath` recursively for `azure.yaml`. Select services whose `host` is exactly `azure.ai.agent`.
@@ -47,9 +47,9 @@ Complete target selection before loading rules or inspecting agent source.
        host: azure.ai.agent
    ```
 
-3. If the recursive search finds no candidates, support a direct project directory by inspecting only the nearest ancestor `azure.yaml`. Select only services whose `host` is exactly `azure.ai.agent` and whose canonical resolved `project` path exactly equals `agentPath`. If the nearest ancestor manifest has no exact match, do not inspect farther ancestor manifests.
-4. If no agents are found, return `no-hosted-agent` and stop without loading rules, inspecting agent source, or writing files.
-5. If one agent is found, select it. If multiple agents are found, require explicit interactive selection. In a noninteractive invocation, report the ambiguity and stop without loading rules, inspecting agent source, or writing files.
+3. If none are found, inspect only the nearest ancestor `azure.yaml`. Accept only services with exact host `azure.ai.agent` whose canonical `project` path equals `agentPath`; do not inspect farther ancestors when none match.
+4. If none match, return `no-hosted-agent` without reading rules or source or writing files.
+5. Select one match. Multiple matches require interactive selection; a noninteractive invocation reports ambiguity and stops.
 6. Freeze the selected service and canonical `agentPath` for this invocation. Do not inspect or validate sibling agents.
 
 ### Step 3: Prepare Rules
@@ -98,7 +98,7 @@ Process the merged rules in order for the selected agent:
    - `target.agentRoot` to canonical `agentPath`.
    - `results` to the completed results.
    - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>.md`.
-3. Generate the Markdown report from the same data according to [report-template.md](references/report-template.md).
+3. Generate the Markdown `.md` report from the same data according to [report-template.md.tpl](references/report-template.md.tpl).
 4. Write one report pair:
    - `<outputPath>/validation-<reportId>.json`
    - `<outputPath>/validation-<reportId>.md`
