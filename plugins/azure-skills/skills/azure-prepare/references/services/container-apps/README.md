@@ -38,6 +38,33 @@ services:
 | Background Worker | None | 0 (scale to zero) | Queue-based |
 | Web Application | External | 1 | HTTP-based |
 
+## Templates & Recipes
+
+> ⚠️ **Before generating IaC**, load [templates/selection.md](templates/selection.md) for the base
+> template decision tree, then follow [templates/composition.md](templates/composition.md)
+> to generate the base and compose required recipes.
+
+| Base Template | Use Case |
+|---------------|----------|
+| [web-app](templates/web-app.md) | High-scale serverless web application |
+| [api](templates/api.md) | REST/gRPC API service |
+| [microservice](templates/microservice.md) | Multi-service app with Dapr service discovery |
+| [worker](templates/worker.md) | Background/queue-driven worker |
+| [job](templates/job.md) | Scheduled/event/manual-trigger Container Apps Job |
+| [functions-on-aca](templates/functions-on-aca.md) | Azure Functions hosted on Container Apps |
+
+| Recipe | Adds |
+|--------|------|
+| [dapr](templates/recipes/dapr/README.md) | Service invocation, pub/sub, state, secrets |
+| [cosmos](templates/recipes/cosmos/README.md) | Cosmos DB NoSQL |
+| [servicebus](templates/recipes/servicebus/README.md) | Service Bus messaging + KEDA scaling |
+| [eventhubs](templates/recipes/eventhubs/README.md) | Event Hubs streaming + KEDA scaling |
+| [redis](templates/recipes/redis/README.md) | Redis cache / state store |
+| [acr](templates/recipes/acr/README.md) | Container Registry build/push |
+| [postgres](templates/recipes/postgres/README.md) | PostgreSQL Flexible Server |
+
+Choose a runtime from [multi-stage Dockerfiles](templates/dockerfiles/README.md).
+
 ## References
 
 - [Bicep Patterns](bicep.md)
