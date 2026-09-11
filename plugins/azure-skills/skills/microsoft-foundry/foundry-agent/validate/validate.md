@@ -23,7 +23,7 @@ Define these variables:
    - Default: current folder.
    - If the caller provides `agentPath`, use it instead.
 2. `outputPath`
-   - Default: `<agent-root>/.foundry/results`, resolved after selecting the agent.
+   - Default: `<agentPath>/.foundry/results`.
    - If the caller provides `outputPath`, use an absolute path as supplied or resolve a relative path from the current folder, independently of `agentPath`.
 3. `reportId`
    - Default: current UTC timestamp in `YYYYMMDDTHHMMSSZ` format.
@@ -32,12 +32,25 @@ Define these variables:
 
 ### Step 2: Select One Hosted Agent
 
-1. Search `agentPath` recursively for `azure.yaml`.
-2. Select services whose `host` is exactly `azure.ai.agent`.
-3. If no agents are found, return `no-hosted-agent` and stop without loading rules, inspecting agent source, or writing files.
-4. If one agent is found, select it. If multiple agents are found, require explicit interactive selection. In a noninteractive invocation, report the ambiguity and stop without loading rules, inspecting agent source, or writing files.
-5. Resolve the agent root from the selected service's `project` path relative to `azure.yaml`, or use the `azure.yaml` directory when `project` is absent.
-6. Freeze the selected service and agent root for this invocation. Do not inspect or validate sibling agents.
+Complete target selection before loading rules or inspecting agent source.
+
+1. Resolve `agentPath` to a canonical directory.
+2. Search `agentPath` recursively for `azure.yaml`. Select services whose `host` is exactly `azure.ai.agent`.
+
+   Example:
+
+   ```yaml
+   services:
+     agent:
+       name: agent
+       project: src
+       host: azure.ai.agent
+   ```
+
+3. If the recursive search finds no candidates, support a direct project directory by inspecting only the nearest ancestor `azure.yaml`. Select only services whose `host` is exactly `azure.ai.agent` and whose canonical resolved `project` path exactly equals `agentPath`. If the nearest ancestor manifest has no exact match, do not inspect farther ancestor manifests.
+4. If no agents are found, return `no-hosted-agent` and stop without loading rules, inspecting agent source, or writing files.
+5. If one agent is found, select it. If multiple agents are found, require explicit interactive selection. In a noninteractive invocation, report the ambiguity and stop without loading rules, inspecting agent source, or writing files.
+6. Freeze the selected service and canonical `agentPath` for this invocation. Do not inspect or validate sibling agents.
 
 ### Step 3: Prepare Rules
 
@@ -82,7 +95,7 @@ Process the merged rules in order for the selected agent:
    - `reportId` to `<reportId>`.
    - `generatedAt` to the value above.
    - `target.serviceName` to the selected service's `name`, falling back to its key under `services`.
-   - `target.agentRoot` to the selected agent root.
+   - `target.agentRoot` to canonical `agentPath`.
    - `results` to the completed results.
    - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>.md`.
 3. Generate the Markdown report from the same data according to [report-template.md](references/report-template.md).
