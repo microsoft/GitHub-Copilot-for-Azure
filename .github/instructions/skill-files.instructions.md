@@ -64,6 +64,16 @@ If including executable scripts:
 - Provide both bash (`.sh`) and PowerShell (`.ps1`) versions for non-trivial scripts
 - Trivial one-liners may use bash only
 
+## Integration Tests
+
+Every skill must have its test cases written under `evals/<owning-plugin>/<skill-name>`. The test cases must be implemented as Vally eval suites. See [vally-eval](../skills/vally-eval/SKILL.md) on the requirements of the eval suites.
+
+## Owners
+
+The entry must include at least two distinct GitHub aliases from the skill's authoring team, plus `@RickWinter` as the fallback repository owner.
+
+The directory containing the skill's eval suites must also have a `CODEOWNERS` entry with the same owners as the skill directory.
+
 ## Related Resources
 
 - Reference the [skill-authoring skill](../skills/skill-authoring/SKILL.md) for detailed guidelines
