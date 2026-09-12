@@ -76,9 +76,9 @@ If the user pastes or points to a single YAML manifest, validate it directly wit
 
 #### Cluster-Connected Mode
 
-1. Discover an Azure MCP capability that advertises AKS operations in the host's tools; use its host-assigned name. A missing literal name is not proof of absence.
-2. Use its advertised cluster/node-pool reads for metadata (SKU, network plugin, addons, node pool OS). The documented surface has no readiness-assessment operation — do not expect one ([Azure MCP AKS tools](https://learn.microsoft.com/azure/developer/azure-mcp-server/tools/azure-kubernetes)).
-3. Read workloads through a host Kubernetes capability with allowlist projection, or pipe `kubectl` JSON through `scripts/sanitize-readiness-input.jq` (requires `jq`) before anything reaches the model. Never fetch `Secret`/ConfigMap resources or paste raw `kubectl -o json`.
+1. Discover the host's approved AKS metadata capabilities; use their host-assigned names and schemas. Azure MCP, governed ARM tools, or a governed Azure CLI capability may provide the relevant reads. A missing literal name is not proof of absence.
+2. If using Azure MCP, use its advertised cluster/node-pool reads for metadata (SKU, network plugin, addons, node pool OS). The documented surface has no readiness-assessment operation — do not expect one ([Azure MCP AKS tools](https://learn.microsoft.com/azure/developer/azure-mcp-server/tools/azure-kubernetes)).
+3. Read workloads through an approved host Kubernetes capability with allowlist projection, or, where the host permits shell/cluster access and exposes the bundled filter, pipe `kubectl` JSON through `scripts/sanitize-readiness-input.jq` (requires `jq`) before anything reaches the model. Never fetch `Secret`/ConfigMap resources or paste raw `kubectl -o json`. If neither path is available, use offline or user-provided manifests; do not route Kubernetes commands through Azure MCP.
 4. Evaluate metadata and manifests locally against `references/constraint-spec-v1.yaml`.
 5. Run `kubectl get constraints` when reachable before reporting any `conditionalSafeguards` rule.
 
@@ -96,15 +96,21 @@ jq -f scripts/sanitize-readiness-input.jq
 Cluster metadata:
 1. Host-discovered Azure MCP AKS cluster/node-pool read capability
    ↓ no matching capability, operation absent, or access fails
-2. `az aks show` and `az aks nodepool list`
+2. Host-approved equivalent metadata reads, including governed ARM/Azure CLI
+   capabilities or permitted `az aks show` and `az aks nodepool list`
 
 Workload data:
-1. Host Kubernetes read capability or sanitized `kubectl | jq`
-   ↓ cluster access unavailable (or jq missing)
+1. Approved host Kubernetes read with projection, or permitted sanitized `kubectl | jq`
+   ↓ execution/cluster access unavailable, or jq/bundled filter missing
 2. Offline validation of local, rendered, or user-provided manifests
 ```
 
-If no Azure MCP AKS tool is discovered, say so, point to the host's MCP setup flow (SRE Agent connector steps are in `references/mcp-integration.md`), use the `az` metadata fallback, and continue with Kubernetes or offline validation.
+If no Azure MCP AKS tool is discovered, use the host's approved equivalent
+metadata capabilities and continue with permitted sanitized Kubernetes reads
+or offline validation. A local or external MCP server is not a prerequisite.
+Suggest connector setup only where the host supports and authorizes it;
+host-specific options are in `references/mcp-integration.md`. Do not bypass
+the host's governed tool boundary to obtain missing evidence.
 
 #### Offline Mode
 
@@ -223,10 +229,10 @@ There is no documented in-place Standard → Automatic SKU switch; migration to 
 
 | Error / Symptom | Likely Cause | Remediation |
 |-----------------|--------------|-------------|
-| No Azure MCP AKS capability in the host's tools | Connector/server unavailable, or host uses a built-in Azure surface | SRE Agent: use built-in Azure/`kubectl` tools; other hosts: configure Azure MCP. Use `az aks show` / `az aks nodepool list` meanwhile |
+| No Azure MCP AKS capability in the host's tools | Host uses another approved surface or does not expose these reads | Use approved equivalent metadata reads, including governed ARM/Azure CLI capabilities, or continue offline. Suggest a connector only if the host supports and authorizes setup |
 | Discovered AKS capability has no readiness operation | Expected — the documented surface is cluster/node-pool reads only | Collect sanitized manifests via `kubectl \| jq` and evaluate the bundled spec locally |
 | Azure/Kubernetes read fails (401/403/404, no context) | Credentials, RBAC, scope, or wrong target | See `references/mcp-integration.md` (SRE Agent UAMI scope vs `az login` hosts); continue offline if unresolved |
-| `jq: command not found` | Sanitizer dependency missing | Install `jq`, or use rendered manifests / a projecting host read; never send raw cluster JSON to the model |
+| `jq` or bundled sanitizer unavailable | Host cannot execute the sanitized pipeline | Use rendered manifests or an approved projecting host read. Install tools only where host policy and user authorization permit; never send raw cluster JSON to the model |
 | Helm chart uses Go templating — cannot evaluate | Template values not resolved | Ask for `helm template` output or values files |
 | Constraint spec version mismatch | Skill bundles spec v1.2.0 | Note version in output; recommend re-running after spec update |
 

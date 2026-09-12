@@ -21,11 +21,29 @@ Use for explicit packet capture after read-only checks, not generic connectivity
 
 ## MCP Tools
 
-None. Run scripts from the skill root.
+Azure MCP's AKS area provides cluster and node-pool metadata, not Kubernetes
+command execution or packet capture.
+
+## Host Capability Gate
+
+Before executing the workflow, confirm that the host permits the required
+Bash or PowerShell execution, `kubectl` access to the bound cluster, `az` for
+Azure evidence, access to the bundled scripts, and an approved artifact
+destination. A governed Azure CLI tool alone does not establish that shell,
+Kubernetes commands, or artifact operations are supported.
+
+If a required capability is unavailable or prohibited, state that capture
+execution is unavailable in this host. Analyze supplied, appropriately
+redacted evidence or give the operator a target-bound collection/capture plan;
+do not claim to have run it. Never route `kubectl` through Azure MCP, add an
+unapproved execution path, or bypass host policy. Host support does not replace
+the mutation and sensitive-data approvals below.
+
+Run bundled scripts from the skill root only after this gate is satisfied.
 
 ## Workflow/Steps
 
-0. Complete [authorization and target binding](references/capture-authorization.md).
+0. Check host capabilities, then complete [authorization and target binding](references/capture-authorization.md).
    Capture intent is not mutation consent. Stop for separate approval before
    any debug-container fallback.
 1. Install [Bash](scripts/setup-capture-configmap.sh) / [PowerShell](scripts/setup-capture-configmap.ps1).

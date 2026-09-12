@@ -19,6 +19,18 @@ Root-cause live AKS incidents with a read-only, evidence-first investigation. Th
 
 **Tool preference.** Inspect the host's available tools and advertised schemas. Azure MCP Server's AKS area can supply cluster and node-pool metadata. AppLens, Azure Monitor, and Resource Health are separate Azure MCP areas; use each only when its host-advertised schema fits the read. Never treat a specific prefix or spelling as an availability check, and do not invent a name-mapping layer. Use the portable `az` and `kubectl` flows for checks outside those surfaces or whenever the matching capability is unavailable. See [references/azure-mcp.md](references/azure-mcp.md).
 
+**Host capability gate.** Execute commands only through capabilities the host
+provides and authorizes, within the user-selected or host-authorized target
+scope. Before running the collectors or log-file pipelines, confirm approved
+shell execution, the required `az`/`kubectl`/`jq` tools, cluster reachability,
+access to the bundled scripts, and approved artifact storage. A governed Azure
+CLI tool does not imply support for arbitrary shell commands or `kubectl`.
+Use equivalent approved host reads where their schemas support the required
+evidence. Otherwise state that execution is unavailable, analyze supplied or
+redacted evidence, or hand the operator a collection plan. Never route
+`kubectl` through Azure MCP or bypass host policy to complete a mandatory read.
+Record unavailable evidence rather than treating it as a negative result.
+
 **Evidence order.** Bind the subscription, cluster, kube context, namespace, and affected resource before collecting evidence. Let the supplied symptom select the first decisive read: for a workload-local crash, preserve pod state, termination details, events, and current/previous logs before expanding outward; for control-plane, provisioning, scaling, quota, stopped-cluster, or upgrade symptoms, start with the relevant Azure operation and cluster/node-pool state. Then follow the causal branch across Kubernetes, Azure, application, network, or customer-supplied evidence. Do not require Azure Monitor when the decisive evidence exists elsewhere, and do not run a broad Azure sweep before reading a clearly identified workload failure.
 
 ## Route by symptom
@@ -46,7 +58,7 @@ boundaries; do not answer from general quota knowledge alone.
 
 ## Scripts
 
-Both shipped scripts are POSIX `sh` and read-only. They require an explicit resource group, cluster, and kube context, then verify that the context endpoint matches the named AKS resource before any Kubernetes API read. Set `AKS_SUBSCRIPTION_ID` to pin Azure reads to a subscription.
+Both shipped scripts are POSIX `sh` and read-only; use them only when the host capability gate is satisfied. They require an explicit resource group, cluster, and kube context, then verify that the context endpoint matches the named AKS resource before any Kubernetes API read. Set `AKS_SUBSCRIPTION_ID` to pin Azure reads to the authorized subscription.
 
 - `scripts/cluster-snapshot.sh <resource-group> <cluster> <kube-context>` — target-bound cluster overview (nodes, recent events, pressure, and node-pool state).
 - `scripts/pod-deep-dive.sh <namespace> <pod> <resource-group> <cluster> <kube-context> <artifacts-dir>` — target-bound pod evidence. Raw current/previous logs stay in the artifact directory; stdout contains redacted projections and no more than 50 lines from each stream.
@@ -70,7 +82,7 @@ The highest-signal failure patterns that are specific to AKS — a frontier mode
 
 ## Log discipline
 
-- Use `pod-deep-dive.sh` so current and previous streams are collected together, raw output stays outside model context, and visible log evidence is bounded and redacted.
+- When the host capability gate is satisfied, use `pod-deep-dive.sh` so current and previous streams are collected together, raw output stays outside model context, and visible log evidence is bounded and redacted. Otherwise use an equivalent approved host projection or request redacted current/previous logs from the operator.
 - The 50-line visible projection is an investigation starting point. If earlier evidence is necessary, keep the expanded raw collection in the artifact directory and expose only a separately reviewed bounded/redacted slice.
 - Preserve container prefixes and all-container collection so sidecar evidence remains attributable.
 - Get current UTC time with `date -u` before using `--since-time`.

@@ -25,6 +25,21 @@ exclusions as described above.
 
 Use a fitting host-advertised Azure read or the references' read-only queries.
 
+## Host Capability Gate
+
+Before executing any referenced pipeline, verify that the host authorizes
+the required shell and `kubectl`/`az` commands against the bound target.
+File-backed collection also requires approved artifact storage and access to
+any bundled files it uses. A governed Azure CLI tool alone does not establish
+these capabilities. Equivalent host reads may replace commands only where
+their advertised schemas provide the required evidence.
+
+If execution is unavailable or prohibited, say so and analyze supplied or
+redacted events, status, logs, and metrics, or give the operator a scoped
+collection plan. State which reads did not run and leave conclusions requiring
+missing evidence unconfirmed. Never route `kubectl` through Azure MCP or
+bypass host policy. The authorization requirements below still apply.
+
 ## Workflow
 
 1. Bind subscription, cluster, kube context, pool, and affected resource.

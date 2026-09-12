@@ -2,51 +2,61 @@
 
 ## Node NotReady — executable evidence first
 
-Every identifier in this block is derivable or enumerable — exhaust derivation before asking the user for one. If no node was named, enumerate candidates with `kubectl get nodes --no-headers | awk '$2 !~ /^Ready(,|$)/'` and run the block for each; an empty result means no node in the current cluster is NotReady, so reconfirm the cluster identity before concluding. The VMSS name and instance id are computed from the node's `providerID` inside the block — never request them.
+Derive the cluster, subscription, resource group, and node from the user's
+selected target and the host's approved metadata capabilities. Stay within
+that scope; access available to a local Azure CLI identity is not permission
+to enumerate other subscriptions. If the target is unavailable or ambiguous,
+use the host's elicitation mechanism to ask the user to select or identify it.
+Do not require a local kubeconfig or an all-subscriptions sweep before asking.
 
-If the cluster name or resource group is unknown, capture the current kubeconfig server and enumerate AKS clusters in every enabled subscription available to the current Azure CLI identity:
+Only where the host capability gate is satisfied, a scoped CLI read can
+resolve the cluster within an authorized subscription and resource group:
 
 ```bash
-KUBECONFIG_SERVER=$(kubectl config view --minify \
-  -o jsonpath='{.clusters[0].cluster.server}')
-printf 'kubeconfigServer=%s\n' "$KUBECONFIG_SERVER"
-
-az account list --query "[?state=='Enabled'].id" -o tsv |
-  while IFS= read -r SUBSCRIPTION_ID; do
-    printf 'subscriptionId=%s\n' "$SUBSCRIPTION_ID"
-    if ! az aks list \
-      --subscription "$SUBSCRIPTION_ID" \
-      --query "[].{id:id,name:name,resourceGroup:resourceGroup,fqdn:fqdn,privateFqdn:privateFqdn}" \
-      -o json; then
-      printf 'aksEnumeration=inaccessible; subscriptionId=%s\n' \
-        "$SUBSCRIPTION_ID"
-    fi
-  done
+az aks list \
+  --subscription <authorized-subscription-id> \
+  --resource-group <authorized-resource-group> \
+  --query "[].{id:id,name:name,resourceGroup:resourceGroup,fqdn:fqdn,privateFqdn:privateFqdn}" \
+  -o json
 ```
 
-Match the kubeconfig server host against `fqdn` or `privateFqdn`, then take the cluster name and resource group from the matching resource ID. Only ask the user if this read-only cross-subscription enumeration cannot produce a unique match.
+For approved `kubectl` execution, verify that the selected context's API
+endpoint matches the selected AKS resource's `fqdn` or `privateFqdn`; do not
+assume the current context is the requested cluster. If no node was named,
+list non-Ready nodes only in that bound cluster through an approved host read
+or `kubectl --context <verified-context> get nodes`. Ask which node to
+investigate when the selection is ambiguous. Derive the VMSS name and instance
+ID from the selected node's `providerID` when available; otherwise request
+targeted metadata or operator-provided evidence rather than widening scope.
+
+The following pipeline assumes that scope and context verification succeeded.
+If its execution capabilities are unavailable, request redacted equivalent
+outputs and record the missing evidence instead of running it:
 
 ```bash
+AKS_SUBSCRIPTION_ID="<authorized-subscription-id>"
 AKS_RG="<cluster-resource-group>"
 AKS_NAME="<cluster-name>"
+KUBE_CONTEXT="<verified-context>"
 NODE="<node-name>"
 
 # Kubernetes description, conditions, and node-scoped events
-kubectl describe node "$NODE"
-kubectl get node "$NODE" \
+kubectl --context "$KUBE_CONTEXT" describe node "$NODE"
+kubectl --context "$KUBE_CONTEXT" get node "$NODE" \
   -o jsonpath='{range .status.conditions[*]}{.lastTransitionTime}{"\t"}{.type}{"\t"}{.status}{"\t"}{.reason}{"\t"}{.message}{"\n"}{end}'
-kubectl get events --all-namespaces \
+kubectl --context "$KUBE_CONTEXT" get events --all-namespaces \
   --field-selector involvedObject.kind=Node,involvedObject.name="$NODE" \
   --sort-by='.metadata.creationTimestamp'
 
 # AKS node resource group and Kubernetes node to VMSS instance mapping
 NODE_RG=$(az aks show \
+  --subscription "$AKS_SUBSCRIPTION_ID" \
   --resource-group "$AKS_RG" \
   --name "$AKS_NAME" \
   --query nodeResourceGroup -o tsv)
-AGENT_POOL=$(kubectl get node "$NODE" \
+AGENT_POOL=$(kubectl --context "$KUBE_CONTEXT" get node "$NODE" \
   -o jsonpath='{.metadata.labels.agentpool}')
-PROVIDER_ID=$(kubectl get node "$NODE" \
+PROVIDER_ID=$(kubectl --context "$KUBE_CONTEXT" get node "$NODE" \
   -o jsonpath='{.spec.providerID}')
 VMSS=$(printf '%s\n' "$PROVIDER_ID" |
   awk -F'/virtualMachineScaleSets/' '{print $2}' | cut -d/ -f1)
@@ -57,6 +67,7 @@ printf 'nodeResourceGroup=%s\nagentPool=%s\nvmss=%s\ninstanceId=%s\n' \
 
 # AKS pool state
 az aks nodepool show \
+  --subscription "$AKS_SUBSCRIPTION_ID" \
   --resource-group "$AKS_RG" \
   --cluster-name "$AKS_NAME" \
   --name "$AGENT_POOL" \
@@ -65,11 +76,13 @@ az aks nodepool show \
 
 # Exact VMSS instance view and extension statuses
 az vmss get-instance-view \
+  --subscription "$AKS_SUBSCRIPTION_ID" \
   --resource-group "$NODE_RG" \
   --name "$VMSS" \
   --instance-id "$INSTANCE_ID" \
   -o json
 az vmss get-instance-view \
+  --subscription "$AKS_SUBSCRIPTION_ID" \
   --resource-group "$NODE_RG" \
   --name "$VMSS" \
   --instance-id "$INSTANCE_ID" \
