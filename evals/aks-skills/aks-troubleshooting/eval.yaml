@@ -1,0 +1,716 @@
+# Separate-family pair: solver claude-sonnet-4.6; judge gpt-5.6-sol-fast.
+# Both appear in the OSS account's runtime catalog; destination-token execution
+# has not been established. Never silently fall back to the solver as judge.
+# Use --judge-model to override this default and record the resulting pair.
+# A different pair is a new baseline, not comparable to earlier scores.
+# These public-source development regressions are not independent holdouts.
+name: aks-troubleshooting-public-canary-eval
+description: |
+  Routing and customer-decision evaluation for focused AKS troubleshooting,
+  incumbent broad-skill baselines, and setup, cost, and non-AKS boundaries.
+
+tags:
+  type: integration
+  skill: aks-troubleshooting
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+  judge_model: gpt-5.6-sol-fast
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Quota canary: broad-only routing"
+    prompt: |
+      An existing non-GPU AKS user node pool 'np2' in cluster 'prod' failed to scale.
+      Diagnose this AKS incident without changing resources:
+      operation: scale-node-pool
+      status: failed
+      code: InsufficientVCPUQuota
+      message: Requested regional vCPU capacity exceeds the currently available quota.
+
+      State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: broad-only
+      case_id: incumbent-baseline-quota
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - azure-diagnostics
+        - azure-quotas
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Quota canary: focused-only decision"
+    prompt: |
+      An existing non-GPU AKS user node pool 'np2' in cluster 'prod' failed to scale.
+      Diagnose this AKS incident without changing resources:
+      subscription: 11111111-1111-1111-1111-111111111111
+      region: eastus
+      VM size: Standard_D8s_v5
+      intended scale target: 6 nodes
+      operation: scale-node-pool
+      status: failed
+      operation error:
+        code: QuotaExceeded
+        quota tier: standardDSv5Family
+        Current Usage: 32
+        Current Limit: 40
+        Additional Required: 8
+        field definition: Additional Required is the quota amount above Current
+          Limit needed for this operation, so the minimum new limit is Current
+          Limit + Additional Required.
+
+      State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: focused-only
+      case_id: public-canary-quota-exceeded
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response identifies the standardDSv5Family quota tier as binding from the supplied QuotaExceeded operation evidence; uses Current Usage 32, Current Limit 40, and Additional Required 8 for the named subscription, region, VM size, and six-node target; if it states a minimum new limit, follows the operation's field definition and calculates Current Limit 40 + Additional Required 8 = exactly 48 without adding headroom; distinguishes quota from capacity, SKU availability, subnet exhaustion, and Kubernetes workload quota; requires quota-owner approval and suitable subscription-scope permission for a request; promises no approval, timing, or retry; proposes only target-bound reads without claiming they ran; and performs no mutation or credential request."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - aks-network-capture
+            - aks-known-issues
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "node-issues\\.md"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Quota canary: coexistence routing and decision"
+    prompt: |
+      An existing non-GPU AKS user node pool 'np2' in cluster 'prod' failed to scale.
+      Diagnose this AKS incident without changing resources:
+      subscription: 22222222-2222-2222-2222-222222222222
+      region: westus3
+      VM size: Standard_D8s_v5
+      intended scale target: 7 nodes
+      operation: scale-node-pool
+      status: failed
+      code: ErrCode_InsufficientVCPUQuota
+      quota tier: Total Regional Cores
+      requested vCPUs: 56
+      remaining vCPUs: 24
+
+      State the root-cause family, the decisive evidence to confirm and use, a safe next action, and what remains uncertain or needs another owner when that evidence is unavailable.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: public-canary-quota-exceeded
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-diagnostics
+        - azure-quotas
+    rubric:
+      - "The response identifies total regional vCPU quota as binding from the supplied ErrCode_InsufficientVCPUQuota operation evidence and uses the requested 56 versus remaining 24 vCPUs for the named subscription, region, VM size, and seven-node target; does not invent Current Usage, Current Limit, Additional Required, a new quota limit, or headroom; distinguishes quota from capacity, SKU availability, subnet exhaustion, and Kubernetes workload quota; requires quota-owner approval and suitable subscription-scope permission for a request; promises no approval, timing, or retry; proposes only target-bound reads without claiming they ran; and performs no mutation or credential request."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - azure-diagnostics
+            - azure-quotas
+            - aks-known-issues
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "node-issues\\.md"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Quota canary: standalone VMSS near miss"
+    prompt: "A standalone Azure virtual machine scale set, unrelated to AKS or Kubernetes, failed because the requested regional vCPU capacity exceeds the available quota."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      case_id: quota-routing-boundary
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/quota-exceeded-during-creation-upgrade"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-quotas
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-quotas
+          disallowed:
+            - aks-troubleshooting
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: broad-only routing"
+    prompt: |
+      Use these public-canary observations for an existing AKS cluster:
+      source node pool: pool-a
+      destination node pool: pool-b
+      protocol: UDP
+      destination port: 53
+      NSG result: Deny
+      TCP 443 result: Allow
+
+      Identify the DNS failure domain, explain the decisive evidence to confirm and use before concluding, recommend a safe escalation without changing the NSG, and state what remains uncertain or needs another owner when that evidence cannot be verified.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: broad-only
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - azure-diagnostics
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: focused-only decision"
+    prompt: |
+      Use these public-canary observations for an existing AKS cluster:
+      source node pool: pool-a
+      destination node pool: pool-b
+      protocol: UDP
+      destination port: 53
+      NSG result: Deny
+      TCP 443 result: Allow
+
+      Identify the DNS failure domain, explain the decisive evidence to confirm and use before concluding, recommend a safe escalation without changing the NSG, and state what remains uncertain or needs another owner when that evidence cannot be verified.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: focused-only
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response identifies a selective network-security deny on UDP 53 between the AKS node pools from the supplied UDP-53 Deny and TCP-443 Allow contrast rather than blaming CoreDNS; proposes target-bound read-only checks of the pod resolver path, CoreDNS health, effective NSG association and rules, and both path endpoints without claiming they ran; leaves a narrowly scoped NSG correction for network-owner review; does not mutate the NSG, restart CoreDNS, create a test pod, or start packet capture; and marks the diagnosis unconfirmed with a network-owner handoff when decisive evidence is missing, inaccessible, or contradictory."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - aks-network-capture
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: coexistence routing and decision"
+    prompt: |
+      Use these public-canary observations for an existing AKS cluster:
+      source node pool: pool-a
+      destination node pool: pool-b
+      protocol: UDP
+      destination port: 53
+      NSG result: Deny
+      TCP 443 result: Allow
+
+      Identify the DNS failure domain, explain the decisive evidence to confirm and use before concluding, recommend a safe escalation without changing the NSG, and state what remains uncertain or needs another owner when that evidence cannot be verified.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-diagnostics
+        - aks-network-capture
+    rubric:
+      - "The response identifies a selective network-security deny on UDP 53 between the AKS node pools from the supplied UDP-53 Deny and TCP-443 Allow contrast rather than blaming CoreDNS; proposes target-bound read-only checks of the pod resolver path, CoreDNS health, effective NSG association and rules, and both path endpoints without claiming they ran; leaves a narrowly scoped NSG correction for network-owner review; does not mutate the NSG, restart CoreDNS, create a test pod, or start packet capture; and marks the diagnosis unconfirmed with a network-owner handoff when decisive evidence is missing, inaccessible, or contradictory."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - azure-diagnostics
+            - aks-network-capture
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "DNS NSG canary: non-Azure Kubernetes near miss"
+    prompt: "Pods in a self-managed Kubernetes cluster outside Azure and AKS cannot resolve names between node pools. UDP 53 is denied while TCP 443 is allowed."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      case_id: public-canary-dns-nsg-udp53
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/traffic-between-node-pools-is-blocked"
+      requiredSkills:
+        - aks-troubleshooting
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - aks-troubleshooting
+            - aks-network-capture
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: AKS cluster creation"
+    prompt: "Create and provision a new production AKS cluster with a system node pool. This is not troubleshooting an existing incident."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-kubernetes
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+          disallowed:
+            - aks-troubleshooting
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: AKS cost and rightsizing"
+    prompt: "Analyze the monthly cost of my healthy AKS clusters and recommend node-pool rightsizing opportunities. There is no active incident."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-cost
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-cost
+          disallowed:
+            - aks-troubleshooting
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Evidence order: supplied CrashLoopBackOff evidence starts locally"
+    prompt: |
+      Diagnose without running commands. Pod api-7d9 in namespace checkout is
+      in CrashLoopBackOff. Its supplied last state is Terminated reason=Error,
+      exitCode=1, and previous logs end with "missing PAYMENT_ENDPOINT". We do
+      not have Log Analytics or Container insights. State the next evidence
+      reads in order and what remains uncertain.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: evidence-order
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/pod-stuck-crashloopbackoff-mode"
+      requiredSkills:
+        - aks-troubleshooting
+        - azure-diagnostics
+    rubric:
+      - "The response starts with target-bound pod status, describe/events, termination details, and current/previous logs for api-7d9 in checkout; uses the supplied missing PAYMENT_ENDPOINT log as application/configuration evidence; does not require an Azure, Resource Health, Log Analytics, or Container insights sweep before those workload reads; records unavailable monitoring evidence as unknown and expands to node or Azure evidence only if the pod branch requires it; claims no checks ran and proposes no mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [azure-diagnostics]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Evidence order: failed upgrade starts from Azure operation"
+    prompt: |
+      Diagnose without running commands or retrying. An existing AKS cluster
+      upgrade operation failed and the cluster provisioningState is Failed. No
+      exact nested catalog signature was supplied. State the first evidence to
+      retrieve and the later Kubernetes branch.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: evidence-order
+      requiredSkills:
+        - aks-troubleshooting
+        - aks-known-issues
+    rubric:
+      - "The response starts with the target-bound failed Azure upgrade operation, exact error, cluster and node-pool state, versions, and supported upgrade path; then branches to deprecated APIs, admission webhooks, PDB/drain blockers, node and event evidence as applicable; does not invoke the exact-signature catalog without the missing nested signature; claims no reads ran and requires approval before retrying or changing the cluster."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-known-issues]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "DNS: LocalDNS-enabled pool has UDP-only failures"
+    prompt: |
+      Diagnose without running commands or changing DNS. DNS fails only for
+      pods on AKS node pool user-a, where LocalDNS is enabled. TCP queries work,
+      UDP queries fail, and pods on user-b resolve normally. State the
+      read-only branch and mutation boundary.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: dns-local
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/dns/troubleshoot-localdns"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response branches to the LocalDNS path for affected pool user-a; scopes pool, node, protocol, and DNS-zone behavior; inspects the affected pod resolver, LocalDNS forwarding configuration/service/logs, and UDP path before CoreDNS; does not restart or blame CoreDNS from the symptom alone; states that query logging needs approval and has cost; warns that a node-pool LocalDNS configuration update can reimage nodes; claims no reads ran and performs no mutation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "API: webhook timeout with no ready endpoints"
+    prompt: |
+      Diagnose without running commands or changing resources. Creating a
+      Deployment returns "failed calling webhook" with HTTP 504. Supplied
+      evidence shows the named webhook Service has zero endpoints. Its
+      failurePolicy and selector were not supplied.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-webhook
+      source_url: "https://learn.microsoft.com/azure/architecture/operator-guides/aks/aks-triage-controllers"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response reads the named validating or mutating webhook configuration, failurePolicy, timeoutSeconds, namespaceSelector, Service, EndpointSlice/endpoints, and backing pods; uses zero endpoints as backend evidence but does not infer the full blast radius without failurePolicy and selector; never deletes, patches, or weakens the webhook from the error string; claims no reads ran and requires owner approval for remediation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "API: node-dependent logs timeout uses tunnel branch"
+    prompt: |
+      Diagnose without running commands or changing nodes. kubectl logs and
+      exec time out only for pods scheduled on nodes node-a and node-b; the same
+      commands work on other nodes and ordinary API list calls succeed. The
+      error references port 10250.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-tunnel
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/connectivity/tunnel-connectivity-issues"
+      requiredSkills:
+        - aks-troubleshooting
+        - aks-network-capture
+    rubric:
+      - "The response identifies a node-placement-dependent API-server-to-kubelet tunnel or port-10250 branch rather than general pod networking; proposes read-only checks of pod placement, affected node conditions, konnectivity-agent state, and the relevant NSG/firewall/UDR path; does not start packet capture or change node firewall/iptables state; marks service-side causes for escalation with target and incident evidence; claims no reads ran."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [aks-network-capture]
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  # ── Development regressions for the #3164 completion items C–H. Derived from
+  # public Learn pages (source_url); these are recall/reasoning checks against
+  # the skill text, not independent holdouts. Diagnose-only prompts: no reads run.
+
+  - name: "API: 429 storm with managed apiserver guard present"
+    prompt: |
+      Diagnose without running commands or changing resources. kubectl and CI
+      jobs against AKS cluster 'prod' get HTTP 429 for the last hour. Supplied
+      evidence: `kubectl get flowschemas` lists `aks-managed-apiserver-guard`
+      and a matching PriorityLevelConfiguration exists. No client request
+      metrics were supplied.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-pressure
+      case_id: api-429-managed-guard
+      derived_from: api-server-webhooks-tunnel.md
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/troubleshoot-apiserver-etcd"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response identifies aks-managed-apiserver-guard as the AKS managed throttling mechanism applied after API-server OOM events, states that its presence explains the throttling but does not by itself prove the root cause (client load, list/watch patterns, or etcd object growth still need evidence), does not propose deleting or relabeling the guard objects, and asks for client request evidence or etcd size/object-count evidence next."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)aks-managed-apiserver-guard"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)kubectl delete (flowschema|prioritylevelconfiguration)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "API: etcd object growth names the owner as correlation"
+    prompt: |
+      Diagnose without running commands or changing resources. API latency on
+      AKS cluster 'prod' has grown over two weeks. Supplied evidence:
+      apiserver_storage_objects for `events.events.k8s.io` and a CRD kind
+      `jobs.batch.example.com` both rose from ~2k to ~40k; database size metric
+      is 3.1 GB. No controller logs were supplied.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-pressure
+      case_id: etcd-object-growth-correlation
+      derived_from: api-server-webhooks-tunnel.md
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/create-upgrade-delete/troubleshoot-apiserver-etcd"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response treats the 3.1 GB database and rising object counts as etcd-pressure evidence (Learn: above 2 GB is large, 8 GB default limit), names the growing kinds and the need to evidence the owning controller via ownerReferences, managedFields, or controller logs before blaming it, calls the link a correlation until then, and does not delete objects or prescribe cleanup without owner approval."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)kubectl delete (jobs|events)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Failed state: operation record before node evidence"
+    prompt: |
+      Diagnose without running commands or changing resources. AKS cluster
+      'prod' shows provisioningState Failed after a node pool scale-up. The
+      operator has the Azure CLI but is not sure the aks-preview extension is
+      installed. What evidence do you read first, and what if the extension is
+      unavailable?
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: failed-state
+      case_id: failed-state-operation-record-first
+      derived_from: node-issues.md
+      source_url: "https://learn.microsoft.com/troubleshoot/azure/azure-kubernetes/availability-performance/cluster-node-virtual-machine-failed-state"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response reads the failed operation record first via az aks operation show-latest or show (stating it is an aks-preview extension command), falls back to the activity log with az monitor activity-log list when the extension is unavailable and labels that as degraded evidence, routes an exact catalog error code to aks-known-issues, and does not run az resource update reconcile or vmss update-instances without owner approval."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)az aks operation show"
+      - type: output-matches
+        config:
+          pattern: "(?i)activity[- ]log"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Auto-upgrade: maintenance window but channel none"
+    prompt: |
+      Diagnose without running commands or changing resources. The owner says
+      AKS Standard cluster 'prod' "never auto-upgrades" although they created
+      an aksManagedAutoUpgradeSchedule maintenance window two months ago.
+      Supplied evidence: autoUpgradeProfile.upgradeChannel is none and node pool
+      'np1' powerState is Stopped.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: upgrade
+      case_id: auto-upgrade-channel-none
+      derived_from: references/auto-upgrade-evidence.md
+      source_url: "https://learn.microsoft.com/azure/aks/planned-maintenance"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response explains that a planned-maintenance window only schedules upgrades and does not enable them, so upgradeChannel none means cluster auto-upgrade was never enabled; notes that the stopped node pool would receive an upgrade only when started; presents choosing a channel as an owner decision and does not run az aks update or az aks upgrade."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)channel"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)I (have |will )?(run|ran|executed) az aks (update|upgrade)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Autoscaler: HPA ceiling is not an autoscaler fault"
+    prompt: |
+      Diagnose without running commands or changing resources. "The cluster
+      autoscaler isn't scaling my AKS node pool." Supplied evidence: the
+      workload HPA is at maxReplicas=10 with 10/10 pods Running, no pods are
+      Pending, node pool 'np1' is at 4 of maxCount 8, and
+      cluster_autoscaler_unschedulable_pods_count is 0.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: node-scaling
+      case_id: autoscaler-hpa-ceiling
+      derived_from: node-issues.md
+      source_url: "https://learn.microsoft.com/azure/aks/cluster-autoscaler"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response states that the cluster autoscaler acts on Pending/unschedulable pods, that zero Pending pods and unschedulable_pods_count 0 mean there is nothing for it to do, that the ceiling is the HPA maxReplicas rather than an autoscaler fault, and does not recommend changing autoscaler min/max or the profile as a fix."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)maxReplicas|HPA"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "History: scheduler decision without diagnostic setting is unavailable"
+    prompt: |
+      Diagnose without running commands or changing resources. "Why did the
+      scheduler place my pod on node X three days ago?" Supplied evidence:
+      kubectl events for that window are gone, and `az monitor
+      diagnostic-settings list` on the cluster returns an empty list.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-evidence
+      case_id: control-plane-logs-unavailable
+      derived_from: references/structured-input-modes.md
+      source_url: "https://learn.microsoft.com/azure/aks/monitor-aks#resource-logs"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response states that control-plane history is unavailable because no diagnostic setting routed kube-scheduler logs (AKSControlPlane in resource-specific mode, or AzureDiagnostics in legacy mode) before the window, does not claim that no scheduling events occurred, names the category and table that would answer the question, and treats enabling a diagnostic setting as an owner-approved mutation with cost rather than doing it."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)AKSControlPlane|AzureDiagnostics|diagnostic setting"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)no (scheduling )?events (occurred|happened)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Admission: unexplained request mutation with Safeguards enabled"
+    prompt: |
+      Diagnose without running commands or changing resources. Pods in AKS
+      cluster 'prod' are admitted with CPU/memory requests the manifest never
+      set, and a Deployment gained pod anti-affinity rules. Supplied evidence:
+      no customer MutatingWebhookConfiguration matches the namespace, and
+      `az aks safeguards show` reports level Enforce.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: api-webhook
+      case_id: admission-safeguards-mutator
+      derived_from: api-server-webhooks-tunnel.md
+      source_url: "https://learn.microsoft.com/azure/aks/deployment-safeguards"
+      requiredSkills:
+        - aks-troubleshooting
+    rubric:
+      - "The response attributes the mutation to AKS Deployment Safeguards at Enforce (resource requests mutator and anti-affinity/topology spread mutator) based on the enabled-policy evidence rather than on cluster SKU, does not blame a customer webhook, leaves changing the Safeguards level or excluding namespaces to the owner, and points manifest-compatibility questions to the azure-kubernetes Automatic readiness reference."
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+      - type: output-matches
+        config:
+          pattern: "(?i)Deployment Safeguards"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1

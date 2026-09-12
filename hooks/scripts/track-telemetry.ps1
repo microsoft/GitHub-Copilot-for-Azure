@@ -72,6 +72,12 @@
 #                             root of the skill folder the reference lives in
 #    - Example: azure-validate/references/recipes/azd/README.md
 #
+# === Plugin Identity ===
+#
+# Every tracked event includes the plugin name and version read from the
+# installed copy's .plugin/plugin.json manifest. This lets the existing
+# telemetry receiver attribute sibling-plugin events without adding fields.
+#
 # === Reference File Detection ===
 #
 # When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
@@ -97,6 +103,11 @@
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
 #     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     aks-skills:
+#     - .copilot/installed-plugins/<catalog-name>/aks-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/aks-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/aks-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/aks-skills/skills/...
 #     shared:
 #     - .agents/skills/...
 #
@@ -217,6 +228,35 @@ function Get-PluginVersion {
         }
     } catch { }
     return $null
+}
+
+# Extract the plugin name from the top-level .plugin/plugin.json manifest.
+# Returns $null if the file or expected JSON value cannot be read.
+function Get-PluginName {
+    $pluginManifestPath = Join-Path (Split-Path -Parent $skillsDir) '.plugin/plugin.json'
+    if (-not (Test-Path -LiteralPath $pluginManifestPath)) { return $null }
+    try {
+        $manifest = Get-Content -LiteralPath $pluginManifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        if ($manifest.name -is [string] -and -not [string]::IsNullOrWhiteSpace($manifest.name)) {
+            return $manifest.name
+        }
+    } catch { }
+    return $null
+}
+
+# Return true only when this hook's plugin configures the named MCP server.
+# The shared hook is copied into every plugin, so an empty .mcp.json must not
+# report MCP calls owned by a co-installed plugin.
+function Test-OwnsMcpServer {
+    param([string]$ServerName)
+    if ([string]::IsNullOrWhiteSpace($ServerName)) { return $false }
+    $mcpConfigPath = Join-Path (Split-Path -Parent $skillsDir) '.mcp.json'
+    if (-not (Test-Path -LiteralPath $mcpConfigPath)) { return $false }
+    try {
+        $config = Get-Content -LiteralPath $mcpConfigPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        return $config.mcpServers -and ($config.mcpServers.PSObject.Properties.Name -contains $ServerName)
+    } catch { }
+    return $false
 }
 
 # === Main Processing ===
@@ -349,6 +389,12 @@ $pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-
 $pathPatternCursorKustoGraph = '\.cursor/plugins/cache/[^/]+/azure-kusto-graph-skills/[^/]+/skills/'
 $pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
 
+# --- aks-skills plugin ---
+$pathPatternCopilotAks = '\.copilot/installed-plugins/[^/]+/aks-skills/skills/'
+$pathPatternClaudeAks = '\.claude/plugins/cache/azure-skills/aks-skills/[0-9.]+/skills/'
+$pathPatternCursorAks = '\.cursor/plugins/cache/[^/]+/aks-skills/[^/]+/skills/'
+$pathPatternVscodeAgentPluginsAks = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/aks-skills/skills/'
+
 # --- shared across all plugins ---
 $pathPatternAgentsSkills = '\.agents/skills/'
 
@@ -356,6 +402,7 @@ $pathPatternAgentsSkills = '\.agents/skills/'
 $pathPatterns = @(
     $pathPatternCopilot, $pathPatternClaude, $pathPatternCursor, $pathPatternVscodeAgentPlugins,
     $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternCursorKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
+    $pathPatternCopilotAks, $pathPatternClaudeAks, $pathPatternCursorAks, $pathPatternVscodeAgentPluginsAks,
     $pathPatternAgentsSkills
 )
 
@@ -375,17 +422,26 @@ $filePath = $null
 
 # Check for skill invocation via 'skill'/'Skill' tool
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
-    $skillName = $toolInput.skill
-    # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
-    # Strip it to get the actual skill name for the allowlist
-    if ($skillName -and $skillName.StartsWith("azure:")) {
-        $skillName = $skillName.Substring(6)
+    $requestedSkillName = $toolInput.skill
+    $pluginName = Get-PluginName
+    $skillName = $requestedSkillName
+    # Native plugin invocations use "<plugin-name>:<skill-name>". Strip only
+    # this hook copy's own namespace so another plugin cannot claim the call.
+    if ($requestedSkillName -and $requestedSkillName.Contains(":")) {
+        $skillParts = $requestedSkillName -split ':', 2
+        if ($pluginName -and $skillParts[0] -eq $pluginName) {
+            $skillName = $skillParts[1]
+        } else {
+            $skillName = $null
+        }
     }
-    $skillMdPath = Join-Path $skillsDir (Join-Path $skillName 'SKILL.md')
-    if ($skillName -and (Test-Path -LiteralPath $skillMdPath) -and (Test-OwnedSkillPath $skillMdPath)) {
-        $eventType = "skill_invocation"
-        $shouldTrack = $true
-        $skillVersion = Get-SkillVersion $skillMdPath
+    if ($skillName) {
+        $skillMdPath = Join-Path $skillsDir (Join-Path $skillName 'SKILL.md')
+        if ((Test-Path -LiteralPath $skillMdPath) -and (Test-OwnedSkillPath $skillMdPath)) {
+            $eventType = "skill_invocation"
+            $shouldTrack = $true
+            $skillVersion = Get-SkillVersion $skillMdPath
+        }
     }
 }
 
@@ -424,7 +480,7 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 # Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
 #               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
-if ($toolName) {
+if ($toolName -and (Test-OwnsMcpServer -ServerName "azure")) {
     if ($clientName -eq "cursor" -and $hookEventName -eq "afterMCPExecution" -and $mcpServerName -eq "azure") {
         $azureToolName = $toolName
         if ($azureToolName.StartsWith("MCP:", [System.StringComparison]::Ordinal)) {
@@ -478,6 +534,7 @@ if (-not $filePath -and -not $skillName) {
 # === STEP 3: Publish event ===
 
 if ($shouldTrack) {
+    $pluginName = Get-PluginName
     $pluginVersion = Get-PluginVersion
 
     # Build MCP command arguments
@@ -491,6 +548,7 @@ if ($shouldTrack) {
     if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
     if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
     if ($skillVersion) { $mcpArgs += "--skill-version"; $mcpArgs += $skillVersion }
+    if ($pluginName) { $mcpArgs += "--plugin-name"; $mcpArgs += $pluginName }
     if ($pluginVersion) { $mcpArgs += "--plugin-version"; $mcpArgs += $pluginVersion }
     if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
