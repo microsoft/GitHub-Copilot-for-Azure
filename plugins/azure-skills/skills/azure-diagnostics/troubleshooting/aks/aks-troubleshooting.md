@@ -24,6 +24,11 @@ When standard diagnostics do not reveal root cause, use **Inspektor Gadget** for
 
 See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md), [references/command-flows.md](references/command-flows.md)
 
+For a deeper operational workflow, load
+[optional-aks-operations.md](optional-aks-operations.md). The add-on is
+consent-gated and optional; this baseline guide remains usable when it is not
+installed or cannot execute.
+
 ## Required Inputs
 
 - subscription or active Azure context

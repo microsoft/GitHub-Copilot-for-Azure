@@ -1,0 +1,26 @@
+{
+  "name": "azure-skills",
+  "owner": {
+    "name": "Microsoft",
+    "url": "https://www.microsoft.com"
+  },
+  "plugins": [
+    {
+      "name": "azure",
+      "description": "Current Azure description",
+      "source": "./.github/plugins/azure-skills",
+      "homepage": "https://github.com/microsoft/azure-skills",
+      "author": {
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+      },
+      "repository": "https://github.com/microsoft/github-copilot-for-azure"
+    },
+    {
+      "name": "azure-kusto-graph-skills",
+      "description": "Unrelated Kusto entry",
+      "source": "./.github/plugins/azure-kusto-graph-skills",
+      "customField": "preserve-me"
+    }
+  ]
+}

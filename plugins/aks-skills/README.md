@@ -26,19 +26,15 @@ public-canary evals trace to PR #102 source commit
 
 ## Publication and installation
 
-> Pending catalog registration: the [publish workflow](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/publish-to-marketplace.yml)
-> syncs the built
-> `aks-skills` payload into downstream `.github/plugins/aks-skills` directories,
-> but it does not add marketplace catalog entries. Those entries require
-> separate maintainer-approved manual changes. The install name below becomes
-> available only after the corresponding catalog entry is merged.
+The shared [publish workflow](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/publish-to-marketplace.yml)
+copies the built sibling payload to `.github/plugins/aks-skills` and updates
+the marketplace catalogs in the same generated downstream pull requests. Those
+pull requests still require maintainer review and merge before the install name
+is available. The workflow does not replicate AKS skills into the
+`microsoft/azure-skills` repository root.
 
-The publish workflow copies the built sibling payload to
-`.github/plugins/aks-skills` in the downstream repositories. It does not
-replicate AKS skills into the `microsoft/azure-skills` repository root.
-
-The current catalogs do not contain an AKS entry. At publication time,
-maintainers must add `aks-skills` manually to all four downstream catalogs:
+The publisher updates these four downstream catalogs from the built
+`aks-skills` manifest:
 
 - `microsoft/azure-skills/.claude-plugin/marketplace.json`
 - `microsoft/azure-skills/.cursor-plugin/marketplace.json`
@@ -47,12 +43,11 @@ maintainers must add `aks-skills` manually to all four downstream catalogs:
 
 Each entry uses the name `aks-skills`, source
 `./.github/plugins/aks-skills`, and the description from the built plugin
-manifest. Merge the payload synchronization before, or atomically with, a
-catalog entry so the catalog never points to a missing payload. No separate
-portal or application registration step is part of this repository's
-publication procedure.
+manifest. Unrelated catalog entries remain in place. No separate portal or
+application registration step is part of this repository's publication
+procedure.
 
-- **Claude Code / compatible CLI (after catalog registration):** add the
+- **Claude Code / compatible CLI (after the generated catalog change merges):** add the
   `microsoft/azure-skills` marketplace, then install
   `aks-skills@azure-skills`.
 - **SRE Agent:** add the `microsoft/azure-skills` marketplace, select the
@@ -72,6 +67,26 @@ publication procedure.
 - **Folder consumers:** use
   `microsoft/skills/.github/plugins/aks-skills/skills/` at an exact published
   commit SHA.
+
+## Base Azure and optional AKS operations
+
+The base `azure` plugin continues to provide AKS recommendation, Day-0
+planning, cluster setup, application deployment, readiness, and basic
+diagnostics. This sibling plugin adds four focused, deeper operational skills;
+it is not an automatic dependency and must not be installed or invoked without
+the customer's consent.
+
+When the current task would benefit from one of these focused skills, use the
+host's available-skill inventory or an approved read-only host capability to
+check whether it is present. If present, invoke only the relevant skill through
+the host's native skill mechanism. If absent, explain the benefit and ask
+before using the host-supported plugin manager. If installation is declined or
+the host cannot install or execute the add-on, continue with the base Azure
+guidance and supplied evidence rather than stopping.
+
+Skill bodies and their `references/` documents are selected on demand for the
+current task; installing the sibling plugin does not mean every operational
+reference should be loaded into every conversation.
 
 ## Telemetry readiness
 

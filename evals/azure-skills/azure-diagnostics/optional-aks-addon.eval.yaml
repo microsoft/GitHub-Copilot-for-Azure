@@ -1,0 +1,136 @@
+name: azure-diagnostics-optional-aks-addon-eval
+description: |
+  Verifies that the base Azure diagnostics skill uses a focused optional AKS
+  operations skill when the host inventory contains it, asks before installing
+  a useful missing add-on, and continues baseline help after decline or on an
+  unsupported host.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring: {}
+
+stimuli:
+  - name: "Present add-on routes through host-native skill capability"
+    prompt: |
+      This is a supplied-context routing exercise. The host's available-skill
+      inventory explicitly contains azure-diagnostics and aks-troubleshooting.
+      An existing AKS production cluster has an open incident: pods are Pending
+      and one node is NotReady. Route to the best available workflow without
+      running Azure, Kubernetes, shell, or network commands.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: optional-addon-present
+      requiredSkills:
+        - azure-diagnostics
+        - aks-troubleshooting
+      systemPrompt: '{"mode":"append","content":"Strict resource isolation: use only the supplied text. Do not call Azure/MCP, Kubernetes, shell, file, or network tools and do not install anything. A host-native skill invocation is the only permitted tool call."}'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - aks-troubleshooting
+          disallowed:
+            - azure-diagnostics
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Missing useful add-on requires install consent"
+    prompt: |
+      This is a supplied-context exercise. The host inventory contains only the
+      base azure-diagnostics skill; aks-troubleshooting is absent. The host has
+      a generic plugin manager, but I have not approved installation. I have an
+      open AKS node incident and want help now. Explain the optional benefit and
+      continue useful baseline intake without running commands or installing.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: optional-addon-absent
+      requiredSkills:
+        - azure-diagnostics
+      systemPrompt: '{"mode":"append","content":"Strict resource isolation: use only the supplied text. Do not call Azure/MCP, Kubernetes, shell, file, network, installation, or plugin-manager tools."}'
+    rubric:
+      - "The response explains the incident-specific benefit of the optional aks-troubleshooting skill, asks for consent before any installation, and still begins or offers the base AKS diagnostic intake. It does not claim the add-on is present or installed, does not invent a host-specific command, and does not stop without baseline help."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - aks-troubleshooting
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Declined add-on continues baseline without repeated prompting"
+    prompt: |
+      This is a supplied-context exercise. The optional aks-troubleshooting
+      add-on is not installed, and I already declined the offer to install it.
+      Continue helping with my AKS Pending-pod incident from the event and pod
+      descriptions I will supply. Do not run commands or ask about installation
+      again.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: optional-addon-declined
+      requiredSkills:
+        - azure-diagnostics
+      systemPrompt: '{"mode":"append","content":"Strict resource isolation: use only the supplied text. Do not call Azure/MCP, Kubernetes, shell, file, network, installation, or plugin-manager tools."}'
+    rubric:
+      - "The response continues the base Azure AKS diagnostic workflow using supplied evidence, asks only for relevant incident evidence, and does not repeat the installation offer. It does not claim the optional skill ran and does not dead-end."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - aks-troubleshooting
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+
+  - name: "Unsupported skill-only host keeps supplied-evidence fallback"
+    prompt: |
+      This is a supplied-context exercise on a skill-only remote host. Its
+      inventory contains azure-diagnostics but no aks-skills entries, and the
+      host exposes neither plugin installation nor command execution. I can
+      paste AKS events, pod descriptions, and Azure operation errors. Continue
+      the investigation without requiring a CLI.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: optional-addon-unsupported-host
+      requiredSkills:
+        - azure-diagnostics
+      systemPrompt: '{"mode":"append","content":"Strict resource isolation: use only the supplied text. Do not call Azure/MCP, Kubernetes, shell, file, network, installation, or plugin-manager tools."}'
+    rubric:
+      - "The response accepts the host limitation, continues baseline AKS diagnosis from supplied evidence, and requests a focused evidence set. It does not require a CLI, fabricate add-on availability or execution, repeatedly offer installation, or stop solely because the optional plugin is unavailable."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+          disallowed:
+            - aks-troubleshooting
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1

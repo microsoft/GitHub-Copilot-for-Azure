@@ -1,0 +1,41 @@
+{
+  "name": "skills",
+  "owner": {
+    "name": "microsoft",
+    "url": "https://github.com/microsoft"
+  },
+  "metadata": {
+    "description": "Skills, agents, and plugins for AI coding agents",
+    "version": "1.0.0",
+    "pluginRoot": "./.github/plugins"
+  },
+  "renames": {
+    "azure-skills": "azure"
+  },
+  "plugins": [
+    {
+      "name": "deep-wiki",
+      "source": "./.github/plugins/deep-wiki",
+      "description": "Unrelated plugin",
+      "version": "1.0.0",
+      "strict": true
+    },
+    {
+      "name": "azure",
+      "source": "./.github/plugins/azure-skills",
+      "description": "Current Azure description",
+      "version": "1.0.0",
+      "author": {
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+      },
+      "homepage": "https://github.com/microsoft/github-copilot-for-azure",
+      "repository": "https://github.com/microsoft/github-copilot-for-azure",
+      "license": "MIT",
+      "category": "orchestration",
+      "skills": [
+        "./skills/"
+      ]
+    }
+  ]
+}
