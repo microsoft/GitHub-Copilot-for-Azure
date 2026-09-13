@@ -11,7 +11,7 @@ defaults:
   runs: 5
   timeout: "5m"
   executor: integration-test-agent-runner
-  model: claude-sonnet-4.6
+  model: claude-sonnet-5
 
 scoring:
   threshold: 1

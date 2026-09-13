@@ -30,6 +30,7 @@ engine: copilot
 
 tools:
   bash: []
+  cli-proxy: false
   github:
     toolsets: [issues, labels, repos]
     min-integrity: none

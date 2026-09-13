@@ -264,7 +264,7 @@
         New-Item -Path $copilotLogDir -ItemType Directory -Force | Out-Null
         $copilotArgs = @(
                 "-p", $reportGenerationPrompt,
-                "--model", "claude-opus-4.6",
+                "--model", "claude-opus-4.8",
                 "--share", $copilotLogFile,
                 "--yolo"
             )

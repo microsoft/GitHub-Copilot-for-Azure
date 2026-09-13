@@ -31,7 +31,7 @@ export class IntegrationTestAgentRunner implements Executor {
     const workDir = options.workDir;
 
     // Set the model to use
-    const model = modelOverride ?? options.model ?? "claude-sonnet-4.6";
+    const model = modelOverride ?? options.model ?? "claude-sonnet-5";
 
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
     const systemPrompt = getSystemPrompt(tags);
