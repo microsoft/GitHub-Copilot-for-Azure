@@ -24,10 +24,10 @@ When standard diagnostics do not reveal root cause, use **Inspektor Gadget** for
 
 See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md), [references/command-flows.md](references/command-flows.md)
 
-For a deeper operational workflow, load
-[optional-aks-operations.md](optional-aks-operations.md). The add-on is
-consent-gated and optional; this baseline guide remains usable when it is not
-installed or cannot execute.
+The optional `aks-skills` add-on is handled by the focused-skill checkpoint in
+the Workflow below, using [optional-aks-operations.md](optional-aks-operations.md).
+The add-on is consent-gated and optional; this baseline guide remains usable
+when it is not installed or cannot execute.
 
 ## Required Inputs
 
@@ -60,9 +60,16 @@ If cluster identity is missing, stop and ask for it.
 
 1. Get cluster context.
 2. Classify the problem by scope bucket.
-3. Prefer Azure-side evidence before Kubernetes-side evidence.
-4. Use the matching AKS-MCP path first, then the documented CLI fallback if MCP cannot perform that read.
-5. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
+3. Focused-skill checkpoint. For an open AKS incident, or any symptom matching a
+   focused boundary in [optional-aks-operations.md](optional-aks-operations.md),
+   complete that handoff once before gathering evidence: check the host's
+   available-skill inventory; use the focused skill if it is present; if it is
+   absent and the host can install it, make one task-specific offer and ask
+   before installing; if the customer declines or the host cannot install or
+   execute it, continue with this guide and do not ask again.
+4. Prefer Azure-side evidence before Kubernetes-side evidence.
+5. Use the matching AKS-MCP path first, then the documented CLI fallback if MCP cannot perform that read.
+6. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
 
 ## Error Patterns
 
