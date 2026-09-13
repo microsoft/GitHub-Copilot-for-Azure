@@ -73,16 +73,18 @@ procedure.
 The base `azure` plugin continues to provide AKS recommendation, Day-0
 planning, cluster setup, application deployment, readiness, and basic
 diagnostics. This sibling plugin adds four focused, deeper operational skills;
-it is not an automatic dependency and must not be installed or invoked without
-the customer's consent.
+it is not an automatic dependency. Installation requires explicit customer
+consent. When the add-on is already available, use the relevant focused skill
+for the customer's requested task subject to host policy.
 
 When the current task would benefit from one of these focused skills, use the
 host's available-skill inventory or an approved read-only host capability to
-check whether it is present. If present, invoke only the relevant skill through
-the host's native skill mechanism. If absent, explain the benefit and ask
-before using the host-supported plugin manager. If installation is declined or
-the host cannot install or execute the add-on, continue with the base Azure
-guidance and supplied evidence rather than stopping.
+check whether it is present. If present and relevant to the requested task,
+invoke only that skill through the host's native skill mechanism. If absent,
+explain the benefit and ask before using the host-supported plugin manager. If
+installation is declined or the host cannot install or execute the add-on,
+continue with the base Azure guidance and supplied evidence rather than
+stopping.
 
 Skill bodies and their `references/` documents are selected on demand for the
 current task; installing the sibling plugin does not mean every operational

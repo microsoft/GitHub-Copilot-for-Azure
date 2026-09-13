@@ -9,7 +9,7 @@ plugin only when one focused workflow materially fits the current incident.
 | Skill | Exact boundary |
 |-------|----------------|
 | `aks-troubleshooting` | An open AKS incident needs deeper, target-bound operational investigation. |
-| `aks-known-issues` | An exact, fully qualified catalog signature is present. A generic symptom, quota/capacity issue, or incomplete wrapper error is not enough. |
+| `aks-known-issues` | An exact, fully qualified catalog signature is present. A quota error, unqualified capacity symptom, or incomplete wrapper is not enough; an exact fully qualified catalog capacity signature remains eligible. |
 | `aks-network-capture` | The customer explicitly requests packet capture and separately approves the bounded `pcap` plan. Generic network troubleshooting stays here. |
 | `aks-gpu-inference` | An existing AKS GPU or inference deployment has a Day-2 incident. Initial setup stays in `airunway-aks-setup`. |
 
