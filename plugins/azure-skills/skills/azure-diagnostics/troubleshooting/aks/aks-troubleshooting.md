@@ -60,13 +60,15 @@ If cluster identity is missing, stop and ask for it.
 
 1. Get cluster context.
 2. Classify the problem by scope bucket.
-3. Focused-skill checkpoint. For an open AKS incident, or any symptom matching a
-   focused boundary in [optional-aks-operations.md](optional-aks-operations.md),
-   complete that handoff once before gathering evidence: check the host's
-   available-skill inventory; use the focused skill if it is present; if it is
-   absent and the host can install it, make one task-specific offer and ask
-   before installing; if the customer declines or the host cannot install or
-   execute it, continue with this guide and do not ask again.
+3. Focused-skill checkpoint. For any incident in the Scope Buckets below,
+   including workload crashes such as `CrashLoopBackOff` on AKS, complete the
+   handoff in [optional-aks-operations.md](optional-aks-operations.md) once
+   before gathering evidence: check the host's available-skill inventory; use
+   the focused skill if it is present; if it is absent and the host can install
+   it, make one task-specific offer and ask before installing; if the customer
+   declines or the host cannot install or execute it, continue with this guide
+   and do not ask again. An application-level cause does not exempt an AKS
+   workload incident from this checkpoint.
 4. Prefer Azure-side evidence before Kubernetes-side evidence.
 5. Use the matching AKS-MCP path first, then the documented CLI fallback if MCP cannot perform that read.
 6. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
@@ -129,4 +131,4 @@ Keep these read-only unless the user explicitly asks for remediation.
 
 ## Output Checklist
 
-Return scope and impact, evidence, failure domain, root cause, confidence, next checks, remediation, and escalation.
+Return scope and impact, evidence, failure domain, root cause, confidence, next checks, remediation, and escalation. State once which focused optional AKS skill applied and its status: used, offered and awaiting consent, declined, or not available on this host.

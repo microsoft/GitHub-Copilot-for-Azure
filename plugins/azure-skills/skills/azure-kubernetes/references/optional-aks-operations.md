@@ -28,7 +28,7 @@ other execution. Apply each focused skill's own approval gates separately.
 
 | Skill | Use only when |
 |-------|---------------|
-| `aks-troubleshooting` | The customer has an open AKS incident that benefits from deeper target-bound investigation. |
+| `aks-troubleshooting` | The customer has a live AKS incident in any scope, including workload crashes, node, networking, ingress, upgrade, or scaling problems, that benefits from deeper target-bound investigation. An application-level cause does not exclude an AKS workload incident. |
 | `aks-known-issues` | The supplied or retrieved failure includes an exact, fully qualified catalog signature. A quota error, unqualified capacity symptom, or incomplete wrapper is not enough; an exact fully qualified catalog capacity signature remains eligible. |
 | `aks-network-capture` | The customer explicitly requests and separately approves a packet capture (`pcap`) workflow. Generic connectivity troubleshooting stays in baseline diagnostics. |
 | `aks-gpu-inference` | An existing AKS GPU or inference deployment has a Day-2 incident. Initial GPU cluster, provider, or model setup stays with the base setup workflow. |
