@@ -11,6 +11,27 @@ metadata:
 
 This skill provides the end-to-end steps for onboarding a new plugin to this repo. Follow the steps to scaffold a new plugin and make it ready for distribution.
 
+## Install dependencies
+
+Install dependencies at the repo root, in `tests/` and in `scripts/`.
+
+```bash
+# At repo root
+npm i
+```
+
+```bash
+# In tests/
+cd tests
+npm i
+```
+
+```bash
+# In scripts/
+cd scripts/
+npm i
+```
+
 ## Scaffold the new plugin folder
 
 Ask the skill author to provide a name for the new plugin. Then in `<repo-root>/scripts/`, run this command to scaffold the common files for a new plugin.
