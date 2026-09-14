@@ -26,7 +26,8 @@
           "type": "string"
         },
         "agentRoot": {
-          "type": "string"
+          "type": "string",
+          "description": "The unchanged agentPath resolved for the validation run; never a manifest-derived subdirectory."
         }
       },
       "additionalProperties": false
@@ -76,7 +77,7 @@
               "type": "string",
               "minLength": 1
             },
-            "description": "Plain-text, workspace-relative source locations using file:line or file:start-end."
+            "description": "Plain-text, agentPath-relative source locations using file:line or file:start-end."
           },
           "guidance": {
             "type": "array",

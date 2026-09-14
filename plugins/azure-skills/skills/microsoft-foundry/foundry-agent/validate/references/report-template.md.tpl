@@ -7,7 +7,7 @@
 
 **Report ID:** `[report ID]`<br>
 **Hosted agent:** [service name]<br>
-**Agent root:** [agent root]<br>
+**Agent path:** [the unchanged agent path used for this validation run]<br>
 **Generated:** [ISO date-time]
 
 **Results:** [failed count] feedbacks · [passed count] passed · [inconclusive count] inconclusive · [not applicable count] not applicable
