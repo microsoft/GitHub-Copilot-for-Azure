@@ -28,7 +28,7 @@
     "@types/micromatch": "^4.0.10",
     "@types/node": "^25.9.0",
     "@vitest/coverage-v8": "^4.1.11",
-    "eslint": "^10.9.0",
+    "eslint": "^10.10.0",
     "fast-xml-parser": "^5.11.0",
     "gray-matter": "^4.0.3",
     "micromatch": "^4.0.8",
