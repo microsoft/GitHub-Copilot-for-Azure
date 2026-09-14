@@ -1,0 +1,10 @@
+{
+  "tool_name": "read_file",
+  "tool_input": {
+    "filePath": "C:\\Users\\test\\.vscode\\agent-plugins\\github.com\\microsoft\\azure-skills\\.github\\plugins\\azure-skills\\skills\\azure-cost\\SKILL.md"
+  },
+  "tool_use_id": "tool-read__vscode",
+  "session_id": "73e52424-a95d-4e21-b70c-2dffe48fdd86",
+  "transcript_path": "C:\\Users\\test\\AppData\\Roaming\\Code\\User\\workspaceStorage\\transcript.json",
+  "hook_event_name": "PostToolUse"
+}

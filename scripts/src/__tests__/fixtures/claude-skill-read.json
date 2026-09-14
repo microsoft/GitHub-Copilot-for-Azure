@@ -1,0 +1,9 @@
+{
+  "tool_name": "Read",
+  "tool_input": {
+    "file_path": "/home/test/.claude/plugins/cache/azure-skills/azure/1.2.3/skills/azure-cost/SKILL.md"
+  },
+  "tool_use_id": "tool-read",
+  "session_id": "73e52424-a95d-4e21-b70c-2dffe48fdd86",
+  "hook_event_name": "PostToolUse"
+}
