@@ -89,7 +89,7 @@ For each agent, in the order established in Step 2:
    - `target.agentRoot` to the directory containing the agent's `azure.yaml`.
    - `results` to the agent's completed results.
    - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`.
-3. Generate the Markdown report from the same data according to [report-template.md](references/report-template.md).
+3. Generate the Markdown report from the same data according to [report-template.md.tpl](references/report-template.md.tpl).
 4. Write the report pair:
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.json`
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`
