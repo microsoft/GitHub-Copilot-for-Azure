@@ -1,0 +1,165 @@
+name: azure-local-multi-rack-integration-eval
+description: |
+  Integration evaluation for the azure-local-multi-rack skill.
+  Tests routing for multi-rack (rack scale) Azure Local prompts, correct
+  separation from standard Azure Local, and read-only-first behavior on
+  fabric and hardware operations.
+
+tags:
+  type: integration
+  skill: azure-local-multi-rack
+
+defaults:
+  runs: 3
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Plan a multi-rack deployment"
+    prompt: "Help me plan a multi-rack deployment of Azure Local and work out the prerequisites."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local-multi-rack"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local-multi-rack
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Network Fabric Controller and Cluster Manager"
+    prompt: "Do I need a Network Fabric Controller and Cluster Manager before creating my rack scale Azure Local cluster?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local-multi-rack"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local-multi-rack
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Multi-rack logical network"
+    prompt: "How do I create a logical network on a multi-rack Azure Local deployment?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local-multi-rack"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local-multi-rack
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "L3 isolation domain"
+    prompt: "Configure a layer 3 isolation domain for my Azure Local network fabric."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local-multi-rack"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local-multi-rack
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Compute rack troubleshooting"
+    prompt: "A whole compute rack in my multi-rack Azure Local instance lost connectivity. Where do I start?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-local-multi-rack"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local-multi-rack
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Read-only investigation before hardware action"
+    prompt: "A bare metal machine in my multi-rack Azure Local instance is unresponsive. Should I just reimage it?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    config:
+      runs: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-local-multi-rack
+      - type: output-matches
+        config:
+          pattern: "(?i)(confirm|before (you )?(reimage|restart|replace)|read-only|check .*(health|state|status))"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Negative: standard Azure Local deployment"
+    prompt: "Help me deploy a 4-node Azure Stack HCI cluster in my branch office."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-local-multi-rack
+
+  - name: "Negative: rack aware clustering is standard scale"
+    prompt: "How do I deploy a rack aware cluster across two rooms with 8 nodes?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-local-multi-rack
+
+  - name: "Negative: public Azure networking"
+    prompt: "Create a virtual network and subnet in Azure eastus."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-local-multi-rack
