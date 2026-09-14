@@ -18,7 +18,7 @@ Primary AKS troubleshooting guide for incidents routed from [../../SKILL.md](../
 
 ## Tool Selection For Diagnostics
 
-When gathering AKS diagnostic evidence, prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool that fits the read, then supporting Azure tools such as `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only when the AKS-MCP surface cannot perform the needed check.
+When gathering AKS diagnostic evidence, use the host-assigned Azure MCP AKS area for cluster and node-pool metadata, then separate Azure MCP areas such as AppLens, Monitor, or Resource Health when their advertised schemas fit the read. Use `az aks` and `kubectl` for every check those surfaces do not provide, including all Kubernetes-side inspection; the AKS area does not run `kubectl`.
 
 When standard diagnostics do not reveal root cause, use **Inspektor Gadget** for real-time, low-level node and pod observability (DNS traces, TCP traces, process snapshots, file access traces). See [references/inspektor-gadget.md](references/inspektor-gadget.md) for the gadget catalog, the `run-ig` script, and symptom-to-gadget mapping.
 
@@ -70,7 +70,7 @@ If cluster identity is missing, stop and ask for it.
    and do not ask again. An application-level cause does not exempt an AKS
    workload incident from this checkpoint.
 4. Prefer Azure-side evidence before Kubernetes-side evidence.
-5. Use the matching AKS-MCP path first, then the documented CLI fallback if MCP cannot perform that read.
+5. Use the matching Azure MCP area for Azure-side metadata where its schema fits, then the documented `az`/`kubectl` flows for everything else.
 6. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
 
 ## Error Patterns
@@ -83,7 +83,7 @@ If cluster identity is missing, stop and ask for it.
 
 ## Safe Fallback Checks
 
-When AKS-MCP cannot perform the baseline read, run the **[`aks-baseline`](../../scripts/aks-baseline.sh)** script. It executes the read-only cluster + Kubernetes baseline sweep (provisioning state, node pools, activity log, node readiness, unhealthy pods, kube-system health, warning events) and returns a single labeled digest:
+When the Azure MCP areas cannot perform the baseline read, run the **[`aks-baseline`](../../scripts/aks-baseline.sh)** script. It executes the read-only cluster + Kubernetes baseline sweep (provisioning state, node pools, activity log, node readiness, unhealthy pods, kube-system health, warning events) and returns a single labeled digest:
 
 ```bash
 # bash

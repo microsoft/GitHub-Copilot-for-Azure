@@ -90,6 +90,22 @@ Skill bodies and their `references/` documents are selected on demand for the
 current task; installing the sibling plugin does not mean every operational
 reference should be loaded into every conversation.
 
+### Relationship to the base `azure-diagnostics` AKS guide
+
+`azure-skills/skills/azure-diagnostics/troubleshooting/aks/` is the intentional
+baseline for customers without this add-on. `aks-skills/skills/aks-troubleshooting/`
+is the deeper version of the same topics. Eleven files share names across the
+two directories; `load-balancer-and-ingress.md` and `spot-and-zone-issues.md`
+are identical, the rest are baseline subsets. Both describe the same tool
+boundary: the Azure MCP AKS area provides cluster and node-pool metadata only,
+`kubectl` never runs through it, and the separate `Azure/aks-mcp` server is not
+configured by either plugin.
+
+Maintenance rule: when a fact, command, or safety boundary changes, update the
+focused skill first and then the baseline file of the same name, so the two
+never disagree. Baseline files may say less than the focused skill; they must
+not say the opposite.
+
 ## Telemetry readiness
 
 The bundled hooks use the existing Azure MCP plugin-telemetry command and honor
