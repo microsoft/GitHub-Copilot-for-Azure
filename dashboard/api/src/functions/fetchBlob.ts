@@ -1,5 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getBlobBuffer } from "../blobEnumerator";
+import { EXCLUDED_FILENAMES, getBlobBuffer } from "../blobEnumerator";
 import { validateRequestIdentity } from "../requestIdentity";
 
 /**
@@ -21,6 +21,11 @@ async function fetchBlob(request: HttpRequest, context: InvocationContext): Prom
     // Prevent directory traversal
     if (blobPath.includes("..")) {
         return { status: 400, body: "Invalid path" };
+    }
+
+    const fileName = blobPath.split("/").pop() ?? "";
+    if (EXCLUDED_FILENAMES.has(fileName)) {
+        return { status: 404, body: "Blob not found" };
     }
 
     const container = request.query.get("container") || undefined;
