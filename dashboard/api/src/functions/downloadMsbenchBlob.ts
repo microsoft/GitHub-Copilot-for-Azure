@@ -1,4 +1,5 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
+import { EXCLUDED_FILENAMES } from "../blobEnumerator";
 import { getMsbenchBlobContent } from "../msbenchBlobEnumerator";
 import { validateRequestIdentity } from "../requestIdentity";
 
@@ -22,10 +23,14 @@ async function downloadMsbenchBlob(request: HttpRequest, context: InvocationCont
         return { status: 400, body: "Invalid path" };
     }
 
+    const rawFileName = blobPath.split("/").pop() ?? "";
+    if (EXCLUDED_FILENAMES.has(rawFileName)) {
+        return { status: 404, body: "Blob not found" };
+    }
+
     try {
         const content = await getMsbenchBlobContent(blobPath);
-        const rawFileName = blobPath.split("/").pop() ?? "download";
-        const fileName = rawFileName.replace(/[\r\n"\\]/g, "_");
+        const fileName = (rawFileName || "download").replace(/[\r\n"\\]/g, "_");
 
         return {
             status: 200,
