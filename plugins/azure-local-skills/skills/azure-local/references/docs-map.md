@@ -8,7 +8,7 @@ Use Microsoft Learn as the authoritative source for Azure Local procedures. Use 
 | --- | --- |
 | Azure Local landing page | `https://learn.microsoft.com/azure/azure-local/` |
 | What is Azure Local | `https://learn.microsoft.com/azure/azure-local/overview` |
-| Scalability and deployments | `https://learn.microsoft.com/azure/azure-local/scalability-deployments` |
+| Scalability and deployments (choose a scale) | `https://learn.microsoft.com/azure/azure-local/scalability-deployments` |
 | Release information | `https://learn.microsoft.com/azure/azure-local/release-information-23h2` |
 | Known issues | `https://learn.microsoft.com/azure/azure-local/known-issues` |
 
@@ -32,6 +32,19 @@ Use Microsoft Learn as the authoritative source for Azure Local procedures. Use 
 | Register with Arc gateway | `https://learn.microsoft.com/azure/azure-local/deploy/deployment-with-azure-arc-gateway` |
 | Deploy via portal | `https://learn.microsoft.com/azure/azure-local/deploy/deploy-via-portal` |
 | Deploy via ARM template | `https://learn.microsoft.com/azure/azure-local/deploy/deployment-azure-resource-manager-template` |
+
+## Rack-aware clusters
+
+Rack-aware clustering spreads a single cluster across two racks as availability zones with synchronous replication. It is a standard-scale topology, not multi-rack. For multi-rack (rack scale), use the `azure-local-multi-rack` skill.
+
+| Need | Microsoft Learn path |
+| --- | --- |
+| Rack aware cluster overview | `https://learn.microsoft.com/azure/azure-local/concepts/rack-aware-cluster-overview` |
+| Requirements and supported configurations | `https://learn.microsoft.com/azure/azure-local/concepts/rack-aware-cluster-requirements` |
+| Network reference patterns | `https://learn.microsoft.com/azure/azure-local/concepts/rack-aware-cluster-reference-architecture` |
+| Prepare deployment | `https://learn.microsoft.com/azure/azure-local/deploy/rack-aware-cluster-deploy-prep` |
+| Deploy via portal | `https://learn.microsoft.com/azure/azure-local/deploy/rack-aware-cluster-deploy-portal` |
+| Deploy via ARM template | `https://learn.microsoft.com/azure/azure-local/deploy/rack-aware-cluster-deployment-via-template` |
 
 ## Operations, updates, and upgrades
 
