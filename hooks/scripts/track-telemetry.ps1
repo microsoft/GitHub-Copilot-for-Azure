@@ -108,6 +108,11 @@
 #     - .claude/plugins/cache/azure-skills/aks-skills/<version>/skills/...
 #     - .cursor/plugins/cache/<catalog-name>/aks-skills/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/aks-skills/skills/...
+#     azure-local-skills:
+#     - .copilot/installed-plugins/<catalog-name>/azure-local-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/azure-local-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-local-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-local-skills/skills/...
 #     shared:
 #     - .agents/skills/...
 #
@@ -394,6 +399,11 @@ $pathPatternCopilotAks = '\.copilot/installed-plugins/[^/]+/aks-skills/skills/'
 $pathPatternClaudeAks = '\.claude/plugins/cache/azure-skills/aks-skills/[0-9.]+/skills/'
 $pathPatternCursorAks = '\.cursor/plugins/cache/[^/]+/aks-skills/[^/]+/skills/'
 $pathPatternVscodeAgentPluginsAks = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/aks-skills/skills/'
+# --- azure-local-skills plugin ---
+$pathPatternCopilotAzureLocal = '\.copilot/installed-plugins/[^/]+/azure-local-skills/skills/'
+$pathPatternClaudeAzureLocal = '\.claude/plugins/cache/azure-skills/azure-local-skills/[0-9.]+/skills/'
+$pathPatternCursorAzureLocal = '\.cursor/plugins/cache/[^/]+/azure-local-skills/[^/]+/skills/'
+$pathPatternVscodeAgentPluginsAzureLocal = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-local-skills/skills/'
 
 # --- shared across all plugins ---
 $pathPatternAgentsSkills = '\.agents/skills/'
@@ -403,6 +413,7 @@ $pathPatterns = @(
     $pathPatternCopilot, $pathPatternClaude, $pathPatternCursor, $pathPatternVscodeAgentPlugins,
     $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternCursorKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
     $pathPatternCopilotAks, $pathPatternClaudeAks, $pathPatternCursorAks, $pathPatternVscodeAgentPluginsAks,
+    $pathPatternCopilotAzureLocal, $pathPatternClaudeAzureLocal, $pathPatternCursorAzureLocal, $pathPatternVscodeAgentPluginsAzureLocal,
     $pathPatternAgentsSkills
 )
 
