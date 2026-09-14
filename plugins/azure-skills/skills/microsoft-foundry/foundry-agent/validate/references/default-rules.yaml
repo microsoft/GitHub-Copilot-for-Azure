@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.1.0
 scope: Repository review rules, not certification controls.
 
 rules:
@@ -9,12 +9,34 @@ rules:
     guidance:
       - title: "Foundry Toolbox MCP hosted-agent sample"
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox"
-    when: Apply when the hosted agent uses one or more MCP servers; otherwise skip this rule.
+    when: Apply when the hosted agent uses an MCP server; otherwise skip.
     checks: >-
-      Inspect azure.yaml and toolbox.yaml when present, together with the hosted-agent code and configuration. Identify every MCP server the agent uses, verify that each server is configured as a tool in a Foundry Toolbox when a local Toolbox definition exists, and verify that every MCP call uses the Toolbox consumer endpoint rather than the original MCP server endpoint. The Toolbox may be defined in either configuration file, in both, or outside the repository; when no local definition exists, accept endpoint-only consumption if the code or configuration clearly targets a Toolbox consumer endpoint. SDK wrappers and generic MCP clients are both valid.
+      1) Start from the selected azure.ai.agent service in azure.yaml and its deployed entry point. Identify every MCP client used by the deployed agent by inspecting related dependencies, imports, runtime configuration, and call sites; ignore test-only and local-development paths. 2) For each MCP client, trace the endpoint value passed at runtime, including URL literals, configuration values, environment variables, and fallbacks. 3) Treat the endpoint as Foundry Toolbox when at least one of these signals is present: the agent references a local azure.ai.toolbox service; the URL contains /toolboxes/{name}/mcp or /toolboxes/{name}/versions/{version}/mcp; or an environment variable whose name clearly contains both TOOLBOX and ENDPOINT is used as the MCP endpoint. Generic names such as MCP_ENDPOINT, an ordinary hostname, or use of an MCP SDK alone are insufficient. 4) Check every deployed path and fallback. Pass when all paths use Toolbox, fail when any resolved path directly uses an original MCP server, and use inconclusive when an endpoint source or deployment path cannot be determined.
     statusCriteria:
-      pass: Local configuration places every MCP server in a Foundry Toolbox and the agent uses its consumer endpoint, or no local Toolbox definition exists and the agent clearly consumes an externally managed Toolbox endpoint. No code path accesses an MCP server endpoint directly.
-      fail: Local configuration places an MCP server outside Toolbox, or any hosted-agent code path accesses an MCP server endpoint directly instead of a Toolbox consumer endpoint.
+      pass: Every deployed MCP path uses a Toolbox endpoint proven by a local reference, Foundry Toolbox URL, or unambiguous Toolbox endpoint variable, with no contradictory path.
+      fail: A fully resolved deployed path directly calls an original MCP server, including through a fallback, or local configuration places an MCP server outside Toolbox.
+      inconclusive: MCP use is evident, but an endpoint source, variable meaning, or deployed path cannot be resolved.
+
+  - id: AIGW-001
+    title: Use AI Gateway for required rate limits
+    level: recommendation
+    rationale: Azure API Management AI Gateway can enforce model token or request limits and tool-call limits before traffic reaches backends.
+    guidance:
+      - title: "APIM hosted-agent solution template"
+        link: "https://github.com/microsoft/Foundry-Agent-Solution-Templates/tree/main/apim-hosted-agent"
+      - title: "AI gateway capabilities"
+        link: "https://learn.microsoft.com/azure/api-management/genai-gateway-capabilities"
+      - title: "LLM token limit policy"
+        link: "https://learn.microsoft.com/azure/api-management/llm-token-limit-policy"
+      - title: "Rate limit by key policy"
+        link: "https://learn.microsoft.com/azure/api-management/rate-limit-by-key-policy"
+    when: Apply when repository requirements or configuration specify a model token or request limit or a tool-call rate limit; otherwise skip.
+    checks: >-
+      1) Establish a model token, model request, or tool-call rate-limit requirement from repository requirements, configuration, or infrastructure; do not infer one from generic retry or 429 handling. 2) For each affected model or tool call path, trace its runtime endpoint through code, configuration, environment variables, and fallbacks. 3) Verify the endpoint belongs to Azure API Management through an azure-api.net hostname, a linked APIM resource, or infrastructure that maps its custom domain to APIM. Local APIM rate-limit policies are supporting evidence, not required evidence, because policies may be managed externally.
+    statusCriteria:
+      pass: Every required rate-limited path is resolved and uses an APIM AI Gateway endpoint.
+      fail: A fully resolved path with a rate-limit requirement calls its model or tool backend directly.
+      inconclusive: A rate-limit requirement exists, but the call endpoint or its APIM identity cannot be resolved.
 
   - id: OBS-001
     title: Enable supported tracing for hosted agents
