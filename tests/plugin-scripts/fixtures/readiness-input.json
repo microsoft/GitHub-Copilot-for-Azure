@@ -1,0 +1,113 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "payments",
+        "namespace": "prod",
+        "labels": {
+          "app": "payments",
+          "kubernetes.azure.com/agentpool": "system",
+          "internal.example/token": "LABEL_SENTINEL"
+        },
+        "annotations": { "deploy.example/note": "METADATA_ANNOTATION_SENTINEL" },
+        "managedFields": [{ "manager": "MANAGED_FIELDS_SENTINEL" }]
+      },
+      "spec": {
+        "replicas": 3,
+        "selector": { "matchLabels": { "app": "payments" } },
+        "template": {
+          "metadata": {
+            "labels": { "app": "payments" },
+            "annotations": {
+              "container.apparmor.security.beta.kubernetes.io/web": "runtime/default",
+              "sensitive.example/token": "ANNOTATION_SENTINEL",
+              "example.com/apparmor-token": "APPARMOR_NEAR_MATCH_SENTINEL",
+              "container.apparmor.security.beta.kubernetes.io/invalid": "APPARMOR_VALUE_SENTINEL"
+            }
+          },
+          "spec": {
+            "hostNetwork": true,
+            "affinity": { "podAntiAffinity": { "preferredDuringSchedulingIgnoredDuringExecution": [] } },
+            "containers": [
+              {
+                "name": "web",
+                "image": "registry.example/payments:v1",
+                "env": [
+                  { "name": "TOKEN", "value": "ENV_SENTINEL" },
+                  { "name": "PASSWORD", "valueFrom": { "secretKeyRef": { "name": "db", "key": "SECRET_KEY_SENTINEL" } } }
+                ],
+                "envFrom": [{ "secretRef": { "name": "ENVFROM_SENTINEL" } }],
+                "args": ["--conn=ARGS_SENTINEL"],
+                "ports": [{ "containerPort": 8080, "hostPort": 8080, "protocol": "TCP" }],
+                "readinessProbe": { "httpGet": { "path": "/healthz", "port": 8080, "host": "PROBE_HOST_SENTINEL" } },
+                "securityContext": {
+                  "privileged": false,
+                  "allowPrivilegeEscalation": true,
+                  "runAsUser": 0,
+                  "capabilities": { "add": ["NET_ADMIN"] },
+                  "seccompProfile": { "type": "Unconfined" },
+                  "windowsOptions": { "runAsUserName": "ContainerAdministrator" }
+                },
+                "resources": { "requests": { "cpu": "100m" } }
+              },
+              { "name": "sidecar", "image": "registry.example/sidecar" },
+              { "name": "pinned", "image": "registry.example/app@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" }
+            ],
+            "volumes": [
+              { "name": "logs", "hostPath": { "path": "/var/log/HOSTPATH_SENTINEL" } },
+              { "name": "creds", "secret": { "secretName": "SECRET_NAME_SENTINEL" } },
+              { "name": "cfg", "configMap": { "name": "CONFIGMAP_NAME_SENTINEL" } }
+            ]
+          }
+        }
+      },
+      "status": { "conditions": [{ "message": "STATUS_SENTINEL" }] }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Secret",
+      "metadata": { "name": "db", "namespace": "prod" },
+      "data": { "password": "U0VDUkVUX0RBVEFfU0VOVElORUw=" }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": { "name": "app-config", "namespace": "prod" },
+      "data": { "conn": "CONFIGMAP_DATA_SENTINEL" }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": { "name": "payments", "namespace": "prod" },
+      "spec": { "selector": { "app": "payments" }, "ports": [{ "port": 80 }] }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": { "name": "payments-dup", "namespace": "prod" },
+      "spec": { "selector": { "app": "payments" } }
+    },
+    {
+      "apiVersion": "storage.k8s.io/v1",
+      "kind": "StorageClass",
+      "metadata": { "name": "legacy" },
+      "provisioner": "kubernetes.io/azure-disk",
+      "parameters": { "storageaccount": "SC_PARAM_SENTINEL" }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "CronJob",
+      "metadata": { "name": "nightly", "namespace": "prod" },
+      "spec": {
+        "schedule": "0 0 * * *",
+        "jobTemplate": { "spec": { "template": { "spec": { "containers": [
+          { "name": "job", "image": "registry.example/job:latest", "env": [{ "name": "K", "value": "CRON_ENV_SENTINEL" }] }
+        ] } } } }
+      }
+    }
+  ]
+}
