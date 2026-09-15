@@ -1,6 +1,6 @@
 # Cost Query Dimensions
 
-Use only dimensions accepted by the ARM MCP whitelist.
+Use only dimensions accepted by the Azure Resource Manager MCP whitelist.
 
 ## Dimensions supported at all scopes
 
@@ -12,8 +12,8 @@ Use only dimensions accepted by the ARM MCP whitelist.
 `BillingAccountName`, `BillingProfileName`, and `InvoiceSectionName`.
 
 Agreement-specific upstream rules still apply. For example, department and
-enrollment dimensions apply to EA, while billing profile and invoice section
-dimensions apply to MCA.
+enrollment dimensions apply to Enterprise Agreement (EA), while billing profile
+and invoice section dimensions apply to Microsoft Customer Agreement (MCA).
 
 ## Subscription or resource-group scope only
 

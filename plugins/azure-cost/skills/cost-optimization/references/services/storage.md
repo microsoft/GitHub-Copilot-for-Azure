@@ -17,8 +17,9 @@ IDs are not Cost Management scopes.
    exposed, and ownership tags.
 3. Join recommendations to inventory by resource ID. Preserve the Advisor
    recommendation text, impact, savings fields, currency, and period.
-4. Use access, capacity, and transaction metrics only when an ARM MCP operation
-   returns them for the same resource and period.
+4. Use access, capacity, and transaction metrics only when an Azure Resource
+   Manager MCP (ARM MCP) operation returns them for the same resource and
+   period.
 
 An unattached disk, missing policy, SKU, redundancy choice, or resource tag is
 an inventory fact, not proof of waste. Do not classify storage as idle,
@@ -87,7 +88,7 @@ Include: account name, resource group, SKU/redundancy, kind, monthly cost, capac
 
 ## ARM MCP Tools
 
-Use Resource Graph operations for inventory and configuration that ARG exposes.
+Use Azure Resource Graph (ARG) operations for inventory and configuration.
 Use ARM MCP storage operations for management policies and access tracking, and
 ARM MCP monitoring operations for capacity and transaction metrics. Report an
 evidence gap when the needed operation is unavailable.

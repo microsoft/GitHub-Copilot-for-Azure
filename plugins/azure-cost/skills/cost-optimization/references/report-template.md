@@ -7,7 +7,7 @@ Use `create_file` with path `output/costoptimizereport<YYYYMMDD_HHMMSS>.md` and 
 **Generated**: <timestamp>
 
 ## Executive Summary
-- Total Monthly Cost: $X (ACTUAL DATA from ARM MCP)
+- Total Monthly Cost: $X (ACTUAL DATA from Azure Resource Manager MCP)
 - Top Cost Drivers: [List top 3 services with costs]
 - Potential Savings: $Y/month
 

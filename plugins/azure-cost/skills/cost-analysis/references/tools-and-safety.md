@@ -2,7 +2,8 @@
 
 ## Tool preference
 
-Use ARM MCP tools exclusively. They provide the supported contract for cost,
+Use Azure Resource Manager MCP (ARM MCP) tools exclusively. They provide the
+supported contract for cost,
 forecast, AKS, budget, benefit, and pricing operations. Use Resource Graph's
 generate, validate, execute sequence for inventory or change correlation.
 

@@ -1,6 +1,7 @@
 # Cost Forecast Guardrails
 
-These limits match the ARM MCP `forecast_costs` implementation.
+These limits match the Azure Resource Manager MCP `forecast_costs`
+implementation.
 
 | Rule | Limit |
 |---|---|

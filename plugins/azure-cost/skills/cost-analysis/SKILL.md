@@ -20,8 +20,9 @@ metadata:
 
 ## When to Use This Skill
 
-Use for spend, anomalies, AKS or AI cost allocation, and AKS namespace cost
-visibility. Analyze before handing remediation to `cost-optimization`.
+Use for spend, anomalies, Azure Kubernetes Service (AKS) or AI cost allocation,
+and namespace visibility. Analyze before handing remediation to
+`cost-optimization`.
 
 ## MCP Tools
 

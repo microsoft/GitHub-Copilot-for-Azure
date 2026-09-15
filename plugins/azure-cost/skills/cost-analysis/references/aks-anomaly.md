@@ -1,4 +1,4 @@
-# AKS Cost and Utilization Anomalies
+# Azure Kubernetes Service (AKS) Cost and Utilization Anomalies
 
 This workflow supports both cluster-level and namespace-level cost analysis.
 
@@ -6,7 +6,8 @@ This workflow supports both cluster-level and namespace-level cost analysis.
 2. `query_aks_costs` supports daily or monthly cost granularity, not hourly
    attribution. Query the affected day and comparable baseline days with the
    same grouping, and report each currency separately.
-3. If the available ARM MCP surface exposes node-count, CPU, memory, autoscaler,
+3. If the available Azure Resource Manager MCP surface exposes node-count, CPU,
+   memory, autoscaler,
    or Kubernetes event evidence, correlate it with the cost change. Otherwise
    state that hourly utilization evidence is unavailable; do not infer an
    hour-level cause from daily cost data.

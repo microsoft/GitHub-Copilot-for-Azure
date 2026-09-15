@@ -50,5 +50,5 @@ Do not recommend Archive for data with unpredictable or urgent retrieval.
 The day values are placeholders, not recommendations. Derive them from observed
 access evidence and the user's retention requirements.
 `daysAfterLastAccessTimeGreaterThan` requires last-access tracking; verify it
-through an available ARM MCP storage operation. If that evidence is unavailable,
-leave the recommendation unresolved.
+through an available Azure Resource Manager MCP storage operation. If that
+evidence is unavailable, leave the recommendation unresolved.

@@ -1,8 +1,8 @@
 # Azure Resource Graph Queries for Cost Optimization
 
 Azure Resource Graph (ARG) enables fast, cross-subscription resource querying
-through ARM MCP. Use it to retrieve Azure Advisor recommendations and factual
-resource inventory for optimization analysis.
+through Azure Resource Manager MCP (ARM MCP). Use it to retrieve Azure Advisor
+recommendations and factual resource inventory for optimization analysis.
 
 ## How to Query
 

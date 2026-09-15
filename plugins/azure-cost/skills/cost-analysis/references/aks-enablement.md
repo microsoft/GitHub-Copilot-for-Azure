@@ -1,6 +1,7 @@
-# AKS Cost Analysis Enablement
+# Azure Kubernetes Service (AKS) Cost Analysis Enablement
 
-Enable namespace-level cost visibility using the built-in AKS cost monitoring add-on.
+Enable namespace-level cost visibility using the built-in AKS cost monitoring
+add-on.
 
 ## Check Status
 
@@ -10,7 +11,8 @@ clusters. Project the cluster name, resource group, SKU tier, and
 
 ## Enable Add-on
 
-This cost plugin does not bypass ARM MCP with CLI or direct REST mutations. If
+This cost plugin does not bypass Azure Resource Manager MCP (ARM MCP) with CLI
+or direct REST mutations. If
 the available ARM MCP tools do not expose AKS cost-analysis enablement, explain
 the missing operation. Direct the user to the Azure Portal's AKS **Cost
 Analysis** blade, or hand off to the `azure-kubernetes` skill when the separate

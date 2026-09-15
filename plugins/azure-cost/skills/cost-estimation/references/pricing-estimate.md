@@ -17,7 +17,8 @@
    Reservation prices are term purchase totals; normalize one-year prices by 12
    and three-year prices by 36. Savings Plan and consumption prices are hourly
    meter rates and may be multiplied by expected hours.
-5. For negotiated rates, confirm EA or MCA billing scope. Call
+5. For negotiated rates, confirm the Enterprise Agreement (EA) or Microsoft
+   Customer Agreement (MCA) billing scope. Call
    `start_pricesheet_download`, then poll `get_pricesheet_status` using its
    retry interval. Label retail and negotiated values separately.
 6. Pricesheet downloads return a short-lived ZIP URL. The MCP server does not

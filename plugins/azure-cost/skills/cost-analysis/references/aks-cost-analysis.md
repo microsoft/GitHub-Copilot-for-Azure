@@ -1,4 +1,4 @@
-# AKS Cost Analysis
+# Azure Kubernetes Service (AKS) Cost Analysis
 
 `query_aks_costs` accepts only a subscription scope in the exact form
 `/subscriptions/{subscriptionId}`. Do not use resource-group, management-group,

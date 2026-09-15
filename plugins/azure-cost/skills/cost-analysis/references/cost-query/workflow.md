@@ -43,7 +43,7 @@ result may be incomplete.
 |---|---|
 | Unsupported timeframe, metric, dimension, or sort | Use a value exposed by the tool contract. |
 | Missing `from`/`to` or filter pair | Supply both members of the pair. |
-| Date outside 92 days | Narrow the period; do not bypass ARM MCP. |
+| Date outside 92 days | Narrow the period; do not bypass Azure Resource Manager MCP. |
 | Throttled | Honor the retry guidance returned by the tool and reduce fan-out. |
 | More than about 10 subscriptions | Ask the user to narrow scope. |
 

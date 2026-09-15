@@ -17,8 +17,8 @@ IDs are not Cost Management scopes.
    ID, SKU, capacity, location, provisioning state, and ownership tags.
 3. Join recommendations to inventory by resource ID. Preserve the Advisor
    recommendation text, impact, savings fields, currency, and period.
-4. Use observed utilization metrics only when an ARM MCP monitoring operation
-   returns them for the same resource and period.
+4. Use observed utilization metrics only when an Azure Resource Manager MCP
+   (ARM MCP) monitoring operation returns them for the same resource and period.
 
 Do not infer that a cache is idle, oversized, or safe to downgrade from its age,
 SKU, tags, or configuration alone. If Advisor and metrics provide no

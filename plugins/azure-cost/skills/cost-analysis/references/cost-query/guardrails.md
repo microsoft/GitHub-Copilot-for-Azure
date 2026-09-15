@@ -1,6 +1,6 @@
 # Cost Query Guardrails
 
-These limits match the ARM MCP `query_costs` implementation.
+These limits match the Azure Resource Manager MCP `query_costs` implementation.
 
 | Rule | Limit |
 |---|---|

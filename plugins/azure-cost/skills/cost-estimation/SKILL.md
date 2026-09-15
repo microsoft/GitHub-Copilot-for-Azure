@@ -18,17 +18,17 @@ metadata:
 
 ## When to Use This Skill
 
-Use for forecasts, hypothetical pricing, or planning targets. Configured budget
-resources and alerts belong to `cost-governance`; historical decomposition
-belongs to `cost-analysis`.
+Use for forecasts, pricing estimates, or planning targets. Budgets and alerts
+belong to `cost-governance`; historical decomposition belongs to
+`cost-analysis`.
 
 ## MCP Tools
 
 | Tool | Use |
 |------|-----|
-| `forecast_costs` | Forecast an existing Azure scope. |
+| `forecast_costs` | Forecast an Azure scope. |
 | `get_retail_prices` | Retrieve public SKU and meter prices. |
-| Pricesheet tools | Retrieve negotiated EA or MCA prices asynchronously. |
+| `start_pricesheet_download`, `get_pricesheet_status` | Retrieve Enterprise Agreement (EA) or Microsoft Customer Agreement (MCA) prices. |
 
 ## Workflow
 
@@ -44,4 +44,4 @@ belongs to `cost-analysis`.
 | Forecast unavailable | Explain the history requirement. |
 | Pricesheet pending | Honor the returned polling interval. |
 | Multiple currencies | Never combine currencies. |
-| MCP server error | Retry once; then stop and report the trace ID. |
+| Server error | Retry once; then stop and report the trace ID. |

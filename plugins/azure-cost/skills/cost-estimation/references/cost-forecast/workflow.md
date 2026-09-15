@@ -29,7 +29,7 @@ present. Empty or unavailable forecast data is not zero.
 
 For grouped historical data, hand off to `cost-analysis`. If the requested
 forecast cannot fit the tool contract, explain the limitation rather than
-bypassing ARM MCP.
+bypassing Azure Resource Manager MCP.
 
 ## Error handling
 
