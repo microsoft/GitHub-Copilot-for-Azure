@@ -26,7 +26,7 @@ Define:
 3. Sort the selected agents by `azure.yaml` path, then by their key under `services`.
 4. If no agents are found, return `no-hosted-agents` and stop without creating `outputPath` or generating files.
 5. Process each agent in the sorted order:
-   - `agentName`: service `name`, otherwise its key under `services`.
+   - `agentName`: read `name` only from the selected service object under `services`; otherwise use its exact service key. Never use top-level manifest `name`.
    - `normalizedAgentName`: lowercase `agentName`, replace non-alphanumeric sequences with `-`, and trim `-`. If assigned, append the lowest available suffix starting at `-1`.
 
 ### Step 3: Prepare Rules
@@ -37,7 +37,7 @@ Define:
 
    > **Note:** An agent-path or caller-provided custom rule can skip a default rule by using the same `id` and a `when` condition that never applies.
 4. Create `outputPath` if it does not exist. If it cannot be written, report the error and stop.
-5. Serialize the merged rules as valid YAML to `<outputPath>/agent-validation-<reportId>-rules.yaml`. Quote strings or use block scalars when plain syntax is ambiguous, including values containing `: `. Read the file back, parse it, and validate it against [rules-schema.json](references/rules-schema.json). If either check fails, rewrite and revalidate before Step 4; if it still fails, report the error and stop.
+5. Serialize the merged rules as valid YAML to `<outputPath>/agent-validation-<reportId>-rules.yaml`. Quote strings or use block scalars when plain syntax is ambiguous, including values containing `: `. Read it back, parse it, and validate it against [rules-schema.json](references/rules-schema.json). Compare every parsed rule field-for-field with its highest-precedence source object (caller > agent > default), including new custom IDs, without changing merged order. On any parse, schema, or content mismatch, rewrite and revalidate before Step 4; if it still fails, report the error and stop.
 
 ### Step 4: Validate Rules One by One
 
@@ -59,7 +59,7 @@ For each agent, in the order established in Step 2:
 
 1. Complete all Step 4 results before generating either report.
 2. Set `generatedAt` to the current date-time in ISO 8601 UTC format.
-3. Generate JSON from the final results per [report-schema.json](references/report-schema.json), including every merged rule once. Set `reportId`, `generatedAt`, `target.serviceName=agentName`, final `results`, and resolved `markdownPath`. Set compatibility field `target.agentRoot` to unchanged `agentPath`, never a manifest-derived path.
+3. Generate JSON from the final results per [report-schema.json](references/report-schema.json), including every merged rule once. Set `reportId`, `generatedAt`, `target.serviceName=agentName`, final `results`, and resolved `markdownPath`. Verify `target.serviceName` equals the selected service object's `name`, or its exact service key when absent; never use top-level manifest `name`, and correct any mismatch before writing. Set compatibility field `target.agentRoot` to unchanged `agentPath`, never a manifest-derived path.
 4. Filter the final JSON `results` into four complete lists for `fail`, `pass`, `inconclusive`, and `skipped`. Use each list's exact length for Summary; never reuse a count from a partial result list. Require the four lengths to sum to both `results.length` and the merged-rule count.
 5. Attach each result's original merged-rule index. Stable-sort every list by `(level rank, merged-rule index)` using `error=0`, `warning=1`, and `recommendation=2`.
 6. Generate Markdown from the sorted lists according to [report-template.md.tpl](references/report-template.md.tpl). Use `fail` for the failed-results table and render every result exactly once in its matching status section.
