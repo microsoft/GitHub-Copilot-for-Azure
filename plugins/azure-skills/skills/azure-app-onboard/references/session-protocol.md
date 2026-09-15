@@ -53,8 +53,7 @@ Call `mcp_azure_mcp_extension_cli_install` with `cli-type: "az"` to verify Azure
 
 | Location | Artifacts |
 |----------|-----------|
-| `.copilot-azure/sessions/{uuid}/` | `context.json`, `prereq-output.json`, `prepare-plan.json`, `scaffold-manifest.json`, `deploy-result.json` |
-| `.copilot-azure/sessions/{uuid}/replaced-files/` | User files displaced by scaffold (existing IaC), stored at their original relative path (**mirror path** = same directory structure as the repo). Never overwritten or deleted — moved here so the original is preserved. |
+| `.copilot-azure/sessions/{uuid}/` | `context.json`, `prereq-output.json`, `readiness-report.md`, `prepare-plan.json`, `scaffold-manifest.json`, `deploy-result.json` |
 
 ## Phase-gated Reference Loading
 

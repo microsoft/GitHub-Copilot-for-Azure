@@ -8,7 +8,7 @@ Artifact write procedures for the prereq phase exit. Read at Step 4 of the [read
 
 1. **`prereq-output.json`** — ⛔ Read [`prereq-schemas.ts`](prereq-schemas.ts) for `PrereqOutput` interface.
 
-   > ⛔ **Per-component verdicts MUST persist.** Every entry in `components[]` MUST include a `verdicts` object: `{ "build", "completeness", "deployability" }` with values `PASS`/`WARN`/`FAIL` (`build` may be `SKIPPED` when build validation was skipped; `completeness`/`deployability` are never `SKIPPED`). Downstream readiness scoring and the prepare phase read these — never omit them.
+   > ⛔ **Per-component `verdicts` MUST persist** — prepare + readiness scoring read them; never omit. Every `components[]` entry needs a `verdicts` **object** (plural key, never a singular `verdict`): `{ build, completeness, deployability }` = `PASS`/`WARN`/`FAIL` (`build` may be `SKIPPED` when build validation was skipped; the other two never). `PASS`/`WARN`/`FAIL` live ONLY in `verdicts` — do NOT confuse with the top-level `overallHealth` enum (`ready`/`readyWithCaveats`/`blocked`).
    >
    > ⛔ **Warnings MUST persist.** Every ⚠️ WARN → `warnings[]`: `{ "id": "W-{ID}", "component", "axis", "summary", "detail", "fix", "fixPhase" }`. Both `fix` and `fixPhase` are required — validate before writing.
    >

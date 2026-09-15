@@ -20,7 +20,7 @@ az account show
 
 ### 0b. Resource Name Availability
 
-Check globally-unique names before deploy: `az acr check-name`, `az storage account check-name`, `az webapp show`, `az keyvault show`. Name taken → suggest alternate from `prepare-plan.json.naming.suffix`: "Name `{name}` taken. Use `{altName}`?"
+Check globally-unique names before deploy: `az acr check-name`, `az storage account check-name`, `az webapp show`, `az keyvault show`. Name taken → suggest alternate from `prepare-plan.json.naming.suffix`: "Name `{name}` taken. Use `{altName}`?" ⛔ On acceptance, write `{altName}` to the affected `prepare-plan.json.naming.resources[]` entry BEFORE redeploying — scaffold/deploy read plan names verbatim, so an un-synced rename regenerates the same collision or fails the conformance gate.
 
 ### 0c. F1/Free Tier Warning
 
@@ -34,10 +34,15 @@ az role assignment list --assignee {userId} --scope /subscriptions/{sub} --query
 ```
 
 Subscription-scope deploy requires `Contributor`/`Owner` on subscription. Missing → `ENVIRONMENT_BLOCKING` with `az role assignment create` command.
+- ⛔ Empty result ≠ no permissions (misses inherited/group roles) — retry with `--include-inherited` before treating as blocked.
 
 ### 1. Deployment Preview
 
 ⛔ **MANDATORY — do NOT skip.** What-if validates + previews in one call. Use `what-if` exclusively — `az deployment sub/group validate` hits a known CLI bug (HTTP stream consumed error). If what-if fails, log + warn user — do not skip to execution.
+
+⛔ **Scope is NOT a choice — read `infra/main.bicep` line 1 FIRST.** Grep for `targetScope\s*=\s*'(\w+)'`. This determines which command block below applies — never guess, never include both in the generated checklist:
+- `targetScope = 'subscription'` → use **Bicep (subscription scope)** below. `az deployment group` will fail (`ResourceGroupNotFound` — the RG doesn't exist yet, this Bicep creates it).
+- `targetScope` omitted, or `= 'resourceGroup'` → use **Bicep (resource-group scope)** below.
 
 #### Bicep (subscription scope)
 
@@ -47,24 +52,26 @@ az deployment sub what-if \
   --location {location} \
   --template-file infra/main.bicep \
   --parameters @infra/main.parameters.json \
-  --subscription {subscriptionId} \
-  --what-if-result-format FullResourcePayloads
+  --parameters {additionalSecureParams} \
+  --subscription {subscriptionId}
 ```
 
 #### Bicep (resource-group scope)
 
 ```bash
-az deployment group create \
+az deployment group what-if \
   --resource-group {rg} \
   --template-file infra/main.bicep \
   --parameters @infra/main.parameters.json \
-  --subscription {subscriptionId} \
-  --what-if \
-  --what-if-result-format FullResourcePayloads
+  --parameters {additionalSecureParams} \
+  --subscription {subscriptionId}
 ```
+
+> ⛔ Pass every `@secure()` param from `main.bicep` (e.g. `deployerObjectId`) as `--parameters {additionalSecureParams}` — same list as Step 6's deploy command. Omitting one hangs `what-if` silently instead of erroring. Use only the flags shown above; unlisted flags (e.g. `--what-if-result-format`) fail outright.
 
 - Review changes: `Create`, `Modify`, `Delete`, `NoChange`. Surface `Delete` as warnings — user must acknowledge.
 - Auth error → `ENVIRONMENT_BLOCKING`.
+- **If the command produces no output for >60s:** stop it and check whether every `@secure()` parameter from `main.bicep` was supplied — a hang, not an error, is the signature of a missing secure parameter.
 
 #### Terraform
 
@@ -96,14 +103,15 @@ Otherwise → **read [sku-quota-validation.md](../../prepare/references/sku-quot
 
 ⛔ `SubscriptionIsOverQuotaForSku` or `LocationIsOfferRestricted` in deploy output → HALT. See [error-classification.md](error-classification.md).
 
-### 5. Resource Group Existence
+### 5. Resource Group Existence + Ownership
 
 ```bash
-az group show --name {rg} --query "location" -o tsv 2>/dev/null
+az group show --name {rg} --query "{location:location, tags:tags}" -o json 2>/dev/null
 ```
 
-- Exists → verify location matches `prepare-plan.json` region. Mismatch → warn.
 - Not exists → will be created by deployment (if `main.bicep` has subscription scope).
+- Exists, `tags.app-onboard-session-id` matches this session → resume/redeploy target. Verify location matches `prepare-plan.json` region; mismatch → warn.
+- Exists, tags missing OR `app-onboard-session-id` belongs to a DIFFERENT session → **not owned by this session.** ⛔ HALT — `ask_user`: "Resource group `{rg}` already exists and isn't tracked by this session. Deploying here adds resources alongside whatever's already in it. Continue anyway, or pick a new name?" Proceed only on explicit confirmation; "pick a new name" → append an attempt suffix to `naming.suffix`, recompute resource names, and re-run this check on the new name.
 
 ## Error Handling
 
@@ -114,6 +122,7 @@ Each check runs independently. Collect all results, then present structured repo
 | Deployment preview | Warn, don't block (can fail on unsupported types) |
 | RBAC | Block. Surface `az role assignment create`. |
 | RG check | Warn on location mismatch. Don't block. |
+| RG ownership | Block until explicit user confirmation (consent gate, not a hard failure). |
 
 ## Report Format
 

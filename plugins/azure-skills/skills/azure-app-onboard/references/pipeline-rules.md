@@ -29,7 +29,8 @@ Update `context.json` at phase boundaries — combine `completedPhases` update w
 `currentPhase` must NEVER appear in `completedPhases` — if invariant violated, halt and report.
 
 `context.json` is NOT write-once — each phase boundary MUST update it on completion:
-- Write `intent` after Step 2
+
+- Write `intent` after Step 4
 - `components` after Step 3
 - `azure.resourceGroup` after Step 7 (also written to `deploy-result.json.resourceGroupName`)
 - Push to `completedPhases` at phase boundaries

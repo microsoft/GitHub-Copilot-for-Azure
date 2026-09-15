@@ -13,7 +13,9 @@ The deploying user/principal needs RBAC to write secrets (scaffold seeds initial
 
 If the app seeds data using a generated secret (admin password, API key), either display it to the user at deploy time OR ensure the deployer has read RBAC on the Key Vault.
 
-> ⛔ **Include a role assignment for the deploying user** (`context.json.azure.userObjectId`) with Key Vault Secrets Officer scoped to the Key Vault resource. Without this, `az keyvault secret set` fails with 403 during deploy secret seeding.
+> ⛔ **Include a role assignment for the deploying user** (the `deployerObjectId` parameter — scaffold resolves `az ad signed-in-user show --query id -o tsv` and writes the real value into `main.parameters.json`; NEVER empty/placeholder) with Key Vault Secrets Officer scoped to the Key Vault resource. Without this, `az keyvault secret set` fails with 403 during deploy secret seeding.
+>
+> ⛔ **Wire the KV from the key-vault module's output** — in `main.bicep` pass `keyVaultId: keyVault.outputs.id` into the role-assignments module (never a plain name/param). Bicep then infers the ordering (KV created before the assignment), exactly like `scope: rg`. A name-only reference gives no ordering, so the assignment races the KV and fails `ResourceNotFound` — the missing-`dependsOn` heal loop.
 
 ## Security Defaults
 
