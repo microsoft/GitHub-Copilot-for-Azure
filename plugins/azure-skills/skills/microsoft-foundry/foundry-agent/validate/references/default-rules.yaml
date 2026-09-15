@@ -7,8 +7,10 @@ rules:
     level: recommendation
     rationale: Foundry Toolbox centralizes MCP configuration, authentication, credential handling, and policy enforcement while allowing tools to be updated without changing hosted-agent code.
     guidance:
-      - title: "Foundry Toolbox MCP hosted-agent sample"
-        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/bring-your-own/responses/bring-your-own-toolbox"
+      - title: "Agent Framework Foundry Toolbox sample"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/agent-framework/responses/04-foundry-toolbox"
+      - title: "LangGraph Foundry Toolbox sample"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/02-langgraph-toolbox"
     when: Apply when the hosted agent uses an MCP server; otherwise skip.
     checks: >-
       1) Start from the selected azure.ai.agent service in azure.yaml and its deployed entry point. Identify every MCP client used by the deployed agent by inspecting related dependencies, imports, runtime configuration, and call sites; ignore test-only and local-development paths. 2) For each MCP client, trace the endpoint value passed at runtime, including URL literals, configuration values, environment variables, and fallbacks. 3) Treat the endpoint as Foundry Toolbox when at least one of these signals is present: the agent references a local azure.ai.toolbox service; the URL contains /toolboxes/{name}/mcp or /toolboxes/{name}/versions/{version}/mcp; or an environment variable whose name clearly contains both TOOLBOX and ENDPOINT is used as the MCP endpoint. Generic names such as MCP_ENDPOINT, an ordinary hostname, or use of an MCP SDK alone are insufficient. 4) Check every deployed path and fallback. Pass when all paths use Toolbox, fail when any resolved path directly uses an original MCP server, and use inconclusive when an endpoint source or deployment path cannot be determined.
@@ -24,12 +26,6 @@ rules:
     guidance:
       - title: "APIM hosted-agent solution template"
         link: "https://github.com/microsoft/Foundry-Agent-Solution-Templates/tree/main/apim-hosted-agent"
-      - title: "AI gateway capabilities"
-        link: "https://learn.microsoft.com/azure/api-management/genai-gateway-capabilities"
-      - title: "LLM token limit policy"
-        link: "https://learn.microsoft.com/azure/api-management/llm-token-limit-policy"
-      - title: "Rate limit by key policy"
-        link: "https://learn.microsoft.com/azure/api-management/rate-limit-by-key-policy"
     when: Apply when repository requirements or configuration specify a model token or request limit or a tool-call rate limit; otherwise skip.
     checks: >-
       1) Establish a model token, model request, or tool-call rate-limit requirement from repository requirements, configuration, or infrastructure; do not infer one from generic retry or 429 handling. 2) For each affected model or tool call path, trace its runtime endpoint through code, configuration, environment variables, and fallbacks. 3) Verify the endpoint belongs to Azure API Management through an azure-api.net hostname, a linked APIM resource, or infrastructure that maps its custom domain to APIM. Local APIM rate-limit policies are supporting evidence, not required evidence, because policies may be managed externally.
@@ -73,9 +69,9 @@ rules:
       inconclusive: The effective package or version is affected by unresolved ranges, unresolved central version management, environment-specific resolution, or other indirection, or imports cannot be mapped reliably to the declared package family.
 
   - id: SDK-002
-    title: Use framework-specific Foundry hosting SDKs
+    title: Use recommended Foundry hosted-agent SDKs
     level: recommendation
-    rationale: Foundry samples recommend Agent Framework for new Python and .NET agents and LangChain Azure AI hosting for existing Python LangGraph agents. These integrations handle hosted protocols and sessions.
+    rationale: Recommended Foundry integrations implement hosted protocols and sessions without custom hosting code. OpenAI Agents SDK and generic or custom hosts are not recommended for Foundry hosted agents.
     guidance:
       - title: "Python hosted-agent framework samples"
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents"
@@ -83,13 +79,13 @@ rules:
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents"
       - title: "Python LangGraph hosting samples"
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph"
-    when: Apply when deployed Python code imports agent_framework, langchain, or langgraph, or deployed C# code references Microsoft.Agents.AI, AutoGen, or Microsoft.SemanticKernel; otherwise skip.
+    when: Apply to every hosted agent configured with host azure.ai.agent.
     checks: >-
-      1) Resolve the deployed entry point and its reachable framework imports. 2) For Python Agent Framework, require agent-framework-foundry-hosting and ResponsesHostServer or InvocationsHostServer. 3) For Python LangChain or LangGraph, require langchain-azure-ai[hosting], or equivalent resolved lock entries, and langchain_azure_ai.agents.hosting.run, ResponsesHostServer, or InvocationsHostServer. 4) For C# Responses, require Microsoft.Agents.AI.Foundry.Hosting with AddFoundryResponses and MapFoundryResponses; for C# Invocations, require Azure.AI.AgentServer.Invocations with AddInvocationsServer and MapInvocationsServer. Accept a generic host only when repository evidence documents a required customization unsupported by the matching integration.
+      1) Resolve the deployed language, dependencies, entry point, and protocol host. 2) Accept only these end-to-end paths: Python Agent Framework with agent-framework-foundry-hosting and ResponsesHostServer or InvocationsHostServer; Python LangChain or LangGraph with langchain-azure-ai[hosting], or equivalent resolved lock entries, and langchain_azure_ai.agents.hosting.run, ResponsesHostServer, or InvocationsHostServer; C# Responses with Microsoft.Agents.AI.Foundry.Hosting, AddFoundryResponses, and MapFoundryResponses; or C# Invocations with Azure.AI.AgentServer.Invocations, AddInvocationsServer, and MapInvocationsServer. 3) Identify the Python openai-agents package or imports from its agents module, other agent or hosting SDKs, generic web hosts, and handwritten protocol routes or handlers as non-recommended. 4) Trace each declared protocol from the deployed entry point to an approved host; dependency presence alone is insufficient.
     statusCriteria:
-      pass: Every detected framework has its matching hosting dependency, and the deployed entry point uses the matching host or registration API.
-      fail: The framework and entry point are resolved, but a required hosting dependency or API is absent or bypassed without a documented required customization.
-      inconclusive: An applicable framework is detected, but its dependencies, deployed entry point, or hosting API cannot be resolved.
+      pass: Every declared protocol uses an approved hosting dependency and its matching host or registration API end to end.
+      fail: A resolved path uses the Python openai-agents package or its agents imports, another non-approved agent or hosting SDK, a generic web host, a handwritten protocol handler, or an approved framework without its matching hosting integration.
+      inconclusive: The deployed dependencies, entry point, or protocol host cannot be resolved enough to classify the path.
 
   - id: AGT-001
     title: Do not instruct agents to bypass controls or fabricate success
