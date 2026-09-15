@@ -1,7 +1,8 @@
 # Cost Query Errors
 
-Handle errors returned by `query_costs`; do not bypass the tool with REST, CLI,
-or SDK calls.
+Handle errors returned by `query_costs`. Use an API fallback only when the
+operation itself is unavailable, as defined in
+[tool and safety guidance](../tools-and-safety.md).
 
 | Error | Likely cause | Remediation |
 |---|---|---|
@@ -13,7 +14,7 @@ or SDK calls.
 | Invalid `top` | Outside 1-5000 | Choose a supported row limit. |
 | Unauthorized or forbidden | Authentication or RBAC failure | Reauthenticate or request Cost Management Reader access. |
 | Throttled | Excessive Cost Management fan-out | Honor returned retry guidance and reduce calls. |
-| MCP server error | Transient service failure | Retry once; then stop and report the trace ID. |
+| MCP server error | Transient service failure | Retry once; if the operation remains unavailable, use the Cost Management Query API fallback. |
 | Empty rows | No data or unavailable data | Do not report zero unless the response establishes zero. |
 
 Do not assume upstream HTTP headers or error-body fields are exposed by the MCP

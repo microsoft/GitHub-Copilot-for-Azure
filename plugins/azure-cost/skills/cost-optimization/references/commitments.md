@@ -18,3 +18,6 @@
 6. Present current utilization, coverage, new recommendations, and remediation
    options. Never purchase, exchange, or refund a commitment without explicit
    user approval.
+
+If a benefit or reservation tool is unavailable, use the API mapped in
+[tool fallback](tool-fallback.md). Preserve its period and scope semantics.

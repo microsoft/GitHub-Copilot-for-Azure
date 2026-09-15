@@ -142,7 +142,7 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Retail pricing uses ARM MCP without direct pagination"
+  - name: "Retail pricing uses ARM MCP before fallback"
     prompt: "Estimate the public hourly price for a Standard_D4s_v5 Linux VM in East US. Use the supported pricing tool, and if the result is truncated, explain how you will narrow it without calling a returned pagination URL."
     config:
       runs: 1
@@ -161,11 +161,34 @@ stimuli:
         config:
           required:
             - name: "(?i)(azure-pricing|.*get_retail_prices$)"
-          disallowed:
-            - name: "(?i)^(bash|powershell|shell|web_fetch|fetch|curl|http|rest)$"
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|management\\.azure\\.com|prices\\.azure\\.com/api"
+
+  - name: "Forecast API fallback preserves constraints"
+    prompt: "The ARM MCP forecast_costs operation is unavailable. Explain the supported fallback for forecasting this Azure scope, but do not execute it."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost Management Forecast API"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)92.day|scope|currency|period"
 
   - name: "Retail capped results are narrowed"
     prompt: "While estimating Azure VM retail prices, the ARM MCP pricing tool returned Count 5,000 and a NextPageLink for a broad query. Explain the safe next step and whether I can treat those rows as the complete Azure price catalog."

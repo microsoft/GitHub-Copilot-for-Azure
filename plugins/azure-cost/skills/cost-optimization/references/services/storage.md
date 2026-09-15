@@ -37,8 +37,8 @@ When Advisor or observed access evidence supports tiering analysis, load
 **Find storage accounts without lifecycle policies:**
 
 Lifecycle policy contents are not queryable through Resource Graph. Use the
-applicable ARM MCP storage operation. Do not substitute CLI or direct REST when
-the operation is unavailable.
+applicable ARM MCP storage operation. If unavailable, use the Storage Resource
+Provider API through the [fallback process](../tool-fallback.md).
 
 **Find Premium storage accounts in non-production:**
 
@@ -90,8 +90,9 @@ Include: account name, resource group, SKU/redundancy, kind, monthly cost, capac
 
 Use Azure Resource Graph (ARG) operations for inventory and configuration.
 Use ARM MCP storage operations for management policies and access tracking, and
-ARM MCP monitoring operations for capacity and transaction metrics. Report an
-evidence gap when the needed operation is unavailable.
+ARM MCP monitoring operations for capacity and transaction metrics. Use the
+Storage Resource Provider or Azure Monitor API fallback when needed, and report
+an evidence gap if neither source returns the required data.
 
 ## Pricing
 

@@ -1,7 +1,8 @@
 # Cost Query Tool Contract
 
-`query_costs` accepts typed MCP parameters. Do not build a Cost Management REST
-request body.
+`query_costs` accepts typed MCP parameters. Use this contract for MCP calls; an
+API fallback must use the official Cost Management Query API schema instead of
+translating arbitrary fields.
 
 | Parameter | Required | Values or format |
 |---|---|---|

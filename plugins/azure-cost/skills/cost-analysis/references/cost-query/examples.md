@@ -1,6 +1,7 @@
 # Cost Query Examples
 
-Pass these parameters to `query_costs`; do not translate them into REST calls.
+Pass these parameters to `query_costs`. If that operation is unavailable, use
+the official Cost Management Query API schema and preserve these constraints.
 
 | Scenario | Parameters |
 |---|---|

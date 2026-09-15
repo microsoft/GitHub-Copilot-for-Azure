@@ -41,6 +41,7 @@ utilization metrics, and any evidence gaps.
 
 Use Resource Graph's `generate_query`, `validate_query`, and `execute_query` to
 inventory cache resources and configuration. Use ARM MCP monitoring operations
-for utilization metrics when available. If a required metric or mutation is not
-available through ARM MCP, report the evidence gap; do not substitute CLI or
-direct REST.
+for utilization metrics when available. If an operation is unavailable, use the
+Azure Resource Graph, Advisor, or Monitor API mapped in
+[tool fallback](../tool-fallback.md). Preserve evidence gaps when the fallback
+also returns no data.

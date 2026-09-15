@@ -32,6 +32,34 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  - name: "Budget API fallback keeps confirmation"
+    prompt: "The ARM MCP budget tools are unavailable. Explain how to inspect or create an Azure budget through a supported fallback, but do not create it."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-governance
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost Management Budgets API"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)preview|confirm|confirmation|scope|threshold|recipient"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(?<!no )(?<!not )(created|successfully created)"
+
   - name: "List configured budgets"
     prompt: "What budgets are configured on my Azure subscription? For each budget, show the amount, time period, current spend, and alert thresholds."
     tags:

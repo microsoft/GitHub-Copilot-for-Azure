@@ -29,7 +29,8 @@ scope. Tag grouping and filtering are not supported by this MCP tool.
 
 ## 3. Execute and interpret
 
-Call `query_costs`; do not construct a REST body or invoke returned URLs.
+Call `query_costs`. If the operation is unavailable, use the Cost Management
+Query API through the approved [fallback process](../tools-and-safety.md).
 Preserve the response column order, currency, metric, scope, and period. Keep
 different currencies separate.
 
@@ -43,7 +44,7 @@ result may be incomplete.
 |---|---|
 | Unsupported timeframe, metric, dimension, or sort | Use a value exposed by the tool contract. |
 | Missing `from`/`to` or filter pair | Supply both members of the pair. |
-| Date outside 92 days | Narrow the period; do not bypass Azure Resource Manager MCP. |
+| Date outside 92 days | Narrow the period; fallback does not bypass this guardrail. |
 | Throttled | Honor the retry guidance returned by the tool and reduce fan-out. |
 | More than about 10 subscriptions | Ask the user to narrow scope. |
 

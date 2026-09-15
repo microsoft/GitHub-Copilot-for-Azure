@@ -23,13 +23,14 @@ The MCP tool does not expose grouping, sorting, arbitrary aggregations,
 
 ## 3. Execute and interpret
 
-Call `forecast_costs`; do not construct a REST body. The server returns up to
-100 rows. Preserve currency, date, scope, and actual-versus-forecast status when
-present. Empty or unavailable forecast data is not zero.
+Call `forecast_costs`. If it is unavailable, use the Cost Management Forecast
+API through [tool fallback](../tool-fallback.md). Preserve currency, date,
+scope, actual-versus-forecast status, and the 100-row response limit. Empty or
+unavailable forecast data is not zero.
 
 For grouped historical data, hand off to `cost-analysis`. If the requested
-forecast cannot fit the tool contract, explain the limitation rather than
-bypassing Azure Resource Manager MCP.
+forecast cannot fit the supported contract, explain the limitation; fallback
+does not relax it.
 
 ## Error handling
 

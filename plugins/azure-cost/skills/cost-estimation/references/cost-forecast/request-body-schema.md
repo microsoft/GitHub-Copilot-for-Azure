@@ -1,7 +1,7 @@
 # Cost Forecast Tool Contract
 
-`forecast_costs` accepts typed MCP parameters. Do not create a Forecast REST
-request body.
+`forecast_costs` accepts typed MCP parameters. Use this contract for MCP calls;
+an API fallback must use the official Cost Management Forecast API schema.
 
 | Parameter | Required | Values or format |
 |---|---|---|

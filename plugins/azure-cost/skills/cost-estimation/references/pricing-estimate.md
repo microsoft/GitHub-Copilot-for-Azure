@@ -21,6 +21,8 @@
    Customer Agreement (MCA) billing scope. Call
    `start_pricesheet_download`, then poll `get_pricesheet_status` using its
    retry interval. Label retail and negotiated values separately.
+   If a pricing operation is unavailable, use the mapped API from
+   [tool fallback](tool-fallback.md).
 6. Pricesheet downloads return a short-lived ZIP URL. The MCP server does not
    download or parse it. Return the URL and ask the user to download and provide
    the file for comparison; do not claim a negotiated-price analysis before the

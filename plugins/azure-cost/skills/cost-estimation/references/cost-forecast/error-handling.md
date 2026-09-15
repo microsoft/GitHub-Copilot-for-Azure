@@ -1,7 +1,8 @@
 # Cost Forecast Errors
 
-Handle errors returned by `forecast_costs`; do not fall back to REST, CLI, or
-SDK calls.
+Handle errors returned by `forecast_costs`. Use the Cost Management Forecast API
+fallback only when the operation itself is unavailable; follow
+[tool fallback](../tool-fallback.md).
 
 | Error | Likely cause | Remediation |
 |---|---|---|
@@ -12,7 +13,7 @@ SDK calls.
 | Forecast unavailable | Scope lacks usable forecast data | Report unavailability; use `cost-analysis` for history. |
 | Unauthorized or forbidden | Authentication or RBAC failure | Reauthenticate or request Cost Management Reader access. |
 | Throttled | Excessive Cost Management fan-out | Honor returned retry guidance and reduce calls. |
-| MCP server error | Transient service failure | Retry once; then stop and report the trace ID. |
+| MCP server error | Transient service failure | Retry once; if unavailable, use the Forecast API fallback. |
 
 Surface the MCP tool's user-visible error. Do not assume raw HTTP status,
 headers, request-body validation codes, or hidden forecast options are available.

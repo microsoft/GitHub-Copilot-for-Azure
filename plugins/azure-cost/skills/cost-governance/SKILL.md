@@ -19,14 +19,14 @@ metadata:
 
 ## When to Use This Skill
 
-Use for budgets, alerts, tags, policy, and coverage. Planning-target
-forecasts belong to `cost-estimation`. Only confirmed `create_budget` calls
-may mutate Azure.
+Use for budgets, alerts, tags, and policy. Route forecasts to
+`cost-estimation`. Only confirmed `create_budget` calls may write.
 
 ## MCP Tools
 
-Use cost tools for budgets and Resource Graph for policy and tags. Creation
-requires confirmed scope, amount, thresholds, and recipients.
+Use cost tools for budgets and Resource Graph for policy and tags. Writes need
+confirmed scope, amount, thresholds, and recipients. Fallback:
+[API mappings](references/tool-fallback.md).
 
 ## Workflow
 
@@ -39,7 +39,7 @@ requires confirmed scope, amount, thresholds, and recipients.
 | Error | Action |
 |-------|--------|
 | Access denied | Name missing permission. |
-| No budget or forecast | Report unavailable data, not zero spend. |
+| No budget or forecast | Report unavailable data, not zero. |
 | Multiple currencies | Never sum or compare across currencies. |
-| Write conflict | Preserve the existing budget. |
+| Write conflict | Preserve the budget. |
 | Server error | Retry once; then stop with the trace ID. |

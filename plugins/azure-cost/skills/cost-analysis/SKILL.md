@@ -20,14 +20,14 @@ metadata:
 
 ## When to Use This Skill
 
-Use for spend, anomalies, Azure Kubernetes Service (AKS) or AI cost allocation,
-and namespace visibility. Analyze before handing remediation to
-`cost-optimization`.
+Use for spend, anomalies, Azure Kubernetes Service (AKS), or AI cost allocation.
+Analyze before handing remediation to `cost-optimization`.
 
 ## MCP Tools
 
-Use `query_costs`, `query_aks_costs`, and Resource Graph. Never use non-MCP
-fallbacks; apply the [shared safety guidance](references/tools-and-safety.md).
+Use `query_costs`, `query_aks_costs`, and Resource Graph first. If a required
+operation is unavailable, follow [fallback and
+safety](references/tools-and-safety.md).
 
 ## Workflow
 

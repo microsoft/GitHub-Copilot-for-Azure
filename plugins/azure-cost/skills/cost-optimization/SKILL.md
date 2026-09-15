@@ -23,7 +23,8 @@ Use for waste, rightsizing, Reservations, or Savings Plans.
 ## MCP Tools
 
 Use `query_costs` for baselines, Resource Graph for inventory and Advisor, and
-benefit tools for commitments. Validate every generated query.
+benefit tools for commitments. Validate generated queries. Fallback:
+[API mappings](references/tool-fallback.md).
 
 ## Workflow
 

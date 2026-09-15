@@ -11,12 +11,12 @@ clusters. Project the cluster name, resource group, SKU tier, and
 
 ## Enable Add-on
 
-This cost plugin does not bypass Azure Resource Manager MCP (ARM MCP) with CLI
-or direct REST mutations. If
-the available ARM MCP tools do not expose AKS cost-analysis enablement, explain
-the missing operation. Direct the user to the Azure Portal's AKS **Cost
-Analysis** blade, or hand off to the `azure-kubernetes` skill when the separate
-`azure@azure-skills` plugin is installed.
+If ARM MCP does not expose AKS cost-analysis enablement, identify the AKS
+Managed Clusters API operation and follow the [fallback
+guidance](tools-and-safety.md). Show the proposed change and require explicit
+approval before using Azure CLI, Azure PowerShell, or REST. The Azure portal's
+Kubernetes Cost Analysis view or the `azure-kubernetes` skill are also valid
+handoffs. Do not claim the add-on was enabled without a successful response.
 
 ## If Cluster is Free Tier
 

@@ -32,6 +32,31 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  - name: "Cost query API fallback is bounded"
+    prompt: "The ARM MCP query_costs operation is unavailable. Explain the supported fallback for reading last month's Azure costs, but do not execute it."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost Management Query API"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)scope|period|currency|row|limit"
+
   - name: "Investigate date-specific spike"
     prompt: "There was a cost spike on a specific day last month in my current subscription. Explain what caused it and which resource was responsible."
     tags:
