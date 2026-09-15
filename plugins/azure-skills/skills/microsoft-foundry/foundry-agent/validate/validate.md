@@ -22,29 +22,18 @@ Define:
 ### Step 2: Discover Hosted Agents
 
 1. Search `agentPath` recursively for `azure.yaml`.
-2. Select every service whose `host` is exactly `azure.ai.agent`. Treat each selected service as one agent. Use manifest contents only to discover and describe services; never use a service's `project` or other manifest fields to change `agentPath`.
+2. Treat each service whose `host` is exactly `azure.ai.agent` as one agent. Manifest fields only discover and describe it; never derive `agentPath` from `project` or other fields.
 3. Sort the selected agents by `azure.yaml` path, then by their key under `services`.
 4. If no agents are found, return `no-hosted-agents` and stop without creating `outputPath` or generating files.
 5. Process each agent in the sorted order:
-   - Set `agentName` from the selected `azure.ai.agent` service's `name`. If `name` is absent, use its key under `services`.
-   - Create its normalized base name by converting `agentName` to lowercase, replacing non-alphanumeric sequences with `-`, and trimming leading or trailing `-`.
-   - Set `normalizedAgentName` to the base name when it has not been assigned. Otherwise, append `-1`, `-2`, and so on, using the lowest suffix that produces an unassigned name.
+   - `agentName`: service `name`, otherwise its key under `services`.
+   - `normalizedAgentName`: lowercase `agentName`, replace non-alphanumeric sequences with `-`, and trim `-`. If assigned, append the lowest available suffix starting at `-1`.
 
 ### Step 3: Prepare Rules
 
-1. Select all applicable rule files:
-   - `defaultRules`: [default-rules.yaml](references/default-rules.yaml).
-   - `customAgentRules`: `<agentPath>/.foundry/agent-validation-rules.yaml`, when present.
-   - `customCallerRules`: caller-provided `rulesFile`, when supplied. Resolve it from `agentPath` when relative.
+1. Select [default rules](references/default-rules.yaml), `<agentPath>/.foundry/agent-validation-rules.yaml` when present, and caller `rulesFile` when supplied (resolve relative paths from `agentPath`).
 2. Validate each custom rule file against [rules-schema.json](references/rules-schema.json). If any file is invalid, list all errors and stop.
-3. Merge the selected rules:
-   - Create a rule map keyed by `id`.
-   - Add `defaultRules` to the map.
-   - Add `customAgentRules`; when an `id` already exists, replace the entire existing rule.
-   - Add `customCallerRules`; when an `id` already exists, replace the entire existing rule.
-   - Use the map values as the merged rules, with one rule per `id`.
-
-   Precedence: `customCallerRules` > `customAgentRules` > `defaultRules`.
+3. Build a map keyed by `id`: add default, agent, then caller rules. Each later match replaces the entire rule. Use one value per `id`; precedence is caller > agent > default.
 
    > **Note:** An agent-path or caller-provided custom rule can skip a default rule by using the same `id` and a `when` condition that never applies.
 4. Create `outputPath` if it does not exist. If it cannot be written, report the error and stop.
@@ -57,13 +46,12 @@ For every agent, process the merged rules in order:
 1. If `when` does not apply, use `skipped`. Otherwise, perform `checks` using code, configuration, infrastructure, and shared dependencies related to that agent within `agentPath`.
 2. Exclude environments, dependency caches, build output, generated results, and unrelated files.
 3. Compare the evidence with `statusCriteria`: use `pass` or `fail` only when proved; otherwise use `inconclusive`.
-4. Create one result per rule. Copy existing rule metadata and guidance exactly; never rewrite, normalize, translate, or paraphrase them:
-   - `ruleId`, `title`, `level`, and `rationale` copied exactly from the rule.
+4. Create one result per rule. Never rewrite, normalize, translate, or paraphrase rule metadata:
+   - Exact `ruleId`, `title`, `level`, `rationale`, and `guidance`; preserve legacy guidance strings.
    - `status` selected above.
    - `details` containing result-specific evidence with `file:line` when available, missing evidence for `inconclusive`, or the reason for `skipped`.
    - `recommendedAction` containing the concrete change needed for `fail`. Omit it for other statuses.
    - Optional `sourceCode` array containing relevant, redacted, `agentPath`-relative source locations as plain strings. Use `file:line` for one line or `file:start-end` for a range. Do not use Markdown links.
-   - `guidance` copied exactly from the rule. Preserve legacy URL strings as strings.
 
 ### Step 5: Generate Reports
 
@@ -71,13 +59,7 @@ For each agent, in the order established in Step 2:
 
 1. Complete all Step 4 results before generating either report.
 2. Set `generatedAt` to the current date-time in ISO 8601 UTC format.
-3. Generate the JSON report from the final results according to [report-schema.json](references/report-schema.json). Include every merged rule exactly once and set:
-   - `reportId` to `<reportId>`.
-   - `generatedAt` to the value above.
-   - `target.serviceName` to the agent's `agentName`.
-   - `target.agentRoot` to the unchanged `agentPath` from Step 1. The field name is retained for report compatibility; its value is never a path derived from `azure.yaml` or `agent.yaml`.
-   - `results` to the agent's completed results.
-   - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`.
+3. Generate JSON from the final results per [report-schema.json](references/report-schema.json), including every merged rule once. Set `reportId`, `generatedAt`, `target.serviceName=agentName`, final `results`, and resolved `markdownPath`. Set compatibility field `target.agentRoot` to unchanged `agentPath`, never a manifest-derived path.
 4. Filter the final JSON `results` into four complete lists for `fail`, `pass`, `inconclusive`, and `skipped`. Use each list's exact length for Summary; never reuse a count from a partial result list. Require the four lengths to sum to both `results.length` and the merged-rule count.
 5. Attach each result's original merged-rule index. Stable-sort every list by `(level rank, merged-rule index)` using `error=0`, `warning=1`, and `recommendation=2`.
 6. Generate Markdown from the sorted lists according to [report-template.md.tpl](references/report-template.md.tpl). Use `fail` for the failed-results table and render every result exactly once in its matching status section.
