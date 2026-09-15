@@ -1,0 +1,85 @@
+name: azure-service-retirement-routing-eval
+description: |
+  Verifies routing for explicit Azure retirement lifecycle prompts, including
+  end of support and scheduled deprecation of resource versions.
+tags:
+  type: integration
+  skill: azure-service-retirement
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Routing: AKS Kubernetes version end of support"
+    prompt: "Are any of my AKS clusters on a Kubernetes version that's reaching end of support?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-service-retirement"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-service-retirement
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Routing: Azure service end of life"
+    prompt: "Which Azure services I use are reaching end of life?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-service-retirement"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-service-retirement
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Routing: deprecated Azure SKU"
+    prompt: "Which of my Azure VMs use a SKU that is being deprecated with a shutdown deadline?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-service-retirement"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-service-retirement
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Routing: unsupported App Service runtime"
+    prompt: "Are any of my App Services using a runtime version that is about to become unsupported?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-service-retirement"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-service-retirement
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
