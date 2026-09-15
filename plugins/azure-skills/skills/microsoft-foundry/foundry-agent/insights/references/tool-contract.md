@@ -16,7 +16,7 @@ Discover `agent_insights_get` through the Azure MCP `foundry` tool. It resolves 
 | `after` | No | Previous page's `last_id` when `has_more` is true |
 | `limit` | No | Page size 1-100; service default 20, workflow default 100 |
 
-Use only schema-supported parameters. There are no `startDateTimeUtc`, `endDateTimeUtc`, `projectId`, or `top` inputs. Do not translate a request for fresh analysis into this retrieval call.
+Use only schema-supported parameters. Do not translate a request for fresh analysis into this retrieval call.
 
 ```javascript
 // Azure MCP router; use the host's discovered name for the foundry tool.
@@ -61,15 +61,13 @@ Pagination fields are **snake_case**:
 
 This abbreviated example omits `details`. With `includeDetails: true`, inspect available `details.highlighted_traces`, `details.linked_traces`, and `details.recommended_actions.proposed_fix`. Preserve returned trace IDs and evidence; do not manufacture missing fields. Proposed fixes are recommendations, not permission to modify code or prompts.
 
-There is no legacy `agents[]` grouping or `relatedSpans.operationId` contract.
-
 ## Errors
 
 | Result | Required handling |
 |--------|-------------------|
 | Successful empty `data`, `has_more: false` | Report no matching generated insights; do not infer health |
 | No monitor found | Explain that an existing monitor is required; do not create one |
-| Tool unavailable | Report MCP availability/discovery failure; no legacy HTTP fallback |
+| Tool unavailable | Stop and report MCP availability/discovery failure |
 | Invalid argument/filter | Show the actionable error and correct only supported inputs; do not silently drop filters |
 | Authentication/authorization failure | Report the failure; do not change permissions |
 | Backend/network failure | Report failure, or explicitly partial results if earlier pages succeeded |

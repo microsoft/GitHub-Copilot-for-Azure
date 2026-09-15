@@ -105,7 +105,7 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 | Optimize / improve agent prompt or instructions | observe (Step 4: Optimize) |
 | Evaluate and optimize agent (full loop) | observe |
 | Enable continuous evaluation monitoring | observe (Step 6: CI/CD & Monitoring) |
-| Pull agent insights / list generated issues and recommendations | [insights](foundry-agent/insights/insights.md) (all pages with expanded evidence; read-only) |
+| Pull agent insights / list generated issues and recommendations | [dependency check and setup](#dependency-check-and-setup) → [insights](foundry-agent/insights/insights.md) (all pages with expanded evidence; read-only) |
 | Troubleshoot an agent issue | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → invoke → troubleshoot |
 | Fix a broken agent (troubleshoot + redeploy) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → invoke → troubleshoot → apply fixes → deploy → invoke |
 
@@ -146,7 +146,7 @@ First check whether the workspace has `azure.yaml` with services using `host: az
 - **No azd agent service** -> search the workspace for `.foundry/` folders that contain `agent-metadata.yaml` or `agent-metadata.<env>.yaml`.
   - **One match** -> use that agent root.
   - **Multiple matches** -> require the user to choose the target agent folder.
-  - **No matches** -> for create/deploy workflows, seed a new `.foundry/` folder during setup; for all other workflows, stop and ask the user which agent source folder to initialize.
+  - **No matches** -> for [insights](foundry-agent/insights/insights.md), ask only for missing remote inputs without initializing local files; for create/deploy workflows, seed a new `.foundry/` folder during setup; for other workflows, stop and ask the user which agent source folder to initialize.
 
 After selecting an agent root, keep all local `.foundry` cache inspection, source inspection, evaluator suggestions, dataset suggestions, and prompt-optimization context inside that folder only. Do **not** scan sibling agent folders unless the user explicitly switches roots.
 
