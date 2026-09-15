@@ -52,7 +52,13 @@
 
 [Copy every guidance item exactly from the result without rewording, normalizing, or translating. Preserve object titles and links, and render legacy URL strings unchanged. Repeat each item.]
 
+[For a `{ title, link }` object:]
+
 - [guidance title](<[guidance link]>)
+
+[For a legacy URL string:]
+
+- <[guidance URL]>
 
 </details>
 
