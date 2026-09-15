@@ -71,7 +71,7 @@ rules:
   - id: SDK-002
     title: Use recommended Foundry hosted-agent SDKs
     level: recommendation
-    rationale: Recommended Foundry integrations implement hosted protocols and sessions without custom hosting code. OpenAI Agents SDK and generic or custom hosts are not recommended for Foundry hosted agents.
+    rationale: Approved integrations provide Foundry protocol and session support.
     guidance:
       - title: "Python hosted-agent framework samples"
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents"
@@ -81,11 +81,11 @@ rules:
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph"
     when: Apply to every hosted agent configured with host azure.ai.agent.
     checks: >-
-      1) Resolve the deployed language, dependencies, entry point, and protocol host. 2) Accept only these end-to-end paths: Python Agent Framework with agent-framework-foundry-hosting and ResponsesHostServer or InvocationsHostServer; Python LangChain or LangGraph with langchain-azure-ai[hosting], or equivalent resolved lock entries, and langchain_azure_ai.agents.hosting.run, ResponsesHostServer, or InvocationsHostServer; C# Responses with Microsoft.Agents.AI.Foundry.Hosting, AddFoundryResponses, and MapFoundryResponses; or C# Invocations with Azure.AI.AgentServer.Invocations, AddInvocationsServer, and MapInvocationsServer. 3) Identify the Python openai-agents package or imports from its agents module, other agent or hosting SDKs, generic web hosts, and handwritten protocol routes or handlers as non-recommended. 4) Trace each declared protocol from the deployed entry point to an approved host; dependency presence alone is insufficient.
+      Resolve deployed dependencies, entry point, and protocol host. Approved paths: Python Agent Framework = agent-framework-foundry-hosting + ResponsesHostServer/InvocationsHostServer; Python LangChain/LangGraph = langchain-azure-ai[hosting] (or lock equivalent) + langchain_azure_ai.agents.hosting.run/ResponsesHostServer/InvocationsHostServer; C# Responses = Microsoft.Agents.AI.Foundry.Hosting + AddFoundryResponses/MapFoundryResponses; C# Invocations = Azure.AI.AgentServer.Invocations + AddInvocationsServer/MapInvocationsServer. Trace each declared protocol end to end; dependencies alone do not pass.
     statusCriteria:
-      pass: Every declared protocol uses an approved hosting dependency and its matching host or registration API end to end.
-      fail: A resolved path uses the Python openai-agents package or its agents imports, another non-approved agent or hosting SDK, a generic web host, a handwritten protocol handler, or an approved framework without its matching hosting integration.
-      inconclusive: The deployed dependencies, entry point, or protocol host cannot be resolved enough to classify the path.
+      pass: Every declared protocol uses one approved path end to end.
+      fail: A resolved path uses Python openai-agents or its agents imports, any unapproved agent or hosting SDK, a generic web host, a handwritten protocol handler, or an approved framework without its integration.
+      inconclusive: Dependencies, entry point, or protocol host cannot be classified.
 
   - id: AGT-001
     title: Do not instruct agents to bypass controls or fabricate success
