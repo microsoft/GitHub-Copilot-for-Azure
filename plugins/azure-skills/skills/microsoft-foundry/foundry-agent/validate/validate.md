@@ -92,12 +92,12 @@ For each agent, in the order established in Step 2:
    - `target.agentRoot` to the unchanged `agentPath` from Step 1. The field name is retained for report compatibility; its value is never a path derived from `azure.yaml` or `agent.yaml`.
    - `results` to the agent's completed results.
    - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`.
-4. Calculate status counts from the final `results`; require their sum to equal both `results.length` and the merged-rule count.
-5. Generate Markdown from the same final JSON results and counts according to [report-template.md.tpl](references/report-template.md.tpl). Render every result exactly once in its matching status section.
+4. Filter the final JSON `results` into four complete lists for `fail`, `pass`, `inconclusive`, and `skipped`. Use each list's exact length for Summary; never reuse a count from a partial result list. Require the four lengths to sum to both `results.length` and the merged-rule count.
+5. Generate Markdown from those same four lists according to [report-template.md.tpl](references/report-template.md.tpl). Render every result exactly once in its matching status section.
 6. Write the report pair:
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.json`
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`
-7. Verify the merged-rules YAML, JSON, and Markdown files exist and are nonempty. Verify JSON results, Summary counts, and Markdown sections agree; fix any mismatch before returning paths.
+7. Verify the merged-rules YAML, JSON, and Markdown files exist and are nonempty. In each Markdown status section, count the rendered `- **Rule:**` blocks and replace any differing Summary count. Recheck that JSON results, Summary counts, and section sizes agree before returning paths.
 8. If either report cannot be written or verified, record the error for that agent and continue. Present a report pair only when both files pass verification.
 9. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
 

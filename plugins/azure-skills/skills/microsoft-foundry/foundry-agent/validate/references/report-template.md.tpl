@@ -12,13 +12,13 @@
 
 **Results:** [failed count] feedbacks · [passed count] passed · [inconclusive count] inconclusive · [not applicable count] not applicable
 
-[Calculate counts from the final JSON `results`. Omit zero-count statuses and require displayed counts to sum to `results.length`. Omit this table when there are no failed results.]
+[Filter final JSON `results` into `fail`, `pass`, `inconclusive`, and `skipped` lists. Fill Summary from their exact lengths, never from a partial list. Omit zero-count statuses and require displayed counts to sum to `results.length`. Omit this table when there are no failed results.]
 
 | Level | Rule ID | Failed rule |
 |---|---|---|
 | [error | warning | recommendation] | `[rule ID]` | [rule title] |
 
-[Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`. Render each final JSON result exactly once in its matching section; each section size must match its Summary count.]
+[Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`. Render each list item exactly once in its matching section. Count the `- **Rule:**` blocks in each section; replace any differing Summary number before output.]
 
 [In each section, sort levels: error, warning, recommendation. Keep rule order for ties. Repeat this collapsed block for each result.]
 
