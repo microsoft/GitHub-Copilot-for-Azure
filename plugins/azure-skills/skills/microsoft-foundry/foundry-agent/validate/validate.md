@@ -37,7 +37,7 @@ Define:
 
    > **Note:** An agent-path or caller-provided custom rule can skip a default rule by using the same `id` and a `when` condition that never applies.
 4. Create `outputPath` if it does not exist. If it cannot be written, report the error and stop.
-5. Generate the merged rules according to [rules-schema.json](references/rules-schema.json) and write them to `<outputPath>/agent-validation-<reportId>-rules.yaml`.
+5. Serialize the merged rules as valid YAML to `<outputPath>/agent-validation-<reportId>-rules.yaml`. Quote strings or use block scalars when plain syntax is ambiguous, including values containing `: `. Read the file back, parse it, and validate it against [rules-schema.json](references/rules-schema.json). If either check fails, rewrite and revalidate before Step 4; if it still fails, report the error and stop.
 
 ### Step 4: Validate Rules One by One
 
@@ -66,7 +66,7 @@ For each agent, in the order established in Step 2:
 7. Write the report pair:
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.json`
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`
-8. Verify the merged-rules YAML, JSON, and Markdown files exist and are nonempty. In each Markdown status section, count the rendered `- **Rule:**` blocks and replace any differing Summary count. Extract rule IDs from the failed-results table and each section; compare them with the corresponding sorted list and correct any difference. Recheck all counts and order before returning paths.
+8. Verify the merged-rules YAML exists, is nonempty, parses, and passes schema validation. Verify the current agent's JSON and Markdown files exist and are nonempty. In each Markdown status section, count the rendered `- **Rule:**` blocks and replace any differing Summary count. Extract rule IDs from the failed-results table and each section; compare them with the corresponding sorted list and correct any difference. Recheck all counts and order before returning paths.
 9. If either report cannot be written or verified, record the error for that agent and continue. Present a report pair only when both files pass verification.
 10. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
 
