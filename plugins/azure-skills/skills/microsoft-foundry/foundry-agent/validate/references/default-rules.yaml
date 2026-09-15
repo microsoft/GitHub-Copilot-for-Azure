@@ -13,11 +13,11 @@ rules:
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/02-langgraph-toolbox"
     when: Apply when the hosted agent uses an MCP server; otherwise skip.
     checks: >-
-      1) Start from the selected azure.ai.agent service in azure.yaml and its deployed entry point. Identify every MCP client used by the deployed agent by inspecting related dependencies, imports, runtime configuration, and call sites; ignore test-only and local-development paths. 2) For each MCP client, trace the endpoint value passed at runtime, including URL literals, configuration values, environment variables, and fallbacks. 3) Treat it as Foundry Toolbox when the agent references a local azure.ai.toolbox service; the URL contains /toolboxes/{name}/mcp or /toolboxes/{name}/versions/{version}/mcp; or a variable containing TOOLBOX in its name feeds the deployed MCP endpoint or a supported SDK constructor such as AzureAIProjectToolbox. A name-only constructor input such as TOOLBOX_NAME also requires Foundry project endpoint context. Generic MCP_* names, unused TOOLBOX_* variables, disconnected Toolbox-looking names, hostnames, or MCP clients alone are insufficient. 4) Check every deployed path and fallback. Pass when all paths use Toolbox, fail when any resolved path directly uses an original MCP server, and use inconclusive when an endpoint source or deployment path cannot be determined.
+      Inspect deployed code and configuration to determine whether each MCP connection uses Foundry Toolbox instead of connecting directly to the original MCP server. Accept any clear repository evidence of Toolbox use; do not require a specific URL, environment-variable name, SDK, constructor, or coding pattern.
     statusCriteria:
-      pass: Every deployed MCP path uses a Toolbox endpoint proven by a local reference, Foundry Toolbox URL, or a used TOOLBOX variable connected to the endpoint or supported constructor with project context when required; no contradictory path exists.
-      fail: A fully resolved deployed path directly calls an original MCP server, including through a fallback, or local configuration places an MCP server outside Toolbox.
-      inconclusive: MCP use is evident, but an endpoint source, variable meaning, or deployed path cannot be resolved.
+      pass: Every deployed MCP connection clearly uses Foundry Toolbox.
+      fail: A deployed MCP connection clearly accesses an original MCP server directly or configures it outside Toolbox.
+      inconclusive: MCP use is evident, but repository evidence cannot determine whether every connection uses Toolbox.
 
   - id: AIGW-001
     title: Use AI Gateway for required rate limits
