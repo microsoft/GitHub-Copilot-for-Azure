@@ -1,0 +1,55 @@
+name: Evaluate skill
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin:
+        description: Plugin containing the skill to evaluate
+        required: true
+        type: string
+      skill:
+        description: Skill to evaluate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+  copilot-requests: write
+
+jobs:
+  evaluate:
+    name: Evaluate ${{ inputs.plugin }}/${{ inputs.skill }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout evaluation repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.14.0"
+
+      # Add tools and other test prerequisites here before running the evaluation.
+
+      # Before using this workflow, replace @main below with a reviewed commit SHA.
+      - name: Run skill evaluation
+        uses: microsoft/GitHub-Copilot-for-Azure/workflow-templates/evaluation-steps@main
+        with:
+          plugin: ${{ inputs.plugin }}
+          skill: ${{ inputs.skill }}
+          azure-subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          azure-tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          azure-client-id: ${{ vars.AZURE_CLIENT_ID }}
+          storage-account: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+
+      # Add result post-processing or custom publishing steps here.
+      # The evaluation action writes dashboard-compatible reports to
+      # eval-workspace/tests/reports/ and raw Vally results to
+      # eval-workspace/tests/results/. Paths are relative to the repository root.
+      # Use `if: ${{ always() }}` when a step must process available output after
+      # a failed or cancelled evaluation.
