@@ -12,13 +12,13 @@
 
 **Results:** [failed count] feedbacks · [passed count] passed · [inconclusive count] inconclusive · [not applicable count] not applicable
 
-[Omit zero-count statuses. Omit this table when there are no failed results.]
+[Calculate counts from the final JSON `results`. Omit zero-count statuses and require displayed counts to sum to `results.length`. Omit this table when there are no failed results.]
 
 | Level | Rule ID | Failed rule |
 |---|---|---|
 | [error | warning | recommendation] | `[rule ID]` | [rule title] |
 
-[Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`.]
+[Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`. Render each final JSON result exactly once in its matching section; each section size must match its Summary count.]
 
 [In each section, sort levels: error, warning, recommendation. Keep rule order for ties. Repeat this collapsed block for each result.]
 
@@ -48,7 +48,7 @@
 
 #### Guidance
 
-[Repeat each item.]
+[Copy every guidance item exactly from the result without rewording, normalizing, or translating. Preserve object titles and links, and render legacy URL strings unchanged. Repeat each item.]
 
 - [guidance title](<[guidance link]>)
 

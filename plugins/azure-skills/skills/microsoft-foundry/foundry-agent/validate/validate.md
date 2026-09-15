@@ -71,32 +71,35 @@ For every agent, process the merged rules in order:
 1. If `when` does not apply, use `skipped`. Otherwise, perform `checks` using code, configuration, infrastructure, and shared dependencies related to that agent within `agentPath`.
 2. Exclude environments, dependency caches, build output, generated results, and unrelated files.
 3. Compare the evidence with `statusCriteria`: use `pass` or `fail` only when proved; otherwise use `inconclusive`.
-4. Create one result with:
-   - `ruleId`, `title`, `level`, and `rationale` copied from the rule.
+4. Create one result per rule. Copy existing rule metadata and guidance exactly; never rewrite, normalize, translate, or paraphrase them:
+   - `ruleId`, `title`, `level`, and `rationale` copied exactly from the rule.
    - `status` selected above.
    - `details` containing result-specific evidence with `file:line` when available, missing evidence for `inconclusive`, or the reason for `skipped`.
    - `recommendedAction` containing the concrete change needed for `fail`. Omit it for other statuses.
    - Optional `sourceCode` array containing relevant, redacted, `agentPath`-relative source locations as plain strings. Use `file:line` for one line or `file:start-end` for a range. Do not use Markdown links.
-   - `guidance` copied to `{ title, link }` objects. When a rule uses a legacy URL string, derive a short title and preserve the URL as `link`.
+   - `guidance` copied exactly from the rule. Preserve legacy URL strings as strings.
 
 ### Step 5: Generate Reports
 
 For each agent, in the order established in Step 2:
 
-1. Set `generatedAt` to the current date-time in ISO 8601 UTC format.
-2. Generate the JSON report from the Step 4 results according to [report-schema.json](references/report-schema.json). Include every merged rule exactly once and set:
+1. Complete all Step 4 results before generating either report.
+2. Set `generatedAt` to the current date-time in ISO 8601 UTC format.
+3. Generate the JSON report from the final results according to [report-schema.json](references/report-schema.json). Include every merged rule exactly once and set:
    - `reportId` to `<reportId>`.
    - `generatedAt` to the value above.
    - `target.serviceName` to the agent's `agentName`.
    - `target.agentRoot` to the unchanged `agentPath` from Step 1. The field name is retained for report compatibility; its value is never a path derived from `azure.yaml` or `agent.yaml`.
    - `results` to the agent's completed results.
    - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`.
-3. Generate the Markdown report from the same data according to [report-template.md.tpl](references/report-template.md.tpl).
-4. Write the report pair:
+4. Calculate status counts from the final `results`; require their sum to equal both `results.length` and the merged-rule count.
+5. Generate Markdown from the same final JSON results and counts according to [report-template.md.tpl](references/report-template.md.tpl). Render every result exactly once in its matching status section.
+6. Write the report pair:
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.json`
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`
-5. If either file cannot be written, record the error for that agent and continue. Present a report pair only when both files were written.
-6. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
+7. Verify the merged-rules YAML, JSON, and Markdown files exist and are nonempty. Verify JSON results, Summary counts, and Markdown sections agree; fix any mismatch before returning paths.
+8. If either report cannot be written or verified, record the error for that agent and continue. Present a report pair only when both files pass verification.
+9. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
 
 ## Behavioral Rules
 
