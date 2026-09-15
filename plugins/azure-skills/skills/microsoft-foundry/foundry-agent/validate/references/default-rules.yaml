@@ -13,7 +13,7 @@ rules:
         link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph/responses/02-langgraph-toolbox"
     when: Apply when the hosted agent uses an MCP server; otherwise skip.
     checks: >-
-      Inspect deployed code and configuration to determine whether each MCP connection uses Foundry Toolbox instead of connecting directly to the original MCP server. Accept any clear repository evidence of Toolbox use; do not require a specific URL, environment-variable name, SDK, constructor, or coding pattern.
+      Inspect deployed code and configuration to determine whether every MCP connection uses Foundry Toolbox instead of the original MCP server. Evidence can include a local azure.ai.toolbox service, a Foundry Toolbox URL, a TOOLBOX-named environment variable connected to the MCP path, or a supported Toolbox SDK or constructor. These examples are not exhaustive; accept any clear repository evidence of Toolbox use.
     statusCriteria:
       pass: Every deployed MCP connection clearly uses Foundry Toolbox.
       fail: A deployed MCP connection clearly accesses an original MCP server directly or configures it outside Toolbox.
