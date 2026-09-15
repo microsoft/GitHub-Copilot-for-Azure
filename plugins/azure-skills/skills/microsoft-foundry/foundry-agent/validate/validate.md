@@ -93,13 +93,14 @@ For each agent, in the order established in Step 2:
    - `results` to the agent's completed results.
    - `markdownPath` to the resolved path of `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`.
 4. Filter the final JSON `results` into four complete lists for `fail`, `pass`, `inconclusive`, and `skipped`. Use each list's exact length for Summary; never reuse a count from a partial result list. Require the four lengths to sum to both `results.length` and the merged-rule count.
-5. Generate Markdown from those same four lists according to [report-template.md.tpl](references/report-template.md.tpl). Render every result exactly once in its matching status section.
-6. Write the report pair:
+5. Attach each result's original merged-rule index. Stable-sort every list by `(level rank, merged-rule index)` using `error=0`, `warning=1`, and `recommendation=2`.
+6. Generate Markdown from the sorted lists according to [report-template.md.tpl](references/report-template.md.tpl). Use `fail` for the failed-results table and render every result exactly once in its matching status section.
+7. Write the report pair:
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.json`
    - `<outputPath>/validation-<reportId>-<normalizedAgentName>.md`
-7. Verify the merged-rules YAML, JSON, and Markdown files exist and are nonempty. In each Markdown status section, count the rendered `- **Rule:**` blocks and replace any differing Summary count. Recheck that JSON results, Summary counts, and section sizes agree before returning paths.
-8. If either report cannot be written or verified, record the error for that agent and continue. Present a report pair only when both files pass verification.
-9. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
+8. Verify the merged-rules YAML, JSON, and Markdown files exist and are nonempty. In each Markdown status section, count the rendered `- **Rule:**` blocks and replace any differing Summary count. Extract rule IDs from the failed-results table and each section; compare them with the corresponding sorted list and correct any difference. Recheck all counts and order before returning paths.
+9. If either report cannot be written or verified, record the error for that agent and continue. Present a report pair only when both files pass verification.
+10. Present the merged rules path and every generated report path. The caller decides whether to open UI or assign CI/CD status.
 
 ## Behavioral Rules
 

@@ -14,13 +14,15 @@
 
 [Filter final JSON `results` into `fail`, `pass`, `inconclusive`, and `skipped` lists. Fill Summary from their exact lengths, never from a partial list. Omit zero-count statuses and require displayed counts to sum to `results.length`. Omit this table when there are no failed results.]
 
+[Attach each result's original merged-rule index. Stable-sort every list by `(level rank, merged-rule index)` with `error=0`, `warning=1`, and `recommendation=2`. Use the sorted `fail` list for this table.]
+
 | Level | Rule ID | Failed rule |
 |---|---|---|
 | [error | warning | recommendation] | `[rule ID]` | [rule title] |
 
 [Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`. Render each list item exactly once in its matching section. Count the `- **Rule:**` blocks in each section; replace any differing Summary number before output.]
 
-[In each section, sort levels: error, warning, recommendation. Keep rule order for ties. Repeat this collapsed block for each result.]
+[After rendering, extract rule IDs from the table and each section. Compare them with the corresponding sorted list and correct any difference. Repeat this collapsed block for each result.]
 
 <details>
 <summary>[rule title]</summary>
