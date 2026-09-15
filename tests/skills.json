@@ -62,6 +62,17 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "cost-analysis,cost-estimation,cost-governance,cost-optimization"
             }
+        },
+        {
+            "name": "azure-local-skills",
+            "dirname": "azure-local-skills",
+            "skills": [
+                "azure-local",
+                "azure-local-multi-rack"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "azure-local,azure-local-multi-rack"
+            }
         }
     ]
 }
