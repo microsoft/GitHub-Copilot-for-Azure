@@ -1,4 +1,4 @@
-version: 1.1.0
+version: 1.2.0
 scope: Repository review rules, not certification controls.
 
 rules:
@@ -71,6 +71,25 @@ rules:
       pass: The official Agent Framework package family is declared, the effective direct dependency version can be determined from repository configuration, and source imports are consistent with that package family.
       fail: Repository evidence explicitly shows an unrelated package presented as Agent Framework, conflicting effective dependency versions for the deployed agent, or imports inconsistent with the declared package family.
       inconclusive: The effective package or version is affected by unresolved ranges, unresolved central version management, environment-specific resolution, or other indirection, or imports cannot be mapped reliably to the declared package family.
+
+  - id: SDK-002
+    title: Use framework-specific Foundry hosting SDKs
+    level: recommendation
+    rationale: Foundry samples recommend Agent Framework for new Python and .NET agents and LangChain Azure AI hosting for existing Python LangGraph agents. These integrations handle hosted protocols and sessions.
+    guidance:
+      - title: "Python hosted-agent framework samples"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents"
+      - title: ".NET hosted-agent framework samples"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/csharp/hosted-agents"
+      - title: "Python LangGraph hosting samples"
+        link: "https://github.com/microsoft-foundry/foundry-samples/tree/main/samples/python/hosted-agents/langgraph"
+    when: Apply when deployed Python code imports agent_framework, langchain, or langgraph, or deployed C# code references Microsoft.Agents.AI, AutoGen, or Microsoft.SemanticKernel; otherwise skip.
+    checks: >-
+      1) Resolve the deployed entry point and its reachable framework imports. 2) For Python Agent Framework, require agent-framework-foundry-hosting and ResponsesHostServer or InvocationsHostServer. 3) For Python LangChain or LangGraph, require langchain-azure-ai[hosting], or equivalent resolved lock entries, and langchain_azure_ai.agents.hosting.run, ResponsesHostServer, or InvocationsHostServer. 4) For C# Responses, require Microsoft.Agents.AI.Foundry.Hosting with AddFoundryResponses and MapFoundryResponses; for C# Invocations, require Azure.AI.AgentServer.Invocations with AddInvocationsServer and MapInvocationsServer. Accept a generic host only when repository evidence documents a required customization unsupported by the matching integration.
+    statusCriteria:
+      pass: Every detected framework has its matching hosting dependency, and the deployed entry point uses the matching host or registration API.
+      fail: The framework and entry point are resolved, but a required hosting dependency or API is absent or bypassed without a documented required customization.
+      inconclusive: An applicable framework is detected, but its dependencies, deployed entry point, or hosting API cannot be resolved.
 
   - id: AGT-001
     title: Do not instruct agents to bypass controls or fabricate success
