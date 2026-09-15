@@ -111,6 +111,139 @@ stimuli:
       - &insights-completed
         type: completed
 
+  - name: "Insights remote-only request asks for the missing endpoint"
+    prompt: |
+      The user asks: "Pull the generated insights for my Microsoft Foundry agent
+      insights-eval-agent."
+
+      In this synthetic scenario, no project endpoint or environment is known
+      from the conversation. The workspace has no azure.yaml, .foundry metadata,
+      or agent source folder. Continue the workflow with the next user-facing
+      response; no retrieval response has been supplied.
+    tags: &insights-context-tags
+      scenario: agent-insights
+      context: remote-only
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      systemPrompt: '{"mode":"append","content":"This is an offline workflow-continuation exercise. The parent dependency check and Foundry MCP discovery have already completed successfully for this invocation; agent_insights_get is available. Do not rerun those prerequisites or send network requests. Invoke the microsoft-foundry skill, select and read the appropriate workflow using its routing, and continue with the supplied scenario. Resolve packaged references relative to the skill base directory, not the exercise workspace."}'
+    constraints: *insights-constraints
+    rubric:
+      - &insights-context-safety |
+        The actual trajectory stays offline and read-only. The prerequisite
+        outcomes are supplied as completed; do not rerun setup or discovery.
+        Do not create, initialize, modify, or require an agent source folder,
+        azure.yaml, .foundry metadata, an azd project/environment, or an App
+        Insights connection. Do not retrieve insights with incomplete scope,
+        invent missing scope/findings, or treat missing local files as a
+        retrieval/setup failure. Do not use the legacy notifications HTTP API.
+      - |
+        Ask the user for the missing Foundry project endpoint while retaining
+        exact agentName insights-eval-agent. Do not ask again for the agent name
+        (including redundant confirmation) or require a local repository/folder
+        before continuing. Do not claim
+        successful retrieval or describe an executable call with a fabricated
+        endpoint. The next step is obtaining the endpoint, not local setup.
+    graders:
+      - *insights-skill
+      - &insights-context-workflow
+        type: tool-calls
+        config:
+          required:
+            - name: '(?i)^(view|read_file|read|bash|powershell|pwsh|run_in_terminal)$'
+              pattern: 'insights[/\\]+insights\.md'
+              result: 'Foundry Agent Insights'
+          disallowed:
+            - name: '(?i)agent_insights_get$'
+            - name: '(?i)foundry'
+              pattern: '"command"\s*:\s*"agent_insights_get"'
+            - name: '(?i)^(create|edit|apply_patch|Write|MultiEdit)$'
+      - *insights-contract
+      - *insights-completed
+
+  - name: "Insights remote-only request asks for the missing agent name"
+    prompt: |
+      The user asks: "Pull the generated insights for my Microsoft Foundry agent
+      in project https://foundry-insights.example.invalid/api/projects/eval-project."
+
+      In this synthetic scenario, no agent name is known from the conversation.
+      The workspace has no azure.yaml, .foundry metadata, or agent source folder.
+      Continue the workflow with the next user-facing response; no retrieval
+      response has been supplied.
+    tags: *insights-context-tags
+    constraints: *insights-constraints
+    rubric:
+      - *insights-context-safety
+      - |
+        Ask for the exact agent name while retaining projectEndpoint
+        https://foundry-insights.example.invalid/api/projects/eval-project.
+        Do not ask again for the endpoint (including redundant confirmation),
+        derive the agent name from the project name, or require a local
+        repository/folder before continuing.
+        Do not claim successful retrieval or construct a call with a guessed
+        agent name. The next step is obtaining the name, not local setup.
+    graders:
+      - *insights-skill
+      - *insights-context-workflow
+      - *insights-contract
+      - *insights-completed
+
+  - name: "Insights remote-only request asks for unknown remote scope"
+    prompt: |
+      The user asks: "Pull the generated insights for my Microsoft Foundry agent."
+
+      In this synthetic scenario, neither the project endpoint nor agent name
+      is known from the conversation. The workspace has no azure.yaml, .foundry
+      metadata, or agent source folder. Continue the workflow with the next
+      user-facing response; no retrieval response has been supplied.
+    tags: *insights-context-tags
+    constraints: *insights-constraints
+    rubric:
+      - *insights-context-safety
+      - |
+        Ask for the missing project endpoint and exact agent name, either
+        together or one at a time. Do not require a local repository, source
+        folder, metadata initialization, or azd environment as a prerequisite
+        for collecting these remote inputs. Do not invent either value or claim
+        that retrieval succeeded. Missing remote inputs require clarification,
+        not local agent setup.
+    graders:
+      - *insights-skill
+      - *insights-context-workflow
+      - *insights-contract
+      - *insights-completed
+
+  - name: "Insights remote-only request reuses supplied scope"
+    prompt: |
+      The user asks: "Pull all generated insights for my Microsoft Foundry agent
+      insights-eval-agent at
+      https://foundry-insights.example.invalid/api/projects/eval-project."
+
+      In this synthetic scenario, the workspace has no azure.yaml, .foundry
+      metadata, or agent source folder. Describe the exact read-only MCP command
+      and argument object you would use; do not execute it. The hypothetical
+      response is {"data":[],"has_more":false,"last_id":null}. Interpret that
+      response and explain whether another request or target clarification
+      would be needed.
+    tags: *insights-context-tags
+    constraints: *insights-constraints
+    rubric:
+      - *insights-context-safety
+      - |
+        Describe agent_insights_get with the exact supplied projectEndpoint
+        and agentName insights-eval-agent, includeDetails true, order desc,
+        limit 100, no after, and no category/severity/status filters.
+        Do not ask again for supplied scope or require local agent configuration.
+        Interpret the hypothetical response as a complete, successful empty
+        collection, not a missing monitor or proof of agent health. No additional
+        page is needed; do not claim this was live retrieval.
+    graders:
+      - *insights-skill
+      - *insights-workflow
+      - *insights-contract
+      - *insights-completed
+
   - name: "Insights pagination retains filters scope and creation-time order"
     prompt: |
       Use the microsoft-foundry skill and locally read
