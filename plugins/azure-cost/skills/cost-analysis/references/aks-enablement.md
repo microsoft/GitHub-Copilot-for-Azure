@@ -19,13 +19,14 @@ Analysis** blade, or hand off to the `azure-kubernetes` skill when the separate
 ## If Cluster is Free Tier
 
 Warn that upgrading from Free to Standard introduces an ongoing cluster
-management fee. Use `get_retail_prices` to validate the current price and
-obtain explicit approval before handing off the tier change.
+management fee. Use `get_retail_prices` to estimate the fee and label it as
+public retail pricing, not the customer's negotiated price. Obtain explicit
+approval before handing off the tier change.
 
 ## After Enabling
 
 Namespace-level cost data is available in:
-- Azure Portal: AKS cluster -> Cost Analysis blade
-- Azure Cost Management: filter by cluster resource ID + `kubernetes namespace` dimension
+- Azure Portal: Cost Management -> Cost Analysis -> Kubernetes view
+- ARM MCP: `query_aks_costs` grouped by `Cluster` and `Namespace`
 
 > Risk: Low for enabling the add-on. Upgrading tier (Free -> Standard) has a cost — always confirm with user first.

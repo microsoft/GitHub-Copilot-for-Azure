@@ -2,7 +2,7 @@
 
 Use only dimensions accepted by the ARM MCP whitelist.
 
-## All supported scopes
+## Dimensions supported at all scopes
 
 `ServiceName`, `ServiceTier`, `ChargeType`, `PublisherType`, `PricingModel`,
 `BenefitName`, `BenefitId`, `Frequency`, `CostAllocationRuleName`,

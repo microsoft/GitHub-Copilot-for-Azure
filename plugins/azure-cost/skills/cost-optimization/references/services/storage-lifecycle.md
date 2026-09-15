@@ -1,28 +1,26 @@
 # Storage Lifecycle Guidance
 
-Treat these thresholds as candidates, not automatic actions. Verify access
-patterns, retention requirements, redundancy requirements, and live prices
-before recommending a policy.
+Use this reference only after Azure Advisor or observed access evidence
+indicates that tiering may reduce cost. Verify retention requirements,
+redundancy requirements, retrieval latency, and live prices before recommending
+a policy.
 
 ## Access tiers
 
-| Last access | Pattern | Candidate |
-|-------------|---------|-----------|
-| Under 30 days | Frequent reads or writes | Hot |
-| 30-90 days | Occasional reads | Cool |
-| 90-180 days | Rare reads | Cold |
-| Over 180 days | Archival with tolerated rehydration delay | Archive |
+Compare Hot, Cool, Cold, and Archive against the workload's observed access
+frequency and retrieval requirements. Do not derive a tier recommendation from
+a generic age threshold.
 
 Include minimum-retention, retrieval, early-deletion, and rehydration costs.
 Do not recommend Archive for data with unpredictable or urgent retrieval.
 
-## Starting policy
+## Policy example
 
 ```json
 {
   "rules": [
     {
-      "name": "tier-inactive-base-blobs",
+      "name": "example-tier-inactive-base-blobs",
       "type": "Lifecycle",
       "definition": {
         "actions": {
@@ -49,6 +47,8 @@ Do not recommend Archive for data with unpredictable or urgent retrieval.
 }
 ```
 
-`daysAfterLastAccessTimeGreaterThan` requires last-access tracking. Verify it
+The day values are placeholders, not recommendations. Derive them from observed
+access evidence and the user's retention requirements.
+`daysAfterLastAccessTimeGreaterThan` requires last-access tracking; verify it
 through an available ARM MCP storage operation. If that evidence is unavailable,
-report the policy as a proposal and leave the check unresolved.
+leave the recommendation unresolved.

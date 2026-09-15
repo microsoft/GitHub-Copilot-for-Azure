@@ -1,6 +1,7 @@
-## Azure Redis Cost Optimization
+# Azure Redis Cost Optimization
 
-Reference guide for identifying cost savings opportunities in Azure Redis deployments through analysis and targeted scans.
+Use Resource Graph and Azure Advisor to collect authoritative Redis
+recommendations and configuration evidence.
 
 ## Scope
 
@@ -8,21 +9,20 @@ Resolve subscription names to subscription scope paths. For cross-subscription
 requests, process no more than ten accessible subscriptions per batch. Tenant
 IDs are not Cost Management scopes.
 
-## Cost Optimization Rules
+## Resource Graph workflow
 
-When analyzing each cache, apply these prioritized rules:
+1. Query `AdvisorResources` for Cost recommendations whose resource ID belongs
+   to an Azure Redis resource.
+2. Query `Resources` for the matching cache configuration, including resource
+   ID, SKU, capacity, location, provisioning state, and ownership tags.
+3. Join recommendations to inventory by resource ID. Preserve the Advisor
+   recommendation text, impact, savings fields, currency, and period.
+4. Use observed utilization metrics only when an ARM MCP monitoring operation
+   returns them for the same resource and period.
 
-| Priority | Rule | Detection Logic | Recommendation |
-|----------|------|----------------|----------------|
-| Critical | Failed Cache | `provisioningState == 'Failed'` | Verify dependencies, then consider removal |
-| Critical | Stuck Creating | `provisioningState == 'Creating'` and age >4 hours | Investigate or open a support request |
-| High | Premium in Dev | Premium SKU with a verified non-production tag | Compare a Standard SKU |
-| High | Enterprise Unused | Enterprise SKU without required modules or clustering | Compare Premium or Standard |
-| High | Old Test Cache | Verified test-purpose tag and age >60 days | Review removal or downsizing |
-| Medium | Large Dev Cache | Capacity >3 with a verified development tag | Compare smaller capacities |
-| Medium | No Expiration Tag | Missing the organization's expiration tag | Recommend a cleanup policy |
-| Low | Untagged Resource | Missing confirmed allocation tags | Recommend the required tags |
-| Low | Old Cache | Age >365 days | Verify continued ownership and need |
+Do not infer that a cache is idle, oversized, or safe to downgrade from its age,
+SKU, tags, or configuration alone. If Advisor and metrics provide no
+recommendation, report the inventory without manufacturing one.
 
 Quantify savings with current cost and live candidate-SKU prices. Do not use
 generic savings ranges.
@@ -33,7 +33,9 @@ generic savings ranges.
 Quick overview of costs and issues per subscription (use for multi-subscription scans). Include: subscription name/ID, total monthly cost, number of caches, cache count by SKU tier, and top issues found.
 
 ### Detailed Cache Analysis
-Individual cache breakdown with specific recommendations. Include: cache name, resource group, SKU tier, current cost, memory usage %, CPU usage %, connection count, and specific rightsizing recommendations.
+Individual cache breakdown with evidence-backed recommendations. Include cache
+name, resource group, SKU tier, current cost, Advisor evidence, available
+utilization metrics, and any evidence gaps.
 
 ## ARM MCP Tools
 

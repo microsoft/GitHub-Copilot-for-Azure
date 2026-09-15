@@ -17,6 +17,17 @@ Resource- and meter-level dimensions are limited to subscription and
 resource-group scopes. Other whitelisted dimensions can be attempted at broader
 scopes, but upstream agreement and scope rules may still reject them.
 
+## Query efficiency
+
+- Prefer one bounded query that answers the question instead of splitting the
+  same scope and period across multiple calls.
+- Filter early and request only the grouping dimensions needed for the answer.
+- Use cost-descending sorting with an appropriate `top` for rankings.
+- Shorten the time range or reduce grouping dimensions for expensive resource,
+  meter, or high-cardinality queries.
+- For subscriptions under the same billing account, prefer one supported
+  billing-account query over separate per-subscription calls.
+
 The tool rejects invalid dates, unsupported dimensions, incomplete
 `from`/`to` or filter pairs, and invalid row limits. It does not silently swap,
 truncate, or shift requested dates.

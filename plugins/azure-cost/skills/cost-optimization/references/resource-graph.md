@@ -1,8 +1,8 @@
 # Azure Resource Graph Queries for Cost Optimization
 
 Azure Resource Graph (ARG) enables fast, cross-subscription resource querying
-through ARM MCP. Use it to find orphaned resources, unused infrastructure, and
-optimization targets.
+through ARM MCP. Use it to retrieve Azure Advisor recommendations and factual
+resource inventory for optimization analysis.
 
 ## How to Query
 
@@ -65,7 +65,7 @@ Resources
 | order by total desc
 ```
 
-**Find idle load balancers (no backend pools):**
+**Find load balancers with no backend pools:**
 
 ```kql
 Resources
@@ -73,6 +73,9 @@ Resources
 | where array_length(properties.backendAddressPools) == 0
 | project name, resourceGroup, location, sku=sku.name
 ```
+
+An empty backend-pool configuration is an investigation signal, not proof that
+the load balancer is unused or safe to remove.
 
 **Get Advisor cost recommendations:**
 

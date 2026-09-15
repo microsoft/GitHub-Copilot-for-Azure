@@ -9,7 +9,10 @@
    filters and disclose that the result set was truncated; do not invoke the
    returned URL directly.
 3. Exclude Spot, Dev/Test, Windows, Reservation, or Savings Plan meters unless
-   they match the request. Never silently choose among multiple meter shapes.
+   they match the request. If multiple plausible meters remain, ask for the
+   minimum missing detail or show a short candidate table containing
+   `productName`, `skuName`, `armSkuName`, meter name, and price type. Never
+   silently choose among multiple meter shapes.
 4. Show `unit price x usage = estimated period cost` and list every assumption.
    Reservation prices are term purchase totals; normalize one-year prices by 12
    and three-year prices by 36. Savings Plan and consumption prices are hourly

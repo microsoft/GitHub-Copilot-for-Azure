@@ -8,25 +8,27 @@ Resolve subscription names to subscription scope paths. For cross-subscription
 requests, process no more than ten accessible subscriptions per batch. Tenant
 IDs are not Cost Management scopes.
 
-## Cost Optimization Rules
+## Resource Graph workflow
 
-When analyzing each storage account, apply these prioritized rules:
+1. Query `AdvisorResources` for Cost recommendations whose resource ID belongs
+   to a storage account or managed disk.
+2. Query `Resources` for matching configuration such as SKU, redundancy, kind,
+   access tier, location, attachment state, management-policy presence when
+   exposed, and ownership tags.
+3. Join recommendations to inventory by resource ID. Preserve the Advisor
+   recommendation text, impact, savings fields, currency, and period.
+4. Use access, capacity, and transaction metrics only when an ARM MCP operation
+   returns them for the same resource and period.
 
-| Priority | Rule | Detection Logic | Recommendation |
-|----------|------|----------------|----------------|
-| Critical | Unattached managed disk | `managedBy` is empty | Verify ownership; compare snapshot or removal |
-| High | Premium in non-production | Premium SKU with a verified environment tag | Compare Standard options |
-| High | No lifecycle policy | No management policy is configured | Model tiering and retention rules |
-| High | Hot-only, infrequent access | Verified access data shows >80% inactive for 30+ days | Compare Cool, Cold, and Archive |
-| High | Geo-redundant non-production | GRS/GZRS with verified lower durability needs | Compare LRS or ZRS |
-| High | Classic account | `kind == 'Storage'` | Assess StorageV2 migration |
-| Medium | Long retention | Snapshot, version, or soft-delete retention exceeds policy | Review retention requirements |
-| Medium | Missing allocation tags | Confirmed tag keys are absent | Recommend required tags |
+An unattached disk, missing policy, SKU, redundancy choice, or resource tag is
+an inventory fact, not proof of waste. Do not classify storage as idle,
+underutilized, or safe to tier, resize, or delete without an authoritative
+recommendation or matching observed usage evidence.
 
 Quantify opportunities with actual usage, current cost, and live prices. Do not
 use generic savings ranges.
 
-For tier-selection constraints and a starting policy, load
+When Advisor or observed access evidence supports tiering analysis, load
 [Lifecycle guidance](storage-lifecycle.md).
 
 ## Resource Graph Queries

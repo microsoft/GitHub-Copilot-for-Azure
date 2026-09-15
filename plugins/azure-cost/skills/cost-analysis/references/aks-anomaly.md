@@ -1,5 +1,7 @@
 # AKS Cost and Utilization Anomalies
 
+This workflow supports both cluster-level and namespace-level cost analysis.
+
 1. Confirm the anomaly window and affected cluster or namespace.
 2. `query_aks_costs` supports daily or monthly cost granularity, not hourly
    attribution. Query the affected day and comparable baseline days with the
