@@ -32,31 +32,6 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Cost query API fallback is bounded"
-    prompt: "The ARM MCP query_costs operation is unavailable. Explain the supported fallback for reading last month's Azure costs, but do not execute it."
-    config:
-      runs: 1
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: behavior
-      regression: api-fallback
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - cost-analysis
-      - type: output-matches
-        config:
-          pattern: "(?i)Cost Management Query API"
-      - type: output-matches
-        config:
-          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
-      - type: output-matches
-        config:
-          pattern: "(?i)scope|period|currency|row|limit"
-
   - name: "Investigate date-specific spike"
     prompt: "There was a cost spike on a specific day last month in my current subscription. Explain what caused it and which resource was responsible."
     tags:
@@ -143,7 +118,7 @@ stimuli:
       - type: tool-calls
         config:
           disallowed:
-            - name: "(?i)^(bash|powershell|shell|web_fetch|fetch|curl|http|rest)$"
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
       - type: output-matches
         config:
           pattern: "(?i)query_costs|Cost Management"
@@ -254,6 +229,93 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|kubectl\\s+top|az\\s+monitor|az\\s+consumption"
+
+  - name: "Cost investigation uses comparable evidence"
+    prompt: "Explain how you would investigate a one-day Azure cost spike without running tools. Include the baseline, drill-down order, financial dimensions, change correlation, and confidence criteria."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: investigation-depth
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)equal-length|comparable|weekday|baseline"
+      - type: output-matches
+        config:
+          pattern: "(?i)ServiceName|resource group|ResourceId|Meter"
+      - type: output-matches
+        config:
+          pattern: "(?i)ChargeType|PricingModel|amortized|refund|purchase"
+      - type: output-matches
+        config:
+          pattern: "(?i)resourcechanges|confidence|evidence"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
+
+  - name: "AI attribution separates direct and inferred cost"
+    prompt: "Explain how you would attribute Microsoft Foundry and Azure AI costs by service, account, meter, deployment, project, model, and token without running tools."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: attribution-depth
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)ServiceName|ResourceId|MeterCategory|Meter"
+      - type: output-matches
+        config:
+          pattern: "(?i)deployment|project|token.{0,40}(not|unavailable|unsupported|separate)"
+      - type: output-matches
+        config:
+          pattern: "(?i)direct|indirect|inferred|confidence|shared|unallocated"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
+
+  - name: "Historical range guardrail is not bypassed"
+    prompt: "The Azure cost query rejected my requested historical period because it is outside the supported 92-day window. Without running tools, explain the valid next step and whether an API fallback can bypass the limit."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: retention-guardrail
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)92.day|narrow|supported (period|window)|recent"
+      - type: output-matches
+        config:
+          pattern: "(?i)fallback.{0,80}(not|cannot|does not)|cannot.{0,80}fallback|does not.{0,80}bypass"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
 
   - name: "Negative hypothetical pricing"
     prompt: "Estimate the monthly pay-as-you-go price of a Standard_D4s_v5 Windows VM with a P15 disk in East US."

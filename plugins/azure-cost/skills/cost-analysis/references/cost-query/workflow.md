@@ -34,6 +34,11 @@ Query API through the approved [fallback process](../tools-and-safety.md).
 Preserve the response column order, currency, metric, scope, and period. Keep
 different currencies separate.
 
+Request `granularity=None` when the answer needs a total instead of summing
+daily rows. For weekly comparisons, issue one bounded custom-period query per
+week, with `granularity=None` and only the required grouping, rather than
+locally parsing or time-bucketing a larger response.
+
 The tool has no continuation input. If the requested data exceeds `top`, raise
 `top` to at most 5000 or narrow the scope, period, or grouping. State when the
 result may be incomplete.

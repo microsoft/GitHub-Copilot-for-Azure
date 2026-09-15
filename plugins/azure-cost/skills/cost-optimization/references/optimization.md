@@ -1,20 +1,44 @@
 # Optimization Workflow
 
-1. Call `query_costs` for month-to-date cost grouped by `ServiceName` and
-   `ResourceGroupName`. Rank contributors per currency.
+## Build the Candidate Set
+
+1. Call `query_costs` for current and prior comparable periods grouped by
+   `ServiceName` and `ResourceGroupName`. Rank contributors and deltas per
+   currency; do not optimize only by resource count.
 2. Use `generate_query`, `validate_query`, then `execute_query` to retrieve
-   Azure Advisor cost recommendations and factual resource inventory.
-   Never execute an unvalidated Resource Graph query.
-3. Split Advisor results into quantified and non-quantified recommendations.
-   Use tool-reported savings only; preserve each amount's currency and period.
-4. Check SKU-changing recommendations against assigned Azure Policy. Mark each
-   target as allowed, blocked, or unknown.
-5. If commitments exist, flag rightsizing that may strand reserved capacity and
-   load [Commitment Analysis](commitments.md).
-6. Present prioritized rightsizing, cleanup, and commitment opportunities with
-   evidence, confidence, impact, and next action. Do not invent utilization
-   thresholds or classify a resource as idle or underutilized without an
-   authoritative recommendation or matching observed metrics.
+   Azure Advisor cost recommendations and factual inventory. Put the exact
+   subscription predicate and required projection in the validated query;
+   never isolate subscription rows by saving and parsing the response locally.
+3. Deduplicate recommendations by resource ID, recommendation type, and target
+   configuration in the validated Resource Graph query when possible. Otherwise
+   narrow or page the query and preserve unresolved duplicates rather than
+   aggregating them in a shell or local interpreter. Keep the newest active
+   recommendation and preserve Advisor's impact, savings amount, currency, and
+   period.
+
+## Validate Feasibility
+
+4. Separate quantified Advisor recommendations, observed-metric candidates, and
+   inventory-only signals. Use tool-reported savings only. Missing policies,
+   unattached state, empty backend pools, age, SKU, or tags require owner and
+   workload confirmation.
+5. Check each proposed SKU, region, shutdown, or deletion against Azure Policy,
+   availability, reliability requirements, ownership, dependencies, and
+   rollback options. Mark feasibility as allowed, blocked, or unknown.
+6. If commitments exist, load [Commitment Analysis](commitments.md). Identify
+   rightsizing or shutdown actions that could strand reserved capacity, and
+   avoid counting commitment and rightsizing savings twice.
+
+## Prioritize and Report
+
+7. Prioritize high-confidence quantified savings that are feasible and do not
+   conflict with commitments or reliability requirements. Follow with
+   non-quantified or lower-confidence investigations. Do not create an invented
+   composite score.
+8. Present current cost, evidence source, savings and period when reported,
+   confidence, feasibility, commitment interaction, owner, validation step,
+   rollback, and next action. Never classify a resource as idle or
+   underutilized without an authoritative recommendation or matching metrics.
 
 Load service-specific Resource Graph guidance only when relevant:
 

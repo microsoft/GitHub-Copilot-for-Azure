@@ -22,6 +22,10 @@ input, denied access, throttling, or empty data.
 Preserve the MCP workflow's scope, period, row limits, pagination, currency, and
 evidence labels. State which fallback was used. Never expose access tokens.
 Require explicit approval before a fallback write or configuration change.
+Do not invoke Bash, PowerShell, Python, or another local interpreter merely to
+parse or aggregate an MCP response. Request server-side grouping or sorting, or
+issue smaller bounded MCP queries. Use shell clients only for an approved API
+fallback when the required MCP operation is unavailable.
 
 ## Evidence labels
 

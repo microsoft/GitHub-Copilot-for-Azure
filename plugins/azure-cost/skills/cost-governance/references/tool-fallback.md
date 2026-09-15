@@ -16,5 +16,10 @@ Prefer native commands when they expose the required fields; otherwise use
 currency, time grain, thresholds, contacts, filters, and pagination. State
 which fallback was used and never expose access tokens.
 
+Do not invoke Bash, PowerShell, Python, or another local interpreter merely to
+parse or aggregate an MCP response. Request server-side grouping or filtering,
+or issue smaller bounded MCP queries. Use shell clients only for an approved API
+fallback when the required MCP operation is unavailable.
+
 Do not fall back for denied access, invalid input, throttling, or empty data.
 Budget or policy writes still require an explicit preview and user confirmation.

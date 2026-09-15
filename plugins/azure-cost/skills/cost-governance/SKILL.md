@@ -14,25 +14,26 @@ metadata:
 | Intent | Workflow | Primary tools |
 |--------|----------|---------------|
 | Check budget status | [Budget health](references/budget-health.md) | `list_budgets`, `forecast_costs`, `query_costs`, `list_alerts` |
-| Configure a budget | [Budget setup](references/budget-setup.md) | `list_budgets`, `query_costs`, `forecast_costs`, `create_budget` |
-| Review guardrails | [Guardrails](references/guardrails.md) | `generate_query`, `validate_query`, `execute_query`, `list_budgets` |
+| Configure a budget | [Budget setup](references/budget-setup.md) | Cost tools, `create_budget` |
+| Review guardrails | [Guardrails](references/guardrails.md) | Resource Graph, `list_budgets` |
 
 ## When to Use This Skill
 
-Use for budgets, alerts, tags, and policy. Route forecasts to
-`cost-estimation`. Only confirmed `create_budget` calls may write.
+Use for budgets, alerts, tags, and policy.
 
 ## MCP Tools
 
-Use cost tools for budgets and Resource Graph for policy and tags. Writes need
+Use cost tools for budgets; Resource Graph for guardrails. Writes need
 confirmed scope, amount, thresholds, and recipients. Fallback:
 [API mappings](references/tool-fallback.md).
 
 ## Workflow
 
 1. Confirm scope and load the matching workflow.
-2. Distinguish access failures from empty results.
-3. Report gaps without implying budgets cap spend.
+2. Never transform MCP results in a shell or interpreter; request tool-side
+   filtering or bounded follow-up queries.
+3. Distinguish access failures from empty results.
+4. Report gaps without implying budgets cap spend.
 
 ## Error Handling
 

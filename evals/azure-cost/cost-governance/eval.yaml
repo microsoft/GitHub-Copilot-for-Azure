@@ -32,34 +32,6 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Budget API fallback keeps confirmation"
-    prompt: "The ARM MCP budget tools are unavailable. Explain how to inspect or create an Azure budget through a supported fallback, but do not create it."
-    config:
-      runs: 1
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: behavior
-      regression: api-fallback
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - cost-governance
-      - type: output-matches
-        config:
-          pattern: "(?i)Cost Management Budgets API"
-      - type: output-matches
-        config:
-          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
-      - type: output-matches
-        config:
-          pattern: "(?i)preview|confirm|confirmation|scope|threshold|recipient"
-      - type: output-not-matches
-        config:
-          pattern: "(?i)(?<!no )(?<!not )(created|successfully created)"
-
   - name: "List configured budgets"
     prompt: "What budgets are configured on my Azure subscription? For each budget, show the amount, time period, current spend, and alert thresholds."
     tags:
@@ -199,6 +171,70 @@ stimuli:
         config:
           disallowed:
             - name: "(?i).*create_budget$"
+
+  - name: "Budget health separates pace and forecast"
+    prompt: "Without running tools, explain how to assess a monthly Azure budget that is 68 percent consumed halfway through the month and has both old and current alerts."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: budget-depth
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-governance
+      - type: output-matches
+        config:
+          pattern: "(?i)percent.{0,80}(elapsed|period)|elapsed.{0,80}percent|pace|burn"
+      - type: output-matches
+        config:
+          pattern: "(?i)forecast|projected|end.of.period|variance"
+      - type: output-matches
+        config:
+          pattern: "(?i)current.{0,80}histor|historical.{0,80}current|periodStartDate"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)budget (stops|caps|throttles|disables) spend"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
+
+  - name: "Guardrails resolve inheritance and exemptions"
+    prompt: "Without running tools, explain how to determine whether a proposed VM SKU and region are effectively blocked when policies are inherited, one assignment is DoNotEnforce, and an exemption may apply."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: guardrail-depth
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-governance
+      - type: output-matches
+        config:
+          pattern: "(?i)inherit|assignment scope|excluded scope"
+      - type: output-matches
+        config:
+          pattern: "(?i)exemption|DoNotEnforce|audit.only"
+      - type: output-matches
+        config:
+          pattern: "(?i)deny|audit|modify|append|deploy"
+      - type: output-matches
+        config:
+          pattern: "(?i)allowed|denied|unknown|effective"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
 
   - name: "Negative bill investigation"
     prompt: "My Azure bill spiked on July 28. Identify the new resource and service that caused it."

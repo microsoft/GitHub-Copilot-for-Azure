@@ -81,13 +81,22 @@ the load balancer is unused or safe to remove.
 
 ```kql
 AdvisorResources
+| where subscriptionId =~ '{subscription-id}'
 | where properties.category == 'Cost'
-| project name,
-    resourceId=tostring(properties.resourceMetadata.resourceId),
+| extend resourceId=tostring(properties.resourceMetadata.resourceId)
+| project subscriptionId,
+    name,
+    resourceId,
     impact=properties.impact,
     description=properties.shortDescription.solution,
-    savingsDetails=properties.extendedProperties
+    savingsDetails=tostring(properties.extendedProperties)
 ```
+
+Replace the placeholder with the exact target subscription returned by Azure.
+Apply both the MCP subscription scope and the KQL subscription predicate before
+execution. Project only fields needed for the report. If duplicate or
+cross-scope rows remain, narrow or page the validated query; do not save and
+parse the response with a local tool.
 
 Report savings, currency, and period only when those fields are present in
 `savingsDetails`; otherwise label the recommendation qualitative.

@@ -1,0 +1,43 @@
+name: cost-analysis-fallback-eval
+description: Strict contract checks for Azure cost analysis API fallback.
+
+tags:
+  type: integration
+  skill: cost-analysis
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Cost query API fallback is bounded"
+    prompt: "The ARM MCP query_costs operation is unavailable. Explain the supported fallback for reading last month's Azure costs, but do not execute it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost Management Query API"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)scope|period|currency|row|limit"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"

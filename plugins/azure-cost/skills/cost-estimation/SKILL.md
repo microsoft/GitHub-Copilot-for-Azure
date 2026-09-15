@@ -18,8 +18,7 @@ metadata:
 
 ## When to Use This Skill
 
-Use for forecasts, pricing, or planning targets. Route budgets to
-`cost-governance` and historical breakdowns to `cost-analysis`.
+Use for forecasts, pricing, and planning targets.
 
 ## MCP Tools
 
@@ -36,6 +35,8 @@ Fallback: [API mappings](references/tool-fallback.md).
 1. Distinguish forecasts from hypothetical pricing.
 2. Confirm scope, assumptions, period, region, OS, and currency.
 3. Load the matching workflow and label every value type.
+4. Never transform MCP results in a shell or interpreter; request tool-side
+   filtering or bounded follow-up queries.
 
 ## Error Handling
 

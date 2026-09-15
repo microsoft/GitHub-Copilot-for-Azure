@@ -13,25 +13,26 @@ metadata:
 
 | Intent | Workflow | Primary tools |
 |--------|----------|---------------|
-| Reduce waste or rightsize | [Optimization](references/optimization.md) | `query_costs`, `generate_query`, `validate_query`, `execute_query` |
+| Reduce waste or rightsize | [Optimization](references/optimization.md) | Cost and Resource Graph tools |
 | Review commitments | [Commitments](references/commitments.md) | `list_benefit_utilization`, `list_reservation_transactions`, `get_benefit_recommendations` |
 
 ## When to Use This Skill
 
-Use for waste, rightsizing, Reservations, or Savings Plans.
+Use for waste, rightsizing, and commitments.
 
 ## MCP Tools
 
-Use `query_costs` for baselines, Resource Graph for inventory and Advisor, and
-benefit tools for commitments. Validate generated queries. Fallback:
-[API mappings](references/tool-fallback.md).
+Use cost and Resource Graph tools for optimization and benefit tools for
+commitments. Validate queries. Fallback: [API mappings](references/tool-fallback.md).
 
 ## Workflow
 
 1. Confirm scope, period, currency, and commitment intent.
 2. Load only the matching workflow above.
-3. Separate measured cost, reported savings, and qualitative opportunities.
-4. Recommend changes only; do not delete, resize, purchase, or deploy resources.
+3. Never transform MCP results in a shell or interpreter; request validated
+   server-side projection, aggregation, or bounded follow-up queries.
+4. Separate measured cost, reported savings, and qualitative opportunities.
+5. Recommend changes only; do not delete, resize, purchase, or deploy resources.
 
 ## Error Handling
 
@@ -40,4 +41,4 @@ benefit tools for commitments. Validate generated queries. Fallback:
 | Access denied | Name the scope and permission. |
 | Multiple currencies | Group and report each currency separately. |
 | Missing evidence | State the gap; do not invent values. |
-| Throttled or server error | Retry once after the longest delay; then stop and report the trace ID. |
+| Server error | Retry once; then report the trace ID. |

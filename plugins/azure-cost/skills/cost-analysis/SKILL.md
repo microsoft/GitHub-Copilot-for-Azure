@@ -20,21 +20,21 @@ metadata:
 
 ## When to Use This Skill
 
-Use for spend, anomalies, Azure Kubernetes Service (AKS), or AI cost allocation.
-Analyze before handing remediation to `cost-optimization`.
+Use for spend, anomalies, and AKS or AI allocation.
 
 ## MCP Tools
 
-Use `query_costs`, `query_aks_costs`, and Resource Graph first. If a required
-operation is unavailable, follow [fallback and
-safety](references/tools-and-safety.md).
+Use cost tools and Resource Graph first. If an operation is unavailable, follow
+[fallback and safety](references/tools-and-safety.md).
 
 ## Workflow
 
 1. Confirm scope, period, currency, and breakdown.
 2. Load only the matching workflow above.
-3. Respect row limits and label incomplete data.
-4. Separate measured cost from inferred causes and recommendations.
+3. Never transform MCP results in a shell or interpreter; request tool-side
+   totals, grouping, sorting, or bounded follow-up queries.
+4. Respect row limits and label incomplete data.
+5. Separate measured cost from inferred causes and recommendations.
 
 ## Error Handling
 

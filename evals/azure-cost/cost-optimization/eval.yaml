@@ -36,31 +36,6 @@ stimuli:
           pattern: "(?i)actual|Advisor|unavailable|could not|evidence"
       - type: completed
 
-  - name: "Commitment API fallback preserves evidence"
-    prompt: "The ARM MCP benefit utilization and recommendation tools are unavailable. Explain the supported fallback for commitment analysis, but do not execute it or purchase anything."
-    config:
-      runs: 1
-    tags:
-      type: integration
-      tier: full
-      cost: llm
-      area: behavior
-      regression: api-fallback
-    graders:
-      - type: skill-invocation
-        config:
-          required:
-            - cost-optimization
-      - type: output-matches
-        config:
-          pattern: "(?i)Benefit (Recommendations|Utilization)|Reservations Transactions"
-      - type: output-matches
-        config:
-          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
-      - type: output-matches
-        config:
-          pattern: "(?i)period|scope|currency|approval|confirm"
-
   - name: "Rightsize an oversized database"
     prompt: "My Azure SQL Database bill is high but query volume is low. Check its tier and utilization, then recommend what I should downsize to."
     tags:
@@ -185,6 +160,70 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)curl|az\\s+graph"
+
+  - name: "Commitment utilization and coverage stay separate"
+    prompt: "Without running tools, explain how to investigate a reservation with 72 percent utilization while the subscription still has substantial pay-as-you-go compute spend."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: commitment-depth
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)utilization.{0,120}coverage|coverage.{0,120}utilization"
+      - type: output-matches
+        config:
+          pattern: "(?i)billing (account|profile|scope)|scope|region|family"
+      - type: output-matches
+        config:
+          pattern: "(?i)AmortizedCost|PricingModel|transaction|exchange|refund"
+      - type: output-matches
+        config:
+          pattern: "(?i)confirm|approval|do not purchase|investigation"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
+
+  - name: "Optimization resolves policy and commitment conflicts"
+    prompt: "An Advisor recommendation reports savings for downsizing a resource, but policy may block the target SKU and an existing reservation may be stranded. Explain how to prioritize the recommendation without running tools."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: optimization-depth
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Advisor|reported savings|currency|period"
+      - type: output-matches
+        config:
+          pattern: "(?i)policy|allowed|blocked|unknown"
+      - type: output-matches
+        config:
+          pattern: "(?i)reservation|commitment|strand|double.count"
+      - type: output-matches
+        config:
+          pattern: "(?i)confidence|feasib|rollback|owner"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
 
   - name: "Negative cost spike"
     prompt: "My Azure bill jumped 36 percent over two months. Find which resources and services caused the increase."
