@@ -1,0 +1,219 @@
+parameters:
+  - name: testHarnessRepository
+    type: string
+    default: evaluationTemplates
+  - name: pluginRepository
+    type: string
+    default: pluginSource
+  - name: pluginsDir
+    type: string
+    default: .github/plugins
+  - name: plugin
+    type: string
+  - name: skill
+    type: string
+  - name: evalDir
+    type: string
+    default: ""
+  # Uncomment when Azure authentication is needed by the evaluation.
+  # - name: azureServiceConnection
+  #   type: string
+  - name: uploadArtifacts
+    type: boolean
+    default: true
+  # - name: storageAccount
+  #   type: string
+  #   default: ""
+
+steps:
+  - bash: |
+      set -euo pipefail
+      for value in "$PLUGIN" "$SKILL"; do
+        if [[ ! "$value" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+          echo "Plugin and skill names may contain only letters, numbers, dots, underscores, and hyphens." >&2
+          exit 1
+        fi
+      done
+      if [[ -e "$EVAL_WORKSPACE" ]]; then
+        echo "Evaluation workspace already exists: $EVAL_WORKSPACE" >&2
+        exit 1
+      fi
+      mkdir -p "$EVAL_WORKSPACE"
+    displayName: Create evaluation workspace
+    env:
+      EVAL_WORKSPACE: $(Pipeline.Workspace)/s/eval-workspace
+      PLUGIN: ${{ parameters.plugin }}
+      SKILL: ${{ parameters.skill }}
+
+  - checkout: ${{ parameters.testHarnessRepository }}
+    displayName: Checkout test harness
+    clean: true
+    fetchDepth: 1
+    path: s/eval-workspace
+    persistCredentials: false
+
+  - checkout: ${{ parameters.pluginRepository }}
+    displayName: Checkout plugin repository
+    clean: true
+    fetchDepth: 1
+    path: s/eval-workspace/.plugin-source
+    persistCredentials: false
+
+  - bash: |
+      set -euo pipefail
+
+      resolve_child_path() {
+        local candidate="$1"
+        local root="$2"
+        local label="$3"
+        local resolved_candidate
+        local resolved_root
+
+        resolved_candidate=$(realpath -m -- "$candidate")
+        resolved_root=$(realpath -m -- "$root")
+        if [[ "$resolved_candidate" != "$resolved_root/"* ]]; then
+          echo "$label must be under $resolved_root: $resolved_candidate" >&2
+          return 1
+        fi
+        printf '%s\n' "$resolved_candidate"
+      }
+
+      safe_remove_child() {
+        local candidate="$1"
+        local root="$2"
+        local label="$3"
+        local resolved_candidate
+
+        resolved_candidate=$(resolve_child_path "$candidate" "$root" "$label") || return 1
+        rm -rf -- "$resolved_candidate"
+      }
+
+      plugin_checkout_root=$(resolve_child_path "$EVAL_WORKSPACE/.plugin-source" "$EVAL_WORKSPACE" "Plugin checkout directory")
+      plugin_source=$(resolve_child_path "$plugin_checkout_root/$PLUGINS_DIR/$PLUGIN" "$plugin_checkout_root" "Plugin source")
+      skill_source=$(resolve_child_path "$plugin_source/skills/$SKILL" "$plugin_source/skills" "Skill source")
+      plugin_destination=$(resolve_child_path "$EVAL_WORKSPACE/output/$PLUGIN" "$EVAL_WORKSPACE/output" "Plugin destination")
+
+      if [[ ! -d "$skill_source" ]]; then
+        echo "Skill not found: $skill_source" >&2
+        exit 1
+      fi
+
+      safe_remove_child "$plugin_destination" "$EVAL_WORKSPACE/output" "Plugin destination"
+      mkdir -p "$plugin_destination"
+      cp -R "$plugin_source/." "$plugin_destination/"
+      safe_remove_child "$plugin_checkout_root" "$EVAL_WORKSPACE" "Plugin checkout directory"
+
+      if [[ -z "$EVAL_DIR" ]]; then
+        requested_eval_source="$CALLER_WORKSPACE/evals/$PLUGIN"
+      else
+        requested_eval_source="$CALLER_WORKSPACE/$EVAL_DIR"
+      fi
+      eval_source=$(resolve_child_path "$requested_eval_source" "$CALLER_WORKSPACE" "Evaluation source")
+      eval_skill_source=$(resolve_child_path "$eval_source/$SKILL" "$eval_source" "Skill evaluation source")
+      eval_root=$(resolve_child_path "$EVAL_WORKSPACE/evals" "$EVAL_WORKSPACE" "Evaluation destination root")
+      eval_destination=$(resolve_child_path "$eval_root/$PLUGIN" "$eval_root" "Evaluation destination")
+
+      if [[ ! -d "$eval_skill_source" ]]; then
+        echo "Evaluation suite not found: $eval_skill_source" >&2
+        exit 1
+      fi
+
+      safe_remove_child "$eval_root" "$EVAL_WORKSPACE" "Evaluation destination root"
+      mkdir -p "$eval_destination"
+      cp -R "$eval_source/." "$eval_destination/"
+    displayName: Prepare plugin and evaluation suites
+    env:
+      EVAL_WORKSPACE: $(Pipeline.Workspace)/s/eval-workspace
+      CALLER_WORKSPACE: $(Pipeline.Workspace)/s/caller
+      PLUGINS_DIR: ${{ parameters.pluginsDir }}
+      PLUGIN: ${{ parameters.plugin }}
+      SKILL: ${{ parameters.skill }}
+      EVAL_DIR: ${{ parameters.evalDir }}
+
+  - bash: |
+      echo "##vso[task.setvariable variable=reportsDirectory;isOutput=true]$EVAL_WORKSPACE/tests/reports"
+      echo "##vso[task.setvariable variable=resultsDirectory;isOutput=true]$EVAL_WORKSPACE/tests/results"
+      mkdir -p "$EVAL_WORKSPACE/tests/reports" "$EVAL_WORKSPACE/tests/results"
+    name: outputPaths
+    displayName: Set output paths
+    env:
+      EVAL_WORKSPACE: $(Pipeline.Workspace)/s/eval-workspace
+
+  - task: NodeTool@0
+    displayName: Use Node.js 22.14.0
+    inputs:
+      versionSpec: 22.14.0
+
+  - bash: npm ci --ignore-scripts
+    displayName: Install root dependencies
+    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace
+
+  - bash: npm ci
+    displayName: Install script dependencies
+    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/scripts
+
+  - bash: npm ci
+    displayName: Install test dependencies
+    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/tests
+
+  - bash: npm install --global @github/copilot
+    displayName: Install GitHub Copilot CLI
+
+  # Use AzureCLI@2 with the workload-identity refresh loop here when Azure
+  # authentication is required by the evaluation.
+  - bash: |
+      set -euo pipefail
+      if [[ -z "$COPILOT_GITHUB_TOKEN" || "$COPILOT_GITHUB_TOKEN" == '$('"COPILOT_GITHUB_TOKEN"')' ]]; then
+        echo "COPILOT_GITHUB_TOKEN must be defined as a secret pipeline variable." >&2
+        exit 1
+      fi
+      npm run test:vally -- --plugin "$PLUGIN" --skill "$SKILL" --workers 2
+    displayName: Run Vally evaluation without Azure authentication
+    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/tests
+    env:
+      COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
+      PLUGIN: ${{ parameters.plugin }}
+      SKILL: ${{ parameters.skill }}
+      TEST_RUN_ID: reusable-eval
+
+  - bash: npm run report -- --skill "$SKILL" || true
+    displayName: Generate skill report
+    condition: always()
+    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/tests
+    env:
+      SKILL: ${{ parameters.skill }}
+
+  - bash: |
+      skill_report=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
+      if [[ -n "$skill_report" ]]; then
+        echo "##vso[task.uploadsummary]$(pwd)/$skill_report"
+      else
+        echo "No skill report was generated."
+      fi
+    displayName: Show skill report
+    condition: always()
+    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/tests
+
+  - ${{ if eq(parameters.uploadArtifacts, true) }}:
+      - bash: |
+          set -euo pipefail
+          rm -rf -- "$ARTIFACT_STAGING"
+          mkdir -p "$ARTIFACT_STAGING/reports" "$ARTIFACT_STAGING/results"
+          cp -R "$EVAL_WORKSPACE/tests/reports/." "$ARTIFACT_STAGING/reports/"
+          cp -R "$EVAL_WORKSPACE/tests/results/." "$ARTIFACT_STAGING/results/"
+        displayName: Stage evaluation artifacts
+        condition: always()
+        env:
+          ARTIFACT_STAGING: $(Pipeline.Workspace)/evaluation-artifact
+          EVAL_WORKSPACE: $(Pipeline.Workspace)/s/eval-workspace
+
+      - task: PublishPipelineArtifact@1
+        displayName: Upload evaluation artifacts
+        condition: always()
+        inputs:
+          targetPath: $(Pipeline.Workspace)/evaluation-artifact
+          artifact: evaluation-${{ parameters.plugin }}-${{ parameters.skill }}-$(Build.BuildId)-$(System.JobAttempt)
+          publishLocation: pipeline
+
+  # Azure Storage publication is disabled while testing without an Azure
+  # service connection. Pipeline artifact publication above remains enabled.
