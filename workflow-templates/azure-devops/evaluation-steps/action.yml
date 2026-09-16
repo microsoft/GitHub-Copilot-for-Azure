@@ -15,15 +15,14 @@ parameters:
   - name: evalDir
     type: string
     default: auto
-  # Uncomment when Azure authentication is needed by the evaluation.
-  # - name: azureServiceConnection
-  #   type: string
+  - name: azureServiceConnection
+    type: string
   - name: uploadArtifacts
     type: boolean
     default: true
-  # - name: storageAccount
-  #   type: string
-  #   default: ""
+  - name: storageAccount
+    type: string
+    default: none
 
 steps:
   - bash: |
@@ -159,21 +158,54 @@ steps:
   - bash: npm install --global @github/copilot
     displayName: Install GitHub Copilot CLI
 
-  # Use AzureCLI@2 with the workload-identity refresh loop here when Azure
-  # authentication is required by the evaluation.
-  - bash: |
-      set -euo pipefail
-      if [[ -z "$COPILOT_GITHUB_TOKEN" || "$COPILOT_GITHUB_TOKEN" == '$('"COPILOT_GITHUB_TOKEN"')' ]]; then
-        echo "COPILOT_GITHUB_TOKEN must be defined as a secret pipeline variable." >&2
-        exit 1
-      fi
-      npm run test:vally -- --plugin "$PLUGIN" --skill "$SKILL" --workers 2
-    displayName: Run Vally evaluation without Azure authentication
-    workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/tests
+  - task: AzureCLI@2
+    displayName: Run Vally evaluation
+    inputs:
+      azureSubscription: ${{ parameters.azureServiceConnection }}
+      addSpnToEnvironment: true
+      scriptType: bash
+      scriptLocation: inlineScript
+      workingDirectory: $(Pipeline.Workspace)/s/eval-workspace/tests
+      inlineScript: |
+        set -euo pipefail
+
+        if [[ -z "$COPILOT_GITHUB_TOKEN" || "$COPILOT_GITHUB_TOKEN" == '$('"COPILOT_GITHUB_TOKEN"')' ]]; then
+          echo "COPILOT_GITHUB_TOKEN must be defined as a secret pipeline variable." >&2
+          exit 1
+        fi
+
+        azure_subscription_id=$(az account show --query id --output tsv)
+
+        refresh_azure_login() {
+          local response
+          local oidc_token
+
+          response=$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer $SYSTEM_ACCESS_TOKEN" \
+            "$SYSTEM_OIDC_REQUEST_URI")
+          oidc_token=$(jq -er '.oidcToken' <<< "$response")
+          az login --service-principal \
+            --username "$servicePrincipalId" \
+            --tenant "$tenantId" \
+            --federated-token "$oidc_token" \
+            --output none
+          az account set --subscription "$azure_subscription_id"
+        }
+
+        while true; do
+          sleep 240
+          refresh_azure_login
+        done &
+        refresh_pid=$!
+        trap 'kill "$refresh_pid" 2>/dev/null || true' EXIT
+
+        npm run test:vally -- --plugin "$PLUGIN" --skill "$SKILL" --workers 2
     env:
       COPILOT_GITHUB_TOKEN: $(COPILOT_GITHUB_TOKEN)
       PLUGIN: ${{ parameters.plugin }}
       SKILL: ${{ parameters.skill }}
+      SYSTEM_ACCESS_TOKEN: $(System.AccessToken)
+      SYSTEM_OIDC_REQUEST_URI: $(System.OidcRequestUri)
       TEST_RUN_ID: reusable-eval
 
   - bash: npm run report -- --skill "$SKILL" || true
@@ -215,5 +247,33 @@ steps:
           artifact: evaluation-${{ parameters.plugin }}-${{ parameters.skill }}-$(Build.BuildId)-$(System.JobAttempt)
           publishLocation: pipeline
 
-  # Azure Storage publication is disabled while testing without an Azure
-  # service connection. Pipeline artifact publication above remains enabled.
+  - ${{ if ne(parameters.storageAccount, 'none') }}:
+      - task: AzureCLI@2
+        displayName: Publish reports to Azure Storage
+        condition: always()
+        inputs:
+          azureSubscription: ${{ parameters.azureServiceConnection }}
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            set -euo pipefail
+            report_source="$EVAL_WORKSPACE/tests/reports/test-run-reusable-eval"
+            if [[ ! -d "$report_source" ]]; then
+              echo "No reports found to publish: $report_source"
+              exit 0
+            fi
+
+            date_prefix=$(date -u +%Y-%m-%d)
+            destination_path="$date_prefix/$BUILD_BUILDID/$PLUGIN/$SKILL/"
+            az storage blob upload-batch \
+              --account-name "$STORAGE_ACCOUNT" \
+              --destination integration-reports \
+              --destination-path "$destination_path" \
+              --source "$report_source" \
+              --auth-mode login \
+              --overwrite
+        env:
+          EVAL_WORKSPACE: $(Pipeline.Workspace)/s/eval-workspace
+          PLUGIN: ${{ parameters.plugin }}
+          SKILL: ${{ parameters.skill }}
+          STORAGE_ACCOUNT: ${{ parameters.storageAccount }}
