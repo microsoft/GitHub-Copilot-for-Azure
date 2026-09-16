@@ -231,14 +231,16 @@ get_plugin_name() {
     ' "$pluginManifestPath" 2>/dev/null
 }
 
-# Return true only when this hook's plugin configures the named MCP server.
-# The shared hook is copied into every plugin, so an empty .mcp.json must not
-# report MCP calls owned by a co-installed plugin.
+# Return true unless this hook's plugin ships a .mcp.json that does not
+# configure the named server. The shared hook is copied into every plugin, so
+# a plugin with an empty .mcp.json (for example aks-skills) must not report MCP
+# calls owned by a co-installed plugin. A plugin with no .mcp.json at all keeps
+# the pre-existing behavior and reports the event.
 owns_mcp_server() {
     local serverName="$1"
     local mcpConfigPath
     mcpConfigPath="$(dirname "$SKILLS_DIR")/.mcp.json"
-    [ -f "$mcpConfigPath" ] || return 1
+    [ -f "$mcpConfigPath" ] || return 0
     node -e '
         try {
             const config = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));

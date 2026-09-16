@@ -249,14 +249,15 @@ function Get-PluginName {
     return $null
 }
 
-# Return true only when this hook's plugin configures the named MCP server.
-# The shared hook is copied into every plugin, so an empty .mcp.json must not
-# report MCP calls owned by a co-installed plugin.
+# Return true unless this hook's plugin ships a .mcp.json that does not
+# configure the named server. A plugin with an empty .mcp.json (for example
+# aks-skills) must not report MCP calls owned by a co-installed plugin; a
+# plugin with no .mcp.json at all keeps the pre-existing behavior.
 function Test-OwnsMcpServer {
     param([string]$ServerName)
     if ([string]::IsNullOrWhiteSpace($ServerName)) { return $false }
     $mcpConfigPath = Join-Path (Split-Path -Parent $skillsDir) '.mcp.json'
-    if (-not (Test-Path -LiteralPath $mcpConfigPath)) { return $false }
+    if (-not (Test-Path -LiteralPath $mcpConfigPath)) { return $true }
     try {
         $config = Get-Content -LiteralPath $mcpConfigPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
         return $config.mcpServers -and ($config.mcpServers.PSObject.Properties.Name -contains $ServerName)
