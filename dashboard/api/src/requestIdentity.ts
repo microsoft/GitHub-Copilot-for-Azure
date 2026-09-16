@@ -1,4 +1,4 @@
-import { HttpRequest, InvocationContext } from "@azure/functions";
+import { HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 
 interface StaticWebAppClaim {
     typ: string;
@@ -63,11 +63,11 @@ function getRequestIdentity(request: HttpRequest): RequestIdentity {
     return { authSource: "unknown" };
 }
 
-export function logRequestIdentity(
+export function validateRequestIdentity(
     request: HttpRequest,
     context: InvocationContext,
     apiName: string,
-): void {
+): HttpResponseInit | undefined {
     const identity = getRequestIdentity(request);
 
     context.log(
@@ -84,4 +84,15 @@ export function logRequestIdentity(
             userRoles: identity.userRoles,
         }),
     );
+
+    const userDetails = identity.userDetails?.trim();
+    if (userDetails?.toLowerCase().endsWith("@microsoft.com")) {
+        return undefined;
+    }
+
+    const hasIdentity = identity.authSource !== "unknown";
+    return {
+        status: hasIdentity ? 403 : 401,
+        jsonBody: { error: hasIdentity ? "Forbidden" : "Unauthorized" },
+    };
 }

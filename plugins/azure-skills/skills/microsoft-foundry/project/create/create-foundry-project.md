@@ -11,6 +11,8 @@ allowed-tools: Read, Write, Bash, AskUserQuestion
 
 Create a new Microsoft Foundry project using azd. Provisions: Foundry account, project, Application Insights, managed identity, and RBAC permissions. Optionally enables hosted-agent deployment (adds an Azure Container Registry, and — only when the **Standard Setup** capability-host flag is also enabled — a `capabilityHosts/agents` resource).
 
+> **Important:** When the user's goal is to create Foundry agents, use `azd ai agent init` for both new and existing Foundry projects. It is sufficient to scaffold code to create a new Foundry project or scaffold agent code to reuse an existing Foundry project.
+
 **Table of Contents:** [Prerequisites](#prerequisites) · [Workflow](#workflow) · [Best Practices](#best-practices) · [Troubleshooting](#troubleshooting) · [Related Skills](#related-skills) · [Resources](#resources)
 
 ## Prerequisites
@@ -66,7 +68,7 @@ Collect only values the user has not already provided. For values not specified,
      ```
    - Show the generated name to the user before proceeding, but do not block on confirmation — proceed unless the user objects.
    - Examples: `ai-project-3f8a1b2c`, `my-ai-project`, `dev-agents`
-2. **Azure location** (optional) — defaults to North Central US (required for hosted agents preview)
+2. **Azure location** (optional) — defaults to North Central US
 3. **Enable hosted agents?** (yes/no) — enables hosted-agent deployment and provisions an Azure Container Registry. A capability host (`capabilityHosts/agents`, used by Foundry's **Standard Agent Setup** for bring-your-own storage) is also created only when `ENABLE_CAPABILITY_HOST=true`. Defaults to no. See [Step 3](#step-3-create-directory-and-initialize) for how the two flags interact.
 
 ### Step 3: Create Directory and Initialize
@@ -118,14 +120,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ### Step 6: Next Steps
 
-> **Next — azd Golden Path:** create a hosted agent with [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md). For headless / scripted flows, **pre-bootstrap the workspace with core `azd init`** so subscription + location are populated before model resolution runs:
->
-> ```bash
-> azd init -t Azure-Samples/azd-ai-starter-basic . -e <env-name> --subscription <id> -l <region>
-> azd ai agent init -m <manifest-url> --no-prompt --deploy-mode code --runtime python_3_13 --entry-point main.py
-> ```
->
-> Core `azd init` accepts `--subscription` and `-l/--location`; `azd ai agent init` does not. `azd ai agent init` then resolves the model from the chosen sample's manifest and writes it into `azure.yaml services.ai-project.deployments[]`; the next `azd provision` creates the deployment through Bicep. **You do not need to deploy a model separately for this path** — no `az cognitiveservices` calls, no `azd env set AI_PROJECT_DEPLOYMENTS`.
+> **Next — azd Golden Path:** create a hosted agent with [foundry-agent/create/create-hosted.md](../../foundry-agent/create/create-hosted.md).
 >
 > Use [models/deploy-model](../../models/deploy-model/SKILL.md) **only** for out-of-band scenarios: adding models to a Foundry project that is not managed by this azd project, or ad-hoc deployments outside the azd lifecycle.
 
@@ -135,7 +130,7 @@ Capture `AZURE_AI_PROJECT_ID`, `AZURE_AI_PROJECT_ENDPOINT`, and `AZURE_RESOURCE_
 
 ## Best Practices
 
-- Use North Central US for hosted agents (preview requirement)
+- Use North Central US for hosted agents
 - Name must be alphanumeric + hyphens only — no spaces, underscores, or special characters
 - Delete unused projects with `azd down` to avoid ongoing costs
 - `azd down` deletes ALL resources — Foundry account, agents, models, Container Registry, and Application Insights data

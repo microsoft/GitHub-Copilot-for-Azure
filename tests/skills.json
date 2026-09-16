@@ -1,6 +1,16 @@
 {
     "plugins": [
         {
+            "name": "foundry-iq-skills",
+            "dirname": "foundry-iq-skills",
+            "skills": [
+                "foundry-iq"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "foundry-iq"
+            }
+        },
+        {
             "name": "azure",
             "dirname": "azure-skills",
             "skills": [
@@ -49,6 +59,17 @@
             ],
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-kusto-graph,azure-kusto-irql,azure-kusto-irql-graph"
+            }
+        },
+        {
+            "name": "azure-local-skills",
+            "dirname": "azure-local-skills",
+            "skills": [
+                "azure-local",
+                "azure-local-multi-rack"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "azure-local,azure-local-multi-rack"
             }
         }
     ]

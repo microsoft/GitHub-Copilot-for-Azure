@@ -17,6 +17,13 @@
 #   - Skill prefix:   azure:<skill-name>  (e.g., azure:azure-prepare)
 #   - Detection:      has "hook_event_name", tool_use_id does NOT contain "__vscode"
 #
+# Cursor:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     PascalCase for file reads (Read); raw MCP tool name from afterMCPExecution
+#   - Skill paths:    .cursor/plugins/cache/<catalog>/azure/<revision>/skills/<name>/SKILL.md
+#   - Detection:      has "hook_event_name" and "cursor_version"
+#   - MCP detection:  afterMCPExecution event with mcp_server_name "azure"
+#
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
 #   - Tool names:     snake_case (read_file, replace_string_in_file)
@@ -42,7 +49,8 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*)
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*), or when Cursor
+#      sends afterMCPExecution with mcp_server_name "azure"
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read
@@ -66,8 +74,8 @@
 #
 # === Reference File Detection ===
 #
-# When a file read tool is invoked (Copilot CLI: "view", Claude Code: "Read",
-# VS Code: "read_file"), the script extracts the file path from the tool input
+# When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
+# "Read", VS Code: "read_file"), the script extracts the file path from the tool input
 # and checks if it falls within a recognized azure-skills folder:
 #
 #   Path field lookup order:
@@ -82,11 +90,18 @@
 #       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
 #     azure-kusto-graph-skills:
 #     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     azure-local-skills:
+#     - .copilot/installed-plugins/<catalog-name>/azure-local-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/azure-local-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-local-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-local-skills/skills/...
 #     shared:
 #     - .agents/skills/...
 #
@@ -120,7 +135,8 @@ function Write-RawInputToFile {
         $timestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
         $rawInputFile = Join-Path $rawInputDir "$timestamp.json"
         try {
-            $RawInput | Out-File -FilePath $rawInputFile -Encoding utf8 -Force
+            $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText($rawInputFile, $RawInput, $utf8WithoutBom)
         } catch { }
     }
 }
@@ -152,12 +168,52 @@ function Write-Success {
     exit 0
 }
 
+# Removes UTF-8 BOM markers and the common Windows mojibake forms that can
+# precede Cursor hook JSON after stdin passes through Windows PowerShell.
+function Remove-LeadingUtf8BomArtifacts {
+    param([AllowEmptyString()][string]$Value)
+
+    if ($null -eq $Value) { return $Value }
+
+    $bomArtifacts = @(
+        [string][char]0xFEFF,
+        (-join ([char[]]@(0x00EF, 0x00BB, 0x00BF))),
+        (-join ([char[]]@(0x2229, 0x2557, 0x2510)))
+    )
+
+    do {
+        $removedArtifact = $false
+        foreach ($artifact in $bomArtifacts) {
+            if ($Value.StartsWith($artifact, [System.StringComparison]::Ordinal)) {
+                $Value = $Value.Substring($artifact.Length)
+                $removedArtifact = $true
+                break
+            }
+        }
+    } while ($removedArtifact)
+
+    return $Value
+}
+
 # Resolve this script's directory so we can locate bundled skills. In the
 # installed plugin, hooks/ and skills/ are siblings under the plugin root, so
 # <plugin-root>/skills/<name>/SKILL.md is the skill definition.
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $skillsDir = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) 'skills'
+$pluginPathAllowPattern = Join-Path $scriptDir 'pluginPathAllowPattern.ps1'
+
+# Return true only when a target belongs to this hook's plugin. Since this hook
+# is copied into every plugin, comparing through the skills directory prevents
+# each installed copy from reporting the same skill or reference event.
+function Test-OwnedSkillPath {
+    # targetPath is either path to the SKILL.md or to a reference file
+    param([string]$TargetPath)
+    if ([string]::IsNullOrWhiteSpace($TargetPath)) { return $false }
+    $skillsRootNorm = (($skillsDir -replace '\\', '/') -replace '/+', '/').TrimEnd('/')
+    $targetPathNorm = ($TargetPath -replace '\\', '/') -replace '/+', '/'
+    return $targetPathNorm.StartsWith("$skillsRootNorm/", [System.StringComparison]::OrdinalIgnoreCase)
+}
 
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Returns $null if the file or version cannot be read.
@@ -198,12 +254,23 @@ function Get-PluginVersion {
 
 # === Main Processing ===
 
-# Read entire stdin at once - hooks send one complete JSON per invocation
+# Read stdin as bytes and decode it as UTF-8. Reading through Console.In and
+# re-encoding with Console.InputEncoding can introduce code-page mojibake.
 try {
-    $rawInput = [Console]::In.ReadToEnd()
+    $stdinStream = [Console]::OpenStandardInput()
+    $inputBuffer = New-Object System.IO.MemoryStream
+    $stdinStream.CopyTo($inputBuffer)
+    $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
+    $rawInput = $utf8WithoutBom.GetString($inputBuffer.ToArray())
 } catch {
     Write-Success
+} finally {
+    if ($inputBuffer) { $inputBuffer.Dispose() }
 }
+
+# Some clients prefix the JSON stream with a UTF-8 BOM. Cursor on Windows can
+# surface an additional mojibake copy of that marker after stdin decoding.
+$rawInput = Remove-LeadingUtf8BomArtifacts -Value $rawInput
 
 # Return success and exit if no input
 if ([string]::IsNullOrWhiteSpace($rawInput)) {
@@ -232,6 +299,8 @@ $sessionId = $inputData.sessionId
 if (-not $sessionId) {
     $sessionId = $inputData.session_id
 }
+$hookEventName = $inputData.hook_event_name
+$mcpServerName = $inputData.mcp_server_name
 
 # Get tool arguments (Copilot CLI: toolArgs, Claude Code / VS Code: tool_input)
 $toolInput = $inputData.toolArgs
@@ -300,28 +369,13 @@ function Get-ToolInputPath {
 # swapping both the catalog/plugin segments (e.g. "azure" and "azure-skills")
 # for the new plugin's name.
 
-# --- azure-skills plugin ---
-# The Copilot CLI pattern wildcards the catalog/marketplace folder name
-# (e.g. "awesome-copilot") since it does not necessarily match the plugin's
-# own name ("azure").
-$pathPatternCopilot = '\.copilot/installed-plugins/[^/]+/azure/skills/'
-$pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
-$pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
-
-# --- azure-kusto-graph-skills plugin ---
-$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/[^/]+/azure-kusto-graph-skills/skills/'
-$pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-graph-skills/[0-9.]+/skills/'
-$pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
+. $pluginPathAllowPattern
 
 # --- shared across all plugins ---
 $pathPatternAgentsSkills = '\.agents/skills/'
 
 # Put the path patterns into an array for easier iteration
-$pathPatterns = @(
-    $pathPatternCopilot, $pathPatternClaude, $pathPatternVscodeAgentPlugins,
-    $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
-    $pathPatternAgentsSkills
-)
+$pathPatterns = @($pluginPathPatterns) + @($pathPatternAgentsSkills)
 
 # If $env:AZURE_SKILLS_PLUGIN_ROOT is set, add it to the path patterns for local skill development
 if ($env:AZURE_SKILLS_PLUGIN_ROOT) {
@@ -345,10 +399,11 @@ if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     if ($skillName -and $skillName.StartsWith("azure:")) {
         $skillName = $skillName.Substring(6)
     }
-    if ($skillName) {
+    $skillMdPath = Join-Path $skillsDir (Join-Path $skillName 'SKILL.md')
+    if ($skillName -and (Test-Path -LiteralPath $skillMdPath) -and (Test-OwnedSkillPath $skillMdPath)) {
         $eventType = "skill_invocation"
         $shouldTrack = $true
-        $skillVersion = Get-SkillVersion (Join-Path $skillsDir (Join-Path $skillName 'SKILL.md'))
+        $skillVersion = Get-SkillVersion $skillMdPath
     }
 }
 
@@ -369,7 +424,7 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
             }
         }
 
-        if ($isAzureSkillMd) {
+        if ($isAzureSkillMd -and (Test-OwnedSkillPath $pathToCheck)) {
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
             if ($pathNormalized -match '/skills/([^/]+)/SKILL\.md$') {
                 $skillName = $Matches[1]
@@ -384,9 +439,18 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
+#               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
 if ($toolName) {
-    if ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_")) {
+    if ($clientName -eq "cursor" -and $hookEventName -eq "afterMCPExecution" -and $mcpServerName -eq "azure") {
+        $azureToolName = $toolName
+        if ($azureToolName.StartsWith("MCP:", [System.StringComparison]::Ordinal)) {
+            $azureToolName = $azureToolName.Substring(4)
+        }
+        $eventType = "tool_invocation"
+        $shouldTrack = $true
+    } elseif ($toolName.StartsWith("azure-") -or $toolName.StartsWith("mcp__plugin_azure_azure__") -or $toolName.StartsWith("mcp_azure_mcp_")) {
         $azureToolName = $toolName
         $eventType = "tool_invocation"
         $shouldTrack = $true
@@ -408,7 +472,7 @@ if (-not $filePath -and -not $skillName) {
                 break
             }
         }
-        if ($matchesPattern) {
+        if ($matchesPattern -and (Test-OwnedSkillPath $pathToCheck)) {
             # Extract relative path after 'skills/'
             $pathNormalized = $pathToCheck -replace '\\', '/' -replace '/+', '/'
 

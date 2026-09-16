@@ -67,7 +67,7 @@ describe("expandToolUsageToRows", () => {
     testName: "azure-quotas_Quota_check",
     reportFile: "agent-metadata-2026-06-15T11-44-05-123Z.md",
     sessionId: "sess-1",
-    model: "claude-sonnet-4.6",
+    model: "claude-sonnet-5",
     timestamp: "2026-06-15T11:44:05.123Z",
     toolCalls: [
       { order: 0, toolName: "skill", toolCallId: "s1", success: true, durationMs: 12, outputBytes: 40 },
@@ -96,7 +96,7 @@ describe("expandToolUsageToRows", () => {
     expect(first.runTimestamp).toBe("2026-06-15T11:44:05.123Z");
     expect(first.reportFile).toBe("agent-metadata-2026-06-15T11-44-05-123Z.md");
     expect(first.sessionId).toBe("sess-1");
-    expect(first.model).toBe("claude-sonnet-4.6");
+    expect(first.model).toBe("claude-sonnet-5");
   });
 
   test("gives every row in a run a distinct rowKey", () => {

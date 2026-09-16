@@ -12,7 +12,7 @@ defaults:
   runs: 1
   timeout: "5m"
   executor: integration-test-agent-runner
-  model: claude-sonnet-4.6
+  model: claude-sonnet-5
 
 scoring:
   threshold: 0.95
@@ -830,6 +830,69 @@ stimuli:
   - name: "Find failing Foundry agent traces"
     prompt: "Find failing traces and errors for my Foundry agent"
     tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Agent Insights
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Pull generated Foundry agent insights"
+    prompt: "Pull the generated insights for my Microsoft Foundry agent."
+    tags:
+      scenario: agent-insights
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "List generated Foundry agent issues"
+    prompt: "List the generated agent issues from my Foundry agent's existing monitor."
+    tags:
+      scenario: agent-insights
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"\"[cC][oO][mM][mM][aA][nN][dD]\":\"(?:[^\"\\\\]|\\\\.)*\\b(?:[aA][zZ]|[aA][zZ][dD])(?:\\.[cC][mM][dD]|\\.[eE][xX][eE])?\\s+"},{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+  - name: "Retrieve Foundry agent recommendations and evidence"
+    prompt: "Show my Microsoft Foundry agent's generated recommendations with their evidence and proposed fixes."
+    tags:
+      scenario: agent-insights
       type: integration
       tier: full
       cost: llm

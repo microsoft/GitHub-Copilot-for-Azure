@@ -31,11 +31,6 @@ metadata:
 
 Keep the main SKILL.md concise. Move detailed documentation to files under the `references/` subfolder.
 
-## Required Sections
-
-1. **Quick Reference** - Summary table with key properties (MCP tools, CLI commands, best for)
-2. **Workflow/Steps** - Numbered or phased step-by-step processes
-
 ## Optional Sections
 
 1. **Prerequisite** - Expected environmental conditions for the skill to operate (e.g. files in the workspace, local CLI tools, type of projects, etc.)
@@ -68,6 +63,16 @@ Structure content for progressive loading:
 If including executable scripts:
 - Provide both bash (`.sh`) and PowerShell (`.ps1`) versions for non-trivial scripts
 - Trivial one-liners may use bash only
+
+## Integration Tests
+
+Every skill must have its test cases written under `evals/<owning-plugin>/<skill-name>`. The test cases must be implemented as Vally eval suites. See [vally-eval](../skills/vally-eval/SKILL.md) on the requirements of the eval suites.
+
+## Owners
+
+The entry must include at least two distinct GitHub aliases from the skill's authoring team, plus `@RickWinter` as the fallback repository owner.
+
+The directory containing the skill's eval suites must also have a `CODEOWNERS` entry with the same owners as the skill directory.
 
 ## Related Resources
 

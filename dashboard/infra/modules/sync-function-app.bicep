@@ -41,6 +41,9 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   sku: {
     name: 'Standard_LRS'
   }
+  properties: {
+    allowSharedKeyAccess: false
+  }
 }
 
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {

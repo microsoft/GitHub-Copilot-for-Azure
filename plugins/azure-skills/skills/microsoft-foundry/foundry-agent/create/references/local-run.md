@@ -33,7 +33,7 @@ For Python agents, prepare the environment from the **agent's service source dir
 
 ## Start the agent locally
 
-Activate the service-dir `.venv`, then in that venv run:
+The examples below use the default port `8088`. Confirm it is free; if occupied, choose another port and add the same `--port <n>` to both `run` and `invoke --local`. Activate the service-dir `.venv`, then in that venv run:
 
 ```bash
 azd ai agent run --no-client
@@ -49,11 +49,15 @@ What this does:
 4. Starts the agent in the foreground on `localhost:8088` (default).
 5. Opens no client when `--no-client` is set. Without that flag, azd opens Agent Inspector for the Responses and Invocations protocols, and Microsoft 365 Agents Playground for the Activity protocol.
 
-> Wait for the ready log line before sending the first invocation. Poll the log at short intervals; do not pre-sleep on a fixed duration.
+> **Readiness gate — required before local invocation.**
+> - Start checking TCP connections to `localhost:<port>` immediately after launching the agent in the background; retry failed connections every 2–5 seconds.
+> - **Keep each startup wait at 5 seconds or less**, including sleeps and shell-tool output reads.
+> - **Proceed to the smoke invocation as soon as TCP connects**, keeping the server running.
+> - If the agent process exits or the startup timeout expires before a connection succeeds, inspect the server logs and resolve the cause before retrying.
 
 `Ctrl+C` stops the agent and clears the saved local session id in an interactive terminal.
 
-For headless or CI runs, pass `--no-client` and start the local server in a managed background session that later steps can monitor and stop. Wait for the ready log line, invoke it from a second command when the service exposes the Responses or Invocations protocol, then stop the same background session before deploying or leaving a temporary workspace. For an Activity-only service, headless local run validates startup only; `azd ai agent invoke` cannot perform the Activity round trip.
+For headless or CI runs, pass `--no-client` and start the local server in a managed background session that later steps can monitor and stop. Once the readiness check passes, invoke it from a second command when the service exposes the Responses or Invocations protocol, then stop the same background session before deploying or leaving a temporary workspace. For an Activity-only service, headless local run validates startup only; `azd ai agent invoke` cannot perform the Activity round trip.
 
 Do **not** start `azd ai agent run` as a detached process that you cannot monitor or stop (for example, a bare `azd ai agent run ... &`, or a popped PowerShell window on Windows). Keep logs, readiness polling, and the PID/process handle for cleanup.
 
@@ -107,20 +111,18 @@ If detection fails and no override is set, `run` errors with the project dir and
 ## Invoke the local agent
 
 ```bash
-azd ai agent invoke --local "hello, are you up?"
+azd ai agent invoke --local "<short representative prompt for the agent's purpose>"
 ```
 
 For a multi-agent project, select the service explicitly:
 
 ```bash
-azd ai agent invoke my-agent --local "hello, are you up?"
+azd ai agent invoke my-agent --local "<short representative prompt for the agent's purpose>"
 ```
 
 Prefer the named form when multiple agent services exist. Keep the unnamed form for a single-agent project.
 
 Do not use `--output json` with invoke. The invoke command supports `default` and `raw` output only.
-
-If the user did not explicitly specify a prompt, use `"hello, are you up"` for the local smoke test; only verify that the agent can return a response.
 
 Run one representative local invocation before deploying. If the local invocation returns a model `404` or wrong deployment error, check `azd env get-values` before changing code; stale azd env values are the most common cause.
 

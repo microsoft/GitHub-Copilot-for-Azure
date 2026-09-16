@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, filterBlobTreeBySkills, resolveSkillFilter } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * SWA Managed API endpoint that returns skill test report.
@@ -36,7 +36,10 @@ import { logRequestIdentity } from "../requestIdentity";
  * All ${DATE} are in the format of yyyy-mm-dd.
  */
 async function getData(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getData");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getData");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const date = request.params.date;
     if (!date) {

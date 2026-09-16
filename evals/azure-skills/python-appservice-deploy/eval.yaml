@@ -35,7 +35,7 @@ defaults:
   # `earlyTerminate` tag, so the higher timeout is just a safety net.
   timeout: "35m"
   executor: integration-test-agent-runner
-  model: claude-sonnet-4.6
+  model: claude-sonnet-5
 
 scoring:
   threshold: 0.8

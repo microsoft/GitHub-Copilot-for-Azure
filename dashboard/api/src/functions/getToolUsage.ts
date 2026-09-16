@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 import { resolveSkillFilter } from "../blobEnumerator";
 
 const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
@@ -61,7 +61,10 @@ export function buildToolUsageFilter(filters: {
  * stored here — they live in the per-run blob and are fetched on demand.
  */
 async function getToolUsage(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getToolUsage");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getToolUsage");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const filter = buildToolUsageFilter({
         skill: request.query.get("skill") || undefined,
