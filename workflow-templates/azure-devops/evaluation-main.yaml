@@ -15,9 +15,9 @@ parameters:
     type: string
     default: .github/plugins
   - name: evalDir
-    displayName: Evaluation directory; defaults to evals/<plugin>
+    displayName: Evaluation directory (auto uses evals/<plugin>)
     type: string
-    default: ""
+    default: auto
   # Uncomment when Azure authentication is needed by the evaluation.
   # - name: azureServiceConnection
   #   displayName: Azure Resource Manager workload-identity service connection
