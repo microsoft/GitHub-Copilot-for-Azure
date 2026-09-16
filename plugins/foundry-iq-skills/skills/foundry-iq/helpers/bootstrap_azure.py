@@ -505,16 +505,16 @@ def plan_request(request, *, cli=run_cli, clock=time.monotonic, execution_output
             if observed is not None:
                 raise failure("bootstrap-state-conflict", "New intent requires exact-name absence; never overwrite or silently reuse.")
             session.regions(selected=request["location"])
+            refreshed = session.get()
+            if refreshed is not None:
+                raise failure("bootstrap-state-drift", "Exact-name absence changed; creation is blocked.")
         else:
             binding = reuse_binding(observed, request, body)
             if binding is None:
                 raise failure("bootstrap-not-ready", "Reuse requires a running, keyless Search service with identity readback.")
-        refreshed = session.get()
-        if request["action"] == "create":
-            if refreshed is not None:
-                raise failure("bootstrap-state-drift", "Exact-name absence changed; creation is blocked.")
-        elif reuse_binding(refreshed, request, body) != binding:
-            raise failure("bootstrap-state-drift", "Selected Search identity changed; obtain fresh evidence.")
+            refreshed = session.get()
+            if reuse_binding(refreshed, request, body) != binding:
+                raise failure("bootstrap-state-drift", "Selected Search identity changed; obtain fresh evidence.")
         artifact = {
             "operation": "bootstrap-search", "operation_id": operation_id, "created_at": int(time.time()),
             "choices": copy.deepcopy(request),
