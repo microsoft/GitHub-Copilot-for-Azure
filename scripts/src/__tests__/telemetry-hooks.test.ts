@@ -251,21 +251,24 @@ describe("Cursor telemetry dispatcher", () => {
     expectArg(args, "--tool-name", "get_azure_bestpractices");
   });
 
-  it.skipIf(process.platform !== "win32")(
-    "normalizes BOM-prefixed UTF-8 input on Windows",
-    () => {
-      const payload = {
-        ...fixture("cursor-mcp-invocation.json"),
-        unicode_probe: "café \u2603",
-      };
-
-      const args = runDispatcher(payload, "\uFEFF");
-
-      expectArg(args, "--client-name", "cursor");
-      expectArg(args, "--tool-name", "get_azure_bestpractices");
-      expect(readRawInput()).toBe(JSON.stringify(payload));
+  it.skipIf(process.platform !== "win32").each([
+    { name: "a UTF-8 BOM", prefix: "\uFEFF" },
+    {
+      name: "Cursor's Windows BOM artifact",
+      prefix: "\uFEFF\u2229\u2557\u2510",
     },
-  );
+  ])("normalizes input prefixed with $name", ({ prefix }) => {
+    const payload = {
+      ...fixture("cursor-mcp-invocation.json"),
+      unicode_probe: "café \u2603",
+    };
+
+    const args = runDispatcher(payload, prefix);
+
+    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expect(readRawInput()).toBe(JSON.stringify(payload));
+  });
 });
 
 describe.each(shells)("Cursor telemetry hook ($name)", shell => {
@@ -340,6 +343,10 @@ describe.skipIf(!powerShell)("PowerShell telemetry input encoding", () => {
   it.each([
     { name: "without a BOM", prefix: "" },
     { name: "with a BOM", prefix: "\uFEFF" },
+    {
+      name: "with Cursor's Windows BOM artifact",
+      prefix: "\uFEFF\u2229\u2557\u2510",
+    },
   ])("reads UTF-8 input $name when invoked directly", ({ prefix }) => {
     const payload = {
       ...fixture("cursor-mcp-invocation.json"),
