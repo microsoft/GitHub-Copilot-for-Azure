@@ -93,6 +93,25 @@ describe("skill improvement configuration", () => {
     );
   });
 
+  test.each([
+    "../azure-skills",
+    "azure/skills",
+    "azure\\skills",
+    "Azure-Skills",
+    "azure skills",
+    "azure_skills",
+    "azure-skills\"",
+    "azure-skills;echo",
+  ])("rejects unsafe target directory name %s", value => {
+    for (const field of ["plugin", "skill"] as const) {
+      const invalid = spec();
+      invalid.target[field] = value;
+      expect(() => validateRunSpec(invalid)).toThrow(
+        `target.${field} must be a repository-safe lowercase hyphenated directory name`
+      );
+    }
+  });
+
   test("rejects a run plan that exceeds limits", () => {
     const runSpec = spec();
     expect(() => enforceRunLimits(runSpec, {
@@ -111,6 +130,23 @@ describe("skill improvement configuration", () => {
     invalid.evaluations.heldOut = [];
     expect(() => validateRunSpec(invalid)).toThrow(
       "evaluations.heldOut must contain at least one file"
+    );
+  });
+
+  test("requires held-out files when the held-out list is omitted", () => {
+    const invalid = spec();
+    delete invalid.evaluations.heldOut;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "evaluations.heldOut must contain at least one file"
+    );
+  });
+
+  test("validates requireHeldOutImprovement without an invocation threshold", () => {
+    const invalid = spec();
+    delete invalid.acceptance.minimumSkillInvocationRate;
+    invalid.acceptance.requireHeldOutImprovement = "yes" as unknown as boolean;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "acceptance.requireHeldOutImprovement must be a boolean"
     );
   });
 });

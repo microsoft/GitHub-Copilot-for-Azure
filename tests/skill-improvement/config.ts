@@ -73,6 +73,18 @@ function requireNonEmptyString(value: unknown, field: string): asserts value is 
   }
 }
 
+function requireRepositoryDirectoryName(
+  value: unknown,
+  field: string,
+): asserts value is string {
+  requireNonEmptyString(value, field);
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)) {
+    throw new Error(
+      `${field} must be a repository-safe lowercase hyphenated directory name.`
+    );
+  }
+}
+
 function requirePositiveInteger(value: unknown, field: string, allowZero = false): asserts value is number {
   if (!Number.isInteger(value) || (allowZero ? Number(value) < 0 : Number(value) < 1)) {
     throw new Error(`${field} must be ${allowZero ? "a non-negative" : "a positive"} integer.`);
@@ -111,8 +123,8 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   }
   const spec = value as SkillImprovementRunSpec;
   requireNonEmptyString(spec.name, "name");
-  requireNonEmptyString(spec.target?.plugin, "target.plugin");
-  requireNonEmptyString(spec.target?.skill, "target.skill");
+  requireRepositoryDirectoryName(spec.target?.plugin, "target.plugin");
+  requireRepositoryDirectoryName(spec.target?.skill, "target.skill");
   requireNonEmptyString(spec.target?.baselineRef, "target.baselineRef");
   if (spec.target.editablePaths) {
     validateStringArray(spec.target.editablePaths, "target.editablePaths");
@@ -126,14 +138,6 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     const overlap = spec.evaluations.heldOut.filter(file => spec.evaluations.development.includes(file));
     if (overlap.length > 0) {
       throw new Error(`Held-out eval files must not also be development files: ${overlap.join(", ")}`);
-    }
-    if (
-      spec.acceptance?.requireHeldOutImprovement
-      && (spec.evaluations.heldOut?.length ?? 0) === 0
-    ) {
-      throw new Error(
-        "evaluations.heldOut must contain at least one file when requireHeldOutImprovement is true."
-      );
     }
   }
 
@@ -201,12 +205,20 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     if (typeof rate !== "number" || rate < 0 || rate > 1) {
       throw new Error("acceptance.minimumSkillInvocationRate must be between 0 and 1.");
     }
-    if (
-      spec.acceptance.requireHeldOutImprovement !== undefined
-      && typeof spec.acceptance.requireHeldOutImprovement !== "boolean"
-    ) {
-      throw new Error("acceptance.requireHeldOutImprovement must be a boolean.");
-    }
+  }
+  if (
+    spec.acceptance.requireHeldOutImprovement !== undefined
+    && typeof spec.acceptance.requireHeldOutImprovement !== "boolean"
+  ) {
+    throw new Error("acceptance.requireHeldOutImprovement must be a boolean.");
+  }
+  if (
+    spec.acceptance.requireHeldOutImprovement
+    && (spec.evaluations.heldOut?.length ?? 0) === 0
+  ) {
+    throw new Error(
+      "evaluations.heldOut must contain at least one file when requireHeldOutImprovement is true."
+    );
   }
 
   requirePositiveInteger(spec.limits?.maxIterations, "limits.maxIterations", true);

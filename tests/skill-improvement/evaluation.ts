@@ -18,7 +18,7 @@ type GradeDetail = {
   details?: GradeDetail[];
 };
 
-type VallyRecord = {
+export type VallyRecord = {
   type?: string;
   itemId?: string;
   evalName?: string;
@@ -51,6 +51,26 @@ type VallyRecord = {
 
 export function isGradedVallyRecord(record: VallyRecord): boolean {
   return record.gradeResult !== undefined;
+}
+
+export function requireCompleteGrading(
+  records: VallyRecord[],
+  expectedCount: number,
+): VallyRecord[] {
+  const trialRecords = records.filter(record =>
+    record.type === "trial-result"
+    || record.trajectory !== undefined
+    || record.gradeResult !== undefined
+  );
+  const ungraded = trialRecords.filter(record => !isGradedVallyRecord(record));
+  if (trialRecords.length !== expectedCount || ungraded.length > 0) {
+    throw new Error(
+      "Incomplete judge output: "
+      + `expected ${expectedCount} graded trajectories, received ${trialRecords.length}, `
+      + `${ungraded.length} without grades.`
+    );
+  }
+  return trialRecords;
 }
 
 export type JudgedTrial = {
@@ -284,8 +304,7 @@ async function gradeAnswers(
     timeoutMs: Math.max(deadline - Date.now(), 1),
   });
 
-  return readJsonl(judgmentFile)
-    .filter(isGradedVallyRecord)
+  return requireCompleteGrading(readJsonl(judgmentFile), generated.count)
     .map(record => ({
       phase,
       iteration,

@@ -220,12 +220,23 @@ export function compareTrials(
 ): Comparison {
   const referenceByKey = new Map(referenceTrials.map(trial => [trialKey(trial), trial]));
   const candidateByKey = new Map(candidateTrials.map(trial => [trialKey(trial), trial]));
-  const matchedKeys = [...candidateByKey.keys()].filter(key => referenceByKey.has(key));
+  const missingCandidateKeys = [...referenceByKey.keys()]
+    .filter(key => !candidateByKey.has(key));
+  const unexpectedCandidateKeys = [...candidateByKey.keys()]
+    .filter(key => !referenceByKey.has(key));
+  if (missingCandidateKeys.length > 0 || unexpectedCandidateKeys.length > 0) {
+    throw new Error(
+      "Candidate and reference evaluation trajectory keys do not match: "
+      + `${missingCandidateKeys.length} missing candidate, `
+      + `${unexpectedCandidateKeys.length} unexpected candidate.`
+    );
+  }
+  const matchedKeys = [...referenceByKey.keys()];
+  if (matchedKeys.length === 0) {
+    throw new Error("Candidate and reference evaluations contain no trials.");
+  }
   const reference = matchedKeys.map(key => referenceByKey.get(key)!);
   const candidate = matchedKeys.map(key => candidateByKey.get(key)!);
-  if (matchedKeys.length === 0) {
-    throw new Error("Candidate and reference evaluations have no matching trials.");
-  }
   const referenceSummary = summarizeTrials(reference);
   const candidateSummary = summarizeTrials(candidate);
   const tokenIncreasePercent = referenceSummary.averageTokens === 0

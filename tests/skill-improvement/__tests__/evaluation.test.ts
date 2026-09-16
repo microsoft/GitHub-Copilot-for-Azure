@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   findVallyRunDirectory,
   isGradedVallyRecord,
+  requireCompleteGrading,
 } from "../evaluation.ts";
 
 describe("findVallyRunDirectory", () => {
@@ -27,5 +28,33 @@ describe("findVallyRunDirectory", () => {
       trajectory: { output: "answer" },
       gradeResult: { passed: true, score: 1 },
     })).toBe(true);
+  });
+
+  test("rejects judge output containing an ungraded trajectory", () => {
+    expect(() => requireCompleteGrading([
+      {
+        status: "success",
+        trajectory: { output: "answer" },
+        gradeResult: { passed: true, score: 1 },
+      },
+      {
+        status: "failure",
+        trajectory: { output: "ungraded answer" },
+      },
+    ], 2)).toThrow(
+      "expected 2 graded trajectories, received 2, 1 without grades"
+    );
+  });
+
+  test("rejects judge output missing an expected trajectory", () => {
+    expect(() => requireCompleteGrading([
+      {
+        status: "success",
+        trajectory: { output: "answer" },
+        gradeResult: { passed: true, score: 1 },
+      },
+    ], 2)).toThrow(
+      "expected 2 graded trajectories, received 1, 0 without grades"
+    );
   });
 });

@@ -91,6 +91,19 @@ describe("skill improvement reporting", () => {
     expect(decision.comparison.tokenIncreasePercent).toBe(5);
   });
 
+  test("rejects comparison when candidate trajectories are missing", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0.5, 100),
+      judged("two", "model-a", "judge-a", true, 0.9, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("two", "model-a", "judge-a", true, 0.9, 100),
+    ]);
+
+    expect(() => decideAcceptance(spec(), reference, candidate, 1000, 1000))
+      .toThrow("1 missing candidate, 0 unexpected candidate");
+  });
+
   test("explains accepted-candidate-only in the report", () => {
     const runSpec = spec();
     const report: SkillImprovementReport = {
