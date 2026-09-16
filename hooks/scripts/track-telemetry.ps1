@@ -325,7 +325,7 @@ if (-not $toolInput) {
 }
 
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
-$isSessionStart = $hookEventName -eq "SessionStart"
+$isSessionStart = $hookEventName -eq "SessionStart" -or $hookEventName -eq "sessionStart"
 
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
