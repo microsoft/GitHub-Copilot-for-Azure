@@ -18,19 +18,18 @@ parameters:
     displayName: Evaluation directory (auto uses evals/<plugin>)
     type: string
     default: auto
-  # Uncomment when Azure authentication is needed by the evaluation.
-  # - name: azureServiceConnection
-  #   displayName: Azure Resource Manager workload-identity service connection
-  #   type: string
-  #   default: azure-evaluation-service-connection
+  - name: azureServiceConnection
+    displayName: Azure Resource Manager workload-identity service connection
+    type: string
+    default: azure-evaluation-service-connection
   - name: uploadArtifacts
     displayName: Upload reports and raw results as a pipeline artifact
     type: boolean
     default: true
-  # - name: storageAccount
-  #   displayName: Storage account for reports; leave empty to skip publishing
-  #   type: string
-  #   default: ""
+  - name: storageAccount
+    displayName: Storage account for reports; use none to skip publishing
+    type: string
+    default: none
 
 # Replace `github-service-connection` with an authorized GitHub service
 # connection. Before use, replace refs/heads/main with a reviewed immutable
@@ -78,9 +77,9 @@ jobs:
           skill: ${{ parameters.skill }}
           pluginsDir: ${{ parameters.pluginsDir }}
           evalDir: ${{ parameters.evalDir }}
-          # azureServiceConnection: ${{ parameters.azureServiceConnection }}
+          azureServiceConnection: ${{ parameters.azureServiceConnection }}
           uploadArtifacts: ${{ parameters.uploadArtifacts }}
-          # storageAccount: ${{ parameters.storageAccount }}
+          storageAccount: ${{ parameters.storageAccount }}
 
       # Add result post-processing or custom publishing steps here. The template
       # writes dashboard-compatible reports to
