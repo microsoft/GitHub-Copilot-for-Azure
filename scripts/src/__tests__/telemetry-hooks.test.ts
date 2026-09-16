@@ -122,11 +122,12 @@ function runHook(
   shell: ShellCase,
   payload: Record<string, unknown>,
   inputPrefix = "",
+  hooksDir = HOOKS_DIR,
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const extension = shell.name === "Bash" ? "sh" : "ps1";
-  const scriptPath = join(HOOKS_DIR, `track-telemetry.${extension}`);
+  const scriptPath = join(hooksDir, `track-telemetry.${extension}`);
   const result = spawnSync(shell.command, shell.args(scriptPath), {
     encoding: "utf8",
     input: `${inputPrefix}${JSON.stringify(payload)}`,
@@ -285,6 +286,37 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     expectArg(args, "--skill-version", "1.2.3");
     expect(args).not.toContain("--file-reference");
   });
+
+  it.each([
+    ".copilot/installed-plugins/catalog/foundry-iq-skills",
+    ".claude/plugins/cache/azure-skills/foundry-iq-skills/1.0.0",
+    ".cursor/plugins/cache/catalog/foundry-iq-skills/revision",
+    ".vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/foundry-iq-skills",
+  ])("tracks Foundry IQ reads under %s without another plugin reporting them", installPath => {
+    const pluginRoot = join(TEST_DIR, installPath);
+    const hooksDir = join(pluginRoot, "hooks", "scripts");
+    const skillRoot = join(pluginRoot, "skills", "foundry-iq");
+    cpSync(SOURCE_HOOKS_DIR, hooksDir, { recursive: true });
+    mkdirSync(join(skillRoot, "references"), { recursive: true });
+    writeFileSync(join(skillRoot, "SKILL.md"), '---\nmetadata:\n  version: "1.0.0"\n---\n');
+    writeFileSync(join(skillRoot, "references", "owner.md"), "# Owner\n");
+
+    for (const filename of ["SKILL.md", "references/owner.md"]) {
+      const payload = fixture("cursor-skill-read.json") as CursorPayload & Record<string, unknown>;
+      payload.tool_input.file_path = pathForShell(shell, join(skillRoot, filename));
+      const args = runHook(shell, payload, "", hooksDir);
+
+      expectArg(args, "--event-type", filename === "SKILL.md" ? "skill_invocation" : "reference_file_read");
+      expectArg(args, "--skill-version", "1.0.0");
+      if (filename === "SKILL.md") {
+        expectArg(args, "--skill-name", "foundry-iq");
+        expect(args).not.toContain("--file-reference");
+      } else {
+        expectArg(args, "--file-reference", "foundry-iq\\references\\owner.md");
+      }
+      expect(runHook(shell, payload)).toEqual([]);
+    }
+  }, 30_000);
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
