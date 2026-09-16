@@ -65,7 +65,7 @@ Both shipped scripts are POSIX `sh` and read-only; use them only when the host c
 
 ## AKS-specific gotchas
 
-The highest-signal failure patterns that are specific to AKS — a frontier model will not reliably know these. Review before investigating.
+Failure patterns specific to AKS. Review before investigating.
 
 - **Azure CNI vs kubenet is a fork in every networking fix.** Check `az aks show -o json --query networkProfile.networkPlugin` **first** — the plugin (kubenet, Azure CNI, CNI Overlay, Cilium) changes how pod IPs, routes, and network policy behave.
 - **Managed-identity RBAC is behind a large share of AKS failures.** ACR pull, disk attach, private DNS, and Key Vault access all depend on the cluster or kubelet identity having a role assignment. Check `az aks show --query identityProfile` and the relevant role assignments early.
