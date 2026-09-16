@@ -11,6 +11,9 @@
   "license": "MIT",
   "keywords": [
     "azure",
+    "azure-ai-search",
+    "rag",
+    "grounding",
     "foundry-iq",
     "knowledge-base",
     "file-knowledge-source",

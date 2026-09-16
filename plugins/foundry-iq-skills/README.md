@@ -1,29 +1,31 @@
 # Foundry IQ Skills
 
-Build search and grounded AI experiences with Azure AI Search ([Microsoft Foundry IQ](https://learn.microsoft.com/azure/search/agentic-retrieval-overview)).
+Build grounded knowledge experiences with [Azure AI Search (Foundry IQ)](https://learn.microsoft.com/azure/search/agentic-retrieval-overview).
 
-This plugin helps GitHub Copilot CLI guide you from setup through production, using your existing Azure resources when possible.
+This plugin helps GitHub Copilot CLI create and use Foundry IQ knowledge bases, using your existing Azure resources when possible.
 
 ## Skill
 
-- **foundry-iq**: Build, improve, and troubleshoot Azure AI Search applications and Foundry IQ knowledge experiences.
+- **foundry-iq**: Build, connect, query, and troubleshoot Foundry IQ knowledge experiences using supported Azure resources.
 
 ## What it helps with
 
-- Add search to an application
-- Make local files, Blob Storage, SharePoint, or public websites searchable
-- Ground an existing agent in your organization's content
-- Return answers with citations while respecting user permissions
-- Measure and improve search quality
-- Prepare a search or knowledge solution for production
-- Troubleshoot access, ingestion, network, and missing-result problems
+- Create or reuse an Azure AI Search (Foundry IQ) service
+- Create a File knowledge source from local files
+- Create a knowledge source from Azure Blob Storage or Azure Data Lake Storage
+- Create a knowledge base and validate that its content is searchable
+- Query an existing knowledge base and return citations
+- Connect an existing knowledge base to an agent
+- Diagnose knowledge base failures and unsupported requests
+- Prepare a cleanup plan for resources created by the workflow
 
-The skill is intended for search and knowledge workloads. It is not needed for ordinary code edits or questions about a single file.
+The skill is intended for Foundry IQ knowledge-base workflows. It does not support classic Azure AI Search (Foundry IQ) application, index, or query development, generic agent creation, or repository-file search.
 
 ## Prerequisites
 
 - [Git](https://git-scm.com/downloads), required to add the plugin marketplace
 - [GitHub Copilot CLI](https://github.com/github/copilot-cli)
+- [Python 3.12 or later](https://www.python.org/downloads/), required to run the plugin's helper scripts
 - Access to the Azure subscriptions and resources involved in your request
 - An authenticated Azure identity with the permissions required for the requested read or change
 
@@ -52,32 +54,29 @@ To update the plugin:
 
 ## Example prompts
 
-- "Add production-ready search to this application using our existing product data."
-- "Make `./docs` searchable and answer questions with citations."
-- "Ground our existing agent in content from this Azure Blob container."
-- "Build a SharePoint assistant that respects each user's document permissions."
-- "Measure our retrieval quality and recommend one improvement."
-- "Find out why today's documents are missing from search results."
-- "Prepare this prototype for production with no public network access."
+- "Create a knowledge base from `./docs`."
+- "Create a knowledge base from this Blob container."
+- "Query this knowledge base with citations."
+- "Connect this knowledge base to my existing agent."
+- "Why is retrieval from this knowledge base failing?"
 
 ## Before changes are made
 
-The skill starts by inspecting your environment without changing it. It prefers existing resources and uses Microsoft Entra ID and managed identities by default.
+The skill starts with read-only checks and can reuse Azure resources you identify. It asks whether to use an existing service, find compatible services, or create a new one before performing broader discovery.
 
 It asks for your approval before it:
 
-- Creates or scales resources that may cost money
-- Changes permissions, networking, or encryption
-- Uploads private content or sends it to an AI model
-- Changes production resources or replaces an index
+- Creates an Azure AI Search (Foundry IQ) service, knowledge source, or knowledge base
+- Connects a knowledge base to an agent
+- Makes another planned change to Azure resources
 
-The skill does not delete Azure resources. It can provide a cleanup plan for you to review separately.
+Approval applies to the plan shown to you. If the plan changes, the skill asks again. Cleanup is handled as a separate planning workflow. The skill can also perform supported deletion of workflow-owned resources after separate approval.
 
 ## Learn more
 
-- [Azure AI Search overview](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
+- [Azure AI Search (Foundry IQ) overview](https://learn.microsoft.com/azure/search/search-what-is-azure-search)
 - [Foundry IQ and agentic retrieval](https://learn.microsoft.com/azure/search/agentic-retrieval-overview)
-- [Azure AI Search API and SDK versions](https://learn.microsoft.com/azure/search/search-api-versions)
-- [Azure AI Search REST API](https://learn.microsoft.com/en-us/rest/api/searchservice/?source=recommendations)
-- [Azure MCP Server tools for Azure AI Search](https://learn.microsoft.com/azure/developer/azure-mcp-server/tools/azure-ai-search)
+- [Azure AI Search (Foundry IQ) API and SDK versions](https://learn.microsoft.com/azure/search/search-api-versions)
+- [Azure AI Search (Foundry IQ) REST API](https://learn.microsoft.com/en-us/rest/api/searchservice/?source=recommendations)
+- [Azure MCP Server tools for Azure AI Search (Foundry IQ)](https://learn.microsoft.com/azure/developer/azure-mcp-server/tools/azure-ai-search)
 - [Foundry IQ skill details](skills/foundry-iq/SKILL.md)
