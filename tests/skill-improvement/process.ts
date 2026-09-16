@@ -35,16 +35,48 @@ export function commandName(name: string): string {
     : name;
 }
 
-function processCommand(
+type ProcessRuntime = {
+  platform: NodeJS.Platform;
+  nodeExecutable: string;
+  nodeInstallDirectory: string;
+};
+
+const defaultProcessRuntime: ProcessRuntime = {
+  platform: process.platform,
+  nodeExecutable: process.execPath,
+  nodeInstallDirectory: path.dirname(process.execPath),
+};
+
+export function resolveProcessLaunch(
   command: string,
   args: string[],
+  runtime: ProcessRuntime = defaultProcessRuntime,
 ): { command: string; args: string[] } {
-  if (process.platform !== "win32" || !/\.(cmd|bat)$/i.test(command)) {
+  if (runtime.platform !== "win32" || !/\.(cmd|bat)$/i.test(command)) {
     return { command, args };
   }
+  const commandBaseName = path.basename(command).toLowerCase();
+  if (commandBaseName !== "npm.cmd" && commandBaseName !== "npx.cmd") {
+    throw new Error(
+      `Cannot safely execute Windows batch command without a shell: ${command}`
+    );
+  }
+  const cliName = commandBaseName === "npm.cmd" ? "npm-cli.js" : "npx-cli.js";
+  const cliPath = path.join(
+    runtime.nodeInstallDirectory,
+    "node_modules",
+    "npm",
+    "bin",
+    cliName
+  );
+  if (!fs.existsSync(cliPath)) {
+    throw new Error(
+      `Unable to resolve ${commandBaseName} JavaScript CLI at ${cliPath}.`
+    );
+  }
   return {
-    command: process.env.ComSpec ?? "cmd.exe",
-    args: ["/d", "/s", "/c", command, ...args],
+    command: runtime.nodeExecutable,
+    args: [cliPath, ...args],
   };
 }
 
@@ -64,7 +96,7 @@ export async function runProcess(
       ? fs.createWriteStream(options.stderrFile, { encoding: "utf8" })
       : undefined;
     const stdinFd = options.stdinFile ? fs.openSync(options.stdinFile, "r") : undefined;
-    const launch = processCommand(command, args);
+    const launch = resolveProcessLaunch(command, args);
     const child = spawn(launch.command, launch.args, {
       cwd: options.cwd,
       env: { ...process.env, ...options.env },
