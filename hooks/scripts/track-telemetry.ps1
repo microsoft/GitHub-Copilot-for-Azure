@@ -168,6 +168,33 @@ function Write-Success {
     exit 0
 }
 
+# Removes UTF-8 BOM markers and the common Windows mojibake forms that can
+# precede Cursor hook JSON after stdin passes through Windows PowerShell.
+function Remove-LeadingUtf8BomArtifacts {
+    param([AllowEmptyString()][string]$Value)
+
+    if ($null -eq $Value) { return $Value }
+
+    $bomArtifacts = @(
+        [string][char]0xFEFF,
+        (-join ([char[]]@(0x00EF, 0x00BB, 0x00BF))),
+        (-join ([char[]]@(0x2229, 0x2557, 0x2510)))
+    )
+
+    do {
+        $removedArtifact = $false
+        foreach ($artifact in $bomArtifacts) {
+            if ($Value.StartsWith($artifact, [System.StringComparison]::Ordinal)) {
+                $Value = $Value.Substring($artifact.Length)
+                $removedArtifact = $true
+                break
+            }
+        }
+    } while ($removedArtifact)
+
+    return $Value
+}
+
 # Resolve this script's directory so we can locate bundled skills. In the
 # installed plugin, hooks/ and skills/ are siblings under the plugin root, so
 # <plugin-root>/skills/<name>/SKILL.md is the skill definition.
@@ -226,21 +253,23 @@ function Get-PluginVersion {
 
 # === Main Processing ===
 
-# Read entire stdin at once - hooks send one complete JSON per invocation
+# Read stdin as bytes and decode it as UTF-8. Reading through Console.In and
+# re-encoding with Console.InputEncoding can introduce code-page mojibake.
 try {
-    $stdinEncoding = [Console]::InputEncoding
-    $rawInput = [Console]::In.ReadToEnd()
+    $stdinStream = [Console]::OpenStandardInput()
+    $inputBuffer = New-Object System.IO.MemoryStream
+    $stdinStream.CopyTo($inputBuffer)
     $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
-    # Recover the original UTF-8 bytes when Windows PowerShell decoded stdin with its OEM code page.
-    $rawInput = $utf8WithoutBom.GetString($stdinEncoding.GetBytes($rawInput))
+    $rawInput = $utf8WithoutBom.GetString($inputBuffer.ToArray())
 } catch {
     Write-Success
+} finally {
+    if ($inputBuffer) { $inputBuffer.Dispose() }
 }
 
-# Some clients prefix the JSON stream with a UTF-8 BOM; remove that marker before parsing.
-if ($rawInput.Length -gt 0 -and [int]$rawInput[0] -eq 0xFEFF) {
-    $rawInput = $rawInput.Substring(1)
-}
+# Some clients prefix the JSON stream with a UTF-8 BOM. Cursor on Windows can
+# surface an additional mojibake copy of that marker after stdin decoding.
+$rawInput = Remove-LeadingUtf8BomArtifacts -Value $rawInput
 
 # Return success and exit if no input
 if ([string]::IsNullOrWhiteSpace($rawInput)) {
