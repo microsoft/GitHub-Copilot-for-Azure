@@ -14,7 +14,7 @@ parameters:
     type: string
   - name: evalDir
     type: string
-    default: ""
+    default: auto
   # Uncomment when Azure authentication is needed by the evaluation.
   # - name: azureServiceConnection
   #   type: string
@@ -103,7 +103,7 @@ steps:
       cp -R "$plugin_source/." "$plugin_destination/"
       safe_remove_child "$plugin_checkout_root" "$EVAL_WORKSPACE" "Plugin checkout directory"
 
-      if [[ -z "$EVAL_DIR" ]]; then
+      if [[ -z "$EVAL_DIR" || "$EVAL_DIR" == "auto" ]]; then
         requested_eval_source="$CALLER_WORKSPACE/evals/$PLUGIN"
       else
         requested_eval_source="$CALLER_WORKSPACE/$EVAL_DIR"
