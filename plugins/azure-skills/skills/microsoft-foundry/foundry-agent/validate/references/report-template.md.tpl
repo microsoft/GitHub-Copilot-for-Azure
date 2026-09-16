@@ -12,7 +12,7 @@
 
 **Results:** [failed count] feedbacks · [passed count] passed · [inconclusive count] inconclusive · [not applicable count] not applicable
 
-[Omit zero-count statuses. Omit this table when there are no failed results.]
+[Always include all four status counts, including counts of zero. Omit this table when there are no failed results.]
 
 | Level | Rule ID | Failed rule |
 |---|---|---|
@@ -20,10 +20,10 @@
 
 [Create nonempty sections in this order: `fail` → `## Feedbacks`; `pass` → `## Passed checks`; `inconclusive` → `## Inconclusive`; `skipped` → `## Not applicable`.]
 
-[In each section, sort levels: error, warning, recommendation. Keep rule order for ties. Repeat this collapsed block for each result.]
+[In each section, sort levels: error, warning, recommendation. Keep rule order for ties. Number results from 1 independently within each section. Repeat this collapsed block for each result.]
 
 <details>
-<summary>[rule title]</summary>
+<summary>[section result number]. [rule title]</summary>
 
 - **Rule:** `[rule ID]`
 - **Level:** [error | warning | recommendation]
