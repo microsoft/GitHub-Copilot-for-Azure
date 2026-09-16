@@ -191,7 +191,7 @@ runs:
     - name: Setup Copilot CLI
       uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
       with:
-        token: ${{ github.token }}
+        token: ${{ env.COPILOT_GITHUB_TOKEN || github.token }}
 
     - name: Log in to Azure
       uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0

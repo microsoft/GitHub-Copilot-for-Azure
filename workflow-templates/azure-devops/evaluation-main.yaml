@@ -62,11 +62,6 @@ jobs:
         path: s/caller
         persistCredentials: false
 
-      - task: NodeTool@0
-        displayName: Use Node.js 22.14.0
-        inputs:
-          versionSpec: 22.14.0
-
       # Add tools and other test prerequisites here before running the evaluation.
 
       # Define COPILOT_GITHUB_TOKEN as a secret pipeline variable with the
