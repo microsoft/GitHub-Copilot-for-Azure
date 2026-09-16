@@ -38,7 +38,7 @@ jobs:
 
       # Before using this workflow, replace @main below with a reviewed commit SHA.
       - name: Run skill evaluation
-        uses: microsoft/GitHub-Copilot-for-Azure/workflow-templates/evaluation-steps@main
+        uses: microsoft/GitHub-Copilot-for-Azure/workflow-templates/github/evaluation-steps@main
         with:
           plugin: ${{ inputs.plugin }}
           skill: ${{ inputs.skill }}
