@@ -360,6 +360,12 @@ $pathPatternClaudeAzureLocal = '\.claude/plugins/cache/azure-skills/azure-local-
 $pathPatternCursorAzureLocal = '\.cursor/plugins/cache/[^/]+/azure-local-skills/[^/]+/skills/'
 $pathPatternVscodeAgentPluginsAzureLocal = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-local-skills/skills/'
 
+# --- foundry-iq-skills plugin ---
+$pathPatternCopilotFoundryIq = '\.copilot/installed-plugins/[^/]+/foundry-iq-skills/skills/'
+$pathPatternClaudeFoundryIq = '\.claude/plugins/cache/azure-skills/foundry-iq-skills/[0-9.]+/skills/'
+$pathPatternCursorFoundryIq = '\.cursor/plugins/cache/[^/]+/foundry-iq-skills/[^/]+/skills/'
+$pathPatternVscodeAgentPluginsFoundryIq = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/foundry-iq-skills/skills/'
+
 # --- shared across all plugins ---
 $pathPatternAgentsSkills = '\.agents/skills/'
 
@@ -368,6 +374,7 @@ $pathPatterns = @(
     $pathPatternCopilot, $pathPatternClaude, $pathPatternCursor, $pathPatternVscodeAgentPlugins,
     $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternCursorKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
     $pathPatternCopilotAzureLocal, $pathPatternClaudeAzureLocal, $pathPatternCursorAzureLocal, $pathPatternVscodeAgentPluginsAzureLocal,
+    $pathPatternCopilotFoundryIq, $pathPatternClaudeFoundryIq, $pathPatternCursorFoundryIq, $pathPatternVscodeAgentPluginsFoundryIq,
     $pathPatternAgentsSkills
 )
 

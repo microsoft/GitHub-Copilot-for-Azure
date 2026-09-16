@@ -1,0 +1,310 @@
+# Prompt inspiration: Foundry IQ - Progressive E2E Bugbash, L1-L14.
+# Expectations follow skills/foundry-iq/SKILL.md and its linked procedures.
+# Upstream format reference: GitHub-Copilot-for-Azure at
+# 78f4166514843182d4eb51a34f15238150c4eb7e (.github/skills/vally-eval).
+# Independently authored prompts; no copied upstream tests or internal fixtures.
+#
+# Invocation only: each prompt is independent, with no live resources, files,
+# prior conversations, or credentials required. Prior state is user-described
+# context, not evidence that a previous test ran. Positive cases assume skill
+# selection before file inspection, resource discovery, or intake questions.
+# requiredSkills keeps the target available even in negative cases; it does not
+# require invocation. These tests do not assert which competing skill is chosen.
+# Model runs require separate approval; no execution evidence is claimed here.
+name: foundry-iq-invocation-eval
+description: |
+  Skill invocation prompts inspired by progressive knowledge-base creation,
+  reuse, retrieval variants, agent connections, diagnosis, and cleanup.
+  Grades only whether foundry-iq is called, not whether Azure tasks succeed.
+
+tags:
+  type: integration
+  skill: foundry-iq
+
+defaults:
+  runs: 5
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  # L1: brand-free searchable documents route to a KB, not just a file source.
+  - name: "Create a first knowledge base from local contracts"
+    prompt: |
+      I have two local contract files and want to ask questions over them in
+      Azure with citations to the original files. Set up the simplest working
+      knowledge base using lexical search and extractive results. I don't need
+      embeddings, an agent, or an app. Show me the costs before creating anything.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L2: self-contained reuse request, not a dependency on the preceding test.
+  - name: "Reuse an existing File source and knowledge base"
+    prompt: |
+      I already have a Foundry IQ File source named docs-file and a knowledge
+      base named docs-kb. Repeat setup with the same unchanged contract files,
+      reusing the existing source and KB without uploads or duplicates.
+      If anything has drifted, explain it before proposing changes.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L3-L4: alternate reasoning modes still belong to knowledge-base setup.
+  - name: "Add a synthesized-answer knowledge base variant"
+    prompt: |
+      My Foundry IQ knowledge base uses minimal extractive retrieval. Add a
+      separate KB over the same File source with synthesized answers. Help me
+      choose low or medium reasoning and explain the model costs before I
+      approve anything. Preserve the original KB and don't re-upload the files.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L5: source extraction mode is distinct from KB retrieval effort.
+  - name: "Create a standard-extraction File knowledge base"
+    prompt: |
+      Create a new Foundry IQ File source using standard extraction and put a
+      minimal extractive knowledge base over it. Use my local contract documents
+      and existing Search service. Explain any Content Understanding and model
+      prerequisites before making changes; don't switch to minimal extraction.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L6: Blob is the input boundary, not a Storage provisioning request.
+  - name: "Make an existing Blob folder queryable"
+    prompt: |
+      Make the contracts in my existing Azure Blob folder queryable through a
+      knowledge base. Reuse my Search service and use minimal extractive
+      retrieval without models. Confirm the folder boundary and required
+      changes with me; don't upload, move, or modify the original blobs.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L7: ADLS Gen2 is a supported Blob-family knowledge source.
+  - name: "Create a knowledge base over an ADLS directory"
+    prompt: |
+      Set up a knowledge base over one existing ADLS Gen2 directory so I can
+      retrieve contract passages with original-document citations. Reuse my
+      Azure AI Search service. Preserve the case-sensitive directory boundary,
+      source files, permissions, and networking.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L8: missing-agent creation is conditional within a KB connection goal.
+  - name: "Set up an agent for an existing knowledge base"
+    prompt: |
+      I have a working Foundry IQ knowledge base and want a Prompt Agent to use
+      it. Reuse a suitable agent if one exists; otherwise show me a supported
+      creation plan first. Get separate approval before connecting the agent
+      to the KB through its native MCP endpoint.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L9: existing Prompt connection, not generic agent lifecycle.
+  - name: "Connect or reuse a Prompt Agent knowledge base tool"
+    prompt: |
+      Connect my existing Foundry Prompt Agent to docs-kb, my Foundry IQ
+      knowledge base. If the connection is already correct, reuse it. Preserve
+      the agent's model, earlier versions, and unrelated tools rather than
+      replacing the agent or adding another copy of the connection.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L10: Hosted connection uses existing source/deployment, not a new app.
+  - name: "Connect an existing Hosted Agent to a knowledge base"
+    prompt: |
+      Connect my existing Hosted Agent to a Foundry IQ knowledge base through
+      the KB's native MCP endpoint. Use its existing source project and
+      deployment setup, preserving its model, telemetry, and tools. Show me
+      any required configuration or permission changes before applying them.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L11: read-only permission-aware retrieval; no real identities are fixtures.
+  - name: "Query a knowledge base as the signed-in user"
+    prompt: |
+      Query my permission-enabled Foundry IQ knowledge base as the user signed
+      in here: what are the contract termination notice periods? Include
+      original-source citations only for documents this user may access.
+      Don't switch identities, ask me for a token, or change permissions.
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L12: a stated failure supplies routing context, not executed failure evidence.
+  - name: "Diagnose failed retrieval without starting over"
+    prompt: |
+      My Foundry IQ knowledge base reports successful ingestion, but retrieval
+      returns no contract passages or citations. Diagnose the issue read-only
+      and propose the smallest supported repair. Don't recreate the environment,
+      broaden permissions, or weaken networking to make it work.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # L13-L14: cleanup review belongs to owning procedures; no deletion is graded.
+  - name: "Review owned knowledge base cleanup and agent dependencies"
+    prompt: |
+      I'm finished testing Foundry IQ. Review cleanup of the knowledge bases
+      and agent connections created for my test. Separate owned resources from
+      reused or shared ones, preserve the original documents, and account for
+      anything still needed by a Hosted Agent. Show a supported cleanup plan
+      and anything requiring an owner handoff; do not delete anything yet.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills: [foundry-iq]
+      earlyTerminate: '[{"type":"skill-call","skill":"foundry-iq"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: [foundry-iq]
+
+  # Explicit classic Search work is outside the skill's KB workflow.
+  - name: "Negative: classic Azure AI Search index query"
+    prompt: |
+      Show a classic Azure AI Search REST request for a hotels index that
+      searches for pool and filters Rating greater than 4. Use the index
+      documents search API, not a knowledge base or agentic retrieval.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [foundry-iq]
+
+  # Another provider's KB is explicitly excluded; no competitor is required.
+  - name: "Negative: another provider's knowledge base"
+    prompt: |
+      Explain how Amazon Bedrock Knowledge Bases uses an S3 data source.
+      Keep the explanation specific to AWS; I am not migrating to Azure.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [foundry-iq]
+
+  # Self-contained non-KB task; no files or hidden prior state needed.
+  - name: "Negative: ordinary Python programming"
+    prompt: |
+      Write a Python function that removes duplicates from a list of strings
+      while preserving their original order. For ["b", "a", "b"], return ["b", "a"].
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills: [foundry-iq]
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [foundry-iq]
