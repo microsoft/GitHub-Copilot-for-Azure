@@ -1,9 +1,11 @@
 /**
  * Tests for agent-runner utility
  * 
- * Specifically tests the fix for the Jest async operation leak
+ * Specifically tests the fix for the test runner async operation leak
  * where event listeners continue after test completion.
  */
+
+import { describe, expect, test } from "vitest";
 
 describe("agent-runner", () => {
   describe("event listener cleanup", () => {

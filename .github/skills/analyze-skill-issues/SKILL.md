@@ -94,7 +94,6 @@ Use just the last path segment as `<filename>`.
 
 1. Any `*.json` files that are NOT `token-usage.json` or `agent-metadata.json` — these contain test pass/fail results and error messages
 2. `*-SKILL-REPORT.md` or `*report*.json` files — contain skill invocation details and test narratives
-3. `junit.xml` blobs if present — contain structured test failure messages
 
 ### Phase 3 — Extract Failure Information
 

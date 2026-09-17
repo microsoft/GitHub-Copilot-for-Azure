@@ -10,12 +10,6 @@ permissions:
 
 on:
   workflow_dispatch:
-    inputs:
-      skill-name:
-        description: "Skill to test (leave empty for all skills)"
-        required: false
-        type: string
-        default: ""
 
   push:
     branches:
@@ -67,36 +61,4 @@ jobs:
       - name: Run tests
         env:
           CI: true
-          SKILL_NAME: ${{ inputs.skill-name }}
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          TEST_ARGS=""
-          if [ -n "$SKILL_NAME" ]; then
-            TEST_ARGS="--testPathPatterns=$SKILL_NAME"
-          fi
-          npm run test -- $TEST_ARGS
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
-        with:
-          name: test-results-all
-          path: tests/reports/junit.xml
-          retention-days: 30
-
-      - name: Test Report Summary
-        if: always()
-        run: |
-          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -f reports/junit.xml ]; then
-            # Parse junit.xml for summary
-            TESTS=$(grep -o 'tests="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')
-            FAILURES=$(grep -o 'failures="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')
-            ERRORS=$(grep -o 'errors="[0-9]*"' reports/junit.xml | head -1 | grep -o '[0-9]*')
-            echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Tests | $TESTS |" >> $GITHUB_STEP_SUMMARY
-            echo "| Failures | $FAILURES |" >> $GITHUB_STEP_SUMMARY
-            echo "| Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
-          fi
+        run: npm test

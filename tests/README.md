@@ -4,7 +4,7 @@ This directory contains the runners, custom Vally extensions, reporting utilitie
 
 Skills have deterministic unit tests and non-deterministic integration tests.
 
-Skill unit tests are Jest JavaScript test cases. They are optional. They can be helpful in validating scripts to make sure they produce expected results when executed in the expected ways when directly invoked by the agent.
+Skill unit tests are Vitest test cases. They are optional. They can be helpful in validating scripts to make sure they produce expected results when executed in the expected ways by the agent.
 
 ```text
 tests/<plugin-dirname>/<skill-name>/*.test.ts
@@ -16,7 +16,7 @@ Skill integration tests are Vally eval suites. They are required. Their source f
 evals/<plugin-dirname>/<skill-name>/*.yaml
 ```
 
-Jest is also used for unit tests of the testing infrastructure in this directory.
+Vitest is also used for unit tests of the testing infrastructure in this directory.
 
 ## Project Layout
 
