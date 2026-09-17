@@ -568,7 +568,7 @@ function generateMarkdownReport(config: AgentRunConfig, agentMetadata: AgentMeta
       case "assistant.message": {
         const content = event.data.content as string;
         if (content) {
-          lines.push(content);
+          lines.push(content.replaceAll(/```/gm, "\\`\\`\\`"));
           lines.push("");
         }
         break;
