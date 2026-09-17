@@ -264,7 +264,7 @@ steps:
             fi
 
             date_prefix=$(date -u +%Y-%m-%d)
-            destination_path="$date_prefix/$BUILD_BUILDID/$PLUGIN/$SKILL/"
+            destination_path="$date_prefix/$BUILD_BUILDID/$SKILL/"
             az storage blob upload-batch \
               --account-name "$STORAGE_ACCOUNT" \
               --destination integration-reports \

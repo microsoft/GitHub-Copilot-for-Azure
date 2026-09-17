@@ -23,7 +23,7 @@ This workflow template provides both the Azure DevOps flavor and the GitHub Acti
 - azure-devops/evaluation-main.yaml
 - github/evaluation-main.yaml
 
-The `evaluation-main.yaml` templates are complete workflow definitions that can be used out-of-box to create a new pipeline. It imports the composite actions template `evaluation-steps/actions.yml` from microsoft/github-copilot-for-azure repo to run the evaluation suites and upload test results.
+The `evaluation-main.yaml` templates are complete workflow definitions that can be used out of the box to create a new pipeline. They use the `evaluation-steps/action.yml` template from the microsoft/GitHub-Copilot-for-Azure repository to run evaluation suites and upload results.
 
 For quick start, create a new pipeline using `evaluation-main.yaml` as is and complete the mandatory user setup steps. Learn more about the optional customization options of the templates if needed.
 
