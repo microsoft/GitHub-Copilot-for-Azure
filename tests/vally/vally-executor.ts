@@ -191,7 +191,12 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
         // Note: Although this type is defined, Copilot CLI in practice treat skills as tool calls.
         // We look for tool call events for skill and convert them into skill events.
         const args = e.data.arguments;
-        const skillName: string = (args?.skill as string) ?? "unknown";
+        let skillName: string;
+        if (typeof args === "object" && !Array.isArray(args)) {
+          skillName = (args?.skill as string) ?? "unknown";
+        } else {
+          skillName = "unknown";
+        }
         result.push({
           type: "skill_activation",
           timestamp,
