@@ -41,6 +41,7 @@ jobs:
           azure-tenant-id: ${{ vars.AZURE_TENANT_ID }}
           azure-client-id: ${{ vars.AZURE_CLIENT_ID }}
           storage-account: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          test-harness-ref: main # Make sure to match the ref of the template
 
       # Add result post-processing or custom publishing steps here.
       # The evaluation action writes dashboard-compatible reports to

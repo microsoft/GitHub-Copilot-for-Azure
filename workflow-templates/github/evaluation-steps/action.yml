@@ -4,8 +4,7 @@ description: Run GitHub Copilot for Azure integration evaluations for a skill
 inputs:
   test-harness-ref:
     description: Branch, tag, or commit to check out from the test harness repository
-    required: false
-    default: main
+    required: true
   plugin-repo:
     description: Repository containing the plugin
     required: false
