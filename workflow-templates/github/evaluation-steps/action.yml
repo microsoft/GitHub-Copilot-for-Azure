@@ -273,7 +273,7 @@ runs:
         fi
 
         date_prefix=$(date -u +%Y-%m-%d)
-        destination_path="$date_prefix/${GITHUB_RUN_ID}/${PLUGIN}/${SKILL}/"
+        destination_path="$date_prefix/${GITHUB_RUN_ID}/${SKILL}/"
         az storage blob upload-batch \
           --account-name "$STORAGE_ACCOUNT" \
           --destination integration-reports \
