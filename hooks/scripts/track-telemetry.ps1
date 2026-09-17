@@ -61,7 +61,17 @@
 #    - Tracked fields: --file-reference <relative-path-after-skills/>,
 #      --skill-version <version>
 #
-# === Skill Version ===
+# 4. session-start
+#    - Triggered when: a client starts or resumes an agent session
+#    - Tracked fields: --plugin-name <name>, --plugin-version <version>,
+#      --client-name <client>, and --session-id <id>
+#
+# === Plugin and Skill Versions ===
+#
+# The plugin name and version are read from the active client's plugin.json:
+#   - Copilot CLI / VS Code: .plugin/plugin.json
+#   - Claude Code:           .claude-plugin/plugin.json
+#   - Cursor:                .cursor-plugin/plugin.json
 #
 # The skill version is read from the SKILL.md frontmatter (metadata.version),
 # which the build stamps at package time. It is resolved as follows:
@@ -179,12 +189,40 @@ function Write-Success {
     exit 0
 }
 
+# Removes UTF-8 BOM markers and the common Windows mojibake forms that can
+# precede Cursor hook JSON after stdin passes through Windows PowerShell.
+function Remove-LeadingUtf8BomArtifacts {
+    param([AllowEmptyString()][string]$Value)
+
+    if ($null -eq $Value) { return $Value }
+
+    $bomArtifacts = @(
+        [string][char]0xFEFF,
+        (-join ([char[]]@(0x00EF, 0x00BB, 0x00BF))),
+        (-join ([char[]]@(0x2229, 0x2557, 0x2510)))
+    )
+
+    do {
+        $removedArtifact = $false
+        foreach ($artifact in $bomArtifacts) {
+            if ($Value.StartsWith($artifact, [System.StringComparison]::Ordinal)) {
+                $Value = $Value.Substring($artifact.Length)
+                $removedArtifact = $true
+                break
+            }
+        }
+    } while ($removedArtifact)
+
+    return $Value
+}
+
 # Resolve this script's directory so we can locate bundled skills. In the
 # installed plugin, hooks/ and skills/ are siblings under the plugin root, so
 # <plugin-root>/skills/<name>/SKILL.md is the skill definition.
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
 $skillsDir = Join-Path (Split-Path -Parent (Split-Path -Parent $scriptDir)) 'skills'
+$pluginPathAllowPattern = Join-Path $scriptDir 'pluginPathAllowPattern.ps1'
 
 # Return true only when a target belongs to this hook's plugin. Since this hook
 # is copied into every plugin, comparing through the skills directory prevents
@@ -221,30 +259,23 @@ function Get-SkillVersion {
     return $null
 }
 
-# Extract the plugin version from the top-level .plugin/plugin.json manifest.
+# Read the plugin manifest for the active client.
 # Returns $null if the file or expected JSON value cannot be read.
-function Get-PluginVersion {
-    $pluginManifestPath = Join-Path (Split-Path -Parent $skillsDir) '.plugin/plugin.json'
-    if (-not (Test-Path -LiteralPath $pluginManifestPath)) { return $null }
-    try {
-        $manifest = Get-Content -LiteralPath $pluginManifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-        if ($manifest.version -is [string] -and -not [string]::IsNullOrWhiteSpace($manifest.version)) {
-            return $manifest.version
-        }
-    } catch { }
-    return $null
-}
+function Get-PluginManifest {
+    param([string]$ClientName)
 
-# Extract the plugin name from the top-level .plugin/plugin.json manifest.
-# Returns $null if the file or expected JSON value cannot be read.
-function Get-PluginName {
-    $pluginManifestPath = Join-Path (Split-Path -Parent $skillsDir) '.plugin/plugin.json'
+    $manifestDir = '.plugin'
+    if ($ClientName -eq 'cursor') {
+        $manifestDir = '.cursor-plugin'
+    } elseif ($ClientName -eq 'claude-code') {
+        $manifestDir = '.claude-plugin'
+    }
+
+    $pluginManifestPath = Join-Path (Split-Path -Parent $skillsDir) "$manifestDir/plugin.json"
     if (-not (Test-Path -LiteralPath $pluginManifestPath)) { return $null }
     try {
         $manifest = Get-Content -LiteralPath $pluginManifestPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
-        if ($manifest.name -is [string] -and -not [string]::IsNullOrWhiteSpace($manifest.name)) {
-            return $manifest.name
-        }
+        return $manifest
     } catch { }
     return $null
 }
@@ -267,21 +298,23 @@ function Test-OwnsMcpServer {
 
 # === Main Processing ===
 
-# Read entire stdin at once - hooks send one complete JSON per invocation
+# Read stdin as bytes and decode it as UTF-8. Reading through Console.In and
+# re-encoding with Console.InputEncoding can introduce code-page mojibake.
 try {
-    $stdinEncoding = [Console]::InputEncoding
-    $rawInput = [Console]::In.ReadToEnd()
+    $stdinStream = [Console]::OpenStandardInput()
+    $inputBuffer = New-Object System.IO.MemoryStream
+    $stdinStream.CopyTo($inputBuffer)
     $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
-    # Recover the original UTF-8 bytes when Windows PowerShell decoded stdin with its OEM code page.
-    $rawInput = $utf8WithoutBom.GetString($stdinEncoding.GetBytes($rawInput))
+    $rawInput = $utf8WithoutBom.GetString($inputBuffer.ToArray())
 } catch {
     Write-Success
+} finally {
+    if ($inputBuffer) { $inputBuffer.Dispose() }
 }
 
-# Some clients prefix the JSON stream with a UTF-8 BOM; remove that marker before parsing.
-if ($rawInput.Length -gt 0 -and [int]$rawInput[0] -eq 0xFEFF) {
-    $rawInput = $rawInput.Substring(1)
-}
+# Some clients prefix the JSON stream with a UTF-8 BOM. Cursor on Windows can
+# surface an additional mojibake copy of that marker after stdin decoding.
+$rawInput = Remove-LeadingUtf8BomArtifacts -Value $rawInput
 
 # Return success and exit if no input
 if ([string]::IsNullOrWhiteSpace($rawInput)) {
@@ -320,6 +353,7 @@ if (-not $toolInput) {
 }
 
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+$isSessionStart = $hookEventName -eq "SessionStart" -or $hookEventName -eq "sessionStart"
 
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
@@ -341,7 +375,7 @@ if ($env:COPILOT_CLI -eq "1") {
     $clientName = "copilot-cli"
 } elseif ($hasHookEventName -and $cursorVersion) {
     $clientName = "cursor"
-} elseif ($hasHookEventName -and ($isVscodeToolUseId -or $isVscodeTranscript)) {
+} elseif ($hasHookEventName -and ($env:AZURE_SKILLS_HOOK_CLIENT_FAMILY -eq "copilot-vscode" -or $isVscodeToolUseId -or $isVscodeTranscript)) {
     # Detect VS Code variant from transcript_path
     # Insiders: ...AppData\Roaming\Code - Insiders\User\...
     # Stable:   ...AppData\Roaming\Code\User\...
@@ -360,8 +394,8 @@ if ($env:COPILOT_CLI -eq "1") {
     $clientName = "unknown"
 }
 
-# Skip if no tool name found in any format
-if (-not $toolName) {
+# Skip if no tool name found in any format and this is not a lifecycle event.
+if (-not $toolName -and -not $isSessionStart) {
     Write-Success
 }
 
@@ -380,43 +414,13 @@ function Get-ToolInputPath {
 # swapping both the catalog/plugin segments (e.g. "azure" and "azure-skills")
 # for the new plugin's name.
 
-# --- azure-skills plugin ---
-# The Copilot CLI pattern wildcards the catalog/marketplace folder name
-# (e.g. "awesome-copilot") since it does not necessarily match the plugin's
-# own name ("azure").
-$pathPatternCopilot = '\.copilot/installed-plugins/[^/]+/azure/skills/'
-$pathPatternClaude = '\.claude/plugins/cache/(azure-skills|claude-plugins-official)/azure/[0-9.]+/skills/'
-$pathPatternCursor = '\.cursor/plugins/cache/[^/]+/azure/[^/]+/skills/'
-$pathPatternVscodeAgentPlugins = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-skills/skills/'
-
-# --- azure-kusto-graph-skills plugin ---
-$pathPatternCopilotKustoGraph = '\.copilot/installed-plugins/[^/]+/azure-kusto-graph-skills/skills/'
-$pathPatternClaudeKustoGraph = '\.claude/plugins/cache/azure-skills/azure-kusto-graph-skills/[0-9.]+/skills/'
-$pathPatternCursorKustoGraph = '\.cursor/plugins/cache/[^/]+/azure-kusto-graph-skills/[^/]+/skills/'
-$pathPatternVscodeAgentPluginsKustoGraph = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-kusto-graph-skills/skills/'
-
-# --- aks-skills plugin ---
-$pathPatternCopilotAks = '\.copilot/installed-plugins/[^/]+/aks-skills/skills/'
-$pathPatternClaudeAks = '\.claude/plugins/cache/azure-skills/aks-skills/[0-9.]+/skills/'
-$pathPatternCursorAks = '\.cursor/plugins/cache/[^/]+/aks-skills/[^/]+/skills/'
-$pathPatternVscodeAgentPluginsAks = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/aks-skills/skills/'
-# --- azure-local-skills plugin ---
-$pathPatternCopilotAzureLocal = '\.copilot/installed-plugins/[^/]+/azure-local-skills/skills/'
-$pathPatternClaudeAzureLocal = '\.claude/plugins/cache/azure-skills/azure-local-skills/[0-9.]+/skills/'
-$pathPatternCursorAzureLocal = '\.cursor/plugins/cache/[^/]+/azure-local-skills/[^/]+/skills/'
-$pathPatternVscodeAgentPluginsAzureLocal = 'agent-plugins/github\.com/microsoft/azure-skills/\.github/plugins/azure-local-skills/skills/'
+. $pluginPathAllowPattern
 
 # --- shared across all plugins ---
 $pathPatternAgentsSkills = '\.agents/skills/'
 
 # Put the path patterns into an array for easier iteration
-$pathPatterns = @(
-    $pathPatternCopilot, $pathPatternClaude, $pathPatternCursor, $pathPatternVscodeAgentPlugins,
-    $pathPatternCopilotKustoGraph, $pathPatternClaudeKustoGraph, $pathPatternCursorKustoGraph, $pathPatternVscodeAgentPluginsKustoGraph,
-    $pathPatternCopilotAks, $pathPatternClaudeAks, $pathPatternCursorAks, $pathPatternVscodeAgentPluginsAks,
-    $pathPatternCopilotAzureLocal, $pathPatternClaudeAzureLocal, $pathPatternCursorAzureLocal, $pathPatternVscodeAgentPluginsAzureLocal,
-    $pathPatternAgentsSkills
-)
+$pathPatterns = @($pluginPathPatterns) + @($pathPatternAgentsSkills)
 
 # If $env:AZURE_SKILLS_PLUGIN_ROOT is set, add it to the path patterns for local skill development
 if ($env:AZURE_SKILLS_PLUGIN_ROOT) {
@@ -432,10 +436,17 @@ $skillVersion = $null
 $azureToolName = $null
 $filePath = $null
 
+# Report every session-start invocation, including resumed sessions.
+if ($isSessionStart) {
+    $eventType = "session-start"
+    $shouldTrack = $true
+}
+
 # Check for skill invocation via 'skill'/'Skill' tool
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
     $requestedSkillName = $toolInput.skill
-    $pluginName = Get-PluginName
+    $ownManifest = Get-PluginManifest -ClientName $clientName
+    $pluginName = if ($ownManifest) { $ownManifest.name } else { $null }
     $skillName = $requestedSkillName
     # Native plugin invocations use "<plugin-name>:<skill-name>". Strip only
     # this hook copy's own namespace so another plugin cannot claim the call.
@@ -546,22 +557,34 @@ if (-not $filePath -and -not $skillName) {
 # === STEP 3: Publish event ===
 
 if ($shouldTrack) {
-    $pluginName = Get-PluginName
-    $pluginVersion = Get-PluginVersion
+    # The plugin-telemetry command requires a session ID for session-start events.
+    if ($eventType -eq "session-start" -and [string]::IsNullOrWhiteSpace($sessionId)) {
+        Write-Success
+    }
+
+    $pluginManifest = Get-PluginManifest -ClientName $clientName
+    $pluginName = $pluginManifest.name
+    $pluginVersion = $pluginManifest.version
+
+    # Session telemetry must identify the plugin.
+    if ($eventType -eq "session-start" -and
+        ([string]::IsNullOrWhiteSpace($pluginName) -or [string]::IsNullOrWhiteSpace($pluginVersion))) {
+        Write-Success
+    }
 
     # Build MCP command arguments
     $mcpArgs = @(
-        "server", "plugin-telemetry",
-        "--timestamp", $timestamp,
-        "--client-name", $clientName
+        "server", "plugin-telemetry"
     )
 
+    if ($pluginName) { $mcpArgs += "--plugin-name"; $mcpArgs += $pluginName }
+    if ($pluginVersion) { $mcpArgs += "--plugin-version"; $mcpArgs += $pluginVersion }
+    $mcpArgs += "--client-name"; $mcpArgs += $clientName
+    $mcpArgs += "--timestamp"; $mcpArgs += $timestamp
     if ($eventType) { $mcpArgs += "--event-type"; $mcpArgs += $eventType }
     if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
     if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
     if ($skillVersion) { $mcpArgs += "--skill-version"; $mcpArgs += $skillVersion }
-    if ($pluginName) { $mcpArgs += "--plugin-name"; $mcpArgs += $pluginName }
-    if ($pluginVersion) { $mcpArgs += "--plugin-version"; $mcpArgs += $pluginVersion }
     if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }

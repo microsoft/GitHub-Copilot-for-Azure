@@ -1,6 +1,16 @@
 {
     "plugins": [
         {
+            "name": "foundry-iq-skills",
+            "dirname": "foundry-iq-skills",
+            "skills": [
+                "foundry-iq"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "foundry-iq"
+            }
+        },
+        {
             "name": "azure",
             "dirname": "azure-skills",
             "skills": [
