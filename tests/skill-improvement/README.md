@@ -4,8 +4,7 @@ The skill improvement runner evaluates a skill, asks a bounded improvement
 agent to edit only that skill, evaluates each candidate, and keeps a candidate
 only when it satisfies the configured acceptance rules.
 
-The same TypeScript engine runs locally and in the manual **Skill Improvement**
-GitHub Actions workflow.
+The same engine runs locally and in the manual **Skill Improvement** workflow.
 
 ## Terminology
 
@@ -126,3 +125,99 @@ The Azure Kusto improvement spec intentionally excludes the pre-existing
 `evals/azure-skills/azure-kusto/eval.yaml` suite so the run has one isolated,
 containment-checked evaluation root without copying or modifying the nightly
 suite.
+
+## Custom evaluator commands
+
+By default, the runner directly launches
+`npx -y @microsoft/vally-cli eval` and `grade`. A run specification can instead
+declare separate generation and grading commands for a trusted repository npm
+wrapper:
+
+```yaml
+evaluator:
+  kind: command
+  generate:
+    executable: npm
+    args:
+      - run
+      - test:vally
+      - "--"
+      - --suite
+      - foundry-e2e
+      - --model
+      - "{answerModel}"
+      - --runs
+      - "{repetitions}"
+      - --skip-grade
+      - --output
+      - jsonl
+      - --output-dir
+      - "{generationDirectory}"
+    workingDirectory: .
+    environment:
+      VALLY_RUNS: "{repetitions}"
+  grade:
+    executable: npm
+    args:
+      - run
+      - test:vally:grade
+      - "--"
+      - --suite
+      - foundry-e2e
+      - --judge-model
+      - "{judgeModel}"
+      - --run-dir
+      - "{runDirectory}"
+      - --output
+      - jsonl
+  output:
+    format: vally-jsonl
+    generationStdout: trajectories
+    gradingStdin: trajectories
+    gradingStdout: graded-trajectories
+    runDirectoryMarker: eval-results.md
+```
+
+See
+[`specs/npm-wrapper.example.yaml`](./specs/npm-wrapper.example.yaml) for a
+complete illustrative run specification.
+
+The engine always launches the executable and argument array without a shell.
+Custom commands currently support only the fixed npm form
+`npm run --silent <safe-script-name> -- <args>`. The runner supplies
+`--silent` so npm lifecycle banners cannot contaminate JSONL stdout. The
+repository's npm script is trusted code, but configured values remain literal
+argv elements: the runner never turns them into a command string, performs
+shell expansion, or uses
+`shell: true`, `cmd.exe /c`, PowerShell command construction, or `eval`.
+
+Each argument or environment value is a literal or one whole placeholder.
+Both stages allow `{evalPath}`, `{evalFile}`, `{answerModel}`,
+`{repetitions}`, `{generationDirectory}`, `{targetPlugin}`, `{targetSkill}`,
+`{conditionName}`, and `{pluginOutputRoot}`. Grading also allows
+`{judgeModel}`, `{answerFile}`, `{runDirectory}`, and
+`{judgmentDirectory}`. Embedded forms such as `"model={answerModel}"` are
+rejected, preserving one-value-in/one-value-out expansion.
+
+`workingDirectory` is relative to the evaluation repository. Absolute paths,
+parent traversal, and links that resolve outside the repository are rejected.
+Environment overrides cannot replace execution-control or engine-owned
+variables such as `PATH`, `ComSpec`, `SHELL`, `NODE_OPTIONS`,
+`NPM_CONFIG_SCRIPT_SHELL`, condition flags, or output settings. The process
+environment remains inherited for authentication and CI; never put secrets in
+the run specification.
+
+The output contract is intentionally fixed:
+
+- generation writes Vally trajectory JSONL to stdout;
+- the engine captures stdout as `answers.jsonl` and stderr separately;
+- generation creates exactly one child run directory containing
+  `eval-results.md`;
+- grading reads the generated JSONL from stdin and writes graded Vally JSONL
+  to stdout;
+- grading must return exactly one graded record per generated trajectory.
+
+One-shot wrappers are incompatible: expose separate scripts so generated
+answers can be reused across judges. The engine schedules one generation per
+configured eval YAML; unrelated whole-suite batching requires a future
+evaluation-unit and budgeting design.
