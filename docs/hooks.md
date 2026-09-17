@@ -8,17 +8,37 @@ These files are used by clients when running agent sessions. We have to maintain
 
 Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the `powershell` script.
 
+The `SessionStart` hook reports new and resumed sessions. Copilot CLI is identified through its `COPILOT_CLI` environment variable, and plugin metadata is read from `.plugin/plugin.json`.
+
 ## VS Code
 
 VS Code uses the `copilot-hooks.json` hooks manifest. Although it shares the manifest with Copilot CLI, it only uses the `windows`, `osx` and `linux` properties defined in it. At runtime, VS Code replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. It then executes the script matching the host OS.
+
+The shared manifest marks its hooks as belonging to the Copilot/VS Code client family so session-start payloads without tool or transcript fields are still identified as VS Code. Plugin metadata is read from `.plugin/plugin.json`.
 
 ## Claude Code
 
 Claude Code uses the `claude-hooks.json` hooks manifest. Its manifest defines a nested `hooks` array under each event, making it unique from other clients' hooks manifests. At runtime, Claude Code replaces the `CLAUDE_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. It then executes the script with bash.
 
+The `SessionStart` hook reports both startup and resume events. Plugin metadata is read from `.claude-plugin/plugin.json`.
+
 ## Cursor
 
-Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. It then executes the script with bash.
+Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. It invokes the Node.js dispatcher, which selects PowerShell on Windows and Bash on macOS and Linux.
+
+The `sessionStart` hook reports each new Composer conversation. Plugin metadata is read from `.cursor-plugin/plugin.json`.
+
+## Session-start telemetry
+
+The build copies the shared hooks into every plugin package. Each installed plugin therefore reports its own session-start event with:
+
+- `--plugin-name` and `--plugin-version` from the active client's `plugin.json`
+- `--client-name` for the detected host
+- `--timestamp` generated in UTC ISO-8601 format
+- `--event-type session-start`
+- `--session-id` from the host payload
+
+The `plugin-telemetry` command requires a session ID, so the hook does not report a session-start event when the host omits it. Telemetry opt-out and fail-open behavior are the same as for the existing tool, skill, and reference-file events.
 
 ## Misc
 

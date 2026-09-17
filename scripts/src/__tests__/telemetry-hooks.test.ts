@@ -50,6 +50,7 @@ const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
 const RAW_INPUT_DIR = join(LOG_DIR, "raw-input");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const PLUGIN_ROOT = join(
   TEST_DIR,
@@ -64,6 +65,11 @@ const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
 const DISPATCHER_PATH = join(HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
+const PLUGIN_METADATA = {
+  copilot: { directory: ".plugin", name: "copilot-test-plugin", version: "1.2.3" },
+  cursor: { directory: ".cursor-plugin", name: "cursor-test-plugin", version: "2.3.4" },
+  claude: { directory: ".claude-plugin", name: "claude-test-plugin", version: "3.4.5" },
+} as const;
 const require = createRequire(import.meta.url);
 const dispatcher = require(join(SOURCE_HOOKS_DIR, "track-telemetry.js")) as Dispatcher;
 
@@ -122,6 +128,7 @@ function runHook(
   shell: ShellCase,
   payload: Record<string, unknown>,
   inputPrefix = "",
+  envOverrides: NodeJS.ProcessEnv = {},
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
@@ -136,6 +143,7 @@ function runHook(
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
       COPILOT_CLI: "",
       TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
+      ...envOverrides,
     },
   });
 
@@ -183,9 +191,23 @@ function expectArg(args: string[], name: string, value: string): void {
   expect(args[index + 1]).toBe(value);
 }
 
+function expectIsoTimestamp(args: string[]): void {
+  const index = args.indexOf("--timestamp");
+  expect(index).toBeGreaterThan(-1);
+  expect(args[index + 1]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
+}
+
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
   cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
+  for (const metadata of Object.values(PLUGIN_METADATA)) {
+    const manifestDir = join(PLUGIN_ROOT, metadata.directory);
+    mkdirSync(manifestDir, { recursive: true });
+    writeFileSync(
+      join(manifestDir, "plugin.json"),
+      JSON.stringify({ name: metadata.name, version: metadata.version }),
+    );
+  }
   writeFileSync(
     join(BIN_DIR, "npx"),
     "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"\n",
@@ -199,6 +221,39 @@ beforeAll(() => {
 
 afterAll(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
+});
+
+describe("Session start hook manifests", () => {
+  it("registers the client-specific lifecycle event shapes", () => {
+    const copilot = JSON.parse(
+      readFileSync(join(HOOKS_SOURCE_DIR, "copilot-hooks.json"), "utf8"),
+    ) as {
+      hooks: {
+        SessionStart: Array<{ env?: Record<string, string> }>;
+      };
+    };
+    const claude = JSON.parse(
+      readFileSync(join(HOOKS_SOURCE_DIR, "claude-hooks.json"), "utf8"),
+    ) as {
+      hooks: {
+        SessionStart: Array<{ hooks: unknown[] }>;
+      };
+    };
+    const cursor = JSON.parse(
+      readFileSync(join(HOOKS_SOURCE_DIR, "cursor-hooks.json"), "utf8"),
+    ) as {
+      hooks: {
+        sessionStart: unknown[];
+      };
+    };
+
+    expect(copilot.hooks.SessionStart).toHaveLength(1);
+    expect(copilot.hooks.SessionStart[0].env?.AZURE_SKILLS_HOOK_CLIENT_FAMILY).toBe(
+      "copilot-vscode",
+    );
+    expect(claude.hooks.SessionStart[0].hooks).toHaveLength(1);
+    expect(cursor.hooks.sessionStart).toHaveLength(1);
+  });
 });
 
 describe("Cursor telemetry dispatcher", () => {
@@ -251,6 +306,23 @@ describe("Cursor telemetry dispatcher", () => {
     expectArg(args, "--tool-name", "get_azure_bestpractices");
   });
 
+  it("reports Cursor session starts with Cursor plugin metadata", () => {
+    const args = runDispatcher({
+      hook_event_name: "sessionStart",
+      session_id: SESSION_ID,
+      cursor_version: "1.7.2",
+      is_background_agent: false,
+      composer_mode: "agent",
+    });
+
+    expectArg(args, "--plugin-name", PLUGIN_METADATA.cursor.name);
+    expectArg(args, "--plugin-version", PLUGIN_METADATA.cursor.version);
+    expectArg(args, "--client-name", "cursor");
+    expectArg(args, "--event-type", "session-start");
+    expectArg(args, "--session-id", SESSION_ID);
+    expectIsoTimestamp(args);
+  });
+
   it.skipIf(process.platform !== "win32").each([
     { name: "a UTF-8 BOM", prefix: "\uFEFF" },
     {
@@ -268,6 +340,85 @@ describe("Cursor telemetry dispatcher", () => {
     expectArg(args, "--client-name", "cursor");
     expectArg(args, "--tool-name", "get_azure_bestpractices");
     expect(readRawInput()).toBe(JSON.stringify(payload));
+  });
+});
+
+describe.each(shells)("Session start telemetry hook ($name)", shell => {
+  it.each([
+    {
+      client: "Copilot CLI",
+      payload: {
+        hook_event_name: "SessionStart",
+        session_id: SESSION_ID,
+        source: "resume",
+      },
+      env: {
+        AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode",
+        COPILOT_CLI: "1",
+      },
+      expectedClient: "copilot-cli",
+      expectedPlugin: PLUGIN_METADATA.copilot,
+    },
+    {
+      client: "VS Code",
+      payload: {
+        hook_event_name: "SessionStart",
+        session_id: SESSION_ID,
+        source: "new",
+      },
+      env: {
+        AZURE_SKILLS_HOOK_CLIENT_FAMILY: "copilot-vscode",
+      },
+      expectedClient: "Visual Studio Code",
+      expectedPlugin: PLUGIN_METADATA.copilot,
+    },
+    {
+      client: "Claude Code",
+      payload: {
+        hook_event_name: "SessionStart",
+        session_id: SESSION_ID,
+        source: "resume",
+      },
+      env: {},
+      expectedClient: "claude-code",
+      expectedPlugin: PLUGIN_METADATA.claude,
+    },
+    {
+      client: "Cursor",
+      payload: {
+        hook_event_name: "sessionStart",
+        session_id: SESSION_ID,
+        cursor_version: "1.7.2",
+        is_background_agent: false,
+        composer_mode: "agent",
+      },
+      env: {},
+      expectedClient: "cursor",
+      expectedPlugin: PLUGIN_METADATA.cursor,
+    },
+  ])(
+    "reports $client with client-specific plugin metadata",
+    ({ payload, env, expectedClient, expectedPlugin }) => {
+      const args = runHook(shell, payload, "", env);
+
+      expect(args.slice(0, 4)).toEqual(["-y", "@azure/mcp@latest", "server", "plugin-telemetry"]);
+      expectArg(args, "--plugin-name", expectedPlugin.name);
+      expectArg(args, "--plugin-version", expectedPlugin.version);
+      expectArg(args, "--client-name", expectedClient);
+      expectArg(args, "--event-type", "session-start");
+      expectArg(args, "--session-id", SESSION_ID);
+      expectIsoTimestamp(args);
+    },
+  );
+
+  it("does not report when the session ID is missing", () => {
+    const args = runHook(shell, {
+      hook_event_name: "SessionStart",
+      conversation_id: "cursor-conversation-id",
+      source: "startup",
+    });
+
+    expect(args).toEqual([]);
   });
 });
 
