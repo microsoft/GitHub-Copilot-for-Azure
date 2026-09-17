@@ -59,6 +59,47 @@ function spec(): SkillImprovementRunSpec {
   };
 }
 
+function commandEvaluator(): NonNullable<SkillImprovementRunSpec["evaluator"]> {
+  return {
+    kind: "command",
+    generate: {
+      executable: "npm",
+      args: [
+        "run",
+        "test:vally",
+        "--",
+        "--model",
+        "{answerModel}",
+        "--runs",
+        "{repetitions}",
+      ],
+      workingDirectory: ".",
+      environment: {
+        VALLY_RUNS: "{repetitions}",
+      },
+    },
+    grade: {
+      executable: "npm",
+      args: [
+        "run",
+        "test:vally:grade",
+        "--",
+        "--judge-model",
+        "{judgeModel}",
+        "--run-dir",
+        "{runDirectory}",
+      ],
+    },
+    output: {
+      format: "vally-jsonl",
+      generationStdout: "trajectories",
+      gradingStdin: "trajectories",
+      gradingStdout: "graded-trajectories",
+      runDirectoryMarker: "eval-results.md",
+    },
+  };
+}
+
 describe("skill improvement configuration", () => {
   test("calculates worst-case answer and judge calls", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-config-"));
@@ -250,5 +291,39 @@ describe("skill improvement configuration", () => {
     expect(() => validateRunSpec(invalid)).toThrow(
       "acceptance.requireHeldOutImprovement must be a boolean"
     );
+  });
+
+  test("accepts a split-stage npm evaluator with whole-value placeholders", () => {
+    const runSpec = spec();
+    runSpec.evaluator = commandEvaluator();
+    expect(validateRunSpec(runSpec)).toBe(runSpec);
+  });
+
+  test.each([
+    ["unsafe executable", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.executable = "cmd" as "npm";
+    }, "executable must be 'npm'"],
+    ["unsafe npm prefix", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.args = ["--script-shell", "powershell"];
+    }, "must start with"],
+    ["working-directory traversal", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.workingDirectory = "../outside";
+    }, "must not contain"],
+    ["embedded placeholder", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.args.push("--model={answerModel}");
+    }, "whole-value allowlisted placeholder"],
+    ["stage-invalid placeholder", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.args.push("{judgeModel}");
+    }, "cannot use {judgeModel}"],
+    ["protected environment", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.environment = {
+        NPM_CONFIG_SCRIPT_SHELL: "powershell",
+      };
+    }, "cannot override protected variable"],
+  ])("rejects evaluator %s", (_name, mutate, message) => {
+    const runSpec = spec();
+    runSpec.evaluator = commandEvaluator();
+    mutate(runSpec);
+    expect(() => validateRunSpec(runSpec)).toThrow(message);
   });
 });

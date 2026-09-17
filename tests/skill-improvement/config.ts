@@ -11,6 +11,41 @@ export type EvaluationCondition = {
   mcp: McpState;
 };
 
+export type EvaluatorPlaceholder =
+  | "{evalPath}"
+  | "{evalFile}"
+  | "{answerModel}"
+  | "{judgeModel}"
+  | "{repetitions}"
+  | "{generationDirectory}"
+  | "{answerFile}"
+  | "{runDirectory}"
+  | "{judgmentDirectory}"
+  | "{targetPlugin}"
+  | "{targetSkill}"
+  | "{conditionName}"
+  | "{pluginOutputRoot}";
+
+export type EvaluatorCommand = {
+  executable: "npm";
+  args: string[];
+  workingDirectory?: string;
+  environment?: Record<string, string>;
+};
+
+export type EvaluatorConfig = {
+  kind: "command";
+  generate: EvaluatorCommand;
+  grade: EvaluatorCommand;
+  output: {
+    format: "vally-jsonl";
+    generationStdout: "trajectories";
+    gradingStdin: "trajectories";
+    gradingStdout: "graded-trajectories";
+    runDirectoryMarker: "eval-results.md";
+  };
+};
+
 export type SkillImprovementRunSpec = {
   name: string;
   target: {
@@ -28,6 +63,7 @@ export type SkillImprovementRunSpec = {
     answers: string[];
     judges: string[];
   };
+  evaluator?: EvaluatorConfig;
   experiment: {
     repetitions: number;
     conditions: EvaluationCondition[];
@@ -157,6 +193,205 @@ function validateEvaluationRoot(value: unknown): asserts value is string {
   }
 }
 
+const evaluatorPlaceholders = new Set<EvaluatorPlaceholder>([
+  "{evalPath}",
+  "{evalFile}",
+  "{answerModel}",
+  "{judgeModel}",
+  "{repetitions}",
+  "{generationDirectory}",
+  "{answerFile}",
+  "{runDirectory}",
+  "{judgmentDirectory}",
+  "{targetPlugin}",
+  "{targetSkill}",
+  "{conditionName}",
+  "{pluginOutputRoot}",
+]);
+
+const generationPlaceholders = new Set<EvaluatorPlaceholder>([
+  "{evalPath}",
+  "{evalFile}",
+  "{answerModel}",
+  "{repetitions}",
+  "{generationDirectory}",
+  "{targetPlugin}",
+  "{targetSkill}",
+  "{conditionName}",
+  "{pluginOutputRoot}",
+]);
+
+const gradingPlaceholders = new Set<EvaluatorPlaceholder>([
+  "{evalPath}",
+  "{evalFile}",
+  "{answerModel}",
+  "{judgeModel}",
+  "{repetitions}",
+  "{generationDirectory}",
+  "{answerFile}",
+  "{runDirectory}",
+  "{judgmentDirectory}",
+  "{targetPlugin}",
+  "{targetSkill}",
+  "{conditionName}",
+  "{pluginOutputRoot}",
+]);
+
+const protectedEnvironmentNames = new Set([
+  "comspec",
+  "constructor",
+  "model_override",
+  "node_options",
+  "npm_config_script_shell",
+  "no_skills",
+  "path",
+  "pathext",
+  "prototype",
+  "shell",
+  "test_run_id",
+  "vally_plugin_output_root",
+  "vally_runner_disable_azure_mcp",
+  "vally_runner_exact_skill",
+  "__proto__",
+]);
+
+function validateTemplateValue(
+  value: unknown,
+  field: string,
+  allowedPlaceholders: Set<EvaluatorPlaceholder>,
+): asserts value is string {
+  requireNonEmptyString(value, field);
+  if (!value.includes("{") && !value.includes("}")) {
+    return;
+  }
+  if (!evaluatorPlaceholders.has(value as EvaluatorPlaceholder)) {
+    throw new Error(
+      `${field} must use one whole-value allowlisted placeholder; received ${value}.`
+    );
+  }
+  if (!allowedPlaceholders.has(value as EvaluatorPlaceholder)) {
+    throw new Error(`${field} cannot use ${value} in this evaluator stage.`);
+  }
+}
+
+function validateWorkingDirectory(value: unknown, field: string): asserts value is string {
+  requireNonEmptyString(value, field);
+  if (
+    value.includes("\0")
+    || path.posix.isAbsolute(value)
+    || path.win32.isAbsolute(value)
+    || /^[A-Za-z]:/.test(value)
+    || value.startsWith("\\\\")
+  ) {
+    throw new Error(`${field} must be a repository-relative directory.`);
+  }
+  if (value === ".") {
+    return;
+  }
+  const segments = value.split(/[\\/]/);
+  if (segments.some(segment => segment === "" || segment === "." || segment === "..")) {
+    throw new Error(`${field} must not contain empty, current, or parent segments.`);
+  }
+}
+
+function validateEvaluatorCommand(
+  value: unknown,
+  field: string,
+  allowedPlaceholders: Set<EvaluatorPlaceholder>,
+): asserts value is EvaluatorCommand {
+  if (!value || typeof value !== "object") {
+    throw new Error(`${field} must be an object.`);
+  }
+  const command = value as EvaluatorCommand;
+  if (command.executable !== "npm") {
+    throw new Error(`${field}.executable must be 'npm'.`);
+  }
+  validateStringArray(command.args, `${field}.args`);
+  if (
+    command.args.length < 3
+    || command.args[0] !== "run"
+    || !/^[A-Za-z0-9][A-Za-z0-9:._-]*$/.test(command.args[1])
+    || command.args[2] !== "--"
+  ) {
+    throw new Error(
+      `${field}.args must start with ['run', '<safe-script-name>', '--'].`
+    );
+  }
+  for (let index = 3; index < command.args.length; index += 1) {
+    validateTemplateValue(
+      command.args[index],
+      `${field}.args[${index}]`,
+      allowedPlaceholders
+    );
+  }
+  if (command.workingDirectory !== undefined) {
+    validateWorkingDirectory(command.workingDirectory, `${field}.workingDirectory`);
+  }
+  if (command.environment !== undefined) {
+    if (
+      !command.environment
+      || typeof command.environment !== "object"
+      || Array.isArray(command.environment)
+    ) {
+      throw new Error(`${field}.environment must be an object.`);
+    }
+    const caseInsensitiveNames = new Set<string>();
+    for (const [name, environmentValue] of Object.entries(command.environment)) {
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+        throw new Error(`${field}.environment contains invalid variable name: ${name}.`);
+      }
+      const normalizedName = name.toLowerCase();
+      if (caseInsensitiveNames.has(normalizedName)) {
+        throw new Error(
+          `${field}.environment contains duplicate case-insensitive variable: ${name}.`
+        );
+      }
+      caseInsensitiveNames.add(normalizedName);
+      if (protectedEnvironmentNames.has(normalizedName)) {
+        throw new Error(`${field}.environment cannot override protected variable: ${name}.`);
+      }
+      validateTemplateValue(
+        environmentValue,
+        `${field}.environment.${name}`,
+        allowedPlaceholders
+      );
+    }
+  }
+}
+
+function validateEvaluator(value: unknown): asserts value is EvaluatorConfig {
+  if (!value || typeof value !== "object") {
+    throw new Error("evaluator must be an object.");
+  }
+  const evaluator = value as EvaluatorConfig;
+  if (evaluator.kind !== "command") {
+    throw new Error("evaluator.kind must be 'command'.");
+  }
+  validateEvaluatorCommand(
+    evaluator.generate,
+    "evaluator.generate",
+    generationPlaceholders
+  );
+  validateEvaluatorCommand(
+    evaluator.grade,
+    "evaluator.grade",
+    gradingPlaceholders
+  );
+  const output = evaluator.output;
+  if (
+    !output
+    || output.format !== "vally-jsonl"
+    || output.generationStdout !== "trajectories"
+    || output.gradingStdin !== "trajectories"
+    || output.gradingStdout !== "graded-trajectories"
+    || output.runDirectoryMarker !== "eval-results.md"
+  ) {
+    throw new Error(
+      "evaluator.output must declare the supported Vally JSONL trajectory contract."
+    );
+  }
+}
+
 export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   if (!value || typeof value !== "object") {
     throw new Error("Run specification must be a YAML object.");
@@ -184,6 +419,9 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
 
   validateStringArray(spec.models?.answers, "models.answers");
   validateStringArray(spec.models?.judges, "models.judges");
+  if (spec.evaluator !== undefined) {
+    validateEvaluator(spec.evaluator);
+  }
   requirePositiveInteger(spec.experiment?.repetitions, "experiment.repetitions");
   if (!Array.isArray(spec.experiment?.conditions) || spec.experiment.conditions.length === 0) {
     throw new Error("experiment.conditions must be a non-empty array.");
