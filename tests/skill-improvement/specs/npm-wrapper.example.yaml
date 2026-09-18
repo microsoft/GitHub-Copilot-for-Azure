@@ -8,8 +8,9 @@ target:
   baselineRef: main
 
 evaluations:
+  root: tests/skill-improvement/evals/azure-kusto
   development:
-    - eval.yaml
+    - access-connectivity.eval.yaml
   heldOut: []
 
 models:
@@ -54,6 +55,7 @@ evaluator:
       - "{runDirectory}"
       - --output
       - jsonl
+    workingDirectory: .
   output:
     format: vally-jsonl
     generationStdout: trajectories

@@ -17,7 +17,10 @@ function spec(): SkillImprovementRunSpec {
       skill: "azure-kusto",
       baselineRef: "main",
     },
-    evaluations: { development: ["eval.yaml"] },
+    evaluations: {
+      root: "tests/skill-improvement/evals/adapter",
+      development: ["eval.yaml"],
+    },
     models: { answers: ["answer"], judges: ["judge"] },
     experiment: {
       repetitions: 2,
@@ -182,6 +185,19 @@ describe("evaluator adapter", () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
       fs.rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  test("normalizes Windows working-directory separators on every platform", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "adapter-separators-"));
+    const expected = path.join(root, "tests", "wrapper");
+    fs.mkdirSync(expected, { recursive: true });
+    try {
+      expect(resolveEvaluatorWorkingDirectory(root, "tests\\wrapper")).toBe(
+        expected
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 });

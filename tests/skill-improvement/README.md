@@ -24,19 +24,11 @@ accepted candidate. A completed workflow still creates a result issue when
 run. The issue contains a bounded summary; the full report and trajectories are
 stored in the workflow artifact.
 
-## What the limits mean
+## Limits
 
-Assume a run has 10 prompts, 2 answer models, 2 conditions, 2 judges, and 2
-improvement iterations.
-
-- Baseline answers: `10 * 2 * 2 = 40`.
-- Candidate answers: only skill-enabled conditions are rerun. With one
-  skill-enabled condition, each iteration uses `10 * 2 * 1 = 20`.
-- Maximum answers: `40 + (20 * 2) = 80`.
-- Judge calls: `80 * 2 = 160`.
-
-The engine refuses to start when this plan exceeds `maxAnswerGenerations` or
-`maxJudgeCalls`.
+Before starting, the engine calculates baseline, candidate-iteration, and
+held-out generations across prompts, conditions, models, repetitions, and
+judges. It refuses plans exceeding answer or judge limits.
 
 | Limit | Effect |
 | --- | --- |
@@ -58,43 +50,39 @@ Each saved response is graded by every configured judge. The runner uses:
 - skill invocation as a separate behavioral requirement;
 - average generated-answer tokens as an efficiency diagnostic.
 
-For example, a baseline pass rate of 60% and candidate pass rate of 66% is a
-`+6` point quality improvement. If `minimumQualityImprovementPoints` is `2`,
-the overall improvement rule passes.
+## Commands
 
-## Run locally
+Run all commands from `tests` with `--config <repository-file>`.
+
+| Command | Audience and behavior | Options and outputs |
+| --- | --- | --- |
+| `validate` | Human or CI preflight. Resolves evals, calculates worst-case usage, and enforces limits without invoking models. | Prints normalized spec and plan JSON. |
+| `run --executor local` | Human entry point and default executor. Runs the engine locally. | Optional `--baseline-ref` and `--output`; otherwise uses the spec baseline and a timestamped output directory. |
+| `run --executor github` | Human dispatcher. Queues the Skill Improvement workflow; it does not run Vally locally. | Optional `--workflow-ref`, `--baseline-ref`, `--pr-base`, and `--create-draft-pr`. |
+| `execute` | Workflow/internal entry point. Runs the engine directly without dispatch. | Requires `--output`; accepts `--baseline-ref`. Writes reports, trajectories, judgments, patches, snapshots, issue summary, and workflow metadata. |
 
 ```powershell
-cd tests
-
 npm run skill-improvement -- validate `
   --config .\skill-improvement\specs\azure-kusto.yaml
 
 npm run skill-improvement -- run `
   --config .\skill-improvement\specs\azure-kusto.yaml `
-  --executor local
-```
-
-Local execution runs Vally, judges, and Copilot CLI on the current machine. It
-does not trigger GitHub Actions.
-
-## Dispatch GitHub Actions locally
-
-```powershell
-cd tests
-
-npm run skill-improvement -- run `
-  --config .\skill-improvement\specs\azure-kusto.yaml `
   --executor github `
-  --workflow-ref <branch-containing-the-workflow> `
-  --baseline-ref <branch-to-evaluate> `
+  --workflow-ref <workflow-branch> `
+  --baseline-ref <evaluated-ref> `
   --pr-base main `
   --create-draft-pr
+
+npm run skill-improvement -- execute `
+  --config .\skill-improvement\specs\azure-kusto.yaml `
+  --baseline-ref main `
+  --output .\skill-improvement-runs\manual
 ```
 
-The draft PR flag is only a request. A PR is not created unless a candidate
-passes all acceptance rules. The workflow creates one result issue per run when
-the specification uses `output.issue: always`.
+Adapters affect generation and grading inside local `run` or `execute`;
+GitHub `run` dispatches the spec unchanged. Draft PR creation is only attempted
+for an accepted candidate. `output.issue: always` creates a result issue even
+when no candidate passes.
 
 ## Answer and judge separation
 
@@ -114,73 +102,21 @@ removed.
 
 ## Opt-in evaluation suites
 
-Each run specification sets `evaluations.root` to a repository-relative
-directory under `tests/skill-improvement/evals/`. Development and held-out
-entries are filenames within that root; absolute paths, nested paths, traversal,
-and paths that resolve outside the configured root are rejected.
-
-Suites in this directory are opt-in inputs to the hill-climbing runner. They are
-not discovered by the nightly integration workflow, which scans `evals/`.
-The Azure Kusto improvement spec intentionally excludes the pre-existing
-`evals/azure-skills/azure-kusto/eval.yaml` suite so the run has one isolated,
-containment-checked evaluation root without copying or modifying the nightly
-suite.
+`evaluations.root` must be under `tests/skill-improvement/evals/`; development
+and held-out entries are filenames inside it. Absolute, nested, traversing, or
+escaping paths are rejected. These suites are opt-in and are not discovered by
+the nightly workflow, which scans top-level `evals/`.
 
 ## Custom evaluator commands
 
 By default, the runner directly launches
-`npx -y @microsoft/vally-cli eval` and `grade`. A run specification can instead
-declare separate generation and grading commands for a trusted repository npm
-wrapper:
+`npx -y @microsoft/vally-cli eval` and `grade`. A spec can instead declare
+generation and grading commands for a trusted npm wrapper:
 
-```yaml
-evaluator:
-  kind: command
-  generate:
-    executable: npm
-    args:
-      - run
-      - test:vally
-      - "--"
-      - --suite
-      - foundry-e2e
-      - --model
-      - "{answerModel}"
-      - --runs
-      - "{repetitions}"
-      - --skip-grade
-      - --output
-      - jsonl
-      - --output-dir
-      - "{generationDirectory}"
-    workingDirectory: .
-    environment:
-      VALLY_RUNS: "{repetitions}"
-  grade:
-    executable: npm
-    args:
-      - run
-      - test:vally:grade
-      - "--"
-      - --suite
-      - foundry-e2e
-      - --judge-model
-      - "{judgeModel}"
-      - --run-dir
-      - "{runDirectory}"
-      - --output
-      - jsonl
-  output:
-    format: vally-jsonl
-    generationStdout: trajectories
-    gradingStdin: trajectories
-    gradingStdout: graded-trajectories
-    runDirectoryMarker: eval-results.md
-```
-
-See
+See the complete split-stage Foundry-style configuration in
 [`specs/npm-wrapper.example.yaml`](./specs/npm-wrapper.example.yaml) for a
-complete illustrative run specification.
+generate/grade commands, working directories, environment, placeholders, and
+the fixed output contract.
 
 The engine always launches the executable and argument array without a shell.
 Custom commands currently support only the fixed npm form
@@ -203,7 +139,7 @@ rejected, preserving one-value-in/one-value-out expansion.
 parent traversal, and links that resolve outside the repository are rejected.
 Environment overrides cannot replace execution-control or engine-owned
 variables such as `PATH`, `ComSpec`, `SHELL`, `NODE_OPTIONS`,
-`NPM_CONFIG_SCRIPT_SHELL`, condition flags, or output settings. The process
+`NODE_PATH`, `NPM_CONFIG_*`, condition flags, or output settings. The process
 environment remains inherited for authentication and CI; never put secrets in
 the run specification.
 
@@ -213,6 +149,7 @@ The output contract is intentionally fixed:
 - the engine captures stdout as `answers.jsonl` and stderr separately;
 - generation creates exactly one child run directory containing
   `eval-results.md`;
+- generated trajectory count matches configured stimuli times repetitions;
 - grading reads the generated JSONL from stdin and writes graded Vally JSONL
   to stdout;
 - grading must return exactly one graded record per generated trajectory.
