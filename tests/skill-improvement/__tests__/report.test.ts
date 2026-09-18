@@ -6,6 +6,7 @@ import {
 } from "../report.ts";
 import type { SkillImprovementRunSpec } from "../config.ts";
 import type { JudgedTrial } from "../evaluation.ts";
+import { describe, test, expect, } from "vitest";
 
 const condition = { name: "skill-with-mcp", skill: "enabled", mcp: "enabled" } as const;
 

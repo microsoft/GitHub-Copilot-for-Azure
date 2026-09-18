@@ -6,6 +6,7 @@ import {
   isGradedVallyRecord,
   requireCompleteGrading,
 } from "../evaluation.ts";
+import { describe, test, expect, } from "vitest";
 
 describe("findVallyRunDirectory", () => {
   test("finds the timestamped directory containing eval results", () => {
