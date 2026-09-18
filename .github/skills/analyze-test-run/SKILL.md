@@ -58,6 +58,7 @@ All tools use `owner: "microsoft"` and `repo: "GitHub-Copilot-for-Azure"` as fix
    The download returns a temporary URL. Fetch the ZIP archive from that URL and extract it locally. If the environment restricts outbound HTTP (e.g. AWF sandbox), record in the analysis report that artifact content was unavailable and fall back to job logs via the `get_job_logs` MCP tool.
 
 4. Locate these files in the downloaded artifacts:
+    - `junit.xml` — test pass/fail/skip/error results
    - `*-SKILL-REPORT.md` — generated skill report with per-test details
    - `agent-metadata-*.md` files — raw agent session logs per test
 

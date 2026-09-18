@@ -108,7 +108,7 @@ export function scaffoldSkill({ plugin, skill, repoRoot }: ScaffoldSkillOptions)
 
   const skillRoot = path.join(skillsRoot, skill);
   const evalRoot = path.join(repoRoot, "evals", plugin, skill);
-  const testRoot = path.join(repoRoot, "tests", plugin, skill);
+  const testRoot = path.join(repoRoot, "tests", "skills", plugin, skill);
 
   const skillMarkdown = `---
 name: ${skill}
