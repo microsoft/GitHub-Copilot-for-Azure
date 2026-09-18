@@ -85,6 +85,12 @@ export function validateRequestIdentity(
         }),
     );
 
+    const hostname = new URL(request.url).hostname.toLowerCase();
+    const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+    if (process.env.AZURE_FUNCTIONS_ENVIRONMENT === "Development" && isLocalHost) {
+        return undefined;
+    }
+
     const userDetails = identity.userDetails?.trim();
     if (userDetails?.toLowerCase().endsWith("@microsoft.com")) {
         return undefined;

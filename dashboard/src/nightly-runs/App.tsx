@@ -20,11 +20,15 @@ function sectionIdFromLabel(label: string): string {
  * Organizes files into sections based on their path hierarchy.
  * Sections are labeled with run ID / skill name / group or test case name.
  */
-function organizeFilesIntoSections(dateNode: BlobTreeNode): FileSection[] {
+function organizeFilesIntoSections(dateNode: BlobTreeNode, selectedSkill: string): FileSection[] {
     const sections: FileSection[] = [];
 
     for (const [runId, runNode] of Object.entries(dateNode.children)) {
         for (const [skillName, skillNode] of Object.entries(runNode.children)) {
+            if (skillName !== selectedSkill) {
+                continue;
+            }
+
             if (skillNode.files.length > 0) {
                 sections.push({
                     label: `${runId} / ${skillName}`,
@@ -55,6 +59,16 @@ function organizeFilesIntoSections(dateNode: BlobTreeNode): FileSection[] {
     return sections;
 }
 
+export function skillNamesFromDateNode(dateNode: BlobTreeNode): string[] {
+    const skillNames = new Set<string>();
+    for (const runNode of Object.values(dateNode.children)) {
+        for (const skillName of Object.keys(runNode.children)) {
+            skillNames.add(skillName);
+        }
+    }
+    return [...skillNames].sort((a, b) => a.localeCompare(b));
+}
+
 function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const fileToView = urlParams.get("file");
@@ -70,6 +84,9 @@ function Dashboard() {
     const [selectedPlugin, setSelectedPlugin] = useState<string>(getPersistedPluginSelection);
     const [dates, setDates] = useState<string[]>([]);
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
+    const [skillNames, setSkillNames] = useState<string[]>([]);
+    const [selectedSkill, setSelectedSkill] = useState("");
+    const [cachedDateNode, setCachedDateNode] = useState<BlobTreeNode | null>(null);
     const [reportMarkdown, setReportMarkdown] = useState<string>("");
     const [fileSections, setFileSections] = useState<FileSection[]>([]);
     const [loadingDates, setLoadingDates] = useState(true);
@@ -96,15 +113,16 @@ function Dashboard() {
             .finally(() => setLoadingDates(false));
     }, [selectedPlugin]);
 
-    // Fetch data and reports when a date is selected
+    // Fetch data when a date is selected
     useEffect(() => {
         if (!selectedDate) return;
 
         setError(null);
         setLoadingData(true);
-        setLoadingReport(true);
         setFileSections([]);
-        setReportMarkdown("");
+        setSkillNames([]);
+        setSelectedSkill("");
+        setCachedDateNode(null);
 
         fetch(apiUrl(`/api/data/${encodeURIComponent(selectedDate)}`))
             .then((res) => {
@@ -114,21 +132,57 @@ function Dashboard() {
             .then((data: BlobTree) => {
                 const dateNode = data[selectedDate];
                 if (dateNode) {
-                    setFileSections(organizeFilesIntoSections(dateNode));
+                    const availableSkillNames = skillNamesFromDateNode(dateNode);
+                    setCachedDateNode(dateNode);
+                    setSkillNames(availableSkillNames);
+                    setSelectedSkill(availableSkillNames[0] ?? "");
                 }
             })
             .catch((err) => setError(err.message))
             .finally(() => setLoadingData(false));
+    }, [selectedDate, selectedPlugin]);
 
-        fetch(apiUrl(`/api/reports/${encodeURIComponent(selectedDate)}`))
+    useEffect(() => {
+        setFileSections(
+            cachedDateNode && selectedSkill
+                ? organizeFilesIntoSections(cachedDateNode, selectedSkill)
+                : [],
+        );
+    }, [cachedDateNode, selectedSkill]);
+
+    // Fetch reports when the date or skill selection changes
+    useEffect(() => {
+        if (!selectedDate || !selectedSkill) {
+            setLoadingReport(false);
+            setReportMarkdown("");
+            return;
+        }
+
+        const controller = new AbortController();
+        setLoadingReport(true);
+        setReportMarkdown("");
+
+        fetch(apiUrl(`/api/reports/${encodeURIComponent(selectedDate)}?skill=${encodeURIComponent(selectedSkill)}`), {
+            signal: controller.signal,
+        })
             .then((res) => {
                 if (!res.ok) throw new Error(`Failed to load reports: ${res.status}`);
                 return res.text();
             })
             .then((md) => setReportMarkdown(md))
-            .catch((err) => setReportMarkdown(`*Error loading reports: ${err.message}*`))
-            .finally(() => setLoadingReport(false));
-    }, [selectedDate, selectedPlugin]);
+            .catch((err) => {
+                if (err.name !== "AbortError") {
+                    setReportMarkdown(`*Error loading reports: ${err.message}*`);
+                }
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) {
+                    setLoadingReport(false);
+                }
+            });
+
+        return () => controller.abort();
+    }, [selectedDate, selectedPlugin, selectedSkill]);
 
     const handleDownload = useCallback((blobName: string) => {
         const viewerUrl = pageUrl(`${window.location.pathname}?file=${encodeURIComponent(blobName)}`);
@@ -167,8 +221,27 @@ function Dashboard() {
 
             <PluginSelector
                 selectedPlugin={selectedPlugin}
-                onChange={setSelectedPlugin}
-            />
+                onChange={(plugin) => {
+                    setSelectedSkill("");
+                    setSelectedPlugin(plugin);
+                }}
+            >
+                <label className="plugin-toolbar__field">
+                    <span className="plugin-toolbar__label">Skill</span>
+                    <select
+                        className="plugin-toolbar__select"
+                        value={selectedSkill}
+                        onChange={(event) => setSelectedSkill(event.target.value)}
+                        disabled={loadingData || skillNames.length === 0}
+                    >
+                        {skillNames.map((skillName) => (
+                            <option key={skillName} value={skillName}>
+                                {skillName}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </PluginSelector>
 
             <div className="nr-body">
                 {/* Left panel - date list */}
@@ -179,7 +252,10 @@ function Dashboard() {
                             <li key={d}>
                                 <button
                                     className={`nr-date-link${d === selectedDate ? " active" : ""}`}
-                                    onClick={() => setSelectedDate(d)}
+                                    onClick={() => {
+                                        setSelectedSkill("");
+                                        setSelectedDate(d);
+                                    }}
                                 >
                                     {d}
                                 </button>
@@ -190,7 +266,9 @@ function Dashboard() {
 
                 {/* Center panel - skill reports */}
                 <main className="nr-panel nr-panel-reports">
-                    <h2>Skill Reports &mdash; {selectedDate ?? "none"}</h2>
+                    <h2>
+                        {selectedSkill || "Skill Reports"} &mdash; {selectedDate ?? "none"}
+                    </h2>
                     {loadingReport || loadingData ? (
                         <p>Loading reports&hellip;</p>
                     ) : (
@@ -206,7 +284,7 @@ function Dashboard() {
                 <aside className="nr-panel nr-panel-files">
                     <h2>Data Files</h2>
                     {fileSections.length === 0 ? (
-                        <p className="nr-muted">No files for this date.</p>
+                        <p className="nr-muted">No files for this skill.</p>
                     ) : (
                         <div className="nr-file-sections">
                             {fileSections.map((section, idx) => (
