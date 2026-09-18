@@ -2,6 +2,7 @@
  * Tests for evaluate utility helpers used by integration assertions.
  */
 
+import { describe, expect, test } from "vitest";
 import { stripNonExecutableContent } from "../evaluate";
 
 describe("stripNonExecutableContent", () => {

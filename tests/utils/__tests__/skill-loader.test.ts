@@ -2,7 +2,7 @@
  * Tests for char-budget helpers used for enforcing required skills.
  */
 
-import { jest } from "@jest/globals";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,8 +10,8 @@ import { truncateSkills, loadSkill, getFormattedSkillDescription, getSkillsForTe
 
 describe("truncateSkills", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.resetModules();
+    vi.restoreAllMocks();
+    vi.resetModules();
   });
 
   test("throws when requiredSkills contains an invalid skill", async () => {

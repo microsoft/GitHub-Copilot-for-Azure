@@ -5,6 +5,8 @@
  * where event listeners continue after test completion.
  */
 
+import { describe, expect, test } from "vitest";
+
 describe("agent-runner", () => {
   describe("event listener cleanup", () => {
     test("isComplete flag prevents event processing after completion", () => {

@@ -6,6 +6,7 @@ import {
   resolveProcessLaunch,
   runProcess,
 } from "../process.ts";
+import { describe, expect, test } from "vitest";
 
 describe("runProcess", () => {
   test.each(["npm", "npx"])(
