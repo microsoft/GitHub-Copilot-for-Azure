@@ -77,6 +77,10 @@ export class IntegrationTestAgentRunner implements Executor {
       timeout: timeout,
       takeScreenshot: takeScreenshot,
       requiredSkills: requiredSkillRefs.length > 0 ? requiredSkillRefs : undefined,
+      // Exact-skill hill climbing loads only evaluated skills so results are attributable to the target, not sibling plugin skills.
+      includeSkills: process.env.VALLY_RUNNER_EXACT_SKILL === "true"
+        ? requiredSkillRefs
+        : undefined,
       maxTurns: stimulus.constraints?.max_turns,
       // Always make our agent runner preserve workspace.
       // vally will delete the test workspace by default.

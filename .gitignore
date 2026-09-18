@@ -338,6 +338,7 @@ StyleCopReport.xml
 TestResult.xml
 tests/reports/
 tests/reports/.DS_Store
+tests/skill-improvement-runs/
 token-metadata.json
 UpgradeLog*.htm
 UpgradeLog*.XML

@@ -1,0 +1,63 @@
+name: azure-kusto-improvement
+
+target:
+  plugin: azure-skills
+  skill: azure-kusto
+  baselineRef: skaluvak-microsoft-azure-kusto-eval-pilot
+  editablePaths:
+    - plugins/azure-skills/skills/azure-kusto/**
+
+evaluations:
+  root: tests/skill-improvement/evals/azure-kusto
+  development:
+    - access-connectivity.eval.yaml
+    - analyze-logs-telemetry.eval.yaml
+    - author-run-query.eval.yaml
+    - discover-cluster-database.eval.yaml
+    - discover-schema-table.eval.yaml
+    - ingestion-health.eval.yaml
+    - stored-functions.eval.yaml
+    - telemetry-informed-scenarios.eval.yaml
+    - troubleshoot-query.eval.yaml
+    - troubleshoot-schema-table.eval.yaml
+    - visualize-dashboard.eval.yaml
+  heldOut: []
+
+models:
+  answers:
+    - gpt-5.6-sol
+  judges:
+    - claude-opus-4.8
+
+experiment:
+  repetitions: 1
+  conditions:
+    - name: skill-with-mcp
+      skill: enabled
+      mcp: enabled
+    - name: no-skill-with-mcp
+      skill: disabled
+      mcp: enabled
+
+improvementAgent:
+  enabled: true
+  model: claude-sonnet-5
+
+acceptance:
+  minimumQualityImprovementPoints: 2
+  maximumEvalRegressionPoints: 5
+  maximumModelRegressionPoints: 5
+  minimumSkillInvocationRate: 0.8
+  requireHeldOutImprovement: false
+
+limits:
+  maxIterations: 2
+  maxAnswerGenerations: 400
+  maxJudgeCalls: 400
+  maxDurationMinutes: 360
+  maxConcurrentJobs: 5
+  maxSkillTokenIncreasePercent: 15
+
+output:
+  issue: always
+  draftPullRequest: accepted-candidate-only

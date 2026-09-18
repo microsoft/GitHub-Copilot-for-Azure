@@ -1,0 +1,39 @@
+name: azure-kusto-access-connectivity
+description: Synthetic restricted-telemetry-aligned scenarios for Azure Data Explorer access and connectivity.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Diagnose forbidden database queries"
+    prompt: "I can see my ADX cluster, but queries against the database return Forbidden. Help me identify which access and connection checks to make."
+    rubric: &rubric
+      - The response separates Azure resource visibility from Kusto database authorization and checks identity, tenant, cluster URI, database name, and effective database permissions.
+      - The response proposes a safe, read-only diagnostic sequence and distinguishes authentication, RBAC or Kusto principals, network restrictions, and database permission failures.
+      - The response asks for missing environment details or shows placeholders rather than inventing identifiers, permissions, or observed results.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Diagnose environment-specific cluster connection"
+    prompt: "My Kusto cluster URL works in the portal but not from this environment. Help me verify the URI, authentication, network access, and database permissions without changing anything."
+    rubric: *rubric
+    tags: *tags
+    graders: *graders
