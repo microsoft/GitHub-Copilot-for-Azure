@@ -238,10 +238,21 @@ const gradingPlaceholders = new Set<EvaluatorPlaceholder>([
 ]);
 
 const protectedEnvironmentNames = new Set([
+  "bash_env",
   "comspec",
   "constructor",
+  "dyld_insert_libraries",
+  "dyld_library_path",
+  "env",
+  "github_env",
+  "github_output",
+  "github_path",
+  "github_step_summary",
+  "ld_library_path",
+  "ld_preload",
   "model_override",
   "node_options",
+  "node_path",
   "npm_config_script_shell",
   "no_skills",
   "path",
@@ -254,6 +265,10 @@ const protectedEnvironmentNames = new Set([
   "vally_runner_exact_skill",
   "__proto__",
 ]);
+
+function isProtectedEnvironmentName(name: string): boolean {
+  return protectedEnvironmentNames.has(name) || name.startsWith("npm_config_");
+}
 
 function validateTemplateValue(
   value: unknown,
@@ -347,7 +362,7 @@ function validateEvaluatorCommand(
         );
       }
       caseInsensitiveNames.add(normalizedName);
-      if (protectedEnvironmentNames.has(normalizedName)) {
+      if (isProtectedEnvironmentName(normalizedName)) {
         throw new Error(`${field}.environment cannot override protected variable: ${name}.`);
       }
       validateTemplateValue(

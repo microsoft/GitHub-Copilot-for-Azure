@@ -5,6 +5,7 @@ import {
   findVallyRunDirectory,
   isGradedVallyRecord,
   readVallyJsonl,
+  requireCompleteGeneration,
   requireCompleteGrading,
   runEvaluationBatch,
 } from "../evaluation.ts";
@@ -62,6 +63,13 @@ describe("findVallyRunDirectory", () => {
     );
   });
 
+  test("rejects generation output that does not match the planned stimuli", () => {
+    expect(() => requireCompleteGeneration([
+      { type: "trial-result", trajectory: { output: "one" } },
+      { type: "trial-result", trajectory: { output: "unexpected" } },
+    ], 1)).toThrow("expected 1 trajectories, received 2");
+  });
+
   test("reports the line containing invalid JSONL output", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "vally-jsonl-"));
     const file = path.join(root, "answers.jsonl");
@@ -75,7 +83,13 @@ describe("findVallyRunDirectory", () => {
 
   test("runs a split-stage npm wrapper with engine-owned JSONL streams", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "vally-wrapper-"));
-    const evalDirectory = path.join(root, "evals", "azure-skills", "azure-kusto");
+    const evalDirectory = path.join(
+      root,
+      "tests",
+      "skill-improvement",
+      "evals",
+      "fixture"
+    );
     const outputRoot = path.join(root, "artifacts");
     const sideEffectFile = path.join(root, "injected.txt");
     fs.mkdirSync(evalDirectory, { recursive: true });
@@ -142,7 +156,10 @@ describe("findVallyRunDirectory", () => {
         skill: "azure-kusto",
         baselineRef: "main",
       },
-      evaluations: { development: ["eval.yaml"] },
+      evaluations: {
+        root: "tests/skill-improvement/evals/fixture",
+        development: ["eval.yaml"],
+      },
       models: {
         answers: ["answer-model & node side-effect.cjs"],
         judges: ["judge-model | node side-effect.cjs"],

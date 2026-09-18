@@ -59,7 +59,11 @@ export function resolveEvaluatorWorkingDirectory(
   evalRepoRoot: string,
   configuredDirectory: string | undefined,
 ): string {
-  const candidate = path.resolve(evalRepoRoot, configuredDirectory ?? "tests");
+  const relativeDirectory = configuredDirectory ?? "tests";
+  const segments = relativeDirectory === "."
+    ? []
+    : relativeDirectory.replaceAll("\\", "/").split("/");
+  const candidate = path.resolve(evalRepoRoot, ...segments);
   if (!isWithin(evalRepoRoot, candidate)) {
     throw new Error(
       `Evaluator working directory resolves outside the repository: ${configuredDirectory}.`

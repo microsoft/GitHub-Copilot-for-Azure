@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { parse } from "yaml";
 import type {
   EvaluationCondition,
   SkillImprovementRunSpec,
@@ -72,6 +73,22 @@ export function requireCompleteGrading(
       "Incomplete judge output: "
       + `expected ${expectedCount} graded trajectories, received ${trialRecords.length}, `
       + `${ungraded.length} without grades.`
+    );
+  }
+  return trialRecords;
+}
+
+export function requireCompleteGeneration(
+  records: VallyRecord[],
+  expectedCount: number,
+): VallyRecord[] {
+  const trialRecords = records.filter(record =>
+    record.type === "trial-result" || record.trajectory !== undefined
+  );
+  if (trialRecords.length !== expectedCount) {
+    throw new Error(
+      "Incomplete generation output: "
+      + `expected ${expectedCount} trajectories, received ${trialRecords.length}.`
     );
   }
   return trialRecords;
@@ -241,12 +258,17 @@ async function generateAnswers(
     taskDirectory,
     spec.evaluator?.output.runDirectoryMarker
   );
-  const count = readVallyJsonl(answerFile)
-    .filter(record => record.type === "trial-result" || record.trajectory)
-    .length;
-  if (count === 0) {
-    throw new Error(`No generated trajectories found in ${answerFile}.`);
+  const evalDocument = parse(fs.readFileSync(evalPath, "utf8")) as {
+    stimuli?: unknown[];
+  };
+  if (!Array.isArray(evalDocument.stimuli) || evalDocument.stimuli.length === 0) {
+    throw new Error(`Eval file contains no stimuli: ${evalPath}`);
   }
+  const expectedCount = evalDocument.stimuli.length * spec.experiment.repetitions;
+  const count = requireCompleteGeneration(
+    readVallyJsonl(answerFile),
+    expectedCount
+  ).length;
   return {
     ...task,
     answerFile,

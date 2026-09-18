@@ -320,6 +320,11 @@ describe("skill improvement configuration", () => {
         NPM_CONFIG_SCRIPT_SHELL: "powershell",
       };
     }, "cannot override protected variable"],
+    ["npm configuration environment", (runSpec: SkillImprovementRunSpec) => {
+      runSpec.evaluator!.generate.environment = {
+        NPM_CONFIG_PREFIX: "unsafe",
+      };
+    }, "cannot override protected variable"],
   ])("rejects evaluator %s", (_name, mutate, message) => {
     const runSpec = spec();
     runSpec.evaluator = commandEvaluator();
