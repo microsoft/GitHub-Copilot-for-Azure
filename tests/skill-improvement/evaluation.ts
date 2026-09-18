@@ -1,12 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
+import { parse } from "yaml";
 import type {
   EvaluationCondition,
   SkillImprovementRunSpec,
 } from "./config.ts";
 import { resolveEvaluationPath } from "./config.ts";
 import {
-  commandName,
+  createGenerationLaunch,
+  createGradingLaunch,
+} from "./evaluator-adapter.ts";
+import {
   runProcess,
   runWithConcurrency,
 } from "./process.ts";
@@ -74,6 +78,22 @@ export function requireCompleteGrading(
   return trialRecords;
 }
 
+export function requireCompleteGeneration(
+  records: VallyRecord[],
+  expectedCount: number,
+): VallyRecord[] {
+  const trialRecords = records.filter(record =>
+    record.type === "trial-result" || record.trajectory !== undefined
+  );
+  if (trialRecords.length !== expectedCount) {
+    throw new Error(
+      "Incomplete generation output: "
+      + `expected ${expectedCount} trajectories, received ${trialRecords.length}.`
+    );
+  }
+  return trialRecords;
+}
+
 export type JudgedTrial = {
   phase: string;
   iteration?: number;
@@ -116,18 +136,32 @@ function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function readJsonl(filePath: string): VallyRecord[] {
+export function readVallyJsonl(filePath: string): VallyRecord[] {
   return fs.readFileSync(filePath, "utf8")
     .split(/\r?\n/)
-    .filter(Boolean)
-    .map(line => JSON.parse(line) as VallyRecord);
+    .map((line, index) => ({ line, lineNumber: index + 1 }))
+    .filter(({ line }) => line.length > 0)
+    .map(({ line, lineNumber }) => {
+      try {
+        return JSON.parse(line) as VallyRecord;
+      } catch (error: unknown) {
+        throw new Error(
+          `Invalid Vally JSONL in ${filePath} at line ${lineNumber}: `
+          + `${error instanceof Error ? error.message : String(error)}`,
+          { cause: error }
+        );
+      }
+    });
 }
 
-export function findVallyRunDirectory(root: string): string {
+export function findVallyRunDirectory(
+  root: string,
+  markerFile = "eval-results.md",
+): string {
   const candidates = fs.readdirSync(root, { withFileTypes: true })
     .filter(entry =>
       entry.isDirectory()
-      && fs.existsSync(path.join(root, entry.name, "eval-results.md"))
+      && fs.existsSync(path.join(root, entry.name, markerFile))
     )
     .map(entry => path.join(root, entry.name));
   if (candidates.length !== 1) {
@@ -200,44 +234,41 @@ async function generateAnswers(
       `skill-improvement-${slug(task.condition.name)}-${slug(task.answerModel)}-${slug(task.evalFile)}`,
   };
 
-  await runProcess(commandName("npx"), [
-    "-y",
-    "@microsoft/vally-cli",
-    "eval",
-    "--eval-spec",
+  const launch = createGenerationLaunch(spec, {
+    worktree,
+    evalRepoRoot,
+    testsDirectory,
     evalPath,
-    "--executor-plugin",
-    path.join(testsDirectory, "vally", "vally-executor.ts"),
-    "--grader-plugin",
-    path.join(testsDirectory, "vally", "vally-graders.ts"),
-    "--output-dir",
-    taskDirectory,
-    "--model",
-    task.answerModel,
-    "--runs",
-    String(spec.experiment.repetitions),
-    "--workers",
-    "1",
-    "--max-retries",
-    "0",
-    "--skip-grade",
-    "--output",
-    "jsonl",
-  ], {
-    cwd: testsDirectory,
-    env,
+    evalFile: task.evalFile,
+    answerModel: task.answerModel,
+    generationDirectory: taskDirectory,
+    answerFile,
+    condition: task.condition,
+    conditionEnvironment: env,
+  });
+  await runProcess(launch.command, launch.args, {
+    cwd: launch.cwd,
+    env: launch.env,
     stdoutFile: answerFile,
     stderrFile,
     timeoutMs: Math.max(deadline - Date.now(), 1),
   });
 
-  const runDirectory = findVallyRunDirectory(taskDirectory);
-  const count = readJsonl(answerFile)
-    .filter(record => record.type === "trial-result" || record.trajectory)
-    .length;
-  if (count === 0) {
-    throw new Error(`No generated trajectories found in ${answerFile}.`);
+  const runDirectory = findVallyRunDirectory(
+    taskDirectory,
+    spec.evaluator?.output.runDirectoryMarker
+  );
+  const evalDocument = parse(fs.readFileSync(evalPath, "utf8")) as {
+    stimuli?: unknown[];
+  };
+  if (!Array.isArray(evalDocument.stimuli) || evalDocument.stimuli.length === 0) {
+    throw new Error(`Eval file contains no stimuli: ${evalPath}`);
   }
+  const expectedCount = evalDocument.stimuli.length * spec.experiment.repetitions;
+  const count = requireCompleteGeneration(
+    readVallyJsonl(answerFile),
+    expectedCount
+  ).length;
   return {
     ...task,
     answerFile,
@@ -247,6 +278,7 @@ async function generateAnswers(
 }
 
 async function gradeAnswers(
+  worktree: string,
   evalRepoRoot: string,
   outputRoot: string,
   spec: SkillImprovementRunSpec,
@@ -274,30 +306,30 @@ async function gradeAnswers(
   const judgmentFile = path.join(judgeDirectory, `${slug(judgeModel)}.jsonl`);
   const stderrFile = path.join(judgeDirectory, `${slug(judgeModel)}.stderr.log`);
 
-  await runProcess(commandName("npx"), [
-    "-y",
-    "@microsoft/vally-cli",
-    "grade",
-    "--eval-spec",
+  const launch = createGradingLaunch(spec, {
+    worktree,
+    evalRepoRoot,
+    testsDirectory,
     evalPath,
-    "--grader-plugin",
-    path.join(testsDirectory, "vally", "vally-graders.ts"),
-    "--judge-model",
+    evalFile: generated.evalFile,
+    answerModel: generated.answerModel,
     judgeModel,
-    "--run-dir",
-    generated.runDirectory,
-    "--output",
-    "jsonl",
-    "--verbose",
-  ], {
-    cwd: testsDirectory,
+    generationDirectory: path.dirname(generated.answerFile),
+    answerFile: generated.answerFile,
+    runDirectory: generated.runDirectory,
+    judgmentDirectory: judgeDirectory,
+    condition: generated.condition,
+  });
+  await runProcess(launch.command, launch.args, {
+    cwd: launch.cwd,
+    env: launch.env,
     stdinFile: generated.answerFile,
     stdoutFile: judgmentFile,
     stderrFile,
     timeoutMs: Math.max(deadline - Date.now(), 1),
   });
 
-  return requireCompleteGrading(readJsonl(judgmentFile), generated.count)
+  return requireCompleteGrading(readVallyJsonl(judgmentFile), generated.count)
     .map(record => ({
       phase,
       iteration,
@@ -364,6 +396,7 @@ export async function runEvaluationBatch(
     spec.limits.maxConcurrentJobs,
     async ({ item, judgeModel }, index) => {
       judged[index] = await gradeAnswers(
+        worktree,
         evalRepoRoot,
         outputRoot,
         spec,
