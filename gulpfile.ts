@@ -190,7 +190,7 @@ type Commit = {
   majorMinor: string;
 
   /**
-   * The number of commits between this commit and the most recent one that touched the version.json file before.
+   * The number of versioned commits since the most recent major/minor version change.
    */
   relativeHeight: number;
 };

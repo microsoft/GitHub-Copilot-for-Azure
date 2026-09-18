@@ -73,7 +73,7 @@ afterEach(() => {
 });
 
 describe("plugin version history", () => {
-  it("counts shared hook commits without resetting for path-filter changes", () => {
+  it("counts shared hooks, ignores path-filter resets, and resets for version changes", () => {
     tempDir = mkdtempSync(path.join(tmpdir(), "plugin-versioning-"));
     runGit("init", "--quiet", "--initial-branch=main");
     runGit("config", "user.name", "Version Test");
@@ -104,6 +104,12 @@ describe("plugin version history", () => {
     writeFileSync(path.join(hooksDir, "hook.txt"), "hook content\n");
     commit("change shared hook");
 
+    writeFileSync(
+      path.join(pluginDir, "version.json"),
+      JSON.stringify({ version: "2.0", pathFilters: [".", ":/hooks"] })
+    );
+    commit("bump plugin version");
+
     const commits = getVersionedCommits();
 
     expect(
@@ -132,6 +138,11 @@ describe("plugin version history", () => {
         subject: "change shared hook",
         majorMinor: "1.0",
         relativeHeight: 3,
+      },
+      {
+        subject: "bump plugin version",
+        majorMinor: "2.0",
+        relativeHeight: 0,
       },
     ]);
   });
