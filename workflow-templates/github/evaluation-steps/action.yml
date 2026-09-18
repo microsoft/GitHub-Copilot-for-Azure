@@ -1,0 +1,282 @@
+name: Evaluate skill
+description: Run GitHub Copilot for Azure integration evaluations for a skill
+
+inputs:
+  test-harness-ref:
+    description: Branch, tag, or commit to check out from the test harness repository
+    required: true
+  plugin-repo:
+    description: Repository containing the plugin
+    required: false
+    default: microsoft/azure-skills
+  plugin-repo-ref:
+    description: Branch, tag, or commit to check out from the plugin repository
+    required: false
+    default: main
+  plugins-dir:
+    description: Directory containing plugins in the plugin repository
+    required: false
+    default: .github/plugins
+  plugin:
+    description: Plugin directory name containing the skill to evaluate
+    required: true
+  skill:
+    description: Skill name to evaluate
+    required: true
+  eval-dir:
+    description: Evaluation directory in the caller repository; defaults to evals/<plugin>
+    required: false
+    default: ""
+  azure-subscription-id:
+    description: Test Azure subscription ID
+    required: true
+  azure-tenant-id:
+    description: Tenant ID for the test Azure subscription
+    required: true
+  azure-client-id:
+    description: Client ID of the federated identity used for testing
+    required: true
+  upload-artifacts:
+    description: Upload reports and raw results as a GitHub Actions artifact
+    required: false
+    default: "true"
+  storage-account:
+    description: Storage account for reports; leave empty to skip publishing
+    required: false
+    default: ""
+
+outputs:
+  reports-directory:
+    description: Absolute path to dashboard-compatible evaluation reports
+    value: ${{ steps.output-paths.outputs.reports-directory }}
+  results-directory:
+    description: Absolute path to raw Vally evaluation results
+    value: ${{ steps.output-paths.outputs.results-directory }}
+
+runs:
+  using: composite
+  steps:
+    - name: Create evaluation workspace
+      shell: bash
+      env:
+        EVAL_WORKSPACE: ${{ github.workspace }}/eval-workspace
+      run: |
+        if [[ -e "$EVAL_WORKSPACE" ]]; then
+          echo "Evaluation workspace already exists: $EVAL_WORKSPACE" >&2
+          exit 1
+        fi
+        mkdir -p "$EVAL_WORKSPACE"
+
+    - name: Checkout test harness
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with:
+        repository: microsoft/GitHub-Copilot-for-Azure
+        ref: ${{ inputs.test-harness-ref }}
+        path: eval-workspace
+        persist-credentials: false
+
+    - name: Checkout plugin repository
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with:
+        repository: ${{ inputs.plugin-repo }}
+        ref: ${{ inputs.plugin-repo-ref }}
+        path: eval-workspace/.plugin-source
+        persist-credentials: false
+
+    - name: Prepare plugin and evaluation suites
+      shell: bash
+      env:
+        EVAL_WORKSPACE: ${{ github.workspace }}/eval-workspace
+        CALLER_WORKSPACE: ${{ github.workspace }}
+        PLUGINS_DIR: ${{ inputs.plugins-dir }}
+        PLUGIN: ${{ inputs.plugin }}
+        SKILL: ${{ inputs.skill }}
+        EVAL_DIR: ${{ inputs.eval-dir }}
+      run: |
+        resolve_child_path() {
+          local candidate="$1"
+          local root="$2"
+          local label="$3"
+          local resolved_candidate
+          local resolved_root
+
+          resolved_candidate=$(realpath -m -- "$candidate")
+          resolved_root=$(realpath -m -- "$root")
+          if [[ "$resolved_candidate" != "$resolved_root/"* ]]; then
+            echo "$label must be under $resolved_root: $resolved_candidate" >&2
+            return 1
+          fi
+          printf '%s\n' "$resolved_candidate"
+        }
+
+        safe_remove_child() {
+          local candidate="$1"
+          local root="$2"
+          local label="$3"
+          local resolved_candidate
+
+          resolved_candidate=$(resolve_child_path "$candidate" "$root" "$label") || return 1
+          rm -rf -- "$resolved_candidate"
+        }
+
+        plugin_checkout_root=$(resolve_child_path "$EVAL_WORKSPACE/.plugin-source" "$EVAL_WORKSPACE" "Plugin checkout directory")
+        plugin_source=$(resolve_child_path "$plugin_checkout_root/$PLUGINS_DIR/$PLUGIN" "$plugin_checkout_root" "Plugin source")
+        skill_source=$(resolve_child_path "$plugin_source/skills/$SKILL" "$plugin_source/skills" "Skill source")
+        plugin_destination=$(resolve_child_path "$EVAL_WORKSPACE/output/$PLUGIN" "$EVAL_WORKSPACE/output" "Plugin destination")
+
+        if [[ ! -d "$skill_source" ]]; then
+          echo "Skill not found: $skill_source" >&2
+          exit 1
+        fi
+
+        safe_remove_child "$plugin_destination" "$EVAL_WORKSPACE/output" "Plugin destination"
+        mkdir -p "$plugin_destination"
+        cp -R "$plugin_source/." "$plugin_destination/"
+        safe_remove_child "$plugin_checkout_root" "$EVAL_WORKSPACE" "Plugin checkout directory"
+
+        if [[ -z "$EVAL_DIR" ]]; then
+          requested_eval_source="$CALLER_WORKSPACE/evals/$PLUGIN"
+        else
+          requested_eval_source="$CALLER_WORKSPACE/$EVAL_DIR"
+        fi
+        eval_source=$(resolve_child_path "$requested_eval_source" "$CALLER_WORKSPACE" "Evaluation source")
+        eval_skill_source=$(resolve_child_path "$eval_source/$SKILL" "$eval_source" "Skill evaluation source")
+        eval_root=$(resolve_child_path "$EVAL_WORKSPACE/evals" "$EVAL_WORKSPACE" "Evaluation destination root")
+        eval_destination=$(resolve_child_path "$eval_root/$PLUGIN" "$eval_root" "Evaluation destination")
+
+        if [[ ! -d "$eval_skill_source" ]]; then
+          echo "Evaluation suite not found: $eval_skill_source" >&2
+          exit 1
+        fi
+
+        safe_remove_child "$eval_root" "$EVAL_WORKSPACE" "Evaluation destination root"
+        mkdir -p "$eval_destination"
+        cp -R "$eval_source/." "$eval_destination/"
+
+    - name: Set output paths
+      id: output-paths
+      shell: bash
+      env:
+        EVAL_WORKSPACE: ${{ github.workspace }}/eval-workspace
+      run: |
+        echo "reports-directory=$EVAL_WORKSPACE/tests/reports" >> "$GITHUB_OUTPUT"
+        echo "results-directory=$EVAL_WORKSPACE/tests/results" >> "$GITHUB_OUTPUT"
+
+    - name: Setup Node.js
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: "22.14.0"
+        cache: npm
+        cache-dependency-path: |
+          eval-workspace/package-lock.json
+          eval-workspace/scripts/package-lock.json
+          eval-workspace/tests/package-lock.json
+
+    - name: Install root dependencies
+      shell: bash
+      working-directory: ${{ github.workspace }}/eval-workspace
+      run: npm ci --ignore-scripts
+
+    - name: Install script dependencies
+      shell: bash
+      working-directory: ${{ github.workspace }}/eval-workspace/scripts
+      run: npm ci
+
+    - name: Install test dependencies
+      shell: bash
+      working-directory: ${{ github.workspace }}/eval-workspace/tests
+      run: npm ci
+
+    - name: Setup Copilot CLI
+      uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+      with:
+        token: ${{ env.COPILOT_GITHUB_TOKEN || github.token }}
+
+    - name: Log in to Azure
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+      with:
+        client-id: ${{ inputs.azure-client-id }}
+        tenant-id: ${{ inputs.azure-tenant-id }}
+        subscription-id: ${{ inputs.azure-subscription-id }}
+
+    - name: Refresh Azure OIDC token
+      shell: bash
+      env:
+        AZURE_CLIENT_ID: ${{ inputs.azure-client-id }}
+        AZURE_TENANT_ID: ${{ inputs.azure-tenant-id }}
+      run: |
+        while true; do
+          token=$(curl --fail --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq -r .value)
+          az login --service-principal \
+            --username "$AZURE_CLIENT_ID" \
+            --tenant "$AZURE_TENANT_ID" \
+            --federated-token "$token" \
+            --output none
+          sleep 240
+        done &
+
+    - name: Run Vally evaluation
+      shell: bash
+      working-directory: ${{ github.workspace }}/eval-workspace/tests
+      env:
+        TEST_RUN_ID: reusable-eval
+        PLUGIN: ${{ inputs.plugin }}
+        SKILL: ${{ inputs.skill }}
+      run: npm run test:vally -- --plugin "$PLUGIN" --skill "$SKILL" --workers 2
+
+    - name: Generate skill report
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{ github.workspace }}/eval-workspace/tests
+      env:
+        SKILL: ${{ inputs.skill }}
+      run: npm run report -- --skill "$SKILL" || true
+
+    - name: Show skill report
+      if: ${{ always() }}
+      shell: bash
+      working-directory: ${{ github.workspace }}/eval-workspace/tests
+      run: |
+        skill_report=$(find reports -name "*-SKILL-REPORT.md" -type f | head -n 1)
+        if [[ -n "$skill_report" ]]; then
+          cat "$skill_report" >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "No skill report was generated."
+        fi
+
+    - name: Upload evaluation artifacts
+      if: ${{ always() && inputs.upload-artifacts == 'true' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: evaluation-${{ inputs.plugin }}-${{ inputs.skill }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ github.workspace }}/eval-workspace/tests/reports/
+          ${{ github.workspace }}/eval-workspace/tests/results/
+        if-no-files-found: warn
+
+    - name: Publish reports to Azure Storage
+      if: ${{ always() && inputs.storage-account != '' }}
+      shell: bash
+      env:
+        EVAL_WORKSPACE: ${{ github.workspace }}/eval-workspace
+        STORAGE_ACCOUNT: ${{ inputs.storage-account }}
+        PLUGIN: ${{ inputs.plugin }}
+        SKILL: ${{ inputs.skill }}
+      run: |
+        report_source="$EVAL_WORKSPACE/tests/reports/test-run-reusable-eval"
+        if [[ ! -d "$report_source" ]]; then
+          echo "No reports found to publish: $report_source"
+          exit 0
+        fi
+
+        date_prefix=$(date -u +%Y-%m-%d)
+        destination_path="$date_prefix/${GITHUB_RUN_ID}/${SKILL}/"
+        az storage blob upload-batch \
+          --account-name "$STORAGE_ACCOUNT" \
+          --destination integration-reports \
+          --destination-path "$destination_path" \
+          --source "$report_source" \
+          --auth-mode login \
+          --overwrite
