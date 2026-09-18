@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { unlinkDependencyLinks } from "../engine.ts";
+import { describe, test, expect, } from "vitest";
 
 describe("worktree dependency cleanup", () => {
   test("unlinks dependency junctions without deleting their targets", () => {

@@ -38,7 +38,7 @@ Sign into Copilot CLI locally to make sure Copilot SDK can access CAPI. Run this
 cd tests
 
 # Run all tests for {skill-name}
-npm run test:vally -- --skill {skill-name}
+npm run test:vally -- --plugin {plugin-dirname} --skill {skill-name}
 ```
 
 ### Step 5: Configure nightly integration test runs
@@ -104,7 +104,7 @@ Run tests for a skill locally using this command.
 cd tests
 
 # Run all tests for {skill-name}
-npm run test:vally -- --skill {skill-name}
+npm run test:vally -- --plugin {plugin-dirname} --skill {skill-name}
 ```
 
 ### CI Environment

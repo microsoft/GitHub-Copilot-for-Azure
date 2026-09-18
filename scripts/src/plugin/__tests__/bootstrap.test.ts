@@ -79,6 +79,12 @@ describe("plugin and skill bootstrap", () => {
     expect(fs.existsSync(path.join(pluginRoot, "skills", "test-skill", "SKILL.md"))).toBe(true);
 
     expect(fs.existsSync(path.join(repoRoot, "evals", "test-plugin", "test-skill", "eval.yaml"))).toBe(true);
+    const unitTest = fs.readFileSync(
+      path.join(repoRoot, "tests", "skills", "test-plugin", "test-skill", "test-skill.test.ts"),
+      "utf8",
+    );
+    expect(unitTest).toContain("Add unit tests for your skill or remove this file if it doesn't need unit tests.");
+    expect(unitTest).toContain("expect(true).toBe(true)");
 
     const bashAllowlist = fs.readFileSync(
       path.join(repoRoot, "hooks", "scripts", "pluginPathAllowPattern.sh"),
