@@ -41,6 +41,14 @@ az rest --method put --url "/subscriptions/{sub}/resourceGroups/{rg}/providers/M
 For apps needing server-side package installation (Python, Node.js, Ruby, PHP), use Kudu zipdeploy directly:
 
 ```powershell
+# Build the deploy zip from the ENTIRE app tree — never cherry-pick directories.
+# Cherry-picking silently drops files: root index.js → MODULE_NOT_FOUND; public/css → unstyled app.
+# Exclude only node_modules (Oryx reinstalls), .git, and .copilot-azure (session artifacts).
+$zipPath = "$env:TEMP\app-deploy.zip"
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+$include = Get-ChildItem -Path . -Force | Where-Object { $_.Name -notin @('node_modules', '.git', '.copilot-azure') }
+Compress-Archive -Path $include.FullName -DestinationPath $zipPath -Force   # package.json + all app files land at zip root
+
 # Get publishing credentials
 $creds = az webapp deployment list-publishing-credentials --subscription {sub} -g {rg} -n {app} --query "{user:publishingUserName, pass:publishingPassword}" -o json | ConvertFrom-Json
 $auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($creds.user):$($creds.pass)"))

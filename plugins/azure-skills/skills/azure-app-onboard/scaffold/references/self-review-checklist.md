@@ -97,7 +97,7 @@ Run `bicep build main.bicep --stdout > /dev/null` as syntax + schema validation.
 
 > ⛔ **Verify `main.bicep` has `targetScope = 'subscription'`.** Missing → FLAGGED (FIXABLE — add targetScope, RG resource with tags, `scope: rg` on modules).
 
-> `mcp_bicep_build_bicep` + `az deployment sub what-if` also appropriate at L3. ⛔ Do NOT use `az deployment sub validate` (known bug).
+> `mcp_bicep_build_bicep` is appropriate at L3. ⛔ Do NOT run `az deployment sub what-if` at scaffold — it needs real secret params; deploy runs the mandatory what-if. ⛔ Do NOT use `az deployment sub validate` (known bug).
 
 **Rating:** Passes `bicep build` → `VERIFIED`. Build warning → `PLAUSIBLE`. Build error → `FLAGGED`.
 
