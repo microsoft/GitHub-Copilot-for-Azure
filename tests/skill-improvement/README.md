@@ -59,11 +59,15 @@ Run all commands from `tests` with `--config <repository-file>`.
 | `validate` | Human or CI preflight. Resolves evals, calculates worst-case usage, and enforces limits without invoking models. | Prints normalized spec and plan JSON. |
 | `run --executor local` | Human entry point and default executor. Runs the engine locally. | Optional `--baseline-ref` and `--output`; otherwise uses the spec baseline and a timestamped output directory. |
 | `run --executor github` | Human dispatcher. Queues the Skill Improvement workflow; it does not run Vally locally. | Optional `--workflow-ref`, `--baseline-ref`, `--pr-base`, and `--create-draft-pr`. |
-| `execute` | Workflow/internal entry point. Runs the engine directly without dispatch. | Requires `--output`; accepts `--baseline-ref`. Writes reports, trajectories, judgments, patches, snapshots, issue summary, and workflow metadata. |
+| `execute` | GitHub Actions/automation entry point. Runs the engine directly without dispatch; most users should use `run`. | Requires `--output`; accepts `--baseline-ref`. Writes reports, trajectories, judgments, patches, snapshots, issue summary, and workflow metadata. |
 
 ```powershell
 npm run skill-improvement -- validate `
   --config .\skill-improvement\specs\azure-kusto.yaml
+
+npm run skill-improvement -- run `
+  --config .\skill-improvement\specs\azure-kusto.yaml `
+  --executor local
 
 npm run skill-improvement -- run `
   --config .\skill-improvement\specs\azure-kusto.yaml `
@@ -73,6 +77,7 @@ npm run skill-improvement -- run `
   --pr-base main `
   --create-draft-pr
 
+# Automation or direct-engine debugging only
 npm run skill-improvement -- execute `
   --config .\skill-improvement\specs\azure-kusto.yaml `
   --baseline-ref main `
@@ -80,9 +85,7 @@ npm run skill-improvement -- execute `
 ```
 
 Adapters affect generation and grading inside local `run` or `execute`;
-GitHub `run` dispatches the spec unchanged. Draft PR creation is only attempted
-for an accepted candidate. `output.issue: always` creates a result issue even
-when no candidate passes.
+GitHub `run` dispatches the spec unchanged.
 
 ## Answer and judge separation
 
@@ -109,52 +112,33 @@ the nightly workflow, which scans top-level `evals/`.
 
 ## Custom evaluator commands
 
-By default, the runner directly launches
-`npx -y @microsoft/vally-cli eval` and `grade`. A spec can instead declare
-generation and grading commands for a trusted npm wrapper:
+Custom evaluators are opt-in compatibility adapters for repositories that
+already expose evaluation through trusted npm scripts, including Foundry-style
+wrappers. The engine still owns planning, limits, conditions, artifacts,
+comparisons, and acceptance. Existing specs and default Azure Skill runs
+continue to launch `npx -y @microsoft/vally-cli eval` and `grade` directly.
 
 See the complete split-stage Foundry-style configuration in
-[`specs/npm-wrapper.example.yaml`](./specs/npm-wrapper.example.yaml) for a
-generate/grade commands, working directories, environment, placeholders, and
-the fixed output contract.
+[`specs/npm-wrapper.example.yaml`](./specs/npm-wrapper.example.yaml) for the
+commands, complete placeholder list, working directories, environment, and
+output contract. Placeholders must occupy a whole argument or environment
+value; embedded forms such as `"model={answerModel}"` are rejected.
 
-The engine always launches the executable and argument array without a shell.
-Custom commands currently support only the fixed npm form
-`npm run --silent <safe-script-name> -- <args>`. The runner supplies
-`--silent` so npm lifecycle banners cannot contaminate JSONL stdout. The
-repository's npm script is trusted code, but configured values remain literal
-argv elements: the runner never turns them into a command string, performs
-shell expansion, or uses
-`shell: true`, `cmd.exe /c`, PowerShell command construction, or `eval`.
-
-Each argument or environment value is a literal or one whole placeholder.
-Both stages allow `{evalPath}`, `{evalFile}`, `{answerModel}`,
-`{repetitions}`, `{generationDirectory}`, `{targetPlugin}`, `{targetSkill}`,
-`{conditionName}`, and `{pluginOutputRoot}`. Grading also allows
-`{judgeModel}`, `{answerFile}`, `{runDirectory}`, and
-`{judgmentDirectory}`. Embedded forms such as `"model={answerModel}"` are
-rejected, preserving one-value-in/one-value-out expansion.
-
-`workingDirectory` is relative to the evaluation repository. Absolute paths,
-parent traversal, and links that resolve outside the repository are rejected.
-Environment overrides cannot replace execution-control or engine-owned
-variables such as `PATH`, `ComSpec`, `SHELL`, `NODE_OPTIONS`,
-`NODE_PATH`, `NPM_CONFIG_*`, condition flags, or output settings. The process
-environment remains inherited for authentication and CI; never put secrets in
-the run specification.
+Adapters support only trusted npm scripts invoked as argv, never through a
+shell or command string. Working directories must resolve inside the
+repository, and configured environment values cannot override protected
+execution or engine state. The inherited environment remains available for
+authentication and CI; never put secrets in the run specification.
 
 The output contract is intentionally fixed:
 
-- generation writes Vally trajectory JSONL to stdout;
-- the engine captures stdout as `answers.jsonl` and stderr separately;
-- generation creates exactly one child run directory containing
-  `eval-results.md`;
-- generated trajectory count matches configured stimuli times repetitions;
-- grading reads the generated JSONL from stdin and writes graded Vally JSONL
-  to stdout;
-- grading must return exactly one graded record per generated trajectory.
+- generation writes Vally trajectory JSONL to stdout and creates one run
+  directory containing `eval-results.md`;
+- the engine saves stdout as `answers.jsonl`, with stderr separate, and verifies
+  the configured trajectory count;
+- grading reads saved JSONL from stdin, writes graded Vally JSONL to stdout,
+  and returns one graded record per trajectory.
 
-One-shot wrappers are incompatible: expose separate scripts so generated
-answers can be reused across judges. The engine schedules one generation per
-configured eval YAML; unrelated whole-suite batching requires a future
-evaluation-unit and budgeting design.
+Generation and grading remain separate so saved answers can be reused across
+judges. One-shot wrappers are therefore incompatible and must expose separate
+scripts.
