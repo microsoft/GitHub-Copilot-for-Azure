@@ -15,7 +15,9 @@
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "compare:run": "npx tsx ./comparison/run-compare.ts",
-    "compare:collect": "npx tsx ./comparison/collect-artifacts"
+    "compare:collect": "npx tsx ./comparison/collect-artifacts.ts",
+    "compare:report": "npx tsx ./comparison/generate-report.ts",
+    "experiment:run": "npx tsx ./comparison/run-experiment.ts"
   },
   "engines": {
     "node": "^22.14.0 || >=24"
