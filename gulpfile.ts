@@ -119,6 +119,10 @@ function getPluginDirnames(): string[] {
     .sort();
 }
 
+function getPluginVersionedPaths(plugin: string): string[] {
+  return [`plugins/${plugin}`, "hooks"];
+}
+
 function copyHookScript(pluginDirname: string) {
   const src = path.join(__dirname, "hooks");
   const dst = path.join(__dirname, `output/${pluginDirname}/hooks`);
@@ -194,8 +198,11 @@ type Commit = {
 /**
  * @returns Commits with their associated version numbers from oldest to newest.
  */
-function getVersionedCommits(plugin: string): Commit[] {
+export function getVersionedCommits(plugin: string): Commit[] {
   const pluginDir = `plugins/${plugin}`;
+  const versionedPaths = getPluginVersionedPaths(plugin)
+    .map((versionedPath) => `"${versionedPath}"`)
+    .join(" ");
 
   // Find the commit that introduced plugin/version.json (the NBGV baseline).
   const baselineCommit = execSync(
@@ -208,14 +215,15 @@ function getVersionedCommits(plugin: string): Commit[] {
     return [];
   }
 
-  // Enumerate all first-parent commits touching plugin/**/* from baseline (inclusive) to HEAD.
+  // Enumerate all first-parent commits affecting the built plugin from baseline
+  // (inclusive) to HEAD. Shared hooks are copied into every plugin.
   const pluginLogOutput = execSync(
-    `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- ${pluginDir}/`,
+    `git log --first-parent --format=%H%x00%s --reverse ${baselineCommit}~1..HEAD -- ${versionedPaths}`,
     { encoding: "utf-8" }
   ).trim();
 
   if (!pluginLogOutput) {
-    log.warn(`No commits found touching ${pluginDir}/; skipping changelog generation.`);
+    log.warn(`No commits found affecting ${pluginDir}; skipping changelog generation.`);
     return [];
   }
 
@@ -238,7 +246,9 @@ function getVersionedCommits(plugin: string): Commit[] {
 
   const pluginHeightByHash = new Map(pluginFileCommits.map((commit) => [commit.hash, commit.height]));
 
-  // versionPoints is ordered from oldest to newest
+  // versionPoints is ordered from oldest to newest. Only an actual major/minor
+  // change resets the relative height; edits to other version.json settings do not.
+  let previousMajorMinor: string | undefined;
   const versionPoints = versionLogOutput
     .split("\n")
     .map((line) => {
@@ -256,6 +266,11 @@ function getVersionedCommits(plugin: string): Commit[] {
       if (!versionJsonAtCommit.version) {
         throw new Error(`Missing version in ${pluginDir}/version.json at commit ${hash}`);
       }
+
+      if (versionJsonAtCommit.version === previousMajorMinor) {
+        return null;
+      }
+      previousMajorMinor = versionJsonAtCommit.version;
 
       return {
         height,
