@@ -20,6 +20,7 @@ export type SkillImprovementRunSpec = {
     editablePaths?: string[];
   };
   evaluations: {
+    root: string;
     development: string[];
     heldOut?: string[];
   };
@@ -111,9 +112,48 @@ function validateStringArray(value: unknown, field: string, allowEmpty = false):
 
 function validateEvalFiles(files: string[], field: string): void {
   for (const file of files) {
-    if (path.basename(file) !== file || !file.endsWith(".yaml")) {
+    if (
+      path.posix.isAbsolute(file)
+      || path.win32.isAbsolute(file)
+      || file.includes("/")
+      || file.includes("\\")
+      || file.includes("\0")
+      || !file.endsWith(".yaml")
+    ) {
       throw new Error(`${field} contains an invalid eval filename: ${file}`);
     }
+  }
+}
+
+const EVALUATION_ROOT_PREFIX = "tests/skill-improvement/evals";
+
+function validateEvaluationRoot(value: unknown): asserts value is string {
+  requireNonEmptyString(value, "evaluations.root");
+  if (
+    path.posix.isAbsolute(value)
+    || path.win32.isAbsolute(value)
+    || value.includes("\\")
+    || value.includes("\0")
+  ) {
+    throw new Error(
+      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_PREFIX}.`
+    );
+  }
+  const segments = value.split("/");
+  const rootSegments = EVALUATION_ROOT_PREFIX.split("/");
+  if (
+    segments.some(segment => segment.length === 0 || segment === "." || segment === "..")
+    || segments.slice(rootSegments.length).some(
+      segment => !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segment)
+    )
+    || (
+      value !== EVALUATION_ROOT_PREFIX
+      && !value.startsWith(`${EVALUATION_ROOT_PREFIX}/`)
+    )
+  ) {
+    throw new Error(
+      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_PREFIX}.`
+    );
   }
 }
 
@@ -130,6 +170,7 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     validateStringArray(spec.target.editablePaths, "target.editablePaths");
   }
 
+  validateEvaluationRoot(spec.evaluations?.root);
   validateStringArray(spec.evaluations?.development, "evaluations.development");
   validateEvalFiles(spec.evaluations.development, "evaluations.development");
   if (spec.evaluations.heldOut) {
@@ -252,18 +293,68 @@ export function loadRunSpec(filePath: string): SkillImprovementRunSpec {
   return validateRunSpec(parse(fs.readFileSync(resolvedPath, "utf8")));
 }
 
-function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
-  const evalDirectory = path.join(
-    repoRoot,
-    "evals",
-    spec.target.plugin,
-    spec.target.skill
+function isInsideDirectory(parent: string, candidate: string): boolean {
+  const relative = path.relative(parent, candidate);
+  return relative === "" || (
+    relative !== ".."
+    && !relative.startsWith(`..${path.sep}`)
+    && !path.isAbsolute(relative)
   );
+}
+
+export function resolveEvaluationPath(
+  repoRoot: string,
+  spec: SkillImprovementRunSpec,
+  file: string,
+): string {
+  validateEvalFiles([file], "evaluation file");
+  const resolvedRepoRoot = fs.realpathSync(repoRoot);
+  const allowedRoot = path.join(
+    resolvedRepoRoot,
+    ...EVALUATION_ROOT_PREFIX.split("/")
+  );
+  const configuredRoot = path.join(
+    resolvedRepoRoot,
+    ...spec.evaluations.root.split("/")
+  );
+  if (!isInsideDirectory(allowedRoot, configuredRoot)) {
+    throw new Error(
+      `Evaluation root escapes ${EVALUATION_ROOT_PREFIX}: ${spec.evaluations.root}`
+    );
+  }
+  if (!fs.existsSync(configuredRoot)) {
+    throw new Error(`Evaluation root not found: ${configuredRoot}`);
+  }
+  if (!fs.statSync(configuredRoot).isDirectory()) {
+    throw new Error(`Evaluation root is not a directory: ${configuredRoot}`);
+  }
+  const realAllowedRoot = fs.realpathSync(allowedRoot);
+  const realConfiguredRoot = fs.realpathSync(configuredRoot);
+  if (
+    !isInsideDirectory(resolvedRepoRoot, realAllowedRoot)
+    || !isInsideDirectory(realAllowedRoot, realConfiguredRoot)
+  ) {
+    throw new Error(
+      `Evaluation root escapes ${EVALUATION_ROOT_PREFIX}: ${spec.evaluations.root}`
+    );
+  }
+  const evalPath = path.join(realConfiguredRoot, file);
+  if (!fs.existsSync(evalPath)) {
+    throw new Error(`Eval file not found: ${evalPath}`);
+  }
+  if (!fs.statSync(evalPath).isFile()) {
+    throw new Error(`Eval path is not a file: ${evalPath}`);
+  }
+  const realEvalPath = fs.realpathSync(evalPath);
+  if (!isInsideDirectory(realConfiguredRoot, realEvalPath)) {
+    throw new Error(`Eval file escapes evaluations.root: ${file}`);
+  }
+  return realEvalPath;
+}
+
+function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
   return files.reduce((total, file) => {
-    const evalPath = path.join(evalDirectory, file);
-    if (!fs.existsSync(evalPath)) {
-      throw new Error(`Eval file not found: ${evalPath}`);
-    }
+    const evalPath = resolveEvaluationPath(repoRoot, spec, file);
     const document = parse(fs.readFileSync(evalPath, "utf8")) as { stimuli?: unknown[] };
     if (!Array.isArray(document.stimuli) || document.stimuli.length === 0) {
       throw new Error(`Eval file contains no stimuli: ${evalPath}`);

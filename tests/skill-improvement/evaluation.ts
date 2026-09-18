@@ -4,6 +4,7 @@ import type {
   EvaluationCondition,
   SkillImprovementRunSpec,
 } from "./config.ts";
+import { resolveEvaluationPath } from "./config.ts";
 import {
   commandName,
   runProcess,
@@ -178,13 +179,7 @@ async function generateAnswers(
 ): Promise<GeneratedAnswers> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
-  const evalPath = path.join(
-    evalRepoRoot,
-    "evals",
-    spec.target.plugin,
-    spec.target.skill,
-    task.evalFile
-  );
+  const evalPath = resolveEvaluationPath(evalRepoRoot, spec, task.evalFile);
   const taskDirectory = path.join(
     outputRoot,
     "generation",
@@ -263,11 +258,9 @@ async function gradeAnswers(
 ): Promise<JudgedTrial[]> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
-  const evalPath = path.join(
+  const evalPath = resolveEvaluationPath(
     evalRepoRoot,
-    "evals",
-    spec.target.plugin,
-    spec.target.skill,
+    spec,
     generated.evalFile
   );
   const judgeDirectory = path.join(

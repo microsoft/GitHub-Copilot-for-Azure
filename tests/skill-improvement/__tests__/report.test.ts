@@ -41,7 +41,10 @@ function spec(): SkillImprovementRunSpec {
   return {
     name: "example",
     target: { plugin: "azure-skills", skill: "azure-kusto", baselineRef: "main" },
-    evaluations: { development: ["quality.eval.yaml"] },
+    evaluations: {
+      root: "tests/skill-improvement/evals/azure-kusto",
+      development: ["quality.eval.yaml"],
+    },
     models: { answers: ["model-a"], judges: ["judge-a", "judge-b"] },
     experiment: {
       repetitions: 1,

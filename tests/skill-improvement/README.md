@@ -112,3 +112,17 @@ Each iteration preserves both `candidate.patch` and a complete
 `candidate-skill/` copy before validation and acceptance. Rejected candidates
 therefore remain available for inspection after the temporary worktree is
 removed.
+
+## Opt-in evaluation suites
+
+Each run specification sets `evaluations.root` to a repository-relative
+directory under `tests/skill-improvement/evals/`. Development and held-out
+entries are filenames within that root; absolute paths, nested paths, traversal,
+and paths that resolve outside the configured root are rejected.
+
+Suites in this directory are opt-in inputs to the hill-climbing runner. They are
+not discovered by the nightly integration workflow, which scans `evals/`.
+The Azure Kusto improvement spec intentionally excludes the pre-existing
+`evals/azure-skills/azure-kusto/eval.yaml` suite so the run has one isolated,
+containment-checked evaluation root without copying or modifying the nightly
+suite.

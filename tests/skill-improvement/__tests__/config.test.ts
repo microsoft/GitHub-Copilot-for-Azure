@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   createRunPlan,
   enforceRunLimits,
+  resolveEvaluationPath,
   validateRunSpec,
   type SkillImprovementRunSpec,
 } from "../config.ts";
@@ -17,6 +18,7 @@ function spec(): SkillImprovementRunSpec {
       baselineRef: "main",
     },
     evaluations: {
+      root: "tests/skill-improvement/evals/azure-kusto",
       development: ["quality.eval.yaml"],
       heldOut: ["held-out.eval.yaml"],
     },
@@ -59,7 +61,13 @@ function spec(): SkillImprovementRunSpec {
 describe("skill improvement configuration", () => {
   test("calculates worst-case answer and judge calls", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-config-"));
-    const evalDirectory = path.join(root, "evals", "azure-skills", "azure-kusto");
+    const evalDirectory = path.join(
+      root,
+      "tests",
+      "skill-improvement",
+      "evals",
+      "azure-kusto"
+    );
     fs.mkdirSync(evalDirectory, { recursive: true });
     fs.writeFileSync(
       path.join(evalDirectory, "quality.eval.yaml"),
@@ -91,6 +99,99 @@ describe("skill improvement configuration", () => {
     expect(() => validateRunSpec(invalid)).toThrow(
       "target.editablePaths must remain inside"
     );
+  });
+
+  test.each([
+    "../evals",
+    "/tests/skill-improvement/evals/azure-kusto",
+    "C:\\tests\\skill-improvement\\evals\\azure-kusto",
+    "tests/skill-improvement/evals/../azure-kusto",
+    "tests\\skill-improvement\\evals\\azure-kusto",
+    "tests/skill-improvement/evals/Azure Kusto",
+    "tests/skill-improvement/evals/azure_kusto",
+    "evals/azure-skills/azure-kusto",
+  ])("rejects unsafe evaluation root %s", value => {
+    const invalid = spec();
+    invalid.evaluations.root = value;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "evaluations.root must be a repository-relative directory inside tests/skill-improvement/evals"
+    );
+  });
+
+  test.each([
+    "../quality.eval.yaml",
+    "nested/quality.eval.yaml",
+    "nested\\quality.eval.yaml",
+    "/quality.eval.yaml",
+    "C:\\quality.eval.yaml",
+  ])("rejects unsafe evaluation filename %s", value => {
+    const invalid = spec();
+    invalid.evaluations.development = [value];
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "evaluations.development contains an invalid eval filename"
+    );
+  });
+
+  test("resolves a metacharacter filename literally inside the configured root", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-path-"));
+    const evalDirectory = path.join(
+      root,
+      "tests",
+      "skill-improvement",
+      "evals",
+      "azure-kusto"
+    );
+    const filename = "quality & 100% ^.eval.yaml";
+    fs.mkdirSync(evalDirectory, { recursive: true });
+    fs.writeFileSync(path.join(evalDirectory, filename), "stimuli:\n  - name: one\n");
+
+    try {
+      expect(resolveEvaluationPath(root, spec(), filename)).toBe(
+        fs.realpathSync(path.join(evalDirectory, filename))
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("reports a missing evaluation file", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-path-"));
+    fs.mkdirSync(
+      path.join(root, "tests", "skill-improvement", "evals", "azure-kusto"),
+      { recursive: true }
+    );
+
+    try {
+      expect(() => resolveEvaluationPath(root, spec(), "missing.eval.yaml"))
+        .toThrow("Eval file not found");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects an evaluation root symlink that escapes the allowed root", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-path-"));
+    const allowedRoot = path.join(root, "tests", "skill-improvement", "evals");
+    const outsideRoot = path.join(root, "outside");
+    const configuredRoot = path.join(allowedRoot, "azure-kusto");
+    fs.mkdirSync(allowedRoot, { recursive: true });
+    fs.mkdirSync(outsideRoot);
+    fs.writeFileSync(
+      path.join(outsideRoot, "quality.eval.yaml"),
+      "stimuli:\n  - name: one\n"
+    );
+    fs.symlinkSync(
+      outsideRoot,
+      configuredRoot,
+      process.platform === "win32" ? "junction" : "dir"
+    );
+
+    try {
+      expect(() => resolveEvaluationPath(root, spec(), "quality.eval.yaml"))
+        .toThrow("Evaluation root escapes tests/skill-improvement/evals");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test.each([

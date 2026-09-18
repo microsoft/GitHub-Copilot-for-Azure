@@ -8,13 +8,13 @@ target:
     - plugins/azure-skills/skills/azure-kusto/**
 
 evaluations:
+  root: tests/skill-improvement/evals/azure-kusto
   development:
     - access-connectivity.eval.yaml
     - analyze-logs-telemetry.eval.yaml
     - author-run-query.eval.yaml
     - discover-cluster-database.eval.yaml
     - discover-schema-table.eval.yaml
-    - eval.yaml
     - ingestion-health.eval.yaml
     - stored-functions.eval.yaml
     - telemetry-informed-scenarios.eval.yaml
