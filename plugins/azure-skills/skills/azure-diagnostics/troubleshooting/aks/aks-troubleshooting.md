@@ -18,11 +18,16 @@ Primary AKS troubleshooting guide for incidents routed from [../../SKILL.md](../
 
 ## Tool Selection For Diagnostics
 
-When gathering AKS diagnostic evidence, prefer `mcp_azure_mcp_aks`, then the smallest discovered AKS-MCP tool that fits the read, then supporting Azure tools such as `mcp_azure_mcp_applens`, `mcp_azure_mcp_monitor`, or `mcp_azure_mcp_resourcehealth`. Use raw `az aks` and `kubectl` only when the AKS-MCP surface cannot perform the needed check.
+When gathering AKS diagnostic evidence, use the host-assigned Azure MCP AKS area for cluster and node-pool metadata, then separate Azure MCP areas such as AppLens, Monitor, or Resource Health when their advertised schemas fit the read. Use `az aks` and `kubectl` for every check those surfaces do not provide, including all Kubernetes-side inspection; the AKS area does not run `kubectl`.
 
 When standard diagnostics do not reveal root cause, use **Inspektor Gadget** for real-time, low-level node and pod observability (DNS traces, TCP traces, process snapshots, file access traces). See [references/inspektor-gadget.md](references/inspektor-gadget.md) for the gadget catalog, the `run-ig` script, and symptom-to-gadget mapping.
 
 See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input-modes.md](references/structured-input-modes.md), [references/command-flows.md](references/command-flows.md)
+
+The optional `aks-skills` add-on is handled by the focused-skill checkpoint in
+the Workflow below, using [optional-aks-operations.md](optional-aks-operations.md).
+The add-on is consent-gated and optional; this baseline guide remains usable
+when it is not installed or cannot execute.
 
 ## Required Inputs
 
@@ -55,9 +60,18 @@ If cluster identity is missing, stop and ask for it.
 
 1. Get cluster context.
 2. Classify the problem by scope bucket.
-3. Prefer Azure-side evidence before Kubernetes-side evidence.
-4. Use the matching AKS-MCP path first, then the documented CLI fallback if MCP cannot perform that read.
-5. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
+3. Focused-skill checkpoint. For any incident in the Scope Buckets below,
+   including workload crashes such as `CrashLoopBackOff` on AKS, complete the
+   handoff in [optional-aks-operations.md](optional-aks-operations.md) once
+   before gathering evidence: check the host's available-skill inventory; use
+   the focused skill if it is present; if it is absent and the host can install
+   it, make one task-specific offer and ask before installing; if the customer
+   declines or the host cannot install or execute it, continue with this guide
+   and do not ask again. An application-level cause does not exempt an AKS
+   workload incident from this checkpoint.
+4. Prefer Azure-side evidence before Kubernetes-side evidence.
+5. Use the matching Azure MCP area for Azure-side metadata where its schema fits, then the documented `az`/`kubectl` flows for everything else.
+6. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
 
 ## Error Patterns
 
@@ -69,7 +83,7 @@ If cluster identity is missing, stop and ask for it.
 
 ## Safe Fallback Checks
 
-When AKS-MCP cannot perform the baseline read, run the **[`aks-baseline`](../../scripts/aks-baseline.sh)** script. It executes the read-only cluster + Kubernetes baseline sweep (provisioning state, node pools, activity log, node readiness, unhealthy pods, kube-system health, warning events) and returns a single labeled digest:
+When the Azure MCP areas cannot perform the baseline read, run the **[`aks-baseline`](../../scripts/aks-baseline.sh)** script. It executes the read-only cluster + Kubernetes baseline sweep (provisioning state, node pools, activity log, node readiness, unhealthy pods, kube-system health, warning events) and returns a single labeled digest:
 
 ```bash
 # bash
@@ -117,4 +131,4 @@ Keep these read-only unless the user explicitly asks for remediation.
 
 ## Output Checklist
 
-Return scope and impact, evidence, failure domain, root cause, confidence, next checks, remediation, and escalation.
+Return scope and impact, evidence, failure domain, root cause, confidence, next checks, remediation, and escalation. State once which focused optional AKS skill applied and its status: used, offered and awaiting consent, declined, or not available on this host.

@@ -38,6 +38,8 @@ Activate this skill when user wants to:
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
 6. Route AKS incidents to the dedicated AKS troubleshooting document
+7. Keep baseline AKS diagnostics available even when the optional `aks-skills`
+   add-on is absent, declined, or unsupported by the host
 
 ---
 
