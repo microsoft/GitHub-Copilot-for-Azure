@@ -50,6 +50,14 @@ Key capabilities:
 3. **Query Data**: Execute KQL queries for analysis, filtering, aggregation
 4. **Analyze Results**: Process query output for insights and reporting
 
+## When Clusters, Databases, or Tables Aren't Accessible
+
+Don't stop at "no clusters found" and only ask for input — deliver full value in the same response:
+- Still provide the **complete, ready-to-run KQL** for the requested analysis (schema retrieval query, aggregation, or lookup) so the user can run it as soon as they supply cluster/database.
+- Name the **exact tool** needed next (`kusto_table_schema_get` for schema, `kusto_query` for execution) so the user knows what happens once access is available.
+- Propose a **bounded fallback inspection** when metadata alone can't confirm a column or table — e.g., `| take 10` or `| limit 20` sample rows — instead of only requesting clarification.
+- Explain **how to interpret the results**: which columns/types drive the answer, what the metric means (e.g., failure-rate trend, percentile spike), and what to check if results come back empty (wrong table/column name, over-restrictive filters, retention gaps) — don't leave interpretation for "later."
+
 ## Query Patterns
 
 ### Pattern 1: Basic Data Retrieval
@@ -149,6 +157,7 @@ Query results include:
 - `startswith()`, `contains()`, `matches regex`: String filtering
 - `parse`, `extract`: Extract values from strings
 - `percentiles()`, `avg()`, `sum()`, `max()`, `min()`: Aggregations
+- Guard rate/percentage math with `iff(Total == 0, 0.0, 100.0 * Failures / Total)` to avoid divide-by-zero
 
 ## Best Practices
 
