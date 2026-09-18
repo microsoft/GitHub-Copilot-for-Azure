@@ -1,8 +1,8 @@
 import eslint from "@eslint/js";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
-import jest from "eslint-plugin-jest";
 import importPlugin from "eslint-plugin-import-x";
+import vitest from "@vitest/eslint-plugin";
 
 const tsFiles = ["**/*.ts"];
 const jsFiles = ["**/*.js", "**/*.mjs"];
@@ -21,14 +21,6 @@ const sharedRules = {
       message: "Use ESM 'export' instead of 'exports.x'"
     }
   ],
-
-  // Jest rules
-  "jest/expect-expect": "error",
-  "jest/no-disabled-tests": "warn",
-  "jest/no-focused-tests": "error",
-  "jest/valid-expect": "error",
-  "jest/no-identical-title": "error",
-  "jest/no-duplicate-hooks": "error",
 
   // General rules
   "no-console": "off",
@@ -62,9 +54,6 @@ export default defineConfig(
       importPlugin.flatConfigs.recommended,
       importPlugin.flatConfigs.typescript
     ],
-    plugins: {
-      jest,
-    },
     languageOptions: {
       parserOptions: {
         project: "./tsconfig.json",
@@ -81,7 +70,6 @@ export default defineConfig(
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-require-imports": "error",
-      "jest/expect-expect": "error",
       // ESLint 10 removed FileEnumerator API which this rule depends on; suppress the no-op warning
       "import-x/no-unused-modules": [1, { "unusedExports": true, "suppressMissingFileEnumeratorAPIWarning": true }]
     },
@@ -92,9 +80,6 @@ export default defineConfig(
     extends: [
       eslint.configs.recommended,
     ],
-    plugins: {
-      jest,
-    },
     languageOptions: {
       globals: {
         console: "readonly",
@@ -115,6 +100,21 @@ export default defineConfig(
         name: "require",
         message: "Use ESM 'import' instead of 'require()'"
       }],
+    },
+  },
+  // Unit test rules
+  {
+    files: ["**/*.test.ts", "**/*.test.js"],
+    plugins: {
+      vitest,
+    },
+    rules: {
+      "vitest/expect-expect": "error",
+      "vitest/no-disabled-tests": "warn",
+      "vitest/no-focused-tests": "error",
+      "vitest/valid-expect": "error",
+      "vitest/no-identical-title": "error",
+      "vitest/no-duplicate-hooks": "error",
     },
   }
 );

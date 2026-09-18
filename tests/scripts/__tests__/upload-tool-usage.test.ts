@@ -6,6 +6,7 @@
  * captured tool-usage-<token>.json file into Azure Table rows.
  */
 
+import { describe, expect, test } from "vitest";
 import {
   deriveRunToken,
   successStateOf,

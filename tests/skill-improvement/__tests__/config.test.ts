@@ -8,6 +8,7 @@ import {
   validateRunSpec,
   type SkillImprovementRunSpec,
 } from "../config.ts";
+import { describe, expect, test } from "vitest";
 
 function spec(): SkillImprovementRunSpec {
   return {
