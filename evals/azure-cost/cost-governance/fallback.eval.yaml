@@ -1,0 +1,47 @@
+name: cost-governance-fallback-eval
+description: Strict contract checks for Azure cost governance API fallback.
+
+tags:
+  type: integration
+  skill: cost-governance
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-4.6
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Budget API fallback keeps confirmation"
+    prompt: "The ARM MCP budget tools are unavailable. Explain how to inspect or create an Azure budget through a supported fallback, but do not create it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-governance
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost Management Budgets API"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)preview|confirm|confirmation|scope|threshold|recipient"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)successfully created|I (have )?created (a|the) budget|budget creation (succeeded|completed)|the budget is now active"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i).*create_budget$"
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
