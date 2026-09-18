@@ -81,7 +81,7 @@ npm run compare:collect
 The [test-all-integration workflow](../.github/workflows/test-all-integration.yml) runs skill evals in CI. [skills.json](./skills.json) defines the skills included in scheduled runs and their schedule groups.
 
 Nightly results are published to the [integration tests dashboard](https://aka.ms/azure-skills-tests). CI artifacts and the local `reports/` directory contain the detailed results used by the dashboard and reporting tools.
-All new test authoring must use Vally eval suites under [../evals](../evals).
+All new integration test authoring must use Vally eval suites under [../evals](../evals).
 
 Use [AGENTS.md](./AGENTS.md) as the primary guide for how to create, update, and run Vally tests in this repository.
 
