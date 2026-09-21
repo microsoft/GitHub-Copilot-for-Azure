@@ -17,16 +17,14 @@ The Azure Kusto baseline uses four separately reported arms:
 | MCP only | Disabled | Enabled | Tool access without Skill guidance |
 | Skill + MCP | Enabled | Enabled | Combined production experience |
 
-Compare:
+Each comparison runs the same prompts and changes one capability.
 
-- **Agent only versus Skill only:** Does Skill guidance improve answer quality
-  when Azure MCP is unavailable?
-- **MCP only versus Skill + MCP:** Does Skill guidance improve the production
-  configuration where Azure MCP is available?
-- **Agent only versus MCP only:** How much does Azure MCP improve results
-  without Skill guidance?
-- **Skill only versus Skill + MCP:** How much does Azure MCP improve results
-  when the Skill is present?
+| Compare results from | What changes | Question answered |
+| --- | --- | --- |
+| Agent only and Skill only | Target Skill is enabled; MCP remains disabled | Does the Skill improve answer quality without MCP? |
+| MCP only and Skill + MCP | Target Skill is enabled; MCP remains enabled | Does the Skill improve answer quality in the production configuration? |
+| Agent only and MCP only | MCP is enabled; target Skill remains disabled | How much does MCP improve results without Skill guidance? |
+| Skill only and Skill + MCP | MCP is enabled; target Skill remains enabled | How much does MCP improve results when the Skill is present? |
 
 The baseline runs all four arms with exact target-Skill isolation. Candidate
 iterations rerun only **Skill only** and **Skill + MCP**; unchanged no-Skill
