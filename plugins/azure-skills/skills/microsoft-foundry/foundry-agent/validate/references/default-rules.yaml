@@ -64,7 +64,7 @@ rules:
         link: "https://learn.microsoft.com/azure/foundry/agents/quickstarts/quickstart-deploy-own-code#choose-your-framework"
     when: Apply only when the hosted agent declares or imports Microsoft Agent Framework; otherwise skip this rule.
     checks: >-
-      Read Agent Framework entries in the service manifest, matching lock/central version declarations and entry-point imports. Exact direct pins establish versions without a lock file. Compare the same package across files, not version numbers of different packages. Record literal package/version evidence. Follow direct local version references only; stop on unresolved ranges or generated declarations. Do not inspect installed packages, whole lock files or SDK internals, require latest versions, or infer API compatibility.
+      Read Agent Framework entries in the selected service's dependency manifests, matching lock/central version declarations and entry-point imports. Exact direct pins establish versions without a lock file. Compare the same package across files, not version numbers of different packages. Record literal package/version evidence. Follow direct local version references only; stop on unresolved ranges or generated declarations. Do not inspect installed packages, whole lock files or SDK internals, require latest versions, or infer API compatibility.
     statusCriteria:
       pass: Official package-family declarations have determinable direct versions and consistent imports.
       fail: An unrelated package is presented as Agent Framework, the same dependency has conflicting effective versions, or source imports contradict the declared family.
