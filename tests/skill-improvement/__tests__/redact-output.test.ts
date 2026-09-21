@@ -4,7 +4,7 @@ import path from "node:path";
 import { redactOutputDirectory } from "../redact-output.ts";
 import { describe, expect, test } from "vitest";
 
-describe("durable output redaction", () => {
+describe("Azure Storage report redaction", () => {
   test("redacts text recursively and preserves binary files", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-redact-"));
     const nested = path.join(root, "generation");

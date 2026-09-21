@@ -14,7 +14,9 @@ describe("skill improvement workflow", () => {
     expect(workflow).toContain("issueMode: \"never\"");
   });
 
-  test("uploads best-effort-redacted evidence privately with OIDC login", () => {
+  test("publishes a best-effort-redacted Azure Storage report with OIDC login", () => {
+    expect(workflow).toContain("- name: Publish report to Azure Storage");
+    expect(workflow).toContain("## Azure Storage report");
     expect(workflow).toContain("if: always() && vars.REPORT_STORAGE_ACCOUNT != ''");
     expect(workflow).toContain("STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}");
     expect(workflow).toContain(

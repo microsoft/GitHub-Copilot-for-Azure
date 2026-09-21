@@ -202,9 +202,9 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload durable private run evidence
+      - name: Publish report to Azure Storage
         if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
-        id: durable-upload
+        id: publish-report
         shell: bash
         env:
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
@@ -243,17 +243,17 @@ jobs:
           echo "container=$STORAGE_CONTAINER" >> "$GITHUB_OUTPUT"
           echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
 
-      - name: Add durable evidence location
-        if: always() && steps.durable-upload.outcome == 'success'
+      - name: Add Azure Storage report location
+        if: always() && steps.publish-report.outcome == 'success'
         shell: bash
         run: |
           {
             echo
-            echo "## Durable private evidence"
+            echo "## Azure Storage report"
             echo
-            echo "- Storage account: \`${{ steps.durable-upload.outputs.account }}\`"
-            echo "- Container: \`${{ steps.durable-upload.outputs.container }}\`"
-            echo "- Blob prefix: \`${{ steps.durable-upload.outputs.prefix }}\`"
+            echo "- Storage account: \`${{ steps.publish-report.outputs.account }}\`"
+            echo "- Container: \`${{ steps.publish-report.outputs.container }}\`"
+            echo "- Blob prefix: \`${{ steps.publish-report.outputs.prefix }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create result issue
