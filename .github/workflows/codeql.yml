@@ -3,8 +3,12 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - "telemetry-reporter/**"
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - "telemetry-reporter/**"
 
 jobs:
   analyze:

@@ -1,0 +1,72 @@
+name: Telemetry Reporter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "telemetry-reporter/**"
+      - ".github/workflows/telemetry-reporter-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "telemetry-reporter/**"
+      - ".github/workflows/telemetry-reporter-build.yml"
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: telemetry-reporter/global.json
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          languages: csharp
+          build-mode: manual
+          queries: security-and-quality
+
+      - name: Build
+        working-directory: ./telemetry-reporter
+        run: dotnet build ./ghcfa-telem.slnx --configuration Debug
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
+        with:
+          category: "/language:csharp"
+
+      - name: Test
+        working-directory: ./telemetry-reporter
+        env:
+          AZURE_MCP_COLLECT_TELEMETRY: "false"
+        run: >
+          dotnet test ./ghcfa-telem.slnx --configuration Debug --no-build
+          --results-directory ./TestResults
+          --report-xunit
+          --report-xunit-filename telemetry-tests.xml
+          --report-xunit-html
+          --report-xunit-html-filename telemetry-tests.html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: telemetry-test-results
+          path: |
+            telemetry-reporter/TestResults/**/*.xml
+            telemetry-reporter/TestResults/**/*.html
+          if-no-files-found: error
