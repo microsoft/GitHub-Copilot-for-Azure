@@ -40,6 +40,7 @@ describe("skill improvement workflow", () => {
       workflow.indexOf("- name: Publish report to Azure Storage"),
       workflow.indexOf("- name: Create result issue")
     );
+    expect(publishStep).not.toContain("continue-on-error");
     expect(publishStep.indexOf("## Azure Storage report")).toBeGreaterThan(
       publishStep.indexOf("az storage blob upload-batch")
     );
