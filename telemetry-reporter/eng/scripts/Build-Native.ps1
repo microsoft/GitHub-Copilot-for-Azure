@@ -11,7 +11,6 @@ param(
     [switch] $NoClean
 )
 
-$ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 if (-not $IsWindows) {
@@ -40,7 +39,7 @@ function Remove-DirectoryIfPresent {
     )
 
     if (Test-Path -LiteralPath $Path) {
-        Remove-Item -LiteralPath $Path -Recurse -Force
+        Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
     }
 }
 
@@ -56,20 +55,20 @@ function Get-MsvcInstallation {
         throw "vswhere.exe failed with exit code $LASTEXITCODE."
     }
 
-    foreach ($installation in ($vsWhereOutput | ConvertFrom-Json)) {
+    foreach ($installation in ($vsWhereOutput | ConvertFrom-Json -ErrorAction Stop)) {
         $candidateVersions[$installation.installationPath] =
             [version]$installation.installationVersion
     }
 
     $visualStudioRoot = Join-Path $env:ProgramFiles 'Microsoft Visual Studio'
     if (Test-Path -LiteralPath $visualStudioRoot) {
-        foreach ($installationDirectory in Get-ChildItem -LiteralPath $visualStudioRoot -Directory -Recurse -Depth 1) {
+        foreach ($installationDirectory in Get-ChildItem -LiteralPath $visualStudioRoot -Directory -Recurse -Depth 1 -ErrorAction Stop) {
             $vcToolsPath = Join-Path $installationDirectory.FullName 'VC\Tools\MSVC'
             if (-not (Test-Path -LiteralPath $vcToolsPath)) {
                 continue
             }
 
-            $toolsetVersion = Get-ChildItem -LiteralPath $vcToolsPath -Directory |
+            $toolsetVersion = Get-ChildItem -LiteralPath $vcToolsPath -Directory -ErrorAction Stop |
                 ForEach-Object {
                     $parsedVersion = $null
                     if ([version]::TryParse($_.Name, [ref]$parsedVersion)) {
@@ -132,7 +131,7 @@ function Invoke-NativeCommand {
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne $ExpectedExitCode) {
             $stderr = if (Test-Path -LiteralPath $stderrPath) {
-                Get-Content -LiteralPath $stderrPath -Raw
+                Get-Content -LiteralPath $stderrPath -Raw -ErrorAction Stop
             }
             else {
                 ''
@@ -157,7 +156,7 @@ function Copy-PublishFiles {
         [string] $Destination
     )
 
-    foreach ($file in Get-ChildItem -LiteralPath $publishDirectory -File -Recurse) {
+    foreach ($file in Get-ChildItem -LiteralPath $publishDirectory -File -Recurse -ErrorAction Stop) {
         if (-not (& $Include $file)) {
             continue
         }
@@ -165,8 +164,8 @@ function Copy-PublishFiles {
         $relativePath = [System.IO.Path]::GetRelativePath($publishDirectory, $file.FullName)
         $destinationPath = Join-Path $Destination $relativePath
         $destinationParent = Split-Path -Parent $destinationPath
-        New-Item -ItemType Directory -Path $destinationParent -Force | Out-Null
-        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath
+        New-Item -ItemType Directory -Path $destinationParent -Force -ErrorAction Stop | Out-Null
+        Copy-Item -LiteralPath $file.FullName -Destination $destinationPath -ErrorAction Stop
     }
 }
 
@@ -197,10 +196,10 @@ if (-not $NoClean) {
 
 Remove-DirectoryIfPresent -Path $publishDirectory
 Remove-DirectoryIfPresent -Path $stagingDirectory
-New-Item -ItemType Directory -Path $publishDirectory -Force | Out-Null
-New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
-New-Item -ItemType Directory -Path $runtimeStagingDirectory -Force | Out-Null
-New-Item -ItemType Directory -Path $symbolsStagingDirectory -Force | Out-Null
+New-Item -ItemType Directory -Path $publishDirectory -Force -ErrorAction Stop | Out-Null
+New-Item -ItemType Directory -Path $packageDirectory -Force -ErrorAction Stop | Out-Null
+New-Item -ItemType Directory -Path $runtimeStagingDirectory -Force -ErrorAction Stop | Out-Null
+New-Item -ItemType Directory -Path $symbolsStagingDirectory -Force -ErrorAction Stop | Out-Null
 
 $vsWhereDirectory = Split-Path -Parent $vsWherePath
 $publishCommand = @(
@@ -241,7 +240,7 @@ try {
         '--session-id', '00000000-0000-4000-8000-000000000000',
         '--tool-name', 'azure-storage'
     ) -ExpectedExitCode 0
-    $successResponse = $successOutput | ConvertFrom-Json
+    $successResponse = $successOutput | ConvertFrom-Json -ErrorAction Stop
     if ($successResponse.status -ne 200) {
         throw "Native success smoke test returned status $($successResponse.status); expected 200."
     }
@@ -250,7 +249,7 @@ try {
         '--event-type', 'tool_invocation',
         '--session-id', '00000000-0000-4000-8000-000000000000'
     ) -ExpectedExitCode 1
-    $failureResponse = $failureOutput | ConvertFrom-Json
+    $failureResponse = $failureOutput | ConvertFrom-Json -ErrorAction Stop
     if ($failureResponse.status -ne 400) {
         throw "Native validation smoke test returned status $($failureResponse.status); expected 400."
     }
@@ -289,12 +288,12 @@ Copy-PublishFiles -Include { param($file) $file.Extension -ne '.pdb' } `
 Copy-PublishFiles -Include { param($file) $file.Extension -eq '.pdb' } `
     -Destination $symbolsStagingDirectory
 
-$runtimeFiles = @(Get-ChildItem -LiteralPath $runtimeStagingDirectory -File -Recurse)
+$runtimeFiles = @(Get-ChildItem -LiteralPath $runtimeStagingDirectory -File -Recurse -ErrorAction Stop)
 if ($runtimeFiles.Count -eq 0) {
     throw 'The runtime package staging directory is empty.'
 }
 
-$symbolFiles = @(Get-ChildItem -LiteralPath $symbolsStagingDirectory -File -Recurse)
+$symbolFiles = @(Get-ChildItem -LiteralPath $symbolsStagingDirectory -File -Recurse -ErrorAction Stop)
 $expectedSymbols = @('ghcfa-telem.pdb', 'Ghcfa.Telemetry.pdb')
 foreach ($expectedSymbol in $expectedSymbols) {
     if ($symbolFiles.Name -notcontains $expectedSymbol) {
@@ -304,15 +303,17 @@ foreach ($expectedSymbol in $expectedSymbols) {
 
 Compress-Archive -Path (Join-Path $runtimeStagingDirectory '*') `
     -DestinationPath $runtimeArchive `
-    -CompressionLevel Optimal
+    -CompressionLevel Optimal `
+    -ErrorAction Stop
 Compress-Archive -Path (Join-Path $symbolsStagingDirectory '*') `
     -DestinationPath $symbolsArchive `
-    -CompressionLevel Optimal
+    -CompressionLevel Optimal `
+    -ErrorAction Stop
 
 foreach ($archive in @($runtimeArchive, $symbolsArchive)) {
-    $hash = Get-FileHash -LiteralPath $archive -Algorithm SHA256
+    $hash = Get-FileHash -LiteralPath $archive -Algorithm SHA256 -ErrorAction Stop
     "$($hash.Hash.ToLowerInvariant())  $([System.IO.Path]::GetFileName($archive))" |
-        Set-Content -LiteralPath "$archive.sha256" -Encoding ascii
+        Set-Content -LiteralPath "$archive.sha256" -Encoding ascii -ErrorAction Stop
 }
 
 Remove-DirectoryIfPresent -Path $stagingDirectory

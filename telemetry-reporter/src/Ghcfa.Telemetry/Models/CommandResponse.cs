@@ -12,7 +12,7 @@ public sealed class CommandResponse
     public HttpStatusCode Status { get; set; } = HttpStatusCode.OK;
 
     [JsonPropertyName("message")]
-    public string Message { get; set; } = string.Empty;
+    public string Message { get; set; } = "Success";
 
     [JsonPropertyName("results")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

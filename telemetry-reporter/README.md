@@ -34,7 +34,7 @@ Native AOT publishing is opt-in and currently supports Windows x64 only.
 
 ### Build and package
 
-Run the build script from any working directory:
+Run the build script from the `telemetry-reporter` directory:
 
 ```powershell
 .\eng\scripts\Build-Native.ps1

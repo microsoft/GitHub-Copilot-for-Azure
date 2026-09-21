@@ -77,11 +77,7 @@ public sealed class PluginTelemetryApplication(
         try
         {
             await _publisher.PublishAsync(options, cancellationToken).ConfigureAwait(false);
-            response = new CommandResponse
-            {
-                Status = HttpStatusCode.OK,
-                Results = Array.Empty<string>()
-            };
+            response = new CommandResponse();
         }
         catch (Exception exception)
         {

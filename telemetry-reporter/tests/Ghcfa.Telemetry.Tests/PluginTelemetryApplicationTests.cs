@@ -35,8 +35,8 @@ public sealed class PluginTelemetryApplicationTests
         Assert.Equal(0, exitCode);
         using var response = JsonDocument.Parse(output.ToString());
         Assert.Equal(200, response.RootElement.GetProperty("status").GetInt32());
-        Assert.Equal(string.Empty, response.RootElement.GetProperty("message").GetString());
-        Assert.Equal(0, response.RootElement.GetProperty("results").GetArrayLength());
+        Assert.Equal("Success", response.RootElement.GetProperty("message").GetString());
+        Assert.False(response.RootElement.TryGetProperty("results", out _));
         await _publisher.Received(1).PublishAsync(
             Arg.Is<PluginTelemetryOptions>(options => options.ToolName == "storage"),
             Arg.Any<CancellationToken>());
