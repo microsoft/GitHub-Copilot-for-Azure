@@ -204,7 +204,6 @@ jobs:
 
       - name: Publish report to Azure Storage
         if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
-        id: publish-report
         shell: bash
         env:
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
@@ -238,20 +237,13 @@ jobs:
             --source "$UPLOAD_OUTPUT" \
             --auth-mode login \
             --overwrite
-          echo "account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
-          echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
-
-      - name: Add Azure Storage report location
-        if: always() && steps.publish-report.outcome == 'success'
-        shell: bash
-        run: |
           {
             echo
             echo "## Azure Storage report"
             echo
-            echo "- Storage account: \`${{ steps.publish-report.outputs.account }}\`"
+            echo "- Storage account: \`${STORAGE_ACCOUNT}\`"
             echo "- Container: \`skill-improvement-runs\`"
-            echo "- Blob prefix: \`${{ steps.publish-report.outputs.prefix }}\`"
+            echo "- Blob prefix: \`${PREFIX}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create result issue

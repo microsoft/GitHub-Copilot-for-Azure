@@ -33,6 +33,18 @@ describe("skill improvement workflow", () => {
     expect(workflow).toContain("--public-access off");
     expect(workflow).toContain("az storage blob upload-batch");
     expect(workflow).toContain("--auth-mode login");
+    expect(workflow).not.toContain("- name: Add Azure Storage report location");
+    expect(workflow).not.toContain("id: publish-report");
+    expect(workflow).not.toContain("steps.publish-report.");
+    const publishStep = workflow.slice(
+      workflow.indexOf("- name: Publish report to Azure Storage"),
+      workflow.indexOf("- name: Create result issue")
+    );
+    expect(publishStep.indexOf("## Azure Storage report")).toBeGreaterThan(
+      publishStep.indexOf("az storage blob upload-batch")
+    );
+    expect(publishStep).toContain('echo "- Storage account: \\`${STORAGE_ACCOUNT}\\`"');
+    expect(publishStep).toContain('echo "- Blob prefix: \\`${PREFIX}\\`"');
     expect(workflow).not.toMatch(/account-key|connection-string|sas-token/i);
     expect(workflow).not.toMatch(/--public-access (blob|container)/i);
   });
