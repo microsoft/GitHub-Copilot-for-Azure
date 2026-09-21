@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..", "..");
 
-export type ParsedArgs = {
+type ParsedArgs = {
   command?: string;
   config?: string;
   executor: "local" | "github";
@@ -21,7 +21,7 @@ export type ParsedArgs = {
   createDraftPr: boolean;
 };
 
-export function usage(): string {
+function usage(): string {
   return [
     "Usage:",
     "  npm run skill-improvement -- validate --config <run-spec.yaml>",
@@ -29,16 +29,14 @@ export function usage(): string {
     "  npm run skill-improvement -- execute --config <run-spec.yaml> --output <directory>",
     "",
     "Options:",
-    "  --executor <local|github>  Run locally or dispatch the GitHub workflow",
     "  --baseline-ref <ref>       Override target.baselineRef",
     "  --workflow-ref <ref>       Workflow ref used by the GitHub executor",
     "  --pr-base <branch>          Base branch for an optional draft PR",
-    "  --output <directory>        Artifact directory; required by execute",
     "  --create-draft-pr          Request a draft PR for an accepted candidate",
   ].join("\n");
 }
 
-export function parseArgs(args: string[]): ParsedArgs {
+function parseArgs(args: string[]): ParsedArgs {
   const parsed: ParsedArgs = {
     command: args[0],
     executor: "local",
@@ -75,12 +73,6 @@ export function parseArgs(args: string[]): ParsedArgs {
     index += 1;
   }
   return parsed;
-}
-
-export function validateCommandOptions(args: ParsedArgs): void {
-  if (args.command === "execute" && !args.output) {
-    throw new Error("--output is required for the execute command.");
-  }
 }
 
 function resolveConfig(config: string): string {
@@ -148,7 +140,6 @@ async function main(): Promise<void> {
     process.exitCode = args.command ? 2 : 0;
     return;
   }
-  validateCommandOptions(args);
   const configPath = resolveConfig(args.config);
   const spec = loadRunSpec(configPath);
   if (args.command === "validate") {

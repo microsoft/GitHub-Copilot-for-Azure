@@ -156,31 +156,32 @@ jobs:
       - name: Read workflow outputs
         if: always()
         id: metadata
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const fs = require("node:fs");
-            const path = require("node:path");
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          import path from "node:path";
 
-            const metadataPath = path.join(
-              process.env.RUN_OUTPUT,
-              "workflow-outputs.json"
-            );
-            const metadata = fs.existsSync(metadataPath)
-              ? JSON.parse(fs.readFileSync(metadataPath, "utf8"))
-              : {
-                  accepted: false,
-                  issueMode: "always",
-                  draftPullRequestMode: "never",
-                  skill: "unknown",
-                  finalPatchPath: null,
-                };
-            core.setOutput("accepted", metadata.accepted);
-            core.setOutput("issue-mode", metadata.issueMode);
-            core.setOutput("draft-pr-mode", metadata.draftPullRequestMode);
-            core.setOutput("skill", metadata.skill);
-            core.setOutput("patch", metadata.finalPatchPath ?? "");
+          const output = process.env.RUN_OUTPUT;
+          const metadataPath = path.join(output, "workflow-outputs.json");
+          const metadata = fs.existsSync(metadataPath)
+            ? JSON.parse(fs.readFileSync(metadataPath, "utf8"))
+            : {
+                accepted: false,
+                issueMode: "always",
+                draftPullRequestMode: "never",
+                skill: "unknown",
+                finalPatchPath: null,
+              };
+          const lines = [
+            `accepted=${metadata.accepted}`,
+            `issue-mode=${metadata.issueMode}`,
+            `draft-pr-mode=${metadata.draftPullRequestMode}`,
+            `skill=${metadata.skill}`,
+            `patch=${metadata.finalPatchPath ?? ""}`,
+          ];
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${lines.join("\n")}\n`);
+          NODE
       - name: Upload run artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
