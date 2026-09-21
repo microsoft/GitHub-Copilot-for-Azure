@@ -10,17 +10,32 @@ Improvement** workflow.
 
 The Azure Kusto baseline uses four separately reported arms:
 
-| Arm | Target Skill | Azure MCP |
-| --- | --- | --- |
-| Agent only | Disabled | Disabled |
-| Skill only | Enabled | Disabled |
-| MCP only | Disabled | Enabled |
-| Skill + MCP | Enabled | Enabled |
+| Arm | Target Skill | Azure MCP | What it measures |
+| --- | --- | --- | --- |
+| Agent only | Disabled | Disabled | Model's built-in knowledge without target Skill/Azure MCP |
+| Skill only | Enabled | Disabled | Skill standalone guidance/query patterns |
+| MCP only | Disabled | Enabled | Tool access without Skill guidance |
+| Skill + MCP | Enabled | Enabled | Combined production experience |
+
+Compare:
+
+- **Agent only -> Skill only:** Does the Skill add knowledge without tools?
+- **MCP only -> Skill + MCP:** Does the Skill improve the production experience?
+- **Agent only -> MCP only:** How much does MCP itself add?
+- **Skill only -> Skill + MCP:** How much does MCP add when guided by the Skill?
 
 The baseline runs all four arms with exact target-Skill isolation. Candidate
 iterations rerun only **Skill only** and **Skill + MCP**; unchanged no-Skill
 controls are reused. Limits count all baseline arms plus Skill-enabled
 candidate runs and every configured judge.
+
+Four arms improve attribution but cost more. Validate the plan first; start
+with one answer model, judge, repetition, and a focused eval set. For `P`
+prompts, `A` answer models, `R` repetitions, `I` iterations, and `J` judges:
+
+- baseline generations = `P * A * R * 4`
+- candidate generations = `P * A * R * 2 * I`
+- judge calls = `(baseline + candidate generations) * J`
 
 ## Decisions and evidence
 
