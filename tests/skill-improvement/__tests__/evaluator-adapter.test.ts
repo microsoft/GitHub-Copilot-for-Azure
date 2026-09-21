@@ -8,6 +8,7 @@ import {
   resolveEvaluatorWorkingDirectory,
 } from "../evaluator-adapter.ts";
 import { commandName } from "../process.ts";
+import { describe, expect, test } from "vitest";
 
 function spec(): SkillImprovementRunSpec {
   return {

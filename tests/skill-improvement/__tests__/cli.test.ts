@@ -1,4 +1,5 @@
 import { parseArgs, usage, validateCommandOptions } from "../cli.ts";
+import { describe, expect, test } from "vitest";
 
 describe("skill improvement CLI", () => {
   test("documents all supported command entry points", () => {
