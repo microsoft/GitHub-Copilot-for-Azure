@@ -68,8 +68,9 @@ copy of the complete run output using OIDC and `--auth-mode login` to:
 `${REPORT_STORAGE_ACCOUNT}/skill-improvement-runs/<UTC-date>/<GitHub-run-id>/<skill>/`
 
 If the variable is absent, publishing is skipped and the complete 30-day
-GitHub artifact remains available. When configured, publishing is required and
-an Azure Storage failure fails the job.
+GitHub artifact remains available. When the repository variable
+`REPORT_STORAGE_ACCOUNT` is set, publishing is required and an Azure Storage
+failure fails the job.
 
 The workflow creates the container if needed and enforces public access off.
 Access is RBAC-based; no keys, SAS tokens, connection strings, or public URLs
