@@ -19,10 +19,14 @@ The Azure Kusto baseline uses four separately reported arms:
 
 Compare:
 
-- **Agent only -> Skill only:** Does the Skill add knowledge without tools?
-- **MCP only -> Skill + MCP:** Does the Skill improve the production experience?
-- **Agent only -> MCP only:** How much does MCP itself add?
-- **Skill only -> Skill + MCP:** How much does MCP add when guided by the Skill?
+- **Agent only versus Skill only:** Does Skill guidance improve answer quality
+  when Azure MCP is unavailable?
+- **MCP only versus Skill + MCP:** Does Skill guidance improve the production
+  configuration where Azure MCP is available?
+- **Agent only versus MCP only:** How much does Azure MCP improve results
+  without Skill guidance?
+- **Skill only versus Skill + MCP:** How much does Azure MCP improve results
+  when the Skill is present?
 
 The baseline runs all four arms with exact target-Skill isolation. Candidate
 iterations rerun only **Skill only** and **Skill + MCP**; unchanged no-Skill
@@ -59,16 +63,14 @@ retains the complete GitHub artifact for 30 days. `output.issue: never` creates
 no issue; `output.issue: always` remains an explicit opt-in. Draft PR creation
 still requires an accepted candidate and does not require a result issue.
 
-Normal users do not configure a report location. When the centrally
-administered repository variable `REPORT_STORAGE_ACCOUNT` exists, **Publish
-report to Azure Storage** automatically sends a repository-standard
-best-effort-redacted copy of the complete run output using OIDC and
-`--auth-mode login` to:
+When the repository variable `REPORT_STORAGE_ACCOUNT` is configured, **Publish
+report to Azure Storage** uploads a repository-standard best-effort-redacted
+copy of the complete run output using OIDC and `--auth-mode login` to:
 
 `${REPORT_STORAGE_ACCOUNT}/skill-improvement-runs/<UTC-date>/<GitHub-run-id>/<skill>/`
 
-If the central account variable is absent, Azure Storage publishing is skipped
-and the complete 30-day GitHub artifact remains available.
+If the variable is absent, publishing is skipped and the complete 30-day
+GitHub artifact remains available.
 
 The workflow creates the container if needed and enforces public access off.
 Access is RBAC-based; no keys, SAS tokens, connection strings, or public URLs
