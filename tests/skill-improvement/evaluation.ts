@@ -44,7 +44,6 @@ export type VallyRecord = {
       tokenUsage?: {
         totalTokens?: number;
       };
-      toolCallBreakdown?: Record<string, number>;
       skillActivationBreakdown?: Record<string, number>;
     };
   };
@@ -90,7 +89,6 @@ export type JudgedTrial = {
   details: GradeDetail[];
   output: string;
   targetSkillInvoked: boolean;
-  kustoToolCalls: number;
   totalTokens: number;
 };
 
@@ -144,12 +142,6 @@ function canonicalItemId(record: VallyRecord): string {
   }
   return record.itemId
     ?? `${record.evalName ?? "unknown"}::${record.trajectory?.stimulus?.name ?? record.stimulus ?? "unknown"}`;
-}
-
-function countKustoToolCalls(record: VallyRecord): number {
-  return Object.entries(record.trajectory?.metrics?.toolCallBreakdown ?? {})
-    .filter(([name]) => name.toLowerCase().includes("kusto"))
-    .reduce((total, [, count]) => total + count, 0);
 }
 
 function flattenEvidence(details: GradeDetail[] | undefined): string[] {
@@ -318,7 +310,6 @@ async function gradeAnswers(
       output: record.trajectory?.output ?? "",
       targetSkillInvoked:
         (record.trajectory?.metrics?.skillActivationBreakdown?.[spec.target.skill] ?? 0) > 0,
-      kustoToolCalls: countKustoToolCalls(record),
       totalTokens: record.trajectory?.metrics?.tokenUsage?.totalTokens ?? 0,
     }));
 }

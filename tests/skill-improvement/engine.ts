@@ -15,7 +15,6 @@ import {
   aggregateJudgments,
   buildFailurePacket,
   decideAcceptance,
-  summarizeTrials,
   writeReport,
   type AcceptanceDecision,
   type AggregatedTrial,
@@ -448,15 +447,23 @@ export async function executeSkillImprovement(
           if (iterationReport.changedFiles.length === 0) {
             iterationReport.validationErrors.push("Improvement agent made no file changes.");
           } else {
-            iterationReport.candidatePatchPath = writeCandidatePatch(
+            const candidatePatchPath = writeCandidatePatch(
               worktree,
               iterationDirectory
             );
-            iterationReport.candidateSkillPath = copyCandidateSkill(
+            iterationReport.candidatePatchPath = path.relative(
+              outputDirectory,
+              candidatePatchPath
+            ).replaceAll("\\", "/");
+            const candidateSkillPath = copyCandidateSkill(
               worktree,
               iterationDirectory,
               spec
             );
+            iterationReport.candidateSkillPath = path.relative(
+              outputDirectory,
+              candidateSkillPath
+            ).replaceAll("\\", "/");
           }
           if (iterationReport.validationErrors.length === 0) {
             iterationReport.validationErrors.push(
@@ -573,9 +580,9 @@ export async function executeSkillImprovement(
     }
 
     if (finalAccepted && bestCandidateCommit) {
-      finalPatchPath = path.join(outputDirectory, "final-candidate.patch");
+      finalPatchPath = "final-candidate.patch";
       fs.writeFileSync(
-        finalPatchPath,
+        path.join(outputDirectory, finalPatchPath),
         git(options.repoRoot, ["diff", "--binary", baselineCommit, bestCandidateCommit]),
         "utf8"
       );
@@ -590,7 +597,6 @@ export async function executeSkillImprovement(
       baselineCommit,
       baselineSkillTokens,
       baselineTrials,
-      baselineSummary: summarizeTrials(baselineTrials),
       iterations,
       heldOut,
       bestCandidateCommit,
@@ -614,7 +620,6 @@ export async function executeSkillImprovement(
       baselineCommit,
       baselineSkillTokens,
       baselineTrials,
-      baselineSummary: summarizeTrials(baselineTrials),
       iterations,
       heldOut,
       bestCandidateCommit,

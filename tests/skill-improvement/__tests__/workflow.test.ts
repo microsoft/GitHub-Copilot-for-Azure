@@ -1,0 +1,39 @@
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { describe, expect, test } from "vitest";
+
+const workflow = fs.readFileSync(
+  fileURLToPath(new URL("../../../.github/workflows/skill-improvement.yml", import.meta.url)),
+  "utf8"
+);
+
+describe("skill improvement workflow", () => {
+  test("always publishes the concise summary and retains the GitHub artifact", () => {
+    expect(workflow).toContain("cat \"$RUN_OUTPUT/report-summary.md\" >> \"$GITHUB_STEP_SUMMARY\"");
+    expect(workflow).toContain("retention-days: 30");
+    expect(workflow).toContain("issueMode: \"never\"");
+  });
+
+  test("uploads best-effort-redacted evidence privately with OIDC login", () => {
+    expect(workflow).toContain("if: always() && vars.REPORT_STORAGE_ACCOUNT != ''");
+    expect(workflow).toContain("STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}");
+    expect(workflow).toContain(
+      "STORAGE_CONTAINER: ${{ vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER || 'skill-improvement-runs' }}"
+    );
+    expect(workflow).toContain('PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"');
+    expect(workflow).toContain("redact-output.ts");
+    expect(workflow).toContain("--public-access off");
+    expect(workflow).toContain("az storage blob upload-batch");
+    expect(workflow).toContain("--auth-mode login");
+    expect(workflow).not.toMatch(/account-key|connection-string|sas-token/i);
+    expect(workflow).not.toMatch(/--public-access (blob|container)/i);
+  });
+
+  test("uses artifact-relative patches and does not require a result issue for draft PRs", () => {
+    expect(workflow).toContain(
+      'git apply --index "$RUN_OUTPUT/${{ steps.metadata.outputs.patch }}"'
+    );
+    expect(workflow).toContain('if [[ -n "${{ steps.issue.outputs.url }}" ]]');
+    expect(workflow).toContain("--body-file \"$body_file\"");
+  });
+});

@@ -3,7 +3,7 @@ name: azure-kusto-improvement
 target:
   plugin: azure-skills
   skill: azure-kusto
-  baselineRef: skaluvak-microsoft-azure-kusto-eval-pilot
+  baselineRef: main
   editablePaths:
     - plugins/azure-skills/skills/azure-kusto/**
 
@@ -32,11 +32,17 @@ models:
 experiment:
   repetitions: 1
   conditions:
-    - name: skill-with-mcp
-      skill: enabled
-      mcp: enabled
-    - name: no-skill-with-mcp
+    - name: Agent only
       skill: disabled
+      mcp: disabled
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
+    - name: Skill + MCP
+      skill: enabled
       mcp: enabled
 
 improvementAgent:
@@ -52,12 +58,12 @@ acceptance:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 400
-  maxJudgeCalls: 400
+  maxAnswerGenerations: 700
+  maxJudgeCalls: 700
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
 
 output:
-  issue: always
+  issue: never
   draftPullRequest: accepted-candidate-only
