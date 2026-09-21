@@ -7,6 +7,11 @@ only when it satisfies the configured acceptance rules.
 The same TypeScript engine runs locally and in the manual **Skill Improvement**
 GitHub Actions workflow.
 
+Partner pipelines can check out this repository and invoke the same commands
+from `tests`; no separate evaluator adapter is required. `npm run test:vally`
+runs a normal Vally suite. Baseline/candidate A/B improvement uses
+`npm run skill-improvement -- run` with a run specification.
+
 ## Terminology
 
 - **Baseline**: the immutable branch, tag, or commit being evaluated before any
@@ -96,6 +101,25 @@ npm run skill-improvement -- run `
 The draft PR flag is only a request. A PR is not created unless a candidate
 passes all acceptance rules. The workflow creates one result issue per run when
 the specification uses `output.issue: always`.
+
+## Automation entry point
+
+`execute` runs the engine directly without dispatching a workflow. GitHub
+Actions uses it after preparing the checkout and output directory. Most users
+and partner pipelines should use `run`; use `execute` only for workflow
+automation or direct-engine debugging.
+
+```powershell
+cd tests
+
+npm run skill-improvement -- execute `
+  --config .\skill-improvement\specs\azure-kusto.yaml `
+  --baseline-ref main `
+  --output .\skill-improvement-runs\manual
+```
+
+`--output` is required. The directory receives the report, trajectories,
+judgments, patches, snapshots, issue summary, and workflow metadata.
 
 ## Answer and judge separation
 

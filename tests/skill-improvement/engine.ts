@@ -34,6 +34,12 @@ type Usage = {
   judgeCalls: number;
 };
 
+const DEPENDENCY_LINK_PATHS = [
+  "node_modules",
+  "tests/node_modules",
+  "scripts/node_modules",
+];
+
 function git(repoRoot: string, args: string[]): string {
   return execFileSync("git", args, {
     cwd: repoRoot,
@@ -69,12 +75,8 @@ function linkDependencies(repoRoot: string, worktree: string): void {
 }
 
 export function unlinkDependencyLinks(worktree: string): void {
-  for (const relativePath of [
-    "node_modules",
-    path.join("tests", "node_modules"),
-    path.join("scripts", "node_modules"),
-  ]) {
-    const dependencyPath = path.join(worktree, relativePath);
+  for (const relativePath of DEPENDENCY_LINK_PATHS) {
+    const dependencyPath = path.join(worktree, ...relativePath.split("/"));
     if (fs.existsSync(dependencyPath) && fs.lstatSync(dependencyPath).isSymbolicLink()) {
       fs.unlinkSync(dependencyPath);
     }
@@ -137,8 +139,20 @@ function estimateSkillTokens(worktree: string, spec: SkillImprovementRunSpec): n
   return Math.ceil(characters / 4);
 }
 
-function changedFiles(worktree: string): string[] {
-  const output = execFileSync("git", ["status", "--porcelain"], {
+function candidatePathspecs(): string[] {
+  return [
+    "--",
+    ".",
+    ...DEPENDENCY_LINK_PATHS.map(relativePath => `:(exclude)${relativePath}`),
+  ];
+}
+
+export function changedFiles(worktree: string): string[] {
+  const output = execFileSync("git", [
+    "status",
+    "--porcelain",
+    ...candidatePathspecs(),
+  ], {
     cwd: worktree,
     encoding: "utf8",
   });
@@ -256,8 +270,15 @@ async function runImprovementAgent(
   }
 }
 
+function stageCandidateChanges(worktree: string): void {
+  execFileSync("git", ["add", "--all", ...candidatePathspecs()], {
+    cwd: worktree,
+    stdio: "ignore",
+  });
+}
+
 function commitCandidate(worktree: string, iteration: number): string {
-  execFileSync("git", ["add", "--all"], { cwd: worktree, stdio: "ignore" });
+  stageCandidateChanges(worktree);
   execFileSync("git", [
     "-c",
     "user.name=Skill Improvement",
@@ -276,8 +297,11 @@ function commitCandidate(worktree: string, iteration: number): string {
   }).trim();
 }
 
-function writeCandidatePatch(worktree: string, iterationDirectory: string): string {
-  execFileSync("git", ["add", "--all"], { cwd: worktree, stdio: "ignore" });
+export function writeCandidatePatch(
+  worktree: string,
+  iterationDirectory: string,
+): string {
+  stageCandidateChanges(worktree);
   const patchPath = path.join(iterationDirectory, "candidate.patch");
   fs.writeFileSync(
     patchPath,
