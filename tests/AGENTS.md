@@ -107,6 +107,10 @@ cd tests
 npm run test:vally -- --skill {skill-name}
 ```
 
+To run the same evals with Claude Code, add `--executor claude-cli`.
+See [Claude setup and limitations](../evals/README.md#run-with-claude-code)
+for the upstream executor build, authentication, and result locations.
+
 ### CI Environment
 
 Run tests for a subset of skills in the CI workflow by manually queuing a job at [test-all-integration](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/workflows/test-all-integration.yml) and collect the test results at the destination storage account, or collect the test results from nightly runs at the destination storage account.

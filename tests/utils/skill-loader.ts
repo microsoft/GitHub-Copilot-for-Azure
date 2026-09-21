@@ -129,6 +129,7 @@ export function listPlugins(): Plugin[] {
   const items = fs.readdirSync(pluginsDir, { withFileTypes: true });
   return items
     .filter((item) => item.isDirectory())
+    .filter((item) => fs.existsSync(path.join(pluginsDir, item.name, "skills")))
     .map((item) => {
       return {
         dirname: item.name,

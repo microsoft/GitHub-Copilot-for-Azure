@@ -165,18 +165,29 @@ async function convertTestResults(vallyResultsPath: string, testCaseDirPath: str
 type CliOptions = {
   plugin?: string;
   skill?: string;
+  executor?: string;
   passRate?: number;
   forwardedArgs: string[];
 };
 
-function parseCliOptions(argv: string[]): CliOptions {
+export function parseCliOptions(argv: string[]): CliOptions {
   const forwardedArgs: string[] = [];
   let plugin: string | undefined;
   let skill: string | undefined;
+  let executor: string | undefined;
   let passRate: number | undefined;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+
+    if (arg === "--executor" || arg === "--agent" || arg.startsWith("--executor=") || arg.startsWith("--agent=")) {
+      const value = arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i];
+      if (!value || value.startsWith("--") || !value.trim()) {
+        throw new Error("Missing value for --executor/--agent");
+      }
+      executor = value;
+      continue;
+    }
 
     if (arg === "--plugin") {
       const value = argv[i + 1];
@@ -263,6 +274,7 @@ function parseCliOptions(argv: string[]): CliOptions {
   return {
     plugin,
     skill,
+    executor,
     passRate,
     forwardedArgs,
   };
@@ -275,6 +287,7 @@ function printUsage(): void {
     "Options:",
     "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: azure-skills). Note that a plugin's dirname may be different from its name.",
     "  --skill <name>            Skill name used by this wrapper",
+    "  --executor <name>         Use claude-cli for Claude Code (default: eval spec executor)",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
     "",
@@ -338,8 +351,7 @@ async function main(): Promise<void> {
   if (!hasWorkersArg) {
     forwardedArgs.splice(0, 0, "--workers", "2");
   }
-  forwardedArgs.splice(0, 0, "--output-dir", "./results");
-  forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
+  forwardedArgs.splice(0, 0, ...executorArgs(options));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
     const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
@@ -355,14 +367,33 @@ async function main(): Promise<void> {
   }
 
   const exitCode = await runVallyCommand(forwardedArgs);
-  await convertAllTestResult(passRateThreshold);
+  if (options.executor !== "claude-cli") {
+    await convertAllTestResult(passRateThreshold);
+  }
 
   if (exitCode !== 0) {
     process.exitCode = exitCode;
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+export function executorArgs(options: CliOptions): string[] {
+  const claude = options.executor === "claude-cli";
+  const args = [
+    "--output-dir", path.join(__dirname, claude ? "results-claude" : "results"),
+    "--executor-plugin", path.join(__dirname, "vally", claude ? "claude-executor.ts" : "vally-executor.ts"),
+  ];
+  if (options.executor) {
+    args.push("--executor", options.executor);
+  }
+  if (claude && !options.forwardedArgs.some(arg => arg === "--model" || arg.startsWith("--model="))) {
+    args.push("--model", process.env.MODEL_OVERRIDE?.trim() || "sonnet");
+  }
+  return args;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}
