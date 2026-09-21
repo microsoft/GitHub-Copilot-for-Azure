@@ -1,6 +1,6 @@
 # GitHub Copilot for Azure — Repository Instructions
 
-This repo contains Azure agent skills (markdown-based knowledge packages) organized into per-plugin sources under `plugins/`. The build produces versioned output in `output/`, with shared hooks built at the top level.
+This repo contains Azure agent skills (markdown-based knowledge packages) organized into per-plugin sources under `plugins/`, plus a standalone .NET telemetry reporter under `telemetry-reporter/`. The plugin build produces versioned output in `output/`, with shared hooks built at the top level. The telemetry reporter has its own solution and build process.
 
 ## Repository Layout
 
@@ -17,6 +17,14 @@ plugins/                  # Plugin sources
     .mcp.json             # MCP server declarations
     version.json          # NBGV plugin-level version config
 hooks/                    # Shared hook sources, built at the output top level
+
+telemetry-reporter/       # Standalone .NET 10 telemetry reporting executable
+  src/                    # Console application and telemetry library
+  tests/                  # .NET unit tests
+  resources/              # Embedded Azure MCP compatibility allowlists
+  eng/scripts/            # Opt-in Windows x64 Native AOT packaging
+  ghcfa-telem.slnx        # .NET solution
+  version.json            # NBGV version rooted at 0.1
 
 output/                   # Build output (git-ignored) — stamped, ready to deploy
   <plugin-dirname>/       # Built plugin output
@@ -37,10 +45,23 @@ gulpfile.ts               # Build pipeline
 
 ## Building
 
+### Skills and Hooks
+
 ```bash
 npm install          # Install root + scripts deps (postinstall handles scripts/)
 npm run build        # Builds plugins/ and shared hooks into output/, stamps NBGV versions, generates CHANGELOG.md
 ```
+
+### Telemetry Reporter
+
+Run .NET commands from `telemetry-reporter/` so the nested `global.json` settings are applied:
+
+```powershell
+cd telemetry-reporter
+dotnet build .\ghcfa-telem.slnx --configuration Release
+```
+
+The telemetry reporter is independent of the root npm build. Do not add it to existing build or CI systems unless explicitly requested.
 
 ## Versioning Rules
 
@@ -50,6 +71,8 @@ This repo uses **Nerdbank.GitVersioning (NBGV)**. Versions are computed automati
 - Source files must always use `"0.0.0-placeholder"` — the build stamps real versions
 - Each skill has its own `version.json` with `pathFilters: ["."]`; only commits touching that skill's directory increment its version
 - For skills outside `plugins/` (e.g., `.github/skills/`), set a real semver version and bump it in the same PR that modifies the skill
+- `telemetry-reporter/version.json` starts at `0.1` and uses `pathFilters: ["."]`; the NBGV NuGet package stamps its .NET assemblies and packages
+- Do not add hard-coded `<Version>` properties to telemetry reporter projects; use NBGV's `GetBuildVersion` target when scripts need the computed version
 - Use conventional commit-style PR titles (e.g. `feat:`, `fix:`, `feature:`) — the build generates `CHANGELOG.md` from these
 
 ## Validating Changes
@@ -82,6 +105,17 @@ npm run lint                                 # ESLint
 ### Integration Tests
 
 Integration tests are authored as vally eval suites. Read `vally-eval` skill to see how to author integration tests for skills.
+
+### Telemetry Reporter
+
+Run the .NET tests from the telemetry reporter directory:
+
+```powershell
+cd telemetry-reporter
+dotnet test .\ghcfa-telem.slnx --configuration Release
+```
+
+The executable must preserve the Azure MCP `server plugin-telemetry` command-line contract, JSON responses, allowlist validation, and telemetry properties. The allowlists in `resources/` are embedded into `Ghcfa.Telemetry`; update compatibility metadata and tests when synchronizing them with a new Azure MCP source revision.
 
 ## Adding a New Skill
 
@@ -208,6 +242,8 @@ PRs against `main` must pass these checks — run the corresponding local comman
 | Plugin Version Check | `plugin.json` versions remain `0.0.0-placeholder` | Ensure you never edit version fields |
 | Skill Tests | Unit and trigger tests for changed skills | `cd tests && npm test` |
 | Shell Scripts | Shebang-bearing `.sh` files are executable in Git | `npm run check:shell-scripts` |
+
+The telemetry reporter is not currently included in these CI jobs. Build and test it locally for changes under `telemetry-reporter/`, and do not modify CI configuration unless explicitly requested.
 
 ## Commit and PR Conventions
 

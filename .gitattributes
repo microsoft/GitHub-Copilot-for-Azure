@@ -1,2 +1,10 @@
+* text=auto
+
 .github/workflows/*.lock.yml linguist-generated=true
+*.cs text
+*.csproj text
+*.json text
+*.props text
+*.slnx text
+*.txt text
 *.sh text eol=lf
