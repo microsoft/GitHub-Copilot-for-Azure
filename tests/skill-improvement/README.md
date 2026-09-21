@@ -44,13 +44,16 @@ retains the complete GitHub artifact for 30 days. `output.issue: never` creates
 no issue; `output.issue: always` remains an explicit opt-in. Draft PR creation
 still requires an accepted candidate and does not require a result issue.
 
-When `REPORT_STORAGE_ACCOUNT` is set, **Publish report to Azure Storage** sends
-a repository-standard best-effort-redacted copy of the complete run output
-using OIDC and `--auth-mode login`. The private container is
-`SKILL_IMPROVEMENT_STORAGE_CONTAINER`, defaulting to
-`skill-improvement-runs`, under:
+Normal users do not configure a report location. When the centrally
+administered repository variable `REPORT_STORAGE_ACCOUNT` exists, **Publish
+report to Azure Storage** automatically sends a repository-standard
+best-effort-redacted copy of the complete run output using OIDC and
+`--auth-mode login` to:
 
-`<UTC-date>/<GitHub-run-id>/<skill>/`
+`${REPORT_STORAGE_ACCOUNT}/skill-improvement-runs/<UTC-date>/<GitHub-run-id>/<skill>/`
+
+If the central account variable is absent, Azure Storage publishing is skipped
+and the complete 30-day GitHub artifact remains available.
 
 The workflow creates the container if needed and enforces public access off.
 Access is RBAC-based; no keys, SAS tokens, connection strings, or public URLs

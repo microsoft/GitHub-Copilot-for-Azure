@@ -208,7 +208,6 @@ jobs:
         shell: bash
         env:
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
-          STORAGE_CONTAINER: ${{ vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER || 'skill-improvement-runs' }}
           SKILL: ${{ steps.metadata.outputs.skill }}
         run: |
           DATE=$(date -u +%Y-%m-%d)
@@ -220,27 +219,26 @@ jobs:
           (cd tests && npx tsx skill-improvement/redact-output.ts "$UPLOAD_OUTPUT")
           az storage container create \
             --account-name "$STORAGE_ACCOUNT" \
-            --name "$STORAGE_CONTAINER" \
+            --name "skill-improvement-runs" \
             --public-access off \
             --auth-mode login \
             --only-show-errors \
             --output none
           az storage container set-permission \
             --account-name "$STORAGE_ACCOUNT" \
-            --name "$STORAGE_CONTAINER" \
+            --name "skill-improvement-runs" \
             --public-access off \
             --auth-mode login \
             --only-show-errors \
             --output none
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
-            --destination "$STORAGE_CONTAINER" \
+            --destination "skill-improvement-runs" \
             --destination-path "$PREFIX" \
             --source "$UPLOAD_OUTPUT" \
             --auth-mode login \
             --overwrite
           echo "account=$STORAGE_ACCOUNT" >> "$GITHUB_OUTPUT"
-          echo "container=$STORAGE_CONTAINER" >> "$GITHUB_OUTPUT"
           echo "prefix=$PREFIX" >> "$GITHUB_OUTPUT"
 
       - name: Add Azure Storage report location
@@ -252,7 +250,7 @@ jobs:
             echo "## Azure Storage report"
             echo
             echo "- Storage account: \`${{ steps.publish-report.outputs.account }}\`"
-            echo "- Container: \`${{ steps.publish-report.outputs.container }}\`"
+            echo "- Container: \`skill-improvement-runs\`"
             echo "- Blob prefix: \`${{ steps.publish-report.outputs.prefix }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 

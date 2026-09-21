@@ -15,13 +15,19 @@ describe("skill improvement workflow", () => {
   });
 
   test("publishes a best-effort-redacted Azure Storage report with OIDC login", () => {
+    const dispatchConfiguration = workflow.slice(
+      workflow.indexOf("on:"),
+      workflow.indexOf("concurrency:")
+    );
     expect(workflow).toContain("- name: Publish report to Azure Storage");
     expect(workflow).toContain("## Azure Storage report");
     expect(workflow).toContain("if: always() && vars.REPORT_STORAGE_ACCOUNT != ''");
     expect(workflow).toContain("STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}");
-    expect(workflow).toContain(
-      "STORAGE_CONTAINER: ${{ vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER || 'skill-improvement-runs' }}"
-    );
+    expect(dispatchConfiguration).not.toMatch(/storage|container|prefix/i);
+    expect(workflow).not.toContain("SKILL_IMPROVEMENT_STORAGE_CONTAINER");
+    expect(workflow).not.toContain("STORAGE_CONTAINER:");
+    expect(workflow).toContain('--destination "skill-improvement-runs"');
+    expect(workflow).toContain('--name "skill-improvement-runs"');
     expect(workflow).toContain('PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"');
     expect(workflow).toContain("redact-output.ts");
     expect(workflow).toContain("--public-access off");
