@@ -12,8 +12,8 @@ should modify the project.
   platform-specific machine information behavior.
 - `tests/Ghcfa.Telemetry.Tests/` contains the .NET unit tests.
 - `resources/` contains Azure MCP allowlists embedded by `Ghcfa.Telemetry`.
-- `eng/scripts/Build-Native.ps1` creates the opt-in Windows x64 Native AOT
-  packages.
+- `eng/scripts/Build-Native.ps1` creates opt-in Native AOT packages for the
+  Azure MCP operating system and architecture matrix.
 
 The repository-level `tests/AGENTS.md` does not apply to this directory.
 
@@ -41,8 +41,11 @@ dotnet build .\ghcfa-telem.slnx --configuration Release
 dotnet test .\ghcfa-telem.slnx --configuration Release --no-build
 ```
 
-Normal builds are framework-dependent. Native AOT is opt-in, Windows x64 only,
-and requires the Visual Studio C++ toolchain described in the README.
+Normal builds are framework-dependent. Native AOT is opt-in and supports
+`win-x64`, `win-arm64`, `linux-x64`, `linux-arm64`, `osx-x64`, and
+`osx-arm64`. Follow the host mapping and platform toolchain prerequisites in
+the README. Smoke tests run only when the target RID matches the host RID;
+cross-compiled Windows and macOS ARM64 packages report an explicit skip.
 
 ## Versioning
 

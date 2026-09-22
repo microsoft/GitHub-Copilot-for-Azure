@@ -7,7 +7,7 @@
     <EnableAotAnalyzer>true</EnableAotAnalyzer>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
-    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
     <PublishSingleFile>false</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <PublishReadyToRun>false</PublishReadyToRun>
@@ -25,6 +25,7 @@
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
     <InvariantGlobalization>true</InvariantGlobalization>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <StripSymbols>true</StripSymbols>
   </PropertyGroup>
 
   <ItemGroup>

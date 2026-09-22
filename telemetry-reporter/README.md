@@ -20,49 +20,92 @@ calculates the executable and library versions from `version.json`. The
 starting major and minor version is `0.1`, and `pathFilters: ["."]` limits
 version-height changes to commits that modify this directory.
 
-## Windows x64 Native AOT build
+## Native AOT builds
 
-Native AOT publishing is opt-in and currently supports Windows x64 only.
+Native AOT publishing is opt-in and supports the same operating system and
+architecture matrix as Azure MCP:
+
+| Build host | Target RIDs | Smoke tests |
+|---|---|---|
+| Windows x64 | `win-x64`, `win-arm64` | `win-x64` only |
+| Linux x64 | `linux-x64` | `linux-x64` |
+| Linux ARM64 | `linux-arm64` | `linux-arm64` |
+| macOS x64 | `osx-x64`, `osx-arm64` | `osx-x64` only |
+
+Native AOT supports cross-architecture publishing within an operating system,
+but not cross-operating-system publishing. The build script follows Azure
+MCP's host topology: Windows and macOS ARM64 artifacts are cross-compiled on
+x64 hosts, while Linux ARM64 builds run on an ARM64 host.
 
 ### Prerequisites
 
+All platforms require:
+
 - .NET 10 SDK
-- Visual Studio with the **Desktop development with C++** workload
-- MSVC x64/x86 build tools
-- A Windows SDK
 - PowerShell 7 or later
+
+Platform-specific prerequisites:
+
+- Windows: Visual Studio with the **Desktop development with C++** workload, a
+  Windows SDK, and the MSVC x64/x86 build tools. Building `win-arm64` also
+  requires the MSVC ARM64 build tools.
+- Linux: `clang`, `binutils` (including `objcopy`), and zlib development
+  headers for the target architecture. Run `linux-arm64` builds on an ARM64
+  host.
+- macOS: Xcode command-line tools and the macOS SDK. An x64 host can publish
+  both `osx-x64` and `osx-arm64`.
 
 ### Build and package
 
 Run the build script from the `telemetry-reporter` directory:
 
 ```powershell
-.\eng\scripts\Build-Native.ps1
+.\eng\scripts\Build-Native.ps1 -RuntimeIdentifier win-x64
 ```
 
 The script:
 
-1. Finds a complete Visual Studio C++ x64 toolchain.
-2. Initializes `vcvars64.bat`.
+1. Validates the requested RID and host/target combination.
+2. Locates and initializes the platform-native compiler and linker toolchain.
 3. Publishes the console app with `BuildNative=true`.
-4. Runs the native executable through success and validation-error smoke tests.
-5. Creates separate runtime and symbols packages.
+4. Runs the native executable through success and validation-error smoke tests
+   when the target RID matches the host RID.
+5. Creates separate runtime and symbols packages with SHA-256 sidecars.
+
+Specify the target RID on each host:
+
+```powershell
+# Windows x64 host
+.\eng\scripts\Build-Native.ps1 -RuntimeIdentifier win-x64
+.\eng\scripts\Build-Native.ps1 -RuntimeIdentifier win-arm64
+
+# Linux x64 or ARM64 host
+pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-x64
+pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-arm64
+
+# macOS x64 host
+pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier osx-x64
+pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier osx-arm64
+```
+
+The Linux commands must be run on the matching architecture. The script rejects
+unsupported host/target combinations.
 
 Use `-NoClean` to skip `dotnet clean`, or select a different artifact root:
 
 ```powershell
-.\eng\scripts\Build-Native.ps1 -NoClean -OutputRoot C:\temp\ghcfa-telem
+.\eng\scripts\Build-Native.ps1 -RuntimeIdentifier win-x64 -NoClean -OutputRoot C:\temp\ghcfa-telem
 ```
 
 ### Direct publish
 
-From a Visual Studio Developer PowerShell or another shell where the MSVC x64
-environment is already initialized:
+From a shell where the target platform's Native AOT toolchain is already
+initialized:
 
 ```powershell
 dotnet publish .\src\ghcfa-telem\ghcfa-telem.csproj `
   --configuration Release `
-  --runtime win-x64 `
+  --runtime <rid> `
   --self-contained true `
   -p:BuildNative=true
 ```
@@ -79,18 +122,20 @@ exception messages are therefore unavailable in the native executable.
 The default output is:
 
 ```text
-artifacts\
-  publish\win-x64\
-  packages\
-    ghcfa-telem-<version>-win-x64.zip
-    ghcfa-telem-<version>-win-x64.zip.sha256
-    ghcfa-telem-<version>-win-x64-symbols.zip
-    ghcfa-telem-<version>-win-x64-symbols.zip.sha256
+artifacts/
+  publish/<rid>/
+  packages/
+    ghcfa-telem-<version>-<rid>.zip
+    ghcfa-telem-<version>-<rid>.zip.sha256
+    ghcfa-telem-<version>-<rid>-symbols.zip
+    ghcfa-telem-<version>-<rid>-symbols.zip.sha256
 ```
 
-The runtime ZIP contains the native executable and all non-PDB runtime files
-from `dotnet publish`. The symbols ZIP contains the native executable PDB and
-the library PDB.
+The runtime ZIP contains the native executable and all non-symbol runtime files
+from `dotnet publish`. The symbols ZIP contains Windows `.pdb`, Linux `.dbg`,
+or macOS `.dSYM` artifacts, plus any managed PDBs emitted by the publish.
 
 The smoke tests set `AZURE_MCP_COLLECT_TELEMETRY=false`, so building the native
-artifact does not send telemetry.
+artifact does not send telemetry. Cross-compiled `win-arm64` and `osx-arm64`
+artifacts cannot run on their x64 build hosts, so the script explicitly reports
+their smoke tests as skipped.
