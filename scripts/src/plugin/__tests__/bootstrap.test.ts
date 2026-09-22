@@ -76,6 +76,11 @@ describe("plugin and skill bootstrap", () => {
     expect(fs.existsSync(path.join(pluginRoot, ".cursor-plugin", "plugin.json"))).toBe(true);
     expect(fs.existsSync(path.join(pluginRoot, ".mcp.json"))).toBe(true);
 
+    const versionManifest = JSON.parse(
+      fs.readFileSync(path.join(pluginRoot, "version.json"), "utf8"),
+    ) as { pathFilters: string[] };
+    expect(versionManifest.pathFilters).toEqual([".", ":/hooks"]);
+
     expect(fs.existsSync(path.join(pluginRoot, "skills", "test-skill", "SKILL.md"))).toBe(true);
 
     expect(fs.existsSync(path.join(repoRoot, "evals", "test-plugin", "test-skill", "eval.yaml"))).toBe(true);

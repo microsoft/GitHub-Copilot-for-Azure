@@ -164,7 +164,7 @@ async function main(): Promise<void> {
   const versionManifest = {
     $schema: "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
     version: "1.0",
-    pathFilters: ["."]
+    pathFilters: [".", ":/hooks"]
   };
   fs.writeFileSync(path.join(pluginRoot, "version.json"), JSON.stringify(versionManifest, null, 2));
 
