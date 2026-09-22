@@ -61,33 +61,31 @@ if (-not $allowedTargetsByHost.ContainsKey($currentRuntimeIdentifier) -or
 }
 
 $repoRoot = [System.IO.Path]::GetFullPath(
-    [System.IO.Path]::Combine($PSScriptRoot, '..', '..')
+    (Join-Path -Path $PSScriptRoot -ChildPath '..' -AdditionalChildPath '..')
 )
-$projectPath = [System.IO.Path]::Combine(
-    $repoRoot,
-    'src',
-    'ghcfa-telem',
-    'ghcfa-telem.csproj'
-)
+$projectPath = Join-Path `
+    -Path $repoRoot `
+    -ChildPath 'src' `
+    -AdditionalChildPath 'ghcfa-telem', 'ghcfa-telem.csproj'
 $outputRootPath = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    [System.IO.Path]::Combine($repoRoot, 'artifacts')
+    Join-Path $repoRoot 'artifacts'
 }
 else {
     [System.IO.Path]::GetFullPath($OutputRoot)
 }
 
-$publishDirectory = [System.IO.Path]::Combine($outputRootPath, 'publish', $RuntimeIdentifier)
-$packageDirectory = [System.IO.Path]::Combine($outputRootPath, 'packages')
-$stagingDirectory = [System.IO.Path]::Combine($outputRootPath, 'staging', $RuntimeIdentifier)
-$runtimeStagingDirectory = [System.IO.Path]::Combine($stagingDirectory, 'runtime')
-$symbolsStagingDirectory = [System.IO.Path]::Combine($stagingDirectory, 'symbols')
+$publishDirectory = Join-Path $outputRootPath 'publish' $RuntimeIdentifier
+$packageDirectory = Join-Path $outputRootPath 'packages'
+$stagingDirectory = Join-Path $outputRootPath 'staging' $RuntimeIdentifier
+$runtimeStagingDirectory = Join-Path $stagingDirectory 'runtime'
+$symbolsStagingDirectory = Join-Path $stagingDirectory 'symbols'
 $executableName = if ($targetOperatingSystem -eq 'win') {
     'ghcfa-telem.exe'
 }
 else {
     'ghcfa-telem'
 }
-$nativeExecutable = [System.IO.Path]::Combine($publishDirectory, $executableName)
+$nativeExecutable = Join-Path $publishDirectory $executableName
 
 function Remove-DirectoryIfPresent {
     param(
