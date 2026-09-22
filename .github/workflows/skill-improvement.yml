@@ -216,20 +216,6 @@ jobs:
           mkdir -p "$UPLOAD_OUTPUT"
           cp -a "$RUN_OUTPUT/." "$UPLOAD_OUTPUT/"
           (cd tests && npx tsx skill-improvement/redact-output.ts "$UPLOAD_OUTPUT")
-          az storage container create \
-            --account-name "$STORAGE_ACCOUNT" \
-            --name "skill-improvement-runs" \
-            --public-access off \
-            --auth-mode login \
-            --only-show-errors \
-            --output none
-          az storage container set-permission \
-            --account-name "$STORAGE_ACCOUNT" \
-            --name "skill-improvement-runs" \
-            --public-access off \
-            --auth-mode login \
-            --only-show-errors \
-            --output none
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
             --destination "skill-improvement-runs" \

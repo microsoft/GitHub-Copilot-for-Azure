@@ -27,10 +27,8 @@ describe("skill improvement workflow", () => {
     expect(workflow).not.toContain("SKILL_IMPROVEMENT_STORAGE_CONTAINER");
     expect(workflow).not.toContain("STORAGE_CONTAINER:");
     expect(workflow).toContain('--destination "skill-improvement-runs"');
-    expect(workflow).toContain('--name "skill-improvement-runs"');
     expect(workflow).toContain('PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"');
     expect(workflow).toContain("redact-output.ts");
-    expect(workflow).toContain("--public-access off");
     expect(workflow).toContain("az storage blob upload-batch");
     expect(workflow).toContain("--auth-mode login");
     expect(workflow).not.toContain("- name: Add Azure Storage report location");
@@ -41,6 +39,8 @@ describe("skill improvement workflow", () => {
       workflow.indexOf("- name: Create result issue")
     );
     expect(publishStep).not.toContain("continue-on-error");
+    expect(publishStep).not.toContain("az storage container create");
+    expect(publishStep).not.toContain("az storage container set-permission");
     expect(publishStep.indexOf("## Azure Storage report")).toBeGreaterThan(
       publishStep.indexOf("az storage blob upload-batch")
     );
