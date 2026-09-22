@@ -396,7 +396,7 @@ export async function executeSkillImprovement(
     await buildWorktree(baselineWorktree, deadline);
     baselineSkillTokens = estimateSkillTokens(baselineWorktree, spec);
 
-    console.log("Running baseline and control conditions...");
+    console.log("Running baseline conditions...");
     const baselineBatch = await runEvaluationBatch(
       baselineWorktree,
       options.repoRoot,

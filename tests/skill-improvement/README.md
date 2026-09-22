@@ -6,37 +6,42 @@ only when every configured quality, regression, invocation, and Skill-size gate
 passes. The same TypeScript engine runs locally and in the manual **Skill
 Improvement** workflow.
 
-## Four-arm study
+## Choosing experiment arms
 
-The Azure Kusto baseline uses four separately reported arms:
+An **arm** is one test configuration. Every run needs at least one arm with the
+target Skill enabled so the runner can compare the current Skill with proposed
+revisions. No-Skill control arms are optional.
 
-| Arm | Target Skill | Azure MCP | What it measures |
-| --- | --- | --- | --- |
-| Agent only | Disabled | Disabled | Model's built-in knowledge without target Skill/Azure MCP |
-| Skill only | Enabled | Disabled | Skill standalone guidance/query patterns |
-| MCP only | Disabled | Enabled | Tool access without Skill guidance |
-| Skill + MCP | Enabled | Enabled | Combined production experience |
+Choose only the arms needed to answer your question:
 
-Each comparison runs the same prompts and changes one capability.
-
-| Compare results from | What changes | Question answered |
+| Goal | Configure these arms | What the run tells you |
 | --- | --- | --- |
-| Agent only and Skill only | Target Skill is enabled; MCP remains disabled | Does the Skill improve answer quality without MCP? |
-| MCP only and Skill + MCP | Target Skill is enabled; MCP remains enabled | Does the Skill improve answer quality in the production configuration? |
-| Agent only and MCP only | MCP is enabled; target Skill remains disabled | How much does MCP improve results without Skill guidance? |
-| Skill only and Skill + MCP | MCP is enabled; target Skill remains enabled | How much does MCP improve results when the Skill is present? |
+| Improve the Skill without MCP | **Skill only** | Whether a revised Skill is better than the current Skill without MCP |
+| Improve the Skill with MCP | **Skill + MCP** | Whether a revised Skill is better than the current Skill with MCP |
+| Improve across both environments | **Skill only** and **Skill + MCP** | Whether a revision works both without and with MCP |
+| Measure the Skill's value without MCP | **Agent only** and **Skill only** | What changes when the Skill is added |
+| Measure the Skill's value with MCP | **MCP only** and **Skill + MCP** | What changes when the Skill is added while MCP remains available |
+| Measure Skill and MCP effects separately | All four arms | Skill effect, MCP effect, and their combined behavior |
 
-The baseline runs all four arms with exact target-Skill isolation. Candidate
-iterations rerun only **Skill only** and **Skill + MCP**; unchanged no-Skill
-controls are reused. Limits count all baseline arms plus Skill-enabled
-candidate runs and every configured judge.
+The available arms are:
 
-Four arms improve attribution but cost more. Validate the plan first; start
-with one answer model, judge, repetition, and a focused eval set. For `P`
-prompts, `A` answer models, `R` repetitions, `I` iterations, and `J` judges:
+| Arm | Target Skill | Azure MCP |
+| --- | --- | --- |
+| Agent only | Disabled | Disabled |
+| Skill only | Enabled | Disabled |
+| MCP only | Disabled | Enabled |
+| Skill + MCP | Enabled | Enabled |
 
-- baseline generations = `P * A * R * 4`
-- candidate generations = `P * A * R * 2 * I`
+Candidate iterations rerun only Skill-enabled arms. No-Skill arms provide
+attribution for the baseline report, but they do not need to be rerun because
+the candidate changes only the Skill.
+
+More arms cost more. Validate the plan before running paid evaluations. For
+`P` prompts, `A` answer models, `R` repetitions, `B` configured baseline arms,
+`S` Skill-enabled arms, `I` iterations, and `J` judges:
+
+- baseline generations = `P * A * R * B`
+- candidate generations = `P * A * R * S * I`
 - judge calls = `(baseline + candidate generations) * J`
 
 ## Decisions and evidence

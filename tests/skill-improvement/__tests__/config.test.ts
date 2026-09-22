@@ -64,16 +64,14 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement configuration", () => {
-  test("configures the Azure Kusto run as a four-arm main baseline without issues", () => {
+  test("configures the Azure Kusto run with its selected baseline conditions", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
     ));
 
     expect(runSpec.target.baselineRef).toBe("main");
     expect(runSpec.experiment.conditions).toEqual([
-      { name: "Agent only", skill: "disabled", mcp: "disabled" },
       { name: "Skill only", skill: "enabled", mcp: "disabled" },
-      { name: "MCP only", skill: "disabled", mcp: "enabled" },
       { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
     ]);
     expect(runSpec.experiment.conditions.filter(
@@ -83,6 +81,33 @@ describe("skill improvement configuration", () => {
     expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(664);
     expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(664);
   });
+
+  test.each([
+    {
+      name: "one Skill-enabled arm",
+      conditions: [
+        { name: "Skill only", skill: "enabled", mcp: "disabled" },
+      ],
+    },
+    {
+      name: "two Skill-enabled arms",
+      conditions: [
+        { name: "Skill only", skill: "enabled", mcp: "disabled" },
+        { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
+      ],
+    },
+  ] satisfies Array<{
+    name: string;
+    conditions: SkillImprovementRunSpec["experiment"]["conditions"];
+  }>)(
+    "allows skill improvement without a no-skill control: $name",
+    ({ conditions }) => {
+      const runSpec = spec();
+      runSpec.experiment.conditions = conditions;
+
+      expect(() => validateRunSpec(runSpec)).not.toThrow();
+    }
+  );
 
   test("calculates worst-case answer and judge calls", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-config-"));
