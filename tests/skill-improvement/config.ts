@@ -205,9 +205,6 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   if (!spec.experiment.conditions.some(condition => condition.skill === "enabled")) {
     throw new Error("At least one condition must enable the target skill.");
   }
-  if (!spec.experiment.conditions.some(condition => condition.skill === "disabled")) {
-    throw new Error("At least one condition must disable the target skill for attribution.");
-  }
 
   const targetSkillPrefix =
     `plugins/${spec.target.plugin}/skills/${spec.target.skill}/`;
