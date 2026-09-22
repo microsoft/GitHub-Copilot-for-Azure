@@ -162,6 +162,64 @@ export function changedFiles(worktree: string): string[] {
     .map(file => file.replaceAll("\\", "/"));
 }
 
+function normalizeCrLf(content: Buffer): Buffer {
+  const normalized = Buffer.allocUnsafe(content.length);
+  let outputIndex = 0;
+  for (let index = 0; index < content.length; index += 1) {
+    if (
+      content[index] === 0x0d
+      && index + 1 < content.length
+      && content[index + 1] === 0x0a
+    ) {
+      continue;
+    }
+    normalized[outputIndex] = content[index];
+    outputIndex += 1;
+  }
+  return normalized.subarray(0, outputIndex);
+}
+
+function removeOutOfScopeLineEndingNoise(
+  worktree: string,
+  files: string[],
+  spec: SkillImprovementRunSpec,
+): string[] {
+  const prefixes = editablePathPrefixes(spec);
+  const restored: string[] = [];
+  for (const file of files) {
+    if (prefixes.some(prefix => file.startsWith(prefix))) {
+      continue;
+    }
+    const workingPath = path.join(worktree, ...file.split("/"));
+    if (!fs.existsSync(workingPath) || !fs.statSync(workingPath).isFile()) {
+      continue;
+    }
+    let headContent: Buffer;
+    try {
+      headContent = execFileSync("git", ["show", `HEAD:${file}`], {
+        cwd: worktree,
+        encoding: null,
+        maxBuffer: 10 * 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"],
+      });
+    } catch {
+      continue;
+    }
+    const workingContent = fs.readFileSync(workingPath);
+    if (!normalizeCrLf(headContent).equals(normalizeCrLf(workingContent))) {
+      continue;
+    }
+    execFileSync(
+      "git",
+      ["restore", "--source=HEAD", "--staged", "--worktree", "--", file],
+      { cwd: worktree, stdio: "ignore" }
+    );
+    restored.push(file);
+    console.log(`Restored line-ending-only change outside editable paths: ${file}`);
+  }
+  return restored;
+}
+
 function validateChangedPaths(
   files: string[],
   spec: SkillImprovementRunSpec,
@@ -170,6 +228,18 @@ function validateChangedPaths(
   return files
     .filter(file => !prefixes.some(prefix => file.startsWith(prefix)))
     .map(file => `Change outside allowed paths: ${file}`);
+}
+
+export function collectCandidateChanges(
+  worktree: string,
+  spec: SkillImprovementRunSpec,
+): { changedFiles: string[]; validationErrors: string[] } {
+  removeOutOfScopeLineEndingNoise(worktree, changedFiles(worktree), spec);
+  const files = changedFiles(worktree);
+  return {
+    changedFiles: files,
+    validationErrors: validateChangedPaths(files, spec),
+  };
 }
 
 async function runCandidateValidation(
@@ -440,10 +510,9 @@ export async function executeSkillImprovement(
             iteration,
             deadline
           );
-          iterationReport.changedFiles = changedFiles(worktree);
-          iterationReport.validationErrors.push(
-            ...validateChangedPaths(iterationReport.changedFiles, spec)
-          );
+          const candidateChanges = collectCandidateChanges(worktree, spec);
+          iterationReport.changedFiles = candidateChanges.changedFiles;
+          iterationReport.validationErrors.push(...candidateChanges.validationErrors);
           if (iterationReport.changedFiles.length === 0) {
             iterationReport.validationErrors.push("Improvement agent made no file changes.");
           } else {
