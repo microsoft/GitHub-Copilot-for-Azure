@@ -1,6 +1,6 @@
 ---
 name: microsoft-foundry
-description: "Build, deploy, evaluate, optimize, fine-tune, and manage Microsoft Foundry agents, models, and resources. WHEN: \"create hosted agent\", \"create prompt agent\", \"create managed harness agent\", \"MHA\", \"GitHub Copilot harness agent\", \"azd ai agent\", \"deploy model\", \"evaluate agent\", \"optimize prompt\", \"fine-tune model\", \"Foundry project\", RBAC, quota, capacity, or deployment troubleshooting. DO NOT USE FOR: general Azure app deployment or preparation."
+description: "Build, deploy, evaluate, optimize, fine-tune, and manage Microsoft Foundry agents, models, and resources end to end. USE FOR: foundry, azd ai agent, azd provision/deploy, hosted agent scaffold/develop/run/deploy/troubleshoot, prompt agent create, managed harness agent create, GitHub Copilot harness agent, create agent, update agent, add tool to agent, invoke agent, agent insights, evaluate agent, batch eval, continuous eval, continuous monitoring, agent CI/CD, optimize prompt, improve prompt, prompt optimizer, Agent Optimizer scaffold, dataset curation from traces, deploy model, model fine-tuning (SFT/DPO/RFT), Foundry project, RBAC, role assignment, permissions, quota, capacity, region, deployment failure, AI Services, create Foundry resource, knowledge index, customize deployment, onboard, availability, training-data, grader, distillation, large file upload. DO NOT USE FOR: Azure Functions, App Service, general Azure deploy (use azure-deploy), general Azure prep (use azure-prepare)."
 license: MIT
 metadata:
   author: Microsoft
@@ -95,7 +95,7 @@ Match user intent to the correct agent workflow. Read each sub-skill in order be
 
 | User Intent | Workflow (read in order) |
 |-------------|------------------------|
-| Create or develop an explicitly requested MHA / Managed Harness Agent / GitHub Copilot harness agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-managed-harness](foundry-agent/create/create-managed-harness.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
+| Create or develop an explicitly requested Managed Harness Agent / GitHub Copilot harness agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create-managed-harness](foundry-agent/create/create-managed-harness.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Create a new hosted agent end-to-end (scaffold + deploy + test) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [quick-start-hosted](foundry-agent/create/quick-start-hosted.md) (self-contained end-to-end) |
 | Anything beyond the standard quickstart (existing code, migration, re-hosting, deployment customization, scaffold-time connections, A2A (Agent2Agent), recovery) | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [create](foundry-agent/create/create-hosted.md) → [deploy](foundry-agent/deploy/deploy.md) → [invoke](foundry-agent/invoke/invoke.md) |
 | Optimize existing Python hosted agent | [dependency check and setup](#dependency-check-and-setup) → [azd-guidance](foundry-agent/azd-guidance/azd-guidance.md) → [agent-optimizer](foundry-agent/agent-optimizer/agent-optimizer.md) → scaffold/review → eval.yaml → optimize → apply candidate → deploy → invoke |
@@ -255,21 +255,21 @@ Agent workflows distinguish three development paths:
 |------|------|-------------|
 | **Prompt** | `"prompt"` | LLM-based agents backed by a model deployment |
 | **Hosted** | `"hosted"` | Container-based agents running custom code |
-| **Managed Harness (MHA)** | `"prompt"` with `harness.type: "github_copilot_preview"` | Prompt Agent running on the Foundry-managed GitHub Copilot harness; developed and deployed with azd |
+| **Managed Harness Agent** | `"prompt"` with `harness.type: "github_copilot_preview"` | Prompt Agent running on the Foundry-managed GitHub Copilot harness; this skill uses azd for development and deployment |
 
 Classify an `azure.yaml` service by its definition, not by `host` alone:
 
 - `kind: hosted` -> Hosted.
-- `kind: prompt` plus `harness.type: github_copilot_preview` -> MHA.
+- `kind: prompt` plus `harness.type: github_copilot_preview` -> Managed Harness Agent.
 - `kind: prompt` without that harness -> ordinary Prompt Agent.
 
-Use `agent_get` only when the type cannot be resolved from project context. Do not convert an existing Agent between Prompt, Hosted, and MHA; create a new Agent instead.
+Use `agent_get` only when the type cannot be resolved from project context. Do not convert an existing Agent between Prompt, Hosted, and Managed Harness Agent types; create a new Agent instead.
 
 ## Tool Usage Conventions
 
 - Use the `ask_user` or `askQuestions` tool whenever collecting information from the user
 - Use the `task` or `runSubagent` tool to delegate long-running or independent sub-tasks (e.g., env var scanning, status polling, Dockerfile generation)
-- Prefer azd for Hosted Agents and MHA; prefer Foundry MCP for ordinary Prompt Agents.
+- Prefer azd for Hosted Agents and Managed Harness Agents; prefer Foundry MCP for ordinary Prompt Agents.
 - Reference official Microsoft documentation URLs instead of embedding CLI command syntax
 
 ## Azure Authentication

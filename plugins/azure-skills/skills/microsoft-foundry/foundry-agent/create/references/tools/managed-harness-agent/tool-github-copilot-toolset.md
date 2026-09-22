@@ -1,7 +1,5 @@
 # GitHub Copilot Toolset
 
-**Evidence: test verified and strictly validated by azd.**
-
 Requires:
 
 ```yaml

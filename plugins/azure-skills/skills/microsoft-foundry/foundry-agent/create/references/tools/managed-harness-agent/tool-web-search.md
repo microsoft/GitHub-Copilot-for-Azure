@@ -1,7 +1,5 @@
 # Web Search
 
-**Evidence: live verified.**
-
 Add Foundry Web Search directly:
 
 ```yaml
@@ -11,4 +9,4 @@ tools:
 
 No project connection is required.
 
-This differs from `github_copilot_toolset_preview`'s built-in `web` capability. Most MHAs should choose one to avoid overlapping search tools.
+This differs from `github_copilot_toolset_preview`'s built-in `web` capability. Most Managed Harness Agents should choose one to avoid overlapping search tools.

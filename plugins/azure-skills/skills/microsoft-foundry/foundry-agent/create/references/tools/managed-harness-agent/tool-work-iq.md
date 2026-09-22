@@ -17,7 +17,7 @@ tools:
     require_approval: never
 ```
 
-Use a connection supplied by the user or already referenced by the MHA. Do not scan for and select an unreferenced connection automatically.
+Use a connection supplied by the user or already referenced by the Managed Harness Agent. Do not scan for and select an unreferenced connection automatically.
 
 ## Explicit connection creation
 

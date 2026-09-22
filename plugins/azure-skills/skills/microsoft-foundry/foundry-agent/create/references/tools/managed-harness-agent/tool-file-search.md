@@ -1,7 +1,5 @@
 # File Search
 
-**Evidence: top-level fields test verified; nested filters are service-owned.**
-
 File Search requires an existing vector store:
 
 ```yaml
@@ -15,6 +13,6 @@ tools:
       score_threshold: 0.5
 ```
 
-Do not invent or create a vector store as part of this Phase 1 workflow. If the user did not provide an ID and the existing MHA does not reference one, stop and request it.
+Do not invent or create a vector store as part of this Phase 1 workflow. If the user did not provide an ID and the existing Managed Harness Agent does not reference one, stop and request it.
 
 azd passes nested `ranking_options` and `filters` to Foundry without complete validation.

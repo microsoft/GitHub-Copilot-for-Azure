@@ -23,7 +23,7 @@ Set it inline only (as shown above). Never persist it into code or committed con
 
 ## Managed Harness Agents
 
-MHA is an azd-managed Prompt Agent:
+A Microsoft Foundry Managed Harness Agent is a Prompt Agent configured with the Foundry-managed GitHub Copilot harness. This workflow uses azd for development and deployment:
 
 ```yaml
 kind: prompt
@@ -31,7 +31,7 @@ harness:
   type: github_copilot_preview
 ```
 
-Initialize a new MHA without using the Hosted sample catalog:
+Initialize a new Managed Harness Agent without using the Hosted sample catalog:
 
 ```bash
 AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd ai agent init --no-prompt \
@@ -43,4 +43,4 @@ AZURE_DEV_USER_AGENT=microsoft_foundry_skill azd ai agent init --no-prompt \
 
 For an existing Foundry model deployment, pass `--project-id` and `--model-deployment` instead of `--model`. The `--harness` flag is preview and may be hidden from `--help`; verify it against the installed `azure.ai.agents` extension before use.
 
-Collect unresolved choices before running init. Do not use azd's interactive prompts as the normal workflow. Existing MHA projects are updated by editing `azure.yaml`, not by rerunning init.
+Collect unresolved choices before running init. Do not use azd's interactive prompts as the normal workflow. Existing Managed Harness Agent projects are updated by editing `azure.yaml`, not by rerunning init.

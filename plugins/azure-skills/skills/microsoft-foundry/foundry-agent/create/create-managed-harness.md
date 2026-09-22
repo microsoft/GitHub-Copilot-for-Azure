@@ -1,6 +1,6 @@
 # Create Managed Harness Agent
 
-Create or continue developing a Microsoft Foundry Managed Harness Agent (MHA) with azd. MHA is a Prompt Agent running on the Foundry-managed GitHub Copilot harness:
+Create or continue developing a Microsoft Foundry Managed Harness Agent with azd. A Managed Harness Agent is a Prompt Agent running on the Foundry-managed GitHub Copilot harness:
 
 ```yaml
 kind: prompt
@@ -8,19 +8,19 @@ harness:
   type: github_copilot_preview
 ```
 
-Use this workflow only when the user explicitly says MHA, Managed Harness Agent, GitHub Copilot harness agent, or Prompt Agent with GitHub Copilot harness. Ordinary Prompt Agents use [create-prompt.md](create-prompt.md); Hosted Agents use [create-hosted.md](create-hosted.md).
+Use this workflow only when the user explicitly says Managed Harness Agent, GitHub Copilot harness agent, or Prompt Agent with GitHub Copilot harness. Ordinary Prompt Agents use [create-prompt.md](create-prompt.md); Hosted Agents use [create-hosted.md](create-hosted.md).
 
 ## Boundaries
 
 - Use azd and `azure.yaml` as the source of truth.
 - Do not use Hosted samples, local runtime, sessions, files, or monitor commands.
-- Do not convert an existing Prompt, Hosted, or MHA Agent to another type. Create a new Agent instead.
+- Do not convert an existing Prompt, Hosted, or Managed Harness Agent to another type. Create a new Agent instead.
 - Prefer direct tools. Use a Toolbox only when the user explicitly requests one.
 - Consume a connection/toolbox supplied by the user or already referenced in the project. Create one only when explicitly requested.
 - Phase 1 tools: Copilot built-ins, Web Search, Code Interpreter, File Search, and Work IQ.
 - Do not generate an evaluation suite in this workflow.
 
-Read [MHA Authoring](references/managed-harness-agent.md) and [MHA Tools](references/tools/managed-harness-agent/agent-tools.md) before editing `azure.yaml`.
+Read [Managed Harness Agent Authoring](references/managed-harness-agent.md) and [Managed Harness Agent Tools](references/tools/managed-harness-agent/agent-tools.md) before editing `azure.yaml`.
 
 ## Workflow
 
@@ -45,11 +45,11 @@ Follow their `[ACTION]` output. Never run `az login` or `azd auth login` for the
 Inspect `azure.yaml`:
 
 - One service with `kind: prompt` and `harness.type: github_copilot_preview` -> continue development.
-- Multiple MHA services -> ask the user to select one.
-- Existing non-MHA service -> do not convert it; add a new service only when the user wants a new MHA.
-- No azd project -> initialize a new MHA.
+- Multiple Managed Harness Agent services -> ask the user to select one.
+- Existing non-Managed Harness Agent service -> do not convert it; add a new service only when the user wants a new Managed Harness Agent.
+- No azd project -> initialize a new Managed Harness Agent.
 
-Do not fetch a remote MHA and synthesize `azure.yaml`.
+Do not fetch a remote Managed Harness Agent and synthesize `azure.yaml`.
 
 ### Step 3: Collect unresolved values
 
@@ -62,11 +62,11 @@ Resolve values from the request, `azure.yaml`, and `azd env get-values` before a
 - Model name for a new deployment, or existing model deployment name.
 - Instructions and requested tools.
 
-MHA does not need language, runtime, entry point, deploy mode, Docker, or ACR.
+A Managed Harness Agent does not need language, runtime, entry point, deploy mode, Docker, or ACR.
 
 ### Step 4: Initialize or update
 
-For a new MHA, run non-interactively:
+For a new Managed Harness Agent, run non-interactively:
 
 ```bash
 azd ai agent init --no-prompt \
@@ -91,7 +91,7 @@ The preview `--harness` flag may be hidden from help. If rejected, verify the in
 
 After init completes, enter the generated project directory before running `azd env set`. For a new project set subscription, location, and project name. Do not chain these commands to init.
 
-For an existing MHA, edit `azure.yaml` in place. Rerunning init can create a suffixed duplicate service.
+For an existing Managed Harness Agent, edit `azure.yaml` in place. Rerunning init can create a suffixed duplicate service.
 
 ### Step 5: Validate the definition
 
@@ -107,7 +107,7 @@ Preserve unrelated services and unknown user-authored fields.
 
 ### Step 6: Add tools
 
-Read the matching MHA reference before editing:
+Read the matching Managed Harness Agent reference before editing:
 
 | Capability | Reference |
 |---|---|
@@ -117,13 +117,13 @@ Read the matching MHA reference before editing:
 | File Search | [File Search](references/tools/managed-harness-agent/tool-file-search.md) |
 | Work IQ | [Work IQ](references/tools/managed-harness-agent/tool-work-iq.md) |
 
-For connection-backed tools, use only a connection supplied by the user or already present in the MHA configuration. If missing, leave a clear placeholder or stop and request the value. Create it only when explicitly requested.
+For connection-backed tools, use only a connection supplied by the user or already present in the Managed Harness Agent configuration. If missing, leave a clear placeholder or stop and request the value. Create it only when explicitly requested.
 
-If the user explicitly requests a Toolbox, follow [Toolbox](../toolbox/toolbox.md) for creation/versioning, then attach the existing endpoint as described in [MHA Authoring](references/managed-harness-agent.md).
+If the user explicitly requests a Toolbox, follow [Toolbox](../toolbox/toolbox.md) for creation/versioning, then attach the existing endpoint as described in [Managed Harness Agent Authoring](references/managed-harness-agent.md).
 
 ### Step 7: Deploy and invoke
 
-Continue with the independent MHA branches in [deploy](../deploy/deploy.md) and [invoke](../invoke/invoke.md). There is no local MHA runtime gate.
+Continue with the independent Managed Harness Agent branches in [deploy](../deploy/deploy.md) and [invoke](../invoke/invoke.md). There is no local harness runtime gate.
 
 ## Error Handling
 
@@ -131,6 +131,6 @@ Continue with the independent MHA branches in [deploy](../deploy/deploy.md) and 
 |---|---|
 | `--harness` rejected | Update/verify `azure.ai.agents`; the flag is preview and hidden |
 | Prompt init requires a model | Supply `--model`, or `--project-id` plus `--model-deployment` |
-| Duplicate `<agent>-2` service | Remove the unintended duplicate and edit the original MHA in place |
+| Duplicate `<agent>-2` service | Remove the unintended duplicate and edit the original Managed Harness Agent in place |
 | Deploy succeeds without harness | Treat as failure; verify `kind` and `harness` in the published definition |
-| Tool rejected by Foundry | Compare the REST-shaped fields with the MHA tool reference |
+| Tool rejected by Foundry | Compare the REST-shaped fields with the Managed Harness Agent tool reference |

@@ -1,6 +1,6 @@
-# MHA Tools
+# Managed Harness Agent Tools
 
-MHA prefers tools declared directly in the Agent service's `tools[]`. Use a Toolbox only when explicitly requested.
+A Managed Harness Agent prefers tools declared directly in the Agent service's `tools[]`. Use a Toolbox only when explicitly requested.
 
 | Capability | Authoring | Connection |
 |---|---|---|

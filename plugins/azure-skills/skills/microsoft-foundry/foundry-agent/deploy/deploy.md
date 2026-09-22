@@ -11,7 +11,7 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, code deploy via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container deploy via `azd deploy` (remote builds require a Dockerfile and ACR; local builds also require Docker; no `codeConfiguration:` in the `azure.yaml` service block) |
-| Managed Harness | `azd provision` when needed, then declarative `azd deploy`; no code/container packaging |
+| Managed Harness Agent | `azd provision` when needed, then declarative `azd deploy`; no code/container packaging |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
 | Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
@@ -20,7 +20,7 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 ## Route by Agent Type
 
 - Shipping Python / .NET code -> **Hosted** (azd workflow below).
-- Explicit `kind: prompt` plus `harness.type: github_copilot_preview` -> **Managed Harness** (MHA azd workflow below).
+- Explicit `kind: prompt` plus `harness.type: github_copilot_preview` -> **Managed Harness Agent** (azd workflow below).
 - Ordinary Prompt Agent model / instructions / tools -> **Prompt** (MCP workflow below).
 
 ## Deploy Mode Selection -- Hosted agents
@@ -257,7 +257,7 @@ For deeper logs, see [troubleshoot](../troubleshoot/troubleshoot.md).
 
 ## Workflow -- Managed Harness Agent (azd)
 
-MHA is declarative Prompt Agent configuration deployed by azd. Read [create-managed-harness](../create/create-managed-harness.md) before creating or editing it.
+A Microsoft Foundry Managed Harness Agent is a declarative Prompt Agent configuration that this workflow deploys with azd. Read [create-managed-harness](../create/create-managed-harness.md) before creating or editing it.
 
 ### Step 1: Resolve and validate
 
@@ -286,7 +286,7 @@ If the Agent is not deployed, continue to provisioning. If active/deployed, skip
 
 Run `azd provision --no-prompt` only for a new Foundry project, a new model deployment, or another real infrastructure change. If no project is configured and the user did not select a new or existing project, stop and ask.
 
-MHA does not require Hosted Agent source packaging, Docker, ACR, runtime, protocol, or container configuration.
+A Managed Harness Agent does not require Hosted Agent source packaging, Docker, ACR, runtime, protocol, or container configuration.
 
 ### Step 3: Deploy
 
@@ -323,24 +323,24 @@ Run one remote smoke invocation:
 azd ai agent invoke <service-name> "hello, are you up?"
 ```
 
-Follow the MHA branch in [invoke](../invoke/invoke.md). Do not use Hosted sessions/files/monitor and do not start evaluation generation in Phase 1.
+Follow the Managed Harness Agent branch in [invoke](../invoke/invoke.md). Do not use Hosted sessions/files/monitor and do not start evaluation generation in Phase 1.
 
 ### Step 5: Hand off
 
 Show Agent name, version, project, model, harness, tools, optional Toolbox, deployment status, and smoke-test status.
 
-## Common failure modes -- MHA
+## Common failure modes -- Managed Harness Agent
 
 | Error | Fix |
 |---|---|
 | Deploy packages code/container | Remove Hosted-only fields and verify `kind: prompt` |
 | Published definition lacks harness | Fix `harness.type`, verify the extension version, and redeploy |
-| Tool shape rejected | Read the matching MHA tool reference and preserve REST field names |
+| Tool shape rejected | Read the matching Managed Harness Agent tool reference and preserve REST field names |
 | Connection missing | Use a user-supplied/existing configured connection, or create it only on explicit request |
 
 ## Workflow -- Prompt agent (MCP)
 
-Ordinary Prompt Agents are not containerized -- they are a model + instructions + optional tools, created through the Foundry MCP server. Do not use this branch for MHA.
+Ordinary Prompt Agents are not containerized -- they are a model + instructions + optional tools, created through the Foundry MCP server. Do not use this branch for a Managed Harness Agent.
 
 ### MCP tools
 

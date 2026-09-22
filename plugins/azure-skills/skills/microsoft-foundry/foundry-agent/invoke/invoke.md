@@ -7,17 +7,17 @@ Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harnes
 | Agent type | Protocol | Invoke path | State management |
 |------------|----------|-------------|------------------|
 | Prompt | — | Foundry MCP `agent_invoke` | `conversationId`; no hosted session or file operations |
-| Managed Harness | Responses | `azd ai agent invoke` | Managed response history; no Hosted session/file operations |
+| Managed Harness Agent | Responses | `azd ai agent invoke` | Managed response history; no Hosted session/file operations |
 | Hosted | `responses` | `azd ai agent invoke` | azd sessions, files, conversations, and monitor commands |
 | Hosted | `invocations` | `azd ai agent invoke --protocol invocations` | azd sessions, files, conversations, and monitor commands |
 | Hosted | `activity` | Microsoft 365 channel, such as Teams | Activity conversation and channel state |
 | Hosted | `invocations_ws` | WebSocket client; follow [invocations-ws](../invocations-ws/invocations-ws.md) | Agent-managed state keyed by `agent_session_id` |
 
-Classify `azure.yaml` services by `kind` and `harness`: `kind: hosted` is Hosted; `kind: prompt` plus `harness.type: github_copilot_preview` is MHA; other `kind: prompt` services are ordinary Prompt Agents. If still unknown, use `agent_get` only to classify.
+Classify `azure.yaml` services by `kind` and `harness`: `kind: hosted` is Hosted; `kind: prompt` plus `harness.type: github_copilot_preview` is a Managed Harness Agent; other `kind: prompt` services are ordinary Prompt Agents. If still unknown, use `agent_get` only to classify.
 
 ## Managed Harness Agent Workflow with azd
 
-### Step 1: Verify the MHA
+### Step 1: Verify the Managed Harness Agent
 
 Inside the azd project, confirm the selected service is `kind: prompt` with `harness.type: github_copilot_preview`, then run:
 
@@ -51,7 +51,7 @@ Do not use:
 - Hosted `sessions` commands
 - Hosted `files` commands
 - `azd ai agent monitor`
-- Foundry MCP `agent_invoke` as the default MHA path
+- Foundry MCP `agent_invoke` as the default Managed Harness Agent path
 
 Remote invocation can incur model usage charges. Run it only within the user's request.
 
@@ -162,8 +162,8 @@ Ordinary Prompt Agents do not use hosted sessions or hosted file operations.
 | Error | Resolution |
 |-------|------------|
 | Agent service cannot be resolved | Use the `azure.yaml` service name, correct the service block, or use `--agent-endpoint` outside the project |
-| MHA is routed to Hosted session/file commands | Reclassify from `kind: prompt` plus `harness.type: github_copilot_preview` and use the MHA workflow |
-| MHA published definition lacks harness | Fix `azure.yaml`, verify the extension version, and redeploy |
+| Managed Harness Agent is routed to Hosted session/file commands | Reclassify from `kind: prompt` plus `harness.type: github_copilot_preview` and use the Managed Harness Agent workflow |
+| Managed Harness Agent published definition lacks harness | Fix `azure.yaml`, verify the extension version, and redeploy |
 | Hosted version is not active | Inspect `azd ai agent show --output json` and deployment logs |
 | Session is missing or expired | Run `azd ai agent sessions list`, then use a valid ID or invoke with `--new-session` |
 | Conversation is missing after a session was deleted | For the responses protocol, retry with `--new-session --new-conversation` |

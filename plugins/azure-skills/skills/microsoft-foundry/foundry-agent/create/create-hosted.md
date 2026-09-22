@@ -29,7 +29,7 @@ For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prom
 
 ## Hosted vs Prompt
 
-| | Hosted | Prompt | MHA |
+| | Hosted | Prompt | Managed Harness Agent |
 |--|--------|--------|-----|
 | Definition | Custom Python / .NET code | Model + instructions | Prompt + GitHub Copilot harness |
 | Workflow | This skill | [create-prompt.md](create-prompt.md) | [create-managed-harness.md](create-managed-harness.md) |

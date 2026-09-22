@@ -60,7 +60,7 @@ Use `sessions create` only when a session must exist before invoke or file opera
 
 ## The azure.yaml service block
 
-After `azd ai agent init`, every azd-managed agent is defined as a **service block in `azure.yaml`** (`host: azure.ai.agent`) plus the active azd env. Hosted Agents add code/container fields; MHA uses `kind: prompt` and `harness.type: github_copilot_preview`.
+After `azd ai agent init`, each agent developed through azd is defined as a **service block in `azure.yaml`** (`host: azure.ai.agent`) plus the active azd env. Hosted Agents add code/container fields; a Managed Harness Agent uses `kind: prompt` and `harness.type: github_copilot_preview`.
 
 | Location | What it holds |
 |------|---------------|
@@ -138,7 +138,7 @@ services:
       - type: web_search
 ```
 
-MHA has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. When explicitly requested, an existing Toolbox is represented by a sibling `azure.ai.toolbox` reuse service and attached with the Agent's singular `toolbox` field.
+A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. When explicitly requested, an existing Toolbox is represented by a sibling `azure.ai.toolbox` reuse service and attached with the Agent's singular `toolbox` field.
 
 ## State (azd env vars)
 

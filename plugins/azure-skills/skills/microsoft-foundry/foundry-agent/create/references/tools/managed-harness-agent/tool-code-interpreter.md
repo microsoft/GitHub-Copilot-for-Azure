@@ -1,13 +1,10 @@
 # Code Interpreter
 
-**Evidence: test verified.**
-
 Add Code Interpreter directly:
 
 ```yaml
 tools:
   - type: code_interpreter
-    container: auto
 ```
 
 No project connection is required.

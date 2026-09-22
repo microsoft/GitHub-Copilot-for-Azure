@@ -1,6 +1,6 @@
 # Managed Harness Agent Authoring
 
-MHA is an azd-managed Prompt Agent:
+A Microsoft Foundry Managed Harness Agent is a Prompt Agent configured with the Foundry-managed GitHub Copilot harness. This skill uses azd to author and deploy it:
 
 ```yaml
 services:
@@ -18,7 +18,7 @@ Use REST field names, normally `snake_case`, inside `tools[]`. azd strictly vali
 
 ## Toolbox attachment
 
-MHA prefers direct tools. When the user explicitly requests an existing Toolbox, represent its endpoint as a sibling reuse service:
+A Managed Harness Agent prefers direct tools. When the user explicitly requests an existing Toolbox, represent its endpoint as a sibling reuse service:
 
 ```yaml
 services:
@@ -56,7 +56,7 @@ toolbox:
   projectConnectionId: toolbox-auth
 ```
 
-Do not use Hosted Agent `TOOLBOX_ENDPOINT` code wiring for MHA.
+Do not use Hosted Agent `TOOLBOX_ENDPOINT` code wiring for a Managed Harness Agent.
 
 ## Validation
 
@@ -67,4 +67,4 @@ After deploy, read the published definition and verify:
 - Direct tools retain their authored fields.
 - The Toolbox resolves to an injected MCP tool when configured.
 
-MHA, ordinary Prompt Agent, and Hosted Agent are not converted in place.
+Managed Harness Agents, ordinary Prompt Agents, and Hosted Agents are not converted in place.
