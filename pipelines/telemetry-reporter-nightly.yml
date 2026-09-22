@@ -32,8 +32,8 @@ extends:
           image: $(LINUXVMIMAGE)
           os: linux
         variables:
-          - template: /pipelines/templates/variables/image.yml
-          - template: /pipelines/templates/variables/globals.yml
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
         jobs:
           - job: Initialize
             displayName: Create build matrix
@@ -74,28 +74,28 @@ extends:
           image: $(LINUXVMIMAGE)
           os: linux
         variables:
-          - template: /pipelines/templates/variables/image.yml
-          - template: /pipelines/templates/variables/globals.yml
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
         jobs:
-          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
             parameters:
               OSName: windows
               Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.WindowsMatrix']
               MaxParallel: 2
 
-          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
             parameters:
               OSName: macOS
               Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.MacOSMatrix']
               MaxParallel: 2
 
-          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
             parameters:
               OSName: linux
               Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.LinuxX64Matrix']
               MaxParallel: 1
 
-          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
             parameters:
               OSName: linux
               HostArchitecture: Arm64
@@ -113,8 +113,8 @@ extends:
           image: $(LINUXVMIMAGE)
           os: linux
         variables:
-          - template: /pipelines/templates/variables/image.yml
-          - template: /pipelines/templates/variables/globals.yml
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
         jobs:
           - job: Verify
             displayName: Verify Native AOT package matrix
