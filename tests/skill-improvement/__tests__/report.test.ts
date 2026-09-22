@@ -239,6 +239,7 @@ describe("skill improvement reporting", () => {
       writeReport(output, report);
       expect(fs.readFileSync(path.join(output, "report-summary.md"), "utf8"))
         .toContain("# Final outcome: ACCEPTED");
+      expect(fs.existsSync(path.join(output, "issue-summary.md"))).toBe(false);
       expect(JSON.parse(
         fs.readFileSync(path.join(output, "workflow-outputs.json"), "utf8")
       ).finalPatchPath).toBe("final-candidate.patch");

@@ -816,8 +816,6 @@ export function renderReportSummary(report: SkillImprovementReport): string {
   return `${lines.join("\n")}\n`;
 }
 
-export const renderIssueSummary = renderReportSummary;
-
 export function writeReport(outputDirectory: string, report: SkillImprovementReport): void {
   fs.mkdirSync(outputDirectory, { recursive: true });
   fs.writeFileSync(
@@ -832,11 +830,6 @@ export function writeReport(outputDirectory: string, report: SkillImprovementRep
   );
   fs.writeFileSync(
     path.join(outputDirectory, "report-summary.md"),
-    renderReportSummary(report),
-    "utf8"
-  );
-  fs.writeFileSync(
-    path.join(outputDirectory, "issue-summary.md"),
     renderReportSummary(report),
     "utf8"
   );

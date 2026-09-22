@@ -33,6 +33,7 @@ describe("skill improvement workflow", () => {
     expect(workflow).not.toContain("- name: Add Azure Storage report location");
     expect(workflow).not.toContain("id: publish-report");
     expect(workflow).not.toContain("steps.publish-report.");
+    expect(workflow).not.toContain("issue-summary.md");
     const publishStep = workflow.slice(
       workflow.indexOf("- name: Publish report to Azure Storage"),
       workflow.indexOf("- name: Create result issue")
@@ -51,6 +52,7 @@ describe("skill improvement workflow", () => {
     expect(workflow).toContain(
       'git apply --index "$RUN_OUTPUT/${{ steps.metadata.outputs.patch }}"'
     );
+    expect(workflow).toContain('cp "$RUN_OUTPUT/report-summary.md" "$issue_body"');
     expect(workflow).toContain('if [[ -n "${{ steps.issue.outputs.url }}" ]]');
     expect(workflow).toContain("--body-file \"$body_file\"");
   });
