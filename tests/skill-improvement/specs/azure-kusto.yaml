@@ -10,7 +10,17 @@ target:
 evaluations:
   root: tests/skill-improvement/evals/azure-kusto
   development:
+    - access-connectivity.eval.yaml
     - analyze-logs-telemetry.eval.yaml
+    - author-run-query.eval.yaml
+    - discover-cluster-database.eval.yaml
+    - discover-schema-table.eval.yaml
+    - ingestion-health.eval.yaml
+    - stored-functions.eval.yaml
+    - telemetry-informed-scenarios.eval.yaml
+    - troubleshoot-query.eval.yaml
+    - troubleshoot-schema-table.eval.yaml
+    - visualize-dashboard.eval.yaml
   heldOut: []
 
 models:
@@ -22,9 +32,15 @@ models:
 experiment:
   repetitions: 1
   conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
