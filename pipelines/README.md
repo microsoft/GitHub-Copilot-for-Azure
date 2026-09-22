@@ -7,6 +7,8 @@ nightly Native AOT build for `ghcfa-telem`. The pipeline is hosted in the
 `azure-sdk/internal` Azure DevOps project and uses the 1ES official pipeline
 template and Azure SDK build pools.
 
+Pipeline: [telemetry-reporter - nightly](https://dev.azure.com/azure-sdk/internal/_build?definitionId=8402)
+
 The pipeline has three stages:
 
 1. **Initialize** finds the previous successful scheduled run, checks whether
@@ -28,14 +30,14 @@ Each RID has an artifact named `telemetry-reporter_<rid>` containing runtime
 and symbol ZIP files plus checksums. `telemetry-reporter_manifest` records the
 source commit, NBGV version, files, and hashes.
 
-Register the pipeline in `https://dev.azure.com/azure-sdk/internal` with this
-repository as its GitHub source and this file as its YAML path:
+The registered definition uses this repository as its GitHub source and this
+file as its YAML path:
 
 ```text
 pipelines/telemetry-reporter-nightly.yml
 ```
 
-Authorize the pipeline to use `1ESPipelineTemplates`, `azsdk-pool`,
+The pipeline is authorized to use `1ESPipelineTemplates`, `azsdk-pool`,
 `azsdk-pool-arm64`, the Azure Pipelines macOS pool, and the build service
-identity's read access to prior builds. Enable scripts to use
+identity's read access to prior builds. The initializer maps
 `System.AccessToken` so scheduled change detection can query the Builds API.

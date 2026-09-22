@@ -148,6 +148,8 @@ runs nightly in the `azure-sdk/internal` project. It uses the 1ES official
 pipeline template and Azure SDK build pools to produce all six supported Native
 AOT packages:
 
+[Open the telemetry reporter nightly pipeline](https://dev.azure.com/azure-sdk/internal/_build?definitionId=8402).
+
 - `win-x64` and `win-arm64`
 - `osx-x64` and `osx-arm64`
 - `linux-x64` and `linux-arm64`
