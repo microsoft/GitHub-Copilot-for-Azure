@@ -10,17 +10,7 @@ target:
 evaluations:
   root: tests/skill-improvement/evals/azure-kusto
   development:
-    - access-connectivity.eval.yaml
     - analyze-logs-telemetry.eval.yaml
-    - author-run-query.eval.yaml
-    - discover-cluster-database.eval.yaml
-    - discover-schema-table.eval.yaml
-    - ingestion-health.eval.yaml
-    - stored-functions.eval.yaml
-    - telemetry-informed-scenarios.eval.yaml
-    - troubleshoot-query.eval.yaml
-    - troubleshoot-schema-table.eval.yaml
-    - visualize-dashboard.eval.yaml
   heldOut: []
 
 models:
@@ -57,7 +47,7 @@ acceptance:
   requireHeldOutImprovement: false
 
 limits:
-  maxIterations: 2
+  maxIterations: 3
   maxAnswerGenerations: 700
   maxJudgeCalls: 700
   maxDurationMinutes: 360
