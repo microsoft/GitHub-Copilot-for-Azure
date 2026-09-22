@@ -3,12 +3,8 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
-    paths-ignore:
-      - "telemetry-reporter/**"
   pull_request:
     branches: [ "main" ]
-    paths-ignore:
-      - "telemetry-reporter/**"
 
 jobs:
   analyze:
@@ -22,11 +18,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'actions', 'javascript', 'python' ]
+        language: [ 'actions', 'javascript', 'python', 'csharp' ]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      if: matrix.language == 'csharp'
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      with:
+        global-json-file: telemetry-reporter/global.json
 
     - name: Initialize CodeQL
       uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63 # v4.38.0
