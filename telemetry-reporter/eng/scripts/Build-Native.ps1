@@ -60,27 +60,34 @@ if (-not $allowedTargetsByHost.ContainsKey($currentRuntimeIdentifier) -or
     throw "Host RID '$currentRuntimeIdentifier' does not build target RID '$RuntimeIdentifier' in the supported Azure MCP platform topology."
 }
 
-$repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..'))
-$projectPath = Join-Path $repoRoot 'src\ghcfa-telem\ghcfa-telem.csproj'
+$repoRoot = [System.IO.Path]::GetFullPath(
+    [System.IO.Path]::Combine($PSScriptRoot, '..', '..')
+)
+$projectPath = [System.IO.Path]::Combine(
+    $repoRoot,
+    'src',
+    'ghcfa-telem',
+    'ghcfa-telem.csproj'
+)
 $outputRootPath = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
-    Join-Path $repoRoot 'artifacts'
+    [System.IO.Path]::Combine($repoRoot, 'artifacts')
 }
 else {
     [System.IO.Path]::GetFullPath($OutputRoot)
 }
 
-$publishDirectory = Join-Path $outputRootPath "publish\$RuntimeIdentifier"
-$packageDirectory = Join-Path $outputRootPath 'packages'
-$stagingDirectory = Join-Path $outputRootPath "staging\$RuntimeIdentifier"
-$runtimeStagingDirectory = Join-Path $stagingDirectory 'runtime'
-$symbolsStagingDirectory = Join-Path $stagingDirectory 'symbols'
+$publishDirectory = [System.IO.Path]::Combine($outputRootPath, 'publish', $RuntimeIdentifier)
+$packageDirectory = [System.IO.Path]::Combine($outputRootPath, 'packages')
+$stagingDirectory = [System.IO.Path]::Combine($outputRootPath, 'staging', $RuntimeIdentifier)
+$runtimeStagingDirectory = [System.IO.Path]::Combine($stagingDirectory, 'runtime')
+$symbolsStagingDirectory = [System.IO.Path]::Combine($stagingDirectory, 'symbols')
 $executableName = if ($targetOperatingSystem -eq 'win') {
     'ghcfa-telem.exe'
 }
 else {
     'ghcfa-telem'
 }
-$nativeExecutable = Join-Path $publishDirectory $executableName
+$nativeExecutable = [System.IO.Path]::Combine($publishDirectory, $executableName)
 
 function Remove-DirectoryIfPresent {
     param(
