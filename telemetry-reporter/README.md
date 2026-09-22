@@ -139,3 +139,27 @@ The smoke tests set `AZURE_MCP_COLLECT_TELEMETRY=false`, so building the native
 artifact does not send telemetry. Cross-compiled `win-arm64` and `osx-arm64`
 artifacts cannot run on their x64 build hosts, so the script explicitly reports
 their smoke tests as skipped.
+
+## Nightly Azure DevOps builds
+
+The Azure DevOps pipeline defined in
+[`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)
+runs nightly in the `azure-sdk/internal` project. It uses the 1ES official
+pipeline template and Azure SDK build pools to produce all six supported Native
+AOT packages:
+
+- `win-x64` and `win-arm64`
+- `osx-x64` and `osx-arm64`
+- `linux-x64` and `linux-arm64`
+
+Scheduled runs compare `main` with the previous successful scheduled build and
+skip the platform matrix when no executable-affecting telemetry reporter files
+changed. Manual runs always build the complete matrix.
+
+Each target publishes a `telemetry-reporter_<rid>` pipeline artifact containing
+the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final
+`telemetry-reporter_manifest` artifact records and verifies the complete
+six-target build.
+
+Musl-based Linux packages are tracked separately and are not produced by this
+pipeline.

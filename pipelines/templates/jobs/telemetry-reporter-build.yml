@@ -1,0 +1,114 @@
+parameters:
+  - name: OSName
+    type: string
+  - name: Matrix
+    type: string
+  - name: MaxParallel
+    type: number
+  - name: HostArchitecture
+    type: string
+    default: ''
+
+jobs:
+  - job: Build_${{ parameters.OSName }}_${{ coalesce(parameters.HostArchitecture, 'x64') }}
+    displayName: Native AOT ${{ parameters.OSName }} ${{ coalesce(parameters.HostArchitecture, 'x64') }}
+    timeoutInMinutes: 90
+    condition: and(succeeded(), ne(${{ parameters.Matrix }}, '{}'))
+    strategy:
+      maxParallel: ${{ parameters.MaxParallel }}
+      matrix: $[ ${{ parameters.Matrix }} ]
+    pool:
+      name: $(Pool)
+      ${{ if eq(parameters.OSName, 'macOS') }}:
+        vmImage: $(OSVmImage)
+      ${{ else }}:
+        image: $(OSVmImage)
+      os: ${{ parameters.OSName }}
+      ${{ if ne(parameters.HostArchitecture, '') }}:
+        hostArchitecture: ${{ parameters.HostArchitecture }}
+
+    steps:
+      - checkout: self
+        fetchDepth: 0
+
+      - task: UseDotNet@2
+        displayName: Install .NET SDK
+        inputs:
+          packageType: sdk
+          useGlobalJson: true
+          workingDirectory: $(Build.SourcesDirectory)/telemetry-reporter
+
+      - ${{ if eq(parameters.OSName, 'linux') }}:
+          - task: PowerShell@2
+            displayName: Install Native AOT prerequisites
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                if (Get-Command apt-get -ErrorAction SilentlyContinue) {
+                  sudo apt-get update
+                  if ($LASTEXITCODE -ne 0) {
+                    Write-Error "apt-get update failed with exit code $LASTEXITCODE."
+                    exit 1
+                  }
+                  sudo apt-get install --yes clang binutils zlib1g-dev
+                  if ($LASTEXITCODE -ne 0) {
+                    Write-Error "apt-get install failed with exit code $LASTEXITCODE."
+                    exit 1
+                  }
+                }
+                elseif (Get-Command tdnf -ErrorAction SilentlyContinue) {
+                  sudo tdnf install --assumeyes clang binutils zlib-devel
+                  if ($LASTEXITCODE -ne 0) {
+                    Write-Error "tdnf install failed with exit code $LASTEXITCODE."
+                    exit 1
+                  }
+                }
+                else {
+                  Write-Error 'No supported package manager was found for Native AOT prerequisites.'
+                  exit 1
+                }
+
+      - task: PowerShell@2
+        displayName: Build and package $(BuildRuntimeIdentifier)
+        inputs:
+          pwsh: true
+          filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Build-Native.ps1
+          arguments: >
+            -Configuration Release
+            -RuntimeIdentifier '$(BuildRuntimeIdentifier)'
+            -OutputRoot '$(Build.ArtifactStagingDirectory)/native'
+        env:
+          AZURE_MCP_COLLECT_TELEMETRY: "false"
+
+      - task: PowerShell@2
+        displayName: Verify package output
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $packageDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'native/packages'
+            $runtimeIdentifier = '$(BuildRuntimeIdentifier)'
+            $runtimeArchives = @(
+              Get-ChildItem -LiteralPath $packageDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier.zip"
+            )
+            $symbolArchives = @(
+              Get-ChildItem -LiteralPath $packageDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier-symbols.zip"
+            )
+            if ($runtimeArchives.Count -ne 1 -or $symbolArchives.Count -ne 1) {
+              Write-Error "Expected one runtime and one symbols archive for '$runtimeIdentifier'."
+              exit 1
+            }
+
+            foreach ($archive in @($runtimeArchives[0], $symbolArchives[0])) {
+              if (-not (Test-Path -LiteralPath "$($archive.FullName).sha256")) {
+                Write-Error "Checksum for '$($archive.Name)' is missing."
+                exit 1
+              }
+            }
+
+      - task: 1ES.PublishPipelineArtifact@1
+        displayName: Publish $(BuildRuntimeIdentifier) packages
+        inputs:
+          artifactName: telemetry-reporter_$(BuildRuntimeIdentifier)
+          targetPath: $(Build.ArtifactStagingDirectory)/native/packages

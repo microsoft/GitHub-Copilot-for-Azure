@@ -1,0 +1,217 @@
+name: telemetry-reporter-nightly-$(Date:yyyyMMdd).$(Rev:r)
+
+trigger: none
+pr: none
+
+schedules:
+  - cron: "0 6 * * *"
+    displayName: Nightly telemetry reporter build
+    branches:
+      include:
+        - main
+    always: false
+
+resources:
+  repositories:
+    - repository: 1ESPipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    settings:
+      skipBuildTagsForGitHubPullRequests: true
+      networkIsolationPolicy: Permissive
+    stages:
+      - stage: Initialize
+        displayName: Initialize
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml
+          - template: /pipelines/templates/variables/globals.yml
+        jobs:
+          - job: Initialize
+            displayName: Create build matrix
+            steps:
+              - checkout: self
+                fetchDepth: 0
+
+              - task: PowerShell@2
+                name: CreateBuildInfo
+                displayName: Detect changes and create build matrix
+                inputs:
+                  pwsh: true
+                  filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/New-NightlyBuildInfo.ps1
+                  arguments: >
+                    -CollectionUri '$(System.CollectionUri)'
+                    -Project '$(System.TeamProject)'
+                    -DefinitionId $(System.DefinitionId)
+                    -BuildId $(Build.BuildId)
+                    -BuildReason '$(Build.Reason)'
+                    -SourceVersion '$(Build.SourceVersion)'
+                    -RepositoryRoot '$(Build.SourcesDirectory)'
+                    -OutputPath '$(Build.ArtifactStagingDirectory)/build_info/build_info.json'
+                env:
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+              - task: 1ES.PublishPipelineArtifact@1
+                displayName: Publish build information
+                inputs:
+                  artifactName: build_info
+                  targetPath: $(Build.ArtifactStagingDirectory)/build_info
+
+      - stage: Build
+        displayName: Build Native AOT packages
+        dependsOn: Initialize
+        condition: and(succeeded(), eq(dependencies.Initialize.outputs['Initialize.CreateBuildInfo.ShouldBuild'], 'true'))
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml
+          - template: /pipelines/templates/variables/globals.yml
+        jobs:
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+            parameters:
+              OSName: windows
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.WindowsMatrix']
+              MaxParallel: 2
+
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+            parameters:
+              OSName: macOS
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.MacOSMatrix']
+              MaxParallel: 2
+
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+            parameters:
+              OSName: linux
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.LinuxX64Matrix']
+              MaxParallel: 1
+
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml
+            parameters:
+              OSName: linux
+              HostArchitecture: Arm64
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.LinuxArm64Matrix']
+              MaxParallel: 1
+
+      - stage: Verify
+        displayName: Verify artifacts
+        dependsOn:
+          - Initialize
+          - Build
+        condition: and(succeeded(), eq(dependencies.Initialize.outputs['Initialize.CreateBuildInfo.ShouldBuild'], 'true'))
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml
+          - template: /pipelines/templates/variables/globals.yml
+        jobs:
+          - job: Verify
+            displayName: Verify Native AOT package matrix
+            steps:
+              - checkout: none
+
+              - download: current
+                displayName: Download build artifacts
+
+              - task: PowerShell@2
+                displayName: Verify packages and create manifest
+                inputs:
+                  pwsh: true
+                  targetType: inline
+                  script: |
+                    $runtimeIdentifiers = @(
+                      'win-x64',
+                      'win-arm64',
+                      'osx-x64',
+                      'osx-arm64',
+                      'linux-x64',
+                      'linux-arm64'
+                    )
+                    $manifestFiles = @()
+                    $versions = @()
+
+                    foreach ($runtimeIdentifier in $runtimeIdentifiers) {
+                      $artifactDirectory = Join-Path '$(Pipeline.Workspace)' "telemetry-reporter_$runtimeIdentifier"
+                      if (-not (Test-Path -LiteralPath $artifactDirectory)) {
+                        Write-Error "Artifact directory '$artifactDirectory' was not downloaded."
+                        exit 1
+                      }
+
+                      $runtimeArchives = @(
+                        Get-ChildItem -LiteralPath $artifactDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier.zip"
+                      )
+                      $symbolArchives = @(
+                        Get-ChildItem -LiteralPath $artifactDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier-symbols.zip"
+                      )
+                      if ($runtimeArchives.Count -ne 1 -or $symbolArchives.Count -ne 1) {
+                        Write-Error "Expected one runtime and one symbols archive for '$runtimeIdentifier'."
+                        exit 1
+                      }
+
+                      foreach ($archive in @($runtimeArchives[0], $symbolArchives[0])) {
+                        $checksumPath = "$($archive.FullName).sha256"
+                        if (-not (Test-Path -LiteralPath $checksumPath)) {
+                          Write-Error "Checksum file '$checksumPath' is missing."
+                          exit 1
+                        }
+
+                        $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw -ErrorAction Stop).Trim()
+                        $expectedHash = ($checksumLine -split '\s+', 2)[0]
+                        $actualHash = (Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
+                        if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
+                          Write-Error "Checksum validation failed for '$($archive.Name)'."
+                          exit 1
+                        }
+
+                        $manifestFiles += [ordered]@{
+                          runtimeIdentifier = $runtimeIdentifier
+                          file = $archive.Name
+                          sha256 = $actualHash
+                        }
+                      }
+
+                      $versionMatch = [regex]::Match(
+                        $runtimeArchives[0].Name,
+                        "^ghcfa-telem-(.+)-$([regex]::Escape($runtimeIdentifier))\.zip$"
+                      )
+                      if (-not $versionMatch.Success) {
+                        Write-Error "Unable to parse the version from '$($runtimeArchives[0].Name)'."
+                        exit 1
+                      }
+                      $versions += $versionMatch.Groups[1].Value
+                    }
+
+                    $uniqueVersions = @($versions | Sort-Object -Unique)
+                    if ($uniqueVersions.Count -ne 1) {
+                      Write-Error "Expected one package version across the matrix; found: $($uniqueVersions -join ', ')."
+                      exit 1
+                    }
+
+                    $manifestDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'manifest'
+                    New-Item -ItemType Directory -Path $manifestDirectory -Force -ErrorAction Stop | Out-Null
+                    [ordered]@{
+                      buildId = '$(Build.BuildId)'
+                      sourceVersion = '$(Build.SourceVersion)'
+                      version = $uniqueVersions[0]
+                      runtimeIdentifiers = $runtimeIdentifiers
+                      files = $manifestFiles
+                    } |
+                      ConvertTo-Json -Depth 10 |
+                      Set-Content -LiteralPath (Join-Path $manifestDirectory 'build-manifest.json') -Encoding utf8 -ErrorAction Stop
+
+              - task: 1ES.PublishPipelineArtifact@1
+                displayName: Publish build manifest
+                inputs:
+                  artifactName: telemetry-reporter_manifest
+                  targetPath: $(Build.ArtifactStagingDirectory)/manifest
