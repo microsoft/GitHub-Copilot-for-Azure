@@ -35,7 +35,7 @@ The build copies the shared hooks into every plugin package. Each installed plug
 - `--plugin-name` and `--plugin-version` from the active client's `plugin.json`
 - `--client-name` for the detected host
 - `--timestamp` generated in UTC ISO-8601 format
-- `--event-type session-start`
+- `--event-type session_start`
 - `--session-id` from the host payload
 
 The `plugin-telemetry` command requires a session ID, so the hook does not report a session-start event when the host omits it. Telemetry opt-out and fail-open behavior are the same as for the existing tool, skill, and reference-file events.
