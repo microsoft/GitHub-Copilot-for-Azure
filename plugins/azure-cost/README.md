@@ -3,6 +3,11 @@
 Azure cost analysis, estimation, optimization, and governance skills backed by
 the Azure Resource Manager MCP server.
 
+## Security
+
+> [!WARNING]
+> The `azure-cost` plugin uses `npx` to download and run the Azure MCP Server, inheriting the local environment's `.npmrc` configuration. Install this plugin only on trusted devices. A compromised `.npmrc` configuration could cause `npx` to download and execute malicious code, potentially resulting in remote code execution.
+
 ## Skills
 
 | Skill | Workflows |
