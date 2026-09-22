@@ -1,78 +1,89 @@
 # Skill improvement runner
 
-The skill improvement runner evaluates a skill, asks a bounded improvement
-agent to edit only that skill, evaluates each candidate, and keeps a candidate
-only when it satisfies the configured acceptance rules.
+This bounded runner evaluates a baseline, asks Copilot CLI to edit only the
+target Skill directory, reruns candidate evaluations, and accepts a candidate
+only when every configured quality, regression, invocation, and Skill-size gate
+passes. The same TypeScript engine runs locally and in the manual **Skill
+Improvement** workflow.
 
-The same TypeScript engine runs locally and in the manual **Skill Improvement**
-GitHub Actions workflow.
+## Four-arm study
 
-Partner pipelines can check out this repository and invoke the same commands
-from `tests`; no separate evaluator adapter is required. `npm run test:vally`
-runs a normal Vally suite. Baseline/candidate A/B improvement uses
-`npm run skill-improvement -- run` with a run specification.
+The Azure Kusto baseline uses four separately reported arms:
 
-## Terminology
+| Arm | Target Skill | Azure MCP | What it measures |
+| --- | --- | --- | --- |
+| Agent only | Disabled | Disabled | Model's built-in knowledge without target Skill/Azure MCP |
+| Skill only | Enabled | Disabled | Skill standalone guidance/query patterns |
+| MCP only | Disabled | Enabled | Tool access without Skill guidance |
+| Skill + MCP | Enabled | Enabled | Combined production experience |
 
-- **Baseline**: the immutable branch, tag, or commit being evaluated before any
-  generated changes. It contains the existing skill.
-- **Condition**: one skill and MCP setup, such as skill enabled with MCP enabled.
-- **Improvement agent**: a non-interactive Copilot CLI session that receives
-  development failures and may edit only the target skill directory.
-- **Accepted candidate**: a generated skill change that satisfies every
-  configured quality, regression, invocation, and size rule.
+Each comparison runs the same prompts and changes one capability.
 
-`accepted-candidate-only` means a draft pull request is created only for an
-accepted candidate. A completed workflow still creates a result issue when
-`output.issue` is `always`, even if no candidate is accepted.
+| Compare results from | What changes | Question answered |
+| --- | --- | --- |
+| Agent only and Skill only | Target Skill is enabled; MCP remains disabled | Does the Skill improve answer quality without MCP? |
+| MCP only and Skill + MCP | Target Skill is enabled; MCP remains enabled | Does the Skill improve answer quality in the production configuration? |
+| Agent only and MCP only | MCP is enabled; target Skill remains disabled | How much does MCP improve results without Skill guidance? |
+| Skill only and Skill + MCP | MCP is enabled; target Skill remains enabled | How much does MCP improve results when the Skill is present? |
 
-`output.issue: always` creates one new result issue for every manual workflow
-run. The issue contains a bounded summary; the full report and trajectories are
-stored in the workflow artifact.
+The baseline runs all four arms with exact target-Skill isolation. Candidate
+iterations rerun only **Skill only** and **Skill + MCP**; unchanged no-Skill
+controls are reused. Limits count all baseline arms plus Skill-enabled
+candidate runs and every configured judge.
 
-## What the limits mean
+Four arms improve attribution but cost more. Validate the plan first; start
+with one answer model, judge, repetition, and a focused eval set. For `P`
+prompts, `A` answer models, `R` repetitions, `I` iterations, and `J` judges:
 
-Assume a run has 10 prompts, 2 answer models, 2 conditions, 2 judges, and 2
-improvement iterations.
+- baseline generations = `P * A * R * 4`
+- candidate generations = `P * A * R * 2 * I`
+- judge calls = `(baseline + candidate generations) * J`
 
-- Baseline answers: `10 * 2 * 2 = 40`.
-- Candidate answers: only skill-enabled conditions are rerun. With one
-  skill-enabled condition, each iteration uses `10 * 2 * 1 = 20`.
-- Maximum answers: `40 + (20 * 2) = 80`.
-- Judge calls: `80 * 2 = 160`.
+## Decisions and evidence
 
-The engine refuses to start when this plan exceeds `maxAnswerGenerations` or
-`maxJudgeCalls`.
+Pass/fail uses judge majority and response score uses the median judge score.
+Acceptance uses pass-rate improvement, per-model and per-eval regression
+limits, target-Skill invocation, and estimated **Skill Markdown token growth**.
+Average generated-answer token change is diagnostic only, not the Skill-size
+gate.
 
-| Limit | Effect |
-| --- | --- |
-| `maxIterations` | Maximum candidate edits the improvement agent may attempt. |
-| `maxAnswerGenerations` | Maximum responses produced by answer models. |
-| `maxJudgeCalls` | Maximum independent grades of saved responses. |
-| `maxDurationMinutes` | Wall-clock limit for the complete run. |
-| `maxConcurrentJobs` | Maximum Vally generation or grading processes running together. |
-| `maxSkillTokenIncreasePercent` | Maximum estimated Markdown token growth versus the baseline skill. |
+Each run writes:
 
-## Acceptance calculations
+- `report-summary.md`: decision-first Actions/job summary with separate baseline
+  arms, candidate pass rates, all rejection/validation reasons, acceptance
+  gates, and changed outcomes/regressions;
+- `report.md` and `report.json`: detailed results;
+- raw generation/judgment JSONL, agent output, relative candidate patches, and
+  Skill snapshots.
 
-Each saved response is graded by every configured judge. The runner uses:
+The workflow always appends `report-summary.md` to `GITHUB_STEP_SUMMARY` and
+retains the complete GitHub artifact for 30 days. `output.issue: never` creates
+no issue; `output.issue: always` remains an explicit opt-in. Draft PR creation
+still requires an accepted candidate and does not require a result issue.
 
-- majority vote for pass/fail;
-- median judge score for the response score;
-- pass-rate difference in percentage points as the primary improvement metric;
-- per-answer-model and per-eval pass-rate differences as regression checks;
-- skill invocation as a separate behavioral requirement;
-- average generated-answer tokens as an efficiency diagnostic.
+When the repository variable `REPORT_STORAGE_ACCOUNT` is configured, **Publish
+report to Azure Storage** uploads a repository-standard best-effort-redacted
+copy of the complete run output using OIDC and `--auth-mode login` to:
 
-For example, a baseline pass rate of 60% and candidate pass rate of 66% is a
-`+6` point quality improvement. If `minimumQualityImprovementPoints` is `2`,
-the overall improvement rule passes.
+`${REPORT_STORAGE_ACCOUNT}/skill-improvement-runs/<UTC-date>/<GitHub-run-id>/<skill>/`
 
-## Run locally
+If the variable is absent, publishing is skipped and the complete 30-day
+GitHub artifact remains available. When the repository variable
+`REPORT_STORAGE_ACCOUNT` is set, publishing is required and an Azure Storage
+failure fails the job.
+
+The workflow creates the container if needed and enforces public access off.
+Access is RBAC-based; no keys, SAS tokens, connection strings, or public URLs
+are emitted. Raw trajectories can contain prompts, outputs, and tool evidence.
+Pattern-based redaction reduces known secret exposure but is not comprehensive,
+so restrict container access and configure lifecycle/retention according to
+repository policy.
+
+## Commands
+
+From `tests`:
 
 ```powershell
-cd tests
-
 npm run skill-improvement -- validate `
   --config .\skill-improvement\specs\azure-kusto.yaml
 
@@ -81,72 +92,19 @@ npm run skill-improvement -- run `
   --executor local
 ```
 
-Local execution runs Vally, judges, and Copilot CLI on the current machine. It
-does not trigger GitHub Actions.
+Local execution runs paid evaluations, judges, and the improvement agent; do
+not run it for ordinary unit validation.
 
-## Dispatch GitHub Actions locally
+To dispatch the workflow, use `--executor github` with
+`--workflow-ref <branch-containing-workflow>` and optional `--baseline-ref`,
+`--pr-base`, and `--create-draft-pr`. The PR flag is only a request; no PR is
+created unless every acceptance gate passes.
 
-```powershell
-cd tests
+The workflow calls the internal `execute` command with an explicit `--output`
+directory. Vally first saves answers with `--skip-grade`, then re-grades those
+trajectories with each judge. The improvement agent receives development
+failures and prior rejection reasons, never held-out evidence.
 
-npm run skill-improvement -- run `
-  --config .\skill-improvement\specs\azure-kusto.yaml `
-  --executor github `
-  --workflow-ref <branch-containing-the-workflow> `
-  --baseline-ref <branch-to-evaluate> `
-  --pr-base main `
-  --create-draft-pr
-```
-
-The draft PR flag is only a request. A PR is not created unless a candidate
-passes all acceptance rules. The workflow creates one result issue per run when
-the specification uses `output.issue: always`.
-
-## Automation entry point
-
-`execute` runs the engine directly without dispatching a workflow. GitHub
-Actions uses it after preparing the checkout and output directory. Most users
-and partner pipelines should use `run`; use `execute` only for workflow
-automation or direct-engine debugging.
-
-```powershell
-cd tests
-
-npm run skill-improvement -- execute `
-  --config .\skill-improvement\specs\azure-kusto.yaml `
-  --baseline-ref main `
-  --output .\skill-improvement-runs\manual
-```
-
-`--output` is required. The directory receives the report, trajectories,
-judgments, patches, snapshots, issue summary, and workflow metadata.
-
-## Answer and judge separation
-
-Vally first runs with `--skip-grade` to save trajectories. Each saved
-trajectory is then re-graded with `vally grade --judge-model` for every
-configured judge. Changing judges therefore does not require regenerating
-answers.
-
-The improvement agent receives development failures, judge evidence, answer
-excerpts, and rejection reasons from earlier iterations. Held-out results are
-not included in that failure packet.
-
-Each iteration preserves both `candidate.patch` and a complete
-`candidate-skill/` copy before validation and acceptance. Rejected candidates
-therefore remain available for inspection after the temporary worktree is
-removed.
-
-## Opt-in evaluation suites
-
-Each run specification sets `evaluations.root` to a repository-relative
-directory under `tests/skill-improvement/evals/`. Development and held-out
-entries are filenames within that root; absolute paths, nested paths, traversal,
-and paths that resolve outside the configured root are rejected.
-
-Suites in this directory are opt-in inputs to the hill-climbing runner. They are
-not discovered by the nightly integration workflow, which scans `evals/`.
-The Azure Kusto improvement spec intentionally excludes the pre-existing
-`evals/azure-skills/azure-kusto/eval.yaml` suite so the run has one isolated,
-containment-checked evaluation root without copying or modifying the nightly
-suite.
+Run specifications may reference only filenames inside a repository-relative
+`tests/skill-improvement/evals/<name>` root. These suites are opt-in and are not
+discovered by the nightly `evals/` integration workflow.

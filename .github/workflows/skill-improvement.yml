@@ -152,6 +152,18 @@ jobs:
           if [[ ! -f "$RUN_OUTPUT/issue-summary.md" ]]; then
             cp "$RUN_OUTPUT/report.md" "$RUN_OUTPUT/issue-summary.md"
           fi
+          if [[ ! -f "$RUN_OUTPUT/report-summary.md" ]]; then
+            cp "$RUN_OUTPUT/issue-summary.md" "$RUN_OUTPUT/report-summary.md"
+          fi
+
+      - name: Add decision summary
+        if: always()
+        shell: bash
+        run: |
+          cat "$RUN_OUTPUT/report-summary.md" >> "$GITHUB_STEP_SUMMARY"
+          printf '\nWorkflow run: %s/%s/actions/runs/%s\n' \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" \
+            >> "$GITHUB_STEP_SUMMARY"
 
       - name: Read workflow outputs
         if: always()
@@ -171,7 +183,7 @@ jobs:
               ? JSON.parse(fs.readFileSync(metadataPath, "utf8"))
               : {
                   accepted: false,
-                  issueMode: "always",
+                  issueMode: "never",
                   draftPullRequestMode: "never",
                   skill: "unknown",
                   finalPatchPath: null,
@@ -189,6 +201,50 @@ jobs:
           path: ${{ env.RUN_OUTPUT }}
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish report to Azure Storage
+        if: always() && vars.REPORT_STORAGE_ACCOUNT != ''
+        shell: bash
+        env:
+          STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          SKILL: ${{ steps.metadata.outputs.skill }}
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          SKILL="${SKILL:-unknown}"
+          PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"
+          UPLOAD_OUTPUT="${RUNNER_TEMP}/skill-improvement-upload-${GITHUB_RUN_ID}"
+          mkdir -p "$UPLOAD_OUTPUT"
+          cp -a "$RUN_OUTPUT/." "$UPLOAD_OUTPUT/"
+          (cd tests && npx tsx skill-improvement/redact-output.ts "$UPLOAD_OUTPUT")
+          az storage container create \
+            --account-name "$STORAGE_ACCOUNT" \
+            --name "skill-improvement-runs" \
+            --public-access off \
+            --auth-mode login \
+            --only-show-errors \
+            --output none
+          az storage container set-permission \
+            --account-name "$STORAGE_ACCOUNT" \
+            --name "skill-improvement-runs" \
+            --public-access off \
+            --auth-mode login \
+            --only-show-errors \
+            --output none
+          az storage blob upload-batch \
+            --account-name "$STORAGE_ACCOUNT" \
+            --destination "skill-improvement-runs" \
+            --destination-path "$PREFIX" \
+            --source "$UPLOAD_OUTPUT" \
+            --auth-mode login \
+            --overwrite
+          {
+            echo
+            echo "## Azure Storage report"
+            echo
+            echo "- Storage account: \`${STORAGE_ACCOUNT}\`"
+            echo "- Container: \`skill-improvement-runs\`"
+            echo "- Blob prefix: \`${PREFIX}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create result issue
         if: always() && steps.metadata.outputs.issue-mode == 'always'
@@ -215,7 +271,7 @@ jobs:
         run: |
           branch="skill-improvement/${{ steps.metadata.outputs.skill }}-${GITHUB_RUN_ID}"
           git checkout -b "$branch" "$BASELINE_REF"
-          git apply --index "${{ steps.metadata.outputs.patch }}"
+          git apply --index "$RUN_OUTPUT/${{ steps.metadata.outputs.patch }}"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             commit -m "feat: improve ${{ steps.metadata.outputs.skill }} from evaluations" \
@@ -230,16 +286,23 @@ jobs:
         env:
           PR_BASE: ${{ inputs.pr-base }}
         run: |
+          body_file="$RUNNER_TEMP/skill-improvement-pr-body.md"
+          cat > "$body_file" <<EOF
+          Automated candidate from skill improvement run $GITHUB_RUN_ID.
+
+          Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          This pull request is intentionally a draft and requires human review.
+          EOF
+          if [[ -n "${{ steps.issue.outputs.url }}" ]]; then
+            printf '\nResult issue: %s\n' "${{ steps.issue.outputs.url }}" >> "$body_file"
+          fi
           pr_url=$(gh pr create \
             --draft \
             --base "$PR_BASE" \
             --head "${{ steps.candidate.outputs.branch }}" \
             --title "feat: improve ${{ steps.metadata.outputs.skill }} from evaluations" \
-            --body "Automated candidate from skill improvement run $GITHUB_RUN_ID.
-
-          Result issue: ${{ steps.issue.outputs.url }}
-
-          This pull request is intentionally a draft and requires human review.")
+            --body-file "$body_file")
           echo "url=$pr_url" >> "$GITHUB_OUTPUT"
           echo "Draft pull request: $pr_url" >> "$GITHUB_STEP_SUMMARY"
 

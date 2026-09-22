@@ -1,9 +1,11 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   createRunPlan,
   enforceRunLimits,
+  loadRunSpec,
   resolveEvaluationPath,
   validateRunSpec,
   type SkillImprovementRunSpec,
@@ -30,8 +32,10 @@ function spec(): SkillImprovementRunSpec {
     experiment: {
       repetitions: 1,
       conditions: [
-        { name: "skill", skill: "enabled", mcp: "enabled" },
-        { name: "control", skill: "disabled", mcp: "enabled" },
+        { name: "Agent only", skill: "disabled", mcp: "disabled" },
+        { name: "Skill only", skill: "enabled", mcp: "disabled" },
+        { name: "MCP only", skill: "disabled", mcp: "enabled" },
+        { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
       ],
     },
     improvementAgent: {
@@ -60,6 +64,26 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement configuration", () => {
+  test("configures the Azure Kusto run as a four-arm main baseline without issues", () => {
+    const runSpec = loadRunSpec(fileURLToPath(
+      new URL("../specs/azure-kusto.yaml", import.meta.url)
+    ));
+
+    expect(runSpec.target.baselineRef).toBe("main");
+    expect(runSpec.experiment.conditions).toEqual([
+      { name: "Agent only", skill: "disabled", mcp: "disabled" },
+      { name: "Skill only", skill: "enabled", mcp: "disabled" },
+      { name: "MCP only", skill: "disabled", mcp: "enabled" },
+      { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
+    ]);
+    expect(runSpec.experiment.conditions.filter(
+      condition => condition.skill === "enabled"
+    )).toHaveLength(2);
+    expect(runSpec.output.issue).toBe("never");
+    expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(664);
+    expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(664);
+  });
+
   test("calculates worst-case answer and judge calls", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-config-"));
     const evalDirectory = path.join(
@@ -86,11 +110,11 @@ describe("skill improvement configuration", () => {
     expect(plan).toEqual({
       developmentPromptCount: 2,
       heldOutPromptCount: 1,
-      baselineAnswerGenerations: 8,
-      candidateAnswerGenerationsPerIteration: 4,
-      heldOutAnswerGenerations: 4,
-      maximumAnswerGenerations: 20,
-      maximumJudgeCalls: 40,
+      baselineAnswerGenerations: 16,
+      candidateAnswerGenerationsPerIteration: 8,
+      heldOutAnswerGenerations: 8,
+      maximumAnswerGenerations: 40,
+      maximumJudgeCalls: 80,
     });
   });
 

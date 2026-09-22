@@ -23,7 +23,6 @@ export type AggregatedTrial = {
   }>;
   output: string;
   targetSkillInvoked: boolean;
-  kustoToolCalls: number;
   totalTokens: number;
 };
 
@@ -34,7 +33,6 @@ export type EvaluationSummary = {
   averageScore: number;
   targetSkillInvoked: number;
   skillInvocationRate: number;
-  kustoToolCalls: number;
   totalTokens: number;
   averageTokens: number;
   judgeDisagreements: number;
@@ -46,7 +44,15 @@ export type Comparison = {
   candidate: EvaluationSummary;
   qualityImprovementPoints: number;
   scoreImprovementPoints: number;
-  tokenIncreasePercent: number;
+  averageAnswerTokenChangePercent: number;
+  changedOutcomes: Array<{
+    condition: string;
+    answerModel: string;
+    evalFile: string;
+    itemId: string;
+    referencePassed: boolean;
+    candidatePassed: boolean;
+  }>;
   byModel: Array<{
     name: string;
     referencePassRate: number;
@@ -61,10 +67,19 @@ export type Comparison = {
   }>;
 };
 
+export type AcceptanceGate = {
+  label: string;
+  observed: string;
+  requirement: string;
+  passed: boolean;
+};
+
 export type AcceptanceDecision = {
   accepted: boolean;
   reasons: string[];
   comparison: Comparison;
+  skillMarkdownTokenIncreasePercent: number;
+  gates: AcceptanceGate[];
 };
 
 export type IterationReport = {
@@ -88,7 +103,6 @@ export type SkillImprovementReport = {
   baselineCommit: string;
   baselineSkillTokens: number;
   baselineTrials: AggregatedTrial[];
-  baselineSummary: EvaluationSummary;
   iterations: IterationReport[];
   heldOut?: {
     decision: AcceptanceDecision;
@@ -162,7 +176,6 @@ export function aggregateJudgments(trials: JudgedTrial[]): AggregatedTrial[] {
       })),
       output: first.output,
       targetSkillInvoked: first.targetSkillInvoked,
-      kustoToolCalls: first.kustoToolCalls,
       totalTokens: first.totalTokens,
     };
   });
@@ -181,7 +194,6 @@ export function summarizeTrials(trials: AggregatedTrial[]): EvaluationSummary {
       : round(trials.reduce((total, trial) => total + trial.score, 0) / trials.length),
     targetSkillInvoked: invoked,
     skillInvocationRate: trials.length === 0 ? 0 : round(invoked / trials.length),
-    kustoToolCalls: trials.reduce((total, trial) => total + trial.kustoToolCalls, 0),
     totalTokens,
     averageTokens: trials.length === 0 ? 0 : round(totalTokens / trials.length),
     judgeDisagreements: trials.filter(trial => trial.judgeDisagreement).length,
@@ -239,7 +251,7 @@ export function compareTrials(
   const candidate = matchedKeys.map(key => candidateByKey.get(key)!);
   const referenceSummary = summarizeTrials(reference);
   const candidateSummary = summarizeTrials(candidate);
-  const tokenIncreasePercent = referenceSummary.averageTokens === 0
+  const averageAnswerTokenChangePercent = referenceSummary.averageTokens === 0
     ? 0
     : round(
       ((candidateSummary.averageTokens - referenceSummary.averageTokens)
@@ -258,7 +270,22 @@ export function compareTrials(
       (candidateSummary.averageScore - referenceSummary.averageScore) * 100,
       2
     ),
-    tokenIncreasePercent,
+    averageAnswerTokenChangePercent,
+    changedOutcomes: matchedKeys.flatMap(key => {
+      const referenceTrial = referenceByKey.get(key)!;
+      const candidateTrial = candidateByKey.get(key)!;
+      if (referenceTrial.passed === candidateTrial.passed) {
+        return [];
+      }
+      return [{
+        condition: referenceTrial.condition.name,
+        answerModel: referenceTrial.answerModel,
+        evalFile: referenceTrial.evalFile,
+        itemId: referenceTrial.itemId,
+        referencePassed: referenceTrial.passed,
+        candidatePassed: candidateTrial.passed,
+      }];
+    }),
     byModel: compareGroup(reference, candidate, trial => trial.answerModel),
     byEval: compareGroup(reference, candidate, trial => trial.evalFile),
   };
@@ -273,10 +300,17 @@ export function decideAcceptance(
 ): AcceptanceDecision {
   const comparison = compareTrials(referenceTrials, candidateTrials);
   const reasons: string[] = [];
-  if (
+  const gates: AcceptanceGate[] = [];
+  const qualityPassed =
     comparison.qualityImprovementPoints
-    < spec.acceptance.minimumQualityImprovementPoints
-  ) {
+    >= spec.acceptance.minimumQualityImprovementPoints;
+  gates.push({
+    label: "Quality improvement",
+    observed: `${comparison.qualityImprovementPoints.toFixed(2)} points`,
+    requirement: `at least ${spec.acceptance.minimumQualityImprovementPoints.toFixed(2)} points`,
+    passed: qualityPassed,
+  });
+  if (!qualityPassed) {
     reasons.push(
       `Quality improved by ${comparison.qualityImprovementPoints.toFixed(2)} points; `
       + `${spec.acceptance.minimumQualityImprovementPoints.toFixed(2)} required.`
@@ -284,10 +318,17 @@ export function decideAcceptance(
   }
   const worstModel = [...comparison.byModel]
     .sort((a, b) => a.differencePoints - b.differencePoints)[0];
-  if (
-    worstModel
-    && worstModel.differencePoints < -spec.acceptance.maximumModelRegressionPoints
-  ) {
+  const modelRegressionPassed = !worstModel
+    || worstModel.differencePoints >= -spec.acceptance.maximumModelRegressionPoints;
+  gates.push({
+    label: "Worst answer-model regression",
+    observed: worstModel
+      ? `${worstModel.differencePoints.toFixed(2)} points (${worstModel.name})`
+      : "N/A",
+    requirement: `no worse than -${spec.acceptance.maximumModelRegressionPoints.toFixed(2)} points`,
+    passed: modelRegressionPassed,
+  });
+  if (!modelRegressionPassed && worstModel) {
     reasons.push(
       `${worstModel.name} regressed by ${Math.abs(worstModel.differencePoints).toFixed(2)} points; `
       + `${spec.acceptance.maximumModelRegressionPoints.toFixed(2)} allowed.`
@@ -295,10 +336,17 @@ export function decideAcceptance(
   }
   const worstEval = [...comparison.byEval]
     .sort((a, b) => a.differencePoints - b.differencePoints)[0];
-  if (
-    worstEval
-    && worstEval.differencePoints < -spec.acceptance.maximumEvalRegressionPoints
-  ) {
+  const evalRegressionPassed = !worstEval
+    || worstEval.differencePoints >= -spec.acceptance.maximumEvalRegressionPoints;
+  gates.push({
+    label: "Worst evaluation regression",
+    observed: worstEval
+      ? `${worstEval.differencePoints.toFixed(2)} points (${worstEval.name})`
+      : "N/A",
+    requirement: `no worse than -${spec.acceptance.maximumEvalRegressionPoints.toFixed(2)} points`,
+    passed: evalRegressionPassed,
+  });
+  if (!evalRegressionPassed && worstEval) {
     reasons.push(
       `${worstEval.name} regressed by ${Math.abs(worstEval.differencePoints).toFixed(2)} points; `
       + `${spec.acceptance.maximumEvalRegressionPoints.toFixed(2)} allowed.`
@@ -307,26 +355,42 @@ export function decideAcceptance(
   const skillIncreasePercent = baselineSkillTokens === 0
     ? 0
     : ((candidateSkillTokens - baselineSkillTokens) / baselineSkillTokens) * 100;
-  if (skillIncreasePercent > spec.limits.maxSkillTokenIncreasePercent) {
+  const skillGrowthPassed =
+    skillIncreasePercent <= spec.limits.maxSkillTokenIncreasePercent;
+  gates.push({
+    label: "Skill Markdown token growth",
+    observed: `${skillIncreasePercent.toFixed(2)}%`,
+    requirement: `at most ${spec.limits.maxSkillTokenIncreasePercent.toFixed(2)}%`,
+    passed: skillGrowthPassed,
+  });
+  if (!skillGrowthPassed) {
     reasons.push(
       `Estimated skill tokens increased by ${skillIncreasePercent.toFixed(2)}%; `
       + `${spec.limits.maxSkillTokenIncreasePercent.toFixed(2)}% allowed.`
     );
   }
-  if (
-    spec.acceptance.minimumSkillInvocationRate !== undefined
-    && comparison.candidate.skillInvocationRate
-      < spec.acceptance.minimumSkillInvocationRate
-  ) {
-    reasons.push(
-      `Target skill invocation rate was ${(comparison.candidate.skillInvocationRate * 100).toFixed(1)}%; `
-      + `${(spec.acceptance.minimumSkillInvocationRate * 100).toFixed(1)}% required.`
-    );
+  if (spec.acceptance.minimumSkillInvocationRate !== undefined) {
+    const invocationPassed = comparison.candidate.skillInvocationRate
+      >= spec.acceptance.minimumSkillInvocationRate;
+    gates.push({
+      label: "Target Skill invocation rate",
+      observed: percent(comparison.candidate.skillInvocationRate),
+      requirement: `at least ${percent(spec.acceptance.minimumSkillInvocationRate)}`,
+      passed: invocationPassed,
+    });
+    if (!invocationPassed) {
+      reasons.push(
+        `Target skill invocation rate was ${(comparison.candidate.skillInvocationRate * 100).toFixed(1)}%; `
+        + `${(spec.acceptance.minimumSkillInvocationRate * 100).toFixed(1)}% required.`
+      );
+    }
   }
   return {
     accepted: reasons.length === 0,
     reasons,
     comparison,
+    skillMarkdownTokenIncreasePercent: round(skillIncreasePercent, 2),
+    gates,
   };
 }
 
@@ -397,8 +461,8 @@ function renderSummaryTable(trials: AggregatedTrial[]): string[] {
     groups.set(key, group);
   }
   const lines = [
-    "| Condition | Answer model | Eval | Passed | Pass rate | Score | Skill invocation | Kusto calls | Avg. tokens | Judge disagreements |",
-    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    "| Condition | Answer model | Eval | Passed | Pass rate | Score | Skill invocation | Avg. answer tokens | Judge disagreements |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
   ];
   for (const [key, group] of groups) {
     const [condition, model, evalFile] = JSON.parse(key) as string[];
@@ -406,7 +470,7 @@ function renderSummaryTable(trials: AggregatedTrial[]): string[] {
     lines.push(
       `| ${condition} | ${model} | ${evalFile} | ${summary.passed}/${summary.total} | `
       + `${percent(summary.passRate)} | ${percent(summary.averageScore)} | `
-      + `${summary.targetSkillInvoked}/${summary.total} | ${summary.kustoToolCalls} | `
+      + `${summary.targetSkillInvoked}/${summary.total} | `
       + `${summary.averageTokens.toFixed(0)} | ${summary.judgeDisagreements} |`
     );
   }
@@ -429,8 +493,7 @@ function renderFailureDetails(trials: AggregatedTrial[]): string[] {
       `- Eval: \`${trial.evalFile}\``,
       `- Pass: ${trial.passed ? "yes" : "no"}`,
       `- Skill invoked: ${trial.targetSkillInvoked ? "yes" : "no"}`,
-      `- Kusto calls: ${trial.kustoToolCalls}`,
-      `- Tokens: ${trial.totalTokens}`,
+      `- Answer tokens: ${trial.totalTokens}`,
       ""
     );
     for (const judgment of trial.judgments) {
@@ -482,9 +545,86 @@ function renderSkillEffects(trials: AggregatedTrial[]): string[] {
     : [...lines, ""];
 }
 
+function conditionSemantics(condition: AggregatedTrial["condition"]): string {
+  return `Skill ${condition.skill}; Azure MCP ${condition.mcp}`;
+}
+
+function renderBaselineArms(report: SkillImprovementReport): string[] {
+  const lines = [
+    "| Baseline arm | Configuration | Passed | Pass rate | Average score | Skill invocation | Avg. answer tokens |",
+    "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
+  ];
+  for (const condition of report.spec.experiment.conditions) {
+    const trials = report.baselineTrials.filter(
+      trial => trial.condition.name === condition.name
+    );
+    const summary = summarizeTrials(trials);
+    lines.push(
+      `| ${condition.name} | ${conditionSemantics(condition)} | `
+      + `${summary.passed}/${summary.total} | ${percent(summary.passRate)} | `
+      + `${percent(summary.averageScore)} | ${summary.targetSkillInvoked}/${summary.total} | `
+      + `${summary.averageTokens.toFixed(0)} |`
+    );
+  }
+  return lines;
+}
+
+function renderAcceptanceGates(decision: AcceptanceDecision): string[] {
+  return [
+    "| Acceptance gate | Observed | Requirement | Result |",
+    "| --- | --- | --- | --- |",
+    ...decision.gates.map(gate =>
+      `| ${gate.label} | ${gate.observed} | ${gate.requirement} | `
+      + `${gate.passed ? "Pass" : "Fail"} |`
+    ),
+  ];
+}
+
+function renderChangedOutcomes(comparison: Comparison): string[] {
+  const changed = comparison.changedOutcomes;
+  const lines = [
+    "### Changed outcomes and regressions",
+    "",
+  ];
+  if (changed.length === 0) {
+    lines.push("No individual pass/fail outcomes changed.", "");
+  } else {
+    lines.push(
+      "| Outcome | Condition | Answer model | Eval | Item |",
+      "| --- | --- | --- | --- | --- |",
+      ...changed.map(outcome =>
+        `| ${outcome.referencePassed ? "Pass" : "Fail"} → `
+        + `${outcome.candidatePassed ? "Pass" : "Fail"} | `
+        + `${outcome.condition} | ${outcome.answerModel} | `
+        + `${outcome.evalFile} | ${outcome.itemId} |`
+      ),
+      ""
+    );
+  }
+  const regressions = [
+    ...comparison.byModel
+      .filter(item => item.differencePoints < 0)
+      .map(item => `- Answer model \`${item.name}\`: ${item.differencePoints.toFixed(2)} points`),
+    ...comparison.byEval
+      .filter(item => item.differencePoints < 0)
+      .map(item => `- Eval \`${item.name}\`: ${item.differencePoints.toFixed(2)} points`),
+  ];
+  lines.push(
+    "Regressions:",
+    "",
+    ...(regressions.length > 0 ? regressions : ["- None"]),
+    ""
+  );
+  return lines;
+}
+
 export function renderReport(report: SkillImprovementReport): string {
   const lines = [
-    `# Skill improvement run: ${report.spec.target.skill}`,
+    renderReportSummary(report).trimEnd(),
+    "",
+    "# Detailed results",
+    "",
+    `## Run metadata: ${report.spec.target.skill}`,
     "",
     `- Run ID: \`${report.runId}\``,
     `- Status: **${report.status}**`,
@@ -541,12 +681,15 @@ export function renderReport(report: SkillImprovementReport): string {
         "",
         `- Quality difference: ${comparison.qualityImprovementPoints >= 0 ? "+" : ""}${comparison.qualityImprovementPoints.toFixed(2)} points`,
         `- Average score difference: ${comparison.scoreImprovementPoints >= 0 ? "+" : ""}${comparison.scoreImprovementPoints.toFixed(2)} points`,
-        `- Average token difference: ${comparison.tokenIncreasePercent >= 0 ? "+" : ""}${comparison.tokenIncreasePercent.toFixed(2)}%`,
+        `- Average answer-token change (diagnostic): ${comparison.averageAnswerTokenChangePercent >= 0 ? "+" : ""}${comparison.averageAnswerTokenChangePercent.toFixed(2)}%`,
+        `- Skill Markdown token growth (acceptance gate): ${iteration.decision.skillMarkdownTokenIncreasePercent >= 0 ? "+" : ""}${iteration.decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%`,
         ""
       );
+      lines.push(...renderAcceptanceGates(iteration.decision), "");
       if (iteration.decision.reasons.length > 0) {
         lines.push(...iteration.decision.reasons.map(reason => `- ${reason}`), "");
       }
+      lines.push(...renderChangedOutcomes(comparison));
     }
     if (iteration.trials) {
       lines.push(
@@ -592,53 +735,88 @@ export function renderReport(report: SkillImprovementReport): string {
   return `${lines.join("\n")}\n`;
 }
 
-export function renderIssueSummary(report: SkillImprovementReport): string {
+export function renderReportSummary(report: SkillImprovementReport): string {
+  const outcome = report.status === "failed"
+    ? "RUN FAILED"
+    : report.finalAccepted
+      ? "ACCEPTED"
+      : "NOT ACCEPTED";
   const lines = [
-    `# Skill improvement run: ${report.spec.target.skill}`,
+    `# Final outcome: ${outcome}`,
+    "",
+    `Skill improvement run for \`${report.spec.target.skill}\`.`,
     "",
     `- Status: **${report.status}**`,
     `- Baseline: \`${report.baselineCommit}\``,
     `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
-    `- Final acceptance: **${report.finalAccepted ? "passed" : "not passed"}**`,
     `- Answer models: ${report.spec.models.answers.map(model => `\`${model}\``).join(", ")}`,
     `- Judge models: ${report.spec.models.judges.map(model => `\`${model}\``).join(", ")}`,
     `- Answer generations: ${report.usage.answerGenerations}/${report.spec.limits.maxAnswerGenerations}`,
     `- Judge calls: ${report.usage.judgeCalls}/${report.spec.limits.maxJudgeCalls}`,
     `- Duration: ${report.usage.durationMinutes.toFixed(1)} minutes`,
     "",
-    "## Baseline",
+    "## Configured baseline arms",
     "",
-    `- Passed: ${report.baselineSummary.passed}/${report.baselineSummary.total}`,
-    `- Pass rate: ${percent(report.baselineSummary.passRate)}`,
-    `- Average score: ${percent(report.baselineSummary.averageScore)}`,
-    `- Skill invocation: ${report.baselineSummary.targetSkillInvoked}/${report.baselineSummary.total}`,
-    `- Judge disagreements: ${report.baselineSummary.judgeDisagreements}`,
+    ...renderBaselineArms(report),
     "",
-    "## Iterations",
+    "## Candidate decisions",
     "",
-    "| Iteration | Decision | Quality difference | Score difference | Token difference | Reason |",
-    "| ---: | --- | ---: | ---: | ---: | --- |",
+    "| Iteration | Decision | Candidate pass rate | Improvement | Avg. answer-token change (diagnostic) | Skill Markdown token growth (gate) |",
+    "| ---: | --- | ---: | ---: | ---: | ---: |",
   ];
   for (const iteration of report.iterations) {
     const decision = iteration.decision;
     lines.push(
       `| ${iteration.iteration} | ${decision ? (decision.accepted ? "Accepted" : "Rejected") : "Not evaluated"} | `
+      + `${decision ? percent(decision.comparison.candidate.passRate) : "N/A"} | `
       + `${decision ? `${decision.comparison.qualityImprovementPoints.toFixed(2)} points` : "N/A"} | `
-      + `${decision ? `${decision.comparison.scoreImprovementPoints.toFixed(2)} points` : "N/A"} | `
-      + `${decision ? `${decision.comparison.tokenIncreasePercent.toFixed(2)}%` : "N/A"} | `
-      + `${(iteration.validationErrors[0] ?? decision?.reasons[0] ?? "").slice(0, 500)} |`
+      + `${decision ? `${decision.comparison.averageAnswerTokenChangePercent.toFixed(2)}%` : "N/A"} | `
+      + `${decision ? `${decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%` : "N/A"} |`
     );
+  }
+  lines.push("", "## Rejection and validation reasons", "");
+  const reasons = report.iterations.flatMap(iteration => [
+    ...iteration.validationErrors.map(reason => `- Iteration ${iteration.iteration} validation: ${reason}`),
+    ...(iteration.decision?.reasons ?? []).map(
+      reason => `- Iteration ${iteration.iteration} rejection: ${reason}`
+    ),
+  ]);
+  lines.push(...(reasons.length > 0 ? reasons : ["- None"]), "");
+
+  for (const iteration of report.iterations) {
+    if (!iteration.decision) {
+      continue;
+    }
+    lines.push(
+      `## Iteration ${iteration.iteration} acceptance gates`,
+      "",
+      ...renderAcceptanceGates(iteration.decision),
+      ""
+    );
+    lines.push(...renderChangedOutcomes(iteration.decision.comparison));
+    if (iteration.candidatePatchPath) {
+      lines.push(`- Candidate patch: \`${iteration.candidatePatchPath}\``);
+    }
+    if (iteration.candidateSkillPath) {
+      lines.push(`- Candidate Skill snapshot: \`${iteration.candidateSkillPath}\``);
+    }
+    if (iteration.candidatePatchPath || iteration.candidateSkillPath) {
+      lines.push("");
+    }
   }
   if (report.failure) {
     lines.push("", "## Failure", "", report.failure.slice(0, 4000), "");
   }
   lines.push(
+    "## Detailed evidence",
     "",
-    "The complete report, trajectories, judge evidence, agent output, and patches are attached to the workflow run.",
+    "The GitHub artifact contains the complete report, raw generation and judgment trajectories, judge evidence, agent output, patches, and Skill snapshots.",
     ""
   );
   return `${lines.join("\n")}\n`;
 }
+
+export const renderIssueSummary = renderReportSummary;
 
 export function writeReport(outputDirectory: string, report: SkillImprovementReport): void {
   fs.mkdirSync(outputDirectory, { recursive: true });
@@ -653,8 +831,13 @@ export function writeReport(outputDirectory: string, report: SkillImprovementRep
     "utf8"
   );
   fs.writeFileSync(
+    path.join(outputDirectory, "report-summary.md"),
+    renderReportSummary(report),
+    "utf8"
+  );
+  fs.writeFileSync(
     path.join(outputDirectory, "issue-summary.md"),
-    renderIssueSummary(report),
+    renderReportSummary(report),
     "utf8"
   );
   fs.writeFileSync(
