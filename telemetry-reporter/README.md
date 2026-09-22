@@ -161,5 +161,9 @@ the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final
 `telemetry-reporter_manifest` artifact records and verifies the complete
 six-target build.
 
+Pipeline restores use the Azure SDK public NuGet feed instead of direct
+`nuget.org` access, keeping dependency acquisition within the 1ES network
+boundary.
+
 Musl-based Linux packages are tracked separately and are not produced by this
 pipeline.

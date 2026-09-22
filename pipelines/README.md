@@ -16,6 +16,10 @@ The pipeline has three stages:
    `osx-arm64`, `linux-x64`, and `linux-arm64`.
 3. **Verify** validates every SHA-256 sidecar and publishes a build manifest.
 
+Build jobs authenticate to the Azure SDK public NuGet feed and use
+[`config/telemetry-reporter.nuget.config`](config/telemetry-reporter.nuget.config)
+so dependency restore remains inside the 1ES network boundary.
+
 The YAML schedule runs from `main` at 06:00 UTC. Manual runs always build the
 full matrix. Scheduled runs skip the Build and Verify stages when changes are
 limited to unrelated, documentation, or test files.

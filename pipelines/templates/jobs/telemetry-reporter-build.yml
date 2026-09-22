@@ -31,12 +31,30 @@ jobs:
       - checkout: self
         fetchDepth: 0
 
+      - task: NuGetAuthenticate@1
+        displayName: Authenticate Azure SDK NuGet feed
+
+      - task: PowerShell@2
+        displayName: Resolve .NET SDK version
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            $globalJsonPath = Join-Path '$(Build.SourcesDirectory)' 'telemetry-reporter/global.json'
+            $sdkVersion = (Get-Content -LiteralPath $globalJsonPath -Raw -ErrorAction Stop | ConvertFrom-Json).sdk.version
+            if ([string]::IsNullOrWhiteSpace($sdkVersion)) {
+              Write-Error "Unable to read sdk.version from '$globalJsonPath'."
+              exit 1
+            }
+            Write-Host "##vso[task.setvariable variable=DotNetSdkVersion]$sdkVersion"
+
       - task: UseDotNet@2
-        displayName: Install .NET SDK
+        displayName: Install .NET SDK $(DotNetSdkVersion)
+        retryCountOnTaskFailure: 3
         inputs:
           packageType: sdk
-          useGlobalJson: true
-          workingDirectory: $(Build.SourcesDirectory)/telemetry-reporter
+          version: $(DotNetSdkVersion)
+          performMultiLevelLookup: true
 
       - ${{ if eq(parameters.OSName, 'linux') }}:
           - task: PowerShell@2
@@ -78,6 +96,7 @@ jobs:
             -Configuration Release
             -RuntimeIdentifier '$(BuildRuntimeIdentifier)'
             -OutputRoot '$(Build.ArtifactStagingDirectory)/native'
+            -RestoreConfigFile '$(Build.SourcesDirectory)/pipelines/config/telemetry-reporter.nuget.config'
         env:
           AZURE_MCP_COLLECT_TELEMETRY: "false"
 
