@@ -24,6 +24,15 @@ extends:
     settings:
       skipBuildTagsForGitHubPullRequests: true
       networkIsolationPolicy: Permissive
+    sdl:
+      sourceAnalysisPool:
+        name: azsdk-pool
+        image: windows-2022
+        os: windows
+      psscriptanalyzer:
+        compiled: true
+        break: true
+      policy: M365
     stages:
       - stage: Initialize
         displayName: Initialize
