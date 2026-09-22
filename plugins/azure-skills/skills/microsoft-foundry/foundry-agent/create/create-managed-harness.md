@@ -17,7 +17,7 @@ Use this workflow only when the user explicitly says Managed Harness Agent, GitH
 - Do not convert an existing Prompt, Hosted, or Managed Harness Agent to another type. Create a new Agent instead.
 - Prefer direct tools. Use a Toolbox only when the user explicitly requests one.
 - Consume a connection/toolbox supplied by the user or already referenced in the project. Create one only when explicitly requested.
-- Phase 1 tools: Copilot built-ins, Web Search, Code Interpreter, File Search, and Work IQ.
+- Supported direct tools: Copilot built-ins, Code Interpreter, File Search, Web Search, MCP, Azure AI Search, OpenAPI, Agent-to-Agent, Work IQ, and Fabric IQ.
 - Do not generate an evaluation suite in this workflow.
 
 Read [Managed Harness Agent Authoring](references/managed-harness-agent.md) and [Managed Harness Agent Tools](references/tools/managed-harness-agent/agent-tools.md) before editing `azure.yaml`.
@@ -115,7 +115,12 @@ Read the matching Managed Harness Agent reference before editing:
 | Web Search | [Web Search](references/tools/managed-harness-agent/tool-web-search.md) |
 | Code Interpreter | [Code Interpreter](references/tools/managed-harness-agent/tool-code-interpreter.md) |
 | File Search | [File Search](references/tools/managed-harness-agent/tool-file-search.md) |
+| MCP server | [MCP](references/tools/managed-harness-agent/tool-mcp.md) |
+| Azure AI Search | [Azure AI Search](references/tools/managed-harness-agent/tool-azure-ai-search.md) |
+| OpenAPI | [OpenAPI](references/tools/managed-harness-agent/tool-openapi.md) |
+| Agent-to-Agent | [Agent-to-Agent](references/tools/managed-harness-agent/tool-a2a.md) |
 | Work IQ | [Work IQ](references/tools/managed-harness-agent/tool-work-iq.md) |
+| Fabric IQ | [Fabric IQ](references/tools/managed-harness-agent/tool-fabric-iq.md) |
 
 For connection-backed tools, use only a connection supplied by the user or already present in the Managed Harness Agent configuration. If missing, leave a clear placeholder or stop and request the value. Create it only when explicitly requested.
 
