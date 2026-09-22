@@ -76,7 +76,7 @@ jobs:
                   }
                 }
                 elseif (Get-Command tdnf -ErrorAction SilentlyContinue) {
-                  sudo tdnf install --assumeyes clang binutils zlib-devel
+                  sudo tdnf install --assumeyes clang binutils gcc glibc-devel zlib-devel
                   if ($LASTEXITCODE -ne 0) {
                     Write-Error "tdnf install failed with exit code $LASTEXITCODE."
                     exit 1
