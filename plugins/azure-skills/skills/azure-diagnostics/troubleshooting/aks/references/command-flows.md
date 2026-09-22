@@ -102,7 +102,7 @@ kubectl describe quota -n <namespace>
 Standard diagnostics inconclusive -> select gadget from symptom-to-gadget map -> run `scripts/run-ig.sh` (or `run-ig.ps1`; resolves node, applies timeout) -> interpret output -> correlate with prior evidence
 ```
 
-Use when steps 1–3 of the evidence order (Azure-side, Kubernetes-side, and detector evidence) do not reveal root cause. See [inspektor-gadget.md](inspektor-gadget.md) for the full gadget catalog and command patterns.
+Use when the standard checks relevant to the symptom do not reveal root cause; collect Azure-side, Kubernetes-side, or detector evidence as the investigation requires, not in a mandatory cross-platform sequence. See [inspektor-gadget.md](inspektor-gadget.md) for the full gadget catalog and command patterns.
 
 ## Safety Boundary
 

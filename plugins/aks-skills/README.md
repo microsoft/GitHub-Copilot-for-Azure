@@ -49,11 +49,14 @@ procedure.
 
 - **Claude Code / compatible CLI (after the generated catalog change merges):** add the
   `microsoft/azure-skills` marketplace, then install
-  `aks-skills@azure-skills`. Update with `/plugin update aks-skills@azure-skills`;
-  this repository ships no updater, and merging source here does not update
-  installed copies. A host under managed plugin policy may block install or
-  update; treat that as the unsupported path and continue with base Azure
-  guidance.
+  `aks-skills@azure-skills`. Update with `/plugin update aks-skills@azure-skills`
+  (`plugin update` takes `plugin-name@marketplace-name`); this repository
+  ships no updater, and merging source here does not update installed copies.
+  Under managed plugin policy: if policy blocks installing or enabling the
+  plugin, it is unavailable on that host, so continue with base Azure guidance;
+  if policy only pins or blocks updates, the installed approved version stays
+  usable within its documented capabilities — use it, say it is pinned, and do
+  not bypass the restriction.
 - **SRE Agent:** add the `microsoft/azure-skills` marketplace, select the
   `aks-skills` plugin, and record the installation's pinned commit SHA.
   Updates are explicit. If an integration requires an MCP connector, configure

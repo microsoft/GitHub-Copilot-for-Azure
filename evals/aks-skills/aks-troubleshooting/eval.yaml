@@ -380,16 +380,21 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Evidence order: baseline-only supplied CrashLoopBackOff evidence starts locally"
-    # Baseline-only development regression for the base guide's symptom-selected
-    # evidence order and checkpoint gate. Not a with/without-skill comparison.
+  - name: "Evidence order: baseline guide consumed, CrashLoopBackOff starts locally"
+    # Baseline-only instruction-consumption regression: the prompt selects the
+    # installed azure-diagnostics skill explicitly so the run exercises the base
+    # AKS guide's symptom-selected evidence order and checkpoint gate. Not a
+    # with/without-skill comparison and not a natural-routing case (those stay
+    # separate above).
     prompt: |
-      Diagnose without running commands. Pod api-7d9 in namespace checkout on
-      an existing AKS cluster is in CrashLoopBackOff. Its supplied last state
-      is Terminated reason=Error, exitCode=1, and previous logs end with
-      "missing PAYMENT_ENDPOINT". We do not have Log Analytics or Container
-      insights. State the next evidence reads in order and what remains
-      uncertain.
+      Use the azure-diagnostics skill and read its
+      troubleshooting/aks/aks-troubleshooting.md guide before answering. Diagnose without running az or kubectl commands and
+      without changing anything. Pod api-7d9 in namespace checkout on an
+      existing AKS cluster is in CrashLoopBackOff; nothing else on the cluster
+      is reported unhealthy. Its last state is Terminated reason=Error,
+      exitCode=1, and previous logs end with "missing PAYMENT_ENDPOINT". We do
+      not have Log Analytics or Container insights. State the next evidence
+      reads in order and what remains uncertain.
     tags:
       type: integration
       tier: full
@@ -399,18 +404,22 @@ stimuli:
       requiredSkills:
         - azure-diagnostics
     rubric:
-      - "The response starts with target-bound pod status, describe/events, termination details, and current/previous logs for api-7d9 in checkout; uses the supplied missing PAYMENT_ENDPOINT log as application/configuration evidence; does not require an Azure, Resource Health, Log Analytics, or Container insights sweep before those workload reads; records unavailable monitoring evidence as unknown and expands to node or Azure evidence only if the pod branch requires it; does not make installing an optional AKS add-on a precondition for the answer and mentions it at most once as an optional offer or as not available; claims no checks ran and proposes no mutation."
+      - "The response starts with target-bound pod status, describe/events, termination details, and current/previous logs for api-7d9 in checkout; uses the supplied missing PAYMENT_ENDPOINT log as application/configuration evidence; does not require an Azure, Resource Health, Log Analytics, or Container insights sweep before those workload reads; records unavailable monitoring evidence as unknown and expands to node or Azure evidence only if the pod branch requires it; does not make installing an optional AKS add-on a precondition for the answer and mentions it at most once as an optional offer or as not available; claims no az or kubectl checks ran and proposes no mutation."
     graders:
       - type: skill-invocation
         config:
           required: [azure-diagnostics]
+      - type: tool-calls
+        config:
+          required:
+            # Any read tool counts; what matters is that the baseline AKS guide was read.
+            - name: "^(view|bash|grep)$"
+              pattern: "troubleshooting/aks/aks-troubleshooting\\.md"
       - type: prompt
         config:
           scoring: binary
           threshold: 1
-      - type: output-not-matches
-        config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      # Pod-error terminology is valid diagnostic output, not an agent-runtime failure.
 
   - name: "Evidence order: failed upgrade starts from Azure operation"
     prompt: |
