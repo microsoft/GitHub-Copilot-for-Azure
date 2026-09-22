@@ -101,12 +101,17 @@ function Get-PreviousScheduledBuild {
         throw "Unable to query previous scheduled builds. $($_.Exception.Message)"
     }
 
-    return @($response.value |
+    $previousBuilds = @($response.value |
         Where-Object {
             [int]$_.id -ne $BuildId -and
             -not [string]::IsNullOrWhiteSpace([string]$_.sourceVersion)
         } |
-        Select-Object -First 1)[0]
+        Select-Object -First 1)
+    if ($previousBuilds.Count -eq 0) {
+        return $null
+    }
+
+    return $previousBuilds[0]
 }
 
 if ([string]::IsNullOrWhiteSpace($RepositoryRoot)) {
