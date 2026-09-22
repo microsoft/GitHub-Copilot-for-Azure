@@ -22,7 +22,7 @@ telemetry-reporter/       # Standalone .NET 10 telemetry reporting executable
   src/                    # Console application and telemetry library
   tests/                  # .NET unit tests
   resources/              # Embedded Azure MCP compatibility allowlists
-  eng/scripts/            # Opt-in Windows x64 Native AOT packaging
+  eng/scripts/            # Opt-in cross-platform Native AOT packaging
   ghcfa-telem.slnx        # .NET solution
   version.json            # NBGV version rooted at 0.1
 
