@@ -22,7 +22,11 @@ plugin only when one focused workflow materially fits the current incident.
    mechanism.
 3. If it is missing and useful, explain the focused benefit and ask before
    using the host-supported plugin manager. Do not silently install the plugin,
-   add it as a dependency, or bypass host policy.
+   add it as a dependency, or bypass host policy. After installation, confirm
+   the selected skill appears in the host's available-skill inventory before
+   invoking it. If the host activates newly installed components only in a new
+   session or after a restart, say so, continue this baseline guide now, and
+   report the focused skill as installed but not yet active rather than used.
 4. If installation is declined or unsupported, continue this baseline guide
    with available reads or supplied evidence. Do not repeatedly prompt, stop
    without help, or pretend the optional skill executed.

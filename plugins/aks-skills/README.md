@@ -49,7 +49,11 @@ procedure.
 
 - **Claude Code / compatible CLI (after the generated catalog change merges):** add the
   `microsoft/azure-skills` marketplace, then install
-  `aks-skills@azure-skills`.
+  `aks-skills@azure-skills`. Update with `/plugin update aks-skills@azure-skills`;
+  this repository ships no updater, and merging source here does not update
+  installed copies. A host under managed plugin policy may block install or
+  update; treat that as the unsupported path and continue with base Azure
+  guidance.
 - **SRE Agent:** add the `microsoft/azure-skills` marketplace, select the
   `aks-skills` plugin, and record the installation's pinned commit SHA.
   Updates are explicit. If an integration requires an MCP connector, configure
@@ -81,7 +85,10 @@ When the current task would benefit from one of these focused skills, use the
 host's available-skill inventory or an approved read-only host capability to
 check whether it is present. If present and relevant to the requested task,
 invoke only that skill through the host's native skill mechanism. If absent,
-explain the benefit and ask before using the host-supported plugin manager. If
+explain the benefit and ask before using the host-supported plugin manager.
+After installation, confirm the skill appears in the host's inventory before
+invoking it; if the host activates new components only in a new session or
+after a restart, say so and continue with base guidance now. If
 installation is declined or the host cannot install or execute the add-on,
 continue with the base Azure guidance and supplied evidence rather than
 stopping.
@@ -96,7 +103,8 @@ reference should be loaded into every conversation.
 baseline for customers without this add-on. `aks-skills/skills/aks-troubleshooting/`
 is the deeper version of the same topics. Eleven files share names across the
 two directories; `load-balancer-and-ingress.md` and `spot-and-zone-issues.md`
-are identical, the rest are baseline subsets. Both describe the same tool
+are identical, the rest overlap: the baseline may say less about focused
+topics and carries its own baseline scripts. Both describe the same tool
 boundary: the Azure MCP AKS area provides cluster and node-pool metadata only,
 `kubectl` never runs through it, and the separate `Azure/aks-mcp` server is not
 configured by either plugin.

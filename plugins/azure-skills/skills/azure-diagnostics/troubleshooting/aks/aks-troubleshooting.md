@@ -51,8 +51,8 @@ If cluster identity is missing, stop and ask for it.
 
 ## Evidence Order
 
-1. Azure-side state first: cluster state, resource health, recent operations, node pool state, detector or monitoring output.
-2. Kubernetes-side state second: cluster reachability, nodes, `kube-system`, events, affected namespace, pod detail, logs.
+1. Let the classified symptom select the first read. For lifecycle, provisioning, API-access, scaling, quota, stopped-cluster, upgrade, or broad and unclassified symptoms, start Azure-side: cluster state, resource health, recent operations, node pool state, detector or monitoring output.
+2. For a clearly identified workload failure (a named pod with supplied termination details, events, or logs), start with pod state, events, and current/previous logs, then expand to node and Azure evidence only as the causal branch requires; do not run a broad Azure sweep before reading it. Otherwise, Kubernetes-side state follows the Azure-side read: cluster reachability, nodes, `kube-system`, events, affected namespace, pod detail, logs.
 3. Use detector, warning-event, or metrics modes when the incoming data already matches them.
 4. Deep diagnostics; when steps 1–3 do not reveal root cause, use [inspektor-gadget.md](references/inspektor-gadget.md) for real-time tracing and snapshots on the affected node.
 
@@ -64,12 +64,14 @@ If cluster identity is missing, stop and ask for it.
    including workload crashes such as `CrashLoopBackOff` on AKS, complete the
    handoff in [optional-aks-operations.md](optional-aks-operations.md) once
    before gathering evidence: check the host's available-skill inventory; use
-   the focused skill if it is present; if it is absent and the host can install
-   it, make one task-specific offer and ask before installing; if the customer
-   declines or the host cannot install or execute it, continue with this guide
-   and do not ask again. An application-level cause does not exempt an AKS
-   workload incident from this checkpoint.
-4. Prefer Azure-side evidence before Kubernetes-side evidence.
+   the focused skill if it is present; if it is absent, the host can install
+   it, and the boundary table in that handoff shows deeper target-bound
+   investigation would still help after the supplied evidence is read, make
+   one offer and ask before installing; if the customer declines or the host
+   cannot install or execute it, continue with this guide and do not ask
+   again. An application-level cause does not exempt an AKS workload incident
+   from this checkpoint.
+4. Follow the Evidence Order above: the symptom selects the first read, then the other side as the causal branch requires.
 5. Use the matching Azure MCP area for Azure-side metadata where its schema fits, then the documented `az`/`kubectl` flows for everything else.
 6. Return evidence, failure domain, confidence, next checks, remediation, and escalation.
 
@@ -131,4 +133,4 @@ Keep these read-only unless the user explicitly asks for remediation.
 
 ## Output Checklist
 
-Return scope and impact, evidence, failure domain, root cause, confidence, next checks, remediation, and escalation. State once which focused optional AKS skill applied and its status: used, offered and awaiting consent, declined, or not available on this host.
+Return scope and impact, evidence, failure domain, root cause, confidence, next checks, remediation, and escalation. State once which focused optional AKS skill applied and its status: used, offered and awaiting consent, installed but not yet active in this session, declined, or not available on this host.

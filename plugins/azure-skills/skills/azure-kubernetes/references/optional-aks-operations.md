@@ -16,7 +16,11 @@ workflows.
 3. If it is missing and useful, explain the task-specific benefit and ask for
    consent before installation. After approval, use the host-supported plugin
    manager or installation path. Do not invent a host-specific command or
-   bypass host policy.
+   bypass host policy. After installation, confirm the selected skill appears
+   in the host's available-skill inventory before invoking it. If the host
+   activates newly installed components only in a new session or after a
+   restart, say so, continue the base workflow now, and report the focused
+   skill as installed but not yet active rather than used.
 4. If the customer declines, or the host cannot install or execute the add-on,
    continue the base workflow with available Azure/Kubernetes reads or supplied
    evidence. Do not dead-end or imply that optional execution occurred.
