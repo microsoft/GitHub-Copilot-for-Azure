@@ -20,7 +20,6 @@ describe("skill improvement workflow", () => {
       workflow.indexOf("concurrency:")
     );
     expect(workflow).toContain("- name: Publish report to Azure Storage");
-    expect(workflow).toContain("## Azure Storage report");
     expect(workflow).toContain("if: always() && vars.REPORT_STORAGE_ACCOUNT != ''");
     expect(workflow).toContain("STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}");
     expect(dispatchConfiguration).not.toMatch(/storage|container|prefix/i);
@@ -41,11 +40,9 @@ describe("skill improvement workflow", () => {
     expect(publishStep).not.toContain("continue-on-error");
     expect(publishStep).not.toContain("az storage container create");
     expect(publishStep).not.toContain("az storage container set-permission");
-    expect(publishStep.indexOf("## Azure Storage report")).toBeGreaterThan(
-      publishStep.indexOf("az storage blob upload-batch")
-    );
-    expect(publishStep).toContain('echo "- Storage account: \\`${STORAGE_ACCOUNT}\\`"');
-    expect(publishStep).toContain('echo "- Blob prefix: \\`${PREFIX}\\`"');
+    expect(publishStep).toContain("--only-show-errors");
+    expect(publishStep).toContain("--output none");
+    expect(publishStep).not.toContain("GITHUB_STEP_SUMMARY");
     expect(workflow).not.toMatch(/account-key|connection-string|sas-token/i);
     expect(workflow).not.toMatch(/--public-access (blob|container)/i);
   });

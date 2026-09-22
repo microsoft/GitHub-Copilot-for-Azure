@@ -222,15 +222,9 @@ jobs:
             --destination-path "$PREFIX" \
             --source "$UPLOAD_OUTPUT" \
             --auth-mode login \
-            --overwrite
-          {
-            echo
-            echo "## Azure Storage report"
-            echo
-            echo "- Storage account: \`${STORAGE_ACCOUNT}\`"
-            echo "- Container: \`skill-improvement-runs\`"
-            echo "- Blob prefix: \`${PREFIX}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
+            --overwrite \
+            --only-show-errors \
+            --output none
 
       - name: Create result issue
         if: always() && steps.metadata.outputs.issue-mode == 'always'

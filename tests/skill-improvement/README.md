@@ -79,8 +79,9 @@ failure fails the job.
 
 The `skill-improvement-runs` container must already exist and must not allow
 public access. Access is RBAC-based; no keys, SAS tokens, connection strings,
-or public URLs are emitted. Raw trajectories can contain prompts, outputs, and
-tool evidence. Pattern-based redaction reduces known secret exposure but is not
+or public URLs are emitted. Successful uploads are quiet; upload errors still
+fail the workflow. Raw trajectories can contain prompts, outputs, and tool
+evidence. Pattern-based redaction reduces known secret exposure but is not
 comprehensive, so restrict container access and configure lifecycle/retention
 according to repository policy.
 
