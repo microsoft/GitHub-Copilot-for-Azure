@@ -294,12 +294,6 @@ A Managed Harness Agent does not require Hosted Agent source packaging, Docker, 
 azd deploy <service-name> --no-prompt
 ```
 
-For required sibling dependencies, such as an explicitly requested Toolbox reuse service, deploy the dependency graph with:
-
-```bash
-azd deploy --all --no-prompt
-```
-
 Deployment reads the Prompt Agent definition from `azure.yaml` and creates a new immutable version. It must not package source or build a container.
 
 ### Step 4: Verify and invoke
@@ -313,7 +307,8 @@ Verify the version is active/deployed and the published definition retains:
 - `kind: prompt`
 - `harness.type: github_copilot_preview`
 - Requested direct tools
-- Toolbox attachment, when explicitly configured
+- Versioned Toolbox MCP endpoint, when explicitly configured
+- Versioned Skill references, when explicitly configured
 
 A successful deploy that drops the harness is a failure.
 

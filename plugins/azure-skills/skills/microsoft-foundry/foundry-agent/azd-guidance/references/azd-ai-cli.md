@@ -138,7 +138,7 @@ services:
       - type: web_search
 ```
 
-A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. When explicitly requested, an existing Toolbox is represented by a sibling `azure.ai.toolbox` reuse service and attached with the Agent's singular `toolbox` field.
+A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. In this workflow, existing Toolboxes are attached through their versioned MCP endpoint and existing Skills are referenced by name and version; connection, Toolbox, and Skill resources are managed separately with their `azd ai` commands.
 
 ## State (azd env vars)
 

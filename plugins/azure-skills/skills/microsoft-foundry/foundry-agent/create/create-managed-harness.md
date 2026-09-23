@@ -16,7 +16,7 @@ Use this workflow only when the user explicitly says Managed Harness Agent, GitH
 - Do not use Hosted samples, local runtime, sessions, files, or monitor commands.
 - Do not convert an existing Prompt, Hosted, or Managed Harness Agent to another type. Create a new Agent instead.
 - Prefer direct tools. Use a Toolbox only when the user explicitly requests one.
-- Consume a connection/toolbox supplied by the user or already referenced in the project. Create one only when explicitly requested.
+- Consume a connection, Toolbox, or Skill supplied by the user or already referenced in the project. Create one only when explicitly requested.
 - Supported direct tools: Copilot built-ins, Code Interpreter, File Search, Web Search, MCP, Azure AI Search, OpenAPI, Agent-to-Agent, Work IQ, and Fabric IQ.
 - Do not generate an evaluation suite in this workflow.
 
@@ -105,7 +105,7 @@ Confirm:
 
 Preserve unrelated services and unknown user-authored fields.
 
-### Step 6: Add tools
+### Step 6: Add capabilities
 
 Read the matching Managed Harness Agent reference before editing:
 
@@ -125,6 +125,8 @@ Read the matching Managed Harness Agent reference before editing:
 For connection-backed tools, use only a connection supplied by the user or already present in the Managed Harness Agent configuration. If missing, leave a clear placeholder or stop and request the value. Create it only when explicitly requested.
 
 If the user explicitly requests a Toolbox, follow [Toolbox](../toolbox/toolbox.md) for creation/versioning, then attach the existing endpoint as described in [Managed Harness Agent Authoring](references/managed-harness-agent.md).
+
+For Foundry Skills, follow [Managed Harness Agent Skills](references/skills/managed-harness-agent-skill-attach.md). Manage the Skill separately with `azd ai skill`, then pin its existing version in the Agent's top-level `skills` list.
 
 ### Step 7: Deploy and invoke
 

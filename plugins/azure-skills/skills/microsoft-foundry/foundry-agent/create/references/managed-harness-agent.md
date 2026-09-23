@@ -18,45 +18,62 @@ Use REST field names, normally `snake_case`, inside `tools[]`. azd strictly vali
 
 ## Toolbox attachment
 
-A Managed Harness Agent prefers direct tools. When the user explicitly requests an existing Toolbox, represent its endpoint as a sibling reuse service:
+A Managed Harness Agent prefers direct tools. When the user explicitly requests an existing Toolbox, create or update it separately with `azd ai toolbox`, then attach its versioned MCP endpoint as a direct tool:
 
 ```yaml
-services:
-  research-tools:
-    host: azure.ai.toolbox
-    endpoint: ${RESEARCH_TOOLBOX_ENDPOINT}
-    env:
-      RESEARCH_TOOLBOX_ENDPOINT: ${RESEARCH_TOOLBOX_ENDPOINT}
-
-  assistant:
-    host: azure.ai.agent
-    uses:
-      - research-tools
-    kind: prompt
-    harness:
-      type: github_copilot_preview
-    toolbox:
-      name: research-tools
+tools:
+  - type: mcp
+    server_label: research-tools
+    server_url: https://<account>.services.ai.azure.com/api/projects/<project>/toolboxes/<toolbox>/versions/<version>/mcp?api-version=v1
+    require_approval: never
 ```
 
-Set the endpoint outside source control:
+Resolve the endpoint from the separately managed Toolbox:
 
 ```bash
-azd env set RESEARCH_TOOLBOX_ENDPOINT "<toolbox-endpoint>"
+azd ai toolbox show <toolbox-name> \
+  --version <version> \
+  --project-endpoint "<project-endpoint>" \
+  --output json
 ```
 
-Both `uses` and singular `toolbox` are required. `azd ai agent toolbox add` adds only `uses`; it does not attach the Toolbox to a Prompt Agent.
+Do not declare `host: azure.ai.toolbox` in this phase: that would make `azd deploy` create or update the Toolbox. Do not use the Agent's singular `toolbox` field, which expects an azd-managed sibling Toolbox service.
 
-Optional fields:
+If the Toolbox endpoint requires a project connection, add its connection ID:
 
 ```yaml
-toolbox:
-  name: research-tools
-  version: "3"
-  projectConnectionId: toolbox-auth
+tools:
+  - type: mcp
+    server_label: research-tools
+    server_url: <versioned-toolbox-mcp-endpoint>
+    project_connection_id: <toolbox-connection>
+    require_approval: never
 ```
 
 Do not use Hosted Agent `TOOLBOX_ENDPOINT` code wiring for a Managed Harness Agent.
+
+## Skill attachment
+
+Create and version Skills separately with `azd ai skill`. Reference an existing Foundry Skill by name and immutable version:
+
+```yaml
+skills:
+  - name: issue-triage
+    version: "3"
+```
+
+For a local Skill, upload it first:
+
+```bash
+azd ai skill create issue-triage \
+  --file ./skills/issue-triage/ \
+  --project-endpoint "<project-endpoint>" \
+  --output json
+```
+
+Use the returned version in `azure.yaml`. For updates, run `azd ai skill update` and replace the pinned version.
+
+Do not declare `host: azure.ai.skill` in this phase: that would make `azd deploy` manage the Skill lifecycle. The current `azure.ai.agents` extension may reject object-form Skill references because its authoring schema still models `skills` as strings; treat that as a known extension bug rather than changing the intended Foundry payload.
 
 ## Validation
 
@@ -65,6 +82,7 @@ After deploy, read the published definition and verify:
 - `kind` remains `prompt`.
 - `harness.type` remains `github_copilot_preview`.
 - Direct tools retain their authored fields.
-- The Toolbox resolves to an injected MCP tool when configured.
+- The versioned Toolbox MCP endpoint remains in the direct `mcp` tool.
+- Skill references retain both `name` and `version`.
 
 Managed Harness Agents, ordinary Prompt Agents, and Hosted Agents are not converted in place.
