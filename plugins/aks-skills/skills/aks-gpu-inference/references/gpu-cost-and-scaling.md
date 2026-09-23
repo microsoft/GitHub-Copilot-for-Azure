@@ -29,7 +29,8 @@ configuration separately from KEDA.
 
 Do not enable KEDA, monitoring, or autoscaling, and do not scale a workload or
 pool, without explicit authorization. Route generic cost analysis to
-`azure-cost`.
+`cost-analysis` from the optional `azure-cost` plugin; if it is unavailable,
+direct the user to their client's supported plugin installation flow.
 
 Source:
 [KEDA and DCGM workload autoscaling](https://learn.microsoft.com/azure/aks/autoscale-gpu-workloads-with-keda).

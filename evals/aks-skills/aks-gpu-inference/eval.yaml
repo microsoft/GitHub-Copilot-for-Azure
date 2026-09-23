@@ -265,9 +265,8 @@ stimuli:
 
   - name: "Route out: generic Azure cost"
     prompt: |
-      Analyze my overall Azure bill, find the biggest subscription-level cost
-      changes, and recommend general savings opportunities. This is not an AKS
-      GPU incident.
+      Analyze my overall Azure bill and find the biggest subscription-level cost
+      changes and their causes. This is not an AKS GPU incident.
     tags:
       type: integration
       tier: full
@@ -275,11 +274,11 @@ stimuli:
       area: coexistence-negative
       requiredSkills:
         - aks-gpu-inference
-        - azure-cost
+        - cost-analysis
     graders:
       - type: skill-invocation
         config:
-          required: [azure-cost]
+          required: [cost-analysis]
           disallowed: [aks-gpu-inference]
       - type: output-not-matches
         config:

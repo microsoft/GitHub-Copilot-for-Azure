@@ -328,8 +328,8 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
-  - name: "Route out: AKS cost and rightsizing"
-    prompt: "Analyze the monthly cost of my healthy AKS clusters and recommend node-pool rightsizing opportunities. There is no active incident."
+  - name: "Route out: AKS cost analysis"
+    prompt: "Analyze the monthly cost of my healthy AKS clusters and show which node pools and namespaces drive the spend. There is no active incident."
     tags:
       type: integration
       tier: full
@@ -337,12 +337,12 @@ stimuli:
       area: negative-routing
       requiredSkills:
         - aks-troubleshooting
-        - azure-cost
+        - cost-analysis
     graders:
       - type: skill-invocation
         config:
           required:
-            - azure-cost
+            - cost-analysis
           disallowed:
             - aks-troubleshooting
       - type: output-not-matches

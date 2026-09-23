@@ -1,6 +1,6 @@
 ---
 name: aks-gpu-inference
-description: "Diagnose Day-2 AKS GPU and KAITO incidents using profile-aware, read-only evidence. WHEN: 'Insufficient nvidia.com/gpu', GPU pod Pending, model-load OOM, DCGM/VRAM, KAITO Workspace not ready, or GPU autoscaling. DO NOT USE FOR: setup (airunway-aks-setup), non-GPU incidents (aks-troubleshooting), standalone VM quota (azure-quotas), or generic cost (azure-cost)."
+description: "Diagnose Day-2 AKS GPU and KAITO incidents using profile-aware, read-only evidence. WHEN: 'Insufficient nvidia.com/gpu', GPU pod Pending, model-load OOM, DCGM/VRAM, KAITO Workspace not ready, or GPU autoscaling. DO NOT USE FOR: setup (airunway-aks-setup), non-GPU incidents (aks-troubleshooting), standalone VM quota (azure-quotas), or generic cost (cost-analysis or cost-optimization from the optional azure-cost plugin)."
 license: MIT
 metadata:
   author: Microsoft
