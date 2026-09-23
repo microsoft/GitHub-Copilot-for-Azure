@@ -158,13 +158,20 @@ async function main(): Promise<void> {
   fs.copyFileSync(path.join(azureSkillsPluginRoot, "LICENSE"), path.join(pluginRoot, "LICENSE"));
 
   // Readme
-  fs.writeFileSync(path.join(pluginRoot, "README.md"), "");
+  const readme = `# <Your Plugin>
+
+## Security
+
+> [!WARNING]
+> The \`your-plugin\` plugin uses \`npx\` to download and run the Azure MCP Server, inheriting the local environment's \`.npmrc\` configuration. Install this plugin only on trusted devices. A compromised \`.npmrc\` configuration could cause \`npx\` to download and execute malicious code, potentially resulting in remote code execution.
+`;
+  fs.writeFileSync(path.join(pluginRoot, "README.md"), readme);
 
   // Version
   const versionManifest = {
     $schema: "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
     version: "1.0",
-    pathFilters: ["."]
+    pathFilters: [".", ":/hooks"]
   };
   fs.writeFileSync(path.join(pluginRoot, "version.json"), JSON.stringify(versionManifest, null, 2));
 

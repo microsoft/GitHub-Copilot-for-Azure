@@ -13,7 +13,6 @@
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
     "types": [
-      "jest",
       "node"
     ],
     "declaration": true

@@ -76,6 +76,19 @@ describe("plugin and skill bootstrap", () => {
     expect(fs.existsSync(path.join(pluginRoot, ".cursor-plugin", "plugin.json"))).toBe(true);
     expect(fs.existsSync(path.join(pluginRoot, ".mcp.json"))).toBe(true);
 
+    expect(fs.readFileSync(path.join(pluginRoot, "README.md"), "utf8")).toBe(`# <Your Plugin>
+
+## Security
+
+> [!WARNING]
+> The \`your-plugin\` plugin uses \`npx\` to download and run the Azure MCP Server, inheriting the local environment's \`.npmrc\` configuration. Install this plugin only on trusted devices. A compromised \`.npmrc\` configuration could cause \`npx\` to download and execute malicious code, potentially resulting in remote code execution.
+`);
+
+    const versionManifest = JSON.parse(
+      fs.readFileSync(path.join(pluginRoot, "version.json"), "utf8"),
+    ) as { pathFilters: string[] };
+    expect(versionManifest.pathFilters).toEqual([".", ":/hooks"]);
+
     expect(fs.existsSync(path.join(pluginRoot, "skills", "test-skill", "SKILL.md"))).toBe(true);
 
     expect(fs.existsSync(path.join(repoRoot, "evals", "test-plugin", "test-skill", "eval.yaml"))).toBe(true);

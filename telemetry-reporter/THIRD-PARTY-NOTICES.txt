@@ -1,0 +1,8 @@
+This project includes code and data adapted from the Microsoft MCP repository:
+
+https://github.com/microsoft/mcp
+Source commit: 5d96d4d9e9cc49f92c9a1635fd9ee5b9e0e6098e
+
+Copyright (c) Microsoft Corporation.
+
+Licensed under the MIT License.

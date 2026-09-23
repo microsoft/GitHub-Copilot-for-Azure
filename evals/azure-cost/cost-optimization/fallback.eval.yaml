@@ -1,0 +1,43 @@
+name: cost-optimization-fallback-eval
+description: Strict contract checks for Azure cost optimization API fallback.
+
+tags:
+  type: integration
+  skill: cost-optimization
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Commitment API fallback preserves evidence"
+    prompt: "The ARM MCP benefit utilization and recommendation tools are unavailable. Explain the supported fallback for commitment analysis, but do not execute it or purchase anything."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Benefit (Recommendations|Utilization)|Reservations Transactions"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)period|scope|currency|approval|confirm"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"

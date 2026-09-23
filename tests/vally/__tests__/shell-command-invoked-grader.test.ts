@@ -9,6 +9,7 @@
  */
 
 import type { GraderInput, Trajectory, TrajectoryEvent } from "@microsoft/vally";
+import { describe, expect, test } from "vitest";
 import { ShellCommandInvokedGrader } from "../shell-command-invoked-grader.ts";
 
 function makeToolCall(toolName: string, command: string, toolCallId = "call-1"): TrajectoryEvent {

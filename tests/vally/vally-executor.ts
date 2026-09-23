@@ -77,6 +77,10 @@ export class IntegrationTestAgentRunner implements Executor {
       timeout: timeout,
       takeScreenshot: takeScreenshot,
       requiredSkills: requiredSkillRefs.length > 0 ? requiredSkillRefs : undefined,
+      // Exact-skill hill climbing loads only evaluated skills so results are attributable to the target, not sibling plugin skills.
+      includeSkills: process.env.VALLY_RUNNER_EXACT_SKILL === "true"
+        ? requiredSkillRefs
+        : undefined,
       maxTurns: stimulus.constraints?.max_turns,
       // Always make our agent runner preserve workspace.
       // vally will delete the test workspace by default.
@@ -191,7 +195,12 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
         // Note: Although this type is defined, Copilot CLI in practice treat skills as tool calls.
         // We look for tool call events for skill and convert them into skill events.
         const args = e.data.arguments;
-        const skillName: string = (args?.skill as string) ?? "unknown";
+        let skillName: string;
+        if (typeof args === "object" && !Array.isArray(args)) {
+          skillName = (args?.skill as string) ?? "unknown";
+        } else {
+          skillName = "unknown";
+        }
         result.push({
           type: "skill_activation",
           timestamp,

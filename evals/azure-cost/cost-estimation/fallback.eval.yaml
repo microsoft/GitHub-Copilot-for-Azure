@@ -1,0 +1,43 @@
+name: cost-estimation-fallback-eval
+description: Strict contract checks for Azure cost estimation API fallback.
+
+tags:
+  type: integration
+  skill: cost-estimation
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Forecast API fallback preserves constraints"
+    prompt: "The ARM MCP forecast_costs operation is unavailable. Explain the supported fallback for forecasting this Azure scope, but do not execute it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      regression: api-fallback
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-estimation
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost Management Forecast API"
+      - type: output-matches
+        config:
+          pattern: "(?i)Azure CLI|Azure PowerShell|az rest|Invoke-AzRestMethod|REST"
+      - type: output-matches
+        config:
+          pattern: "(?i)92.day|scope|currency|period"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"

@@ -318,7 +318,7 @@ describe("Cursor telemetry dispatcher", () => {
     expectArg(args, "--plugin-name", PLUGIN_METADATA.cursor.name);
     expectArg(args, "--plugin-version", PLUGIN_METADATA.cursor.version);
     expectArg(args, "--client-name", "cursor");
-    expectArg(args, "--event-type", "session-start");
+    expectArg(args, "--event-type", "session_start");
     expectArg(args, "--session-id", SESSION_ID);
     expectIsoTimestamp(args);
   });
@@ -405,7 +405,7 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
       expectArg(args, "--plugin-name", expectedPlugin.name);
       expectArg(args, "--plugin-version", expectedPlugin.version);
       expectArg(args, "--client-name", expectedClient);
-      expectArg(args, "--event-type", "session-start");
+      expectArg(args, "--event-type", "session_start");
       expectArg(args, "--session-id", SESSION_ID);
       expectIsoTimestamp(args);
     },
