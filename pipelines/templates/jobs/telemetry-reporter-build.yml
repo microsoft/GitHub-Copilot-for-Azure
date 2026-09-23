@@ -98,6 +98,7 @@ jobs:
             -OutputRoot '$(Build.ArtifactStagingDirectory)/native'
             -RestoreConfigFile '$(Build.SourcesDirectory)/telemetry-reporter/nuget.config'
         env:
+          # Build-Native smoke-tests host-compatible binaries; CI executions must not emit product telemetry.
           AZURE_MCP_COLLECT_TELEMETRY: "false"
 
       - task: PowerShell@2
