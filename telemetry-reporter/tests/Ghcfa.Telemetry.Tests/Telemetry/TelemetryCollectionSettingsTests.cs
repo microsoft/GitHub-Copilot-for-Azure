@@ -3,25 +3,23 @@ using Ghcfa.Telemetry.Telemetry;
 namespace Ghcfa.Telemetry.Tests.Telemetry;
 
 /// <summary>
-/// Contains tests for deriving telemetry exporter settings.
+/// Contains tests for deriving telemetry collection settings.
 /// </summary>
-public sealed class TelemetryExporterSettingsTests
+public sealed class TelemetryCollectionSettingsTests
 {
     [Fact]
     public void FromEnvironment_UsesAzureMcpDefaults()
     {
-        var settings = TelemetryExporterSettings.FromEnvironment(
+        var settings = TelemetryCollectionSettings.FromEnvironment(
             new TestEnvironment(),
             microsoftExporterAvailable: true);
 
         Assert.True(settings.TelemetryEnabled);
         Assert.True(settings.MicrosoftExporterEnabled);
-        Assert.Null(settings.UserApplicationInsightsConnectionString);
-        Assert.False(settings.OtlpExporterEnabled);
     }
 
     [Fact]
-    public void FromEnvironment_RespectsAllExporterSettings()
+    public void FromEnvironment_IgnoresExporterSettings()
     {
         var environment = new TestEnvironment
         {
@@ -31,14 +29,12 @@ public sealed class TelemetryExporterSettingsTests
             ["AZURE_MCP_ENABLE_OTLP_EXPORTER"] = "true"
         };
 
-        var settings = TelemetryExporterSettings.FromEnvironment(
+        var settings = TelemetryCollectionSettings.FromEnvironment(
             environment,
             microsoftExporterAvailable: true);
 
         Assert.True(settings.TelemetryEnabled);
-        Assert.False(settings.MicrosoftExporterEnabled);
-        Assert.Equal("InstrumentationKey=test", settings.UserApplicationInsightsConnectionString);
-        Assert.True(settings.OtlpExporterEnabled);
+        Assert.True(settings.MicrosoftExporterEnabled);
     }
 
     [Fact]
@@ -49,7 +45,7 @@ public sealed class TelemetryExporterSettingsTests
             ["AZURE_MCP_COLLECT_TELEMETRY"] = "false"
         };
 
-        var settings = TelemetryExporterSettings.FromEnvironment(
+        var settings = TelemetryCollectionSettings.FromEnvironment(
             environment,
             microsoftExporterAvailable: true);
 
@@ -59,7 +55,7 @@ public sealed class TelemetryExporterSettingsTests
     [Fact]
     public void FromEnvironment_DoesNotEnableMicrosoftExporterInDevelopmentBuild()
     {
-        var settings = TelemetryExporterSettings.FromEnvironment(
+        var settings = TelemetryCollectionSettings.FromEnvironment(
             new TestEnvironment(),
             microsoftExporterAvailable: false);
 
@@ -75,7 +71,9 @@ public sealed class TelemetryExporterSettingsTests
         };
 
         Assert.Throws<ArgumentException>(() =>
-            TelemetryExporterSettings.FromEnvironment(environment, microsoftExporterAvailable: true));
+            TelemetryCollectionSettings.FromEnvironment(
+                environment,
+                microsoftExporterAvailable: true));
     }
 
     [Theory]
@@ -106,7 +104,7 @@ public sealed class TelemetryExporterSettingsTests
     }
 
     /// <summary>
-    /// Provides configurable environment variables for exporter settings tests.
+    /// Provides configurable environment variables for telemetry settings tests.
     /// </summary>
     private sealed class TestEnvironment : IEnvironmentVariables
     {

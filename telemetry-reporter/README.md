@@ -5,6 +5,17 @@
 `ghcfa-telem` and consumes pinned Azure MCP allowlist resources from
 `resources\`.
 
+## Telemetry policy
+
+Distributed release builds send telemetry only to the Microsoft-owned
+Application Insights destination. Set `AZURE_MCP_COLLECT_TELEMETRY=false` to
+disable telemetry collection.
+
+User-provided Application Insights connection strings and OTLP exporters are
+not supported. This Microsoft-only exporter policy intentionally differs from
+Azure MCP while preserving its telemetry events, properties, and global
+opt-out behavior.
+
 ## .NET standard build
 
 The normal build remains framework-dependent:
