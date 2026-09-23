@@ -1,5 +1,7 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
+# Determines whether a nightly build is needed by comparing scheduled runs, then emits the platform matrices and diagnostic build information consumed by the Azure DevOps pipeline.
+# Exit codes: 0 = success, 1 = change detection or output failure, 2 = invalid repository path.
 
 [CmdletBinding()]
 param(

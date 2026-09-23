@@ -1,5 +1,7 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
+# Builds and packages the telemetry reporter as a Native AOT executable for one supported runtime identifier, including host validation, optional smoke testing, runtime and symbol archives, and SHA-256 checksums.
+# Exit codes: 0 = success, 1 = build, validation, or packaging failure.
 
 [CmdletBinding()]
 param(

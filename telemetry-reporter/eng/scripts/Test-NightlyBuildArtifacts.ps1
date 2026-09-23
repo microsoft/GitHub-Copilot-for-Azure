@@ -1,5 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
+# Validates all downloaded nightly runtime and symbol archives against their SHA-256 sidecars and writes the consolidated build manifest published by the pipeline.
 # Exit codes: 0 = success, 1 = artifact validation failed, 2 = invalid arguments.
 
 [CmdletBinding()]
