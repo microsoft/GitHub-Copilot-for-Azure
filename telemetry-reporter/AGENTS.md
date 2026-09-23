@@ -14,6 +14,10 @@ should modify the project.
 - `resources/` contains Azure MCP allowlists embedded by `Ghcfa.Telemetry`.
 - `eng/scripts/Build-Native.ps1` creates opt-in Native AOT packages for the
   Azure MCP operating system and architecture matrix.
+- The nightly pipeline publishes unsigned intermediate packages, signs Windows
+  and macOS executables through the Azure SDK build-tools templates, and only
+  then publishes final per-RID packages. Linux executables intentionally remain
+  unsigned to match Azure MCP.
 
 The repository-level `tests/AGENTS.md` does not apply to this directory.
 
@@ -31,6 +35,10 @@ The repository-level `tests/AGENTS.md` does not apply to this directory.
   notices as applicable.
 - Keep telemetry disabled in build or smoke-test scenarios that invoke the
   executable.
+- Preserve the unsigned intermediate versus final signed artifact boundary.
+  Signing or native signature verification failures must stop the pipeline;
+  never publish an unsigned Windows or macOS package under a final artifact
+  name.
 - Add XML summary comments to every declared C# type, including test and nested
   types.
 

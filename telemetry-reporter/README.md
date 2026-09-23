@@ -169,10 +169,21 @@ Scheduled runs compare `main` with the previous successful scheduled build and
 skip the platform matrix when no executable-affecting telemetry reporter files
 changed. Manual runs always build the complete matrix.
 
-Each target publishes a `telemetry-reporter_<rid>` pipeline artifact containing
-the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final
-`telemetry-reporter_manifest` artifact records and verifies the complete
-six-target build.
+Build jobs first publish `telemetry-reporter_unsigned_<rid>` intermediate
+artifacts. A dedicated signing stage then:
+
+- Authenticode-signs the `win-x64` and `win-arm64` executables.
+- Apple-signs and notarizes the `osx-x64` and `osx-arm64` executables.
+- Passes the `linux-x64` and `linux-arm64` runtime ZIPs through byte-for-byte
+  unsigned, matching Azure MCP.
+
+The signing stage republishes each target as a final
+`telemetry-reporter_<rid>` pipeline artifact containing the runtime ZIP,
+symbols ZIP, and post-signing SHA-256 sidecars. Native Windows and macOS jobs
+verify the executable signatures before the
+`telemetry-reporter_manifest` artifact records the complete six-target build.
+Signing failures stop the pipeline; unsigned Windows or macOS artifacts are
+never published under the final artifact names.
 
 Pipeline restores use the Azure SDK public NuGet feed instead of direct
 `nuget.org` access, keeping dependency acquisition within the 1ES network

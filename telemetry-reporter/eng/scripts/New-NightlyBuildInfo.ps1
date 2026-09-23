@@ -66,12 +66,13 @@ function Test-RelevantPath {
     return $normalizedPath -match '^telemetry-reporter/src/' -or
         $normalizedPath -match '^telemetry-reporter/resources/' -or
         $normalizedPath -match '^telemetry-reporter/eng/scripts/.+\.ps1$' -or
+        $normalizedPath -eq 'telemetry-reporter/eng/dotnet-executable-entitlements.plist' -or
         $normalizedPath -match '^telemetry-reporter/Directory\.(Build|Packages)\.(props|targets)$' -or
         $normalizedPath -match '^telemetry-reporter/(global|version)\.json$' -or
         $normalizedPath -eq 'telemetry-reporter/ghcfa-telem.slnx' -or
         $normalizedPath -eq 'pipelines/telemetry-reporter-nightly.yml' -or
         $normalizedPath -eq 'telemetry-reporter/nuget.config' -or
-        $normalizedPath -eq 'pipelines/templates/jobs/telemetry-reporter-build.yml' -or
+        $normalizedPath -match '^pipelines/templates/jobs/telemetry-reporter-(build|sign)\.yml$' -or
         $normalizedPath -match '^pipelines/templates/variables/(image|globals)\.yml$'
 }
 

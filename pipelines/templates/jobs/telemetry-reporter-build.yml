@@ -128,7 +128,7 @@ jobs:
             }
 
       - task: 1ES.PublishPipelineArtifact@1
-        displayName: Publish $(BuildRuntimeIdentifier) packages
+        displayName: Publish unsigned $(BuildRuntimeIdentifier) packages
         inputs:
-          artifactName: telemetry-reporter_$(BuildRuntimeIdentifier)
+          artifactName: telemetry-reporter_unsigned_$(BuildRuntimeIdentifier)
           targetPath: $(Build.ArtifactStagingDirectory)/native/packages
