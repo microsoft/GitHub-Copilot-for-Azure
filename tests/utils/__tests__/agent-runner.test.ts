@@ -1,7 +1,7 @@
 /**
  * Tests for agent-runner utility
  * 
- * Specifically tests the fix for the Jest async operation leak
+ * Specifically tests the fix for the test runner async operation leak
  * where event listeners continue after test completion.
  */
 
