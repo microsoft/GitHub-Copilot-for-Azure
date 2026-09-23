@@ -232,7 +232,9 @@ azd env set AZURE_AI_MODEL_DEPLOYMENT_NAME "<deployment-name>"
 
 Set up a venv with `uv` installed first. `azd ai agent run` installs Python dependencies on first start; with an activated venv that has `uv` available, it uses `uv` (seconds) instead of plain `pip` (minutes).
 
-> **Important:** the venv must live in `src/<agent-name>/` (next to `requirements.txt`). `azd ai agent run` resolves the venv relative to the service source directory; a venv at the project root is ignored and azd silently creates a second one without `uv`, wasting the speedup.
+> **Important:** the venv must live in `src/<agent-name>/` (next to `pyproject.toml` / `requirements.txt`). `azd ai agent run` resolves the venv relative to the service source directory; a venv at the project root is ignored and azd silently creates a second one without `uv`, wasting the speedup.
+>
+> **Private package index:** If the sample has a `uv.lock`, the user has the `UV_DEFAULT_INDEX` environment variable set to a private index, and public PyPI is unreachable, `azd ai agent run` fails with `uv.lock needs to be updated`. Back up `uv.lock` first, then run `uv lock` in `src/<agent-name>/` and continue the local test. The re-locked file is for local run only; see [Step 11](#step-11--deploy) before deploying.
 
 **Python:**
 ```bash
@@ -271,7 +273,11 @@ Stop the local server via the managed session's stop primitive before continuing
 
 ### Step 11 — Deploy
 
-Once local invocation succeeds, if the user does not explicitly ask to deploy, tell them the agent is ready and ask if they want to deploy. To deploy:
+Once local invocation succeeds, if the user does not explicitly ask to deploy, tell them the agent is ready and ask if they want to deploy.
+
+If you re-ran `uv lock` against a private index in Step 10, the remote build cannot use that lock. If dependencies did not change, restore the backed-up `uv.lock` before deploying. If dependencies changed, tell the user `uv.lock` must be regenerated against public PyPI before deploying.
+
+To deploy:
 
 ```bash
 azd deploy --no-prompt
