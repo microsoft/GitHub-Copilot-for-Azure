@@ -128,7 +128,8 @@ extends:
           - job: Verify
             displayName: Verify Native AOT package matrix
             steps:
-              - checkout: none
+              - checkout: self
+                fetchDepth: 1
 
               - download: current
                 displayName: Download build artifacts
@@ -137,87 +138,12 @@ extends:
                 displayName: Verify packages and create manifest
                 inputs:
                   pwsh: true
-                  targetType: inline
-                  script: |
-                    $runtimeIdentifiers = @(
-                      'win-x64',
-                      'win-arm64',
-                      'osx-x64',
-                      'osx-arm64',
-                      'linux-x64',
-                      'linux-arm64'
-                    )
-                    $manifestFiles = @()
-                    $versions = @()
-
-                    foreach ($runtimeIdentifier in $runtimeIdentifiers) {
-                      $artifactDirectory = Join-Path '$(Pipeline.Workspace)' "telemetry-reporter_$runtimeIdentifier"
-                      if (-not (Test-Path -LiteralPath $artifactDirectory)) {
-                        Write-Error "Artifact directory '$artifactDirectory' was not downloaded."
-                        exit 1
-                      }
-
-                      $runtimeArchives = @(
-                        Get-ChildItem -LiteralPath $artifactDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier.zip"
-                      )
-                      $symbolArchives = @(
-                        Get-ChildItem -LiteralPath $artifactDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier-symbols.zip"
-                      )
-                      if ($runtimeArchives.Count -ne 1 -or $symbolArchives.Count -ne 1) {
-                        Write-Error "Expected one runtime and one symbols archive for '$runtimeIdentifier'."
-                        exit 1
-                      }
-
-                      foreach ($archive in @($runtimeArchives[0], $symbolArchives[0])) {
-                        $checksumPath = "$($archive.FullName).sha256"
-                        if (-not (Test-Path -LiteralPath $checksumPath)) {
-                          Write-Error "Checksum file '$checksumPath' is missing."
-                          exit 1
-                        }
-
-                        $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw -ErrorAction Stop).Trim()
-                        $expectedHash = ($checksumLine -split '\s+', 2)[0]
-                        $actualHash = (Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256 -ErrorAction Stop).Hash.ToLowerInvariant()
-                        if ($actualHash -ne $expectedHash.ToLowerInvariant()) {
-                          Write-Error "Checksum validation failed for '$($archive.Name)'."
-                          exit 1
-                        }
-
-                        $manifestFiles += [ordered]@{
-                          runtimeIdentifier = $runtimeIdentifier
-                          file = $archive.Name
-                          sha256 = $actualHash
-                        }
-                      }
-
-                      $versionMatch = [regex]::Match(
-                        $runtimeArchives[0].Name,
-                        "^ghcfa-telem-(.+)-$([regex]::Escape($runtimeIdentifier))\.zip$"
-                      )
-                      if (-not $versionMatch.Success) {
-                        Write-Error "Unable to parse the version from '$($runtimeArchives[0].Name)'."
-                        exit 1
-                      }
-                      $versions += $versionMatch.Groups[1].Value
-                    }
-
-                    $uniqueVersions = @($versions | Sort-Object -Unique)
-                    if ($uniqueVersions.Count -ne 1) {
-                      Write-Error "Expected one package version across the matrix; found: $($uniqueVersions -join ', ')."
-                      exit 1
-                    }
-
-                    $manifestDirectory = Join-Path '$(Build.ArtifactStagingDirectory)' 'manifest'
-                    New-Item -ItemType Directory -Path $manifestDirectory -Force -ErrorAction Stop | Out-Null
-                    [ordered]@{
-                      buildId = '$(Build.BuildId)'
-                      sourceVersion = '$(Build.SourceVersion)'
-                      version = $uniqueVersions[0]
-                      runtimeIdentifiers = $runtimeIdentifiers
-                      files = $manifestFiles
-                    } |
-                      ConvertTo-Json -Depth 10 |
-                      Set-Content -LiteralPath (Join-Path $manifestDirectory 'build-manifest.json') -Encoding utf8 -ErrorAction Stop
+                  filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Test-NightlyBuildArtifacts.ps1
+                  arguments: >
+                    -PipelineWorkspace '$(Pipeline.Workspace)'
+                    -ManifestPath '$(Build.ArtifactStagingDirectory)/manifest/build-manifest.json'
+                    -BuildId '$(Build.BuildId)'
+                    -SourceVersion '$(Build.SourceVersion)'
 
               - task: 1ES.PublishPipelineArtifact@1
                 displayName: Publish build manifest
