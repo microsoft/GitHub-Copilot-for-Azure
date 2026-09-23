@@ -6,6 +6,7 @@
   "scripts": {
     "build": "gulp",
     "check:shell-scripts": "cd scripts && npm run checkShellScriptPermissions",
+    "check:line-endings": "cd scripts && npm run checkLineEndings",
     "tokens": "cd scripts && npm run tokens --",
     "verify-local": "echo 'Removed: use npm run build + copilot --plugin-dir ./output instead' && exit 1",
     "test": "cd scripts && npm test",
