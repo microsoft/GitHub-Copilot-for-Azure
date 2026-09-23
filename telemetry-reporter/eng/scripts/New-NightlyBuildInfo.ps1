@@ -68,7 +68,7 @@ function Test-RelevantPath {
         $normalizedPath -match '^telemetry-reporter/(global|version)\.json$' -or
         $normalizedPath -eq 'telemetry-reporter/ghcfa-telem.slnx' -or
         $normalizedPath -eq 'pipelines/telemetry-reporter-nightly.yml' -or
-        $normalizedPath -eq 'pipelines/config/telemetry-reporter.nuget.config' -or
+        $normalizedPath -eq 'telemetry-reporter/nuget.config' -or
         $normalizedPath -eq 'pipelines/templates/jobs/telemetry-reporter-build.yml' -or
         $normalizedPath -match '^pipelines/templates/variables/(image|globals)\.yml$'
 }

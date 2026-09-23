@@ -96,7 +96,7 @@ jobs:
             -Configuration Release
             -RuntimeIdentifier '$(BuildRuntimeIdentifier)'
             -OutputRoot '$(Build.ArtifactStagingDirectory)/native'
-            -RestoreConfigFile '$(Build.SourcesDirectory)/pipelines/config/telemetry-reporter.nuget.config'
+            -RestoreConfigFile '$(Build.SourcesDirectory)/telemetry-reporter/nuget.config'
         env:
           AZURE_MCP_COLLECT_TELEMETRY: "false"
 
