@@ -1,9 +1,11 @@
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { computeMetrics } from "@microsoft/vally";
-import { cp, mkdir } from "node:fs/promises";
+import { copyFile, cp, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { homedir, tmpdir } from "node:os";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 import { getSkillsForTest, listPlugins, loadSkill } from "../utils/skill-loader.ts";
+import { comparisonMcpServers, comparisonSkills, comparisonStimulus, getCommonSystemPrompt, isComparisonRun } from "./comparison-policy.ts";
 
 type ClaudeOptions = {
   claudePath?: string;
@@ -39,22 +41,24 @@ export async function loadClaudeExecutor(): Promise<ClaudeExecutorConstructor> {
   return upstream.ClaudeCliExecutor;
 }
 
+async function isolatedClaudeConfig(): Promise<string> {
+  const configDir = await mkdtemp(path.join(tmpdir(), "vally-claude-comparison-"));
+  const source = path.join(process.env.CLAUDE_CONFIG_DIR ?? path.join(homedir(), ".claude"), ".credentials.json");
+  try {
+    await copyFile(source, path.join(configDir, ".credentials.json"));
+  } catch (error) {
+    if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) {
+      await rm(configDir, { recursive: true, force: true });
+      throw error;
+    }
+    // API-key and macOS Keychain authentication need no credentials file.
+  }
+  return configDir;
+}
+
 function systemPromptArgs(stimulus: Stimulus): string[] {
-  const value = stimulus.tags?.systemPrompt;
-  if (value === undefined) {
-    return [];
-  }
-  if (typeof value !== "string") {
-    throw new Error("Claude systemPrompt must be a JSON string.");
-  }
-  const prompt: unknown = JSON.parse(value);
-  if (typeof prompt !== "object" || prompt === null || !("content" in prompt)
-    || typeof prompt.content !== "string"
-    || ("mode" in prompt && prompt.mode !== "append" && prompt.mode !== "replace")
-    || Object.keys(prompt).some(key => key !== "mode" && key !== "content")) {
-    throw new Error("Claude systemPrompt supports only { mode: 'append' | 'replace', content: string }.");
-  }
-  return ["mode" in prompt && prompt.mode === "replace" ? "--system-prompt" : "--append-system-prompt", prompt.content];
+  const prompt = getCommonSystemPrompt(stimulus);
+  return prompt ? [prompt.mode === "replace" ? "--system-prompt" : "--append-system-prompt", prompt.content] : [];
 }
 
 /** Adapt the upstream CLI executor to this repository's skill layout and tags. */
@@ -70,10 +74,18 @@ export class ClaudeIntegrationExecutor implements Executor {
   }
 
   async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
+    const comparison = isComparisonRun();
+    if (comparison) stimulus = comparisonStimulus(stimulus, options);
     if (stimulus.tags?.takeScreenshot !== undefined) {
       throw new Error("Claude does not support the takeScreenshot tag. Use integration-test-agent-runner.");
     }
     const extraArgs = systemPromptArgs(stimulus);
+    if (comparison) {
+      extraArgs.push("--setting-sources", "project", "--strict-mcp-config");
+      if (Object.keys(comparisonMcpServers(options)).length === 0) {
+        extraArgs.push("--mcp-config", JSON.stringify({ mcpServers: {} }));
+      }
+    }
     if (stimulus.constraints?.max_turns !== undefined) {
       extraArgs.push("--max-turns", String(stimulus.constraints.max_turns));
     }
@@ -89,7 +101,7 @@ export class ClaudeIntegrationExecutor implements Executor {
         throw new Error("Claude evals require a skill or requiredSkills tag.");
       }
       const allSkills = listPlugins().flatMap(plugin => plugin.skills);
-      const requiredSkills = names.map(name => {
+      const requiredSkills = comparison ? await comparisonSkills(stimulus) : names.map(name => {
         const matches = allSkills.filter(skill => skill.name === name);
         if (matches.length !== 1) {
           throw new Error(`Expected one built skill named '${name}', found ${matches.length}. Run npm run build.`);
@@ -98,7 +110,7 @@ export class ClaudeIntegrationExecutor implements Executor {
       });
       const selected = await getSkillsForTest(
         requiredSkills,
-        process.env.VALLY_RUNNER_EXACT_SKILL === "true" ? requiredSkills : undefined,
+        comparison || process.env.VALLY_RUNNER_EXACT_SKILL === "true" ? requiredSkills : undefined,
       );
       const skillsDir = path.join(options.workDir, ".claude", "skills");
       await mkdir(skillsDir, { recursive: true });
@@ -116,12 +128,16 @@ export class ClaudeIntegrationExecutor implements Executor {
       claudePath: process.env.CLAUDE_CLI_PATH?.trim() || undefined,
       extraArgs,
     });
+    const configDir = comparison ? await isolatedClaudeConfig() : undefined;
     try {
       const trajectory = await executor.execute(stimulus, {
         ...options,
         model: process.env.MODEL_OVERRIDE?.trim() || options.model || "sonnet",
-        env: { UV_CACHE_DIR: path.join(options.workDir, ".uv-cache"), ...options.env },
-        mcpServers: {
+        env: {
+          UV_CACHE_DIR: path.join(options.workDir, ".uv-cache"), ...options.env,
+          ...(configDir ? { CLAUDE_CONFIG_DIR: configDir } : {}),
+        },
+        mcpServers: comparison ? comparisonMcpServers(options) : {
           ...(process.env.VALLY_RUNNER_DISABLE_AZURE_MCP === "true" ? {} : {
             azure: { type: "stdio", command: "npx", args: ["-y", "@azure/mcp", "server", "start"] },
           }),
@@ -152,7 +168,11 @@ export class ClaudeIntegrationExecutor implements Executor {
         metrics: { ...computeMetrics(events), wallTimeMs: trajectory.metrics.wallTimeMs },
       };
     } finally {
-      await executor.shutdown();
+      try {
+        await executor.shutdown();
+      } finally {
+        if (configDir) await rm(configDir, { recursive: true, force: true });
+      }
     }
   }
 

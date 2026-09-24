@@ -16,9 +16,10 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { type CopilotSession, CopilotClient, type SessionEvent, RuntimeConnection, approveAll, type SystemMessageConfig } from "@github/copilot-sdk";
+import { type CopilotSession, CopilotClient, type SessionEvent, RuntimeConnection, approveAll, type SystemMessageConfig, type MCPServerConfig } from "@github/copilot-sdk";
 import { redactSecrets } from "./redact.ts";
 import { DEFAULT_SKILL_CHAR_BUDGET, getSkillsForTest, type SkillRef } from "./skill-loader.ts";
+import { runComparisonConversation } from "./comparison-conversation.ts";
 
 // Re-export for backward compatibility (consumers still import from agent-runner)
 export { getAllAssistantMessages } from "./evaluate.ts";
@@ -171,6 +172,8 @@ export interface AgentRunConfig {
   nonInteractive?: boolean;
   followUp?: string[];
   systemPrompt?: SystemMessageConfig;
+  mcpServers?: Record<string, MCPServerConfig>;
+  comparisonMode?: boolean;
 
   /**
    * Optional. An absolute path to a directory.
@@ -815,7 +818,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
         onPermissionRequest: approveAll,
         skillDirectories: skillDirectories,
         disabledSkills: disabledSkills?.map(s => s.name),
-        ...(disableAzureMcp ? {} : {
+        ...(runConfig.mcpServers !== undefined ? { mcpServers: runConfig.mcpServers } : disableAzureMcp ? {} : {
           mcpServers: {
             azure: {
               type: "stdio",
@@ -826,55 +829,79 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           }
         }),
         systemMessage: runConfig.systemPrompt,
+        ...(runConfig.comparisonMode ? { enableConfigDiscovery: false, enableSessionStore: false } : {}),
         // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
         enableSessionTelemetry: false
       });
       entry.session = session;
 
-      const startTime = new Date().getTime();
-      const done = new Promise<void>((resolve) => {
-        // Global timeout for the entire run, including all turns
-        if (runConfig.timeout !== undefined) {
-          const timeoutTimer = setTimeout(async () => {
-            if (!isComplete) {
+      if (runConfig.comparisonMode) {
+        await runComparisonConversation(
+          session, [runConfig.prompt, ...(runConfig.followUp ?? [])], runConfig.timeout ?? PER_TURN_TIMEOUT,
+          event => {
+            agentMetadata.events.push(event);
+            if (event.type === "assistant.turn_start") agentMetadata.turnCount++;
+          },
+        );
+      } else {
+        const startTime = new Date().getTime();
+        const done = new Promise<void>((resolve) => {
+          // Global timeout for the entire run, including all turns
+          if (runConfig.timeout !== undefined) {
+            const timeoutTimer = setTimeout(async () => {
+              if (!isComplete) {
+                isComplete = true;
+                isAborted = true;
+                const currentTime = new Date().getTime();
+                agentMetadata.testComments.push(
+                  `⚠️ Run aborted: run time (${currentTime - startTime} ms) exceeded timeout (${runConfig.timeout} ms).`
+                );
+                try {
+                  await session.abort();
+                } catch (error) {
+                  console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+                } finally {
+                  resolve();
+                }
+              }
+            }, runConfig.timeout);
+            timeoutTimer.unref();
+          }
+          session.on(async (event: SessionEvent) => {
+            if (isComplete) return;
+
+            if (process.env.DEBUG) {
+              console.log(`=== session event ${event.type}`);
+            }
+
+            if (event.type === "session.idle") {
               isComplete = true;
-              isAborted = true;
-              const currentTime = new Date().getTime();
-              agentMetadata.testComments.push(
-                `⚠️ Run aborted: run time (${currentTime - startTime} ms) exceeded timeout (${runConfig.timeout} ms).`
-              );
-              try {
-                await session.abort();
-              } catch (error) {
-                console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
-              } finally {
-                resolve();
+              resolve();
+              return;
+            }
+
+            agentMetadata.events.push(event);
+
+            if (event.type === "assistant.turn_start") {
+              agentMetadata.turnCount++;
+              if (runConfig.maxTurns !== undefined && agentMetadata.turnCount > runConfig.maxTurns) {
+                agentMetadata.testComments.push(
+                  `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
+                );
+                isComplete = true;
+                isAborted = true;
+                try {
+                  await session.abort();
+                } catch (error) {
+                  console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
+                } finally {
+                  resolve();
+                }
+                return;
               }
             }
-          }, runConfig.timeout);
-          timeoutTimer.unref();
-        }
-        session.on(async (event: SessionEvent) => {
-          if (isComplete) return;
 
-          if (process.env.DEBUG) {
-            console.log(`=== session event ${event.type}`);
-          }
-
-          if (event.type === "session.idle") {
-            isComplete = true;
-            resolve();
-            return;
-          }
-
-          agentMetadata.events.push(event);
-
-          if (event.type === "assistant.turn_start") {
-            agentMetadata.turnCount++;
-            if (runConfig.maxTurns !== undefined && agentMetadata.turnCount > runConfig.maxTurns) {
-              agentMetadata.testComments.push(
-                `⚠️ Run aborted: turn count (${agentMetadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
-              );
+            if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
               isComplete = true;
               isAborted = true;
               try {
@@ -886,33 +913,20 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
               }
               return;
             }
-          }
-
-          if (runConfig.shouldEarlyTerminate?.(agentMetadata)) {
-            isComplete = true;
-            isAborted = true;
-            try {
-              await session.abort();
-            } catch (error) {
-              console.error(`session.abort failed ${error instanceof Error ? error.message : String(error)}`);
-            } finally {
-              resolve();
-            }
-            return;
-          }
+          });
         });
-      });
 
-      await session.send({ prompt: runConfig.prompt });
-      await done;
+        await session.send({ prompt: runConfig.prompt });
+        await done;
 
-      // Send follow-up prompts before aggregating stats so tool/skill/token
-      // counts include events emitted during follow-up turns.
-      // Skip follow-ups when the run was aborted.
-      for (const followUpPrompt of (runConfig.followUp ?? [])) {
-        if (isAborted) break;
-        isComplete = false;
-        await session.sendAndWait({ prompt: followUpPrompt }, PER_TURN_TIMEOUT);
+        // Send follow-up prompts before aggregating stats so tool/skill/token
+        // counts include events emitted during follow-up turns.
+        // Skip follow-ups when the run was aborted.
+        for (const followUpPrompt of (runConfig.followUp ?? [])) {
+          if (isAborted) break;
+          isComplete = false;
+          await session.sendAndWait({ prompt: followUpPrompt }, PER_TURN_TIMEOUT);
+        }
       }
 
       // Extract token usage from assistant.usage events

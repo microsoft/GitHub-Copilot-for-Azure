@@ -2,6 +2,10 @@
 
 See [vally-eval](../.github/skills/vally-eval/SKILL.md) on how to run vally eval suites in this repo.
 
+For a controlled Claude/Copilot comparison, use
+[`npm run compare:clients`](../tests/comparison/README.md). It aligns skill
+selection, stopping policy, environment/MCP configuration, and run settings.
+
 ## Run with Claude Code
 
 The test wrapper defaults to the existing Copilot executor. Pass

@@ -361,5 +361,6 @@ dashboard/**/dist/
 # Local vally eval outputs
 results/
 tests/results-claude/
+tests/results-comparison/
 tmp/
 .vally-workspaces/

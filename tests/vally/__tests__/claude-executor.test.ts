@@ -1,6 +1,6 @@
 import type { ExecutorOptions, Stimulus, Trajectory } from "@microsoft/vally";
 import { computeMetrics } from "@microsoft/vally";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import * as path from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -41,6 +41,8 @@ describe("ClaudeIntegrationExecutor", () => {
     vi.stubEnv("NO_SKILLS", "false");
     vi.stubEnv("MODEL_OVERRIDE", "");
     vi.stubEnv("CLAUDE_CLI_PATH", "");
+    vi.stubEnv("VALLY_FAIR_COMPARISON", "false");
+    vi.stubEnv("CLAUDE_CONFIG_DIR", path.join(root, "auth"));
     stimulus = { name: "routing", prompt: "Help with search", tags: { skill: "azure-ai" } };
     options = { workDir: path.join(root, "workspace"), timeout: 1000 };
     await mkdir(options.workDir);
@@ -157,6 +159,44 @@ describe("ClaudeIntegrationExecutor", () => {
   test("reports a missing upstream module with setup instructions", async () => {
     vi.stubEnv("VALLY_CLAUDE_EXECUTOR_MODULE", path.join(root, "missing.js"));
     await expect(loadClaudeExecutor()).rejects.toThrow("VALLY_CLAUDE_EXECUTOR_MODULE");
+  });
+
+  test("comparison uses exact skills, disables early stops and isolates ambient config", async () => {
+    vi.stubEnv("VALLY_FAIR_COMPARISON", "true");
+    vi.stubEnv("VALLY_RUNNER_EXACT_SKILL", "false");
+    options.model = "claude-sonnet-5";
+    stimulus.tags = { skill: "azure-ai", earlyTerminate: "[]" };
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const result = await adapter.execute(stimulus, options);
+    expect(result.metadata.skillsLoaded).toEqual(["azure-ai"]);
+    expect(execute.mock.calls[0][0].tags).not.toHaveProperty("earlyTerminate");
+    expect(execute.mock.calls[0][1].mcpServers).toEqual({});
+    expect(construct).toHaveBeenCalledWith(expect.objectContaining({
+      extraArgs: ["--setting-sources", "project", "--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"],
+    }));
+    const configDir = execute.mock.calls[0][1].env?.CLAUDE_CONFIG_DIR;
+    expect(configDir).toBeTruthy();
+    expect(configDir).not.toBe(process.env.CLAUDE_CONFIG_DIR);
+    await expect(access(configDir!)).rejects.toThrow();
+    expect(stimulus.tags.earlyTerminate).toBe("[]");
+  });
+
+  test("comparison copies only auth into its temporary config and removes it on failure", async () => {
+    vi.stubEnv("VALLY_FAIR_COMPARISON", "true");
+    options.model = "claude-sonnet-5";
+    await mkdir(process.env.CLAUDE_CONFIG_DIR!);
+    await writeFile(path.join(process.env.CLAUDE_CONFIG_DIR!, ".credentials.json"), "{\"test\":true}");
+    await writeFile(path.join(process.env.CLAUDE_CONFIG_DIR!, "settings.json"), "{\"testSetting\":true}");
+    let isolatedDir = "";
+    execute.mockImplementationOnce(async (_stimulus, received) => {
+      isolatedDir = received.env!.CLAUDE_CONFIG_DIR;
+      expect(await readFile(path.join(isolatedDir, ".credentials.json"), "utf8")).toBe("{\"test\":true}");
+      await expect(access(path.join(isolatedDir, "settings.json"))).rejects.toThrow();
+      throw new Error("agent failed");
+    });
+    await expect(adapter.execute(stimulus, options)).rejects.toThrow("agent failed");
+    await expect(access(isolatedDir)).rejects.toThrow();
+    expect(shutdown).toHaveBeenCalledOnce();
   });
 });
 

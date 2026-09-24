@@ -6,6 +6,7 @@ import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
 import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
+import { comparisonCopilotMcpServers, comparisonSkills, comparisonStimulus, getCommonSystemPrompt, isComparisonRun } from "./comparison-policy.ts";
 
 /**
  * The model to use for the agent run.
@@ -15,9 +16,12 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
   supportsMultiTurn = true;
-  supportsPreparedWorkspace = true;
+  supportsPreparedWorkspace = !isComparisonRun();
+  supportsEnvVars = true;
 
   async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
+    const comparison = isComparisonRun();
+    if (comparison) stimulus = comparisonStimulus(stimulus, options);
     const startedAt = new Date();
     const tags = stimulus.tags;
     const skillName = getSkillName(tags);
@@ -34,15 +38,15 @@ export class IntegrationTestAgentRunner implements Executor {
     const model = modelOverride ?? options.model ?? "claude-sonnet-5";
 
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
-    const systemPrompt = getSystemPrompt(tags);
+    const systemPrompt = comparison ? getCommonSystemPrompt(stimulus) : getSystemPrompt(tags);
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
     const requiredSkills = getRequiredSkillsCondition(tags);
     const timeout = options.timeout;
 
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
-    const requiredSkillRefs: SkillRef[] = [];
-    (requiredSkills ?? [skillName]).forEach(s => {
+    const requiredSkillRefs: SkillRef[] = comparison ? await comparisonSkills(stimulus) : [];
+    if (!comparison) (requiredSkills ?? [skillName]).forEach(s => {
       const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === s)).at(0);
       if (owningPlugin) {
         requiredSkillRefs.push({
@@ -67,7 +71,9 @@ export class IntegrationTestAgentRunner implements Executor {
       workspace: workDir,
       env: {
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
+        ...options.env,
       },
+      ...(comparison ? { mcpServers: comparisonCopilotMcpServers(options), comparisonMode: true } : {}),
       model: model,
       prompt: prompt,
       shouldEarlyTerminate: shouldEarlyTerminate,
@@ -78,7 +84,7 @@ export class IntegrationTestAgentRunner implements Executor {
       takeScreenshot: takeScreenshot,
       requiredSkills: requiredSkillRefs.length > 0 ? requiredSkillRefs : undefined,
       // Exact-skill hill climbing loads only evaluated skills so results are attributable to the target, not sibling plugin skills.
-      includeSkills: process.env.VALLY_RUNNER_EXACT_SKILL === "true"
+      includeSkills: comparison || process.env.VALLY_RUNNER_EXACT_SKILL === "true"
         ? requiredSkillRefs
         : undefined,
       maxTurns: stimulus.constraints?.max_turns,
@@ -87,8 +93,14 @@ export class IntegrationTestAgentRunner implements Executor {
       preserveWorkspace: true
     };
 
-    const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
-    const completedAt = new Date();
+    let agentMetadata: AgentMetadata;
+    let completedAt: Date;
+    try {
+      agentMetadata = await agentRunner.run(runConfig);
+      completedAt = new Date();
+    } finally {
+      await agentRunner.cleanup();
+    }
     const events = convertToTrajectoryEvents(agentMetadata);
     const metrics = computeMetrics(events);
 
@@ -101,8 +113,7 @@ export class IntegrationTestAgentRunner implements Executor {
       .filter(e => e.type === "session.start")
       .at(0)?.id;
 
-    await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
-    await agentRunner.cleanup();
+    if (!comparison) await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
 
     // Vally will run the graders and produce results.jsonl.
     // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
