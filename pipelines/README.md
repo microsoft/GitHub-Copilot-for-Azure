@@ -11,9 +11,9 @@ Pipeline: [telemetry-reporter - nightly](https://dev.azure.com/azure-sdk/interna
 
 The pipeline has three stages:
 
-1. **Initialize** finds the previous successful scheduled run, checks whether
-   executable-affecting telemetry reporter files changed, and creates the
-   platform matrices.
+1. **Initialize** finds the previous scheduled run that succeeded or succeeded
+   with warnings, checks whether executable-affecting telemetry reporter files
+   changed, and creates the platform matrices.
 2. **Build** produces packages for `win-x64`, `win-arm64`, `osx-x64`,
    `osx-arm64`, `linux-x64`, and `linux-arm64`.
 3. **Verify** validates every SHA-256 sidecar and publishes a build manifest.

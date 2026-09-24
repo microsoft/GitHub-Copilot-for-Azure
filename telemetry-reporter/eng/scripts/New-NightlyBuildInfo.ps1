@@ -88,7 +88,6 @@ function Get-PreviousScheduledBuild {
         "?definitions=$DefinitionId" +
         '&reasonFilter=schedule' +
         '&statusFilter=completed' +
-        '&resultFilter=succeeded' +
         '&queryOrder=finishTimeDescending' +
         '&$top=20' +
         '&api-version=7.1'
@@ -106,6 +105,7 @@ function Get-PreviousScheduledBuild {
     $previousBuilds = @($response.value |
         Where-Object {
             [int]$_.id -ne $BuildId -and
+            [string]$_.result -in @('succeeded', 'partiallySucceeded') -and
             -not [string]::IsNullOrWhiteSpace([string]$_.sourceVersion)
         } |
         Select-Object -First 1)
