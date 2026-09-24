@@ -49,6 +49,10 @@ const BIN_DIR = join(TEST_DIR, "bin");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
 const RAW_INPUT_DIR = join(LOG_DIR, "raw-input");
+const INSTALL_CACHE_DIR = join(TEST_DIR, "telemetry-cache");
+const TELEMETRY_ARCHIVE_DIR = join(TEST_DIR, "telemetry-archive");
+const TELEMETRY_ZIP_PATH = join(TEST_DIR, "ghcfa-telem-local.zip");
+const INVALID_TELEMETRY_ZIP_PATH = join(TEST_DIR, "invalid-telemetry.zip");
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
@@ -91,7 +95,61 @@ function isCommandAvailable(command: string): boolean {
   return spawnSync(command, ["--version"], { stdio: "ignore" }).error === undefined;
 }
 
+function resolveCommand(command: string): string {
+  if (process.platform !== "win32") {
+    return command;
+  }
+  const result = spawnSync("where.exe", [command], { encoding: "utf8" });
+  return result.status === 0 ? result.stdout.split(/\r?\n/, 1)[0] : command;
+}
+
 const shells = shellCandidates.filter(shell => isCommandAvailable(shell.command));
+
+function quotePowerShell(value: string): string {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+function createTelemetryArchive(): void {
+  mkdirSync(TELEMETRY_ARCHIVE_DIR, { recursive: true });
+  const binaryName = process.platform === "win32" ? "ghcfa-telem.exe" : "ghcfa-telem";
+  const binaryPath = join(TELEMETRY_ARCHIVE_DIR, binaryName);
+  const binaryContent =
+    process.platform === "win32"
+      ? "test telemetry executable"
+      : "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"\n";
+  writeFileSync(binaryPath, binaryContent);
+  if (process.platform !== "win32") {
+    chmodSync(binaryPath, 0o755);
+  }
+
+  const zip = spawnSync("zip", ["-j", TELEMETRY_ZIP_PATH, binaryPath], {
+    encoding: "utf8",
+  });
+  if (zip.error === undefined && zip.status === 0) {
+    return;
+  }
+
+  const powerShell = shellCandidates.find(
+    shell => shell.name === "PowerShell" && isCommandAvailable(shell.command),
+  );
+  if (!powerShell) {
+    throw new Error(`Unable to create telemetry ZIP: ${zip.stderr || zip.error?.message}`);
+  }
+
+  const command = [
+    `Compress-Archive -LiteralPath ${quotePowerShell(binaryPath)}`,
+    `-DestinationPath ${quotePowerShell(TELEMETRY_ZIP_PATH)}`,
+    "-Force",
+  ].join(" ");
+  const compressed = spawnSync(powerShell.command, ["-NoProfile", "-NonInteractive", "-Command", command], {
+    encoding: "utf8",
+  });
+  if (compressed.error !== undefined || compressed.status !== 0) {
+    throw new Error(
+      `Unable to create telemetry ZIP: ${compressed.stderr || compressed.error?.message}`,
+    );
+  }
+}
 
 // Loads a Cursor hook payload fixture by file name.
 function fixture(name: string): Record<string, unknown> {
@@ -141,7 +199,11 @@ function runHook(
       ...process.env,
       PATH: `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
+      AZURE_SKILLS_TELEMETRY_ZIP_PATH: "",
+      AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "",
       COPILOT_CLI: "",
+      LOCALAPPDATA: INSTALL_CACHE_DIR,
+      XDG_CACHE_HOME: INSTALL_CACHE_DIR,
       TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
       ...envOverrides,
     },
@@ -167,7 +229,11 @@ function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): stri
       ...process.env,
       PATH: `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
+      AZURE_SKILLS_TELEMETRY_ZIP_PATH: "",
+      AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "",
       COPILOT_CLI: "",
+      LOCALAPPDATA: INSTALL_CACHE_DIR,
+      XDG_CACHE_HOME: INSTALL_CACHE_DIR,
       TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
     },
   });
@@ -176,6 +242,38 @@ function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): stri
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout.trim()).toBe('{"continue":true}');
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
+}
+
+function runInstaller(
+  shell: ShellCase,
+  cacheDirectory: string,
+  zipPath: string,
+): ReturnType<typeof spawnSync> {
+  const extension = shell.name === "Bash" ? "sh" : "ps1";
+  const scriptPath = join(HOOKS_DIR, `install-telemetry.${extension}`);
+  const versionArgs = shell.name === "Bash" ? ["--version", "0.1.0"] : ["-Version", "0.1.0"];
+  const commandPath =
+    shell.name === "Bash" && process.platform === "win32"
+      ? `${pathForShell(shell, BIN_DIR)}:/usr/bin:/bin`
+      : `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`;
+  return spawnSync(resolveCommand(shell.command), [...shell.args(scriptPath), ...versionArgs], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      PATH: commandPath,
+      AZURE_SKILLS_TELEMETRY_ZIP_PATH: zipPath,
+      LOCALAPPDATA: cacheDirectory,
+      XDG_CACHE_HOME: cacheDirectory,
+    },
+  });
+}
+
+function installedPathExists(shell: ShellCase, installedPath: string): boolean {
+  if (shell.name === "Bash" && process.platform === "win32") {
+    const result = spawnSync(resolveCommand("bash"), ["-lc", '[ -f "$1" ]', "bash", installedPath]);
+    return result.status === 0;
+  }
+  return existsSync(installedPath);
 }
 
 function readRawInput(): string {
@@ -200,6 +298,8 @@ function expectIsoTimestamp(args: string[]): void {
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
   cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
+  createTelemetryArchive();
+  writeFileSync(INVALID_TELEMETRY_ZIP_PATH, "not a ZIP archive");
   for (const metadata of Object.values(PLUGIN_METADATA)) {
     const manifestDir = join(PLUGIN_ROOT, metadata.directory);
     mkdirSync(manifestDir, { recursive: true });
@@ -343,6 +443,53 @@ describe("Cursor telemetry dispatcher", () => {
   });
 });
 
+describe.each(shells)("Telemetry reporter installer ($name)", shell => {
+  it("installs from a local ZIP and reuses the cached executable", () => {
+    const cacheDirectory = join(INSTALL_CACHE_DIR, `installer-${shell.name}`);
+    rmSync(cacheDirectory, { recursive: true, force: true });
+
+    const first = runInstaller(shell, cacheDirectory, TELEMETRY_ZIP_PATH);
+    expect(first.error).toBeUndefined();
+    expect(first.status, String(first.stderr)).toBe(0);
+    const installedPath = String(first.stdout).trim();
+    expect(installedPathExists(shell, installedPath)).toBe(true);
+
+    const second = runInstaller(shell, cacheDirectory, join(TEST_DIR, "missing-cached.zip"));
+    expect(second.error).toBeUndefined();
+    expect(second.status, String(second.stderr)).toBe(0);
+    expect(String(second.stdout).trim()).toBe(installedPath);
+  });
+
+  it("rejects an invalid local ZIP", () => {
+    const cacheDirectory = join(INSTALL_CACHE_DIR, `invalid-installer-${shell.name}`);
+    rmSync(cacheDirectory, { recursive: true, force: true });
+
+    const result = runInstaller(shell, cacheDirectory, INVALID_TELEMETRY_ZIP_PATH);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+  });
+});
+
+describe("Telemetry reporter release download", () => {
+  it("constructs versioned release URLs from the requested version and detected RID", () => {
+    const bashInstaller = readFileSync(
+      join(SOURCE_HOOKS_DIR, "install-telemetry.sh"),
+      "utf8",
+    );
+    const powerShellInstaller = readFileSync(
+      join(SOURCE_HOOKS_DIR, "install-telemetry.ps1"),
+      "utf8",
+    );
+
+    expect(bashInstaller).toContain(
+      'DOWNLOAD_URL="https://github.com/${REPOSITORY}/releases/download/${VERSION}/${ASSET_NAME}"',
+    );
+    expect(powerShellInstaller).toContain(
+      '$downloadUrl = "https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/$Version/$assetName"',
+    );
+  });
+});
+
 describe.each(shells)("Session start telemetry hook ($name)", shell => {
   it.each([
     {
@@ -417,6 +564,58 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
       conversation_id: "cursor-conversation-id",
       source: "startup",
     });
+
+    expect(args).toEqual([]);
+  });
+
+  it("does not enable the standalone publisher from the ZIP override alone", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      { AZURE_SKILLS_TELEMETRY_ZIP_PATH: TELEMETRY_ZIP_PATH },
+    );
+
+    expect(args.slice(0, 4)).toEqual(["-y", "@azure/mcp@latest", "server", "plugin-telemetry"]);
+  });
+
+  it.skipIf(process.platform === "win32")(
+    "installs, invokes, and reuses the standalone reporter when enabled",
+    () => {
+      const shellCache = join(INSTALL_CACHE_DIR, shell.name);
+      rmSync(shellCache, { recursive: true, force: true });
+      const payload = fixture("cursor-mcp-invocation.json");
+      const enabledEnvironment = {
+        AZURE_SKILLS_TELEMETRY_ZIP_PATH: TELEMETRY_ZIP_PATH,
+        AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "true",
+        LOCALAPPDATA: shellCache,
+        XDG_CACHE_HOME: shellCache,
+      };
+
+      const firstArgs = runHook(shell, payload, "", enabledEnvironment);
+      expect(firstArgs.slice(0, 2)).toEqual(["server", "plugin-telemetry"]);
+      expectArg(firstArgs, "--tool-name", "get_azure_bestpractices");
+
+      const secondArgs = runHook(shell, payload, "", {
+        ...enabledEnvironment,
+        AZURE_SKILLS_TELEMETRY_ZIP_PATH: join(TEST_DIR, "missing-after-install.zip"),
+      });
+      expect(secondArgs).toEqual(firstArgs);
+    },
+  );
+
+  it("fails open without invoking npx when standalone installation fails", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      {
+        AZURE_SKILLS_TELEMETRY_ZIP_PATH: join(TEST_DIR, "missing.zip"),
+        AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "true",
+        LOCALAPPDATA: join(INSTALL_CACHE_DIR, `${shell.name}-failure`),
+        XDG_CACHE_HOME: join(INSTALL_CACHE_DIR, `${shell.name}-failure`),
+      },
+    );
 
     expect(args).toEqual([]);
   });
