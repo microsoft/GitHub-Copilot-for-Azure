@@ -165,9 +165,10 @@ AOT packages:
 - `osx-x64` and `osx-arm64`
 - `linux-x64` and `linux-arm64`
 
-Scheduled runs compare `main` with the previous successful scheduled build and
-skip the platform matrix when no executable-affecting telemetry reporter files
-changed. Manual runs always build the complete matrix.
+Scheduled runs compare `main` with the previous scheduled build that succeeded
+or succeeded with warnings, and skip the platform matrix when no
+executable-affecting telemetry reporter files changed. Manual runs always build
+the complete matrix.
 
 Each target publishes a `telemetry-reporter_<rid>` pipeline artifact containing
 the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final

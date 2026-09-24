@@ -88,7 +88,7 @@ function Get-PreviousScheduledBuild {
         "?definitions=$DefinitionId" +
         '&reasonFilter=schedule' +
         '&statusFilter=completed' +
-        '&resultFilter=succeeded' +
+        '&resultFilter=succeeded,partiallySucceeded' +
         '&queryOrder=finishTimeDescending' +
         '&$top=20' +
         '&api-version=7.1'
