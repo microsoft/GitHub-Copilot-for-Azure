@@ -58,7 +58,7 @@ describe("required reviewers", () => {
     ]);
   });
 
-  it("reports mapped aliases and unknown reviewers", () => {
+  it("reports mapped aliases and omits unmatched reviewers", () => {
     const gh = vi.fn<GhRunner>((args) => {
       if (args[1] === "repos/microsoft/GitHub-Copilot-for-Azure/pulls/42/requested_reviewers") {
         return JSON.stringify({
@@ -82,7 +82,7 @@ describe("required reviewers", () => {
     main(["42"], gh);
 
     expect(consoleLog).toHaveBeenCalledOnce();
-    expect(consoleLog).toHaveBeenCalledWith(["hubot-alias", "unknown"]);
+    expect(consoleLog).toHaveBeenCalledWith(["hubot-alias"]);
     expect(process.exitCode).not.toBe(1);
   });
 });
