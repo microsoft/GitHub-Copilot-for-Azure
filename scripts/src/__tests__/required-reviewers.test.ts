@@ -77,7 +77,7 @@ describe("required reviewers", () => {
 
       throw new Error(`Unexpected gh arguments: ${args.join(" ")}`);
     });
-    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => { });
 
     main(["42"], gh);
 
