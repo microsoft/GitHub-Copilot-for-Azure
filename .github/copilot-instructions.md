@@ -159,7 +159,7 @@ The executable must preserve the Azure MCP `server plugin-telemetry` command-lin
    npm run build                              # Verify version stamping works
    cd scripts && npm run frontmatter          # Validate frontmatter
    cd scripts && npm run references           # Validate markdown links
-   cd tests && npm test -- --testPathPatterns=<your-skill-name>
+   cd tests && npm test                       # Run skill unit tests
    ```
 
 ### Token Limits

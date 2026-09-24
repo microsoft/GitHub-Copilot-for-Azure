@@ -1,0 +1,152 @@
+name: telemetry-reporter-nightly-$(Date:yyyyMMdd).$(Rev:r)
+
+trigger: none
+pr: none
+
+schedules:
+  - cron: "0 6 * * *"
+    displayName: Nightly telemetry reporter build
+    branches:
+      include:
+        - main
+    always: false
+
+resources:
+  repositories:
+    - repository: 1ESPipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    settings:
+      skipBuildTagsForGitHubPullRequests: true
+      networkIsolationPolicy: Permissive
+    sdl:
+      sourceAnalysisPool:
+        name: azsdk-pool
+        image: windows-2022
+        os: windows
+      psscriptanalyzer:
+        compiled: true
+        break: true
+      policy: M365
+    stages:
+      - stage: Initialize
+        displayName: Initialize
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
+        jobs:
+          - job: Initialize
+            displayName: Create build matrix
+            steps:
+              - checkout: self
+                fetchDepth: 0
+
+              - task: PowerShell@2
+                name: CreateBuildInfo
+                displayName: Detect changes and create build matrix
+                inputs:
+                  pwsh: true
+                  filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/New-NightlyBuildInfo.ps1
+                  arguments: >
+                    -CollectionUri '$(System.CollectionUri)'
+                    -Project '$(System.TeamProject)'
+                    -DefinitionId $(System.DefinitionId)
+                    -BuildId $(Build.BuildId)
+                    -BuildReason '$(Build.Reason)'
+                    -SourceVersion '$(Build.SourceVersion)'
+                    -RepositoryRoot '$(Build.SourcesDirectory)'
+                    -OutputPath '$(Build.ArtifactStagingDirectory)/build_info/build_info.json'
+                env:
+                  SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+              - task: 1ES.PublishPipelineArtifact@1
+                displayName: Publish build information
+                inputs:
+                  artifactName: build_info
+                  targetPath: $(Build.ArtifactStagingDirectory)/build_info
+
+      - stage: Build
+        displayName: Build Native AOT packages
+        dependsOn: Initialize
+        condition: and(succeeded(), eq(dependencies.Initialize.outputs['Initialize.CreateBuildInfo.ShouldBuild'], 'true'))
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
+        jobs:
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
+            parameters:
+              OSName: windows
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.WindowsMatrix']
+              MaxParallel: 2
+
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
+            parameters:
+              OSName: macOS
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.MacOSMatrix']
+              MaxParallel: 2
+
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
+            parameters:
+              OSName: linux
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.LinuxX64Matrix']
+              MaxParallel: 1
+
+          - template: /pipelines/templates/jobs/telemetry-reporter-build.yml@self
+            parameters:
+              OSName: linux
+              HostArchitecture: Arm64
+              Matrix: stageDependencies.Initialize.Initialize.outputs['CreateBuildInfo.LinuxArm64Matrix']
+              MaxParallel: 1
+
+      - stage: Verify
+        displayName: Verify artifacts
+        dependsOn:
+          - Initialize
+          - Build
+        condition: and(succeeded(), eq(dependencies.Initialize.outputs['Initialize.CreateBuildInfo.ShouldBuild'], 'true'))
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
+        jobs:
+          - job: Verify
+            displayName: Verify Native AOT package matrix
+            steps:
+              - checkout: self
+                fetchDepth: 1
+
+              - download: current
+                displayName: Download build artifacts
+
+              - task: PowerShell@2
+                displayName: Verify packages and create manifest
+                inputs:
+                  pwsh: true
+                  filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Test-NightlyBuildArtifacts.ps1
+                  arguments: >
+                    -PipelineWorkspace '$(Pipeline.Workspace)'
+                    -ManifestPath '$(Build.ArtifactStagingDirectory)/manifest/build-manifest.json'
+                    -BuildId '$(Build.BuildId)'
+                    -SourceVersion '$(Build.SourceVersion)'
+
+              - task: 1ES.PublishPipelineArtifact@1
+                displayName: Publish build manifest
+                inputs:
+                  artifactName: telemetry-reporter_manifest
+                  targetPath: $(Build.ArtifactStagingDirectory)/manifest

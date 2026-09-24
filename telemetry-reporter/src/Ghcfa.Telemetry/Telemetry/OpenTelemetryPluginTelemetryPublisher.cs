@@ -7,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using OpenTelemetry;
-using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -15,10 +14,16 @@ using OpenTelemetry.Trace;
 namespace Ghcfa.Telemetry.Telemetry;
 
 /// <summary>
-/// Publishes telemetry events through the configured OpenTelemetry exporters.
+/// Publishes telemetry events through the Microsoft-owned OpenTelemetry exporter.
 /// </summary>
 public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPublisher
 {
+    private const string MicrosoftOwnedApplicationInsightsConnectionString =
+        "InstrumentationKey=21e003c0-efee-4d3f-8a98-1868515aa2c9;" +
+        "IngestionEndpoint=https://centralus-2.in.applicationinsights.azure.com/;" +
+        "LiveEndpoint=https://centralus.livediagnostics.monitor.azure.com/;" +
+        "ApplicationId=f14f6a2d-6405-4f88-bd58-056f25fe274f";
+
     private readonly IEnvironmentVariables _environment;
 
     public OpenTelemetryPluginTelemetryPublisher()
@@ -37,7 +42,7 @@ public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPubl
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        var settings = TelemetryExporterSettings.FromEnvironment(
+        var settings = TelemetryCollectionSettings.FromEnvironment(
             _environment,
             microsoftExporterAvailable: IsReleaseBuild);
 
@@ -47,9 +52,9 @@ public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPubl
         });
 
         ConfigureLogging(builder.Logging, options);
-        if (settings.TelemetryEnabled)
+        if (settings.TelemetryEnabled && settings.MicrosoftExporterEnabled)
         {
-            ConfigureOpenTelemetry(builder.Services, settings);
+            ConfigureOpenTelemetry(builder.Services);
         }
 
         using var activitySource = new ActivitySource(
@@ -111,62 +116,34 @@ public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPubl
         }
     }
 
-    private static void ConfigureOpenTelemetry(
-        IServiceCollection services,
-        TelemetryExporterSettings settings)
+    private static void ConfigureOpenTelemetry(IServiceCollection services)
     {
-        var openTelemetry = services.AddOpenTelemetry()
+        services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService(
                     CompatibilityConstants.OpenTelemetryServiceName,
                     serviceVersion: CompatibilityConstants.AzureMcpVersion)
                 .AddTelemetrySdk())
-            .WithTracing(tracing => tracing.AddSource(CompatibilityConstants.AzureMcpServerName));
-
-        if (settings.UserApplicationInsightsConnectionString is { } userConnectionString)
-        {
-            openTelemetry
-                .WithLogging(logging => logging.AddAzureMonitorLogExporter(
-                    options => options.ConnectionString = userConnectionString,
-                    name: "UserProvided"))
-                .WithMetrics(metrics => metrics.AddAzureMonitorMetricExporter(
-                    options => options.ConnectionString = userConnectionString,
-                    name: "UserProvided"))
-                .WithTracing(tracing => tracing.AddAzureMonitorTraceExporter(
-                    options => options.ConnectionString = userConnectionString,
-                    name: "UserProvided"));
-        }
-
-        if (settings.MicrosoftExporterEnabled)
-        {
-            openTelemetry
-                .WithMetrics(metrics => metrics.AddAzureMonitorMetricExporter(
+            .WithMetrics(metrics => metrics.AddAzureMonitorMetricExporter(
+                options =>
+                {
+                    options.ConnectionString =
+                        MicrosoftOwnedApplicationInsightsConnectionString;
+                    options.SamplingRatio = 1.0f;
+                    options.TracesPerSecond = null;
+                },
+                name: "Microsoft"))
+            .WithTracing(tracing => tracing
+                .AddSource(CompatibilityConstants.AzureMcpServerName)
+                .AddAzureMonitorTraceExporter(
                     options =>
                     {
                         options.ConnectionString =
-                            TelemetryExporterSettings.MicrosoftOwnedApplicationInsightsConnectionString;
-                        options.SamplingRatio = 1.0f;
-                        options.TracesPerSecond = null;
-                    },
-                    name: "Microsoft"))
-                .WithTracing(tracing => tracing.AddAzureMonitorTraceExporter(
-                    options =>
-                    {
-                        options.ConnectionString =
-                            TelemetryExporterSettings.MicrosoftOwnedApplicationInsightsConnectionString;
+                            MicrosoftOwnedApplicationInsightsConnectionString;
                         options.SamplingRatio = 1.0f;
                         options.TracesPerSecond = null;
                     },
                     name: "Microsoft"));
-        }
-
-        if (settings.OtlpExporterEnabled)
-        {
-            openTelemetry
-                .WithTracing(tracing => tracing.AddOtlpExporter())
-                .WithMetrics(metrics => metrics.AddOtlpExporter())
-                .WithLogging(logging => logging.AddOtlpExporter());
-        }
     }
 
     private static bool IsReleaseBuild

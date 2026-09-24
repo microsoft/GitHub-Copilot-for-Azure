@@ -1,5 +1,7 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
+# Builds and packages the telemetry reporter as a Native AOT executable for one supported runtime identifier, including host validation, optional smoke testing, runtime and symbol archives, and SHA-256 checksums.
+# Exit codes: 0 = success, 1 = build, validation, or packaging failure.
 
 [CmdletBinding()]
 param(
@@ -10,6 +12,8 @@ param(
     [string] $RuntimeIdentifier,
 
     [string] $OutputRoot,
+
+    [string] $RestoreConfigFile,
 
     [switch] $NoClean
 )
@@ -72,6 +76,15 @@ $outputRootPath = if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 }
 else {
     [System.IO.Path]::GetFullPath($OutputRoot)
+}
+$restoreConfigFilePath = if ([string]::IsNullOrWhiteSpace($RestoreConfigFile)) {
+    $null
+}
+else {
+    [System.IO.Path]::GetFullPath($RestoreConfigFile)
+}
+if ($null -ne $restoreConfigFilePath -and -not (Test-Path -LiteralPath $restoreConfigFilePath -PathType Leaf)) {
+    throw "Restore configuration file '$restoreConfigFilePath' does not exist."
 }
 
 $publishDirectory = Join-Path $outputRootPath 'publish' $RuntimeIdentifier
@@ -322,10 +335,18 @@ Write-Host "Host runtime identifier:   $currentRuntimeIdentifier"
 Write-Host "Target runtime identifier: $RuntimeIdentifier"
 
 if (-not $NoClean) {
-    & dotnet clean $projectPath `
-        --configuration $Configuration `
-        --runtime $RuntimeIdentifier `
-        -p:BuildNative=true
+    $cleanArguments = @(
+        'clean',
+        $projectPath,
+        '--configuration', $Configuration,
+        '--runtime', $RuntimeIdentifier,
+        '-p:BuildNative=true'
+    )
+    if ($null -ne $restoreConfigFilePath) {
+        $cleanArguments += "-p:RestoreConfigFile=$restoreConfigFilePath"
+    }
+
+    & dotnet @cleanArguments
 
     if ($LASTEXITCODE -ne 0) {
         throw "dotnet clean failed with exit code $LASTEXITCODE."
@@ -348,6 +369,9 @@ $publishArguments = @(
     '--output', $publishDirectory,
     '-p:BuildNative=true'
 )
+if ($null -ne $restoreConfigFilePath) {
+    $publishArguments += "-p:RestoreConfigFile=$restoreConfigFilePath"
+}
 
 if ($IsWindows) {
     $quotedPublishArguments = $publishArguments |

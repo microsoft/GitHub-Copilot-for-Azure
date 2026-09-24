@@ -21,6 +21,9 @@ The repository-level `tests/AGENTS.md` does not apply to this directory.
 
 - Preserve the Azure MCP command-line contract, JSON response shape, exit
   codes, validation behavior, telemetry event names, and telemetry properties.
+- The Microsoft-only telemetry exporter policy is an intentional compatibility
+  divergence. Preserve `AZURE_MCP_COLLECT_TELEMETRY` as the global opt-out, and
+  do not add user-configurable Application Insights or OTLP sinks.
 - Treat `CompatibilityConstants.AzureMcpCommit` as the source revision for the
   copied behavior and allowlists.
 - When synchronizing with a newer Azure MCP revision, update the compatibility

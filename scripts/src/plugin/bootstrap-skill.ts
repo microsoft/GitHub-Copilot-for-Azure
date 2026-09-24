@@ -108,6 +108,7 @@ export function scaffoldSkill({ plugin, skill, repoRoot }: ScaffoldSkillOptions)
 
   const skillRoot = path.join(skillsRoot, skill);
   const evalRoot = path.join(repoRoot, "evals", plugin, skill);
+  const testRoot = path.join(repoRoot, "tests", "skills", plugin, skill);
 
   const skillMarkdown = `---
 name: ${skill}
@@ -153,12 +154,21 @@ stimuli:
           required:
             - ${skill}
 `;
+  const unitTest = `import { expect, test } from "vitest";
+
+test("${skill} placeholder", () => {
+  // Add unit tests for your skill or remove this file if it doesn't need unit tests.
+  expect(true).toBe(true);
+});
+`;
 
   fs.mkdirSync(skillRoot, { recursive: true });
   fs.mkdirSync(evalRoot, { recursive: true });
+  fs.mkdirSync(testRoot, { recursive: true });
   writeFileIfMissing(path.join(skillRoot, "SKILL.md"), skillMarkdown, repoRoot);
   writeFileIfMissing(path.join(skillRoot, "version.json"), `${JSON.stringify(version, null, 2)}\n`, repoRoot);
   writeFileIfMissing(path.join(evalRoot, "eval.yaml"), evalYaml, repoRoot);
+  writeFileIfMissing(path.join(testRoot, `${skill}.test.ts`), unitTest, repoRoot);
 
   const codeOwnersPath = path.join(repoRoot, ".github", "CODEOWNERS");
   appendCodeOwnerIfMissing(
