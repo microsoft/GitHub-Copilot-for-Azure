@@ -44,6 +44,16 @@ type Dispatcher = {
   ) => number;
 };
 
+type CopilotHookEntry = {
+  type: "command";
+  windows: string;
+  osx: string;
+  linux: string;
+  bash: string;
+  powershell: string;
+  env?: Record<string, string>;
+};
+
 const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
@@ -62,6 +72,8 @@ const PLUGIN_ROOT = join(
   "revision",
 );
 const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
+const SPACED_PLUGIN_ROOT = join(TEST_DIR, "plugin root with spaces");
+const SPACED_HOOKS_DIR = join(SPACED_PLUGIN_ROOT, "hooks", "scripts");
 const DISPATCHER_PATH = join(HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
@@ -178,6 +190,36 @@ function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): stri
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
 }
 
+function runWindowsManifestHook(
+  entry: CopilotHookEntry,
+  payload: Record<string, unknown>,
+): string[] {
+  rmSync(CAPTURE_FILE, { force: true });
+  rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
+  const command = entry.windows.replaceAll("${PLUGIN_ROOT}", SPACED_PLUGIN_ROOT);
+  const result = spawnSync(
+    "powershell.exe",
+    ["-NoProfile", "-NonInteractive", "-Command", command],
+    {
+      encoding: "utf8",
+      input: JSON.stringify(payload),
+      env: {
+        ...process.env,
+        PATH: `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
+        AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
+        COPILOT_CLI: "",
+        TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
+        ...entry.env,
+      },
+    },
+  );
+
+  expect(result.error).toBeUndefined();
+  expect(result.status, result.stderr).toBe(0);
+  expect(result.stdout.trim()).toBe('{"continue":true}');
+  return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
+}
+
 function readRawInput(): string {
   const files = readdirSync(RAW_INPUT_DIR);
   expect(files).toHaveLength(1);
@@ -200,6 +242,7 @@ function expectIsoTimestamp(args: string[]): void {
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
   cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
+  cpSync(SOURCE_HOOKS_DIR, SPACED_HOOKS_DIR, { recursive: true });
   for (const metadata of Object.values(PLUGIN_METADATA)) {
     const manifestDir = join(PLUGIN_ROOT, metadata.directory);
     mkdirSync(manifestDir, { recursive: true });
@@ -208,6 +251,14 @@ beforeAll(() => {
       JSON.stringify({ name: metadata.name, version: metadata.version }),
     );
   }
+  mkdirSync(join(SPACED_PLUGIN_ROOT, PLUGIN_METADATA.copilot.directory), { recursive: true });
+  writeFileSync(
+    join(SPACED_PLUGIN_ROOT, PLUGIN_METADATA.copilot.directory, "plugin.json"),
+    JSON.stringify({
+      name: PLUGIN_METADATA.copilot.name,
+      version: PLUGIN_METADATA.copilot.version,
+    }),
+  );
   writeFileSync(
     join(BIN_DIR, "npx"),
     "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"\n",
@@ -223,15 +274,17 @@ afterAll(() => {
   rmSync(TEST_DIR, { recursive: true, force: true });
 });
 
-describe("Session start hook manifests", () => {
-  it("registers the client-specific lifecycle event shapes", () => {
-    const copilot = JSON.parse(
-      readFileSync(join(HOOKS_SOURCE_DIR, "copilot-hooks.json"), "utf8"),
-    ) as {
-      hooks: {
-        SessionStart: Array<{ env?: Record<string, string> }>;
-      };
+describe("Telemetry hook manifests", () => {
+  const copilot = JSON.parse(
+    readFileSync(join(HOOKS_SOURCE_DIR, "copilot-hooks.json"), "utf8"),
+  ) as {
+    hooks: {
+      SessionStart: CopilotHookEntry[];
+      PostToolUse: CopilotHookEntry[];
     };
+  };
+
+  it("registers the client-specific lifecycle event shapes", () => {
     const claude = JSON.parse(
       readFileSync(join(HOOKS_SOURCE_DIR, "claude-hooks.json"), "utf8"),
     ) as {
@@ -254,6 +307,23 @@ describe("Session start hook manifests", () => {
     expect(claude.hooks.SessionStart[0].hooks).toHaveLength(1);
     expect(cursor.hooks.sessionStart).toHaveLength(1);
   });
+
+  it.skipIf(process.platform !== "win32")(
+    "executes the VS Code Windows command from a plugin path containing spaces",
+    () => {
+      const args = runWindowsManifestHook(copilot.hooks.SessionStart[0], {
+        hook_event_name: "SessionStart",
+        session_id: SESSION_ID,
+        source: "new",
+      });
+
+      expectArg(args, "--plugin-name", PLUGIN_METADATA.copilot.name);
+      expectArg(args, "--plugin-version", PLUGIN_METADATA.copilot.version);
+      expectArg(args, "--client-name", "Visual Studio Code");
+      expectArg(args, "--event-type", "session_start");
+      expectArg(args, "--session-id", SESSION_ID);
+    },
+  );
 });
 
 describe("Cursor telemetry dispatcher", () => {
