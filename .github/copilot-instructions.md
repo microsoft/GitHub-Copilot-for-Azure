@@ -242,6 +242,7 @@ PRs against `main` must pass these checks — run the corresponding local comman
 | Plugin Version Check | `plugin.json` versions remain `0.0.0-placeholder` | Ensure you never edit version fields |
 | Skill Tests | Unit and trigger tests for changed skills | `cd tests && npm test` |
 | Shell Scripts | Shebang-bearing `.sh` files are executable in Git | `npm run check:shell-scripts` |
+| Line Endings | Tracked text files are committed with LF line endings | `npm run check:line-endings` |
 
 The telemetry reporter is not currently included in these CI jobs. Build and test it locally for changes under `telemetry-reporter/`, and do not modify CI configuration unless explicitly requested.
 
