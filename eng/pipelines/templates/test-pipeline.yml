@@ -1,0 +1,19 @@
+pr: none
+trigger: none
+
+parameters:
+  - name: Environment
+    type: string
+    default: pg
+    values:
+    - prod
+    - pg
+  - name: WhatIf
+    type: boolean
+    default: false
+
+extends:
+  template: /eng/pipelines/templates/jobs/test-job.yml
+  parameters:
+    Environment: ${{ parameters.Environment }}
+    WhatIf: ${{ parameters.WhatIf }}
