@@ -1,5 +1,15 @@
 # Invoke-PortalSearchNav.ps1 — Reference
 
+## Authentication and Data Flow
+
+The `azurefd.net` endpoint this script calls fronts the **PCNX Copilot
+Infrastructure** service, owned by the **Azure Kubernetes Service (AKS) team**.
+It receives the signed-in user's ARM-audience (`https://management.azure.com/`)
+bearer token as the `Authorization` header, along with an `App-Tenant-Id`
+header derived from that token. This is the same authentication pattern Azure
+Copilot's in-portal search-and-navigation experience already uses against this
+service.
+
 ## Prerequisites
 
 ```powershell

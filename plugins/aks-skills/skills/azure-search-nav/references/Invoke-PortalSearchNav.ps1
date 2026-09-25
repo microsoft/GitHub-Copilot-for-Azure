@@ -168,7 +168,7 @@ $headers = @{
     'Accept'              = '*/*'
     'User-Data-Boundary'  = 'Global'
 }
-$headers['Authorization'] = ('Bear' + 'er {0}') -f $BearerToken
+$headers['Authorization'] = "Bearer $BearerToken"
 if ($AppTenantId) {
     $headers['App-Tenant-Id'] = $AppTenantId
 }
