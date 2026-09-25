@@ -1,0 +1,102 @@
+name: Request New Skill Onboarding
+description: Partner teams - request onboarding a brand new skill to the Azure Skills Plugin.
+title: "[New Skill]: azure-search-nav"
+labels:
+  - "onboarding"
+  - "skills"
+  - "needs-triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in onboarding a **new skill** to the **Azure Skills Plugin**!
+
+        This repo packages [agent skills](https://agentskills.io/specification) (markdown-based knowledge packages) that teach Copilot how to help customers with Azure services. Use this template to request a **brand new skill**.
+
+        > ⚠️ The char-count budget for skill descriptions is close to the Copilot CLI limit. **Adding new skills risks truncation — if your capability fits an existing skill, please use the [Add Capability to an Existing Skill](https://github.com/microsoft/GitHub-Copilot-for-Azure/issues/new?template=skill_extension_request.yml) template instead.**
+        >
+        > Before submitting, please review the [skill authoring guide](https://github.com/microsoft/GitHub-Copilot-for-Azure/blob/main/.github/skills/skill-authoring/SKILL.md) and the [internal skill onboarding guide](https://aka.ms/azure-skills/onboarding).
+
+  - type: input
+    id: skill-name
+    attributes:
+      label: Skill Name
+      description: Proposed name for the new skill (lowercase, hyphens only).
+      placeholder: ex. azure-prepare
+      value: azure-search-nav
+    validations:
+      required: true
+
+  - type: input
+    id: contacts
+    attributes:
+      label: Contacts
+      description: List of contacts who own the skill being onboarded.
+      placeholder: ex. Bob Dylan (bdylan)
+      value: Obi Michael (obimichael)
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Intended Agent Scenarios
+      description: What customer scenarios should this skill solve? Describe the tasks a user would ask Copilot to do and the value delivered.
+      placeholder: |
+        ex. "Create a web app and deploy it to Azure"
+        ex. "Generate Bicep/Terraform infrastructure for my app and host it on Azure App Service or Container Apps"
+        ex. "Modernize my existing application and add Key Vault and managed identity"
+      value: |
+        Help customers navigate directly to a specific Azure portal blade or menu item for a supported Azure resource without manually searching the portal.
+
+        Intended scenarios include:
+        - Given an Azure portal resource URL or ARM resource ID and a natural-language operation, find the matching portal destination.
+        - Build deep links for enabled Container Service resources, including AKS clusters, fleets, snapshots, maintenance windows, and AI managers.
+        - Build deep links for Arc-enabled Kubernetes connected clusters.
+        - Build deep links for enabled Compute resources, including virtual machines, scale sets, disks, images, galleries, snapshots, and placement or capacity resources.
+        - Return ranked matching destinations when a query can map to multiple portal menu items.
+
+        The skill parses the resource identifier, determines the ARM provider, searches indexed portal navigation metadata semantically, and reconstructs a resource-specific Azure portal deep link. This reduces navigation time and helps users reach features whose portal location or blade name is not obvious.
+    validations:
+      required: true
+
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      description: Your desired onboarding timeline (e.g., Q3 2026, Q4 2026, TBD).
+      placeholder: TBD
+      value: Q3 2026
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Anything else that helps us understand the request - related skills, dependencies, regional considerations, etc.
+      value: |
+        Skill package:
+        - `SKILL.md` defines activation guidance and the end-to-end workflow.
+        - `references/Invoke-PortalSearchNav.ps1` performs resource parsing, authentication, semantic search, and deep-link construction.
+        - `references/resource-types.json` maps supported ARM resource types to the canonical provider casing expected by the search index.
+        - `references/README.md` documents parameters, request construction, and resource-type onboarding.
+
+        Dependencies and authentication:
+        - Requires PowerShell and the `Az.Accounts` module.
+        - Uses interactive `Connect-AzAccount` authentication.
+        - Requests an Azure Management API access token and derives the issuing tenant ID from the token for the `App-Tenant-Id` request header.
+        - The signed-in identity must have access to the supplied Azure resource.
+
+        Search service:
+        - Endpoint: `https://PCNX-AI-etc5bra3fscchrew.b02.azurefd.net/aks-search-direct-mid`
+        - Request type: semantic search filtered by ARM provider and locale.
+        - Current default locale: `en.en-us`.
+
+        Enabled resource scope:
+        - 11 `Microsoft.ContainerService` types: AI managers, container services, deployment safeguards, fleets, maintenance windows, managed clusters, managed cluster snapshots, node customizations, OpenShift managed clusters, prepared image specifications, and snapshots.
+        - `Microsoft.Kubernetes/connectedClusters`.
+        - 16 `Microsoft.Compute` types: availability sets, capacity reservation groups, cloud services, disk accesses, disk encryption sets, disks, galleries, host groups, images, interconnect blocks, proximity placement groups, restore point collections, snapshots, SSH public keys, virtual machines, and virtual machine scale sets.
+        - Additional resource types can be added to `references/resource-types.json` after they are enabled in the search service.
+
+        The skill returns portal URLs and does not modify the target Azure resource.
