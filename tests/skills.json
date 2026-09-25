@@ -55,7 +55,6 @@
         "aks-known-issues",
         "aks-network-capture",
         "aks-troubleshooting",
-        "azure-search-nav"
       ],
       "integrationTestSchedule": {
         "0 12 * * 2-6": "aks-gpu-inference,aks-known-issues,aks-network-capture,aks-troubleshooting"
