@@ -57,4 +57,4 @@ Check `prereq-output.json.warnings[]` for warnings with `fixPhase: "scaffold"`. 
 
 ## Compose → Azure PaaS Credential Mapping
 
-> ⛔ **Azure managed databases only create the `administratorLogin` user.** Docker-compose `POSTGRES_USER` / `MYSQL_USER` auto-creates a database user — Azure PostgreSQL/MySQL Flexible Server does NOT. Map compose user env vars to the `administratorLogin` value from your Bicep, not the compose username.
+> ⛔ **Azure managed databases only create the `administratorLogin` user.** Docker-compose `POSTGRES_USER` / `MYSQL_USER` auto-creates a database user — Azure PostgreSQL/MySQL Flexible Server does NOT. Map compose user env vars to the `administratorLogin` value from your Bicep, not the compose username. Use the BARE `administratorLogin` (e.g. `dbadmin`) — NOT the legacy Single-Server `{admin}@{serverName}` form; Flexible Server rejects the `@server` suffix.

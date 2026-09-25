@@ -1,4 +1,4 @@
-# Handoff Protocol — Step 9
+# Handoff Protocol — Step 10
 
 Offer next steps: CI/CD setup, monitoring, domain config, **🗑️ resource cleanup**, skill-based suggestions. Session artifacts remain for deferred pickup.
 
@@ -19,10 +19,7 @@ See [deploy-checklist-template.md § Deployment Summary](../deploy/references/de
 
 ## Artifact Self-Check
 
-> ⛔ **Artifact self-check — MANDATORY before handoff.** Verify these exist before presenting cleanup or next steps:
-> 1. `deploy-result.json` in session folder — if missing, read [`deploy-schemas.ts`](../deploy/references/deploy-schemas.ts) and write it NOW with status, endpoints, health, `orphanedResourceGroups[]`
-> 2. Portal deployment link printed in chat — if missing, generate from `$resId` pattern (see deploy/SKILL.md Step 6) and print now
-> 3. `deployment-summary.md` in session folder — if missing, `create` it NOW with the same content you are about to present in chat (status, subscription, RG, region, services table, endpoints, cleanup commands). One `create` call — do NOT skip.
+> ⛔ **Portal deployment link printed in chat — MANDATORY before handoff.** deploy's own Step 8a conformance gate (`deploy-conformance.ps1`/`.sh`) already verifies `deploy-result.json` and `deployment-summary.md` before returning control here — do not re-verify those. The one thing that gate cannot check is whether the portal link actually appeared as chat text: if missing, generate it from the `$resId` pattern (see deploy/SKILL.md Step 6) and print it now.
 
 ## Post-Deploy Recommendations
 
