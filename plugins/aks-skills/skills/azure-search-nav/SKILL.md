@@ -1,11 +1,6 @@
 ---
 name: azure-search-nav
-description: >-
-  Builds an Azure portal deep link to a specific blade/menu item for supported
-  Microsoft.ContainerService, Microsoft.Kubernetes, and Microsoft.Compute resources
-  using the aks-search-direct-mid semantic search API.
-  WHEN: "find where in the Azure portal to do something", "search the portal for an operation",
-  "construct a portal link from a search query and a resource".
+description: "Builds an Azure portal deep link to a specific blade/menu item for supported Microsoft.ContainerService, Microsoft.Kubernetes, and Microsoft.Compute resources using the aks-search-direct-mid semantic search API. WHEN: 'find where in the Azure portal to do something', 'search the portal for an operation', 'construct a portal link from a search query and a resource'."
 license: MIT
 metadata:
   author: Microsoft
@@ -18,8 +13,8 @@ metadata:
 
 | Item | Value |
 |------|-------|
-| Script | `references/Invoke-PortalSearchNav.ps1` |
-| Resource map | `references/resource-types.json` |
+| Script | [`references/Invoke-PortalSearchNav.ps1`](references/Invoke-PortalSearchNav.ps1) |
+| Resource map | [`references/resource-types.json`](references/resource-types.json) |
 | Prerequisite | `Az.Accounts` PowerShell module |
 | Auth | Interactive Microsoft sign-in (`Connect-AzAccount`) |
 
