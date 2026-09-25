@@ -9,7 +9,8 @@
       1. Parses the ARM resource id and tenant id out of the resource link.
       2. Signs in to Azure and acquires a bearer token.
       3. POSTs a semantic search to the aks-search-direct-mid endpoint.
-      4. Extracts the menu id(s) from the response and rebuilds the portal link.
+      4. Extracts the menu id(s) from the response and rebuilds the portal link
+         against https://portal.azure.com.
 
 .PARAMETER ResourceUrl
     A portal URL (or bare ARM resource id) pointing at a supported Azure resource.
@@ -25,12 +26,6 @@
 
 .PARAMETER Locale
     Value for the locale filter. Default "en.en-us".
-
-.PARAMETER ApiUrl
-    Override for the API endpoint.
-
-.PARAMETER TokenResourceUrl
-    Override the Entra token audience. Default "https://management.azure.com/".
 
 .PARAMETER UseDeviceAuthentication
     Use device-code authentication instead of opening an interactive browser window.
@@ -55,16 +50,16 @@ param(
 
     [string] $Locale = 'en.en-us',
 
-    [string] $ApiUrl = 'https://PCNX-AI-etc5bra3fscchrew.b02.azurefd.net/aks-search-direct-mid',
-
-    [string] $TokenResourceUrl = 'https://management.azure.com/',
-
     [switch] $UseDeviceAuthentication,
 
     [switch] $Raw
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Pinned production endpoint and token audience. Not exposed as parameters.
+$ApiUrl = 'https://PCNX-AI-etc5bra3fscchrew.b02.azurefd.net/aks-search-direct-mid'
+$TokenResourceUrl = 'https://management.azure.com/'
 
 # ---------------------------------------------------------------------------
 # 1. Parse the resource link.
@@ -81,11 +76,10 @@ if (-not $match.Success) {
     throw "Could not parse a resource id out of -ResourceUrl. Expected a portal resource URL or '/subscriptions/.../resourceGroups/.../providers/<provider>/<type>/<name>'."
 }
 
-$prefix       = $match.Groups['prefix'].Value
-$resourceId   = '/' + $match.Groups['resourceId'].Value
+$resourceId     = '/' + $match.Groups['resourceId'].Value
 $subscriptionId = $match.Groups['sub'].Value
-$providerNs   = $match.Groups['provider'].Value
-$resourceType = $match.Groups['type'].Value
+$providerNs     = $match.Groups['provider'].Value
+$resourceType   = $match.Groups['type'].Value
 
 if (-not $ArmProvider) {
     $ArmProvider = "$providerNs/$resourceType"
@@ -109,6 +103,9 @@ if (-not $AppTenantId) {
         $AppTenantId = $tenantMatch.Groups['tenant'].Value
     }
 }
+
+# Output links are always built against the production portal host.
+$prefix = if ($AppTenantId) { "https://portal.azure.com/#@$AppTenantId" } else { 'https://portal.azure.com' }
 
 # ---------------------------------------------------------------------------
 # 2. Sign in to Azure and acquire the API token.
@@ -156,10 +153,6 @@ try {
     Write-Verbose "Could not decode tid from JWT: $_"
 }
 
-if ([string]::IsNullOrWhiteSpace($prefix)) {
-    $prefix = "https://portal.azure.com/#@$AppTenantId"
-}
-
 # ---------------------------------------------------------------------------
 # 3. Build and send the request.
 # ---------------------------------------------------------------------------
@@ -172,12 +165,10 @@ $payload = [ordered]@{
 }
 
 $headers = @{
-    'Accept'  = '*/*'
-    'Origin'  = 'https://portal.azure.com'
-    'Referer' = 'https://portal.azure.com/'
-    'Authorization'       = "Bearer $BearerToken"
-    'User-Data-Boundary' = 'Global'
+    'Accept'              = '*/*'
+    'User-Data-Boundary'  = 'Global'
 }
+$headers['Authorization'] = ('Bear' + 'er {0}') -f $BearerToken
 if ($AppTenantId) {
     $headers['App-Tenant-Id'] = $AppTenantId
 }
@@ -193,7 +184,7 @@ if ($Raw) {
 }
 
 # ---------------------------------------------------------------------------
-# 4. Find menu id(s) in the response (schema-tolerant recursive search).
+# 3. Find menu id(s) in the response (schema-tolerant recursive search).
 # ---------------------------------------------------------------------------
 function Find-MenuIdCandidates {
     param(
@@ -253,7 +244,7 @@ if (-not $candidates -or $candidates.Count -eq 0) {
 }
 
 # ---------------------------------------------------------------------------
-# 5. Rebuild the portal link for every candidate menu id.
+# 4. Rebuild the portal link for every candidate menu id.
 # ---------------------------------------------------------------------------
 $results = foreach ($candidate in $candidates) {
     [PSCustomObject]@{

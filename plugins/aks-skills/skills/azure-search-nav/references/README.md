@@ -21,10 +21,8 @@ Install-Module Az.Accounts -Scope CurrentUser
 | `-ResourceUrl` | Yes | — | Portal URL or bare ARM resource ID |
 | `-Query` | Yes | — | Natural-language search query |
 | `-ArmProvider` | No | auto-derived | Override the `armProvider` filter value |
-| `-AppTenantId` | No | auto-derived | Override the `App-Tenant-Id` header |
+| `-AppTenantId` | No | auto-derived | Override the `App-Tenant-Id` header; also used to build the `#@<tenant>` portal link fragment |
 | `-Locale` | No | `en.en-us` | Locale for the search filter |
-| `-ApiUrl` | No | production endpoint | Override the API endpoint |
-| `-TokenResourceUrl` | No | `https://management.azure.com/` | Entra token audience |
 | `-UseDeviceAuthentication` | No | `$false` | Use device-code authentication when a browser window cannot be opened |
 | `-Raw` | No | `$false` | Print raw JSON response only |
 
@@ -32,7 +30,7 @@ Install-Module Az.Accounts -Scope CurrentUser
 
 1. **Parse** — Extracts the ARM resource ID, subscription, provider, and tenant from `-ResourceUrl`.
 2. **Validate** — Looks up the resource type in `resource-types.json` to normalise `armProvider` casing and confirm the type is supported.
-3. **Authenticate** — Calls `Connect-AzAccount` (browser sign-in), then `Get-AzAccessToken`. The token's `tid` claim is used as the `App-Tenant-Id` header so the API's APIM issuer check passes.
+3. **Authenticate** — Calls `Connect-AzAccount` (browser sign-in, or device-code with `-UseDeviceAuthentication`), scoped to the resource's subscription, then `Get-AzAccessToken`. The token's `tid` claim is used as the `App-Tenant-Id` header.
 4. **Search** — POSTs to the `aks-search-direct-mid` endpoint:
    ```json
    {
@@ -43,9 +41,9 @@ Install-Module Az.Accounts -Scope CurrentUser
      "semanticConfiguration": "semantic"
    }
    ```
-   Headers: `Authorization`, `App-Tenant-Id`, `User-Data-Boundary: Global`, `Origin`, `Referer`.
+   Headers: `Accept`, `User-Data-Boundary: Global`, `Authorization`, `App-Tenant-Id`.
 5. **Extract** — Recursively scans the response for `menuId` / `bladeName` / `blade` properties.
-6. **Build link** — Replaces the trailing blade segment of the input URL with each discovered `menuId`.
+6. **Build link** — Rebuilds the link against `https://portal.azure.com`, appending each discovered `menuId` as the trailing blade segment.
 
 ## Enabled Resource Types
 
