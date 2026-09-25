@@ -1,1 +1,0 @@
-$headers['Authorization'] = "Bearer $BearerToken"
