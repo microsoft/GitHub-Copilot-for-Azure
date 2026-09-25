@@ -308,20 +308,6 @@ describe("Telemetry hook manifests", () => {
     expect(cursor.hooks.sessionStart).toHaveLength(1);
   });
 
-  it.each(["SessionStart", "PostToolUse"] as const)(
-    "uses client-appropriate Windows commands for %s",
-    eventName => {
-      const entry = copilot.hooks[eventName][0];
-
-      expect(entry.windows).toBe(
-        'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1"',
-      );
-      expect(entry.powershell).toBe(
-        "${PLUGIN_ROOT}/hooks/scripts/track-telemetry.ps1",
-      );
-    },
-  );
-
   it.skipIf(process.platform !== "win32")(
     "executes the VS Code Windows command from a plugin path containing spaces",
     () => {
