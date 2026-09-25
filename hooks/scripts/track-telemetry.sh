@@ -523,7 +523,7 @@ if [ "$shouldTrack" = true ]; then
         installerStatus=$?
 
         if [ "$installerStatus" -eq 0 ] && [ -n "$installerOutput" ]; then
-            "$installerOutput" "${mcpArgs[@]}" >/dev/null 2>&1
+            "$installerOutput" "${mcpArgs[@]:2}" >/dev/null 2>&1
             reporterStatus=$?
             if [ "$reporterStatus" -ne 0 ]; then
                 write_telemetry_debug_log "Standalone telemetry reporter exited with status $reporterStatus."

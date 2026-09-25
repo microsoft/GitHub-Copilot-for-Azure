@@ -593,7 +593,8 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
       };
 
       const firstArgs = runHook(shell, payload, "", enabledEnvironment);
-      expect(firstArgs.slice(0, 2)).toEqual(["server", "plugin-telemetry"]);
+      expect(firstArgs).not.toContain("server");
+      expect(firstArgs).not.toContain("plugin-telemetry");
       expectArg(firstArgs, "--tool-name", "get_azure_bestpractices");
 
       const secondArgs = runHook(shell, payload, "", {

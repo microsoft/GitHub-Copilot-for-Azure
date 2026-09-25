@@ -574,8 +574,9 @@ if ($shouldTrack) {
         $installerStatus = $LASTEXITCODE
         if ($installerStatus -eq 0 -and $installerOutput.Count -gt 0) {
             $reporterPath = [string]$installerOutput[-1]
+            $reporterArguments = $mcpArgs[2..($mcpArgs.Count - 1)]
             try {
-                & $reporterPath @mcpArgs 2>&1 | Out-Null
+                & $reporterPath @reporterArguments 2>&1 | Out-Null
                 $reporterStatus = $LASTEXITCODE
                 if ($reporterStatus -ne 0) {
                     Write-TelemetryDebugLog -Content "Standalone telemetry reporter exited with status $reporterStatus."

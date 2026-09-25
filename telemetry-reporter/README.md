@@ -108,6 +108,53 @@ Use `-NoClean` to skip `dotnet clean`, or select a different artifact root:
 .\eng\scripts\Build-Native.ps1 -RuntimeIdentifier win-x64 -NoClean -OutputRoot C:\temp\ghcfa-telem
 ```
 
+Test a locally produced runtime ZIP against the shared hook installer:
+
+```powershell
+.\eng\scripts\Test-LocalTelemetryInstall.ps1 `
+  -ZipPath .\artifacts\packages\ghcfa-telem-0.1.0-win-x64.zip `
+  -Version 0.1.0
+```
+
+On Linux or macOS, invoke the same PowerShell script through `pwsh` and pass
+the matching runtime ZIP:
+
+```bash
+pwsh ./eng/scripts/Test-LocalTelemetryInstall.ps1 \
+  -ZipPath ./artifacts/packages/ghcfa-telem-0.1.0-linux-x64.zip \
+  -Version 0.1.0
+```
+
+The test uses an isolated cache, verifies that a second install reuses the
+cached executable without reading the ZIP again, runs the installed executable
+with `--help`, and removes the cache afterward. Pass `-KeepCache` to retain the
+installed files for inspection.
+
+Test the complete PowerShell hook path with the same local runtime ZIP:
+
+```powershell
+.\eng\scripts\Test-LocalTelemetryHook.ps1 `
+  -ZipPath .\artifacts\packages\ghcfa-telem-0.1.0-win-x64.zip `
+  -AllowTelemetry
+```
+
+On Linux or macOS:
+
+```bash
+pwsh ./eng/scripts/Test-LocalTelemetryHook.ps1 \
+  -ZipPath ./artifacts/packages/ghcfa-telem-0.1.0-linux-x64.zip \
+  -AllowTelemetry
+```
+
+This test copies the shared hooks and a test plugin manifest into an isolated
+directory, enables the standalone publisher and local ZIP override, invokes a
+session-start hook, and verifies the hook protocol response, reporter
+installation, telemetry arguments, and reporter exit status. A successful
+end-to-end test sends one test event to the reporter's Microsoft-owned
+Application Insights destination, so the script requires `-AllowTelemetry`.
+Pass `-KeepArtifacts` to retain the temporary plugin, logs, and installed
+executable.
+
 ### Direct publish
 
 From a shell where the target platform's Native AOT toolchain is already
