@@ -1,0 +1,38 @@
+name: onboard-plugin-eval
+description: |
+  Integration tests evaluating the effectiveness of the onboard-plugin Skill
+
+tags:
+  type: integration
+  skill: onboard-plugin
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: gpt-5.6-terra
+  # model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Basic: scaffolding with no optional feature"
+    prompt: |
+      I am creating a new skill for debugging an Azure Container App. Scaffold a new plugin named "azure-container-app" and scaffold a new skill named "azure-container-app-debug" in it. Finish the scaffolding and then show me what I need to do.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    environment:
+      commands:
+        - git init -q
+        - git remote add origin https://github.com/microsoft/github-copilot-for-azure
+        - git fetch -q --depth 1 origin main
+        - git checkout -q FETCH_HEAD -- .
+        - git reset -q --soft FETCH_HEAD
+    graders:
+      - type: skill-invocation
+        config:
+          required: [onboard-plugin]

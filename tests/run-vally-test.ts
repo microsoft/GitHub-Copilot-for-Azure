@@ -180,7 +180,7 @@ function parseCliOptions(argv: string[]): CliOptions {
 
     if (arg === "--plugin") {
       const value = argv[i + 1];
-      if (!value || value.startsWith("--")) {
+      if (value === undefined || value.startsWith("--")) {
         throw new Error("Missing value for --plugin");
       }
       plugin = value;
@@ -273,8 +273,8 @@ function printUsage(): void {
     "Usage: tsx tests/run-vally-test.ts [options] [-- <vally args>]",
     "",
     "Options:",
-    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: azure-skills). Note that a plugin's dirname may be different from its name.",
-    "  --skill <name>            Skill name used by this wrapper",
+    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: \"\"). A plugin's dirname may be different from its name. When plugin dirname is \"\", the test runner searches for the eval suites in evals/{skill}/",
+    "  --skill <name>            Required: Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
     "",
@@ -327,7 +327,17 @@ async function main(): Promise<void> {
   }
 
   const options = parseCliOptions(rawArgs);
-  const pluginDirname = options.plugin ?? "azure-skills";
+  if (!options.plugin) {
+    console.error("Missing required argument: --plugin. See --help to learn how to use this script.");
+    process.exitCode = 1;
+    return;
+  }
+  if (!options.skill) {
+    console.error("Missing required argument: --skill. See --help to learn how to use this script.");
+    process.exitCode = 1;
+    return;
+  }
+  const pluginDirname = options.plugin ?? "";
   const passRateThreshold = options.passRate ?? 0.75;
 
   // Wrapper-specific args are parsed above; all other args are preserved here.
@@ -342,7 +352,12 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
-    const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
+    let evalSpecDir: string;
+    if (pluginDirname !== "") {
+      evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
+    } else {
+      evalSpecDir = path.join(__dirname, `../evals/${options.skill}/`);
+    }
     const evalSpecPaths: string[] = [];
     const allFiles = await fs.readdir(evalSpecDir);
     for (const file of allFiles) {

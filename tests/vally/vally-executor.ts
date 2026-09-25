@@ -51,6 +51,13 @@ export class IntegrationTestAgentRunner implements Executor {
         });
       }
     });
+    // Search for skills that are still missing in .github/skills
+    if (!requiredSkillRefs.some((skillRef) => skillRef.name === skillName)) {
+      requiredSkillRefs.push({
+        pluginDirname: "",
+        name: skillName
+      });
+    }
 
     let prompt: string;
     if (stimulus.turns) {

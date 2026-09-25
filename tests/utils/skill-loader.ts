@@ -15,6 +15,10 @@ const __dirname = path.dirname(__filename);
 
 export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
 
+function repoRoot(): string {
+  return path.resolve(__dirname, "../..");
+}
+
 function outputRoot(): string {
   return process.env.VALLY_PLUGIN_OUTPUT_ROOT
     ? path.resolve(process.env.VALLY_PLUGIN_OUTPUT_ROOT)
@@ -74,32 +78,61 @@ export type Plugin = {
  * Load a skill by name
  */
 export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
-  const skillPath = path.join(
-    outputRoot(),
-    skillRef.pluginDirname,
-    "skills",
-    skillRef.name
-  );
-  const skillFile = path.join(skillPath, "SKILL.md");
+  if (skillRef.pluginDirname !== "") {
+    const skillPath = path.join(
+      outputRoot(),
+      skillRef.pluginDirname,
+      "skills",
+      skillRef.name
+    );
+    const skillFile = path.join(skillPath, "SKILL.md");
 
-  if (!fs.existsSync(skillFile)) {
-    throw new Error(`SKILL.md not found for skill: ${skillRef.name} at ${skillFile} in plugin ${skillRef.pluginDirname}`);
+    if (!fs.existsSync(skillFile)) {
+      throw new Error(`SKILL.md not found for skill: ${skillRef.name} at ${skillFile} in plugin ${skillRef.pluginDirname}`);
+    }
+
+    const fileContent = fs.readFileSync(skillFile, "utf-8");
+    const { data: metadata, content } = matter(fileContent);
+
+    return {
+      metadata: {
+        pluginDirname: skillRef.pluginDirname,
+        name: (metadata.name as string) || skillRef.name,
+        description: (metadata.description as string) || "",
+        ...metadata
+      },
+      content: content.trim(),
+      path: skillPath,
+      filePath: skillFile
+    };
+  } else {
+    const skillPath = path.join(
+      repoRoot(),
+      ".github",
+      "skills",
+      skillRef.name
+    );
+    const skillFile = path.join(skillPath, "SKILL.md");
+
+    if (!fs.existsSync(skillFile)) {
+      throw new Error(`SKILL.md not found for skill: ${skillRef.name} at ${skillFile} in plugin ${skillRef.pluginDirname}`);
+    }
+
+    const fileContent = fs.readFileSync(skillFile, "utf-8");
+    const { data: metadata, content } = matter(fileContent);
+
+    return {
+      metadata: {
+        pluginDirname: skillRef.pluginDirname,
+        name: (metadata.name as string) || skillRef.name,
+        description: (metadata.description as string) || "",
+        ...metadata
+      },
+      content: content.trim(),
+      path: skillPath,
+      filePath: skillFile
+    };
   }
-
-  const fileContent = fs.readFileSync(skillFile, "utf-8");
-  const { data: metadata, content } = matter(fileContent);
-
-  return {
-    metadata: {
-      pluginDirname: skillRef.pluginDirname,
-      name: (metadata.name as string) || skillRef.name,
-      description: (metadata.description as string) || "",
-      ...metadata
-    },
-    content: content.trim(),
-    path: skillPath,
-    filePath: skillFile
-  };
 }
 
 /**
@@ -160,8 +193,14 @@ export async function getSkillsForTest(
     // We infer the plugins to include from the requiredSkills.
     // A plugin is included if and only if there is at least one required skill from it.
     const pluginDirnames = new Set<string>();
-    requiredSkills?.forEach(skillRef => {
-      pluginDirnames.add(skillRef.pluginDirname);
+    // skillRefs of skills that belong to some plugin
+    const pluginRequiredSkills = requiredSkills?.filter(skillRef => {
+      return skillRef.pluginDirname !== "";
+    });
+    pluginRequiredSkills?.forEach(skillRef => {
+      if (skillRef.pluginDirname !== "") {
+        pluginDirnames.add(skillRef.pluginDirname);
+      }
     });
     const pluginDirnamesList = [...pluginDirnames.values()];
     const skillDirectories = pluginDirnamesList.map(pluginDir => {
@@ -171,14 +210,14 @@ export async function getSkillsForTest(
     // When includeSkills is defined, we load the exact skills present in the list from plugins inferred from required skills.
     // This is achieved by disabling skills that aren't in the list because skillDirectories don't give us this granular control.
     let disabledSkills: SkillRef[] | undefined;
-    const skillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
+    const pluginSkillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
     if (includeSkills) {
-      if (includeSkills.some((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name))) {
+      if (includeSkills.some((includeSkillRef) => !pluginSkillRefs.some(ref => ref.name === includeSkillRef.name))) {
         // At least one skill to explicitly include doesn't exist within the inferred plugins.
-        const invalidSkills = includeSkills.filter((includeSkillRef) => !skillRefs.some(ref => ref.name === includeSkillRef.name));
+        const invalidSkills = includeSkills.filter((includeSkillRef) => !pluginSkillRefs.some(ref => ref.name === includeSkillRef.name));
         throw new Error(`Invalid includeSkills. ${JSON.stringify(invalidSkills)} are not valid skills.`);
       }
-      disabledSkills = skillRefs.filter((ref) => !includeSkills
+      disabledSkills = pluginSkillRefs.filter((ref) => !includeSkills
         ?.some(includeSkillRef => ref.name === includeSkillRef.name));
     } else {
       // Keep all the required skills, then randomly drop the remaining skills until the estimated char count falls below the budget.
@@ -189,7 +228,16 @@ export async function getSkillsForTest(
       }
     }
 
-    const skillsLoaded: SkillRef[] = skillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+    const skillsLoaded: SkillRef[] = pluginSkillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
+
+    const nonPluginRequiredSkills = requiredSkills?.filter(skillRef => {
+      return skillRef.pluginDirname === "";
+    }) ?? [];
+    skillsLoaded.push(...nonPluginRequiredSkills);
+    nonPluginRequiredSkills.forEach(skillRef => {
+      skillDirectories.push(path.join(repoRoot(), ".github", "skills", skillRef.name));
+    });
+
     return {
       skillsLoaded,
       skillDirectories,
@@ -209,7 +257,7 @@ export async function truncateSkills(
   charBudget: number
 ): Promise<SkillRef[] | undefined> {
   const skillRefs = pluginDirnames.map(p => listSkills(p)).flat();
-  const invalidSkills = requiredSkills.filter((s) => !skillRefs.some(ref => ref.name === s.name));
+  const invalidSkills = requiredSkills.filter((s) => s.pluginDirname !== "" && !skillRefs.some(ref => ref.name === s.name));
   if (invalidSkills.length > 0) {
     throw new Error(`Invalid requiredSkills. ${invalidSkills} do not exist in azure-skills plugin.`);
   }
