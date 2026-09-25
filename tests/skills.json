@@ -1,102 +1,98 @@
 {
-    "plugins": [
-        {
-            "name": "foundry-iq-skills",
-            "dirname": "foundry-iq-skills",
-            "skills": [
-                "foundry-iq"
-            ],
-            "integrationTestSchedule": {
-                "0 12 * * 2-6": "foundry-iq"
-            }
-        },
-        {
-            "name": "azure",
-            "dirname": "azure-skills",
-            "skills": [
-                "airunway-aks-setup",
-                "appinsights-instrumentation",
-                "azure-ai",
-                "azure-aigateway",
-                "azure-app-onboard",
-                "azure-app-onboard-prereq",
-                "azure-cloud-migrate",
-                "azure-compliance",
-                "azure-compute",
-                "azure-deploy",
-                "azure-diagnostics",
-                "azure-enterprise-infra-planner",
-                "azure-kubernetes",
-                "azure-kusto",
-                "azure-messaging",
-                "azure-prepare",
-                "azure-quotas",
-                "azure-reliability",
-                "azure-resource-lookup",
-                "azure-resource-visualizer",
-                "azure-storage",
-                "azure-upgrade",
-                "azure-validate",
-                "discover-azure-skills",
-                "entra-agent-id",
-                "entra-app-registration",
-                "microsoft-foundry",
-                "python-appservice-deploy"
-            ],
-            "integrationTestSchedule": {
-                "0 5 * * 2-6": "microsoft-foundry",
-                "0 8 * * 2-6": "azure-deploy",
-                "0 12 * * 2-6": "airunway-aks-setup,appinsights-instrumentation,azure-ai,azure-aigateway,azure-cloud-migrate,azure-compliance,azure-compute,azure-diagnostics,azure-enterprise-infra-planner,azure-kubernetes,azure-kusto,azure-messaging,azure-prepare,azure-quotas,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-upgrade,azure-validate,entra-agent-id,entra-app-registration,azure-reliability,python-appservice-deploy,azure-app-onboard,azure-app-onboard-prereq,discover-azure-skills"
-            }
-        },
-        {
-            "name": "aks-skills",
-            "dirname": "aks-skills",
-            "skills": [
-                "aks-gpu-inference",
-                "aks-known-issues",
-                "aks-network-capture",
-                "aks-troubleshooting"
-            ],
-            "integrationTestSchedule": {
-                "0 12 * * 2-6": "aks-gpu-inference,aks-known-issues,aks-network-capture,aks-troubleshooting"
-            }
-        },
-        {
-            "name": "azure-kusto-graph-skills",
-            "dirname": "azure-kusto-graph-skills",
-            "skills": [
-                "azure-kusto-graph",
-                "azure-kusto-irql",
-                "azure-kusto-irql-graph"
-            ],
-            "integrationTestSchedule": {
-                "0 12 * * 2-6": "azure-kusto-graph,azure-kusto-irql,azure-kusto-irql-graph"
-            }
-        },
-        {
-            "name": "azure-cost",
-            "dirname": "azure-cost",
-            "skills": [
-                "cost-analysis",
-                "cost-estimation",
-                "cost-governance",
-                "cost-optimization"
-            ],
-            "integrationTestSchedule": {
-                "0 12 * * 2-6": "cost-analysis,cost-estimation,cost-governance,cost-optimization"
-            }
-        },
-        {
-            "name": "azure-local-skills",
-            "dirname": "azure-local-skills",
-            "skills": [
-                "azure-local",
-                "azure-local-multi-rack"
-            ],
-            "integrationTestSchedule": {
-                "0 12 * * 2-6": "azure-local,azure-local-multi-rack"
-            }
-        }
-    ]
+  "plugins": [
+    {
+      "name": "foundry-iq-skills",
+      "dirname": "foundry-iq-skills",
+      "skills": ["foundry-iq"],
+      "integrationTestSchedule": {
+        "0 12 * * 2-6": "foundry-iq"
+      }
+    },
+    {
+      "name": "azure",
+      "dirname": "azure-skills",
+      "skills": [
+        "airunway-aks-setup",
+        "appinsights-instrumentation",
+        "azure-ai",
+        "azure-aigateway",
+        "azure-app-onboard",
+        "azure-app-onboard-prereq",
+        "azure-cloud-migrate",
+        "azure-compliance",
+        "azure-compute",
+        "azure-deploy",
+        "azure-diagnostics",
+        "azure-enterprise-infra-planner",
+        "azure-kubernetes",
+        "azure-kusto",
+        "azure-messaging",
+        "azure-prepare",
+        "azure-quotas",
+        "azure-reliability",
+        "azure-resource-lookup",
+        "azure-resource-visualizer",
+        "azure-storage",
+        "azure-upgrade",
+        "azure-validate",
+        "discover-azure-skills",
+        "entra-agent-id",
+        "entra-app-registration",
+        "microsoft-foundry",
+        "python-appservice-deploy"
+      ],
+      "integrationTestSchedule": {
+        "0 5 * * 2-6": "microsoft-foundry",
+        "0 8 * * 2-6": "azure-deploy",
+        "0 12 * * 2-6": "airunway-aks-setup,appinsights-instrumentation,azure-ai,azure-aigateway,azure-cloud-migrate,azure-compliance,azure-compute,azure-diagnostics,azure-enterprise-infra-planner,azure-kubernetes,azure-kusto,azure-messaging,azure-prepare,azure-quotas,azure-resource-lookup,azure-resource-visualizer,azure-storage,azure-upgrade,azure-validate,entra-agent-id,entra-app-registration,azure-reliability,python-appservice-deploy,azure-app-onboard,azure-app-onboard-prereq,discover-azure-skills"
+      }
+    },
+    {
+      "name": "aks-skills",
+      "dirname": "aks-skills",
+      "skills": [
+        "aks-gpu-inference",
+        "aks-known-issues",
+        "aks-network-capture",
+        "aks-troubleshooting",
+        "azure-search-nav"
+      ],
+      "integrationTestSchedule": {
+        "0 12 * * 2-6": "aks-gpu-inference,aks-known-issues,aks-network-capture,aks-troubleshooting"
+      }
+    },
+    {
+      "name": "azure-kusto-graph-skills",
+      "dirname": "azure-kusto-graph-skills",
+      "skills": [
+        "azure-kusto-graph",
+        "azure-kusto-irql",
+        "azure-kusto-irql-graph"
+      ],
+      "integrationTestSchedule": {
+        "0 12 * * 2-6": "azure-kusto-graph,azure-kusto-irql,azure-kusto-irql-graph"
+      }
+    },
+    {
+      "name": "azure-cost",
+      "dirname": "azure-cost",
+      "skills": [
+        "cost-analysis",
+        "cost-estimation",
+        "cost-governance",
+        "cost-optimization"
+      ],
+      "integrationTestSchedule": {
+        "0 12 * * 2-6": "cost-analysis,cost-estimation,cost-governance,cost-optimization"
+      }
+    },
+    {
+      "name": "azure-local-skills",
+      "dirname": "azure-local-skills",
+      "skills": ["azure-local", "azure-local-multi-rack"],
+      "integrationTestSchedule": {
+        "0 12 * * 2-6": "azure-local,azure-local-multi-rack"
+      }
+    }
+  ]
 }
