@@ -2,17 +2,26 @@
 
 Use Inspektor Gadget for real-time, low-level node/pod diagnostics when `kubectl` is insufficient.
 
-## Approved Image
+## Limits
 
-Use the official `v0.51.0` multi-architecture image at this reviewed digest:
+Linux nodes only; kernel 5.10+ with BTF; not Kata-sandboxed pods. Admission policy can deny privileged pods. If eBPF fails to load or a pod is denied, record the evidence as unavailable and do not relax policy.
 
-```text
-mcr.microsoft.com/oss/v2/inspektor-gadget/ig:v0.51.0@sha256:6610863f6d8cae28800f9331756434639bca44be065719cbcfe76e34c91dffa4
-```
+## Choose a path
+
+1. **Discover (read-only):** `kubectl get ds gadget -n gadget -o jsonpath='{.spec.template.spec.containers[0].image}'`. The AKS extension `microsoft.inspektorgadget` also creates this DaemonSet.
+2. **Deployed and `kubectl gadget` present (preferred; no privileged pod):** require `kubectl auth can-i create pods/portforward -n gadget`. Match the gadget tag to `kubectl gadget version`, because a mismatched version fails to load. Run `kubectl --context <kube-context> gadget run <gadget>:<server-version> -n <ns> [-p <pod>] --timeout <s> -o json > <raw-artifact>.json`. Never use `--detach`, which creates persistent instances.
+3. **Otherwise:** use the debug-pod path below. Require `kubectl auth can-i create pods -n <debug-ns>` and explicit approval.
+4. **Never install IG during an investigation** (`kubectl gadget deploy`, Helm, or `az k8s-extension create`). Propose installation to the owner as a separate change.
+
+If a check fails, name the identity and the missing verb, then stop that path.
+
+## Approved Image (debug-pod path)
+
+`mcr.microsoft.com/oss/v2/inspektor-gadget/ig:v0.51.0@sha256:6610863f6d8cae28800f9331756434639bca44be065719cbcfe76e34c91dffa4`
 
 Do not replace the digest with a tag-only reference. Re-review the upstream release and platform manifests before changing either the version or digest.
 
-## Base Command Pattern
+## Base Command Pattern (debug-pod path)
 
 The incident owner must explicitly approve privileged debug-pod creation and choose a finite outer deadline before this command is run:
 
@@ -35,7 +44,7 @@ Use both bounds: the outer deadline caps the whole `kubectl debug` operation, an
 kubectl get pod <pod-name> -n <namespace> -o jsonpath='{.spec.nodeName}'
 ```
 
-## Common Filters
+## Common Filters (debug-pod `ig run`; `kubectl gadget` uses `-n`/`-p`/`-c`)
 
 | Filter | Description |
 |---|---|
@@ -109,43 +118,12 @@ Use `--pf "<expr>"` for a narrow tcpdump filter (for example, `port 80` or `host
 |---|---|---|---|
 | `trace_capabilities` | trace | Trace Linux capability checks | Permission denied from dropped capabilities, SecurityContext debugging |
 
-## Symptom-to-Gadget Map
-
-| Symptom | Gadget(s) |
-|---|---|
-| DNS resolution failures | `trace_dns` |
-| Connection refused / timeout | `trace_tcp` + `snapshot_socket` |
-| Silent connection drops | `trace_tcpretrans` |
-| High network latency | `trace_tcpretrans` |
-| TLS / HTTPS routing issues | `trace_sni` |
-| Port already in use | `trace_bind` + `snapshot_socket` |
-| CrashLoopBackOff (unknown cause) | `trace_exec` + `trace_open` |
-| OOMKilled pods | `trace_oomkill` + `top_process` |
-| Pod killed unexpectedly | `trace_signal` |
-| PID pressure on node | `snapshot_process` + `top_process` |
-| "Too many open files" | `top_file` |
-| Missing config / secret mount | `trace_open` |
-| Slow disk / PVC performance | `trace_fsslower` + `top_file` |
-| Permission denied (capabilities) | `trace_capabilities` |
-| High CPU (unknown cause) | `profile_cpu` + `top_process` |
-| Deep packet inspection | `tcpdump` |
-| Catch-all / intermittent issues | `traceloop` (use `--syscall-filters`) |
-
-## Gadget Type Reference
-
-| Type | Behavior | IG --timeout |
-|---|---|---|
-| `snapshot` | Point-in-time data, returns immediately | `--timeout 5` |
-| `top` | Aggregated view, returns quickly | `--timeout 5` |
-| `trace` | Streams events in real-time | `--timeout 30` |
-| `profile` | Samples over a duration | `--timeout 30` |
-| `tcpdump` | Streams pcap-ng data, pipe to `tcpdump -nvr -` | `--timeout 30` |
-
 ## Guardrails
 
 - Prove the named AKS resource and kube context match before resolving the node or running IG.
+- Discover an existing IG deployment and check permissions before choosing the debug-pod path.
 - Require explicit approval for privileged debug-pod creation and deletion.
-- Use only the digest-pinned image above, an outer deadline, and the gadget timeout.
+- Bound every run with the gadget timeout; on the debug-pod path also use only the digest-pinned image and an outer deadline.
 - Scope every run to the symptom, namespace, pod, and supported filter set; do not use an unbounded catch-all trace.
 - Keep raw JSON/pcap output outside model context and expose only a bounded, redacted finding summary.
 - Confirm deletion of the exact generated debug pod on success, failure, interruption, or timeout.

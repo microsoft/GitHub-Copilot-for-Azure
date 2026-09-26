@@ -10,9 +10,15 @@
 |----------|---------|---------|
 | | | |
 
+## Failure Domain
+
+<workload | node | Kubernetes network | Azure network | control plane/Azure platform | identity/RBAC | quota/capacity>
+
 ## Root Cause
 
 <concise root cause — one or two sentences>
+
+**Confidence:** <high | medium | low> — <what would raise it, or the ranked alternatives if unresolved>
 
 ## Evidence
 
@@ -25,6 +31,16 @@
 ```bash
 # command(s) to resolve
 ```
+
+**Impact / rollback:** <what changes and how to revert; note IaC/GitOps source to update>
+
+## Unavailable Evidence
+
+- <read that was denied or not possible, identity, missing permission>
+
+## Escalation
+
+<none | Azure support with this report attached, and why Microsoft-side evidence is needed>
 
 ## Additional Findings
 

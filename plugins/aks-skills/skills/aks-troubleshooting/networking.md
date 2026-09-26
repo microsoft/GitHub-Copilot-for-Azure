@@ -2,6 +2,8 @@
 
 For CNI-specific issues, check CNI pod health and review [AKS networking concepts](https://learn.microsoft.com/azure/aks/concepts-network).
 
+First define the failing flow: source pod, destination (Service, pod, or host), port and protocol, and direction. Walk DNS → Service → Endpoints → pod → network policy/CNI → Azure NSG/UDR/egress, and stop at the first layer that blocks. After any fix, re-test the same flow from the same source.
+
 ## Service Unreachable / Connection Refused
 
 **Diagnostics - always start here:**
