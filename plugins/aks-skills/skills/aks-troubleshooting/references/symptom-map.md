@@ -157,13 +157,15 @@ Common causes: coredns pods crashed/pending, custom DNS config overriding cluste
 ```bash
 kubectl get svc -n <ns> -o wide            # EXTERNAL-IP stuck <pending>?
 kubectl describe svc <svc> -n <ns>         # Events for LoadBalancer provisioning errors
-az network lb list -g MC_<rg>_<cluster>_<region> -o table
-az network lb probe list -g MC_<rg>_<cluster>_<region> --lb-name <lb>
-az network lb rule list -g MC_<rg>_<cluster>_<region> --lb-name <lb>
-az network nsg rule list -g MC_<rg>_<cluster>_<region> --nsg-name <nsg>
+NODE_RG=$(az aks show -g <rg> -n <cluster> --query nodeResourceGroup -o tsv)
+az network lb list -g "$NODE_RG" -o table
+az network lb probe list -g "$NODE_RG" --lb-name <lb>
+az network lb rule list -g "$NODE_RG" --lb-name <lb>
 ```
 
-Common causes: NSG blocking inbound, health probe path/port mismatch, subnet has no available IPs, service annotation misconfigured.
+Common causes: effective node-NIC NSG blocking inbound/probes, health probe
+path/port mismatch, subnet exhaustion, or a Service annotation mismatch. Deep
+path: [load-balancer-and-ingress.md](../load-balancer-and-ingress.md).
 
 ---
 
@@ -280,14 +282,18 @@ Common causes: `upgradeChannel: none`/`nodeOSUpgradeChannel` not set (a maintena
 
 ```bash
 az aks show -g <rg> -n <cluster> --query "networkProfile.outboundType" -o tsv
-az network lb show -g MC_<rg>_<cluster>_<region> --name kubernetes -o json --query '{outboundRules:outboundRules, frontendIPConfigurations:frontendIPConfigurations | length(@)}'
-az network nat gateway list -g MC_<rg>_<cluster>_<region> -o table
-kubectl get nodes | wc -l                  # Node count — SNAT issues start at ~500+ nodes
-# Test egress from inside a pod
-kubectl exec <pod> -n <ns> -- curl -sf -o /dev/null -w "%{http_code}" https://mcr.microsoft.com
+NODE_RG=$(az aks show -g <rg> -n <cluster> --query nodeResourceGroup -o tsv)
+az network lb list -g "$NODE_RG" -o table
+az network lb outbound-rule list -g "$NODE_RG" --lb-name <lb> -o json
+az network nat gateway list -g "$NODE_RG" -o table
+# Reproduce the reported destination from the affected pod using an existing client
+kubectl exec <pod> -n <ns> -- curl -sv --connect-timeout <seconds> https://<reported-host>/
 ```
 
-Common causes: Azure LB SNAT port exhaustion (64K ports shared across nodes), too few frontend IPs for outbound rules, no NAT Gateway configured for large clusters. Fix: switch to `managedNATGateway` outbound type or add frontend IPs to LB.
+Do not infer exhaustion from node count. Require failed SNAT metrics or matching
+connection failures, and first follow the cluster's actual outbound type. For
+UDR or NAT gateway paths, an Azure LB outbound-rule diagnosis is the wrong
+branch. Full path: [azure-network-path.md](azure-network-path.md).
 
 ---
 

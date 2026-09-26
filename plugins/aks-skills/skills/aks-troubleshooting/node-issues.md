@@ -216,11 +216,28 @@ az aks nodepool scale -g <rg> --cluster-name <cluster> -n <nodepool> --node-coun
 
 ## Resource Pressure & Capacity Planning
 
-**Check actual vs allocatable:**
+Separate node pressure, container limits, and scheduler capacity. A high current
+usage sample is not a leak, and a Pending pod is not proof of node pressure.
 
 ```bash
-kubectl describe node <node> | grep -A6 "Allocated resources:"
+kubectl top node <node>
+kubectl top pod -A --containers --sort-by=memory
+kubectl get pods -A --field-selector spec.nodeName=<node> \
+  -o custom-columns='NS:.metadata.namespace,POD:.metadata.name,CPU_REQ:.spec.containers[*].resources.requests.cpu,CPU_LIMIT:.spec.containers[*].resources.limits.cpu,MEM_REQ:.spec.containers[*].resources.requests.memory,MEM_LIMIT:.spec.containers[*].resources.limits.memory'
+kubectl describe node <node>
 ```
+
+| Signal | Meaning |
+|---|---|
+| `MemoryPressure=True` plus eviction events | Node-wide memory pressure; identify consumers and reservation/capacity before changing pod limits |
+| Container `OOMKilled` without node pressure | Container crossed its cgroup memory limit; compare the affected container, sidecars, and previous logs |
+| CPU usage near a container limit with throttling telemetry | Limit-induced throttling is plausible; CPU usage alone does not prove throttling |
+| Requests near allocatable but low live usage | Scheduler capacity constraint, not runtime pressure |
+
+`kubectl top` requires Metrics Server and is a current sample, not historical
+evidence. If unavailable, use already-configured Azure Monitor or Prometheus
+telemetry for the incident window; do not enable monitoring during diagnosis.
+Use IG only after aggregate evidence identifies a node/pod scope.
 
 See [AKS resource reservations](https://learn.microsoft.com/azure/aks/concepts-clusters-workloads#resource-reservations) for allocatable math.
 
