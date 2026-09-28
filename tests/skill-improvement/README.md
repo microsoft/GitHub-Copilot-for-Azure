@@ -111,6 +111,8 @@ directory. Vally first saves answers with `--skip-grade`, then re-grades those
 trajectories with each judge. The improvement agent receives development
 failures and prior rejection reasons, never held-out evidence.
 
-Run specifications may reference only filenames inside a repository-relative
-`tests/skill-improvement/evals/<name>` root. These suites are opt-in and are not
-discovered by the nightly `evals/` integration workflow.
+Run specifications may reference only filenames inside either a
+repository-relative `tests/skill-improvement/evals/<name>` root or an existing
+`evals/<plugin>/<skill>` root. Suites under `tests/skill-improvement/evals/` are
+opt-in and are not discovered by the nightly integration workflow; suites under
+`evals/` retain their normal nightly behavior.

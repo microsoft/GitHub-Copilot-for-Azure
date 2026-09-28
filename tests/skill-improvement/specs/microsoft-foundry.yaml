@@ -1,0 +1,63 @@
+name: microsoft-foundry-improvement
+
+target:
+  plugin: azure-skills
+  skill: microsoft-foundry
+  baselineRef: main
+  editablePaths:
+    - plugins/azure-skills/skills/microsoft-foundry/**
+
+evaluations:
+  root: evals/azure-skills/microsoft-foundry
+  development:
+    - e2e.eval.yaml
+    - insights.eval.yaml
+    - integration.eval.yaml
+    - invocation.eval.yaml
+    - smoke.eval.yaml
+  heldOut: []
+
+models:
+  answers:
+    - gpt-5.6-sol
+  judges:
+    - claude-opus-4.8
+
+experiment:
+  repetitions: 1
+  conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
+    - name: Skill + MCP
+      skill: enabled
+      mcp: enabled
+
+improvementAgent:
+  enabled: true
+  model: claude-sonnet-5
+
+acceptance:
+  minimumQualityImprovementPoints: 2
+  maximumEvalRegressionPoints: 5
+  maximumModelRegressionPoints: 5
+  minimumSkillInvocationRate: 0.8
+  requireHeldOutImprovement: false
+
+limits:
+  maxIterations: 2
+  maxAnswerGenerations: 900
+  maxJudgeCalls: 900
+  maxDurationMinutes: 360
+  maxConcurrentJobs: 5
+  maxSkillTokenIncreasePercent: 15
+
+output:
+  issue: never
+  draftPullRequest: accepted-candidate-only

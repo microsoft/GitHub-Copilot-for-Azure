@@ -155,13 +155,22 @@ describe("skill improvement configuration", () => {
     "tests\\skill-improvement\\evals\\azure-kusto",
     "tests/skill-improvement/evals/Azure Kusto",
     "tests/skill-improvement/evals/azure_kusto",
-    "evals/azure-skills/azure-kusto",
+    "evaluation/azure-skills/azure-kusto",
+    "evals/azure-skills/Azure Kusto",
+    "evals/azure-skills/azure_kusto",
   ])("rejects unsafe evaluation root %s", value => {
     const invalid = spec();
     invalid.evaluations.root = value;
     expect(() => validateRunSpec(invalid)).toThrow(
-      "evaluations.root must be a repository-relative directory inside tests/skill-improvement/evals"
+      "evaluations.root must be a repository-relative directory inside tests/skill-improvement/evals or evals"
     );
+  });
+
+  test("allows an existing repository eval directory", () => {
+    const valid = spec();
+    valid.evaluations.root = "evals/azure-skills/azure-kusto";
+
+    expect(() => validateRunSpec(valid)).not.toThrow();
   });
 
   test.each([
