@@ -6,13 +6,13 @@ These files are used by clients when running agent sessions. We have to maintain
 
 ## Copilot CLI
 
-Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the `powershell` script.
+Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the PowerShell script referenced by the `powershell` property.
 
 The `SessionStart` hook reports new and resumed sessions. Copilot CLI is identified through its `COPILOT_CLI` environment variable, and plugin metadata is read from `.plugin/plugin.json`.
 
 ## VS Code
 
-VS Code uses the `copilot-hooks.json` hooks manifest. Although it shares the manifest with Copilot CLI, it only uses the `windows`, `osx` and `linux` properties defined in it. At runtime, VS Code replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. It then executes the script matching the host OS.
+VS Code uses the `copilot-hooks.json` hooks manifest. Although it shares the manifest with Copilot CLI, it only uses the `windows`, `osx` and `linux` properties defined in it. At runtime, VS Code replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. These values are complete command lines rather than shell-specific script bodies. The Windows command therefore invokes `powershell.exe` explicitly and quotes the script path so execution does not depend on the user's `.ps1` file association and works when the plugin path contains spaces.
 
 The shared manifest marks its hooks as belonging to the Copilot/VS Code client family so session-start payloads without tool or transcript fields are still identified as VS Code. Plugin metadata is read from `.plugin/plugin.json`.
 

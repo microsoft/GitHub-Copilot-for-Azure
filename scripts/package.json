@@ -19,6 +19,7 @@
     "lint:fix": "eslint --fix",
     "dashboard:collect": "node --import tsx src/dashboard/compose.ts",
     "generateMcpAllowlists": "node --import tsx src/generate-mcp-allowlists.ts",
+    "required-reviewers": "node --import tsx src/required-reviewers.ts",
     "vally": "node --import tsx src/vally/cli.ts",
     "plugin:new": "node --import tsx src/plugin/bootstrap-plugin.ts",
     "plugin:new-skill": "node --import tsx src/plugin/bootstrap-skill.ts",
