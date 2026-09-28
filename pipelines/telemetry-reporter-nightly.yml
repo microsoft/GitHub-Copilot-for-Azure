@@ -143,6 +143,7 @@ extends:
                     -PipelineWorkspace '$(Pipeline.Workspace)'
                     -ManifestPath '$(Build.ArtifactStagingDirectory)/manifest/build-manifest.json'
                     -BuildId '$(Build.BuildId)'
+                    -BuildReason '$(Build.Reason)'
                     -SourceVersion '$(Build.SourceVersion)'
 
               - task: 1ES.PublishPipelineArtifact@1
@@ -150,3 +151,12 @@ extends:
                 inputs:
                   artifactName: telemetry-reporter_manifest
                   targetPath: $(Build.ArtifactStagingDirectory)/manifest
+
+              - task: PowerShell@2
+                displayName: Mark scheduled build as a release candidate
+                condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
+                inputs:
+                  pwsh: true
+                  targetType: inline
+                  script: |
+                    Write-Host '##vso[build.addbuildtag]telemetry-reporter-release-candidate'

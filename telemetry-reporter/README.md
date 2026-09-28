@@ -151,7 +151,7 @@ artifact does not send telemetry. Cross-compiled `win-arm64` and `osx-arm64`
 artifacts cannot run on their x64 build hosts, so the script explicitly reports
 their smoke tests as skipped.
 
-## Nightly Azure DevOps builds
+## Nightly builds
 
 The Azure DevOps pipeline defined in
 [`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)
@@ -168,12 +168,30 @@ AOT packages:
 Scheduled runs compare `main` with the previous scheduled build that succeeded
 or succeeded with warnings, and skip the platform matrix when no
 executable-affecting telemetry reporter files changed. Manual runs always build
-the complete matrix.
+and verify the complete matrix. Successful changed scheduled runs are tagged as
+release candidates; manual runs are not.
 
 Each target publishes a `telemetry-reporter_<rid>` pipeline artifact containing
 the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final
 `telemetry-reporter_manifest` artifact records and verifies the complete
-six-target build.
+six-target build, including the source build ID, run reason, source commit, and
+release tag.
+
+## GitHub releases
+
+The separate
+[`pipelines/telemetry-reporter-release.yml`](../pipelines/telemetry-reporter-release.yml)
+pipeline is manually queued when a verified nightly build should be released.
+By default it selects the latest successful `main` nightly run tagged as a
+release candidate, retains that source run, and validates the manifest against
+the selected Azure DevOps pipeline resource.
+
+It creates a normal
+[GitHub release](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases)
+tagged `ghcfa-telem-<version>` and titled `ghcfa-telem <version>`. The release
+targets the nightly manifest's source commit, is marked Latest, and contains
+the six runtime ZIPs. Symbols, checksums, build information, and the manifest
+remain available from the retained nightly run.
 
 Pipeline restores use the Azure SDK public NuGet feed instead of direct
 `nuget.org` access, keeping dependency acquisition within the 1ES network

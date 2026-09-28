@@ -1,0 +1,103 @@
+name: telemetry-reporter-release-$(Date:yyyyMMdd).$(Rev:r)
+
+trigger: none
+pr: none
+
+resources:
+  repositories:
+    - repository: 1ESPipelineTemplates
+      type: git
+      name: 1ESPipelineTemplates/1ESPipelineTemplates
+      ref: refs/tags/release
+  pipelines:
+    - pipeline: telemetryReporterNightly
+      project: internal
+      source: telemetry-reporter - nightly
+      branch: refs/heads/main
+      tags:
+        - telemetry-reporter-release-candidate
+      trigger: none
+
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    settings:
+      skipBuildTagsForGitHubPullRequests: true
+      networkIsolationPolicy: Permissive
+    sdl:
+      sourceAnalysisPool:
+        name: azsdk-pool
+        image: windows-2022
+        os: windows
+      psscriptanalyzer:
+        compiled: true
+        break: true
+      policy: M365
+    stages:
+      - stage: Release
+        displayName: Publish GitHub release
+        pool:
+          name: $(LINUXPOOL)
+          image: $(LINUXVMIMAGE)
+          os: linux
+        variables:
+          - template: /pipelines/templates/variables/image.yml@self
+          - template: /pipelines/templates/variables/globals.yml@self
+        jobs:
+          - job: Release
+            displayName: Create telemetry reporter release
+            steps:
+              - checkout: self
+                fetchDepth: 1
+
+              - download: telemetryReporterNightly
+                displayName: Download build manifest
+                artifact: telemetry-reporter_manifest
+
+              - download: telemetryReporterNightly
+                displayName: Download win-x64 packages
+                artifact: telemetry-reporter_win-x64
+
+              - download: telemetryReporterNightly
+                displayName: Download win-arm64 packages
+                artifact: telemetry-reporter_win-arm64
+
+              - download: telemetryReporterNightly
+                displayName: Download osx-x64 packages
+                artifact: telemetry-reporter_osx-x64
+
+              - download: telemetryReporterNightly
+                displayName: Download osx-arm64 packages
+                artifact: telemetry-reporter_osx-arm64
+
+              - download: telemetryReporterNightly
+                displayName: Download linux-x64 packages
+                artifact: telemetry-reporter_linux-x64
+
+              - download: telemetryReporterNightly
+                displayName: Download linux-arm64 packages
+                artifact: telemetry-reporter_linux-arm64
+
+              - template: /eng/common/pipelines/templates/steps/retain-run.yml@self
+                parameters:
+                  DefinitionId: $(resources.pipeline.telemetryReporterNightly.pipelineID)
+                  RunId: $(resources.pipeline.telemetryReporterNightly.runID)
+
+              - template: /eng/common/pipelines/templates/steps/login-to-github.yml@self
+                parameters:
+                  TokenOwners:
+                    - Microsoft
+
+              - task: PowerShell@2
+                displayName: Create GitHub release
+                inputs:
+                  pwsh: true
+                  filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Publish-NightlyRelease.ps1
+                  arguments: >
+                    -PipelineWorkspace '$(Pipeline.Workspace)/telemetryReporterNightly'
+                    -ManifestPath '$(Pipeline.Workspace)/telemetryReporterNightly/telemetry-reporter_manifest/build-manifest.json'
+                    -Repository 'microsoft/GitHub-Copilot-for-Azure'
+                    -ExpectedBuildId '$(resources.pipeline.telemetryReporterNightly.runID)'
+                    -ExpectedSourceVersion '$(resources.pipeline.telemetryReporterNightly.sourceCommit)'
+                env:
+                  GH_TOKEN: $(GH_TOKEN)
