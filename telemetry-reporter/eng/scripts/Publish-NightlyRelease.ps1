@@ -180,27 +180,56 @@ try {
         exit 0
     }
 
-    Invoke-GitHubCli -Arguments @(
-        'release',
-        'create',
-        $releaseTag,
-        '--repo',
-        $Repository,
-        '--target',
-        $sourceVersion,
-        '--title',
-        $title,
-        '--latest'
-    )
+    $releaseCreated = $false
+    try {
+        Invoke-GitHubCli -Arguments @(
+            'release',
+            'create',
+            $releaseTag,
+            '--repo',
+            $Repository,
+            '--target',
+            $sourceVersion,
+            '--title',
+            $title,
+            '--draft'
+        )
+        $releaseCreated = $true
 
-    $uploadArguments = @(
-        'release',
-        'upload',
-        $releaseTag,
-        '--repo',
-        $Repository
-    ) + $runtimeArchives
-    Invoke-GitHubCli -Arguments $uploadArguments
+        $uploadArguments = @(
+            'release',
+            'upload',
+            $releaseTag,
+            '--repo',
+            $Repository
+        ) + $runtimeArchives
+        Invoke-GitHubCli -Arguments $uploadArguments
+
+        Invoke-GitHubCli -Arguments @(
+            'release',
+            'edit',
+            $releaseTag,
+            '--repo',
+            $Repository,
+            '--draft=false',
+            '--latest'
+        )
+        $releaseCreated = $false
+    }
+    catch {
+        $releaseError = $_
+        if ($releaseCreated) {
+            & gh release delete $releaseTag `
+                --repo $Repository `
+                --cleanup-tag `
+                --yes
+            if ($LASTEXITCODE -ne 0) {
+                throw "$releaseError`nCleanup of release '$releaseTag' also failed with exit code $LASTEXITCODE."
+            }
+        }
+
+        throw $releaseError
+    }
 
     Write-Host "Published GitHub release '$releaseTag' with $($runtimeArchives.Count) runtime archives."
 }

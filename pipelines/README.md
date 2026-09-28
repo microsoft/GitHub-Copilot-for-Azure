@@ -50,8 +50,9 @@ The release job follows the Azure MCP public-release pattern:
    `AzureSDKEngKeyVault Secrets`.
 4. Validate that the downloaded manifest represents a scheduled run and that
    its build ID and source commit match the selected pipeline resource.
-5. Create a normal GitHub release tagged `ghcfa-telem-<version>`, mark it
-   Latest, and upload the six runtime ZIPs.
+5. Create a draft GitHub release tagged `ghcfa-telem-<version>`, upload the six
+   runtime ZIPs, and publish it as the normal Latest release. Failed uploads or
+   publication delete the draft and tag so the pipeline can be retried.
 
 Symbols, checksums, build information, and the manifest remain Azure DevOps
 artifacts on the retained nightly run. A repeated release for the same computed

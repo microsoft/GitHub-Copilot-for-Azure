@@ -23,4 +23,3 @@ steps:
         -DefinitionId '${{ parameters.DefinitionId }}'
         -RunId '${{ parameters.RunId }}'
         -DaysValid ${{ parameters.DaysValid }}
-        -AccessToken $env:SYSTEM_ACCESSTOKEN

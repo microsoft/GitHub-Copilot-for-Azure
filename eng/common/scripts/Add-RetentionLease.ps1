@@ -16,6 +16,24 @@ param(
 
 Set-StrictMode -Version Latest
 
+function Get-RetentionLeaseItems {
+    param(
+        [AllowNull()]
+        [object] $Response
+    )
+
+    if ($null -eq $Response) {
+        return
+    }
+
+    $valueProperty = $Response.PSObject.Properties['value']
+    if ($null -ne $valueProperty) {
+        return $valueProperty.Value
+    }
+
+    return $Response
+}
+
 if ([string]::IsNullOrWhiteSpace($Organization) -or
     [string]::IsNullOrWhiteSpace($Project) -or
     $DefinitionId -le 0 -or
@@ -38,7 +56,7 @@ $escapedProject = [Uri]::EscapeDataString($Project)
 $baseUri = "https://dev.azure.com/$Organization/$escapedProject/_apis/build/retention/leases"
 
 try {
-    $existingUri = "$baseUri?ownerId=$([Uri]::EscapeDataString($OwnerId))" +
+    $existingUri = "${baseUri}?ownerId=$([Uri]::EscapeDataString($OwnerId))" +
         "&definitionId=$DefinitionId&runId=$RunId&api-version=6.0-preview.1"
     $existingLeases = Invoke-RestMethod `
         -Method Get `
@@ -47,12 +65,13 @@ try {
         -MaximumRetryCount 3 `
         -ErrorAction Stop
 
-    foreach ($lease in @($existingLeases.value)) {
+    $existingLeaseItems = @(Get-RetentionLeaseItems -Response $existingLeases)
+    foreach ($lease in $existingLeaseItems) {
         if ($null -eq $lease.leaseId) {
             throw 'Azure DevOps returned a retention lease without a lease ID.'
         }
 
-        $deleteUri = "$baseUri?ids=$($lease.leaseId)&api-version=6.0-preview.1"
+        $deleteUri = "${baseUri}?ids=$($lease.leaseId)&api-version=6.0-preview.1"
         $null = Invoke-RestMethod `
             -Method Delete `
             -Uri $deleteUri `
@@ -71,17 +90,18 @@ try {
     ) | ConvertTo-Json -Depth 3
     $createdLease = Invoke-RestMethod `
         -Method Post `
-        -Uri "$baseUri?api-version=6.0-preview.1" `
+        -Uri "${baseUri}?api-version=6.0-preview.1" `
         -Headers $headers `
         -Body $requestBody `
         -ContentType 'application/json' `
         -MaximumRetryCount 3 `
         -ErrorAction Stop
 
-    $leaseId = @($createdLease.value)[0].leaseId
-    if ($null -eq $leaseId) {
-        throw 'Azure DevOps did not return an ID for the new retention lease.'
+    $createdLeaseItems = @(Get-RetentionLeaseItems -Response $createdLease)
+    if ($createdLeaseItems.Count -ne 1 -or $null -eq $createdLeaseItems[0].leaseId) {
+        throw 'Azure DevOps did not return exactly one new retention lease with an ID.'
     }
+    $leaseId = $createdLeaseItems[0].leaseId
 
     Write-Host "Retained pipeline run '$RunId' for $DaysValid days with lease '$leaseId'."
 }
