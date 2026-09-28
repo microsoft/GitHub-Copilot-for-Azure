@@ -226,6 +226,7 @@ interface RunnerCleanup {
   session?: CopilotSession;
   client?: CopilotClient;
   workspace?: string;
+  comparisonConfig?: string;
   preserveWorkspace?: boolean;
   config?: AgentRunConfig;
   agentMetadata?: AgentMetadata;
@@ -739,6 +740,9 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           fs.rmSync(entry.workspace, { recursive: true, force: true });
         }
       } catch { /* ignore */ }
+      if (entry.comparisonConfig) {
+        fs.rmSync(entry.comparisonConfig, { recursive: true, force: true });
+      }
     }
     currentCleanups = [];
   }
@@ -793,9 +797,27 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           : "--disable-warning=ExperimentalWarning"
       };
 
+      if (runConfig.comparisonMode) {
+        entry.comparisonConfig = fs.mkdtempSync(path.join(os.tmpdir(), "vally-copilot-comparison-"));
+        const source = path.join(process.env.COPILOT_HOME ?? path.join(os.homedir(), ".copilot"), "config.json");
+        try {
+          const { parseConfigFileTextToJson, flattenDiagnosticMessageText } = await import("typescript");
+          const parsed = parseConfigFileTextToJson(source, fs.readFileSync(source, "utf8"));
+          if (parsed.error) throw new Error(`Invalid Copilot auth config: ${flattenDiagnosticMessageText(parsed.error.messageText, "\n")}`);
+          const auth: unknown = parsed.config;
+          if (!auth || typeof auth !== "object" || Array.isArray(auth)) throw new Error("Expected Copilot auth config object.");
+          fs.writeFileSync(path.join(entry.comparisonConfig, "config.json"), JSON.stringify({
+            lastLoggedInUser: "lastLoggedInUser" in auth ? auth.lastLoggedInUser : undefined,
+            loggedInUsers: "loggedInUsers" in auth ? auth.loggedInUsers : undefined,
+          }), { mode: 0o600 });
+        } catch (error) {
+          if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
+        }
+      }
       const client = new CopilotClient({
         logLevel: process.env.DEBUG ? "all" : "error",
         workingDirectory: testWorkspace,
+        ...(entry.comparisonConfig ? { baseDirectory: entry.comparisonConfig } : {}),
         connection: RuntimeConnection.forStdio({ args: cliArgs }),
         env: {
           ...process.env,
@@ -829,13 +851,33 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig) {
           }
         }),
         systemMessage: runConfig.systemPrompt,
-        ...(runConfig.comparisonMode ? { enableConfigDiscovery: false, enableSessionStore: false } : {}),
+        ...(runConfig.comparisonMode ? {
+          configDirectory: entry.comparisonConfig,
+          enableConfigDiscovery: false, enableSessionStore: false, enableSkills: true,
+        } : {}),
         // Disable session telemetry so usage of skills and tools by the test agent runner don't end up sending Copilot CLI telemetry.
         enableSessionTelemetry: false
       });
       entry.session = session;
 
       if (runConfig.comparisonMode) {
+        await session.rpc.tools.initializeAndValidate();
+        const enabledSkills = (await session.rpc.skills.list()).skills.filter(skill => skill.enabled);
+        const expectedSkills = skillsLoaded.map(skill => skill.name).sort();
+        if (JSON.stringify(enabledSkills.map(skill => skill.name).sort()) !== JSON.stringify(expectedSkills)
+          || enabledSkills.some(skill => {
+            const skillPath = skill.path;
+            return !skillPath || !skillDirectories.some(directory => {
+              const relative = path.relative(directory, skillPath);
+              return relative.split(path.sep)[0] !== ".." && !path.isAbsolute(relative);
+            });
+          })) {
+          throw new Error("Copilot runtime skill inventory does not match the comparison snapshot.");
+        }
+        const servers = (await session.rpc.mcp.list()).servers.map(server => server.name).sort();
+        if (JSON.stringify(servers) !== JSON.stringify(Object.keys(runConfig.mcpServers ?? {}).sort())) {
+          throw new Error("Copilot runtime MCP inventory does not match the explicit comparison configuration.");
+        }
         await runComparisonConversation(
           session, [runConfig.prompt, ...(runConfig.followUp ?? [])], runConfig.timeout ?? PER_TURN_TIMEOUT,
           event => {

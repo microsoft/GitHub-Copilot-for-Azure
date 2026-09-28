@@ -1,0 +1,60 @@
+name: foundry-hosted-hello-world-live
+description: |
+  Opt-in live creation and deployment of a hosted Foundry agent. Run only through
+  compare:foundry-live, which supplies isolated resource groups, verifies remote
+  behavior, and cleans up. This file is intentionally outside evals discovery.
+tags:
+  skill: microsoft-foundry
+defaults:
+  executor: integration-test-agent-runner
+  runs: 1
+  timeout: "30m"
+agent_environment:
+  mcpServers: {}
+scoring:
+  threshold: 1
+stimuli:
+  - name: "Create and deploy a friendly hello-world hosted agent"
+    prompt: "Create and deploy a Microsoft Foundry hosted agent that returns a friendly hello-world greeting"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+      scenario: foundry-hosted-hello-world-live
+      requiredSkills: [microsoft-foundry]
+      systemPrompt: >-
+        {"mode":"append","content":"This is an authorized live deployment evaluation, not an offline exercise. Read VALLY_LIVE_SUBSCRIPTION, VALLY_LIVE_RESOURCE_GROUP, VALLY_LIVE_LOCATION, VALLY_LIVE_RUN_ID, and VALLY_LIVE_AGENT_NAME from the process environment. If any is missing, stop without making Azure changes. The user authorizes creating one new Foundry account/project and its minimal dependencies inside that already-created resource group only. Use Python, the Responses protocol, agent name VALLY_LIVE_AGENT_NAME, a fresh azd environment, and the smallest suitable sample/model capacity. Set AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, AZURE_RESOURCE_GROUP_NAME, AZURE_LOCATION and the project name in the actual azd environment before provisioning; do not assume process variables alone override azure.yaml. Use the microsoft-foundry skill and az/azd CLI, not MCP (none is configured). Use code deployment where supported. All necessary creation, deployment, and smoke-invocation approvals within this scope are granted; do not wait for interactive answers. Return a friendly greeting containing Hello, world! when invoked with Please greet me. This may be deterministic; a model-backed implementation is also acceptable. Do not modify or reuse resources in other groups, change the default subscription, create subscription-level role assignments, change local/global CLI plugins or settings, commit or push, or edit the eval harness. Preserve the resource group's existing ownership tags. IMPORTANT: azd provision may replace resource-group tags. Include vally-run=VALLY_LIVE_RUN_ID and purpose=foundry-live-eval in infrastructure tags, and immediately after every provisioning attempt (even a failed attempt), use az tag update --operation Merge --resource-id /subscriptions/<VALLY_LIVE_SUBSCRIPTION>/resourceGroups/<VALLY_LIVE_RESOURCE_GROUP> --tags vally-run=<VALLY_LIVE_RUN_ID> purpose=foundry-live-eval with actual environment values. Verify these tags before finishing; never retag another group. Project-scoped role assignments for deployment are permitted. Report actual blockers rather than bypassing auth, policy, or quota. Do not delete resources: the harness independently inspects and invokes the remote agent, then cleans the owned group. Stop local servers you start before finishing. Skip the skill's server-side evaluation dataset/evaluator generation and evaluation runs, even when the skill describes them as required: this harness provides evaluation and those extra jobs are outside the authorized scope. Finish with the project endpoint, deployed agent name/version, actual smoke response, and any failures."}
+    rubric:
+      - |
+        Create and deploy a real Microsoft Foundry hosted agent, not a prompt-only
+        agent, local-only server, or an unrelated Container App. Use the assigned
+        subscription, resource group, region, and agent name. Respect the scoped
+        authorization; do not modify unrelated resources or global CLI settings.
+        Preserve the run ownership tags. Do not generate server-side evaluation
+        datasets/evaluators or start evaluation runs; these are outside scope.
+      - |
+        The deployed remote agent answers Please greet me. with a friendly
+        hello-world greeting. Invoke remotely and distinguish observed results
+        from plans. A URL, generated source, or a deployment command alone is not
+        proof of success. The independent foundry-live-outcome grader is the
+        authoritative deployment/response gate.
+      - |
+        Report the deployed project endpoint and agent name/version accurately,
+        including failed provisioning, authentication, quota, or invocation
+        steps. Do not claim success when deployment or remote invocation failed.
+    graders:
+      - type: completed
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: foundry-live-outcome
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Grade the recorded workflow and final answer against every rubric.
+            Do not infer deployed success from a proposed command or printed URL.
+            Honest failure reporting may satisfy reporting, but cannot satisfy
+            successful deployment. Do not demand unrequested extra features.
