@@ -32,6 +32,11 @@ stimuli:
 
       Foundry model: gpt-5.4-nano
       Region: eastus
+    rubric:
+      - The agent generates a Python hosted-agent implementation that uses the Responses protocol and preserves all requested B2B onboarding behavior.
+      - The agent creates a new Foundry project and gpt-5.4-nano model deployment in eastus, then runs the generated agent locally and verifies a successful response.
+      - The agent deploys with direct code deploy, every attempted `azd deploy` succeeds, and the deployed agent is invoked successfully after deployment.
+      - The final response distinguishes verified outcomes from assumptions and includes enough concrete evidence to confirm local and deployed recovery.
     graders:
       - type: skill-invocation
         config:
@@ -43,11 +48,11 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent generated hosted-agent code, created a new Foundry project and model deployment, ran local testing, deployed the agent
-            successfully to Microsoft Foundry using direct code deploy, invoked the deployed agent after deployment,
-            and received a successful response from that deployed agent. Verify that the `azd deploy` command succeeded every time it was run. Fail if
-            code was not generated, no new Foundry project or model deployment was created, local testing was not run, deployment did not succeed, the `azd deploy` command failed on any run, deployment did not use direct code deploy, the deployed agent was not
-            actually invoked after deployment, or the deployed agent invocation failed.
+            Score every rubric criterion as binary using the full trajectory and
+            final response. All criteria must pass. Fail if any required build,
+            provisioning, local verification, deployment, or deployed invocation
+            step is missing, unsuccessful, or supported only by an unsupported
+            claim.
 
   - name: "Migration - OpenAI Agents SDK to Foundry"
     environment:
@@ -67,6 +72,12 @@ stimuli:
 
       Foundry model: gpt-5.4-nano
       Region: eastus
+    rubric:
+      - The agent inspects the existing project and preserves its OpenAI Agents SDK architecture, customer-support behavior, and local get_order_status MCP tool.
+      - Changes are limited to the Foundry hosting or protocol adapter and other necessary deployment configuration rather than replacing the underlying agent framework.
+      - The agent creates a new Foundry project and gpt-5.4-nano model deployment in eastus, then verifies the migrated agent locally.
+      - The agent deploys with direct code deploy and verifies the deployed agent with an order-status request that produces a successful tool-grounded response.
+      - The final response distinguishes verified outcomes from assumptions and includes enough concrete evidence to confirm migration and recovery.
     graders:
       - type: skill-invocation
         config:
@@ -78,8 +89,8 @@ stimuli:
           scoring: binary
           threshold: 1
           prompt: |
-            Verify that the coding agent inspected the existing OpenAI Agents SDK project and re-hosted it as a Microsoft Foundry hosted agent
-            while preserving its underlying OpenAI Agents SDK architecture, core agent behavior, and local get_order_status MCP tool.
-            Replacing or adapting only the HTTP server or protocol adapter for the Foundry runtime is acceptable and does not count as replacing the underlying SDK architecture.
-            Verify that the coding agent created a new Foundry project and model deployment, ran the migrated agent locally, deployed it successfully with direct code deploy,
-            invoked the deployed agent with an order-status request, and received a successful tool-grounded response.
+            Score every rubric criterion as binary using the full trajectory and
+            final response. All criteria must pass. Fail if preservation of the
+            existing architecture and tool behavior, local verification, direct
+            code deployment, or deployed tool-grounded invocation is missing,
+            unsuccessful, or supported only by an unsupported claim.

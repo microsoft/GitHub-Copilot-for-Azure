@@ -11,6 +11,7 @@ defaults:
   timeout: "30m"
   executor: integration-test-agent-runner
   model: claude-sonnet-5
+  judge_model: claude-sonnet-5
 
 scoring:
   threshold: 0.8
@@ -21,12 +22,21 @@ stimuli:
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "Show quota-related commands"
     prompt: "How do I check my Microsoft Foundry quota limits?"
+    rubric:
+      - The response gives a safe, current way to inspect Foundry quota and capacity, including the relevant Azure CLI or Foundry tooling path.
+      - The response explains the scope needed to run the check, such as subscription, region, resource, model, or deployment, without inventing values.
+      - The response distinguishes observed quota from requested or available capacity and does not claim to have queried Azure without evidence.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - &quality-judge
+        type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
       - type: output-matches
         config:
           pattern: "(?i)az cognitiveservices|quota"
@@ -34,12 +44,17 @@ stimuli:
 
   - name: "Explain quota and TPM"
     prompt: "Explain quota in Microsoft Foundry"
+    rubric:
+      - The response accurately explains TPM and how model, region, deployment type, and subscription scope affect Foundry quota.
+      - The response distinguishes quota allocation from actual throughput, rate limits, and provisioned throughput.
+      - The explanation is actionable but does not invent the user's current limits or usage.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)TPM|Tokens Per Minute"
@@ -47,12 +62,17 @@ stimuli:
 
   - name: "Calculate production quota requirements"
     prompt: "How much quota do I need for a production Foundry deployment?"
+    rubric:
+      - The response requests or defines the workload inputs needed for estimation, including request rate, tokens per request, concurrency, peaks, and headroom.
+      - The response provides a transparent TPM or capacity calculation method and distinguishes standard TPM from provisioned throughput.
+      - Any example uses clearly labeled assumptions and recommends validating regional/model availability before deployment.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)TPM|PTU|capacity|tokens per minute"
@@ -63,12 +83,17 @@ stimuli:
 
   - name: "Explain quota increase justification"
     prompt: "Request more TPM quota for Microsoft Foundry and explain what justification is needed"
+    rubric:
+      - The response explains the supported quota-increase path and the identifiers and scope needed for the request.
+      - The proposed justification includes workload purpose, expected traffic and token demand, model, region, timeline, and business impact.
+      - The response does not claim that a request was submitted or approved without evidence.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)justification|business|reason|rationale"
@@ -76,12 +101,17 @@ stimuli:
 
   - name: "Track quota allocation by model"
     prompt: "Show me quota allocation by model in Microsoft Foundry"
+    rubric:
+      - The response explains how to enumerate quota or capacity by model and region using appropriate Foundry or Azure tooling.
+      - The response distinguishes total allocation, current usage, remaining capacity, and deployment-level allocation.
+      - It requests the missing subscription, region, or project context and does not fabricate live results.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)model"
@@ -92,12 +122,17 @@ stimuli:
 
   - name: "Troubleshoot DeploymentLimitReached"
     prompt: "DeploymentLimitReached error in Microsoft Foundry, what should I do?"
+    rubric:
+      - The response identifies the error as a deployment-count or applicable service limit rather than assuming it is TPM exhaustion.
+      - The response gives an evidence-first diagnostic path to list existing deployments and confirm the exact scoped limit.
+      - Remediation safely prioritizes deleting or consolidating confirmed unused deployments, changing scope or region when supported, or requesting an increase, followed by retry verification.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)delete|deployment"
@@ -105,12 +140,17 @@ stimuli:
 
   - name: "Address 429 rate limiting"
     prompt: "Getting 429 rate limit errors from my Foundry deployment"
+    rubric:
+      - The response distinguishes likely TPM, requests-per-minute, concurrency, transient capacity, and provisioned-throughput causes using response headers or telemetry.
+      - The response recommends bounded retries with backoff and workload controls without presenting retries as the root-cause fix.
+      - It gives safe capacity or quota remediation options and a concrete way to verify that throttling has recovered.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)429|rate limit"
@@ -118,12 +158,17 @@ stimuli:
 
   - name: "Explain quota management best practices"
     prompt: "What are best practices for quota management in Microsoft Foundry?"
+    rubric:
+      - The response covers monitoring, forecasting, regional and model planning, deployment cleanup, alerting, and production headroom.
+      - It distinguishes standard quota from provisioned throughput and recommends measuring real token demand and throttling.
+      - Recommendations are prioritized and avoid claiming that spreading deployments automatically increases a fixed scoped quota.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)best practice|optimize"
@@ -131,12 +176,17 @@ stimuli:
 
   - name: "List model deployments and capacity"
     prompt: "Use the microsoft-foundry skill to list all my Microsoft Foundry model deployments and their capacity"
+    rubric:
+      - The trajectory uses or proposes the appropriate Foundry MCP or Azure CLI discovery path for deployments and capacity.
+      - The response resolves or requests the required subscription, project, resource, and region scope instead of inventing deployment data.
+      - Results, when available, clearly associate deployment names with model, version, SKU, capacity, and region; otherwise the response reports the blocker honestly.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: prompt
         config:
           scoring: binary
@@ -147,12 +197,17 @@ stimuli:
 
   - name: "Offer another region when quota is exhausted"
     prompt: "I ran out of quota in East US for Microsoft Foundry. What are my options?"
+    rubric:
+      - The response confirms whether the constraint is quota, capacity availability, or throttling before recommending a move.
+      - It offers multiple safe options, including checking another supported region, freeing or reallocating quota, changing deployment type, or requesting an increase.
+      - It calls out data residency, latency, model/version availability, failover, and configuration implications before changing regions.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)region|location"
@@ -160,12 +215,17 @@ stimuli:
 
   - name: "Free quota from unused deployments"
     prompt: "I need to free up quota in Microsoft Foundry"
+    rubric:
+      - The response first inventories deployments and their usage or ownership before identifying deletion candidates.
+      - It requires confirmation before deleting resources and explains the effect of deletion on quota and dependent applications.
+      - It verifies the deployment removal and refreshed quota or capacity after remediation.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)delete|unused"
@@ -173,12 +233,17 @@ stimuli:
 
   - name: "Interpret quota usage output"
     prompt: "What does the quota usage output mean in Microsoft Foundry?"
+    rubric:
+      - The response explains currentValue, limit, remaining capacity, units, and the relevant model, region, subscription, or deployment scope.
+      - It distinguishes allocation from consumption and explains how deployment capacity relates to quota usage.
+      - It asks for the actual output when needed and does not invent values or conclusions.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)currentValue|limit"
@@ -186,12 +251,17 @@ stimuli:
 
   - name: "Explain the TPM quota concept"
     prompt: "What is TPM in the context of Microsoft Foundry quotas?"
+    rubric:
+      - The response accurately defines tokens per minute and explains how input and output token demand contributes to throttling.
+      - It explains that TPM is scoped by relevant model, region, subscription, and deployment characteristics.
+      - It distinguishes TPM from RPM, context-window limits, actual billing, and provisioned throughput.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)Tokens Per Minute|TPM"
@@ -199,12 +269,17 @@ stimuli:
 
   - name: "Offer multiple quota resolution options"
     prompt: "What are my options when I hit quota limits in Microsoft Foundry?"
+    rubric:
+      - The response provides multiple evidence-based options such as reducing demand, reallocating or freeing quota, using another supported region or model, changing deployment type, or requesting an increase.
+      - It explains the tradeoffs and prerequisites for each option rather than recommending a destructive or regional change blindly.
+      - It includes a verification step and distinguishes quota exhaustion from transient 429s or regional capacity shortages.
     tags:
       type: integration
       tier: full
       cost: llm
       area: response-quality
     graders:
+      - *quality-judge
       - type: output-matches
         config:
           pattern: "(?i)option|reduce|increase"
