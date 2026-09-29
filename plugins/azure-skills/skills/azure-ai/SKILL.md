@@ -31,7 +31,7 @@ When Azure MCP is enabled:
 - `azure__speech` with command `speech_transcribe` - Speech to text
 - `azure__speech` with command `speech_synthesize` - Text to speech
 
-**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+**If Azure MCP is not enabled:** Enable via `/mcp` in Copilot CLI and Claude Code, or notify the user to enable Azure MCP.
 
 ## AI Search Capabilities
 

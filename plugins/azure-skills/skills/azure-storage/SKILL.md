@@ -29,7 +29,7 @@ When Azure MCP is enabled:
 - `azure__storage` with command `storage_blob_get` - Download blob content
 - `azure__storage` with command `storage_blob_put` - Upload blob content
 
-**If Azure MCP is not enabled:** Run `/azure:setup` or enable via `/mcp`.
+**If Azure MCP is not enabled:** Enable via `/mcp` in Copilot CLI and Claude Code, or notify user to enable Azure MCP.
 
 ## CLI Fallback
 
