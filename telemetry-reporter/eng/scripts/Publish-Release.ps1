@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
-# Validates nightly telemetry reporter artifacts, creates a GitHub release, and uploads the six runtime archives.
+# Validates telemetry reporter artifacts from the current manual pipeline run, creates a GitHub release, and uploads the six runtime archives.
 # Exit codes: 0 = success, 1 = artifact validation or GitHub release failure, 2 = invalid arguments.
 
 [CmdletBinding()]
@@ -73,12 +73,12 @@ try {
     if ($buildId -notmatch '^\d+$') {
         throw "Build manifest build ID '$buildId' is invalid."
     }
-    if ($buildReason -ne 'Schedule') {
-        throw "Build manifest reason '$buildReason' is not a scheduled nightly build."
+    if ($buildReason -ne 'Manual') {
+        throw "Build manifest reason '$buildReason' is not a manually queued release build."
     }
     if (-not [string]::IsNullOrWhiteSpace($ExpectedBuildId) -and
         $buildId -ne $ExpectedBuildId) {
-        throw "Build manifest build ID '$buildId' does not match selected pipeline run '$ExpectedBuildId'."
+        throw "Build manifest build ID '$buildId' does not match current pipeline run '$ExpectedBuildId'."
     }
     if ($version -notmatch '^[0-9A-Za-z][0-9A-Za-z.+-]*$') {
         throw "Build manifest version '$version' is not valid for a release tag."
@@ -91,7 +91,7 @@ try {
     }
     if (-not [string]::IsNullOrWhiteSpace($ExpectedSourceVersion) -and
         $sourceVersion -ne $ExpectedSourceVersion) {
-        throw "Build manifest source version '$sourceVersion' does not match selected pipeline commit '$ExpectedSourceVersion'."
+        throw "Build manifest source version '$sourceVersion' does not match current pipeline commit '$ExpectedSourceVersion'."
     }
 
     $manifestRuntimeIdentifiers = @($manifest.runtimeIdentifiers | ForEach-Object { [string] $_ })

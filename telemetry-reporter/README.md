@@ -168,8 +168,7 @@ AOT packages:
 Scheduled runs compare `main` with the previous scheduled build that succeeded
 or succeeded with warnings, and skip the platform matrix when no
 executable-affecting telemetry reporter files changed. Manual runs always build
-and verify the complete matrix. Successful changed scheduled runs are tagged as
-release candidates; manual runs are not.
+and verify the complete matrix.
 
 Each target publishes a `telemetry-reporter_<rid>` pipeline artifact containing
 the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final
@@ -179,19 +178,18 @@ release tag.
 
 ## GitHub releases
 
-The separate
-[`pipelines/telemetry-reporter-release.yml`](../pipelines/telemetry-reporter-release.yml)
-pipeline is manually queued when a verified nightly build should be released.
-By default it selects the latest successful `main` nightly run tagged as a
-release candidate, retains that source run, and validates the manifest against
-the selected Azure DevOps pipeline resource.
+Queue
+[`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)
+manually from `main` to create a release. The manual run builds and verifies the
+complete matrix, then retains itself and publishes those same artifacts. This
+keeps the release commit and packages within one pipeline run.
 
 It creates a normal
 [GitHub release](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases)
 tagged `ghcfa-telem-<version>` and titled `ghcfa-telem <version>`. The release
-targets the nightly manifest's source commit, is marked Latest, and contains
-the six runtime ZIPs. Symbols, checksums, build information, and the manifest
-remain available from the retained nightly run.
+targets the manual run's source commit, is marked Latest, and contains the six
+runtime ZIPs. Symbols, checksums, build information, and the manifest remain
+available from the retained release run.
 
 Pipeline restores use the Azure SDK public NuGet feed instead of direct
 `nuget.org` access, keeping dependency acquisition within the 1ES network

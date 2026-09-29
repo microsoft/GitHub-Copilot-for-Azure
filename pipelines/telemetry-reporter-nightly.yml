@@ -152,11 +152,45 @@ extends:
                   artifactName: telemetry-reporter_manifest
                   targetPath: $(Build.ArtifactStagingDirectory)/manifest
 
-              - task: PowerShell@2
-                displayName: Mark scheduled build as a release candidate
-                condition: and(succeeded(), eq(variables['Build.Reason'], 'Schedule'))
-                inputs:
-                  pwsh: true
-                  targetType: inline
-                  script: |
-                    Write-Host '##vso[build.addbuildtag]telemetry-reporter-release-candidate'
+      - ${{ if and(eq(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}:
+        - stage: Release
+          displayName: Publish GitHub release
+          dependsOn: Verify
+          condition: succeeded()
+          pool:
+            name: $(LINUXPOOL)
+            image: $(LINUXVMIMAGE)
+            os: linux
+          variables:
+            - template: /pipelines/templates/variables/image.yml@self
+            - template: /pipelines/templates/variables/globals.yml@self
+          jobs:
+            - job: Release
+              displayName: Create telemetry reporter release
+              steps:
+                - checkout: self
+                  fetchDepth: 1
+
+                - download: current
+                  displayName: Download verified build artifacts
+
+                - template: /eng/common/pipelines/templates/steps/retain-run.yml@self
+
+                - template: /eng/common/pipelines/templates/steps/login-to-github.yml@self
+                  parameters:
+                    TokenOwners:
+                      - Microsoft
+
+                - task: PowerShell@2
+                  displayName: Create GitHub release
+                  inputs:
+                    pwsh: true
+                    filePath: $(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Publish-Release.ps1
+                    arguments: >
+                      -PipelineWorkspace '$(Pipeline.Workspace)'
+                      -ManifestPath '$(Pipeline.Workspace)/telemetry-reporter_manifest/build-manifest.json'
+                      -Repository 'microsoft/GitHub-Copilot-for-Azure'
+                      -ExpectedBuildId '$(Build.BuildId)'
+                      -ExpectedSourceVersion '$(Build.SourceVersion)'
+                  env:
+                    GH_TOKEN: $(GH_TOKEN)
