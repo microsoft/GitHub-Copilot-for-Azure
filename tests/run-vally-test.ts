@@ -327,16 +327,6 @@ async function main(): Promise<void> {
   }
 
   const options = parseCliOptions(rawArgs);
-  if (!options.plugin) {
-    console.error("Missing required argument: --plugin. See --help to learn how to use this script.");
-    process.exitCode = 1;
-    return;
-  }
-  if (!options.skill) {
-    console.error("Missing required argument: --skill. See --help to learn how to use this script.");
-    process.exitCode = 1;
-    return;
-  }
   const pluginDirname = options.plugin ?? "azure-skills";
   const passRateThreshold = options.passRate ?? 0.75;
 

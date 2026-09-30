@@ -336,11 +336,19 @@ function computeToolAndSkillStats(
         }
       }
       if (skillName) {
-        const normalizedSkillDir = normalizedSkillDirs.filter(dir => {
-          const skillMdPath = path.resolve(dir, `${skillName}/SKILL.md`);
-          return fs.existsSync(skillMdPath);
-        }).at(0);
-        (skillFilesSet[skillName] ??= new Set()).add(`${normalizedSkillDir}/${skillName}/SKILL.md`);
+        const normalizedSkillMdPath = normalizedSkillDirs.map(dir => {
+          const skillMdPathA = path.resolve(dir, `${skillName}/SKILL.md`);
+          if (fs.existsSync(skillMdPathA)) {
+            return skillMdPathA;
+          } else if (dir.endsWith(`/${skillName}`)) {
+            const skillMdPathB = path.resolve(dir, "SKILL.md");
+            if (fs.existsSync(skillMdPathB)) {
+              return skillMdPathB;
+            }
+          }
+          return;
+        }).filter(p => p !== undefined).at(0);
+        (skillFilesSet[skillName] ??= new Set()).add(normalizedSkillMdPath ?? "unknown");
       }
     }
 
