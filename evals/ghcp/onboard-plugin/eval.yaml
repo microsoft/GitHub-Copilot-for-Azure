@@ -26,12 +26,17 @@ stimuli:
       area: behavior
     environment:
       commands:
-        - git init -q
-        - git remote add origin https://github.com/microsoft/github-copilot-for-azure
-        - git fetch -q origin main
-        - git checkout -q FETCH_HEAD -- .
-        - git reset -q --soft FETCH_HEAD
+        - git clone -q --branch main https://github.com/microsoft/github-copilot-for-azure .
     graders:
       - type: skill-invocation
         config:
           required: [onboard-plugin]
+      - type: file-exists
+        config:
+          path: "plugins/azure-container-app/.plugin/plugin.json"
+      - type: file-exists
+        config:
+          path: "plugins/azure-container-app/skills/azure-container-app-debug/SKILL.md"
+      - type: file-exists
+        config:
+          path: "evals/azure-container-app/azure-container-app-debug/eval.yaml"
