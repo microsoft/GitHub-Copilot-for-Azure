@@ -4,6 +4,10 @@ Use `npm run compare:clients` from `tests` for a controlled paired evaluation.
 This is separate from `compare:run`, which schedules the existing Copilot-only
 branch/model/with-skills CI matrix.
 
+To add another prompt, fixture, or live outcome, follow
+[Add a comparison scenario](scenarios/README.md). It includes a copyable eval,
+run commands, grading guidance, and the extra lifecycle work needed for live tests.
+
 ## Prerequisites
 
 Build the plugins and configure the upstream Claude executor as described in
