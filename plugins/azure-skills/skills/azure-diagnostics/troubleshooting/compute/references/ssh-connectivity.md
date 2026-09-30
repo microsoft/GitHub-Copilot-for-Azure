@@ -31,10 +31,10 @@ az vm run-command invoke --name <vm> -g <rg> --command-id RunShellScript \
   --scripts 'ss -tlnp | grep ":22 "; for u in sshd ssh ssh.socket; do echo "$u: $(systemctl is-active $u)"; done'
 # SELinux distros only. Ubuntu/Debian use AppArmor and have no getenforce/setenforce.
 az vm run-command invoke --name <vm> -g <rg> --command-id RunShellScript \
-  --scripts 'command -v getenforce >/dev/null && getenforce || echo "SELinux not installed"'
+  --scripts 'if command -v getenforce >/dev/null; then getenforce; else echo "SELinux not installed"; fi'
 # Temporary permissive mode, SELinux distros only (reverts on reboot)
 az vm run-command invoke --name <vm> -g <rg> --command-id RunShellScript \
-  --scripts 'command -v setenforce >/dev/null && setenforce 0 || echo "SELinux not installed"'
+  --scripts 'if command -v setenforce >/dev/null; then setenforce 0; else echo "SELinux not installed"; fi'
 ```
 
 [SSH overview]: https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/linux/troubleshoot-ssh-connection
