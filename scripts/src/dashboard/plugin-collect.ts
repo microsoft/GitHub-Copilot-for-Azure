@@ -29,7 +29,7 @@ export function collectPluginSkills() {
 
   // Collect skills in .github/skills as if they are in a plugin named "ghcp"
   const githubSkillsDir = resolve(repoRoot, ".github", "skills");
-  const skills = listDirectories(githubSkillsDir)
+  const skills = listDirectories(githubSkillsDir);
   plugins[GHCP_PLUGIN_DIRNAME] = skills;
 
   const output = { plugins };
