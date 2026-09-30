@@ -10,8 +10,7 @@ defaults:
   runs: 1
   timeout: "10m"
   executor: integration-test-agent-runner
-  model: gpt-5.6-terra
-  # model: claude-sonnet-5
+  model: claude-sonnet-5
 
 scoring:
   threshold: 1.0
@@ -29,7 +28,7 @@ stimuli:
       commands:
         - git init -q
         - git remote add origin https://github.com/microsoft/github-copilot-for-azure
-        - git fetch -q --depth 1 origin main
+        - git fetch -q origin main
         - git checkout -q FETCH_HEAD -- .
         - git reset -q --soft FETCH_HEAD
     graders:

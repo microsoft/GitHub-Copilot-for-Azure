@@ -273,7 +273,7 @@ function printUsage(): void {
     "Usage: tsx tests/run-vally-test.ts [options] [-- <vally args>]",
     "",
     "Options:",
-    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: \"\"). A plugin's dirname may be different from its name. When plugin dirname is \"\", the test runner searches for the eval suites in evals/{skill}/",
+    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: \"azure-skills\"). A plugin's dirname may be different from its name. When plugin dirname is \"ghcp\", the test runner loads skills from .github/skills/ instead.",
     "  --skill <name>            Required: Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
@@ -337,7 +337,7 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  const pluginDirname = options.plugin ?? "";
+  const pluginDirname = options.plugin ?? "azure-skills";
   const passRateThreshold = options.passRate ?? 0.75;
 
   // Wrapper-specific args are parsed above; all other args are preserved here.
@@ -352,12 +352,7 @@ async function main(): Promise<void> {
   forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
-    let evalSpecDir: string;
-    if (pluginDirname !== "") {
-      evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
-    } else {
-      evalSpecDir = path.join(__dirname, `../evals/${options.skill}/`);
-    }
+    const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);
     const evalSpecPaths: string[] = [];
     const allFiles = await fs.readdir(evalSpecDir);
     for (const file of allFiles) {

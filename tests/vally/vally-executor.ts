@@ -5,7 +5,7 @@ import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { normalizeTestName } from "./utils.ts";
-import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
+import { GHCP_PLUGIN_DIRNAME, listPlugins, type SkillRef } from "../utils/skill-loader.ts";
 
 /**
  * The model to use for the agent run.
@@ -36,13 +36,13 @@ export class IntegrationTestAgentRunner implements Executor {
     const { shouldEarlyTerminate } = getEarlyTerminateCondition(tags);
     const systemPrompt = getSystemPrompt(tags);
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
-    const requiredSkills = getRequiredSkillsCondition(tags);
+    const requiredSkills = getRequiredSkillsCondition(tags) ?? [skillName];
     const timeout = options.timeout;
 
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
     const requiredSkillRefs: SkillRef[] = [];
-    (requiredSkills ?? [skillName]).forEach(s => {
+    requiredSkills.forEach(s => {
       const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === s)).at(0);
       if (owningPlugin) {
         requiredSkillRefs.push({
@@ -51,13 +51,15 @@ export class IntegrationTestAgentRunner implements Executor {
         });
       }
     });
-    // Search for skills that are still missing in .github/skills
-    if (!requiredSkillRefs.some((skillRef) => skillRef.name === skillName)) {
-      requiredSkillRefs.push({
-        pluginDirname: "",
-        name: skillName
+
+    // Add skills from .github/skills
+    requiredSkills.filter((skill) => !requiredSkillRefs.some(skillRef => skillRef.name === skill))
+      .forEach((skill) => {
+        requiredSkillRefs.push({
+          pluginDirname: GHCP_PLUGIN_DIRNAME,
+          name: skill
+        });
       });
-    }
 
     let prompt: string;
     if (stimulus.turns) {

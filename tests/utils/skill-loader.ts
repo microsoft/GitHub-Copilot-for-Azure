@@ -14,6 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export const DEFAULT_SKILL_CHAR_BUDGET = 20000;
+export const GHCP_PLUGIN_DIRNAME = "ghcp";
 
 function repoRoot(): string {
   return path.resolve(__dirname, "../..");
@@ -78,7 +79,7 @@ export type Plugin = {
  * Load a skill by name
  */
 export async function loadSkill(skillRef: SkillRef): Promise<LoadedSkill> {
-  if (skillRef.pluginDirname !== "") {
+  if (skillRef.pluginDirname !== GHCP_PLUGIN_DIRNAME) {
     const skillPath = path.join(
       outputRoot(),
       skillRef.pluginDirname,
@@ -195,12 +196,10 @@ export async function getSkillsForTest(
     const pluginDirnames = new Set<string>();
     // skillRefs of skills that belong to some plugin
     const pluginRequiredSkills = requiredSkills?.filter(skillRef => {
-      return skillRef.pluginDirname !== "";
+      return skillRef.pluginDirname !== GHCP_PLUGIN_DIRNAME;
     });
     pluginRequiredSkills?.forEach(skillRef => {
-      if (skillRef.pluginDirname !== "") {
-        pluginDirnames.add(skillRef.pluginDirname);
-      }
+      pluginDirnames.add(skillRef.pluginDirname);
     });
     const pluginDirnamesList = [...pluginDirnames.values()];
     const skillDirectories = pluginDirnamesList.map(pluginDir => {
@@ -212,9 +211,9 @@ export async function getSkillsForTest(
     let disabledSkills: SkillRef[] | undefined;
     const pluginSkillRefs = pluginDirnamesList.map(plugin => listSkills(plugin)).flat();
     if (includeSkills) {
-      if (includeSkills.some((includeSkillRef) => !pluginSkillRefs.some(ref => ref.name === includeSkillRef.name))) {
+      const invalidSkills = includeSkills.filter((includeSkillRef) => includeSkillRef.pluginDirname !== GHCP_PLUGIN_DIRNAME && !pluginSkillRefs.some(ref => ref.name === includeSkillRef.name));
+      if (invalidSkills.length > 0) {
         // At least one skill to explicitly include doesn't exist within the inferred plugins.
-        const invalidSkills = includeSkills.filter((includeSkillRef) => !pluginSkillRefs.some(ref => ref.name === includeSkillRef.name));
         throw new Error(`Invalid includeSkills. ${JSON.stringify(invalidSkills)} are not valid skills.`);
       }
       disabledSkills = pluginSkillRefs.filter((ref) => !includeSkills
@@ -231,7 +230,7 @@ export async function getSkillsForTest(
     const skillsLoaded: SkillRef[] = pluginSkillRefs.filter(s => !disabledSkills?.some(disableSkillRef => disableSkillRef.name === s.name));
 
     const nonPluginRequiredSkills = requiredSkills?.filter(skillRef => {
-      return skillRef.pluginDirname === "";
+      return skillRef.pluginDirname === GHCP_PLUGIN_DIRNAME;
     }) ?? [];
     skillsLoaded.push(...nonPluginRequiredSkills);
     nonPluginRequiredSkills.forEach(skillRef => {
@@ -257,7 +256,7 @@ export async function truncateSkills(
   charBudget: number
 ): Promise<SkillRef[] | undefined> {
   const skillRefs = pluginDirnames.map(p => listSkills(p)).flat();
-  const invalidSkills = requiredSkills.filter((s) => s.pluginDirname !== "" && !skillRefs.some(ref => ref.name === s.name));
+  const invalidSkills = requiredSkills.filter((s) => s.pluginDirname !== GHCP_PLUGIN_DIRNAME && !skillRefs.some(ref => ref.name === s.name));
   if (invalidSkills.length > 0) {
     throw new Error(`Invalid requiredSkills. ${invalidSkills} do not exist in azure-skills plugin.`);
   }
