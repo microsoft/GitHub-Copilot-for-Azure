@@ -1,6 +1,6 @@
 /**
  * Prepare artifact schema — prepare-plan.json.
- * Read by prepare SKILL.md Step 9 (write prepare-plan.json).
+ * Read by prepare SKILL.md Step 10 (write prepare-plan.json).
  */
 
 // ─── Shared type (inlined from session-schemas.ts to avoid cross-ref) ────────
@@ -83,6 +83,8 @@ export interface NamingConfig {
   /** The computed prefix used for all resource names: {project}-{env}-{suffix}.
    *  deploymentVariables.environmentName MUST equal this value. */
   resourcePrefix: string;
+  /** The random suffix segment of resourcePrefix (last {suffix} token). Scaffold/deploy append an attempt number to it when regenerating names during healing. */
+  suffix?: string;
   resources: NamingResource[];
 }
 
@@ -126,6 +128,7 @@ export interface DeploymentVariables {
   environmentName: string;
   location: string;
   sessionId: string;
+  /** Signed-in user's identity (`az ad signed-in-user show --query displayName`) — never a static tool/skill name. */
   deployedBy: string;
   /** Variable names that could not be resolved at prepare time — deploy reads, not asks */
   deferred?: string[];

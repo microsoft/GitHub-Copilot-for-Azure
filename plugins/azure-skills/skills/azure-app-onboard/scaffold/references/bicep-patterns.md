@@ -87,22 +87,21 @@ module resources './modules/resources.bicep' = {
 
 ## Naming Convention (Bicep)
 
-The prepare phase generates a logical resource prefix in `prepare-plan.json.naming.resourcePrefix` (e.g., `myapp-dev`). Scaffold MUST add a globally unique suffix using Bicep's `uniqueString()` function to prevent cross-deployment name collisions on globally unique Azure resources (App Service, Key Vault, Storage Account, ACR).
+The prepare phase pre-computes every resource name (with a unique 4-char suffix) in `prepare-plan.json.naming.resources[]`. ⛔ **Use those names verbatim** as Bicep parameters — do NOT derive, `take()`, `substring()`, `uniqueString()`, or otherwise transform them. The plan is the source of truth; self-review L3 and the conformance gate assert names match the plan exactly.
+
+**Fallback only** — if `naming.resources[]` is absent, synthesize a unique suffix for **every** globally unique resource (App Service, Key Vault, Storage, ACR, and any other resource with a global namespace). Apply the same `${resourcePrefix}-${take(nameSuffix, 4)}` pattern to each — the examples below are illustrative, not exhaustive:
 
 ```bicep
-// main.bicep — derive unique suffix from resource group
+// main.bicep — FALLBACK when the plan omits names.
+// Compute nameSuffix once, then apply to EVERY globally unique resource below.
 var nameSuffix = uniqueString(resourceGroup().id)
-
-// Pass unique names to modules
+param webAppName string = 'app-${resourcePrefix}-${take(nameSuffix, 4)}'
 param kvName string = 'kv-${resourcePrefix}-${take(nameSuffix, 4)}'
-param appName string = 'app-${resourcePrefix}-${take(nameSuffix, 4)}'
-param storName string = 'st${replace(resourcePrefix, '-', '')}${take(nameSuffix, 4)}'
+param storageName string = 'st${replace(resourcePrefix, '-', '')}${take(nameSuffix, 4)}'
 param acrName string = 'cr${replace(resourcePrefix, '-', '')}${take(nameSuffix, 4)}'
 ```
 
 > ⛔ **Do NOT use `uniqueString()` for secrets** — it is deterministic and predictable. See [bicep-patterns-security.md](bicep-patterns-security.md) § Secrets for correct secret patterns.
-
-If `prepare-plan.json.naming.resources[]` provides pre-computed names with suffixes, prefer those — but ALWAYS ensure globally unique resources include a `uniqueString()` or equivalent hash in main.bicep as a safety net.
 
 ## Log Analytics Module Output
 

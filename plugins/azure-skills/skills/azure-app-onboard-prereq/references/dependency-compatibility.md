@@ -132,7 +132,7 @@ Migration framework + `migrations/` dir → ⚠️ WARN, write to `prereq-output
 
 | Found | Assessment |
 |-------|-----------|
-| File-based DB (SQLite, LevelDB, DuckDB) | ⚠️ WARN — ephemeral on PaaS. Deploy as-is, suggest managed DB in `postDeployRecommendations[]` |
+| File-based DB (SQLite, LevelDB, DuckDB) | ⚠️ WARN — ephemeral on PaaS. A generated/fixed module MUST create its DB dir before opening it (Node `fs.mkdirSync(path.dirname(dbPath), { recursive: true })` / Python `os.makedirs(os.path.dirname(db_path), exist_ok=True)`) — a non-existent subdir under `/home` → `SQLITE_CANTOPEN` crash loop. Suggest managed DB in `postDeployRecommendations[]` |
 | Local file storage | Needs Azure Blob Storage |
 | In-memory cache only | Consider Redis |
 | Managed DB connection string | Ready — update connection |

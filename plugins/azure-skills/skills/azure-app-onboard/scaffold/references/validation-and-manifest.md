@@ -26,8 +26,8 @@ az bicep build --file infra/main.bicep --stdout > $null
   "validationResult": {
     "status": "Validated",
     "checks": [
-      { "name": "bicep build", "result": "PASS" },
-      { "name": "RBAC review", "result": "PASS" }
+      { "name": "bicep build", "passed": true },
+      { "name": "RBAC review", "passed": true }
     ]
   }
 }
@@ -40,7 +40,7 @@ az bicep build --file infra/main.bicep --stdout > $null
 
 ## Step 12 — Write `scaffold-manifest.json`
 
-⛔ **You MUST read [`scaffold-schemas.ts`](scaffold-schemas.ts)** to get the exact `ScaffoldManifest` interface. Write to the session folder with ALL fields populated: `files[]`, `selfReview.findings[]`, AND `validationResult` (from Step 11). This is a single write — validation is already complete.
+⛔ **You MUST read [`scaffold-schemas.ts`](scaffold-schemas.ts)** to get the exact `ScaffoldManifest` interface. Write to the exact path **`.copilot-azure/sessions/{id}/scaffold-manifest.json`** with ALL fields populated: `files[]`, `selfReview.findings[]`, AND `validationResult` (from Step 11). This is a single write — validation is already complete.
 
 > ⛔ **Phase exit gate: `scaffold-manifest.json.validationResult` MUST NOT be null.** If validation ran: `{ status: 'Validated'/'Partial'/'Failed', details }` (per `ValidationResult` in [`scaffold-schemas.ts`](scaffold-schemas.ts)). Null = incomplete scaffold.
 
@@ -48,7 +48,7 @@ az bicep build --file infra/main.bicep --stdout > $null
 
 ## Step 12.5 — Deploy Approval Gate
 
-Present the user with: files generated, selfReview findings, **validation results** (pass/fail per check from Step 11), services + SKUs, secure-defaults applied. End with: **"Ready to deploy? (Yes / Run manually / Edit plan / Cancel)"** — do not continue until the user approves.
+Present the user with: files generated, selfReview findings, **validation results** (pass/fail per check from Step 11), services + SKUs, secure-defaults applied. End with: **"🚀 Ready to deploy? (Yes / Run manually / Edit plan / Cancel)"** — do not continue until the user approves.
 
 > ⛔ **Self-check before presenting the deploy gate.** Does `scaffold-manifest.json` contain a `validationResult` field with `status` set? If NO → you skipped Step 11. Go back and run validation. Do NOT present the deploy gate with `validationResult: null`.
 

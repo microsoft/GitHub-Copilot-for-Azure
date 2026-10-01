@@ -18,6 +18,7 @@ Validate IaC syntax, write `scaffold-manifest.json`, and generate deploy checkli
 | `prereq-output.json.warnings[]` — prereq warnings with `fixPhase` | YES |
 | `prereq-output.json.healthEndpoint` — detected health path (or `null`) | YES |
 | Conformance result JSON (from main-thread Step 10a-conf) | YES |
+| Session path (`.copilot-azure/sessions/{uuid}/`) | YES |
 
 ## Output
 
@@ -63,8 +64,8 @@ FIXABLE errors: fix the Bicep → re-run `az bicep build` → proceed to Step 3c
 
 For each App Service / Functions resource in the generated Bicep:
 
-1. **basicPublishingCredentialsPolicies** — verify both child resources exist: `basicPublishingCredentialsPolicies/scm` (with `allow: true`) and `basicPublishingCredentialsPolicies/ftp` (with `allow: false`). Missing → FIXABLE: add the child resources per [bicep-patterns-security.md](bicep-patterns-security.md) § Publishing Credential Lockdown.
-2. **uniqueString in naming** — verify the App Service name uses `uniqueString()` or a unique suffix (not a hardcoded literal). Hardcoded names cause global collisions. Missing → FIXABLE: wrap name with `uniqueString(resourceGroup().id)`.
+1. **basicPublishingCredentialsPolicies** — verify both `scm` and `ftp` child resources exist. ⛔ **Verify-only — do NOT add them.** Self-review owns the fix; `APPSVC-PUBLISH-POLICIES` conformance blocks the deploy gate if still missing. Adding them here races with self-review on the same file → BCP121 duplicates → potential silent removal of both sets.
+2. **Names match the plan** — verify every resource name equals its `prepare-plan.json.naming.resources[]` entry verbatim (the plan already includes a unique suffix). Deviation (invented, or `take()`/`substring()`/`uniqueString()`-derived) → FIXABLE: replace with the exact plan name.
 
 FIXABLE errors: fix the Bicep → re-run `az bicep build` → proceed to Step 3c.
 
@@ -78,7 +79,7 @@ The main thread (SKILL.md Step 10a-conf) already ran the conformance script and 
 
 Read [scaffold-schemas.ts](scaffold-schemas.ts) for exact field names.
 
-**Do:** Write `scaffold-manifest.json` to the session folder with: `sessionId`, `scaffoldCompletedUtc`, `iacFormat`, `targetScope`, `entryPoint`, `parametersFile`, `files[]`, `deployCommand`, `twoPhaseWiring` (if Container Apps), `phase2Steps` (if applicable), `selfReview` (from caller input), `validationResult` (from Steps 2–3). Use the exact field names from [scaffold-schemas.ts](scaffold-schemas.ts) § `ScaffoldManifest`.
+**Do:** Write the manifest to `{SESSION_PATH}scaffold-manifest.json` (use the session path from Input) with: `sessionId`, `scaffoldCompletedUtc`, `iacFormat`, `targetScope`, `entryPoint`, `parametersFile`, `files[]`, `deployCommand`, `twoPhaseWiring` (if Container Apps), `phase2Steps` (if applicable), `selfReview` (from caller input), `validationResult` (from Steps 2–3). Use the exact field names from [scaffold-schemas.ts](scaffold-schemas.ts) § `ScaffoldManifest`.
 
 ### Step 5 — Handle failures (if any)
 

@@ -24,7 +24,7 @@ export interface BuildRequirements {
   exposedPort?: number;
   /** Estimated native module compilation time in seconds (typically 30–300s;
    *  larger compiled dependencies like scipy may take 600+s).
-   *  Used by deploy phase to set WEBSITES_CONTAINER_START_TIME_LIMIT. */
+   *  Informational — scaffold hardcodes WEBSITES_CONTAINER_START_TIME_LIMIT to 1800 (the platform max) for safety. */
   estimatedInstallTime?: number;
   /** Why F1 is not viable — set when f1Viable is false.
    *  Examples: "native modules (node-gyp)", "large dependency tree (27 pinned deps)",
@@ -48,6 +48,17 @@ export interface PrereqWarning {
    *  "deploy-gate" = surface at deploy approval gate for user awareness. No code changes.
    *  "post-deploy" = informational — add to postDeployRecommendations[], no action during pipeline. */
   fixPhase: "prereq" | "scaffold" | "deploy-gate" | "post-deploy";
+}
+
+/** A functional non-Azure cloud SDK dependency that must be swapped before deploy.
+ *  Surfaced at prereq Step 8 as a 🔶 blocker with the Azure swap mapping. */
+export interface CloudSdkFinding {
+  /** The detected dependency, e.g. "aws-sdk", "@google-cloud/storage", "boto3". */
+  dependency: string;
+  /** Which component/path it was found in. */
+  component: string;
+  /** Suggested Azure equivalent, e.g. "@azure/storage-blob". */
+  azureEquivalent: string;
 }
 
 export interface PrereqOutput {
@@ -77,4 +88,7 @@ export interface PrereqOutput {
    *  framework signals + migrations/ dir. Prepare prepends required entries
    *  to deployStrategy.startupCommand. See dependency-compatibility.md § First-Run. */
   initCommands?: { type: string; framework: string; command: string; required: boolean }[];
+  /** Non-Azure cloud SDK deps requiring migration before deploy — populated by the cloud-SDK gate (Step 2).
+   *  Non-empty routes Step 8 to azure-cloud-migrate. */
+  cloudSdkFindings?: CloudSdkFinding[];
 }

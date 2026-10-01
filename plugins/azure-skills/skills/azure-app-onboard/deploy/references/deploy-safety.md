@@ -35,8 +35,9 @@ When `az deployment sub create` returns 403 (insufficient subscription-scope per
 
 ## Deploy Checklist
 
-> ⛔ **Use sync shells** so state persists. **Persist secrets** to `.copilot-azure/sessions/{id}/deploy-secrets.env` — generate each secret ONCE (URL-safe, no `/+=`), reload in every later shell. Never regenerate an existing key. Key Vault is the durable source of truth for every secret (the file is only a cross-shell reload cache and is git-ignored via `.copilot-azure/`). NEVER echo or log rendered secret values.
+> ⛔ **Use sync shells** so state persists. **Persist secrets** to `.copilot-azure/sessions/{id}/deploy-secrets.env` — generate each secret ONCE (URL-safe, no `/+=`), reload in every later shell. Never regenerate an existing key. Key Vault is the durable source of truth for every secret (the file is only a cross-shell reload cache and is git-ignored via `.copilot-azure/`). This session-scoped cache is the **only** sanctioned secret file on disk — never write secrets to ad-hoc temp files or `--file` inputs (see [`blocked-patterns.md`](blocked-patterns.md)). Pass secrets to `az` as a quoted shell variable reloaded from this cache, never as a literal. NEVER echo or log rendered secret values.
 >
+> ⛔ **Generate secrets with a CSPRNG, not `Get-Random`:** bash `openssl rand -base64 32 | tr -d '/+='` · PowerShell `[Convert]::ToBase64String([System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)) -replace '[/+=]',''`
 > ⛔ **URL-safe passwords required** when app uses URL-based connection strings. Forbidden chars: `# @ / ? % : & = + ;`.
 > ⛔ **`az webapp deploy` does NOT support `--track-status`.**
 > ⛔ **`az rest` on Windows PowerShell:** ALWAYS include `--headers "Content-Type=application/json"`.

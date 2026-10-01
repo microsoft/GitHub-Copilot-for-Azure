@@ -4,7 +4,7 @@ Determine how application code will be deployed to Azure based on prereq scan re
 
 ## Deployment Patterns
 
-Three patterns — select based on `prereq-output.json.components[].buildRequirements`:
+Three patterns — select based on `prereq-output.json.buildRequirements`:
 
 > ⛔ **Dockerfile ≠ Container Apps.** A Dockerfile that only serves static files (nginx, httpd, `COPY . /usr/share/nginx/html`) is NOT a backend app. Route static-only Dockerfiles as static sites per `service-mapping.md § Static Dockerfile sites`, not Pattern C.
 

@@ -17,8 +17,9 @@ Three error categories for deploy-time failures.
 | Missing required field | Call `mcp_bicep_build_bicep` for structured error, fix from diagnostics. Fallback: `az bicep build` |
 | Policy violation | Substitute per policy |
 | API version not found | Call `mcp_bicep_list_az_resource_types_for_provider` with `{ providerNamespace: "..." }`. Use latest GA — no `-preview`. Fallback: `az provider show` |
+| Resource type retiring (`BadRequest`: "retiring" / "create {X} instead") | Call `mcp_bicep_list_az_resource_types_for_provider` for the namespace, substitute the replacement type named in the error. ⛔ `planLevelChange: true`, `changeType: "service-type"` — re-approval + plan reconcile per healing rules. NEVER classify as `INFRA_TRANSIENT` |
 | `listKeys()` in output | ⛔ Security risk — replace with KV secret + MI reference |
-| KV soft-delete collision | Rename KV (append suffix). If not viable → user purges manually |
+| KV soft-delete collision | Append a suffix to the KV's `prepare-plan.json.naming.resources[]` entry (scaffold reads plan names verbatim), then regenerate + redeploy. If not viable → user purges manually |
 | Redis `InvalidRequestBody` for `properties.sku.name` | Bicep type issue — create via `az redis create --sku Basic --vm-size c0`, switch Bicep to `existing` keyword |
 
 **Flow:** Deploy → classifies IAC_ERROR → scaffold self-healing → re-validate → retry.

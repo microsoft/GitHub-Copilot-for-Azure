@@ -59,12 +59,13 @@ export interface DeployEndpoint {
 
 export interface DeployDuration {
   startedUtc: string;
-  completedUtc: string;
+  /** Omitted in the in-progress skeleton; set at finalize (Step 8). */
+  completedUtc?: string;
 }
 
 export type DeployStatus = "in-progress" | "succeeded" | "failed";
 
-export type ResourceDeployStatus = "succeeded" | "failed" | "skipped";
+export type ResourceDeployStatus = "succeeded" | "failed";
 
 export interface ResourceResult {
   resourceId: string;
@@ -90,7 +91,7 @@ export interface DeployResult {
   partial: boolean;
   resourceResults: readonly ResourceResult[];
   /** RGs created during healing that are not the final deployment target.
-   *  Surfaced at handoff (Step 9) with manual cleanup commands. */
+   *  Surfaced at handoff (Step 10) with manual cleanup commands. */
   orphanedResourceGroups: readonly OrphanResourceGroup[];
   healingAttempts?: readonly DeployHealingAttempt[];
 }
