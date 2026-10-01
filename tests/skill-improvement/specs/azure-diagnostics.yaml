@@ -11,6 +11,7 @@ evaluations:
   root: evals/azure-skills/azure-diagnostics
   development:
     - eval.yaml
+    - response-quality.eval.yaml
     - script-invocation.eval.yaml
   heldOut: []
 
@@ -43,8 +44,8 @@ acceptance:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 70
-  maxJudgeCalls: 70
+  maxAnswerGenerations: 140
+  maxJudgeCalls: 140
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
