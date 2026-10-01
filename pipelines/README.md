@@ -20,8 +20,9 @@ Scheduled runs have three stages:
    with the run reason.
 
 Manually queued runs of `main` add a fourth **Release** stage after verification.
-That stage retains the current run, authenticates with GitHub, and publishes the
-artifacts produced by the preceding Build stage.
+Its production deployment job waits for approval through the protected
+`package-publish` environment, then retains the current run, authenticates with
+GitHub, and publishes the artifacts produced by the preceding Build stage.
 
 Build jobs authenticate to the Azure SDK public NuGet feed and use
 [`../telemetry-reporter/nuget.config`](../telemetry-reporter/nuget.config)
@@ -46,14 +47,16 @@ runs.
 
 The Release stage follows the Azure SDK release pattern:
 
-1. Download the manifest and six platform artifacts produced earlier in the
-   current run.
-2. Retain the current run for 731 days.
-3. Authenticate with the Azure SDK Automation GitHub App through
+1. Declare the manifest, six platform artifacts, and release scripts as
+   immutable production release inputs.
+2. Wait for an authorized approval on the `package-publish` Azure DevOps
+   environment.
+3. Retain the current run for 731 days.
+4. Authenticate with the Azure SDK Automation GitHub App through
    `AzureSDKEngKeyVault Secrets`.
-4. Validate that the manifest represents the current manual run and matches its
+5. Validate that the manifest represents the current manual run and matches its
    build ID and source commit.
-5. Create a draft GitHub release tagged `ghcfa-telem-<version>`, upload the six
+6. Create a draft GitHub release tagged `ghcfa-telem-<version>`, upload the six
    runtime ZIPs, and publish it as the normal Latest release. Failed uploads or
    publication delete the draft and tag so the pipeline can be retried.
 
@@ -73,7 +76,8 @@ The nightly pipeline is authorized to use `1ESPipelineTemplates`,
 service identity's read access to prior builds. Its initializer maps
 `System.AccessToken` so scheduled change detection can query the Builds API.
 
-The pipeline also requires permission to create retention leases for its runs
-and use the `AzureSDKEngKeyVault Secrets` service connection. The Azure SDK
-Automation GitHub App must have release and tag write access to
+The pipeline also requires permission to deploy through the protected
+`package-publish` environment, create retention leases for its runs, and use
+the `AzureSDKEngKeyVault Secrets` service connection. The Azure SDK Automation
+GitHub App must have release and tag write access to
 `microsoft/GitHub-Copilot-for-Azure`.

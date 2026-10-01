@@ -8,6 +8,9 @@ parameters:
   - name: RunId
     type: string
     default: $(Build.BuildId)
+  - name: ScriptDirectory
+    type: string
+    default: $(Build.SourcesDirectory)/eng/common/scripts
 
 steps:
   - task: PowerShell@2
@@ -16,7 +19,7 @@ steps:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     inputs:
       pwsh: true
-      filePath: $(Build.SourcesDirectory)/eng/common/scripts/Add-RetentionLease.ps1
+      filePath: ${{ parameters.ScriptDirectory }}/Add-RetentionLease.ps1
       arguments: >
         -Organization azure-sdk
         -Project '$(System.TeamProject)'

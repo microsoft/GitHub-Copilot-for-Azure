@@ -181,8 +181,10 @@ release tag.
 Queue
 [`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)
 manually from `main` to create a release. The manual run builds and verifies the
-complete matrix, then retains itself and publishes those same artifacts. This
-keeps the release commit and packages within one pipeline run.
+complete matrix, then waits for authorized approval through the protected
+`package-publish` Azure DevOps environment before retaining itself and
+publishing those same artifacts. This keeps the release commit and packages
+within one pipeline run.
 
 It creates a normal
 [GitHub release](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases)
