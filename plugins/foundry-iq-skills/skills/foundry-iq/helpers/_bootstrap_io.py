@@ -9,13 +9,14 @@ import shutil
 import stat
 import subprocess
 import uuid
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
 try:
     from ._common import HelperFailure, canonical_bytes
 except ImportError:
     from _common import HelperFailure, canonical_bytes
+
 
 MAX_BYTES = 1024 * 1024
 
@@ -226,6 +227,35 @@ def _windows_security():
                 kernel.LocalFree(ctypes.cast(allocated, pointer))
 
 
+class _DirectoryDescriptor:
+    def __init__(self, part, parent_fd):
+        self.part = part
+        self.parent_fd = parent_fd
+        self.descriptor = None
+
+    def __enter__(self):
+        self.descriptor = os.open(
+            str(self.part) if self.parent_fd is None else self.part.name,
+            os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+            **({"dir_fd": self.parent_fd} if self.parent_fd is not None else {}),
+        )
+        return self
+
+    def __exit__(self, exc_type, primary, traceback):
+        descriptor, self.descriptor = self.descriptor, None
+        if descriptor is None:
+            return
+        try:
+            os.close(descriptor)
+        except OSError as error:
+            if primary is None:
+                raise OSError("Directory handle cleanup failed") from error
+            if isinstance(primary, HelperFailure):
+                primary.warnings.append("Directory handle cleanup could not be confirmed.")
+            else:
+                primary.add_note("Directory handle cleanup could not be confirmed.")
+
+
 @contextmanager
 def _pinned_directory(path, *, private=True):
     """Pin every ancestor against substitution; POSIX writes remain handle-relative."""
@@ -254,29 +284,26 @@ def _pinned_directory(path, *, private=True):
         else:
             if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
                 raise OSError("Handle-relative creation unavailable")
-            for part in reversed((path, *path.parents)):
-                fd = os.open(str(part) if not handles else part.name,
-                             os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
-                             **({"dir_fd": handles[-1]} if handles else {}))
-                handles.append(fd)
-                info = os.fstat(fd)
-                # A foreign writable ancestor can substitute descendants, even if the leaf is 0700.
-                if info.st_uid not in (0, os.getuid()) or stat.S_IMODE(info.st_mode) & 0o022:
-                    raise OSError("Unsafe ancestor ownership or write access")
-            if private:
-                _, selected = _validated_directory(str(path))
-                opened = os.fstat(handles[-1])
-                if (selected.st_dev, selected.st_ino) != (opened.st_dev, opened.st_ino):
-                    raise OSError("Directory identity changed")
-            yield handles[-1]
+            with ExitStack() as ancestors:
+                parent_fd = None
+                for part in reversed((path, *path.parents)):
+                    owner = ancestors.enter_context(_DirectoryDescriptor(part, parent_fd))
+                    parent_fd = owner.descriptor
+                    info = os.fstat(parent_fd)
+                    # A foreign writable ancestor can substitute descendants, even if the leaf is 0700.
+                    if info.st_uid not in (0, os.getuid()) or stat.S_IMODE(info.st_mode) & 0o022:
+                        raise OSError("Unsafe ancestor ownership or write access")
+                if private:
+                    _, selected = _validated_directory(str(path))
+                    opened = os.fstat(parent_fd)
+                    if (selected.st_dev, selected.st_ino) != (opened.st_dev, opened.st_ino):
+                        raise OSError("Directory identity changed")
+                yield parent_fd
     finally:
         cleanup_failed = False
         for handle in reversed(handles):
             try:
-                if os.name == "nt":
-                    cleanup_failed = not kernel.CloseHandle(handle) or cleanup_failed
-                else:
-                    os.close(handle)
+                cleanup_failed = not kernel.CloseHandle(handle) or cleanup_failed
             except OSError:
                 cleanup_failed = True
         if cleanup_failed:
@@ -530,12 +557,16 @@ def private_bytes(directory, name, data):
         raise primary from exc
     finally:
         cleanup_failed = False
-        for descriptor in (file_fd, directory_fd):
-            if descriptor is not None:
-                try:
-                    os.close(descriptor)
-                except OSError:
-                    cleanup_failed = True
+        if file_fd is not None:
+            try:
+                os.close(file_fd)
+            except OSError:
+                cleanup_failed = True
+        if directory_fd is not None:
+            try:
+                os.close(directory_fd)
+            except OSError:
+                cleanup_failed = True
         if cleanup_failed:
             if primary is not None:
                 primary.warnings.append("Receipt descriptor cleanup could not be confirmed.")
