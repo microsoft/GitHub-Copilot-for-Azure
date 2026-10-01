@@ -1,6 +1,6 @@
 ---
 name: azure-advisor
-description: "Use Azure Advisor recommendations. WHEN: \"show Advisor recommendations\", \"service retirements\", \"update recommendation status\"."
+description: "Use Azure Advisor recommendations. WHEN: \"show Advisor recommendations\", \"service retirements\", \"update recommendation status\". DO NOT USE FOR: fixes or remediation (use azure-advisor-actionability)."
 license: MIT
 metadata:
   author: Microsoft

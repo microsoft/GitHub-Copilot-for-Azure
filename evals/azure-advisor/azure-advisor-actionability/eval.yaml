@@ -116,7 +116,7 @@ stimuli:
       - type: tool-calls
         config:
           disallowed:
-            - name: "(?i)^(bash|powershell|pwsh|shell)$"
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal|run_command|shell|terminal)$"
             - name: "(?i).*recommendation.*apply.*"
       - type: output-not-matches
         config:

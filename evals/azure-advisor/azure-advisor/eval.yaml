@@ -58,7 +58,7 @@ stimuli:
       type: integration
       tier: full
       cost: llm
-      area: service-retirement
+      area: routing
     constraints:
       max_turns: 4
     graders:
