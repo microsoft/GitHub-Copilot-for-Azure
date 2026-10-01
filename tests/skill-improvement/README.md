@@ -133,9 +133,11 @@ cleanup headroom beyond the current 360-minute engine limit plus the managed
 Kusto cluster's 20-minute startup timeout; the engine deadline remains the
 authoritative evaluation limit.
 
-Run specifications may reference only filenames inside a repository-relative
-`tests/skill-improvement/evals/<name>` root. These suites are opt-in and are not
-discovered by the nightly `evals/` integration workflow.
+Run specifications may reference only filenames inside either a
+repository-relative `tests/skill-improvement/evals/<name>` root or an existing
+`evals/<plugin>/<skill>` root. Suites under `tests/skill-improvement/evals/` are
+opt-in and are not discovered by the nightly integration workflow; suites under
+`evals/` retain their normal nightly behavior.
 
 Conditions may add `developmentEvaluations` or `heldOutEvaluations`. Use this
 for suites that require capabilities available only in that arm, such as live
