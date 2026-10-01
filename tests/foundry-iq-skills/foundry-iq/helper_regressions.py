@@ -64,6 +64,79 @@ LEAF = FakePath("leaf", (FakePath("ancestor"),))
 
 
 class ResourceTests(unittest.TestCase):
+    def test_windows_pins_preserve_primary_and_report_cleanup_failures(self):
+        warning = "Directory handle cleanup could not be confirmed."
+        for primary_kind in ("none", "os", "helper", "interrupt", "validation"):
+            for close_kind in ("success", "false", "raise"):
+                with self.subTest(primary=primary_kind, close=close_kind):
+                    primary = {
+                        "none": None,
+                        "os": OSError("body failed"),
+                        "helper": common.HelperFailure("original-blocker", "Body failed.", blocked_at="verification"),
+                        "interrupt": KeyboardInterrupt(),
+                        "validation": OSError("private directory validation failed"),
+                    }[primary_kind]
+                    cause = ValueError("original cause")
+                    if primary is not None:
+                        primary.__cause__ = cause
+                    kernel = MagicMock()
+                    kernel.CreateFileW.side_effect = [101, 102]
+                    kernel.CloseHandle.side_effect = {
+                        "success": [True, True],
+                        "false": [False, False],
+                        "raise": [OSError("private native details"), True],
+                    }[close_kind]
+                    observed = None
+                    with patch.object(storage, "os", SimpleNamespace(name="nt")), \
+                            patch.object(storage.ctypes, "WinDLL", return_value=kernel, create=True), \
+                            patch.object(FakePath, "lstat", return_value=DIRECTORY, create=True), \
+                            patch.object(storage, "_windows_private"), \
+                            patch.object(storage, "_validated_directory") as validate:
+                        if primary_kind == "validation":
+                            validate.side_effect = primary
+                        try:
+                            with storage._pinned_directory(LEAF) as descriptor:
+                                self.assertIsNone(descriptor)
+                                kernel.CloseHandle.assert_not_called()
+                                if primary is not None:
+                                    raise primary
+                        except (OSError, common.HelperFailure, KeyboardInterrupt) as error:
+                            observed = error
+                    self.assertEqual([c.args[0] for c in kernel.CloseHandle.call_args_list], [102, 101])
+                    self.assertEqual([c.args[1:] for c in kernel.CreateFileW.call_args_list],
+                                     [(0x81, 3, None, 3, 0x02200000, None)] * 2)
+                    if primary is not None:
+                        self.assertIs(observed, primary)
+                        self.assertIs(observed.__cause__, cause)
+                        notes = primary.warnings if primary_kind == "helper" else getattr(primary, "__notes__", [])
+                        self.assertEqual(notes, [] if close_kind == "success" else [warning])
+                    elif close_kind == "success":
+                        self.assertIsNone(observed)
+                    else:
+                        self.assertIsInstance(observed, OSError)
+                        self.assertEqual(str(observed), "Directory handle cleanup failed")
+
+    def test_nested_windows_pins_release_once_without_replacing_primary(self):
+        kernel = MagicMock()
+        kernel.CreateFileW.side_effect = [101, 102, 201, 202]
+        kernel.CloseHandle.side_effect = [False, True, OSError("private native details"), True]
+        primary = OSError("nested body failed")
+        observed = None
+        with patch.object(storage, "os", SimpleNamespace(name="nt")), \
+                patch.object(storage.ctypes, "WinDLL", return_value=kernel, create=True), \
+                patch.object(FakePath, "lstat", return_value=DIRECTORY, create=True), \
+                patch.object(storage, "_windows_private"):
+            try:
+                with storage._pinned_directory(LEAF, private=False):
+                    with storage._pinned_directory(LEAF, private=False):
+                        kernel.CloseHandle.assert_not_called()
+                        raise primary
+            except OSError as error:
+                observed = error
+        self.assertIs(observed, primary)
+        self.assertEqual([c.args[0] for c in kernel.CloseHandle.call_args_list], [202, 201, 102, 101])
+        self.assertEqual(primary.__notes__, ["Directory handle cleanup could not be confirmed."] * 2)
+
     def test_ancestors_remain_pinned_and_release_in_reverse_order_on_every_exit(self):
         for mode in ("normal", "open", "metadata", "body", "close", "body-and-close", "helper-body-and-close"):
             with self.subTest(mode=mode):

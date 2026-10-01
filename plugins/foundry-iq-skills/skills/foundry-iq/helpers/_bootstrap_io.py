@@ -260,6 +260,7 @@ class _DirectoryDescriptor:
 def _pinned_directory(path, *, private=True):
     """Pin every ancestor against substitution; POSIX writes remain handle-relative."""
     handles = []
+    primary = None
     try:
         if os.name == "nt":
             import ctypes.wintypes as w
@@ -299,6 +300,9 @@ def _pinned_directory(path, *, private=True):
                     if (selected.st_dev, selected.st_ino) != (opened.st_dev, opened.st_ino):
                         raise OSError("Directory identity changed")
                 yield parent_fd
+    except BaseException as error:
+        primary = error
+        raise
     finally:
         cleanup_failed = False
         for handle in reversed(handles):
@@ -307,7 +311,12 @@ def _pinned_directory(path, *, private=True):
             except OSError:
                 cleanup_failed = True
         if cleanup_failed:
-            raise OSError("Directory handle cleanup failed")
+            if primary is None:
+                raise OSError("Directory handle cleanup failed")
+            if isinstance(primary, HelperFailure):
+                primary.warnings.append("Directory handle cleanup could not be confirmed.")
+            else:
+                primary.add_note("Directory handle cleanup could not be confirmed.")
 
 
 def create_private_directory(value):
