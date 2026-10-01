@@ -84,6 +84,17 @@
             "integrationTestSchedule": {
                 "0 12 * * 2-6": "azure-local,azure-local-multi-rack"
             }
+        },
+        {
+            "name": "azure-advisor",
+            "dirname": "azure-advisor",
+            "skills": [
+                "azure-advisor",
+                "azure-advisor-actionability"
+            ],
+            "integrationTestSchedule": {
+                "0 12 * * 2-6": "azure-advisor,azure-advisor-actionability"
+            }
         }
     ]
 }
