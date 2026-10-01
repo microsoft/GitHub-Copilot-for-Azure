@@ -327,6 +327,29 @@ export function writeCandidatePatch(
   return patchPath;
 }
 
+export function writeFinalCandidatePatch(
+  repoRoot: string,
+  outputDirectory: string,
+  baselineCommit: string,
+  candidateCommit: string,
+): string {
+  const patchPath = path.join(outputDirectory, "final-candidate.patch");
+  fs.writeFileSync(
+    patchPath,
+    execFileSync(
+      "git",
+      ["diff", "--binary", baselineCommit, candidateCommit],
+      {
+        cwd: repoRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      }
+    ),
+    "utf8"
+  );
+  return patchPath;
+}
+
 function copyCandidateSkill(
   worktree: string,
   iterationDirectory: string,
@@ -622,10 +645,11 @@ export async function executeSkillImprovement(
 
     if (finalAccepted && bestCandidateCommit) {
       finalPatchPath = "final-candidate.patch";
-      fs.writeFileSync(
-        path.join(outputDirectory, finalPatchPath),
-        git(options.repoRoot, ["diff", "--binary", baselineCommit, bestCandidateCommit]),
-        "utf8"
+      writeFinalCandidatePatch(
+        options.repoRoot,
+        outputDirectory,
+        baselineCommit,
+        bestCandidateCommit
       );
     }
 
