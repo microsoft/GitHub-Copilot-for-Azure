@@ -671,10 +671,18 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
       expect(firstArgs).not.toContain("plugin-telemetry");
       expectArg(firstArgs, "--tool-name", "get_azure_bestpractices");
 
+      const firstArgsTimestampIndex = firstArgs.indexOf("--timestamp");
+      firstArgs.splice(firstArgsTimestampIndex, 2);
+
+      // Each run uses a dynamically generated timestamp which may differ.
+      // Every other argument should be identical.
       const secondArgs = runHook(shell, payload, "", {
         ...enabledEnvironment,
         AZURE_SKILLS_TELEMETRY_ZIP_PATH: join(TEST_DIR, "missing-after-install.zip"),
       });
+      const secondArgsTimestampIndex = secondArgs.indexOf("--timestamp");
+      secondArgs.splice(secondArgsTimestampIndex, 2);
+
       expect(secondArgs).toEqual(firstArgs);
     },
   );
