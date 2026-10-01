@@ -85,7 +85,7 @@ def _windows_ancestor_acl(owner_text, entries, current):
 
 def _windows_private(path, *, ancestor=False):
     # Inspect effective trustees, not chmod: Windows chmod does not establish privacy.
-    from ctypes import wintypes as w
+    import ctypes.wintypes as w
     adv = ctypes.WinDLL("advapi32", use_last_error=True)
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     pointer = ctypes.c_void_p
@@ -191,7 +191,7 @@ def private_directory(value):
 @contextmanager
 def _windows_security():
     """An explicit protected, inheritable owner/SYSTEM/admin DACL, supplied at creation."""
-    from ctypes import wintypes as w
+    import ctypes.wintypes as w
     adv = ctypes.WinDLL("advapi32", use_last_error=True)
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     pointer = ctypes.c_void_p
@@ -262,7 +262,7 @@ def _pinned_directory(path, *, private=True):
     handles = []
     try:
         if os.name == "nt":
-            from ctypes import wintypes as w
+            import ctypes.wintypes as w
             kernel = ctypes.WinDLL("kernel32", use_last_error=True)
             kernel.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p,
                                           w.DWORD, w.DWORD, w.HANDLE]
@@ -321,7 +321,7 @@ def create_private_directory(value):
         _outside_plugin(path)
         with _pinned_directory(path.parent, private=False) as parent_fd:
             if os.name == "nt":
-                from ctypes import wintypes as w
+                import ctypes.wintypes as w
                 kernel = ctypes.WinDLL("kernel32", use_last_error=True)
                 kernel.CreateDirectoryW.argtypes = [w.LPCWSTR, ctypes.c_void_p]
                 with _windows_security() as attributes:
@@ -346,7 +346,7 @@ def validate_private_artifact_directory(value):
 
 def _windows_private_open(path, *, create=True):
     import msvcrt
-    from ctypes import wintypes as w
+    import ctypes.wintypes as w
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel.CreateFileW.argtypes = [w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p,
                                   w.DWORD, w.DWORD, w.HANDLE]
@@ -368,7 +368,7 @@ def _windows_private_open(path, *, create=True):
 
 def _windows_publish(fd, destination):
     import msvcrt
-    from ctypes import wintypes as w
+    import ctypes.wintypes as w
     kernel = ctypes.WinDLL("kernel32", use_last_error=True)
     target = str(destination)
     size = len(target.encode("utf-16-le"))
