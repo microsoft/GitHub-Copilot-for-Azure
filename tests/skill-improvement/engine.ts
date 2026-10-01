@@ -15,10 +15,12 @@ import {
   aggregateJudgments,
   buildFailurePacket,
   decideAcceptance,
+  decideRefinement,
   writeReport,
   type AcceptanceDecision,
   type AggregatedTrial,
   type IterationReport,
+  type RefinementDecision,
   type SkillImprovementReport,
 } from "./report.ts";
 
@@ -210,6 +212,7 @@ async function runImprovementAgent(
   outputDirectory: string,
   spec: SkillImprovementRunSpec,
   failurePacketPath: string,
+  previousCandidatePatchPath: string | undefined,
   iteration: number,
   deadline: number,
 ): Promise<void> {
@@ -228,12 +231,22 @@ async function runImprovementAgent(
     "Make a general improvement that addresses the failure pattern instead of copying prompt wording.",
     "Keep the skill concise and preserve its existing structure and conventions.",
     "Read .skill-improvement-failure-packet.md before making changes, but do not edit it.",
-  ].join("\n");
+    previousCandidatePatchPath
+      ? "Inspect .skill-improvement-previous-candidate.patch and selectively reapply useful discarded changes; do not blindly restore the whole patch."
+      : "",
+  ].filter(Boolean).join("\n");
   const localFailurePacketPath = path.join(
     skillDirectory,
     ".skill-improvement-failure-packet.md"
   );
+  const localPreviousCandidatePatchPath = path.join(
+    skillDirectory,
+    ".skill-improvement-previous-candidate.patch"
+  );
   fs.copyFileSync(failurePacketPath, localFailurePacketPath);
+  if (previousCandidatePatchPath) {
+    fs.copyFileSync(previousCandidatePatchPath, localPreviousCandidatePatchPath);
+  }
   const args = [
     "-p",
     prompt,
@@ -266,6 +279,7 @@ async function runImprovementAgent(
     });
   } finally {
     fs.rmSync(localFailurePacketPath, { force: true });
+    fs.rmSync(localPreviousCandidatePatchPath, { force: true });
   }
 }
 
@@ -382,10 +396,13 @@ export async function executeSkillImprovement(
   const iterations: IterationReport[] = [];
   let baselineSkillTokens = 0;
   let baselineTrials: AggregatedTrial[] = [];
-  let bestTrials: AggregatedTrial[];
-  let bestCommit = baselineCommit;
+  let baselineComparableTrials: AggregatedTrial[];
+  let refinementTrials: AggregatedTrial[];
+  let refinementCommit = baselineCommit;
   let bestCandidateCommit: string | undefined;
   let previousDecision: AcceptanceDecision | undefined;
+  let previousRefinementDecision: RefinementDecision | undefined;
+  let previousRejectedPatchPath: string | undefined;
   let finalPatchPath: string | undefined;
   let heldOut: SkillImprovementReport["heldOut"];
   let report: SkillImprovementReport;
@@ -410,7 +427,8 @@ export async function executeSkillImprovement(
     addUsage(usage, baselineBatch);
     enforceActualUsage(spec, usage);
     baselineTrials = aggregateJudgments(baselineBatch.trials);
-    bestTrials = filterComparableTrials(baselineTrials);
+    baselineComparableTrials = filterComparableTrials(baselineTrials);
+    refinementTrials = baselineComparableTrials;
 
     if (spec.improvementAgent.enabled) {
       for (let iteration = 1; iteration <= spec.limits.maxIterations; iteration += 1) {
@@ -424,8 +442,13 @@ export async function executeSkillImprovement(
         };
         iterations.push(iterationReport);
         try {
-          await createWorktree(options.repoRoot, worktree, bestCommit);
-          const failurePacket = buildFailurePacket(spec, bestTrials, previousDecision);
+          await createWorktree(options.repoRoot, worktree, refinementCommit);
+          const failurePacket = buildFailurePacket(
+            spec,
+            refinementTrials,
+            previousDecision,
+            previousRefinementDecision
+          );
           const failurePacketPath = writeFailurePacket(
             outputDirectory,
             iteration,
@@ -437,6 +460,7 @@ export async function executeSkillImprovement(
             outputDirectory,
             spec,
             failurePacketPath,
+            previousRejectedPatchPath,
             iteration,
             deadline
           );
@@ -444,10 +468,11 @@ export async function executeSkillImprovement(
           iterationReport.validationErrors.push(
             ...validateChangedPaths(iterationReport.changedFiles, spec)
           );
+          let candidatePatchPath: string | undefined;
           if (iterationReport.changedFiles.length === 0) {
             iterationReport.validationErrors.push("Improvement agent made no file changes.");
           } else {
-            const candidatePatchPath = writeCandidatePatch(
+            candidatePatchPath = writeCandidatePatch(
               worktree,
               iterationDirectory
             );
@@ -472,6 +497,8 @@ export async function executeSkillImprovement(
           }
           if (iterationReport.validationErrors.length > 0) {
             previousDecision = undefined;
+            previousRefinementDecision = undefined;
+            previousRejectedPatchPath = candidatePatchPath;
             continue;
           }
 
@@ -499,17 +526,31 @@ export async function executeSkillImprovement(
           const candidateSkillTokens = estimateSkillTokens(worktree, spec);
           const decision = decideAcceptance(
             spec,
-            bestTrials,
+            baselineComparableTrials,
+            candidateTrials,
+            baselineSkillTokens,
+            candidateSkillTokens
+          );
+          const refinementDecision = decideRefinement(
+            spec,
+            refinementTrials,
             candidateTrials,
             baselineSkillTokens,
             candidateSkillTokens
           );
           iterationReport.decision = decision;
+          iterationReport.refinementDecision = refinementDecision;
           previousDecision = decision;
+          previousRefinementDecision = refinementDecision;
           if (decision.accepted) {
-            bestCommit = candidateCommit;
             bestCandidateCommit = candidateCommit;
-            bestTrials = candidateTrials;
+          }
+          if (decision.accepted || refinementDecision.retained) {
+            refinementCommit = candidateCommit;
+            refinementTrials = candidateTrials;
+            previousRejectedPatchPath = undefined;
+          } else {
+            previousRejectedPatchPath = candidatePatchPath;
           }
         } finally {
           await removeWorktree(options.repoRoot, worktree);
@@ -525,7 +566,7 @@ export async function executeSkillImprovement(
     ) {
       const finalWorktree = path.join(worktreeRoot, "final-candidate");
       try {
-        await createWorktree(options.repoRoot, finalWorktree, bestCommit);
+        await createWorktree(options.repoRoot, finalWorktree, bestCandidateCommit!);
         await buildWorktree(finalWorktree, deadline);
         const conditions = spec.experiment.conditions.filter(
           condition => condition.skill === "enabled"

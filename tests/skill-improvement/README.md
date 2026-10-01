@@ -52,6 +52,20 @@ limits, target-Skill invocation, and estimated **Skill Markdown token growth**.
 Average generated-answer token change is diagnostic only, not the Skill-size
 gate.
 
+Iterations use a separate refinement boundary. A candidate that has not yet
+met final acceptance can still become the starting point for the next
+iteration when it makes the configured score progress without crossing the
+aggregate quality-regression boundary, Skill invocation threshold, or Skill
+size limit. Final acceptance is always measured against the original baseline,
+so several retained refinements can cumulatively reach the acceptance target.
+When a candidate crosses the refinement boundary and is discarded, its patch
+is still supplied to the next improvement agent for selective reapplication
+rather than being silently lost.
+
+See [Acceptance and refinement configuration](specs/README.md) for definitions,
+point calculations, tuning guidance for new and mature skills, and instructions
+for changing a run specification.
+
 Each run writes:
 
 - `report-summary.md`: decision-first Actions/job summary with separate baseline

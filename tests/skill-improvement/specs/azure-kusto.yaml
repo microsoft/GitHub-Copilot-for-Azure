@@ -56,6 +56,10 @@ acceptance:
   minimumSkillInvocationRate: 0.8
   requireHeldOutImprovement: false
 
+refinement:
+  minimumScoreImprovementPoints: 1
+  maximumQualityRegressionPoints: 0
+
 limits:
   maxIterations: 2
   maxAnswerGenerations: 700

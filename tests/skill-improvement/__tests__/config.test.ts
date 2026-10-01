@@ -48,6 +48,10 @@ function spec(): SkillImprovementRunSpec {
       maximumModelRegressionPoints: 5,
       requireHeldOutImprovement: true,
     },
+    refinement: {
+      minimumScoreImprovementPoints: 1,
+      maximumQualityRegressionPoints: 0,
+    },
     limits: {
       maxIterations: 2,
       maxAnswerGenerations: 100,
@@ -74,6 +78,7 @@ describe("skill improvement configuration", () => {
       condition => condition.skill === "enabled"
     )).toBe(true);
     expect(runSpec.output.issue).toBe("never");
+    expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
     expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(664);
     expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(664);
   });
@@ -295,5 +300,14 @@ describe("skill improvement configuration", () => {
     expect(() => validateRunSpec(invalid)).toThrow(
       "acceptance.requireHeldOutImprovement must be a boolean"
     );
+  });
+
+  test.each([
+    ["minimumScoreImprovementPoints", -1],
+    ["maximumQualityRegressionPoints", -1],
+  ] as const)("rejects invalid refinement threshold %s", (field, value) => {
+    const invalid = spec();
+    invalid.refinement[field] = value;
+    expect(() => validateRunSpec(invalid)).toThrow(`refinement.${field}`);
   });
 });

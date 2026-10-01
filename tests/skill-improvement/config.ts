@@ -44,6 +44,10 @@ export type SkillImprovementRunSpec = {
     minimumSkillInvocationRate?: number;
     requireHeldOutImprovement?: boolean;
   };
+  refinement: {
+    minimumScoreImprovementPoints: number;
+    maximumQualityRegressionPoints: number;
+  };
   limits: {
     maxIterations: number;
     maxAnswerGenerations: number;
@@ -258,6 +262,15 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
       "evaluations.heldOut must contain at least one file when requireHeldOutImprovement is true."
     );
   }
+
+  requireNonNegativeNumber(
+    spec.refinement?.minimumScoreImprovementPoints,
+    "refinement.minimumScoreImprovementPoints"
+  );
+  requireNonNegativeNumber(
+    spec.refinement?.maximumQualityRegressionPoints,
+    "refinement.maximumQualityRegressionPoints"
+  );
 
   requirePositiveInteger(spec.limits?.maxIterations, "limits.maxIterations", true);
   requirePositiveInteger(spec.limits?.maxAnswerGenerations, "limits.maxAnswerGenerations");
