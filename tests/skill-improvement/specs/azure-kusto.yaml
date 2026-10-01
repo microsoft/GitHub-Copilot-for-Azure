@@ -55,7 +55,7 @@ refinement:
   maximumQualityRegressionPoints: 0
 
 limits:
-  maxIterations: 2
+  maxIterations: 3
   maxAnswerGenerations: 700
   maxJudgeCalls: 700
   maxDurationMinutes: 360
