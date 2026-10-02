@@ -1,0 +1,42 @@
+name: onboard-plugin-eval
+description: |
+  Integration tests evaluating the effectiveness of the onboard-plugin Skill
+
+tags:
+  type: integration
+  skill: onboard-plugin
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Basic: scaffolding with no optional feature"
+    prompt: |
+      I am creating a new skill for debugging an Azure Container App. Scaffold a new plugin named "azure-container-app" and scaffold a new skill named "azure-container-app-debug" in it. Finish the scaffolding and then show me what I need to do.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    environment:
+      commands:
+        - git clone -q --branch main https://github.com/microsoft/github-copilot-for-azure .
+    graders:
+      - type: skill-invocation
+        config:
+          required: [onboard-plugin]
+      - type: file-exists
+        config:
+          path: "plugins/azure-container-app/.plugin/plugin.json"
+      - type: file-exists
+        config:
+          path: "plugins/azure-container-app/skills/azure-container-app-debug/SKILL.md"
+      - type: file-exists
+        config:
+          path: "evals/azure-container-app/azure-container-app-debug/eval.yaml"
