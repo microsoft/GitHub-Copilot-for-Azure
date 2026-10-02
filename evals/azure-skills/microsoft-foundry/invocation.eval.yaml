@@ -910,6 +910,70 @@ stimuli:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
   # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Managed Harness Agents
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Managed harness agent creation skill invocation"
+    prompt: "Help me create a managed harness agent in Microsoft Foundry that reviews pull requests."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+
+  - name: "GitHub Copilot harness agent workflow"
+    prompt: |
+      Without executing any create or deploy commands, explain how you would
+      create a prompt agent with the Microsoft Foundry managed GitHub Copilot
+      harness, add web search, and deploy it. Also explain what changes if Work
+      IQ is requested but I did not provide a connection.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response routes the request to the Managed Harness
+            Agent azd workflow and identifies the agent as kind prompt with
+            harness type github_copilot_preview. It should initialize with
+            azd ai agent init using --kind prompt and --harness
+            github_copilot_preview, use azure.yaml as the source of truth,
+            attach web_search directly rather than creating a Toolbox by
+            default, deploy with azd, and state that a Work IQ connection must
+            be supplied or explicitly requested for creation. Fail if it uses
+            a Hosted Agent sample, treats the agent as kind hosted, uses
+            Foundry MCP agent_update as the primary create/deploy path,
+            silently reuses or creates a Work IQ connection, or automatically
+            creates a Toolbox.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\s+ai\\s+agent\\s+init\\b|\\bazd\\s+(up|provision|deploy)\\b|\\bazd\\s+ai\\s+connection\\s+create\\b|\\bazd\\s+ai\\s+toolbox\\s+create\\b"
+              description: "Planning-only routing test must not create or deploy resources"
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Prompt Agents
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "Prompt agent creation skill invocation"
