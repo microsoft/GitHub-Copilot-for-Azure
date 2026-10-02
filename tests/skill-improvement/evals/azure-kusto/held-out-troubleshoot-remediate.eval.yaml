@@ -65,9 +65,10 @@ stimuli:
   - name: "Repair a stored function after source schema drift"
     prompt: "A stored Kusto function began failing after its source table changed. Show how to identify the incompatible expression, propose a compatible revision, and verify callers before changing the function."
     rubric:
-      - The response inspects the function definition and current source schema and identifies type, rename, or missing-column incompatibilities from evidence.
-      - The response proposes a testable query or temporary function pattern before replacing the stored function.
-      - The response treats function alteration as a separate confirmed action and includes caller or dependency validation plus rollback considerations.
+      - The response compares the stored function definition with the current source schema and traces referenced columns and types to identify the incompatible expression from evidence.
+      - The response proposes a concrete compatible revision or normalization pattern that preserves the function's intended output, without inventing unknown replacement fields.
+      - The response validates the revised body as an ad hoc query or temporary function and checks representative callers or dependent functions before replacement.
+      - The response treats persistent alteration as a separate confirmed action and includes a rollback path.
     tags: *tags
     graders: *graders
 
