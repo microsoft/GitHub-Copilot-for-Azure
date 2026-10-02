@@ -31,6 +31,15 @@ calculates the executable and library versions from `version.json`. The
 starting major and minor version is `0.1`, and `pathFilters: ["."]` limits
 version-height changes to commits that modify this directory.
 
+Telemetry reports the reporter's full NBGV informational version, including
+commit metadata, in the event's `Version` property, the OpenTelemetry
+`service.version` resource attribute, and the activity-source version.
+The event's `McpServerNameV2` property identifies the executable as `ghcfa-telem`.
+The activity-source name remains `Azure.Mcp.Server`, and the OpenTelemetry
+service name remains `azmcp`.
+`CompatibilityConstants.AzureMcpCommit` separately pins the Azure MCP source
+revision used for implementation and allowlist synchronization.
+
 ## Native AOT builds
 
 Native AOT publishing is opt-in and supports the same operating system and
