@@ -45,10 +45,12 @@ Key capabilities:
 
 ## Core Workflow
 
-1. **Discover Resources**: List available clusters and databases in subscription
-2. **Explore Schema**: Retrieve table structures to understand data model
+1. **Discover Resources**: Call `kusto_cluster_list`/`kusto_database_list` by name (not raw CLI) to find clusters and databases; ask for cluster/database/table/time range together if missing instead of one at a time, and never invent names
+2. **Explore Schema**: Call `kusto_table_schema_get` on candidate tables; state the tool and table name, and note how column types (string vs numeric, datetime vs timespan) shape the query - if schema alone can't identify the right table/column, sample a few rows (`take 20`) instead of guessing
 3. **Query Data**: Execute KQL queries for analysis, filtering, aggregation
 4. **Analyze Results**: Process query output for insights and reporting
+
+**Don't stall on missing connection details.** If the user already supplied the table/schema/column names (even without a cluster, database, or subscription), draft the full KQL query using those names in the same response - do not wait to run it. Pair the draft query with the request for the missing identifiers so the user gets a usable artifact immediately instead of only a question.
 
 ## Query Patterns
 
@@ -142,6 +144,7 @@ Query results include:
 - Use `bin()` for time bucketing in time series
 - Use `project` to select only needed columns
 - Use `extend` to add calculated fields
+- For charts: end with `render`, guard ratios against divide-by-zero (`iff(Total == 0, real(null), 100.0 * Part / Total)`), and use `make-series ... default=0` instead of plain `summarize` when every time bucket must appear
 
 **🟡 Common Functions:**
 - `ago(timespan)`: Relative time (ago(1h), ago(7d))
@@ -214,13 +217,13 @@ Switch to Azure CLI when:
 
 ## Common Issues
 
-- **Access Denied**: Verify database permissions (Viewer role minimum for queries)
+- **Access Denied**: Check as three distinct causes rather than one generic error - Azure RBAC on the cluster resource, Kusto database/table permissions (Viewer role minimum), and network/firewall rules
 - **Query Timeout**: Optimize query with time filters, reduce result set, or increase timeout
 - **Syntax Error**: Validate KQL syntax - common issues: missing pipes, incorrect operators
 - **Empty Results**: Check time range filters (may be too restrictive), verify table name
 - **Cluster Not Found**: Check cluster name format (exclude ".kusto.windows.net" suffix)
 - **High CPU Usage**: Query too broad - add filters, reduce time range, limit aggregations
-- **Ingestion Lag**: Streaming data may have 1-30 second delay depending on ingestion method
+- **Ingestion Lag / Missing Data**: Don't stop at measuring `ingestion_time() - EventTime`. Separate three distinct causes before concluding: (1) **query-time issue** - the filter uses event time instead of ingestion time, hiding late-arriving rows; (2) **ingestion delay** - streaming data normally has 1-30 second delay, but check for time zone mismatches between the event-time column and query assumptions; (3) **ingestion failure/stoppage** - run `.show ingestion failures` and inspect queued vs failed operations, and check for mapping errors causing silent drops
 
 ## Use Cases
 
