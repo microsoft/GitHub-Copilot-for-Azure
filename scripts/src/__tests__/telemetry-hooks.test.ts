@@ -58,7 +58,9 @@ const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
+const LOG_FILE = join(LOG_DIR, "telemetry.log");
 const RAW_INPUT_DIR = join(LOG_DIR, "raw-input");
+const FAILED_LAUNCH_BIN_DIR = join(TEST_DIR, "failed-launch-bin");
 const INSTALL_CACHE_DIR = join(TEST_DIR, "telemetry-cache");
 const TELEMETRY_ARCHIVE_DIR = join(TEST_DIR, "telemetry-archive");
 const TELEMETRY_ZIP_PATH = join(TEST_DIR, "ghcfa-telem-local.zip");
@@ -76,11 +78,17 @@ const PLUGIN_ROOT = join(
   "revision",
 );
 const HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "scripts");
+const STUB_HOOKS_DIR = join(PLUGIN_ROOT, "hooks", "stub scripts");
 const SPACED_PLUGIN_ROOT = join(TEST_DIR, "plugin root with spaces");
 const SPACED_HOOKS_DIR = join(SPACED_PLUGIN_ROOT, "hooks", "scripts");
 const DISPATCHER_PATH = join(HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
+const MCP_PUBLISHER = "Azure MCP (npx -y @azure/mcp@latest)";
+const STANDALONE_PUBLISHER = "Standalone ghcfa-telem (version 0.1.0)";
+const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
+const PUBLISHER_STDERR = "test-only-private-publisher-stderr";
+const PRIVATE_EVENT_DATA = "test-only-private-event-data";
 const PLUGIN_METADATA = {
   copilot: { directory: ".plugin", name: "copilot-test-plugin", version: "1.2.3" },
   cursor: { directory: ".cursor-plugin", name: "cursor-test-plugin", version: "2.3.4" },
@@ -119,6 +127,41 @@ const shells = shellCandidates.filter(shell => isCommandAvailable(shell.command)
 
 function quotePowerShell(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
+}
+
+function writePublisherStub(binaryPath: string): void {
+  if (binaryPath.endsWith(".cmd")) {
+    writeFileSync(
+      binaryPath,
+      [
+        "@echo off",
+        ":loop",
+        "if \"%~1\"==\"\" goto end",
+        ">>\"%TELEMETRY_CAPTURE_FILE%\" echo %~1",
+        "shift",
+        "goto loop",
+        ":end",
+        `echo ${PUBLISHER_STDOUT}`,
+        `echo ${PUBLISHER_STDERR} >&2`,
+        "if defined TELEMETRY_TEST_EXIT_CODE exit /b %TELEMETRY_TEST_EXIT_CODE%",
+        "exit /b 0",
+        "",
+      ].join("\r\n"),
+    );
+  } else {
+    writeFileSync(
+      binaryPath,
+      [
+        "#!/usr/bin/env bash",
+        "printf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"",
+        `printf '%s\\n' '${PUBLISHER_STDOUT}'`,
+        `printf '%s\\n' '${PUBLISHER_STDERR}' >&2`,
+        "exit \"${TELEMETRY_TEST_EXIT_CODE:-0}\"",
+        "",
+      ].join("\n"),
+    );
+    chmodSync(binaryPath, 0o755);
+  }
 }
 
 function createTelemetryArchive(): void {
@@ -193,17 +236,19 @@ function pathForShell(shell: ShellCase, filePath: string): string {
   return result.stdout.trim();
 }
 
-// Runs a telemetry hook with the payload and returns its captured npx arguments.
+// Runs a telemetry hook with the payload and returns its captured publisher arguments.
 function runHook(
   shell: ShellCase,
   payload: Record<string, unknown>,
   inputPrefix = "",
   envOverrides: NodeJS.ProcessEnv = {},
+  hooksDirectory = HOOKS_DIR,
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
+  rmSync(LOG_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const extension = shell.name === "Bash" ? "sh" : "ps1";
-  const scriptPath = join(HOOKS_DIR, `track-telemetry.${extension}`);
+  const scriptPath = join(hooksDirectory, `track-telemetry.${extension}`);
   const result = spawnSync(shell.command, shell.args(scriptPath), {
     encoding: "utf8",
     input: `${inputPrefix}${JSON.stringify(payload)}`,
@@ -213,10 +258,12 @@ function runHook(
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
       AZURE_SKILLS_TELEMETRY_ZIP_PATH: "",
       AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "",
+      AZURE_MCP_COLLECT_TELEMETRY: "true",
       COPILOT_CLI: "",
       LOCALAPPDATA: INSTALL_CACHE_DIR,
       XDG_CACHE_HOME: INSTALL_CACHE_DIR,
       TELEMETRY_CAPTURE_FILE: CAPTURE_FILE,
+      TELEMETRY_TEST_EXIT_CODE: "0",
       ...envOverrides,
     },
   });
@@ -224,15 +271,32 @@ function runHook(
   expect(result.error).toBeUndefined();
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout.trim()).toBe('{"continue":true}');
+  expect(result.stderr).toBe("");
   if (!existsSync(CAPTURE_FILE)) {
     return [];
   }
   return readFileSync(CAPTURE_FILE, "utf8").trim().split(/\r?\n/);
 }
 
+function standaloneStubEnvironment(shell: ShellCase): NodeJS.ProcessEnv {
+  const binaryName =
+    shell.name === "PowerShell" && process.platform === "win32"
+      ? "ghcfa-telem.cmd"
+      : "ghcfa-telem";
+  return {
+    AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "true",
+    TELEMETRY_TEST_REPORTER_PATH: pathForShell(shell, join(BIN_DIR, binaryName)),
+  };
+}
+
+function readDebugLog(): string {
+  return existsSync(LOG_FILE) ? readFileSync(LOG_FILE, "utf8") : "";
+}
+
 // Runs telemetry through the Node dispatcher using the current platform's shell.
 function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): string[] {
   rmSync(CAPTURE_FILE, { force: true });
+  rmSync(LOG_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const result = spawnSync(process.execPath, [DISPATCHER_PATH], {
     encoding: "utf8",
@@ -243,6 +307,7 @@ function runDispatcher(payload: Record<string, unknown>, inputPrefix = ""): stri
       AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
       AZURE_SKILLS_TELEMETRY_ZIP_PATH: "",
       AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "",
+      AZURE_MCP_COLLECT_TELEMETRY: "true",
       COPILOT_CLI: "",
       LOCALAPPDATA: INSTALL_CACHE_DIR,
       XDG_CACHE_HOME: INSTALL_CACHE_DIR,
@@ -293,6 +358,7 @@ function runWindowsManifestHook(
   payload: Record<string, unknown>,
 ): string[] {
   rmSync(CAPTURE_FILE, { force: true });
+  rmSync(LOG_FILE, { force: true });
   rmSync(RAW_INPUT_DIR, { recursive: true, force: true });
   const command = entry.windows.replaceAll("${PLUGIN_ROOT}", SPACED_PLUGIN_ROOT);
   const result = spawnSync(
@@ -307,6 +373,7 @@ function runWindowsManifestHook(
         AZURE_SKILLS_TELEMETRY_LOG_DIR: LOG_DIR,
         AZURE_SKILLS_TELEMETRY_ZIP_PATH: "",
         AZURE_SKILLS_USE_STANDALONE_TELEMETRY: "",
+        AZURE_MCP_COLLECT_TELEMETRY: "true",
         COPILOT_CLI: "",
         LOCALAPPDATA: INSTALL_CACHE_DIR,
         XDG_CACHE_HOME: INSTALL_CACHE_DIR,
@@ -344,6 +411,15 @@ function expectIsoTimestamp(args: string[]): void {
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
   cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
+  cpSync(SOURCE_HOOKS_DIR, STUB_HOOKS_DIR, { recursive: true });
+  writeFileSync(
+    join(STUB_HOOKS_DIR, "install-telemetry.sh"),
+    "#!/usr/bin/env bash\nprintf '%s\\n' \"$TELEMETRY_TEST_REPORTER_PATH\"\n",
+  );
+  writeFileSync(
+    join(STUB_HOOKS_DIR, "install-telemetry.ps1"),
+    "Write-Output $env:TELEMETRY_TEST_REPORTER_PATH\nexit 0\n",
+  );
   createTelemetryArchive();
   writeFileSync(INVALID_TELEMETRY_ZIP_PATH, "not a ZIP archive");
   cpSync(SOURCE_HOOKS_DIR, SPACED_HOOKS_DIR, { recursive: true });
@@ -363,15 +439,13 @@ beforeAll(() => {
       version: PLUGIN_METADATA.copilot.version,
     }),
   );
-  writeFileSync(
-    join(BIN_DIR, "npx"),
-    "#!/usr/bin/env bash\nprintf '%s\\n' \"$@\" > \"$TELEMETRY_CAPTURE_FILE\"\n",
-  );
-  chmodSync(join(BIN_DIR, "npx"), 0o755);
-  writeFileSync(
-    join(BIN_DIR, "npx.cmd"),
-    "@echo off\r\n:loop\r\nif \"%~1\"==\"\" goto end\r\n>>\"%TELEMETRY_CAPTURE_FILE%\" echo %~1\r\nshift\r\ngoto loop\r\n:end\r\n",
-  );
+  for (const binaryName of ["npx", "npx.cmd", "ghcfa-telem", "ghcfa-telem.cmd"]) {
+    writePublisherStub(join(BIN_DIR, binaryName));
+  }
+  mkdirSync(FAILED_LAUNCH_BIN_DIR, { recursive: true });
+  writeFileSync(join(FAILED_LAUNCH_BIN_DIR, "npx"), "#!/telemetry-missing-interpreter\n");
+  chmodSync(join(FAILED_LAUNCH_BIN_DIR, "npx"), 0o755);
+  writeFileSync(join(FAILED_LAUNCH_BIN_DIR, "npx.exe"), "not an executable");
 });
 
 afterAll(() => {
@@ -640,6 +714,7 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
     });
 
     expect(args).toEqual([]);
+    expect(readDebugLog()).toBe("");
   });
 
   it("does not enable the standalone publisher from the ZIP override alone", () => {
@@ -670,6 +745,8 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
       expect(firstArgs).not.toContain("server");
       expect(firstArgs).not.toContain("plugin-telemetry");
       expectArg(firstArgs, "--tool-name", "get_azure_bestpractices");
+      expect(readDebugLog()).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Args:`);
+      expect(readDebugLog()).toMatch(/Executable: .*[\\/]0\.1\.0[\\/].*[\\/]ghcfa-telem/);
 
       const firstArgsTimestampIndex = firstArgs.indexOf("--timestamp");
       firstArgs.splice(firstArgsTimestampIndex, 2);
@@ -701,7 +778,171 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
     );
 
     expect(args).toEqual([]);
+    const log = readDebugLog();
+    expect(log).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Args:`);
+    expect(log).toContain(
+      `Publisher: ${STANDALONE_PUBLISHER} | Installation failed with status 1:`,
+    );
+    expect(log).toContain("Telemetry ZIP not found:");
+    expect(log).not.toContain(MCP_PUBLISHER);
   });
+});
+
+describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
+  it.each([
+    { name: "default mode", env: {} },
+    {
+      name: "the ZIP override alone",
+      env: { AZURE_SKILLS_TELEMETRY_ZIP_PATH: TELEMETRY_ZIP_PATH },
+    },
+  ])("identifies Azure MCP for $name", ({ env }) => {
+    const args = runHook(shell, fixture("cursor-mcp-invocation.json"), "", env);
+    const log = readDebugLog();
+
+    expect(log).toContain(`Publisher: ${MCP_PUBLISHER} | Args: ${args.slice(2).join(" ")}`);
+    expect(log.match(/\| Args:/g)).toHaveLength(1);
+    expect(log).not.toContain(STANDALONE_PUBLISHER);
+    expect(log).not.toContain("MCP Args:");
+  });
+
+  it("identifies the standalone version, executable, and actual arguments", () => {
+    const env = standaloneStubEnvironment(shell);
+    const args = runHook(shell, fixture("cursor-mcp-invocation.json"), "", env, STUB_HOOKS_DIR);
+    const log = readDebugLog();
+
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expect(args).not.toContain("server");
+    expect(args).not.toContain("plugin-telemetry");
+    expect(log).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Args: ${args.join(" ")}`);
+    expect(log).toContain(
+      `Publisher: ${STANDALONE_PUBLISHER} | Executable: ${env.TELEMETRY_TEST_REPORTER_PATH}`,
+    );
+    expect(log.match(/\| Args:/g)).toHaveLength(1);
+    expect(log).not.toContain(MCP_PUBLISHER);
+    expect(log).not.toContain("MCP Args:");
+  });
+
+  it.each(["Azure MCP", "standalone"])(
+    "attributes %s execution failures without logging private output or extra event data",
+    publisher => {
+      const standalone = publisher === "standalone";
+      const args = runHook(
+        shell,
+        { ...fixture("cursor-mcp-invocation.json"), tool_input: PRIVATE_EVENT_DATA },
+        "",
+        {
+          ...(standalone ? standaloneStubEnvironment(shell) : {}),
+          TELEMETRY_TEST_EXIT_CODE: "17",
+        },
+        standalone ? STUB_HOOKS_DIR : HOOKS_DIR,
+      );
+      const expectedPublisher = standalone ? STANDALONE_PUBLISHER : MCP_PUBLISHER;
+      const log = readDebugLog();
+
+      expectArg(args, "--tool-name", "get_azure_bestpractices");
+      expect(log).toContain(`Publisher: ${expectedPublisher} | Execution failed with status 17.`);
+      expect(log.indexOf("| Args:")).toBeLessThan(log.indexOf("| Execution failed"));
+      expect(log).not.toContain(PUBLISHER_STDOUT);
+      expect(log).not.toContain(PUBLISHER_STDERR);
+      expect(log).not.toContain(PRIVATE_EVENT_DATA);
+      expect(log).not.toContain(standalone ? MCP_PUBLISHER : STANDALONE_PUBLISHER);
+    },
+  );
+
+  it("attributes an Azure MCP launch failure", () => {
+    const args = runHook(shell, fixture("cursor-mcp-invocation.json"), "", {
+      PATH: `${FAILED_LAUNCH_BIN_DIR}${delimiter}${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`,
+    });
+    const log = readDebugLog();
+
+    expect(args).toEqual([]);
+    expect(log).toContain(`Publisher: ${MCP_PUBLISHER} | Args:`);
+    if (shell.name === "Bash") {
+      expect(log).toMatch(/Publisher: Azure MCP \(npx -y @azure\/mcp@latest\) \| Execution failed with status 12[67]\./);
+    } else {
+      expect(log).toContain(`Publisher: ${MCP_PUBLISHER} | Execution failed to start.`);
+    }
+  });
+
+  it("attributes a standalone launch failure without falling back to npx", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      {
+        ...standaloneStubEnvironment(shell),
+        TELEMETRY_TEST_REPORTER_PATH: pathForShell(shell, join(BIN_DIR, "missing-reporter")),
+      },
+      STUB_HOOKS_DIR,
+    );
+    const log = readDebugLog();
+
+    expect(args).toEqual([]);
+    expect(log).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Executable:`);
+    expect(log).toContain(
+      `Publisher: ${STANDALONE_PUBLISHER} | Execution failed ${
+        shell.name === "Bash" ? "with status 127." : "to start."
+      }`,
+    );
+    expect(log).not.toContain(MCP_PUBLISHER);
+  });
+
+  it("logs an installation failure when no executable path is returned", () => {
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      { ...standaloneStubEnvironment(shell), TELEMETRY_TEST_REPORTER_PATH: "" },
+      STUB_HOOKS_DIR,
+    );
+    const log = readDebugLog();
+
+    expect(args).toEqual([]);
+    expect(log).toContain(
+      `Publisher: ${STANDALONE_PUBLISHER} | Installation failed with status 0:`,
+    );
+    expect(log).not.toContain("| Executable:");
+    expect(log).not.toContain(MCP_PUBLISHER);
+  });
+
+  it.each(["Azure MCP", "standalone"])("keeps %s logging opt-in", publisher => {
+    const standalone = publisher === "standalone";
+    const args = runHook(
+      shell,
+      fixture("cursor-mcp-invocation.json"),
+      "",
+      {
+        ...(standalone ? standaloneStubEnvironment(shell) : {}),
+        AZURE_SKILLS_TELEMETRY_LOG_DIR: "",
+      },
+      standalone ? STUB_HOOKS_DIR : HOOKS_DIR,
+    );
+
+    expectArg(args, "--tool-name", "get_azure_bestpractices");
+    expect(existsSync(LOG_FILE)).toBe(false);
+    expect(existsSync(RAW_INPUT_DIR)).toBe(false);
+  });
+
+  it.each(["Azure MCP", "standalone"])(
+    "does not publish or log %s events when telemetry is opted out",
+    publisher => {
+      const standalone = publisher === "standalone";
+      const args = runHook(
+        shell,
+        fixture("cursor-mcp-invocation.json"),
+        "",
+        {
+          ...(standalone ? standaloneStubEnvironment(shell) : {}),
+          AZURE_MCP_COLLECT_TELEMETRY: "false",
+        },
+        standalone ? STUB_HOOKS_DIR : HOOKS_DIR,
+      );
+
+      expect(args).toEqual([]);
+      expect(existsSync(LOG_FILE)).toBe(false);
+      expect(existsSync(RAW_INPUT_DIR)).toBe(false);
+    },
+  );
 });
 
 describe.each(shells)("Cursor telemetry hook ($name)", shell => {
@@ -758,6 +999,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     payload.mcp_server_name = "github";
 
     expect(runHook(shell, payload)).toEqual([]);
+    expect(readDebugLog()).toBe("");
   });
 
   it("does not report MCP calls from the generic postToolUse event", () => {
@@ -767,6 +1009,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
     delete payload.mcp_server_name;
 
     expect(runHook(shell, payload)).toEqual([]);
+    expect(readDebugLog()).toBe("");
   });
 });
 
