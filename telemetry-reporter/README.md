@@ -118,23 +118,28 @@ host. In Bash:
 
 ```bash
 # x64 host
-pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-x64
+pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-x64 -RestoreConfigFile ./nuget.public.config
 # ARM64 host
-pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-arm64
+pwsh ./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-arm64 -RestoreConfigFile ./nuget.public.config
 ```
 
 In PowerShell on those Linux hosts:
 
 ```powershell
-./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-x64
-./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-arm64
+./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-x64 -RestoreConfigFile ./nuget.public.config
+./eng/scripts/Build-Native.ps1 -RuntimeIdentifier linux-musl-arm64 -RestoreConfigFile ./nuget.public.config
 ```
 
 The script builds the toolchain image locally unless `-MuslBuildImage` supplies
 an image built from the same Dockerfile and SDK version. It checks the container
 RID and compiles, links, executes, and extracts symbols from a musl/zlib probe
-before publishing. CI builds the toolchain image with the 1ES container task and
-uses the existing public Azure SDK NuGet feed.
+before publishing. Official CI builds the toolchain image with the 1ES container
+task and uses the existing Azure SDK NuGet feed. Its `NuGetAuthenticate` access
+token is forwarded through a temporary, feed-scoped environment variable, not
+command-line credentials or a credential file. This permits restoring musl
+packages that have not yet been cached by the feed. Public GitHub CI and the
+local examples explicitly select [nuget.public.config](nuget.public.config)
+instead; official builds never fall back to nuget.org.
 
 Musl executable smoke tests run in the matching Alpine `runtime-deps` image,
 without the SDK or compiler libraries. After packaging, the script also tests

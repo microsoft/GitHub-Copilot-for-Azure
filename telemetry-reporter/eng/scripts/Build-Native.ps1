@@ -88,7 +88,37 @@ function Invoke-BuildDotNet {
     param([string[]] $Arguments)
 
     if ($useMuslContainer) {
-        & docker @muslContainerArguments --entrypoint dotnet $MuslBuildImage @Arguments
+        $credentialName = 'NuGetPackageSourceCredentials_azure-sdk-for-net'
+        $previousCredentials = [Environment]::GetEnvironmentVariable($credentialName)
+        $credentialArguments = @()
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($previousCredentials) -or
+                -not [string]::IsNullOrWhiteSpace($env:VSS_NUGET_ACCESSTOKEN)) {
+                $configPath = if ($null -ne $restoreConfigFilePath) { $restoreConfigFilePath } else { Join-Path $repoRoot 'nuget.config' }
+                $config = [xml](Get-Content -LiteralPath $configPath -Raw -ErrorAction Stop)
+                $source = $config.SelectSingleNode('/configuration/packageSources/add[@key="azure-sdk-for-net"]')
+                if ($null -ne $source) {
+                    if ($source.GetAttribute('value') -ne 'https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-net/nuget/v3/index.json') {
+                        throw 'Refusing to forward Azure SDK credentials to an unexpected NuGet feed.'
+                    }
+                    if ([string]::IsNullOrWhiteSpace($previousCredentials)) {
+                        [Environment]::SetEnvironmentVariable(
+                            $credentialName,
+                            "Username=AzureDevOps;Password=$env:VSS_NUGET_ACCESSTOKEN;ValidAuthenticationTypes=Basic"
+                        )
+                    }
+                    $credentialArguments = @('--env', $credentialName)
+                }
+            }
+            & docker @muslContainerArguments @credentialArguments --entrypoint dotnet $MuslBuildImage @Arguments
+            if ($LASTEXITCODE -ne 0) {
+                throw "dotnet $($Arguments[0]) failed with exit code $LASTEXITCODE."
+            }
+        }
+        finally {
+            $restoredCredentials = if ($null -eq $previousCredentials) { [NullString]::Value } else { $previousCredentials }
+            [Environment]::SetEnvironmentVariable($credentialName, $restoredCredentials)
+        }
     }
     else {
         & dotnet @Arguments
@@ -439,6 +469,7 @@ if (-not $NoClean) {
         $buildProjectPath,
         '--configuration', $Configuration,
         '--runtime', $RuntimeIdentifier,
+        "-p:RuntimeIdentifiers=$RuntimeIdentifier",
         '-p:BuildNative=true'
     )
     if ($null -ne $buildRestoreConfigFile) {
@@ -453,6 +484,7 @@ $publishArguments = @(
     $buildProjectPath,
     '--configuration', $Configuration,
     '--runtime', $RuntimeIdentifier,
+    "-p:RuntimeIdentifiers=$RuntimeIdentifier",
     '--self-contained', 'true',
     '--output', $buildPublishDirectory,
     '-p:BuildNative=true'

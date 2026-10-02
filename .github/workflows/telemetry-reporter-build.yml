@@ -81,7 +81,7 @@ jobs:
         run: >
           ./eng/scripts/Build-Native.ps1
           -RuntimeIdentifier '${{ matrix.rid }}'
-          -RestoreConfigFile ./nuget.config
+          -RestoreConfigFile ./nuget.public.config
 
       - name: Upload verified runtime and symbols packages
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0

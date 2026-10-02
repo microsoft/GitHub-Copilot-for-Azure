@@ -34,6 +34,10 @@ GitHub, and publishes the artifacts produced by the preceding Build stage.
 Build jobs authenticate to the Azure SDK public NuGet feed and use
 [`../telemetry-reporter/nuget.config`](../telemetry-reporter/nuget.config)
 so dependency restore remains inside the 1ES network boundary.
+For musl containers, the authenticated task token is passed as a temporary
+NuGet source-credentials environment variable scoped to that feed, without
+writing credentials to disk or exposing them in command arguments. Public
+GitHub verification explicitly uses `nuget.public.config` instead.
 
 Musl legs use the same architecture-specific Linux pools as their glibc
 counterparts. The 1ES container task builds an Alpine 3.23 toolchain image with

@@ -110,7 +110,8 @@ function muslHelperCommand({
   imageRid = rid,
   probeFails = false,
   buildImage = "fixture-toolchain",
-}: { rid?: string; daemon?: string; imageRid?: string; probeFails?: boolean; buildImage?: string } = {}): string {
+  publishFails = false,
+}: { rid?: string; daemon?: string; imageRid?: string; probeFails?: boolean; buildImage?: string; publishFails?: boolean } = {}): string {
   return `
     $ast = [System.Management.Automation.Language.Parser]::ParseFile(
       ${psQuote(join(scriptRoot, "Build-Native.ps1"))}, [ref]$null, [ref]$null)
@@ -121,14 +122,22 @@ function muslHelperCommand({
       . ([scriptblock]::Create($function.Extent.Text))
     }
     $dockerCalls = [System.Collections.Generic.List[object]]::new()
+    $credentialValues = [System.Collections.Generic.List[string]]::new()
     function docker {
       $script:dockerCalls.Add(@($args))
+      if ($args -contains 'NuGetPackageSourceCredentials_azure-sdk-for-net') {
+        $script:credentialValues.Add([Environment]::GetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net'))
+      }
       $global:LASTEXITCODE = 0
       if ($args[0] -eq 'info') { return ${psQuote(daemon)} }
       if ($args[-1] -eq '--version') { return '10.0.400' }
       if ($args[-1] -eq '--info') { return '  RID: ${imageRid}' }
       if ($args -contains '-c') {
         if (${probeFails ? "$true" : "$false"}) { $global:LASTEXITCODE = 7 }
+        return
+      }
+      if ($args -contains 'publish') {
+        if (${publishFails ? "$true" : "$false"}) { $global:LASTEXITCODE = 5 }
         return
       }
       if ($args -contains '/publish/ghcfa-telem') {
@@ -145,6 +154,8 @@ function muslHelperCommand({
     $publishDirectory = ${psQuote(join(fixtureRoot, "publish"))}
     $stagingDirectory = ${psQuote(fixtureRoot)}
     $restoreConfigFilePath = ${psQuote(join(fixtureRoot, "nuget.config"))}
+    '<configuration><packageSources><add key="azure-sdk-for-net" value="https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-net/nuget/v3/index.json"/></packageSources></configuration>' |
+      Set-Content $restoreConfigFilePath
     $RuntimeIdentifier = '${rid}'
     $targetArchitecture = '${rid.endsWith("arm64") ? "arm64" : "x64"}'
     $muslPlatform = '${rid.endsWith("arm64") ? "linux/arm64" : "linux/amd64"}'
@@ -430,6 +441,77 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
     expect(build).toContain("linux/amd64");
     expect(build).toContain("DOTNET_SDK_VERSION=10.0.400");
     expect(build).toContain(observed.image);
+  });
+
+  it.each([null, "Username=existing;Password=fixture;ValidAuthenticationTypes=Basic"])(
+    "forwards feed-scoped credentials without command-line secrets (previous=%s)",
+    previous => {
+      const result = runPowerShell(muslHelperCommand() + `
+        $env:VSS_NUGET_ACCESSTOKEN = 'fake-build-token'
+        [Environment]::SetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net', ${previous ? psQuote(previous) : "[NullString]::Value"})
+        Invoke-BuildDotNet -Arguments @('publish', $buildProjectPath)
+        @{
+          credentials = @($credentialValues.ToArray())
+          calls = @($dockerCalls.ToArray())
+          after = [Environment]::GetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net')
+        } | ConvertTo-Json -Depth 5 -Compress
+      `);
+      expectSuccess(result);
+      const observed = JSON.parse(String(result.stdout)) as {
+        credentials: string[];
+        calls: string[][];
+        after: string | null;
+      };
+      expect(observed.credentials).toEqual([
+        previous ?? "Username=AzureDevOps;Password=fake-build-token;ValidAuthenticationTypes=Basic",
+      ]);
+      expect(observed.after).toBe(previous);
+      expect(observed.calls.flat().join(" ")).not.toContain("fake-build-token");
+      expect(observed.calls.flat().join(" ")).not.toContain("Password=");
+    },
+  );
+
+  it("does not forward Azure SDK credentials when an explicit public feed is selected", () => {
+    const result = runPowerShell(muslHelperCommand() + `
+      $env:VSS_NUGET_ACCESSTOKEN = 'fake-build-token'
+      [Environment]::SetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net', [NullString]::Value)
+      '<configuration><packageSources><add key="nuget.org" value="https://api.nuget.org/v3/index.json"/></packageSources></configuration>' |
+        Set-Content $restoreConfigFilePath
+      Invoke-BuildDotNet -Arguments @('publish', $buildProjectPath)
+      @{ credentials = @($credentialValues.ToArray()) } | ConvertTo-Json -Compress
+    `);
+    expectSuccess(result);
+    expect(JSON.parse(String(result.stdout))).toEqual({ credentials: [] });
+  });
+
+  it("refuses to send the authenticated token to a different feed URL", () => {
+    const result = runPowerShell(muslHelperCommand() + `
+      $env:VSS_NUGET_ACCESSTOKEN = 'fake-build-token'
+      [Environment]::SetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net', [NullString]::Value)
+      '<configuration><packageSources><add key="azure-sdk-for-net" value="https://example.invalid/nuget"/></packageSources></configuration>' |
+        Set-Content $restoreConfigFilePath
+      Invoke-BuildDotNet -Arguments @('publish', $buildProjectPath)
+    `);
+    expectFailure(result, "unexpected NuGet feed");
+    expect(String(result.stderr)).not.toContain("fake-build-token");
+  });
+
+  it("restores the credential environment even when publish fails", () => {
+    const result = runPowerShell(muslHelperCommand({ publishFails: true }) + `
+      $env:VSS_NUGET_ACCESSTOKEN = 'fake-build-token'
+      [Environment]::SetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net', [NullString]::Value)
+      try { Invoke-BuildDotNet -Arguments @('publish', $buildProjectPath) }
+      catch { $errorMessage = $_.Exception.Message }
+      @{
+        error = $errorMessage
+        after = [Environment]::GetEnvironmentVariable('NuGetPackageSourceCredentials_azure-sdk-for-net')
+      } | ConvertTo-Json -Compress
+    `);
+    expectSuccess(result);
+    expect(JSON.parse(String(result.stdout))).toEqual({
+      error: "dotnet publish failed with exit code 5.",
+      after: null,
+    });
   });
 
   it.each([
