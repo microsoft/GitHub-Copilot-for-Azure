@@ -66,6 +66,9 @@ function Test-RelevantPath {
     return $normalizedPath -match '^telemetry-reporter/src/' -or
         $normalizedPath -match '^telemetry-reporter/resources/' -or
         $normalizedPath -match '^telemetry-reporter/eng/scripts/(Build-Native|New-NightlyBuildInfo|Test-NightlyBuildArtifacts)\.ps1$' -or
+        $normalizedPath -eq 'telemetry-reporter/eng/scripts/NativePackaging.psm1' -or
+        $normalizedPath -match '^telemetry-reporter/eng/native-musl/' -or
+        $normalizedPath -match '^hooks/scripts/install-telemetry\.(sh|ps1)$' -or
         $normalizedPath -match '^telemetry-reporter/Directory\.(Build|Packages)\.(props|targets)$' -or
         $normalizedPath -match '^telemetry-reporter/(global|version)\.json$' -or
         $normalizedPath -eq 'telemetry-reporter/ghcfa-telem.slnx' -or
@@ -187,10 +190,20 @@ $linuxX64Matrix = [ordered]@{
         Pool = $LinuxPool
         OSVmImage = $LinuxVmImage
     }
+    linux_musl_x64 = [ordered]@{
+        BuildRuntimeIdentifier = 'linux-musl-x64'
+        Pool = $LinuxPool
+        OSVmImage = $LinuxVmImage
+    }
 }
 $linuxArm64Matrix = [ordered]@{
     linux_arm64 = [ordered]@{
         BuildRuntimeIdentifier = 'linux-arm64'
+        Pool = $LinuxArmPool
+        OSVmImage = $LinuxArmVmImage
+    }
+    linux_musl_arm64 = [ordered]@{
+        BuildRuntimeIdentifier = 'linux-musl-arm64'
         Pool = $LinuxArmPool
         OSVmImage = $LinuxArmVmImage
     }

@@ -8,10 +8,10 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
-import { tmpdir } from "node:os";
 import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -26,6 +26,20 @@ type ShellCase = {
   name: string;
   command: string;
   args: (scriptPath: string) => string[];
+};
+
+type InstallerDetectionCase = {
+  platform: "Linux" | "OSX" | "Windows" | "FreeBSD";
+  architecture: "X64" | "Arm64" | "X86";
+  libc?: "glibc" | "alpine-release" | "os-release" | "musl-loader";
+  osRelease?: string;
+  machine?: string;
+  translated?: boolean;
+  processorArchitecture?: string;
+  nativeProcessorArchitecture?: string;
+  useHomeCache?: boolean;
+  version?: string;
+  unameFailure?: string;
 };
 
 type DispatcherResult = {
@@ -54,8 +68,10 @@ type CopilotHookEntry = {
   env?: Record<string, string>;
 };
 
-const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+const TEST_DIR = mkdtempSync(join(REPO_ROOT, ".azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
+const SCRATCH_DIR = join(TEST_DIR, "scratch");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
 const LOG_DIR = join(TEST_DIR, "logs");
 const RAW_INPUT_DIR = join(LOG_DIR, "raw-input");
@@ -63,7 +79,6 @@ const INSTALL_CACHE_DIR = join(TEST_DIR, "telemetry-cache");
 const TELEMETRY_ARCHIVE_DIR = join(TEST_DIR, "telemetry-archive");
 const TELEMETRY_ZIP_PATH = join(TEST_DIR, "ghcfa-telem-local.zip");
 const INVALID_TELEMETRY_ZIP_PATH = join(TEST_DIR, "invalid-telemetry.zip");
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const PLUGIN_ROOT = join(
@@ -119,6 +134,10 @@ const shells = shellCandidates.filter(shell => isCommandAvailable(shell.command)
 
 function quotePowerShell(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
+}
+
+function quoteBash(value: string): string {
+  return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 function createTelemetryArchive(): void {
@@ -260,10 +279,11 @@ function runInstaller(
   shell: ShellCase,
   cacheDirectory: string,
   zipPath: string,
+  version = "0.1.0",
 ): ReturnType<typeof spawnSync> {
   const extension = shell.name === "Bash" ? "sh" : "ps1";
   const scriptPath = join(HOOKS_DIR, `install-telemetry.${extension}`);
-  const versionArgs = shell.name === "Bash" ? ["--version", "0.1.0"] : ["-Version", "0.1.0"];
+  const versionArgs = shell.name === "Bash" ? ["--version", version] : ["-Version", version];
   const commandPath =
     shell.name === "Bash" && process.platform === "win32"
       ? `${pathForShell(shell, BIN_DIR)}:/usr/bin:/bin`
@@ -276,6 +296,156 @@ function runInstaller(
       AZURE_SKILLS_TELEMETRY_ZIP_PATH: zipPath,
       LOCALAPPDATA: cacheDirectory,
       XDG_CACHE_HOME: cacheDirectory,
+      TMPDIR: pathForShell(shell, SCRATCH_DIR),
+      TMP: SCRATCH_DIR,
+      TEMP: SCRATCH_DIR,
+    },
+  });
+}
+
+// Executes only installer detection/cache/URL logic, with fixture paths and native OS mocks.
+function runInstallerDetection(
+  shell: ShellCase,
+  scenario: InstallerDetectionCase,
+): ReturnType<typeof spawnSync> {
+  const fixtureDirectory = mkdtempSync(join(TEST_DIR, "detection-"));
+  const etcDirectory = join(fixtureDirectory, "etc");
+  const libDirectory = join(fixtureDirectory, "lib");
+  mkdirSync(etcDirectory);
+  mkdirSync(libDirectory);
+  if (scenario.libc === "alpine-release") {
+    writeFileSync(join(etcDirectory, "alpine-release"), "3.20.0\n");
+  }
+  writeFileSync(
+    join(etcDirectory, "os-release"),
+    scenario.osRelease ?? (scenario.libc === "os-release" ? '  ID = "alpine"  \n' : "ID=ubuntu\n"),
+  );
+  if (scenario.libc === "musl-loader") {
+    const loaderArchitecture = scenario.architecture === "Arm64" ? "aarch64" : "x86_64";
+    writeFileSync(join(libDirectory, `ld-musl-${loaderArchitecture}.so.1`), "");
+  }
+
+  const extension = shell.name === "Bash" ? "sh" : "ps1";
+  const installerPath = join(SOURCE_HOOKS_DIR, `install-telemetry.${extension}`);
+  const installer = readFileSync(installerPath, "utf8");
+  let script: string;
+  if (shell.name === "Bash") {
+    const fixturePath = pathForShell(shell, fixtureDirectory);
+    const functions = ["detect_target", "get_cache_root"].map(name => {
+      const match = installer.match(new RegExp(`^${name}\\(\\) \\{[\\s\\S]*?^\\}`, "m"));
+      expect(match, `Missing installer function ${name}`).not.toBeNull();
+      return match![0];
+    }).join("\n")
+      .replaceAll("/etc/alpine-release", quoteBash(`${fixturePath}/etc/alpine-release`))
+      .replaceAll("/etc/os-release", quoteBash(`${fixturePath}/etc/os-release`))
+      .replaceAll("/lib/ld-musl-*.so.1", `${quoteBash(`${fixturePath}/lib`)}/ld-musl-*.so.1`);
+    const assetAssignment = installer.match(/^ASSET_NAME=.*$/m)?.[0];
+    const urlAssignment = installer.match(/^\s*DOWNLOAD_URL=.*$/m)?.[0];
+    expect(assetAssignment).toBeDefined();
+    expect(urlAssignment).toBeDefined();
+    script = `#!/usr/bin/env bash
+set -u
+set -o pipefail
+error() { printf '%s\\n' "$*" >&2; }
+uname() {
+    [ "$INSTALLER_TEST_UNAME_FAILURE" != "$1" ] || return 1
+    case "$1" in
+        -s) printf '%s\\n' "$INSTALLER_TEST_KERNEL" ;;
+        -m) printf '%s\\n' "$INSTALLER_TEST_MACHINE" ;;
+        *) return 1 ;;
+    esac
+}
+sysctl() { printf '%s\\n' "$INSTALLER_TEST_TRANSLATED"; }
+TOOL_NAME="ghcfa-telem"
+REPOSITORY="microsoft/GitHub-Copilot-for-Azure"
+VERSION="$INSTALLER_TEST_VERSION"
+${functions}
+detect_target || exit 1
+CACHE_ROOT="$(get_cache_root)" || exit 1
+${assetAssignment}
+${urlAssignment}
+printf '%s\\n' "$RUNTIME_IDENTIFIER" "$BINARY_NAME" "$CACHE_ROOT/$VERSION/$RUNTIME_IDENTIFIER/$BINARY_NAME" "$DOWNLOAD_URL"
+`;
+  } else {
+    script = `
+class InstallerTestRuntime {
+    static [string] $OSArchitecture
+    static [string] $OSDescription
+    static [bool] IsOSPlatform([System.Runtime.InteropServices.OSPlatform] $Platform) {
+        return $Platform.ToString() -eq $env:INSTALLER_TEST_PLATFORM
+    }
+}
+[InstallerTestRuntime]::OSArchitecture = $env:INSTALLER_TEST_ARCHITECTURE
+[InstallerTestRuntime]::OSDescription = $env:INSTALLER_TEST_PLATFORM
+$tokens = $null
+$parseErrors = $null
+$ast = [System.Management.Automation.Language.Parser]::ParseFile(
+    ${quotePowerShell(installerPath)}, [ref] $tokens, [ref] $parseErrors)
+if ($parseErrors.Count -gt 0) { throw ($parseErrors | Out-String) }
+$definitions = $ast.FindAll({
+    param($node)
+    $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and
+        $node.Name -in @('Get-TelemetryTarget', 'Get-TelemetryCacheRoot')
+}, $true)
+if ($definitions.Count -ne 2) { throw 'Missing installer detection/cache functions.' }
+foreach ($definition in $definitions) {
+    $body = $definition.Extent.Text.Replace(
+        '[System.Runtime.InteropServices.RuntimeInformation]', '[InstallerTestRuntime]')
+    $body = $body.Replace('/etc/alpine-release', ${quotePowerShell(join(etcDirectory, "alpine-release"))})
+    $body = $body.Replace('/etc/os-release', ${quotePowerShell(join(etcDirectory, "os-release"))})
+    $body = $body.Replace('/lib', ${quotePowerShell(libDirectory)})
+    Invoke-Expression $body
+}
+try {
+    $Version = $env:INSTALLER_TEST_VERSION
+    $target = Get-TelemetryTarget
+    $cacheRoot = Get-TelemetryCacheRoot -OperatingSystem $target.OperatingSystem
+    $installDirectory = Join-Path (Join-Path $cacheRoot $Version) $target.RuntimeIdentifier
+    $binaryPath = Join-Path $installDirectory $target.BinaryName
+    $assignments = $ast.FindAll({
+        param($node)
+        $node -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+            $node.Left -is [System.Management.Automation.Language.VariableExpressionAst] -and
+            $node.Left.VariablePath.UserPath -in @('assetName', 'downloadUrl')
+    }, $true)
+    if ($assignments.Count -ne 2) { throw 'Missing installer asset/URL assignments.' }
+    foreach ($assignment in $assignments) { Invoke-Expression $assignment.Extent.Text }
+    Write-Output $target.RuntimeIdentifier
+    Write-Output $target.BinaryName
+    Write-Output $binaryPath
+    Write-Output $downloadUrl
+}
+catch {
+    [Console]::Error.WriteLine($_.Exception.Message)
+    exit 1
+}
+`;
+  }
+  const scriptPath = join(fixtureDirectory, `detect.${extension}`);
+  writeFileSync(scriptPath, script);
+  const cacheDirectory = pathForShell(shell, INSTALL_CACHE_DIR);
+  const kernel = { Linux: "Linux", OSX: "Darwin", Windows: "MINGW64_NT-10.0", FreeBSD: "FreeBSD" };
+  const machine = { X64: "x86_64", Arm64: "aarch64", X86: "i686" };
+  const processor = { X64: "AMD64", Arm64: "ARM64", X86: "x86" };
+  return spawnSync(resolveCommand(shell.command), shell.args(pathForShell(shell, scriptPath)), {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      INSTALLER_TEST_PLATFORM: scenario.platform,
+      INSTALLER_TEST_ARCHITECTURE: scenario.architecture,
+      INSTALLER_TEST_KERNEL: kernel[scenario.platform],
+      INSTALLER_TEST_MACHINE: scenario.machine ?? machine[scenario.architecture],
+      INSTALLER_TEST_TRANSLATED: scenario.translated ? "1" : "0",
+      INSTALLER_TEST_VERSION: scenario.version ?? "0.1.0",
+      INSTALLER_TEST_UNAME_FAILURE: scenario.unameFailure ?? "",
+      PROCESSOR_ARCHITECTURE: scenario.processorArchitecture ?? processor[scenario.architecture],
+      PROCESSOR_ARCHITEW6432: scenario.nativeProcessorArchitecture ?? "",
+      LOCALAPPDATA: cacheDirectory,
+      XDG_CACHE_HOME: scenario.useHomeCache ? "" : cacheDirectory,
+      HOME: cacheDirectory,
+      TMPDIR: pathForShell(shell, SCRATCH_DIR),
+      TMP: SCRATCH_DIR,
+      TEMP: SCRATCH_DIR,
     },
   });
 }
@@ -343,6 +513,7 @@ function expectIsoTimestamp(args: string[]): void {
 
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
+  mkdirSync(SCRATCH_DIR);
   cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
   createTelemetryArchive();
   writeFileSync(INVALID_TELEMETRY_ZIP_PATH, "not a ZIP archive");
@@ -527,6 +698,9 @@ describe.each(shells)("Telemetry reporter installer ($name)", shell => {
     expect(first.status, String(first.stderr)).toBe(0);
     const installedPath = String(first.stdout).trim();
     expect(installedPathExists(shell, installedPath)).toBe(true);
+    if (process.platform !== "win32") {
+      expect(statSync(installedPath).mode & 0o777).toBe(0o755);
+    }
 
     const second = runInstaller(shell, cacheDirectory, join(TEST_DIR, "missing-cached.zip"));
     expect(second.error).toBeUndefined();
@@ -542,6 +716,22 @@ describe.each(shells)("Telemetry reporter installer ($name)", shell => {
     expect(result.error).toBeUndefined();
     expect(result.status).toBe(1);
   });
+
+  it("fails when the local ZIP is missing and no cached executable exists", () => {
+    const cacheDirectory = join(INSTALL_CACHE_DIR, `missing-installer-${shell.name}`);
+    const result = runInstaller(shell, cacheDirectory, join(TEST_DIR, "missing.zip"));
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(String(result.stdout).trim()).toBe("");
+    expect(String(result.stderr)).toContain("Telemetry ZIP not found:");
+  });
+
+  it.each(["", "../invalid"])("rejects invalid version %j with usage exit code 2", version => {
+    const result = runInstaller(shell, INSTALL_CACHE_DIR, TELEMETRY_ZIP_PATH, version);
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(2);
+    expect(String(result.stdout).trim()).toBe("");
+  });
 });
 
 describe("Telemetry reporter release download", () => {
@@ -556,11 +746,129 @@ describe("Telemetry reporter release download", () => {
     );
 
     expect(bashInstaller).toContain(
-      'DOWNLOAD_URL="https://github.com/${REPOSITORY}/releases/download/${VERSION}/${ASSET_NAME}"',
+      'DOWNLOAD_URL="https://github.com/${REPOSITORY}/releases/download/ghcfa-telem-${VERSION}/${ASSET_NAME}"',
     );
     expect(powerShellInstaller).toContain(
-      '$downloadUrl = "https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/$Version/$assetName"',
+      '$downloadUrl = "https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-$Version/$assetName"',
     );
+  });
+});
+
+describe.each(shells)("Telemetry reporter installer detection ($name)", shell => {
+  function expectTarget(scenario: InstallerDetectionCase, rid: string): void {
+    const result = runInstallerDetection(shell, scenario);
+    expect(result.error).toBeUndefined();
+    expect(result.status, String(result.stderr)).toBe(0);
+    const binary = rid.startsWith("win-") ? "ghcfa-telem.exe" : "ghcfa-telem";
+    const cacheRoot = rid.startsWith("win-")
+      ? "GitHubCopilotForAzure/telemetry"
+      : `${scenario.useHomeCache ? ".cache/" : ""}github-copilot-for-azure/telemetry`;
+    const version = scenario.version ?? "0.1.0";
+    const cacheDirectory = pathForShell(shell, INSTALL_CACHE_DIR).replaceAll("\\", "/");
+    expect(String(result.stdout).trim().replaceAll("\\", "/").split(/\r?\n/)).toEqual([
+      rid,
+      binary,
+      `${cacheDirectory}/${cacheRoot}/${version}/${rid}/${binary}`,
+      `https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-${version}/ghcfa-telem-${version}-${rid}.zip`,
+    ]);
+  }
+
+  const architectures = ["X64", "Arm64"] as const;
+  const linuxCases = (["glibc", "alpine-release", "os-release", "musl-loader"] as const)
+    .flatMap(libc => architectures.map(architecture => ({ libc, architecture })));
+  it.each(linuxCases)("selects Linux $libc on $architecture", ({ libc, architecture }) => {
+    const prefix = libc === "glibc" ? "linux" : "linux-musl";
+    const suffix = architecture === "X64" ? "x64" : "arm64";
+    expectTarget({ platform: "Linux", architecture, libc }, `${prefix}-${suffix}`);
+  });
+
+  it.each(
+    (["Windows", "OSX"] as const).flatMap(platform =>
+      architectures.map(architecture => ({ platform, architecture }))),
+  )("preserves $platform on $architecture", ({ platform, architecture }) => {
+    const prefix = platform === "Windows" ? "win" : "osx";
+    const suffix = architecture === "X64" ? "x64" : "arm64";
+    expectTarget({ platform, architecture }, `${prefix}-${suffix}`);
+  });
+
+  it("does not mistake ID_LIKE or an unrelated distribution for Alpine", () => {
+    expectTarget({
+      platform: "Linux",
+      architecture: "X64",
+      osRelease: 'ID=alpine-like\nID_LIKE="alpine"\n',
+    }, "linux-x64");
+  });
+
+  it("selects Alpine from an unquoted distribution ID", () => {
+    expectTarget({
+      platform: "Linux",
+      architecture: "X64",
+      osRelease: "ID=alpine\n",
+    }, "linux-musl-x64");
+  });
+
+  it("keeps the HOME cache fallback and version separation for musl", () => {
+    expectTarget({
+      platform: "Linux",
+      architecture: "Arm64",
+      libc: "musl-loader",
+      useHomeCache: true,
+      version: "0.2.0",
+    }, "linux-musl-arm64");
+  });
+
+  it.skipIf(shell.name !== "Bash")("selects native Apple Silicon under Rosetta", () => {
+    expectTarget({
+      platform: "OSX",
+      architecture: "X64",
+      translated: true,
+    }, "osx-arm64");
+  });
+
+  it.skipIf(shell.name !== "Bash")("prefers the native Windows architecture over emulation", () => {
+    expectTarget({
+      platform: "Windows",
+      architecture: "X64",
+      processorArchitecture: "AMD64",
+      nativeProcessorArchitecture: "ARM64",
+    }, "win-arm64");
+  });
+
+  it.each([
+    { platform: "FreeBSD", architecture: "X64", error: "Unsupported operating system:" },
+    { platform: "Linux", architecture: "X86", error: "Unsupported native architecture:" },
+  ] as const)("rejects unsupported $platform/$architecture", ({ platform, architecture, error }) => {
+    const result = runInstallerDetection(shell, { platform, architecture });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(String(result.stdout).trim()).toBe("");
+    expect(String(result.stderr)).toContain(error);
+  });
+
+  it("still rejects unsupported architectures on musl Linux", () => {
+    const result = runInstallerDetection(shell, {
+      platform: "Linux",
+      architecture: "X86",
+      libc: "alpine-release",
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(String(result.stdout).trim()).toBe("");
+    expect(String(result.stderr)).toContain("Unsupported native architecture:");
+  });
+
+  it.skipIf(shell.name !== "Bash").each([
+    { unameFailure: "-s", error: "Unable to determine the operating system." },
+    { unameFailure: "-m", error: "Unable to determine the native architecture." },
+  ])("propagates uname $unameFailure failures", ({ unameFailure, error }) => {
+    const result = runInstallerDetection(shell, {
+      platform: "Linux",
+      architecture: "X64",
+      unameFailure,
+    });
+    expect(result.status).toBe(1);
+    expect(String(result.stdout).trim()).toBe("");
+    expect(String(result.stderr)).toContain(error);
   });
 });
 

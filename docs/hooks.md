@@ -48,7 +48,7 @@ Native AOT reporter. The hooks currently request reporter version `0.1.0` and
 install the matching release asset:
 
 ```text
-https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/0.1.0/ghcfa-telem-0.1.0-<rid>.zip
+https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-0.1.0/ghcfa-telem-0.1.0-<rid>.zip
 ```
 
 Until that release exists, set `AZURE_SKILLS_TELEMETRY_ZIP_PATH` to a local
@@ -63,10 +63,11 @@ once, then reuses the cached executable:
 - Windows: `%LOCALAPPDATA%\GitHubCopilotForAzure\telemetry\<version>\<rid>\ghcfa-telem.exe`
 - macOS/Linux: `${XDG_CACHE_HOME:-$HOME/.cache}/github-copilot-for-azure/telemetry/<version>/<rid>/ghcfa-telem`
 
-The current reporter packages target Windows, macOS, and glibc-based Linux on
-x64 and ARM64. Alpine and other musl-based Linux systems are detected but not
-treated as generic Linux; the opted-in hook records the unsupported platform in
-the telemetry debug log and otherwise succeeds without publishing.
+The reporter packages target Windows, macOS, glibc-based Linux, and musl-based
+Linux on x64 and ARM64. The installers select `linux-musl-x64` or
+`linux-musl-arm64` for Alpine and other detected musl-based Linux systems,
+rather than the glibc `linux-x64` or `linux-arm64` assets. Both Linux variants use
+the same Unix cache root, with separate per-version/RID directories.
 
 When standalone mode is enabled, installation or reporter failures remain
 fail-open for the host hook and do not fall back to `npx`. This makes rollout

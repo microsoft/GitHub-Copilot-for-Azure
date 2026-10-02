@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
-# Validates telemetry reporter artifacts from the current manual pipeline run, creates a GitHub release, and uploads the six runtime archives.
+# Validates telemetry reporter artifacts from the current manual pipeline run, creates a GitHub release, and uploads the runtime archives.
 # Exit codes: 0 = success, 1 = artifact validation or GitHub release failure, 2 = invalid arguments.
 
 [CmdletBinding()]
@@ -14,15 +14,9 @@ param(
 )
 
 Set-StrictMode -Version Latest
+Import-Module (Join-Path $PSScriptRoot 'NativePackaging.psm1') -Force -ErrorAction Stop
 
-$runtimeIdentifiers = @(
-    'win-x64',
-    'win-arm64',
-    'osx-x64',
-    'osx-arm64',
-    'linux-x64',
-    'linux-arm64'
-)
+$runtimeIdentifiers = @(Get-NativeRuntimeIdentifier)
 
 function Invoke-GitHubCli {
     param(
@@ -97,70 +91,51 @@ try {
     $manifestRuntimeIdentifiers = @($manifest.runtimeIdentifiers | ForEach-Object { [string] $_ })
     if ($manifestRuntimeIdentifiers.Count -ne $runtimeIdentifiers.Count -or
         @(Compare-Object $runtimeIdentifiers $manifestRuntimeIdentifiers).Count -ne 0) {
-        throw "Build manifest runtime identifiers do not match the expected six-target matrix."
+        throw "Build manifest runtime identifiers do not match the expected $($runtimeIdentifiers.Count)-target matrix."
     }
 
     $manifestFiles = @($manifest.files)
     if ($manifestFiles.Count -ne ($runtimeIdentifiers.Count * 2)) {
-        throw "Build manifest contains $($manifestFiles.Count) files; expected 12 runtime and symbols archives."
+        throw "Build manifest contains $($manifestFiles.Count) files; expected $($runtimeIdentifiers.Count * 2) runtime and symbols archives."
     }
 
     $runtimeArchives = @()
     foreach ($runtimeIdentifier in $runtimeIdentifiers) {
-        $expectedFileName = "ghcfa-telem-$version-$runtimeIdentifier.zip"
-        $manifestMatches = @($manifestFiles | Where-Object {
-            [string] $_.runtimeIdentifier -eq $runtimeIdentifier -and
-            [string] $_.file -eq $expectedFileName
-        })
-        if ($manifestMatches.Count -ne 1) {
-            throw "Build manifest must contain exactly one runtime archive entry for '$runtimeIdentifier'."
-        }
-
-        $manifestHash = [string] $manifestMatches[0].sha256
-        if ($manifestHash -notmatch '^[0-9a-fA-F]{64}$') {
-            throw "Build manifest hash for '$expectedFileName' is invalid."
-        }
-
         $artifactDirectory = Join-Path $PipelineWorkspace "telemetry-reporter_$runtimeIdentifier"
         if (-not (Test-Path -LiteralPath $artifactDirectory -PathType Container)) {
             throw "Pipeline artifact directory '$artifactDirectory' was not downloaded."
         }
 
-        $archiveMatches = @(
-            Get-ChildItem `
-                -LiteralPath $artifactDirectory `
-                -File `
-                -Recurse `
-                -Filter $expectedFileName `
-                -ErrorAction Stop
-        )
-        if ($archiveMatches.Count -ne 1) {
-            throw "Expected exactly one '$expectedFileName' in '$artifactDirectory'."
+        foreach ($symbols in @($false, $true)) {
+            $suffix = if ($symbols) { '-symbols' } else { '' }
+            $expectedFileName = "ghcfa-telem-$version-$runtimeIdentifier$suffix.zip"
+            $manifestMatches = @($manifestFiles | Where-Object {
+                [string] $_.runtimeIdentifier -eq $runtimeIdentifier -and
+                [string] $_.file -eq $expectedFileName
+            })
+            if ($manifestMatches.Count -ne 1) {
+                throw "Build manifest must contain exactly one '$expectedFileName' entry."
+            }
+            $manifestHash = [string] $manifestMatches[0].sha256
+            if ($manifestHash -notmatch '^[0-9a-fA-F]{64}$') {
+                throw "Build manifest hash for '$expectedFileName' is invalid."
+            }
+            $archiveMatches = @(
+                Get-ChildItem -LiteralPath $artifactDirectory -File -Recurse `
+                    -Filter $expectedFileName -ErrorAction Stop
+            )
+            if ($archiveMatches.Count -ne 1) {
+                throw "Expected exactly one '$expectedFileName' in '$artifactDirectory'."
+            }
+            $package = Get-ValidatedNativePackage -ArchivePath $archiveMatches[0].FullName `
+                -RuntimeIdentifier $runtimeIdentifier -Symbols:$symbols
+            if ($package.Sha256 -ne $manifestHash.ToLowerInvariant()) {
+                throw "Build manifest SHA-256 validation failed for '$expectedFileName'."
+            }
+            if (-not $symbols) {
+                $runtimeArchives += $package.Path
+            }
         }
-
-        $archive = $archiveMatches[0]
-        $checksumPath = "$($archive.FullName).sha256"
-        if (-not (Test-Path -LiteralPath $checksumPath -PathType Leaf)) {
-            throw "Checksum file '$checksumPath' is missing."
-        }
-
-        $checksumLine = (Get-Content -LiteralPath $checksumPath -Raw -ErrorAction Stop).Trim()
-        $checksumParts = $checksumLine -split '\s+', 2
-        if ($checksumParts.Count -ne 2 -or
-            $checksumParts[0] -notmatch '^[0-9a-fA-F]{64}$' -or
-            $checksumParts[1].Trim() -ne $expectedFileName) {
-            throw "Checksum file '$checksumPath' is malformed."
-        }
-
-        $actualHash = (
-            Get-FileHash -LiteralPath $archive.FullName -Algorithm SHA256 -ErrorAction Stop
-        ).Hash.ToLowerInvariant()
-        if ($actualHash -ne $manifestHash.ToLowerInvariant() -or
-            $actualHash -ne $checksumParts[0].ToLowerInvariant()) {
-            throw "SHA-256 validation failed for '$expectedFileName'."
-        }
-
-        $runtimeArchives += $archive.FullName
     }
 
     $title = "ghcfa-telem $version"

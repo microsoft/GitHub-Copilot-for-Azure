@@ -2,6 +2,12 @@
 
 ## Telemetry reporter nightly build
 
+The independent
+[GitHub Actions workflow](../.github/workflows/telemetry-reporter-build.yml)
+verifies both musl targets on native Linux x64 and ARM64 runners for PRs or
+manual runs. It uploads runtime and symbols packages but never publishes a
+release. Official nightly/release production remains in Azure DevOps.
+
 [`telemetry-reporter-nightly.yml`](telemetry-reporter-nightly.yml) defines the
 nightly Native AOT build for `ghcfa-telem`. The pipeline is hosted in the
 `azure-sdk/internal` Azure DevOps project and uses the 1ES official pipeline
@@ -15,7 +21,8 @@ Scheduled runs have three stages:
    with warnings, checks whether executable-affecting telemetry reporter files
    changed, and creates the platform matrices.
 2. **Build** produces packages for `win-x64`, `win-arm64`, `osx-x64`,
-   `osx-arm64`, `linux-x64`, and `linux-arm64`.
+   `osx-arm64`, `linux-x64`, `linux-arm64`, `linux-musl-x64`, and
+   `linux-musl-arm64`.
 3. **Verify** validates every SHA-256 sidecar and publishes a build manifest
    with the run reason.
 
@@ -28,10 +35,21 @@ Build jobs authenticate to the Azure SDK public NuGet feed and use
 [`../telemetry-reporter/nuget.config`](../telemetry-reporter/nuget.config)
 so dependency restore remains inside the 1ES network boundary.
 
+Musl legs use the same architecture-specific Linux pools as their glibc
+counterparts. The 1ES container task builds an Alpine 3.23 toolchain image with
+the SDK version from `telemetry-reporter/global.json`. Compilation and
+prerequisite probes run inside that image; executable smoke tests run in the
+matching Alpine runtime-deps image with telemetry disabled. The build also
+installs the produced musl ZIP through the Bash installer and verifies cache
+reuse. Neither musl target uses cross-architecture emulation or a skipped
+glibc-host smoke test.
+
 The YAML schedule runs from `main` at 06:00 UTC. Manual runs always build and
 verify the full matrix. Scheduled runs skip the Build and Verify stages when
 changes are limited to unrelated, documentation, release automation, or test
-files. Manually queued runs from branches other than `main` build and verify but
+files. Changes to the musl Dockerfile, shared packaging module, and installers
+also trigger the build because they affect its executable verification.
+Manually queued runs from branches other than `main` build and verify but
 do not include the Release stage.
 
 Each RID has an artifact named `telemetry-reporter_<rid>` containing runtime
@@ -41,13 +59,13 @@ source build ID, source commit, NBGV version, release tag, files, and hashes.
 ## Telemetry reporter release
 
 Queue the `telemetry-reporter - nightly` pipeline manually from `main` to create
-a release. The same run builds and verifies all six packages before entering the
+a release. The same run builds and verifies all eight packages before entering the
 Release stage, so the release commit and artifacts cannot drift between pipeline
 runs.
 
 The Release stage follows the Azure SDK release pattern:
 
-1. Declare the manifest, six platform artifacts, and release scripts as
+1. Declare the manifest, eight platform artifacts, and release scripts as
    immutable production release inputs.
 2. Wait for an authorized approval on the `package-publish` Azure DevOps
    environment.
@@ -56,9 +74,14 @@ The Release stage follows the Azure SDK release pattern:
    `AzureSDKEngKeyVault Secrets`.
 5. Validate that the manifest represents the current manual run and matches its
    build ID and source commit.
-6. Create a draft GitHub release tagged `ghcfa-telem-<version>`, upload the six
+6. Create a draft GitHub release tagged `ghcfa-telem-<version>`, upload the eight
    runtime ZIPs, and publish it as the normal Latest release. Failed uploads or
    publication delete the draft and tag so the pipeline can be retried.
+
+Verification requires runtime ZIPs to exclude symbols and symbols ZIPs to
+contain the expected native debug artifacts. Release validation checks all
+sixteen archives against their sidecars and manifest hashes; only the eight
+runtime ZIPs are uploaded to GitHub.
 
 Symbols, checksums, build information, and the manifest remain Azure DevOps
 artifacts on the retained release run. A repeated release for the same computed

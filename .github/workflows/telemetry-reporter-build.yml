@@ -1,11 +1,14 @@
 name: Telemetry Reporter
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
       - "telemetry-reporter/**"
       - ".github/workflows/telemetry-reporter-build.yml"
+      - "hooks/scripts/install-telemetry.sh"
+      - "hooks/scripts/install-telemetry.ps1"
 
 permissions:
   contents: read
@@ -50,4 +53,39 @@ jobs:
           path: |
             telemetry-reporter/TestResults/**/*.xml
             telemetry-reporter/TestResults/**/*.html
+          if-no-files-found: error
+
+  native-musl:
+    name: Native AOT (${{ matrix.rid }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-musl-x64
+            runner: ubuntu-24.04
+          - rid: linux-musl-arm64
+            runner: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Build, smoke-test, and package Native AOT
+        shell: pwsh
+        working-directory: ./telemetry-reporter
+        env:
+          AZURE_MCP_COLLECT_TELEMETRY: "false"
+        run: >
+          ./eng/scripts/Build-Native.ps1
+          -RuntimeIdentifier '${{ matrix.rid }}'
+          -RestoreConfigFile ./nuget.config
+
+      - name: Upload verified runtime and symbols packages
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: telemetry-reporter_${{ matrix.rid }}
+          path: telemetry-reporter/artifacts/packages/*
           if-no-files-found: error
