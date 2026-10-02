@@ -52,8 +52,7 @@ Normal builds are framework-dependent. Native AOT is opt-in and supports
 `linux-musl-arm64`, `osx-x64`, and `osx-arm64`. Follow the host mapping and
 platform toolchain prerequisites in the README. Musl builds run in Alpine
 containers on matching-architecture glibc Linux hosts. Their smoke tests run
-in Alpine even though the orchestration host uses glibc, and their runtime ZIPs
-also undergo Bash installation/cache-reuse testing. Other executable smoke
+in Alpine even though the orchestration host uses glibc. Other executable smoke
 tests run when the target RID matches the host RID; cross-compiled Windows and
 macOS ARM64 packages report an explicit skip.
 

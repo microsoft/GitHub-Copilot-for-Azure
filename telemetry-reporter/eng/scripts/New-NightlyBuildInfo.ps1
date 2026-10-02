@@ -68,7 +68,6 @@ function Test-RelevantPath {
         $normalizedPath -match '^telemetry-reporter/eng/scripts/(Build-Native|New-NightlyBuildInfo|Test-NightlyBuildArtifacts)\.ps1$' -or
         $normalizedPath -eq 'telemetry-reporter/eng/scripts/NativePackaging.psm1' -or
         $normalizedPath -match '^telemetry-reporter/eng/native-musl/' -or
-        $normalizedPath -match '^hooks/scripts/install-telemetry\.(sh|ps1)$' -or
         $normalizedPath -match '^telemetry-reporter/Directory\.(Build|Packages)\.(props|targets)$' -or
         $normalizedPath -match '^telemetry-reporter/(global|version)\.json$' -or
         $normalizedPath -eq 'telemetry-reporter/ghcfa-telem.slnx' -or

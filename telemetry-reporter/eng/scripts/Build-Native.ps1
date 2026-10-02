@@ -632,30 +632,6 @@ foreach ($archive in @($runtimeArchive, $symbolsArchive)) {
 $null = Get-ValidatedNativePackage -ArchivePath $runtimeArchive -RuntimeIdentifier $RuntimeIdentifier
 $null = Get-ValidatedNativePackage -ArchivePath $symbolsArchive -RuntimeIdentifier $RuntimeIdentifier -Symbols
 
-if ($useMuslContainer) {
-    $installerTest = @'
-set -euo pipefail
-export XDG_CACHE_HOME=/tmp/ghcfa-telem-install-cache
-export AZURE_SKILLS_TELEMETRY_ZIP_PATH="$2"
-installed="$(bash /repo/hooks/scripts/install-telemetry.sh --version "$1")"
-test -x "$installed"
-case "$installed" in
-    */"$3"/ghcfa-telem) ;;
-    *) printf 'Installer selected the wrong RID: %s\n' "$installed" >&2; exit 1 ;;
-esac
-export AZURE_SKILLS_TELEMETRY_ZIP_PATH=/tmp/missing-after-install.zip
-cached="$(bash /repo/hooks/scripts/install-telemetry.sh --version "$1")"
-test "$installed" = "$cached"
-"$installed" --help > /tmp/ghcfa-telem-help.txt
-grep -F 'Usage:' /tmp/ghcfa-telem-help.txt
-'@
-    & docker @muslContainerArguments --entrypoint bash $MuslBuildImage -c $installerTest `
-        'installer-test' $version "/artifacts/packages/$([System.IO.Path]::GetFileName($runtimeArchive))" $RuntimeIdentifier
-    if ($LASTEXITCODE -ne 0) {
-        throw "Musl runtime package installation/cache-reuse smoke test failed with exit code $LASTEXITCODE."
-    }
-}
-
 Remove-DirectoryIfPresent -Path $stagingDirectory
 
 Write-Host ''

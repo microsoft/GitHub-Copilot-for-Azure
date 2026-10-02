@@ -43,16 +43,14 @@ Musl legs use the same architecture-specific Linux pools as their glibc
 counterparts. The 1ES container task builds an Alpine 3.23 toolchain image with
 the SDK version from `telemetry-reporter/global.json`. Compilation and
 prerequisite probes run inside that image; executable smoke tests run in the
-matching Alpine runtime-deps image with telemetry disabled. The build also
-installs the produced musl ZIP through the Bash installer and verifies cache
-reuse. Neither musl target uses cross-architecture emulation or a skipped
-glibc-host smoke test.
+matching Alpine runtime-deps image with telemetry disabled. Neither musl target
+uses cross-architecture emulation or a skipped glibc-host smoke test.
 
 The YAML schedule runs from `main` at 06:00 UTC. Manual runs always build and
 verify the full matrix. Scheduled runs skip the Build and Verify stages when
 changes are limited to unrelated, documentation, release automation, or test
-files. Changes to the musl Dockerfile, shared packaging module, and installers
-also trigger the build because they affect its executable verification.
+files. Changes to the musl Dockerfile and shared packaging module also trigger
+the build because they affect its executable verification.
 Manually queued runs from branches other than `main` build and verify but
 do not include the Release stage.
 

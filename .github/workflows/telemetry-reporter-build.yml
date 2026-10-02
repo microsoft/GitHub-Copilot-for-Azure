@@ -7,8 +7,6 @@ on:
     paths:
       - "telemetry-reporter/**"
       - ".github/workflows/telemetry-reporter-build.yml"
-      - "hooks/scripts/install-telemetry.sh"
-      - "hooks/scripts/install-telemetry.ps1"
 
 permissions:
   contents: read

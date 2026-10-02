@@ -142,10 +142,7 @@ local examples explicitly select [nuget.public.config](nuget.public.config)
 instead; official builds never fall back to nuget.org.
 
 Musl executable smoke tests run in the matching Alpine `runtime-deps` image,
-without the SDK or compiler libraries. After packaging, the script also tests
-the Bash installer against the actual musl ZIP, including RID selection,
-executable permissions, cache reuse, and `--help`. All executions disable
-telemetry.
+without the SDK or compiler libraries. All executions disable telemetry.
 
 Use `-NoClean` to skip `dotnet clean`, or select a different artifact root:
 
@@ -247,9 +244,9 @@ their smoke tests as skipped.
 
 The [GitHub Actions workflow](../.github/workflows/telemetry-reporter-build.yml)
 also builds both musl targets on native Linux x64 and ARM64 runners for pull
-requests and manual verification. It runs the same packaging, executable smoke
-tests, and installer/cache checks, and uploads verified runtime and symbols
-packages without creating a release.
+requests and manual verification. It runs the same packaging and executable
+smoke tests, and uploads verified runtime and symbols packages without creating
+a release.
 
 The Azure DevOps pipeline defined in
 [`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)

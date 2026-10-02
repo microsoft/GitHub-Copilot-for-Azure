@@ -355,7 +355,7 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
     expectSuccess(result);
   });
 
-  it("rebuilds for musl toolchain, packaging helper, and installer changes", () => {
+  it("rebuilds for musl toolchain and packaging helper changes, not installer changes", () => {
     const result = runPowerShell(`
       $ast = [System.Management.Automation.Language.Parser]::ParseFile(
         ${psQuote(join(scriptRoot, "New-NightlyBuildInfo.ps1"))}, [ref]$null, [ref]$null)
@@ -365,11 +365,15 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
       . ([scriptblock]::Create($function.Extent.Text))
       foreach ($path in @(
         'telemetry-reporter/eng/native-musl/Dockerfile',
-        'telemetry-reporter/eng/scripts/NativePackaging.psm1',
+        'telemetry-reporter/eng/scripts/NativePackaging.psm1'
+      )) {
+        if (-not (Test-RelevantPath $path)) { throw "Missing change-detection path: $path" }
+      }
+      foreach ($path in @(
         'hooks/scripts/install-telemetry.sh',
         'hooks/scripts/install-telemetry.ps1'
       )) {
-        if (-not (Test-RelevantPath $path)) { throw "Missing change-detection path: $path" }
+        if (Test-RelevantPath $path) { throw "Installer-only changes should not rebuild: $path" }
       }
       if (Test-RelevantPath 'docs/hooks.md') { throw 'Documentation-only changes should not rebuild.' }
     `);
