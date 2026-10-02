@@ -443,7 +443,7 @@ export async function executeSkillImprovement(
       path.join(outputDirectory, "baseline"),
       spec,
       "baseline",
-      spec.evaluations.development,
+      "development",
       spec.experiment.conditions,
       deadline
     );
@@ -537,7 +537,7 @@ export async function executeSkillImprovement(
             iterationDirectory,
             spec,
             "candidate",
-            spec.evaluations.development,
+            "development",
             candidateConditions,
             deadline,
             iteration
@@ -585,7 +585,7 @@ export async function executeSkillImprovement(
     if (
       finalAccepted
       && spec.acceptance.requireHeldOutImprovement
-      && (spec.evaluations.heldOut?.length ?? 0) > 0
+      && plan.heldOutPromptCount > 0
     ) {
       const finalWorktree = path.join(worktreeRoot, "final-candidate");
       try {
@@ -600,7 +600,7 @@ export async function executeSkillImprovement(
           path.join(outputDirectory, "held-out", "baseline"),
           spec,
           "held-out-baseline",
-          spec.evaluations.heldOut!,
+          "heldOut",
           conditions,
           deadline
         );
@@ -610,7 +610,7 @@ export async function executeSkillImprovement(
           path.join(outputDirectory, "held-out", "candidate"),
           spec,
           "held-out-candidate",
-          spec.evaluations.heldOut!,
+          "heldOut",
           conditions,
           deadline
         );

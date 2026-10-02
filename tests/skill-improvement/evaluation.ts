@@ -1,10 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {
+  EvaluationSet,
   EvaluationCondition,
   SkillImprovementRunSpec,
 } from "./config.ts";
-import { resolveEvaluationPath } from "./config.ts";
+import {
+  evaluationFilesForCondition,
+  resolveEvaluationPath,
+} from "./config.ts";
 import {
   commandName,
   runProcess,
@@ -320,14 +324,15 @@ export async function runEvaluationBatch(
   outputRoot: string,
   spec: SkillImprovementRunSpec,
   phase: string,
-  evalFiles: string[],
+  evaluationSet: EvaluationSet,
   conditions: EvaluationCondition[],
   deadline: number,
   iteration?: number,
 ): Promise<EvaluationBatch> {
   const tasks: GenerationTask[] = conditions.flatMap(condition =>
     spec.models.answers.flatMap(answerModel =>
-      evalFiles.map(evalFile => ({ condition, answerModel, evalFile }))
+      evaluationFilesForCondition(spec, condition, evaluationSet)
+        .map(evalFile => ({ condition, answerModel, evalFile }))
     )
   );
   const generated: GeneratedAnswers[] = new Array(tasks.length);

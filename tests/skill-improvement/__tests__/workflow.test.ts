@@ -56,4 +56,13 @@ describe("skill improvement workflow", () => {
     expect(workflow).toContain('if [[ -n "${{ steps.issue.outputs.url }}" ]]');
     expect(workflow).toContain("--body-file \"$body_file\"");
   });
+
+  test("always stops managed evaluation resources after execution", () => {
+    expect(workflow).toContain(
+      "- name: Ensure managed evaluation resources are stopped"
+    );
+    expect(workflow).toContain(
+      "npm run skill-improvement -- cleanup-resources"
+    );
+  });
 });

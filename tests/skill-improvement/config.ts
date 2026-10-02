@@ -9,6 +9,8 @@ export type EvaluationCondition = {
   name: string;
   skill: SkillState;
   mcp: McpState;
+  developmentEvaluations?: string[];
+  heldOutEvaluations?: string[];
 };
 
 export type SkillImprovementRunSpec = {
@@ -47,6 +49,17 @@ export type SkillImprovementRunSpec = {
   refinement: {
     minimumScoreImprovementPoints: number;
     maximumQualityRegressionPoints: number;
+  };
+  resources?: {
+    kusto?: {
+      subscriptionId: string;
+      resourceGroup: string;
+      clusterName: string;
+      databaseName: string;
+      startBeforeRun: boolean;
+      stopAfterRun: boolean;
+      startupTimeoutMinutes: number;
+    };
   };
   limits: {
     maxIterations: number;
@@ -204,6 +217,30 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     if (conditionNames.has(condition.name)) {
       throw new Error(`Duplicate condition name: ${condition.name}`);
     }
+    for (const field of [
+      "developmentEvaluations",
+      "heldOutEvaluations",
+    ] as const) {
+      const files = condition[field];
+      if (files === undefined) {
+        continue;
+      }
+      validateStringArray(
+        files,
+        `experiment.conditions[].${field}`,
+        true
+      );
+      validateEvalFiles(files, `experiment.conditions[].${field}`);
+      const commonFiles = field === "developmentEvaluations"
+        ? spec.evaluations.development
+        : spec.evaluations.heldOut ?? [];
+      const overlap = files.filter(file => commonFiles.includes(file));
+      if (overlap.length > 0) {
+        throw new Error(
+          `${condition.name} ${field} duplicates common evaluation files: ${overlap.join(", ")}`
+        );
+      }
+    }
     conditionNames.add(condition.name);
   }
   if (!spec.experiment.conditions.some(condition => condition.skill === "enabled")) {
@@ -256,10 +293,11 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   }
   if (
     spec.acceptance.requireHeldOutImprovement
-    && (spec.evaluations.heldOut?.length ?? 0) === 0
+    && !hasHeldOutEvaluations(spec)
   ) {
     throw new Error(
-      "evaluations.heldOut must contain at least one file when requireHeldOutImprovement is true."
+      "At least one common or condition-specific held-out evaluation is required "
+      + "when requireHeldOutImprovement is true."
     );
   }
 
@@ -271,6 +309,24 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     spec.refinement?.maximumQualityRegressionPoints,
     "refinement.maximumQualityRegressionPoints"
   );
+
+  const kusto = spec.resources?.kusto;
+  if (kusto) {
+    requireNonEmptyString(kusto.subscriptionId, "resources.kusto.subscriptionId");
+    requireNonEmptyString(kusto.resourceGroup, "resources.kusto.resourceGroup");
+    requireNonEmptyString(kusto.clusterName, "resources.kusto.clusterName");
+    requireNonEmptyString(kusto.databaseName, "resources.kusto.databaseName");
+    if (typeof kusto.startBeforeRun !== "boolean") {
+      throw new Error("resources.kusto.startBeforeRun must be a boolean.");
+    }
+    if (typeof kusto.stopAfterRun !== "boolean") {
+      throw new Error("resources.kusto.stopAfterRun must be a boolean.");
+    }
+    requirePositiveInteger(
+      kusto.startupTimeoutMinutes,
+      "resources.kusto.startupTimeoutMinutes"
+    );
+  }
 
   requirePositiveInteger(spec.limits?.maxIterations, "limits.maxIterations", true);
   requirePositiveInteger(spec.limits?.maxAnswerGenerations, "limits.maxAnswerGenerations");
@@ -373,37 +429,90 @@ function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: st
   }, 0);
 }
 
+export type EvaluationSet = "development" | "heldOut";
+
+export function hasHeldOutEvaluations(
+  spec: SkillImprovementRunSpec,
+): boolean {
+  return (
+    (spec.evaluations.heldOut?.length ?? 0) > 0
+    || spec.experiment.conditions.some(
+      condition => (condition.heldOutEvaluations?.length ?? 0) > 0
+    )
+  );
+}
+
+export function evaluationFilesForCondition(
+  spec: SkillImprovementRunSpec,
+  condition: EvaluationCondition,
+  evaluationSet: EvaluationSet,
+): string[] {
+  const commonFiles = evaluationSet === "development"
+    ? spec.evaluations.development
+    : spec.evaluations.heldOut ?? [];
+  const conditionFiles = evaluationSet === "development"
+    ? condition.developmentEvaluations ?? []
+    : condition.heldOutEvaluations ?? [];
+  return [...commonFiles, ...conditionFiles];
+}
+
 export function createRunPlan(repoRoot: string, spec: SkillImprovementRunSpec): RunPlan {
+  const developmentFiles = Array.from(new Set([
+    ...spec.evaluations.development,
+    ...spec.experiment.conditions.flatMap(
+      condition => condition.developmentEvaluations ?? []
+    ),
+  ]));
+  const heldOutFiles = Array.from(new Set([
+    ...(spec.evaluations.heldOut ?? []),
+    ...spec.experiment.conditions.flatMap(
+      condition => condition.heldOutEvaluations ?? []
+    ),
+  ]));
   const developmentPromptCount = countStimuli(
     repoRoot,
     spec,
-    spec.evaluations.development
+    developmentFiles
   );
   const heldOutPromptCount = countStimuli(
     repoRoot,
     spec,
-    spec.evaluations.heldOut ?? []
+    heldOutFiles
   );
   const answerModels = spec.models.answers.length;
   const repetitions = spec.experiment.repetitions;
-  const baselineConditions = spec.experiment.conditions.length;
   const candidateConditions = spec.experiment.conditions.filter(
     condition => condition.skill === "enabled"
-  ).length;
+  );
   const plannedIterations = spec.improvementAgent.enabled
     ? spec.limits.maxIterations
     : 0;
-  const baselineAnswerGenerations =
-    developmentPromptCount * answerModels * repetitions * baselineConditions;
-  const candidateAnswerGenerationsPerIteration =
-    developmentPromptCount * answerModels * repetitions * candidateConditions;
+  const generationCount = (
+    conditions: EvaluationCondition[],
+    evaluationSet: EvaluationSet,
+  ): number => conditions.reduce(
+    (total, condition) => total + countStimuli(
+      repoRoot,
+      spec,
+      evaluationFilesForCondition(spec, condition, evaluationSet)
+    ),
+    0
+  ) * answerModels * repetitions;
+  const baselineAnswerGenerations = generationCount(
+    spec.experiment.conditions,
+    "development"
+  );
+  const candidateAnswerGenerationsPerIteration = generationCount(
+    candidateConditions,
+    "development"
+  );
   const heldOutAnswerGenerations = (
     heldOutPromptCount === 0
     || !spec.acceptance.requireHeldOutImprovement
     || plannedIterations === 0
   )
     ? 0
-    : heldOutPromptCount * answerModels * repetitions * candidateConditions * 2;
+    : generationCount(candidateConditions, "heldOut") * 2;
   const maximumAnswerGenerations =
     baselineAnswerGenerations
     + candidateAnswerGenerationsPerIteration * plannedIterations

@@ -171,10 +171,57 @@ npm run skill-improvement -- validate \
   --config ./skill-improvement/specs/azure-kusto.yaml
 ```
 
-The validation output includes `developmentPromptCount` and
-`candidateAnswerGenerationsPerIteration`. Multiply the prompt count by the
-number of Skill-enabled conditions, answer models, and repetitions to determine
-the matched trial count used by the aggregate acceptance comparison.
+The validation output includes `developmentPromptCount`,
+`baselineAnswerGenerations`, and `candidateAnswerGenerationsPerIteration`.
+Use the generation totals directly when conditions have additional evaluation
+files; a simple prompt-count multiplication applies only when every condition
+uses the same common files.
+
+## Condition-specific evaluations
+
+Common `evaluations.development` files run in every configured condition.
+Add files to one condition when they require capabilities unique to that arm:
+
+```yaml
+experiment:
+  conditions:
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: Skill + MCP
+      skill: enabled
+      mcp: enabled
+      developmentEvaluations:
+        - live-connection.eval.yaml
+```
+
+`heldOutEvaluations` provides the equivalent condition-specific extension for
+held-out evidence. A condition-specific file must not duplicate a common file.
+Use this mechanism for live cloud tests so an MCP-disabled arm is not asked to
+connect to infrastructure it cannot access.
+
+## Managed Kusto resources
+
+A run can start and stop a persistent Azure Data Explorer cluster:
+
+```yaml
+resources:
+  kusto:
+    subscriptionId: 00000000-0000-0000-0000-000000000000
+    resourceGroup: rg-evaluations
+    clusterName: evaluationkusto
+    databaseName: IntegrationTests
+    startBeforeRun: true
+    stopAfterRun: true
+    startupTimeoutMinutes: 20
+```
+
+The executor starts a stopped cluster, waits for the management state to become
+`Running`, and runs `print Health=1` against the configured database before
+generation begins. Cleanup requests a cluster stop in a `finally` path, and the
+GitHub workflow invokes an additional `always()` cleanup command. The workflow
+identity needs cluster-scoped `Kusto Contributor` plus a read-only database
+principal assignment.
 
 After a run, use `report-summary.md` to inspect:
 

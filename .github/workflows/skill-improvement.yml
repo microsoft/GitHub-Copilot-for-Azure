@@ -131,6 +131,15 @@ jobs:
             --baseline-ref "${BASELINE_REF}" \
             --output "../${RUN_OUTPUT}"
 
+      - name: Ensure managed evaluation resources are stopped
+        if: always()
+        working-directory: tests
+        env:
+          RUN_SPEC: ${{ inputs.run-spec }}
+        run: |
+          npm run skill-improvement -- cleanup-resources \
+            --config "../${RUN_SPEC}"
+
       - name: Ensure a report exists
         if: always()
         shell: bash

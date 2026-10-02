@@ -88,4 +88,27 @@ describe("runProcess", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+
+  test("launches Windows Azure CLI through its bundled Python", () => {
+    expect(resolveProcessLaunch(
+      "az.cmd",
+      ["resource", "show", "--ids", "literal&resource"],
+      {
+        platform: "win32",
+        nodeExecutable: process.execPath,
+        nodeInstallDirectory: path.dirname(process.execPath),
+        azureCliPython: "C:\\AzureCLI\\python.exe",
+      }
+    )).toEqual({
+      command: "C:\\AzureCLI\\python.exe",
+      args: [
+        "-IBm",
+        "azure.cli",
+        "resource",
+        "show",
+        "--ids",
+        "literal&resource",
+      ],
+    });
+  });
 });

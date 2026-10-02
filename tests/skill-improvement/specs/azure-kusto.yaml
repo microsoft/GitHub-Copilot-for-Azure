@@ -21,7 +21,8 @@ evaluations:
     - troubleshoot-query.eval.yaml
     - troubleshoot-schema-table.eval.yaml
     - visualize-dashboard.eval.yaml
-  heldOut: []
+  heldOut:
+    - held-out-troubleshoot-remediate.eval.yaml
 
 models:
   answers:
@@ -38,6 +39,8 @@ experiment:
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
+      developmentEvaluations:
+        - live-connection.eval.yaml
 
 improvementAgent:
   enabled: true
@@ -48,16 +51,26 @@ acceptance:
   maximumEvalRegressionPoints: 5
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: false
+  requireHeldOutImprovement: true
 
 refinement:
   minimumScoreImprovementPoints: 1
   maximumQualityRegressionPoints: 0
 
+resources:
+  kusto:
+    subscriptionId: 52f7abe2-7856-4f03-9306-4432c1d4c65d
+    resourceGroup: rg-ghcfa-evals
+    clusterName: ghcfaevalskusto
+    databaseName: IntegrationTests
+    startBeforeRun: true
+    stopAfterRun: true
+    startupTimeoutMinutes: 20
+
 limits:
   maxIterations: 3
-  maxAnswerGenerations: 700
-  maxJudgeCalls: 700
+  maxAnswerGenerations: 720
+  maxJudgeCalls: 720
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15

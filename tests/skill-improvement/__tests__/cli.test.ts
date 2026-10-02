@@ -6,6 +6,8 @@ describe("skill improvement CLI", () => {
     expect(usage()).toContain("skill-improvement -- validate");
     expect(usage()).toContain("skill-improvement -- run");
     expect(usage()).toContain("skill-improvement -- execute");
+    expect(usage()).toContain("skill-improvement -- prepare-resources");
+    expect(usage()).toContain("skill-improvement -- cleanup-resources");
   });
 
   test("parses the internal execute command with its output directory", () => {
