@@ -83,9 +83,12 @@ describe("skill improvement configuration", () => {
     expect(runSpec.evaluations.heldOut).toEqual([
       "held-out-troubleshoot-remediate.eval.yaml",
     ]);
-    expect(runSpec.experiment.conditions.find(
-      condition => condition.name === "Skill + MCP"
-    )?.developmentEvaluations).toEqual(["live-connection.eval.yaml"]);
+    expect(runSpec.evaluations.development).toContain(
+      "live-connection.eval.yaml"
+    );
+    expect(runSpec.experiment.conditions.every(
+      condition => condition.developmentEvaluations === undefined
+    )).toBe(true);
     expect(runSpec.resources?.kusto?.clusterName).toBe("ghcfaevalskusto");
     expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(550);
     expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(550);

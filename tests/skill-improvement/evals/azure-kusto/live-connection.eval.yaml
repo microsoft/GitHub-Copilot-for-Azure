@@ -1,5 +1,5 @@
 name: azure-kusto-live-connection
-description: Read-only scenarios that verify Azure Kusto MCP against the persistent evaluation cluster.
+description: Read-only scenarios that verify live Kusto access against the persistent evaluation cluster.
 tags:
   type: integration
   skill: azure-kusto
@@ -14,12 +14,12 @@ scoring:
 stimuli:
   - name: "Verify the persistent evaluation database"
     prompt: >-
-      Use read-only Azure Kusto MCP operations to verify cluster
+      Use available read-only Azure or Kusto operations to verify cluster
       ghcfaevalskusto in resource group rg-ghcfa-evals and subscription
       52f7abe2-7856-4f03-9306-4432c1d4c65d. List its databases and tell me
       whether IntegrationTests exists. Do not create or modify anything.
     rubric:
-      - The response invokes the azure-kusto skill and uses Azure Kusto MCP rather than only describing hypothetical steps.
+      - The response invokes the azure-kusto skill and uses available read-only Azure or Kusto tooling rather than only describing hypothetical steps.
       - The response uses cluster discovery followed by database discovery with the supplied subscription, resource group, and cluster identifiers.
       - The response reports from tool evidence that IntegrationTests exists and keeps every operation read-only.
     tags: &tags
@@ -44,7 +44,7 @@ stimuli:
       Use subscription 52f7abe2-7856-4f03-9306-4432c1d4c65d and resource
       group rg-ghcfa-evals.
     rubric:
-      - The response invokes the azure-kusto skill, inspects the live AppLogs schema, and executes the query through Azure Kusto MCP.
+      - The response invokes the azure-kusto skill, inspects the live AppLogs schema, and executes the query through available read-only Kusto tooling.
       - The query uses the requested bounded date interval and summarizes by the real Severity column rather than inventing fields.
       - The reported live counts are Critical 1, Error 3, Info 1, and Warning 1, with no mutation of the database.
     tags: *tags
@@ -59,7 +59,7 @@ stimuli:
       rg-ghcfa-evals and the subscription is
       52f7abe2-7856-4f03-9306-4432c1d4c65d.
     rubric:
-      - The response invokes the azure-kusto skill, inspects both live table schemas, and executes a bounded read-only join through Azure Kusto MCP.
+      - The response invokes the azure-kusto skill, inspects both live table schemas, and executes a bounded read-only join through available Kusto tooling.
       - The join uses OperationId, filters failed requests and dependency DurationMs greater than 2000, and projects the requested fields.
       - The live result identifies op-002 with Payments at 2600 milliseconds and op-005 with Inventory at 3500 milliseconds.
     tags: *tags
@@ -72,7 +72,7 @@ stimuli:
       count by region. Use resource group rg-ghcfa-evals and subscription
       52f7abe2-7856-4f03-9306-4432c1d4c65d.
     rubric:
-      - The response invokes the azure-kusto skill and uses live read-only Kusto operations to discover and inspect FailedRequestsByRegion before invocation.
+      - The response invokes the azure-kusto skill and uses available live read-only Kusto operations to discover and inspect FailedRequestsByRegion before invocation.
       - The function is called with the requested bounded datetime arguments rather than invoked without inspecting its signature.
       - The live result reports eastus2 with 2 failures and westus2 with 1 failure and does not alter the function or database.
     tags: *tags
@@ -84,7 +84,7 @@ stimuli:
       Keep this read-only.
     rubric:
       - The response invokes the azure-kusto skill and uses live Azure discovery rather than asking the user to supply the subscription and resource group immediately.
-      - The response resolves the cluster through accessible subscription and cluster evidence, then lists its databases through Azure Kusto MCP.
+      - The response resolves the cluster through accessible subscription and cluster evidence, then lists its databases through available read-only Azure or Kusto tooling.
       - The response reports from tool evidence that IntegrationTests exists, identifies the resolved resource context, and performs no mutation.
     tags: *tags
     graders: *graders

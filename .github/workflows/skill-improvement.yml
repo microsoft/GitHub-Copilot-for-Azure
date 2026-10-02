@@ -32,7 +32,7 @@ on:
         default: "main"
 
 concurrency:
-  group: skill-improvement-${{ inputs.run-spec }}-${{ inputs.baseline-ref }}
+  group: skill-improvement-${{ inputs.run-spec }}
   cancel-in-progress: false
 
 jobs:

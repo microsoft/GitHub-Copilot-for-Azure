@@ -8,6 +8,16 @@ const workflow = fs.readFileSync(
 );
 
 describe("skill improvement workflow", () => {
+  test("serializes runs sharing the same run specification", () => {
+    expect(workflow).toContain(
+      "group: skill-improvement-${{ inputs.run-spec }}"
+    );
+    expect(workflow).not.toContain(
+      "group: skill-improvement-${{ inputs.run-spec }}-${{ inputs.baseline-ref }}"
+    );
+    expect(workflow).toContain("cancel-in-progress: false");
+  });
+
   test("always publishes the concise summary and retains the GitHub artifact", () => {
     expect(workflow).toContain("cat \"$RUN_OUTPUT/report-summary.md\" >> \"$GITHUB_STEP_SUMMARY\"");
     expect(workflow).toContain("retention-days: 30");
