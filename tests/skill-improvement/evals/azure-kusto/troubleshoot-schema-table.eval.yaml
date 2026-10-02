@@ -14,10 +14,10 @@ scoring:
 stimuli:
   - name: "Fix string duration aggregation"
     prompt: "ApiLogs.DurationMs is string and may contain 'unknown'. Explain why avg(DurationMs) fails and provide robust KQL for average duration by Endpoint over six hours."
-    rubric: &rubric
-      - The response correctly diagnoses the stated schema or table mismatch and avoids assuming undocumented fields or types.
-      - The response provides plausible KQL or metadata checks that safely handle invalid, null, renamed, or differently typed values.
-      - The troubleshooting sequence starts with focused schema and bounded data checks and preserves the requested time scope.
+    rubric:
+      - The response explains that `avg()` requires a numeric expression and that the string value `unknown` cannot be averaged directly.
+      - The KQL filters `ApiLogs` to six hours, safely converts `DurationMs` to a numeric type, and excludes or separately counts failed conversions.
+      - The query calculates average converted duration by `Endpoint`.
     tags: &tags
       type: integration
       tier: full
@@ -34,46 +34,73 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
   - name: "Handle renamed status column"
     prompt: "A saved query now fails because StatusCode no longer exists in Requests. Show how to confirm the current schema and adapt safely without guessing the replacement."
-    rubric: *rubric
+    rubric:
+      - The response retrieves the current `Requests` schema and treats a rename as a hypothesis rather than inventing a replacement column.
+      - The response identifies candidate replacement fields from schema evidence and validates their types and bounded values before changing the predicate.
+      - The proposed query uses a clearly marked placeholder until the replacement is confirmed and preserves the saved query's intended status semantics.
     tags: *tags
     graders: *graders
   - name: "Resolve datetime stored as text"
     prompt: "LegacyEvents.EventTime is stored as string and some values are malformed. Write KQL that safely filters valid events from the last day."
-    rubric: *rubric
+    rubric:
+      - The KQL converts `LegacyEvents.EventTime` with a safe datetime conversion that yields null for malformed values.
+      - The query excludes null conversions and filters valid converted timestamps to the last day.
+      - The response optionally quantifies malformed values but does not require mutation or pretend malformed timestamps can be reliably inferred.
     tags: *tags
     graders: *graders
   - name: "Diagnose missing recent rows"
     prompt: "TelemetryEvents has historical rows but apparently nothing from today. Give a schema- and data-focused troubleshooting sequence before blaming ingestion."
-    rubric: *rubric
+    rubric:
+      - The response verifies the table schema, candidate event-time field, declared type, and time-zone assumptions before evaluating recency.
+      - The response uses bounded queries for maximum timestamp, recent row counts, alternate datetime fields, and representative values.
+      - The response distinguishes an event-time or query-filter issue from ingestion delay and does not require a complete ingestion incident investigation.
     tags: *tags
     graders: *graders
   - name: "Handle dynamic versus string JSON"
     prompt: "Properties was changed from dynamic to string and bag_unpack-based queries fail. Explain how to verify the type and update parsing safely."
-    rubric: *rubric
+    rubric:
+      - The response inspects the current schema to verify whether `Properties` is `dynamic` or `string`.
+      - For string data, the proposed KQL safely applies `parse_json()` before `bag_unpack` or property access and handles invalid JSON.
+      - The response validates the parsed shape on bounded rows and avoids applying `parse_json()` blindly when the column is already dynamic.
     tags: *tags
     graders: *graders
   - name: "Resolve join key type mismatch"
     prompt: "Requests.OperationId is guid but Dependencies.OperationId is string, causing a Kusto join error. Provide a safe correction and validation checks."
-    rubric: *rubric
+    rubric:
+      - The response normalizes both join keys to one compatible type with explicit conversion before the join.
+      - The KQL isolates or measures null and failed conversions and applies reasonable bounds before joining.
+      - The response validates match counts and key multiplicity so conversion does not silently change join semantics.
     tags: *tags
     graders: *graders
   - name: "Investigate duplicate event rows"
     prompt: "Events appears to contain duplicates for EventId. Write a bounded diagnostic query to quantify duplicates and explain schema or ingestion clues to inspect."
-    rubric: *rubric
+    rubric:
+      - The KQL applies an explicit time bound and summarizes row count by `EventId`, retaining only identifiers with count greater than one.
+      - The query reports duplicate-group and excess-row measures or a bounded sample sufficient to quantify duplication.
+      - The explanation distinguishes true duplicate identifiers from expected repeated events and identifies relevant source, retry, mapping, or ingestion clues without declaring a cause.
     tags: *tags
     graders: *graders
   - name: "Troubleshoot nullable numeric values"
     prompt: "Revenue is real but many rows are null, making totals confusing. Provide KQL that reports null prevalence and clearly handles nulls in aggregation."
-    rubric: *rubric
+    rubric:
+      - The KQL reports total rows, null `Revenue` rows, and null percentage with guarded arithmetic.
+      - The query calculates revenue totals with an explicit null policy, such as excluding nulls and reporting that choice or coalescing only when zero is semantically justified.
+      - The response keeps null prevalence visible rather than hiding missing values behind the aggregate.
     tags: *tags
     graders: *graders
   - name: "Diagnose case-sensitive column failure"
     prompt: "A query references correlationid but the table may expose CorrelationId. Explain how to verify the schema and correct the query."
-    rubric: *rubric
+    rubric:
+      - The response explains that Kusto identifiers are case-sensitive and retrieves the table schema to verify the exact column spelling.
+      - The corrected pattern uses the schema-confirmed identifier, such as `CorrelationId` only if evidence supports it.
+      - The response does not recommend changing values' casing or invent other schema changes to solve an identifier-casing error.
     tags: *tags
     graders: *graders
   - name: "Resolve cross-table schema drift"
     prompt: "Two regional tables should have the same columns, but union reports inconsistent types for Severity. Show how to inspect and normalize them."
-    rubric: *rubric
+    rubric:
+      - The response inspects both regional table schemas and compares the declared type and representative values of `Severity`.
+      - The KQL normalizes `Severity` to one explicit compatible type in each branch before `union`, preserving source identification when useful.
+      - The response validates failed conversions or unmapped values and does not propose altering either table as the first fix.
     tags: *tags
     graders: *graders
