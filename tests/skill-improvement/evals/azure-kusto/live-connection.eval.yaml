@@ -77,3 +77,50 @@ stimuli:
       - The live result reports eastus2 with 2 failures and westus2 with 1 failure and does not alter the function or database.
     tags: *tags
     graders: *graders
+  - name: "Discover the evaluation database from a cluster name"
+    prompt: >-
+      Find the Azure Data Explorer cluster named ghcfaevalskusto that I can
+      access and tell me whether it has a database called IntegrationTests.
+      Keep this read-only.
+    rubric:
+      - The response invokes the azure-kusto skill and uses live Azure discovery rather than asking the user to supply the subscription and resource group immediately.
+      - The response resolves the cluster through accessible subscription and cluster evidence, then lists its databases through Azure Kusto MCP.
+      - The response reports from tool evidence that IntegrationTests exists, identifies the resolved resource context, and performs no mutation.
+    tags: *tags
+    graders: *graders
+  - name: "Summarize errors from partial resource context"
+    prompt: >-
+      On https://ghcfaevalskusto.eastus2.kusto.windows.net, use the
+      IntegrationTests data to summarize Error and Critical events by service
+      and severity for September 20 through September 22, 2026.
+    rubric:
+      - The response invokes the azure-kusto skill, resolves the supplied cluster endpoint, and uses live read-only schema discovery and query execution.
+      - The query uses AppLogs only after discovering a compatible schema, applies the bounded date and severity filters, and summarizes by Service and Severity.
+      - The live result reports Checkout with 2 Error and 1 Critical events and Identity with 1 Error event without inventing additional groups.
+    tags: *tags
+    graders: *graders
+  - name: "Investigate checkout failures from user intent"
+    prompt: >-
+      Why were checkout requests failing in our IntegrationTests Kusto data
+      between September 20 and September 22? Check whether slow dependencies
+      contributed and show me the evidence. The cluster is ghcfaevalskusto.
+    rubric:
+      - The response invokes the azure-kusto skill and discovers the relevant live Requests and Dependencies schemas before choosing join fields or failure indicators.
+      - The response executes a bounded read-only correlation that filters failed checkout requests and evaluates dependency duration without requiring the user to prescribe the query.
+      - The evidence identifies op-002 with Payments at 2600 milliseconds and op-005 with Inventory at 3500 milliseconds and does not claim causation beyond the observed correlation.
+    tags: *tags
+    graders: *graders
+  - name: "Refine a live failure investigation across turns"
+    turns:
+      - >-
+        In IntegrationTests on ghcfaevalskusto, show how many requests failed
+        in each region from September 20 through September 22, 2026.
+      - >-
+        Now narrow that to checkout failures and check whether they line up
+        with dependencies slower than two seconds.
+    rubric:
+      - The first response invokes the azure-kusto skill, discovers the live Requests schema, and reports eastus2 with 2 failed requests and westus2 with 1 for the bounded interval.
+      - The follow-up preserves the established cluster, database, date range, and discovered schema context rather than restarting with invented resource details.
+      - The follow-up uses a live read-only join and identifies op-002 with Payments at 2600 milliseconds and op-005 with Inventory at 3500 milliseconds.
+    tags: *tags
+    graders: *graders

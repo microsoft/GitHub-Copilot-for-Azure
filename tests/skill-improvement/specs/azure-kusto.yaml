@@ -69,8 +69,8 @@ resources:
 
 limits:
   maxIterations: 3
-  maxAnswerGenerations: 720
-  maxJudgeCalls: 720
+  maxAnswerGenerations: 736
+  maxJudgeCalls: 736
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
