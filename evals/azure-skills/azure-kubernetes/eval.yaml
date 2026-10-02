@@ -142,6 +142,26 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  # ── routing-aks-review-prompt ──
+  # Jest: "invokes azure-kubernetes skill for AKS cluster review"
+  # Assertions: softCheckSkill + isSkillInvoked (invocation rate ≥ 80%)
+  - name: "Routing: AKS cluster review"
+    prompt: "I want to review my AKS cluster against best practices"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"},{"type":"tool-call-count","count":3}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   # ── day0-guidance-output-prompt ──
   # Jest: "responds with Day-0 vs Day-1 guidance"
   # Expects response mentioning tier, networking, or API server
