@@ -90,6 +90,44 @@ function validateJsonObjectTag(
   return false;
 }
 
+export function validateEarlyTerminatePatterns(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+
+  if (!Array.isArray(parsed)) {
+    return undefined;
+  }
+
+  for (const [conditionIndex, condition] of parsed.entries()) {
+    if (!isPlainObject(condition)) {
+      continue;
+    }
+
+    for (const patternName of ["toolPattern", "argsPattern", "contentPattern"] as const) {
+      const pattern = condition[patternName];
+      if (typeof pattern !== "string") {
+        continue;
+      }
+
+      try {
+        new RegExp(pattern);
+      } catch {
+        return `tags.earlyTerminate[${conditionIndex}].${patternName} must be a valid JavaScript regular expression`;
+      }
+    }
+  }
+
+  return undefined;
+}
+
 function validateSingleRule(
   displayPath: string,
   stimulusIndex: number,
@@ -441,6 +479,19 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         "earlyTerminate",
         typedStimulus.tags?.earlyTerminate,
       )) {
+        fileHasErrors = true;
+      }
+
+      const earlyTerminatePatternError = validateEarlyTerminatePatterns(
+        typedStimulus.tags?.earlyTerminate,
+      );
+      if (earlyTerminatePatternError) {
+        reportValidationError(
+          displayPath,
+          stimulusIndex,
+          typedStimulus.name,
+          earlyTerminatePatternError,
+        );
         fileHasErrors = true;
       }
 
