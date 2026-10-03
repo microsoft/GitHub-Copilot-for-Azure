@@ -142,7 +142,7 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"(?i)pod-evidence\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"pod-evidence\\.(sh|ps1)"}]'
     graders:
       - type: skill-invocation
         config:
