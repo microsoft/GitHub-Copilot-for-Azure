@@ -6,13 +6,13 @@ These files are used by clients when running agent sessions. We have to maintain
 
 ## Copilot CLI
 
-Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the `powershell` script.
+Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the PowerShell script referenced by the `powershell` property.
 
 The `SessionStart` hook reports new and resumed sessions. Copilot CLI is identified through its `COPILOT_CLI` environment variable, and plugin metadata is read from `.plugin/plugin.json`.
 
 ## VS Code
 
-VS Code uses the `copilot-hooks.json` hooks manifest. Although it shares the manifest with Copilot CLI, it only uses the `windows`, `osx` and `linux` properties defined in it. At runtime, VS Code replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. It then executes the script matching the host OS.
+VS Code uses the `copilot-hooks.json` hooks manifest. Although it shares the manifest with Copilot CLI, it only uses the `windows`, `osx` and `linux` properties defined in it. At runtime, VS Code replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. These values are complete command lines rather than shell-specific script bodies. The Windows command therefore invokes `powershell.exe` explicitly and quotes the script path so execution does not depend on the user's `.ps1` file association and works when the plugin path contains spaces.
 
 The shared manifest marks its hooks as belonging to the Copilot/VS Code client family so session-start payloads without tool or transcript fields are still identified as VS Code. Plugin metadata is read from `.plugin/plugin.json`.
 
@@ -39,6 +39,39 @@ The build copies the shared hooks into every plugin package. Each installed plug
 - `--session-id` from the host payload
 
 The `plugin-telemetry` command requires a session ID, so the hook does not report a session-start event when the host omits it. Telemetry opt-out and fail-open behavior are the same as for the existing tool, skill, and reference-file events.
+
+## Standalone telemetry reporter rollout
+
+The hooks continue to publish through `npx -y @azure/mcp@latest` by default.
+Set `AZURE_SKILLS_USE_STANDALONE_TELEMETRY=true` to opt into the standalone
+Native AOT reporter. The hooks currently request reporter version `0.1.0` and
+install the matching release asset:
+
+```text
+https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/0.1.0/ghcfa-telem-0.1.0-<rid>.zip
+```
+
+Until that release exists, set `AZURE_SKILLS_TELEMETRY_ZIP_PATH` to a local
+runtime ZIP produced by `telemetry-reporter/eng/scripts/Build-Native.ps1`.
+The ZIP override does not enable the standalone path by itself; the rollout
+variable must also be set to `true`.
+
+The installer detects the native operating system and architecture, including
+Apple Silicon when Bash runs under Rosetta. It installs each version and RID
+once, then reuses the cached executable:
+
+- Windows: `%LOCALAPPDATA%\GitHubCopilotForAzure\telemetry\<version>\<rid>\ghcfa-telem.exe`
+- macOS/Linux: `${XDG_CACHE_HOME:-$HOME/.cache}/github-copilot-for-azure/telemetry/<version>/<rid>/ghcfa-telem`
+
+The current reporter packages target Windows, macOS, and glibc-based Linux on
+x64 and ARM64. Alpine and other musl-based Linux systems are detected but not
+treated as generic Linux; the opted-in hook records the unsupported platform in
+the telemetry debug log and otherwise succeeds without publishing.
+
+When standalone mode is enabled, installation or reporter failures remain
+fail-open for the host hook and do not fall back to `npx`. This makes rollout
+testing deterministic while preserving the existing publisher for everyone
+who has not enabled the new path.
 
 ## Misc
 

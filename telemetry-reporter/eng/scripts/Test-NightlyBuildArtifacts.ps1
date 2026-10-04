@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Version 7
-# Validates all downloaded nightly runtime and symbol archives against their SHA-256 sidecars and writes the consolidated build manifest published by the pipeline.
+# Validates all downloaded runtime and symbol archives against their SHA-256 sidecars and writes the consolidated build manifest published by the pipeline.
 # Exit codes: 0 = success, 1 = artifact validation failed, 2 = invalid arguments.
 
 [CmdletBinding()]
@@ -8,6 +8,7 @@ param(
     [string] $PipelineWorkspace,
     [string] $ManifestPath,
     [string] $BuildId,
+    [string] $BuildReason,
     [string] $SourceVersion
 )
 
@@ -16,8 +17,9 @@ Set-StrictMode -Version Latest
 if ([string]::IsNullOrWhiteSpace($PipelineWorkspace) -or
     [string]::IsNullOrWhiteSpace($ManifestPath) -or
     [string]::IsNullOrWhiteSpace($BuildId) -or
+    [string]::IsNullOrWhiteSpace($BuildReason) -or
     [string]::IsNullOrWhiteSpace($SourceVersion)) {
-    Write-Error 'PipelineWorkspace, ManifestPath, BuildId, and SourceVersion are required.'
+    Write-Error 'PipelineWorkspace, ManifestPath, BuildId, BuildReason, and SourceVersion are required.'
     exit 2
 }
 if (-not (Test-Path -LiteralPath $PipelineWorkspace -PathType Container)) {
@@ -92,8 +94,10 @@ try {
     New-Item -ItemType Directory -Path $manifestDirectory -Force -ErrorAction Stop | Out-Null
     [ordered]@{
         buildId = $BuildId
+        buildReason = $BuildReason
         sourceVersion = $SourceVersion
         version = $uniqueVersions[0]
+        releaseTag = "ghcfa-telem-$($uniqueVersions[0])"
         runtimeIdentifiers = $runtimeIdentifiers
         files = $manifestFiles
     } |

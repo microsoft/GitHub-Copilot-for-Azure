@@ -108,6 +108,53 @@ Use `-NoClean` to skip `dotnet clean`, or select a different artifact root:
 .\eng\scripts\Build-Native.ps1 -RuntimeIdentifier win-x64 -NoClean -OutputRoot C:\temp\ghcfa-telem
 ```
 
+Test a locally produced runtime ZIP against the shared hook installer:
+
+```powershell
+.\eng\scripts\Test-LocalTelemetryInstall.ps1 `
+  -ZipPath .\artifacts\packages\ghcfa-telem-0.1.0-win-x64.zip `
+  -Version 0.1.0
+```
+
+On Linux or macOS, invoke the same PowerShell script through `pwsh` and pass
+the matching runtime ZIP:
+
+```bash
+pwsh ./eng/scripts/Test-LocalTelemetryInstall.ps1 \
+  -ZipPath ./artifacts/packages/ghcfa-telem-0.1.0-linux-x64.zip \
+  -Version 0.1.0
+```
+
+The test uses an isolated cache, verifies that a second install reuses the
+cached executable without reading the ZIP again, runs the installed executable
+with `--help`, and removes the cache afterward. Pass `-KeepCache` to retain the
+installed files for inspection.
+
+Test the complete PowerShell hook path with the same local runtime ZIP:
+
+```powershell
+.\eng\scripts\Test-LocalTelemetryHook.ps1 `
+  -ZipPath .\artifacts\packages\ghcfa-telem-0.1.0-win-x64.zip `
+  -AllowTelemetry
+```
+
+On Linux or macOS:
+
+```bash
+pwsh ./eng/scripts/Test-LocalTelemetryHook.ps1 \
+  -ZipPath ./artifacts/packages/ghcfa-telem-0.1.0-linux-x64.zip \
+  -AllowTelemetry
+```
+
+This test copies the shared hooks and a test plugin manifest into an isolated
+directory, enables the standalone publisher and local ZIP override, invokes a
+session-start hook, and verifies the hook protocol response, reporter
+installation, telemetry arguments, and reporter exit status. A successful
+end-to-end test sends one test event to the reporter's Microsoft-owned
+Application Insights destination, so the script requires `-AllowTelemetry`.
+Pass `-KeepArtifacts` to retain the temporary plugin, logs, and installed
+executable.
+
 ### Direct publish
 
 From a shell where the target platform's Native AOT toolchain is already
@@ -151,7 +198,7 @@ artifact does not send telemetry. Cross-compiled `win-arm64` and `osx-arm64`
 artifacts cannot run on their x64 build hosts, so the script explicitly reports
 their smoke tests as skipped.
 
-## Nightly Azure DevOps builds
+## Nightly builds
 
 The Azure DevOps pipeline defined in
 [`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)
@@ -165,14 +212,33 @@ AOT packages:
 - `osx-x64` and `osx-arm64`
 - `linux-x64` and `linux-arm64`
 
-Scheduled runs compare `main` with the previous successful scheduled build and
-skip the platform matrix when no executable-affecting telemetry reporter files
-changed. Manual runs always build the complete matrix.
+Scheduled runs compare `main` with the previous scheduled build that succeeded
+or succeeded with warnings, and skip the platform matrix when no
+executable-affecting telemetry reporter files changed. Manual runs always build
+and verify the complete matrix.
 
 Each target publishes a `telemetry-reporter_<rid>` pipeline artifact containing
 the runtime ZIP, symbols ZIP, and their SHA-256 sidecars. A final
 `telemetry-reporter_manifest` artifact records and verifies the complete
-six-target build.
+six-target build, including the source build ID, run reason, source commit, and
+release tag.
+
+## GitHub releases
+
+Queue
+[`pipelines/telemetry-reporter-nightly.yml`](../pipelines/telemetry-reporter-nightly.yml)
+manually from `main` to create a release. The manual run builds and verifies the
+complete matrix, then waits for authorized approval through the protected
+`package-publish` Azure DevOps environment before retaining itself and
+publishing those same artifacts. This keeps the release commit and packages
+within one pipeline run.
+
+It creates a normal
+[GitHub release](https://github.com/microsoft/GitHub-Copilot-for-Azure/releases)
+tagged `ghcfa-telem-<version>` and titled `ghcfa-telem <version>`. The release
+targets the manual run's source commit, is marked Latest, and contains the six
+runtime ZIPs. Symbols, checksums, build information, and the manifest remain
+available from the retained release run.
 
 Pipeline restores use the Azure SDK public NuGet feed instead of direct
 `nuget.org` access, keeping dependency acquisition within the 1ES network

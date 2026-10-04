@@ -4,7 +4,7 @@ description: "Scaffold a new plugin and prepare it for distribution. WHEN: 'crea
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Workflow
@@ -102,3 +102,34 @@ Notify the skill author about these next steps to finish onboarding the new plug
 - Replace the placeholder codeowners in CODEOWNERS file. Codeowners will be responsible for keeping the plugin up-to-date to make sure it brings value to the users.
 - IMPORTANT: Keep scaffolded files as is except for the ones mentioned above. When unsure, read [Onboarding](../../../docs/Onboarding.md) to learn more about the plugin structure.
 - Once all the above are completed, submit a PR with the changes to microsoft/github-copilot-for-azure repo.
+
+## Optional next steps
+
+### Set up a separate integration test workflow
+
+Tell the skill author that they can host integration tests in a separate GitHub
+or Azure DevOps repository. This is useful when tests need a dedicated Azure
+subscription, custom result processing, or extra dependencies.
+
+If they want a separate workflow:
+
+1. Ask whether they use GitHub Actions or Azure Pipelines.
+2. Read `<repo-root>/workflow-templates/Readme.md` and follow its user setup
+   instructions.
+3. Copy the matching `evaluation-main.yaml` starter into the evaluation
+   repository:
+   - GitHub Actions: `workflow-templates/github/evaluation-main.yaml`
+   - Azure Pipelines: `workflow-templates/azure-devops/evaluation-main.yaml`
+4. Pin the template to a reviewed commit SHA rather than `main`. For GitHub
+   Actions, use the same SHA for the action reference and `test-harness-ref`.
+   For Azure Pipelines, set the `evaluationTemplates` repository `ref` to the
+   SHA.
+5. Help the author configure the GitHub, Azure, and Copilot connections
+   required by their platform. Never request or store token values in source.
+6. Keep the suites under `evals/<plugin-name>/<skill-name>/` in the evaluation
+   repository unless the starter's evaluation-directory option is changed.
+7. Run the workflow once. For Azure Pipelines, remind the author to authorize
+   the service connections if the first run prompts for approval.
+
+The starter workflows upload reports and raw Vally results as artifacts. They
+also identify where to add dependency setup and result post-processing steps.

@@ -65,7 +65,7 @@ function Test-RelevantPath {
     $normalizedPath = $Path.Replace('\', '/')
     return $normalizedPath -match '^telemetry-reporter/src/' -or
         $normalizedPath -match '^telemetry-reporter/resources/' -or
-        $normalizedPath -match '^telemetry-reporter/eng/scripts/.+\.ps1$' -or
+        $normalizedPath -match '^telemetry-reporter/eng/scripts/(Build-Native|New-NightlyBuildInfo|Test-NightlyBuildArtifacts)\.ps1$' -or
         $normalizedPath -match '^telemetry-reporter/Directory\.(Build|Packages)\.(props|targets)$' -or
         $normalizedPath -match '^telemetry-reporter/(global|version)\.json$' -or
         $normalizedPath -eq 'telemetry-reporter/ghcfa-telem.slnx' -or
@@ -88,7 +88,7 @@ function Get-PreviousScheduledBuild {
         "?definitions=$DefinitionId" +
         '&reasonFilter=schedule' +
         '&statusFilter=completed' +
-        '&resultFilter=succeeded' +
+        '&resultFilter=succeeded,partiallySucceeded' +
         '&queryOrder=finishTimeDescending' +
         '&$top=20' +
         '&api-version=7.1'
