@@ -28,8 +28,8 @@ internal sealed class PluginTelemetryActivityWriter(
 
         _defaultTags =
         [
-            new(TelemetryConstants.McpServerVersion, CompatibilityConstants.AzureMcpVersion),
-            new(TelemetryConstants.McpServerName, CompatibilityConstants.AzureMcpServerName),
+            new(TelemetryConstants.McpServerVersion, TelemetryConstants.ProductVersion),
+            new(TelemetryConstants.McpServerName, TelemetryConstants.ProductName),
             new(TelemetryConstants.ServerMode, "namespace"),
             new(TelemetryConstants.Transport, "stdio"),
             new(TelemetryConstants.Host, RuntimeInformation.OSDescription),

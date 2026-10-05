@@ -59,7 +59,7 @@ public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPubl
 
         using var activitySource = new ActivitySource(
             CompatibilityConstants.AzureMcpServerName,
-            CompatibilityConstants.AzureMcpVersion);
+            TelemetryConstants.ProductVersion);
         using var host = builder.Build();
         await host.StartAsync(cancellationToken).ConfigureAwait(false);
 
@@ -119,11 +119,7 @@ public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPubl
     private static void ConfigureOpenTelemetry(IServiceCollection services)
     {
         services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource
-                .AddService(
-                    CompatibilityConstants.OpenTelemetryServiceName,
-                    serviceVersion: CompatibilityConstants.AzureMcpVersion)
-                .AddTelemetrySdk())
+            .ConfigureResource(ConfigureResource)
             .WithMetrics(metrics => metrics.AddAzureMonitorMetricExporter(
                 options =>
                 {
@@ -145,6 +141,13 @@ public sealed class OpenTelemetryPluginTelemetryPublisher : IPluginTelemetryPubl
                     },
                     name: "Microsoft"));
     }
+
+    internal static void ConfigureResource(ResourceBuilder resource) =>
+        resource
+            .AddService(
+                CompatibilityConstants.OpenTelemetryServiceName,
+                serviceVersion: TelemetryConstants.ProductVersion)
+            .AddTelemetrySdk();
 
     private static bool IsReleaseBuild
     {

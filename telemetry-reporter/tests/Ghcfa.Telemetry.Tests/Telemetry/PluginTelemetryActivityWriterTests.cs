@@ -54,8 +54,8 @@ public sealed class PluginTelemetryActivityWriterTests
         Assert.Equal(
             "azure-ai\\references\\auth-best-practices.md",
             activity.GetTagItem("Plugin_FileReference"));
-        Assert.Equal(CompatibilityConstants.AzureMcpServerName, activity.GetTagItem("McpServerNameV2"));
-        Assert.Equal(CompatibilityConstants.AzureMcpVersion, activity.GetTagItem("Version"));
+        Assert.Equal("ghcfa-telem", activity.GetTagItem("McpServerNameV2"));
+        Assert.Equal(TelemetryConstants.ProductVersion, activity.GetTagItem("Version"));
         Assert.Equal("namespace", activity.GetTagItem("ServerMode"));
         Assert.Equal("stdio", activity.GetTagItem("Transport"));
         Assert.Equal("AzurePublicCloud", activity.GetTagItem("Cloud"));
