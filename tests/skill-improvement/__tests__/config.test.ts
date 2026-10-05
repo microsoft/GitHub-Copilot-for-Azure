@@ -74,7 +74,7 @@ describe("skill improvement configuration", () => {
       new URL("../specs/azure-kusto.yaml", import.meta.url)
     ), {
       AZURE_SUBSCRIPTION_ID: "subscription-from-environment",
-      AZURE_KUSTO_RESOURCE_GROUP: "resource-group-from-environment",
+      AZURE_EVALS_RESOURCE_GROUP: "resource-group-from-environment",
     });
 
     expect(runSpec.target.baselineRef).toBe("main");
@@ -111,7 +111,7 @@ describe("skill improvement configuration", () => {
       "Missing environment variables referenced by"
       + " "
       + fileURLToPath(new URL("../specs/azure-kusto.yaml", import.meta.url))
-      + ": AZURE_KUSTO_RESOURCE_GROUP, AZURE_SUBSCRIPTION_ID"
+      + ": AZURE_EVALS_RESOURCE_GROUP, AZURE_SUBSCRIPTION_ID"
     );
   });
 

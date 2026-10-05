@@ -5,7 +5,7 @@ The persistent test environment is intentionally stopped between runs:
 | Setting | Value |
 | --- | --- |
 | Subscription | `${AZURE_SUBSCRIPTION_ID}` |
-| Resource group | `${AZURE_KUSTO_RESOURCE_GROUP}` |
+| Resource group | `${AZURE_EVALS_RESOURCE_GROUP}` |
 | Region | East US 2 |
 | Cluster | `ghcfaevalskusto` |
 | SKU | `Dev(No SLA)_Standard_E2a_v4`, capacity 1 |
