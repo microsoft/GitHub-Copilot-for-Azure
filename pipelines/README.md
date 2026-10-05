@@ -81,3 +81,18 @@ The pipeline also requires permission to deploy through the protected
 the `AzureSDKEngKeyVault Secrets` service connection. The Azure SDK Automation
 GitHub App must have release and tag write access to
 `microsoft/GitHub-Copilot-for-Azure`.
+
+The shared retention template explicitly maps `System.AccessToken` to
+`SYSTEM_ACCESSTOKEN`, which the retention script reads by default. The script
+sends a JSON array containing one lease to the Azure DevOps retention API,
+preserving the 731-day policy.
+
+Run the focused retention regression tests from the `scripts` directory with
+PowerShell 7 on `PATH`:
+
+```text
+npm test -- retention-lease.test.ts
+```
+
+These tests use dummy tokens and mocked REST calls; they do not change pipeline
+retention or publish releases.
