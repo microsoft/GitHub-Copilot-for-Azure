@@ -6,6 +6,7 @@ import {
   changedFiles,
   unlinkDependencyLinks,
   writeCandidatePatch,
+  writeCommitRangePatch,
 } from "../engine.ts";
 import { describe, expect, test } from "vitest";
 
@@ -80,6 +81,67 @@ describe("worktree dependency cleanup", () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
       fs.rmSync(dependencySource, { recursive: true, force: true });
+    }
+  });
+
+  test("writes an applicable commit-range patch with its trailing newline", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-final-patch-"));
+    const skillFile = path.join(
+      root,
+      "plugins",
+      "azure-skills",
+      "skills",
+      "azure-kusto",
+      "SKILL.md"
+    );
+    const patchPath = path.join(root, "final-candidate.patch");
+    try {
+      execFileSync("git", ["init"], { cwd: root, stdio: "ignore" });
+      execFileSync("git", ["config", "user.name", "Skill Improvement Test"], {
+        cwd: root,
+      });
+      execFileSync("git", ["config", "user.email", "test@example.com"], {
+        cwd: root,
+      });
+      execFileSync("git", ["config", "core.autocrlf", "false"], { cwd: root });
+      fs.mkdirSync(path.dirname(skillFile), { recursive: true });
+      fs.writeFileSync(skillFile, "baseline\n", "utf8");
+      execFileSync("git", ["add", "--all"], { cwd: root });
+      execFileSync("git", ["commit", "-m", "baseline"], {
+        cwd: root,
+        stdio: "ignore",
+      });
+      const baselineCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+
+      fs.writeFileSync(skillFile, "candidate\n", "utf8");
+      execFileSync("git", ["add", "--all"], { cwd: root });
+      execFileSync("git", ["commit", "-m", "candidate"], {
+        cwd: root,
+        stdio: "ignore",
+      });
+      const candidateCommit = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: root,
+        encoding: "utf8",
+      }).trim();
+
+      writeCommitRangePatch(root, patchPath, baselineCommit, candidateCommit);
+
+      expect(fs.readFileSync(patchPath, "utf8")).toMatch(/\n$/);
+      execFileSync("git", ["checkout", "--detach", baselineCommit], {
+        cwd: root,
+        stdio: "ignore",
+      });
+      expect(() => {
+        execFileSync("git", ["apply", "--check", patchPath], {
+          cwd: root,
+          stdio: "ignore",
+        });
+      }).not.toThrow();
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 });
