@@ -70,7 +70,7 @@ Every skill must have its test cases written under `evals/<owning-plugin>/<skill
 
 ## Owners
 
-The entry must include at least two distinct GitHub aliases from the skill's authoring team, plus `@RickWinter` as the fallback repository owner.
+The entry must include at least two distinct GitHub aliases from the skill's authoring team, plus `@microsoft/github-copilot-for-azure-writers` as the fallback repository owner.
 
 The directory containing the skill's eval suites must also have a `CODEOWNERS` entry with the same owners as the skill directory.
 
