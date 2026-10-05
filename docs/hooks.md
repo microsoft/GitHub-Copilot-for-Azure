@@ -99,9 +99,13 @@ installation from execution:
 
 ```text
 Publisher: Standalone ghcfa-telem (version 0.1.0) | Installation failed with status 1: <installer-diagnostic>
+Publisher: Standalone ghcfa-telem (version 0.1.0) | Installation failed: installer returned no executable path.
 Publisher: Standalone ghcfa-telem (version 0.1.0) | Execution failed with status 1.
 Publisher: Azure MCP (npx -y @azure/mcp@latest) | Execution failed with status 1.
 ```
+
+A successful installer exit without an executable path is reported as a
+contract failure, not as an installation failure with status `0`.
 
 PowerShell logs `Execution failed to start.` when invocation throws; Bash reports
 the shell exit status, such as `126` when an executable cannot run or `127` for

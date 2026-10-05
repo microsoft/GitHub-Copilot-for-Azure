@@ -533,6 +533,8 @@ if [ "$shouldTrack" = true ]; then
             if [ "$reporterStatus" -ne 0 ]; then
                 write_telemetry_debug_log "Publisher: $publisher | Execution failed with status $reporterStatus."
             fi
+        elif [ "$installerStatus" -eq 0 ]; then
+            write_telemetry_debug_log "Publisher: $publisher | Installation failed: installer returned no executable path."
         else
             write_telemetry_debug_log "Publisher: $publisher | Installation failed with status $installerStatus: $installerOutput"
         fi

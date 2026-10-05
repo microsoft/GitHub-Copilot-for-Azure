@@ -887,7 +887,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
     expect(log).not.toContain(MCP_PUBLISHER);
   });
 
-  it("logs an installation failure when no executable path is returned", () => {
+  it("diagnoses a successful installer exit with no executable path", () => {
     const args = runHook(
       shell,
       fixture("cursor-mcp-invocation.json"),
@@ -899,8 +899,9 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
 
     expect(args).toEqual([]);
     expect(log).toContain(
-      `Publisher: ${STANDALONE_PUBLISHER} | Installation failed with status 0:`,
+      `Publisher: ${STANDALONE_PUBLISHER} | Installation failed: installer returned no executable path.`,
     );
+    expect(log).not.toContain("Installation failed with status");
     expect(log).not.toContain("| Executable:");
     expect(log).not.toContain(MCP_PUBLISHER);
   });

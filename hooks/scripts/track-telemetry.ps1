@@ -595,6 +595,9 @@ if ($shouldTrack) {
                 Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed to start."
             }
         }
+        elseif ($installerStatus -eq 0) {
+            Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed: installer returned no executable path."
+        }
         else {
             Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed with status ${installerStatus}: $($installerOutput -join ' ')"
         }
