@@ -16,7 +16,7 @@ scoring:
 
 stimuli:
   - name: "Route Advisor remediation request"
-    prompt: "How do I fix Azure Advisor recommendation 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourcegroups/bernardmtestarm/providers/microsoft.web/sites/bernardmarmdiagtestwebl?"
+    prompt: "How do I fix Azure Advisor recommendation type 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourcegroups/bernardmtestarm/providers/microsoft.web/sites/bernardmarmdiagtestwebl?"
     tags:
       type: integration
       tier: smoke
@@ -100,7 +100,7 @@ stimuli:
           pattern: "(?i)stack trace|raw JSON|internal error"
 
   - name: "Do not execute remediation without confirmation"
-    prompt: "Show me how to fix Azure Advisor recommendation 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourcegroups/bernardmtestarm/providers/microsoft.web/sites/bernardmarmdiagtestwebl. Do not make any changes."
+    prompt: "Show me how to fix Azure Advisor recommendation type 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourcegroups/bernardmtestarm/providers/microsoft.web/sites/bernardmarmdiagtestwebl. Do not make any changes."
     tags:
       type: integration
       tier: full

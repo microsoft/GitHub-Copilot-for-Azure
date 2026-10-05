@@ -71,7 +71,7 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
   - name: "Require confirmation for status update"
-    prompt: "Dismiss Azure Advisor recommendation abcdefab-1234-5678-9012-abcdefabcdef in subscription 00000000-0000-0000-0000-000000000000."
+    prompt: "Dismiss Azure Advisor recommendation instance 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef in subscription 00000000-0000-0000-0000-000000000000."
     tags:
       type: integration
       tier: full
@@ -92,8 +92,8 @@ stimuli:
           disallowed:
             - name: "(?i)advisor_recommendation_update"
 
-  - name: "Prefer actionability for one recommendation"
-    prompt: "Fix Azure Advisor recommendation 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourceGroups/bernardmtestarm/providers/Microsoft.Web/sites/bernardmarmdiagtestwebl."
+  - name: "Prefer actionability for remediation"
+    prompt: "Fix Azure Advisor recommendation type 55a560ff-1039-4a49-b6da-6f272dc52db6 for /subscriptions/76cb77fa-8b17-4eab-9493-b65dace99813/resourceGroups/bernardmtestarm/providers/Microsoft.Web/sites/bernardmarmdiagtestwebl."
     tags:
       type: integration
       tier: full
