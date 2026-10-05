@@ -174,11 +174,16 @@ az webapp config ssl show --certificate-name CERT -g RG
 
 ## Combined Diagnostic Script
 
-Use the [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) script
-([PowerShell](../../scripts/appservice-diagnostics.ps1)) to collect everything in one call.
+When asked to collect/gather diagnostics for an app, run the [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) script
+([PowerShell](../../scripts/appservice-diagnostics.ps1)) directly with the name and resource
+group given — it is read-only, works against the default subscription context, and reports
+clearly if the app or resource group can't be found. Don't spend turns pre-checking
+subscription/resource existence with separate commands first; let the script surface that.
 It prints clearly labeled sections — app config, recent deployments, app settings, and
 custom domains — and a summary line describing what it collected. Interpreting the output
-remains your job.
+remains your job. Actually invoke it through your shell/terminal tool — don't just
+describe running it or fabricate its output; an available AppLens/MCP diagnosis is a
+complement, not a replacement, for this evidence collection.
 
 ```powershell
 ..\..\scripts\appservice-diagnostics.ps1 -Name <app> -ResourceGroup <rg>

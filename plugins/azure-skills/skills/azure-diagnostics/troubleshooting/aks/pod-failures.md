@@ -5,7 +5,9 @@
 For **any** pod symptom below, run the **pod-evidence** script to collect the same
 read-only evidence bundle. Per pod it digests **STATUS**, **STATE** (exit code, reason,
 last state), **EVENTS**, current/previous **LOGS**, and **RESOURCES** (requests vs
-`top`). It only gathers; interpret with the tables.
+`top`). It only gathers; interpret with the tables. Run it directly as soon as `kubectl`
+has cluster context — if the pod name or namespace isn't given, use `--all-failing` to
+discover unhealthy pods instead of pausing to ask for those details.
 
 Bash [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) · PowerShell [`../../scripts/pod-evidence.ps1`](../../scripts/pod-evidence.ps1)
 

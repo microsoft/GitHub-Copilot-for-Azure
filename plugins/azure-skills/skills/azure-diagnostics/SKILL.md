@@ -1,6 +1,6 @@
 ---
 name: azure-diagnostics
-description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter."
+description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, missing or dropped Application Insights telemetry, App Insights connection string or instrumentation key misconfiguration, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter."
 license: MIT
 metadata:
   author: Microsoft
@@ -26,6 +26,7 @@ Activate this skill when user wants to:
 - Respond to prompts like "troubleshoot app service", "app service high CPU", or "app service deployment failure"
 - Troubleshoot Azure Function Apps (invocation failures, timeouts, binding errors)
 - Find the App Insights or Log Analytics workspace linked to a Function App
+- Diagnose missing, dropped, or redirected Application Insights telemetry (e.g. traces stop after a connection-string or instrumentation-key change)
 - Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 - Troubleshoot Azure VM connectivity issues (RDP/SSH failures, port 3389/22 timeouts, NSG or firewall blocking, credential resets)
 - Troubleshoot Azure Messaging SDK issues (Event Hubs, Service Bus connection failures, AMQP errors, message lock issues)
@@ -38,6 +39,8 @@ Activate this skill when user wants to:
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
 6. Route AKS incidents to the dedicated AKS troubleshooting document
+7. Run bundled read-only evidence scripts directly with the identifiers given (or a discovery flag like `--all-failing` when specifics are missing) — don't pause to ask for confirmation or pre-verify resource existence first; the scripts report clearly when something can't be found
+8. When a step says to run a bundled script, actually invoke it through your shell/terminal tool and wait for real output — availability of an MCP diagnostic tool (e.g. AppLens) is a complement, not a substitute. Never narrate or fabricate a script run, a shell session, or its output without a genuine tool call
 
 ---
 

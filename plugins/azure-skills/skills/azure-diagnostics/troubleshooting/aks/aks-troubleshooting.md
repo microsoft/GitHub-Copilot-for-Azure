@@ -32,7 +32,7 @@ See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input
 - first observed time or recent change window
 - impacted namespace, workload, service, or ingress when known
 
-If cluster identity is missing, stop and ask for it.
+If `kubectl` is already pointed at a cluster (or the user names a pod/namespace without naming the cluster), proceed with the read-only evidence scripts (e.g. `pod-evidence --all-failing`) instead of pausing to collect every field above — they are safe to run and report clearly when context is missing. Only stop and ask when no cluster, namespace, or pod can be inferred and no kubectl context exists at all.
 
 ## Scope Buckets
 
@@ -61,7 +61,7 @@ If cluster identity is missing, stop and ask for it.
 
 ## Error Patterns
 
-- No cluster context: ask for subscription, resource group, and cluster name.
+- No cluster context and no active `kubectl` context: ask for subscription, resource group, and cluster name. If `kubectl` already has context, run the read-only evidence scripts first instead of asking.
 - MCP unavailable: fall back to safe `az aks` and `kubectl` reads.
 - `kubectl` blocked: separate auth problems from network reachability.
 - Logs or metrics missing: use events, node state, and resource descriptions.

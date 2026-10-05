@@ -95,11 +95,16 @@ az containerapp logs show --name APP -g RG --type system
 
 ### Get All Diagnostic Info
 
-Use the [`containerapp-diagnostics`](../../scripts/containerapp-diagnostics.sh) script
-([PowerShell](../../scripts/containerapp-diagnostics.ps1)) to collect everything in one
-call. It prints clearly labeled sections — revisions, registry config, ingress config, and
+When asked to collect/gather all diagnostics for an app, run the [`containerapp-diagnostics`](../../scripts/containerapp-diagnostics.sh) script
+([PowerShell](../../scripts/containerapp-diagnostics.ps1)) directly with the name and resource
+group given — it is read-only, works against the default subscription context, and reports
+clearly if the app or resource group can't be found. Don't spend turns pre-checking
+subscription/resource existence with separate commands first; let the script surface that.
+It prints clearly labeled sections — revisions, registry config, ingress config, and
 recent logs — and a summary line describing what it collected. Interpreting the output
-remains your job.
+remains your job. Actually invoke it through your shell/terminal tool — don't just
+describe running it or fabricate its output; an available AppLens/MCP diagnosis is a
+complement, not a replacement, for this evidence collection.
 
 ```powershell
 ..\..\scripts\containerapp-diagnostics.ps1 -Name <app> -ResourceGroup <rg>
