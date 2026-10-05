@@ -4,8 +4,8 @@
 
 The independent
 [GitHub Actions workflow](../.github/workflows/telemetry-reporter-build.yml)
-verifies both musl targets on native Linux x64 and ARM64 runners for PRs or
-manual runs. It uploads runtime and symbols packages but never publishes a
+verifies both musl targets on native Linux x64 and ARM64 runners for PRs.
+It uploads runtime and symbols packages but never publishes a
 release. Official nightly/release production remains in Azure DevOps.
 
 [`telemetry-reporter-nightly.yml`](telemetry-reporter-nightly.yml) defines the

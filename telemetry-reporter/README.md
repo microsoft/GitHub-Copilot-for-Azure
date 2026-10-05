@@ -244,7 +244,7 @@ their smoke tests as skipped.
 
 The [GitHub Actions workflow](../.github/workflows/telemetry-reporter-build.yml)
 also builds both musl targets on native Linux x64 and ARM64 runners for pull
-requests and manual verification. It runs the same packaging and executable
+requests. It runs the same packaging and executable
 smoke tests, and uploads verified runtime and symbols packages without creating
 a release.
 
