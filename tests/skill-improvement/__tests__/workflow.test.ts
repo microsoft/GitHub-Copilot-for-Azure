@@ -72,6 +72,9 @@ describe("skill improvement workflow", () => {
       "AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}"
     );
     expect(workflow).toContain(
+      "AZURE_EVALS_SUBSCRIPTION_ID: ${{ vars.AZURE_EVALS_SUBSCRIPTION_ID }}"
+    );
+    expect(workflow).toContain(
       "AZURE_EVALS_RESOURCE_GROUP: ${{ vars.AZURE_EVALS_RESOURCE_GROUP }}"
     );
     expect(workflow).toContain(
