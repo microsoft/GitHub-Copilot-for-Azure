@@ -58,7 +58,7 @@ refinement:
 
 resources:
   kusto:
-    subscriptionId: ${AZURE_EVALS_SUBSCRIPTION_ID}
+    subscriptionId: ${AZURE_SUBSCRIPTION_ID}
     resourceGroup: ${AZURE_EVALS_RESOURCE_GROUP}
     clusterName: ghcfaevalskusto
     databaseName: IntegrationTests
