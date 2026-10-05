@@ -1,5 +1,12 @@
 # App Service Troubleshooting
 
+> **Request to "collect"/"gather" diagnostics?** Run the
+> [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) script
+> ([PowerShell](../../scripts/appservice-diagnostics.ps1)) directly as your first action —
+> don't verify the app/resource group exists with separate calls first, and don't substitute
+> the individual commands below for it. It's read-only and reports clearly if the
+> resource can't be found. See "Combined Diagnostic Script" below for usage.
+
 ## Common Issues Matrix
 
 | Symptom | Likely Cause | Action |

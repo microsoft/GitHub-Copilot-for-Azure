@@ -1,5 +1,12 @@
 # Container Apps Troubleshooting
 
+> **Request to "collect"/"gather" diagnostics?** Run the
+> [`containerapp-diagnostics`](../../scripts/containerapp-diagnostics.sh) script
+> ([PowerShell](../../scripts/containerapp-diagnostics.ps1)) directly as your first action —
+> don't verify the app/resource group exists with separate calls first, and don't substitute
+> the individual commands below for it. It's read-only and reports clearly if the
+> resource can't be found. See "Get All Diagnostic Info" below for usage.
+
 ### Common Issues Matrix
 
 | Symptom | Likely Cause | Quick Fix |
