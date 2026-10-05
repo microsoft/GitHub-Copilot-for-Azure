@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 
 export type SkillState = "enabled" | "disabled";
 export type McpState = "enabled" | "disabled";
@@ -84,6 +84,69 @@ export type RunPlan = {
   maximumAnswerGenerations: number;
   maximumJudgeCalls: number;
 };
+
+const ENVIRONMENT_VARIABLE_PATTERN = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+
+export function expandEnvironmentVariables<T>(
+  value: T,
+  source: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): T {
+  const missing = new Set<string>();
+  const expand = (current: unknown): unknown => {
+    if (typeof current === "string") {
+      return current.replace(
+        ENVIRONMENT_VARIABLE_PATTERN,
+        (placeholder, name: string) => {
+          const environmentValue = environment[name];
+          if (environmentValue === undefined || environmentValue.length === 0) {
+            missing.add(name);
+            return placeholder;
+          }
+          return environmentValue;
+        }
+      );
+    }
+    if (Array.isArray(current)) {
+      return current.map(expand);
+    }
+    if (current && typeof current === "object") {
+      return Object.fromEntries(
+        Object.entries(current).map(([key, child]) => [key, expand(child)])
+      );
+    }
+    return current;
+  };
+  const expanded = expand(value) as T;
+  if (missing.size > 0) {
+    throw new Error(
+      `Missing environment variables referenced by ${source}: `
+      + Array.from(missing).sort().join(", ")
+    );
+  }
+  return expanded;
+}
+
+function readExpandedYaml<T>(
+  filePath: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): T {
+  return expandEnvironmentVariables(
+    parse(fs.readFileSync(filePath, "utf8")) as T,
+    filePath,
+    environment
+  );
+}
+
+export function materializeEvaluationFile(
+  sourcePath: string,
+  destinationPath: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): string {
+  const document = readExpandedYaml<unknown>(sourcePath, environment);
+  fs.writeFileSync(destinationPath, stringify(document), "utf8");
+  return destinationPath;
+}
 
 function requireNonEmptyString(value: unknown, field: string): asserts value is string {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -351,12 +414,17 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   return spec;
 }
 
-export function loadRunSpec(filePath: string): SkillImprovementRunSpec {
+export function loadRunSpec(
+  filePath: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): SkillImprovementRunSpec {
   const resolvedPath = path.resolve(filePath);
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(`Run specification not found: ${resolvedPath}`);
   }
-  return validateRunSpec(parse(fs.readFileSync(resolvedPath, "utf8")));
+  return validateRunSpec(
+    readExpandedYaml<SkillImprovementRunSpec>(resolvedPath, environment)
+  );
 }
 
 function isInsideDirectory(parent: string, candidate: string): boolean {
@@ -421,7 +489,7 @@ export function resolveEvaluationPath(
 function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
   return files.reduce((total, file) => {
     const evalPath = resolveEvaluationPath(repoRoot, spec, file);
-    const document = parse(fs.readFileSync(evalPath, "utf8")) as { stimuli?: unknown[] };
+    const document = readExpandedYaml<{ stimuli?: unknown[] }>(evalPath);
     if (!Array.isArray(document.stimuli) || document.stimuli.length === 0) {
       throw new Error(`Eval file contains no stimuli: ${evalPath}`);
     }

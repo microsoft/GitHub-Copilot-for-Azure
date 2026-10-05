@@ -45,6 +45,7 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_KUSTO_RESOURCE_GROUP: ${{ vars.AZURE_KUSTO_RESOURCE_GROUP }}
       RUN_OUTPUT: tests/skill-improvement-runs/${{ github.run_id }}
       BASELINE_REF: ${{ inputs.baseline-ref || github.ref_name }}
       GH_TOKEN: ${{ github.token }}

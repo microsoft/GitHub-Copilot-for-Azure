@@ -58,8 +58,8 @@ refinement:
 
 resources:
   kusto:
-    subscriptionId: 52f7abe2-7856-4f03-9306-4432c1d4c65d
-    resourceGroup: rg-ghcfa-evals
+    subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+    resourceGroup: ${AZURE_KUSTO_RESOURCE_GROUP}
     clusterName: ghcfaevalskusto
     databaseName: IntegrationTests
     startBeforeRun: true

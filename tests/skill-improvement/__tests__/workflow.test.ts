@@ -69,6 +69,12 @@ describe("skill improvement workflow", () => {
 
   test("always stops managed evaluation resources after execution", () => {
     expect(workflow).toContain(
+      "AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}"
+    );
+    expect(workflow).toContain(
+      "AZURE_KUSTO_RESOURCE_GROUP: ${{ vars.AZURE_KUSTO_RESOURCE_GROUP }}"
+    );
+    expect(workflow).toContain(
       "- name: Ensure managed evaluation resources are stopped"
     );
     expect(workflow).toContain(

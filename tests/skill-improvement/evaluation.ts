@@ -7,6 +7,7 @@ import type {
 } from "./config.ts";
 import {
   evaluationFilesForCondition,
+  materializeEvaluationFile,
   resolveEvaluationPath,
 } from "./config.ts";
 import {
@@ -110,6 +111,7 @@ type GenerationTask = {
 
 type GeneratedAnswers = GenerationTask & {
   answerFile: string;
+  evalSpecFile: string;
   runDirectory: string;
   count: number;
 };
@@ -184,6 +186,10 @@ async function generateAnswers(
     slug(task.evalFile)
   );
   fs.mkdirSync(taskDirectory, { recursive: true });
+  const evalSpecFile = materializeEvaluationFile(
+    evalPath,
+    path.join(taskDirectory, task.evalFile)
+  );
   const answerFile = path.join(taskDirectory, "answers.jsonl");
   const stderrFile = path.join(taskDirectory, "vally.stderr.log");
   const env: NodeJS.ProcessEnv = {
@@ -201,7 +207,7 @@ async function generateAnswers(
     "@microsoft/vally-cli",
     "eval",
     "--eval-spec",
-    evalPath,
+    evalSpecFile,
     "--executor-plugin",
     path.join(testsDirectory, "vally", "vally-executor.ts"),
     "--grader-plugin",
@@ -237,6 +243,7 @@ async function generateAnswers(
   return {
     ...task,
     answerFile,
+    evalSpecFile,
     runDirectory,
     count,
   };
@@ -254,11 +261,6 @@ async function gradeAnswers(
 ): Promise<JudgedTrial[]> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
-  const evalPath = resolveEvaluationPath(
-    evalRepoRoot,
-    spec,
-    generated.evalFile
-  );
   const judgeDirectory = path.join(
     outputRoot,
     "judgments",
@@ -275,7 +277,7 @@ async function gradeAnswers(
     "@microsoft/vally-cli",
     "grade",
     "--eval-spec",
-    evalPath,
+    generated.evalSpecFile,
     "--grader-plugin",
     path.join(testsDirectory, "vally", "vally-graders.ts"),
     "--judge-model",

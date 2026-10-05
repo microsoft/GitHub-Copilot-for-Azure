@@ -207,14 +207,21 @@ A run can start and stop a persistent Azure Data Explorer cluster:
 ```yaml
 resources:
   kusto:
-    subscriptionId: 00000000-0000-0000-0000-000000000000
-    resourceGroup: rg-evaluations
+    subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+    resourceGroup: ${AZURE_KUSTO_RESOURCE_GROUP}
     clusterName: evaluationkusto
     databaseName: IntegrationTests
     startBeforeRun: true
     stopAfterRun: true
     startupTimeoutMinutes: 20
 ```
+
+`${ENV_VAR}` references in run specifications and evaluation files are
+expanded when loaded. Validation fails with the names of any unset or empty
+variables; values are never silently defaulted. The GitHub workflow maps
+`AZURE_SUBSCRIPTION_ID` and `AZURE_KUSTO_RESOURCE_GROUP` from repository
+variables. Expanded evaluation files are materialized in the run output before
+Vally starts, so agent-visible stimulus text contains the resolved values.
 
 The executor starts a stopped cluster, waits for the management state to become
 `Running`, and runs `print Health=1` against the configured database before

@@ -6,6 +6,7 @@ import {
   createRunPlan,
   enforceRunLimits,
   loadRunSpec,
+  materializeEvaluationFile,
   resolveEvaluationPath,
   validateRunSpec,
   type SkillImprovementRunSpec,
@@ -71,7 +72,10 @@ describe("skill improvement configuration", () => {
   test("configures a valid Azure Kusto improvement run", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
-    ));
+    ), {
+      AZURE_SUBSCRIPTION_ID: "subscription-from-environment",
+      AZURE_KUSTO_RESOURCE_GROUP: "resource-group-from-environment",
+    });
 
     expect(runSpec.target.baselineRef).toBe("main");
     expect(runSpec.experiment.conditions.some(
@@ -90,8 +94,69 @@ describe("skill improvement configuration", () => {
       condition => condition.developmentEvaluations === undefined
     )).toBe(true);
     expect(runSpec.resources?.kusto?.clusterName).toBe("ghcfaevalskusto");
+    expect(runSpec.resources?.kusto?.subscriptionId).toBe(
+      "subscription-from-environment"
+    );
+    expect(runSpec.resources?.kusto?.resourceGroup).toBe(
+      "resource-group-from-environment"
+    );
     expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(550);
     expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(550);
+  });
+
+  test("reports missing run-spec environment variables", () => {
+    expect(() => loadRunSpec(fileURLToPath(
+      new URL("../specs/azure-kusto.yaml", import.meta.url)
+    ), {})).toThrow(
+      "Missing environment variables referenced by"
+      + " "
+      + fileURLToPath(new URL("../specs/azure-kusto.yaml", import.meta.url))
+      + ": AZURE_KUSTO_RESOURCE_GROUP, AZURE_SUBSCRIPTION_ID"
+    );
+  });
+
+  test("materializes evaluation stimuli with environment values", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
+    const source = path.join(root, "source.eval.yaml");
+    const destination = path.join(root, "resolved.eval.yaml");
+    fs.writeFileSync(
+      source,
+      "stimuli:\n  - prompt: Use ${SUBSCRIPTION_ID} in ${RESOURCE_GROUP}.\n",
+      "utf8"
+    );
+
+    try {
+      materializeEvaluationFile(source, destination, {
+        SUBSCRIPTION_ID: "subscription-value",
+        RESOURCE_GROUP: "resource-group-value",
+      });
+      expect(fs.readFileSync(destination, "utf8")).toContain(
+        "Use subscription-value in resource-group-value."
+      );
+      expect(fs.readFileSync(destination, "utf8")).not.toContain("${");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects evaluation stimuli with missing environment variables", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
+    const source = path.join(root, "source.eval.yaml");
+    const destination = path.join(root, "resolved.eval.yaml");
+    fs.writeFileSync(
+      source,
+      "stimuli:\n  - prompt: Use ${SUBSCRIPTION_ID}.\n",
+      "utf8"
+    );
+
+    try {
+      expect(() => materializeEvaluationFile(source, destination, {})).toThrow(
+        `Missing environment variables referenced by ${source}: SUBSCRIPTION_ID`
+      );
+      expect(fs.existsSync(destination)).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test.each([

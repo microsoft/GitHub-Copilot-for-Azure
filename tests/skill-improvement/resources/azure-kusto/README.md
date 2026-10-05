@@ -4,8 +4,8 @@ The persistent test environment is intentionally stopped between runs:
 
 | Setting | Value |
 | --- | --- |
-| Subscription | `52f7abe2-7856-4f03-9306-4432c1d4c65d` |
-| Resource group | `rg-ghcfa-evals` |
+| Subscription | `${AZURE_SUBSCRIPTION_ID}` |
+| Resource group | `${AZURE_KUSTO_RESOURCE_GROUP}` |
 | Region | East US 2 |
 | Cluster | `ghcfaevalskusto` |
 | SKU | `Dev(No SLA)_Standard_E2a_v4`, capacity 1 |
