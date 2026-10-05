@@ -258,11 +258,22 @@ jobs:
           git push origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
+      - name: Generate token for draft pull request
+        if: steps.candidate.outputs.branch != ''
+        id: draft-pr-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: GitHub-Copilot-for-Azure
+
       - name: Create draft pull request
         if: steps.candidate.outputs.branch != ''
         id: pr
         shell: bash
         env:
+          GH_TOKEN: ${{ steps.draft-pr-token.outputs.token }}
           PR_BASE: ${{ inputs.pr-base }}
         run: |
           body_file="$RUNNER_TEMP/skill-improvement-pr-body.md"
@@ -288,6 +299,8 @@ jobs:
       - name: Link draft pull request from issue
         if: steps.issue.outputs.url != '' && steps.pr.outputs.url != ''
         shell: bash
+        env:
+          GH_TOKEN: ${{ steps.draft-pr-token.outputs.token }}
         run: |
           issue_number="${{ steps.issue.outputs.url }}"
           issue_number="${issue_number##*/}"
