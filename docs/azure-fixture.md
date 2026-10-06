@@ -202,9 +202,6 @@ The following operations use this process:
 
 The user must be aware that fixture context is injected so that they do not provide conflicting instructions in the original test prompt. Replicating the correct context information should be harmless.
 
-**TODO:**
-A rule can be added to `copilot-instructions.md` to catch these issues during Copilot code review. A new section can be added to the vally-eval skill to help users create fixtures for a test case with a coding agent.
-
 2. Update fixture for a test case
 
 - Modify the manifest and Bicep templates

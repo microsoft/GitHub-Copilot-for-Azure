@@ -33,6 +33,13 @@ The custom executor uses special tag values to control the behavior of the custo
 
 > Note: If an eval suite specifies an earlyTerminate condition, the suite MUST NOT use the `completed` grader because early terminated runs will always fail the `completed` grader by design.
 
+Here are the advanced features implemented by the custom executor using tags.
+
+- Early termination: terminate a test run based on custom conditions
+- System prompt: use a customized system prompt
+- Screenshot: take screenshot of a web app at the end of the test
+- Azure fixture: provision Azure resources and present them to the agent as context. See [azure-fixtures](./references/azure-fixture.md) for more details.
+
 ## Validate vally eval suites
 
 Vally eval suites in this repo follow certain conventions. For example, all eval suites must have a `type`, `tier`, `cost` and `area` tag so they can be run for a corresponding target group. To ensure all eval suites follow the conventions, a script is added to validate the eval suites and report errors when it sees any violation. To run the script, execute this command from the `scripts/` directory.
