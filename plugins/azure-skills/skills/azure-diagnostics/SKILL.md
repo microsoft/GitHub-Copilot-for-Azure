@@ -29,18 +29,18 @@ Activate this skill when user wants to:
 - Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 - Troubleshoot Azure VM connectivity issues (RDP/SSH failures, port 3389/22 timeouts, NSG or firewall blocking, credential resets)
 - Troubleshoot Azure Messaging SDK issues (Event Hubs, Service Bus connection failures, AMQP errors, message lock issues)
-- Diagnose a described or synthetic incident from evidence already supplied in the prompt (logs, metrics, timelines) — this skill's symptom matrices and root-cause patterns apply even when the user says not to query or modify Azure; use them to reason over the given evidence instead of skipping the skill
 - Root-cause a symptom that looks like a healthy-runtime-but-wrong-destination problem (e.g., telemetry/messages stop flowing to the expected resource after a config change) — invoke this skill for the matrix even when MCP tools could answer the surface question alone
 
 ## Rules
 
 1. Start with systematic diagnosis flow
-2. Use AppLens (MCP) for AI-powered diagnostics when available
-3. Check resource health before deep-diving into logs
-4. Select appropriate troubleshooting guide based on service type
-5. Document findings and attempted remediation steps
-6. Prefer the bundled diagnostic scripts (`scripts/appservice-diagnostics.*`, `scripts/pod-evidence.*`, `scripts/aks-baseline.*`) over ad hoc one-off CLI/MCP calls when they cover the needed evidence — run them directly as the first action, don't just describe the equivalent checks
-7. Route AKS incidents to the dedicated AKS troubleshooting document
+2. Use supplied evidence first. If the user requests evidence-only analysis or prohibits live Azure access, do not query or modify Azure. Diagnose from the supplied logs, metrics, and timeline; identify assumptions and provide optional verification steps.
+3. Use AppLens (MCP) for AI-powered diagnostics when available
+4. Check resource health before deep-diving into logs
+5. Select appropriate troubleshooting guide based on service type
+6. Document findings and attempted remediation steps
+7. Prefer the bundled diagnostic scripts (`scripts/appservice-diagnostics.*`, `scripts/pod-evidence.*`, `scripts/aks-baseline.*`) over ad hoc one-off CLI/MCP calls when they cover the needed evidence — run them directly as the first action, don't just describe the equivalent checks
+8. Route AKS incidents to the dedicated AKS troubleshooting document
 
 ---
 
