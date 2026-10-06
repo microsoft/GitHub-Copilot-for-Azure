@@ -311,6 +311,6 @@ export function provisionManifest(manifestPath: string, manifest: FixtureManifes
     };
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
-    process.exit(1);
+    throw error;
   }
 }

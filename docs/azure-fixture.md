@@ -150,7 +150,7 @@ The provision-fixture script returns the output to the caller from its helper fu
 
 #### PostProvision script
 
-After provisioning all the Bicep configs, the script executes each `postProvision` script by using `tsx`.
+After provisioning all the Bicep configs, the script executes each `postProvisionScript` script by using `tsx`.
 
 The `postProvision` script can be used for these purposes:
 

@@ -152,16 +152,17 @@ export function remainingMs(step: string): number | undefined {
 /**
  * Helper function to run a single AZ CLI command.
  * @param args arguments to pass to the AZ CLI command, excluding `az`.
+ * @param options controls whether the command is constrained by the current run budget.
  * @returns A string capturing the stdout output.
  * @throws An error if the command exits with a non-zero exit code or the budget runs out.
  */
-export function runAz(args: string[]): string {
+export function runAz(args: string[], options: { subjectToBudget?: boolean } = {}): string {
   const step = `az ${args.join(" ")}`;
   try {
     // az traps SIGTERM and can hang, so kill it outright.
     return execFileSync(AZ_COMMAND, args, {
       encoding: "utf8",
-      timeout: remainingMs(step),
+      timeout: options.subjectToBudget === false ? undefined : remainingMs(step),
       killSignal: "SIGKILL",
       shell: true
     }).trim();
@@ -200,7 +201,10 @@ export function findFixtureResourceGroups(fixtureId: string): FixtureResourceGro
  * Starts deleting a fixture resource group without waiting for completion.
  */
 export function deleteResourceGroup(resourceGroupName: string) {
-  runAz(["group", "delete", "--name", resourceGroupName, "--yes", "--no-wait", "-o", "none"]);
+  runAz(
+    ["group", "delete", "--name", resourceGroupName, "--yes", "--no-wait", "-o", "none"],
+    { subjectToBudget: false },
+  );
 }
 
 /**

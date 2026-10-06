@@ -246,12 +246,10 @@ export function getAzureFixtureManifestPath(tags: Record<string, string[] | stri
     return undefined;
   }
   if (typeof value !== "string") {
-    console.error("Failed to get azureFixture from tags", value);
-    return undefined;
+    throw new Error(`azureFixture must be a relative path: ${value}`);
   }
   if (path.isAbsolute(value)) {
-    console.error("azureFixture must be a relative path", value);
-    return undefined;
+    throw new Error(`azureFixture must be a relative path: ${value}`);
   }
   return value;
 }

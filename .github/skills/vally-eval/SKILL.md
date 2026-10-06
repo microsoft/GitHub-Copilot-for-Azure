@@ -4,7 +4,7 @@ description: "Author, validate, and run Vally evaluation suites for agent skills
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Vally eval suites

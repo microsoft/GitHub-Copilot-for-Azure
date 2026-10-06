@@ -104,8 +104,11 @@ export class IntegrationTestAgentRunner implements Executor {
     const relativeManifestPath = getAzureFixtureManifestPath(tags);
     try {
       // Provision azure fixture if it's defined
-      if (relativeManifestPath && plugin?.dirname) {
+      if (!plugin?.dirname) {
         // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
+        throw new Error(`Unable to resolve plugin for skill ${skillName}`);
+      }
+      if (relativeManifestPath) {
         const fixtureBaseDir = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`);
         absoluteManifestPath = path.resolve(fixtureBaseDir, relativeManifestPath);
         const rel = path.relative(fixtureBaseDir, absoluteManifestPath);
@@ -142,7 +145,7 @@ export class IntegrationTestAgentRunner implements Executor {
       await agentRunner.cleanup();
 
       if (postTestScriptConfig) {
-        runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!))
+        runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!));
       }
 
       // Vally will run the graders and produce results.jsonl.
