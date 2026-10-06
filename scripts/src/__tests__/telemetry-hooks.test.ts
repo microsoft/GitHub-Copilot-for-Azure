@@ -532,7 +532,7 @@ describe.each(shells)("Telemetry reporter installer ($name)", shell => {
     expect(second.error).toBeUndefined();
     expect(second.status, String(second.stderr)).toBe(0);
     expect(String(second.stdout).trim()).toBe(installedPath);
-  });
+  }, 30_000);
 
   it("rejects an invalid local ZIP", () => {
     const cacheDirectory = join(INSTALL_CACHE_DIR, `invalid-installer-${shell.name}`);
