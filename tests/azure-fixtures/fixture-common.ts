@@ -164,7 +164,7 @@ export function runAz(args: string[], options: { subjectToBudget?: boolean } = {
       encoding: "utf8",
       timeout: options.subjectToBudget === false ? undefined : remainingMs(step),
       killSignal: "SIGKILL",
-      shell: true
+      shell: process.platform === "win32"
     }).trim();
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
