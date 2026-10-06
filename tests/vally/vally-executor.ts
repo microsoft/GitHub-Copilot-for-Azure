@@ -1,5 +1,4 @@
 import { computeMetrics } from "@microsoft/vally";
-import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "url";
 import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
@@ -8,7 +7,9 @@ import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
-import { deleteResourceGroup, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
+import { dirname } from "node:path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +18,6 @@ const __dirname = path.dirname(__filename);
  * The model to use for the agent run.
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
-const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 
 export class IntegrationTestAgentRunner implements Executor {
   name = "integration-test-agent-runner";
@@ -45,7 +45,6 @@ export class IntegrationTestAgentRunner implements Executor {
     const { takeScreenshot } = getTakeScreenshotCondition(tags);
     const requiredSkills = getRequiredSkillsCondition(tags);
     const timeout = options.timeout;
-    let fixtureResourceGroups: string[] = [];
 
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
@@ -96,76 +95,90 @@ export class IntegrationTestAgentRunner implements Executor {
       preserveWorkspace: true
     };
 
-    // Provision azure fixture if it's defined
+    let fixtureResourceGroups: string[] = [];
+    let postTestScriptConfig: PostTestScriptConfig | undefined;
+    let persistFixture: boolean = false;
+    let provisionOutput: ProvisionManifestOutput | undefined;
+    let manifest: FixtureManifest | undefined;
+    let absoluteManifestPath: string | undefined;
     const relativeManifestPath = getAzureFixtureManifestPath(tags);
-    if (relativeManifestPath && plugin?.dirname) {
-      // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
-      const fixtureBaseDir = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`);
-      const absoluteManifestPath = path.resolve(fixtureBaseDir, relativeManifestPath);
-      const rel = path.relative(fixtureBaseDir, absoluteManifestPath);
-      if (rel.startsWith("..") || path.isAbsolute(rel)) {
-        throw new Error(`azureFixture must resolve under ${fixtureBaseDir}: ${relativeManifestPath}`);
+    try {
+      // Provision azure fixture if it's defined
+      if (relativeManifestPath && plugin?.dirname) {
+        // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
+        const fixtureBaseDir = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`);
+        absoluteManifestPath = path.resolve(fixtureBaseDir, relativeManifestPath);
+        const rel = path.relative(fixtureBaseDir, absoluteManifestPath);
+        if (rel.startsWith("..") || path.isAbsolute(rel)) {
+          throw new Error(`azureFixture must resolve under ${fixtureBaseDir}: ${relativeManifestPath}`);
+        }
+        manifest = readManifest(absoluteManifestPath);
+
+        provisionOutput = provisionManifest(absoluteManifestPath, manifest);
+        console.log("provisionOutput", provisionOutput);
+        const parsedProvisionStdout: ProvisionScriptOutput = JSON.parse(provisionOutput.stdout);
+        const azureScopePrompt = getAzureScopePrompt(parsedProvisionStdout);
+        runConfig.prompt += `\n${azureScopePrompt}`;
+        fixtureResourceGroups = parsedProvisionStdout.resourceGroups;
+        postTestScriptConfig = manifest.postTestScript;
+        persistFixture = !!manifest.persist;
       }
-      const provisionScriptPath = path.resolve(__dirname, "../azure-fixtures/provision-fixture.ts");
-      const provisionOutput = execFileSync(
-        NPX_COMMAND,
-        ["-y", "tsx", provisionScriptPath, absoluteManifestPath],
-        { shell: true, encoding: "utf8" }
-      );
-      const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput);
-      const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
-      runConfig.prompt += `\n${azureScopePrompt}`;
-      fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
-    }
 
-    const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
-    const completedAt = new Date();
-    const events = convertToTrajectoryEvents(agentMetadata);
-    const metrics = computeMetrics(events);
+      const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
+      const completedAt = new Date();
+      const events = convertToTrajectoryEvents(agentMetadata);
+      const metrics = computeMetrics(events);
 
-    const agentOutput = events
-      .filter(e => e.type === "assistant_message")
-      .map(e => e.data.content)
-      .join("\n");
+      const agentOutput = events
+        .filter(e => e.type === "assistant_message")
+        .map(e => e.data.content)
+        .join("\n");
 
-    const sessionId = agentMetadata.events
-      .filter(e => e.type === "session.start")
-      .at(0)?.id;
+      const sessionId = agentMetadata.events
+        .filter(e => e.type === "session.start")
+        .at(0)?.id;
 
-    await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
-    await agentRunner.cleanup();
+      await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
+      await agentRunner.cleanup();
 
-    // Delete the fixtures provisioned for this test run
-    for (const resourceGroupName of fixtureResourceGroups) {
-      try {
-        deleteResourceGroup(resourceGroupName);
-      } catch {
-        // Suppress cleanup failures so they do not mask test results.
+      if (postTestScriptConfig) {
+        runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!))
+      }
+
+      // Vally will run the graders and produce results.jsonl.
+      // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
+
+      return {
+        id: crypto.randomUUID(),
+        stimulus,
+        events,
+        output: agentOutput,
+        workDir: options.workDir,
+        metadata: {
+          startedAt,
+          completedAt,
+          model: model,
+          executor: this.name,
+          skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
+          sessionID: sessionId ?? "unknown",
+        },
+        metrics: {
+          ...metrics,
+          wallTimeMs: completedAt.getTime() - startedAt.getTime(),
+        },
+      };
+    } finally {
+      // Delete the fixtures provisioned for this test run
+      if (!persistFixture) {
+        for (const resourceGroupName of fixtureResourceGroups) {
+          try {
+            deleteResourceGroup(resourceGroupName);
+          } catch {
+            // Suppress cleanup failures so they do not mask test results.
+          }
+        }
       }
     }
-
-    // Vally will run the graders and produce results.jsonl.
-    // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
-
-    return {
-      id: crypto.randomUUID(),
-      stimulus,
-      events,
-      output: agentOutput,
-      workDir: options.workDir,
-      metadata: {
-        startedAt,
-        completedAt,
-        model: model,
-        executor: this.name,
-        skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
-        sessionID: sessionId ?? "unknown",
-      },
-      metrics: {
-        ...metrics,
-        wallTimeMs: completedAt.getTime() - startedAt.getTime(),
-      },
-    };
   }
 
   async shutdown(): Promise<void> {

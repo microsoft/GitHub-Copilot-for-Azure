@@ -7,14 +7,14 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { basename, dirname, resolve } from "node:path";
 
 import {
-  BicepConfig,
-  BicepParameterConfig,
+  type BicepConfig,
+  type BicepParameterConfig,
   FIXTURE_ID_TAG,
   FIXTURE_VERSION_TAG,
-  FixtureManifest,
-  JsonValue,
-  ProvisionScriptOutput,
-  readManifest,
+  type FixtureManifest,
+  type JsonValue,
+  type ProvisionScriptOutput,
+  findFixtureResourceGroups,
   remainingMs,
   runAz,
   setBudget,
@@ -49,11 +49,6 @@ export type FixtureRunContext = {
   testPrincipalId: string;
 };
 
-type PostProvisionScriptOutput = {
-  path: string;
-  stdout: string;
-};
-
 function resolveBicepParameter(context: FixtureRunContext, parameterConfig: BicepParameterConfig): JsonValue {
   if (parameterConfig.value !== undefined) {
     return parameterConfig.value;
@@ -68,6 +63,7 @@ function resolveBicepParameter(context: FixtureRunContext, parameterConfig: Bice
 
 const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 const DEFAULT_TIME_TO_LIVE_SEC = 3 * 60 * 60; // 3 hours
+const COMPLETED_TAG = "Completed";
 
 /**
  * Each provision script run must finish in 10 minutes.
@@ -123,11 +119,57 @@ function computeRunContext(manifest: FixtureManifest): FixtureRunContext {
   };
 }
 
-function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): PostProvisionScriptOutput[] {
+function discoverPersistentFixtures(context: FixtureRunContext, manifest: FixtureManifest): boolean {
+  const discoveredResourceGroups = new Map<string, string>();
+
+  for (const bicepConfig of manifest.bicepConfigs) {
+    const matchingGroups = findFixtureResourceGroups(bicepConfig.fixtureId)
+      .filter((group) => group.tags[FIXTURE_VERSION_TAG] === String(manifest.version));
+    const incompleteGroups = matchingGroups.filter(
+      (group) => group.tags[COMPLETED_TAG]?.toLowerCase() !== "true",
+    );
+
+    if (incompleteGroups.length > 0) {
+      throw new Error(
+        `Persistent fixture ${bicepConfig.fixtureId} has partially provisioned resource group(s): ${incompleteGroups.map((group) => group.name).join(", ")}`,
+      );
+    }
+
+    if (matchingGroups.length > 1) {
+      throw new Error(
+        `Persistent fixture ${bicepConfig.fixtureId} has multiple provisioned resource groups: ${matchingGroups.map((group) => group.name).join(", ")}`,
+      );
+    }
+
+    if (matchingGroups.length === 1) {
+      discoveredResourceGroups.set(bicepConfig.resourceGroupNameBase, matchingGroups[0].name);
+    }
+  }
+
+  if (discoveredResourceGroups.size === 0) {
+    return false;
+  }
+
+  if (discoveredResourceGroups.size !== manifest.bicepConfigs.length) {
+    const missingFixtureIds = manifest.bicepConfigs
+      .filter((config) => !discoveredResourceGroups.has(config.resourceGroupNameBase))
+      .map((config) => config.fixtureId);
+    throw new Error(
+      `Persistent fixture is only partially provisioned; missing completed resource group(s) for: ${missingFixtureIds.join(", ")}`,
+    );
+  }
+
+  for (const [resourceGroupNameBase, resourceGroupName] of discoveredResourceGroups) {
+    context.resourceGroupNames[resourceGroupNameBase] = resourceGroupName;
+  }
+  return true;
+}
+
+function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): string | undefined {
   const resourceGroupNames = Object.values(context.resourceGroupNames);
 
-  const output: PostProvisionScriptOutput[] = [];
-  for (const scriptConfig of manifest.postProvisionScripts ?? []) {
+  if (manifest.postProvisionScript) {
+    const scriptConfig = manifest.postProvisionScript;
     const step = `post-provision script ${scriptConfig.path}`;
     try {
       const stdout = execFileSync(
@@ -135,7 +177,7 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
         ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
         { encoding: "utf8", timeout: remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
-      output.push({ path: scriptConfig.path, stdout: stdout });
+      return stdout;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
         throw new Error(`Provisioning budget of ${TOTAL_BUDGET_MS / 1000}s was exhausted during ${step}`, { cause: error });
@@ -143,7 +185,21 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
       throw error;
     }
   }
-  return output;
+  return;
+}
+
+export function runPostTestScript(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): string | undefined {
+  const resourceGroupNames = Object.values(context.resourceGroupNames);
+
+  if (manifest.postTestScript) {
+    const scriptConfig = manifest.postTestScript;
+    const stdout = execFileSync(
+      NPX_COMMAND,
+      ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
+      { encoding: "utf8", killSignal: "SIGKILL", shell: true }
+    );
+    return stdout;
+  }
 }
 
 function provision(
@@ -160,7 +216,8 @@ function provision(
   const tags = [
     `${FIXTURE_ID_TAG}=${bicepConfig.fixtureId}`,
     `${FIXTURE_VERSION_TAG}=${manifest.version}`,
-    `"DeleteAfter=${formatDeleteAfter(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))}"`, // Must wrap the argument since date string contains a space
+    manifest.persist ? "DoNotDelete=True" : `"DeleteAfter=${formatDeleteAfter(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))}"`, // Must wrap the argument since date string contains a space
+    "Completed=False"
   ];
 
   // Create resource group
@@ -178,7 +235,7 @@ function provision(
   ]);
 
   const parameters = new Map<string, JsonValue>();
-  for (const parameterConfig of bicepConfig.parameters) {
+  for (const parameterConfig of bicepConfig.parameters ?? []) {
     parameters.set(parameterConfig.key, resolveBicepParameter(context, parameterConfig));
   }
   // Set last so computed values win over anything the manifest declared.
@@ -207,24 +264,39 @@ function provision(
   ]);
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  if (args.length !== 1) {
-    console.error("Usage: tsx provision-fixture.ts <manifest-path>");
-    process.exit(2);
+function markFixturesCompleted(context: FixtureRunContext) {
+  for (const resourceGroupName of Object.values(context.resourceGroupNames)) {
+    runAz([
+      "group",
+      "update",
+      "--name",
+      resourceGroupName,
+      "--set",
+      `tags.${COMPLETED_TAG}=True`,
+      "-o",
+      "none",
+    ]);
   }
+}
 
+export type ProvisionManifestOutput = {
+  context: FixtureRunContext,
+  stdout: string
+};
+
+export function provisionManifest(manifestPath: string, manifest: FixtureManifest): ProvisionManifestOutput {
   try {
     setBudget(TOTAL_BUDGET_MS);
-
-    const manifestPath = resolve(args[0]);
-    const manifest = readManifest(manifestPath);
 
     const context = computeRunContext(manifest);
     const manifestDir = dirname(manifestPath);
 
-    for (const bicepConfig of manifest.bicepConfigs) {
-      provision(context, manifest, bicepConfig, manifestDir);
+    const fixturesAlreadyProvisioned = manifest.persist && discoverPersistentFixtures(context, manifest);
+    if (!fixturesAlreadyProvisioned) {
+      for (const bicepConfig of manifest.bicepConfigs) {
+        provision(context, manifest, bicepConfig, manifestDir);
+      }
+      markFixturesCompleted(context);
     }
 
     runPostProvisionScripts(context, manifest, manifestDir);
@@ -233,11 +305,12 @@ function main() {
     const output: ProvisionScriptOutput = {
       resourceGroups: Object.values(context.resourceGroupNames)
     };
-    process.stdout.write(JSON.stringify(output, null, 2));
+    return {
+      context: context,
+      stdout: JSON.stringify(output, null, 2)
+    };
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);
   }
 }
-
-main();

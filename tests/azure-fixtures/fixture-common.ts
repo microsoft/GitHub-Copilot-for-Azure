@@ -48,12 +48,20 @@ export type BicepConfig = {
    * The parameter values for the Bicep template.
    * The location parameter is always computed and provided.
    */
-  parameters: BicepParameterConfig[];
+  parameters?: BicepParameterConfig[];
 };
 
 export type PostProvisionScriptConfig = {
   /**
-   * Path to the data plane script.
+   * Path to the script.
+   * The path is relative to the location of the manifest file.
+   */
+  path: string;
+};
+
+export type PostTestScriptConfig = {
+  /**
+   * Path to the script.
    * The path is relative to the location of the manifest file.
    */
   path: string;
@@ -81,13 +89,27 @@ export type FixtureManifest = {
   bicepConfigs: BicepConfig[];
 
   /**
-   * Additional post-provision scripts to run after provisioning the fixtures.
+   * Whether this fixture needs to be persisted.
+   */
+  persist?: boolean;
+
+  /**
+   * Additional post-provision script to run after provisioning the fixtures but before running the test.
    * Post-provision scripts are given the computed resource group names.
    * --resource-groups <rg-1> <rg-2> ... <rg-n>
    *
-   * The post-provision scripts will be executed via tsx and must be written in Typescript.
+   * The post-provision script will be executed via tsx and must be written in Typescript.
    */
-  postProvisionScripts?: PostProvisionScriptConfig[];
+  postProvisionScript?: PostProvisionScriptConfig;
+
+  /**
+   * Additional post-provision script to run after the test finishes.
+   * Post-provision scripts are given the computed resource group names.
+   * --resource-groups <rg-1> <rg-2> ... <rg-n>
+   *
+   * The post-test script will be executed via tsx and must be written in Typescript.
+   */
+  postTestScript?: PostTestScriptConfig;
 };
 
 export type ProvisionScriptOutput = {
