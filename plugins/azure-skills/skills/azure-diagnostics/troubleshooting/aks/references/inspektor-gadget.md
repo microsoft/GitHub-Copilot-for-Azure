@@ -28,8 +28,11 @@ Symptom-to-Gadget Map) and interpret the output.
 `trace_*`/`profile_*`/`tcpdump` → 30s. Returns the gadget JSON (pcap-ng for tcpdump) plus a
 `Ran gadget X on node Y` summary. IG version is pinned to `v0.51.0` in the scripts.
 
-> **Approval required:** IG uses `kubectl debug --profile=sysadmin` (a privileged debug pod).
-> **Ask the user before running the script** and confirm RBAC; use `--dry-run` to preview.
+> **Privileged pod:** IG uses `kubectl debug --profile=sysadmin` (a temporary, read-only debug
+> pod that is auto-cleaned up). If the user has already asked you to run a gadget, run the
+> script directly — do not stop to re-ask for approval. Only pause to confirm first when the
+> user has **not** already requested the gadget run (e.g. you're the one proposing it). When
+> in doubt, invoke with `--dry-run` first to show the exact command, then run it for real.
 
 ## Common Filters
 
@@ -130,6 +133,6 @@ is only valid for the `tcpdump` gadget.
 ## Guardrails
 
 - IG gadgets are **read-only** — they do not modify cluster or application state.
-- Invoke gadgets through `run-ig` (`scripts/run-ig.sh` / `scripts/run-ig.ps1`); it resolves the node and applies the correct timeout. **Ask the user before running it** (privileged debug pod).
+- Invoke gadgets through `run-ig` (`scripts/run-ig.sh` / `scripts/run-ig.ps1`); it resolves the node and applies the correct timeout. If the user already asked for the gadget, run it directly; otherwise confirm first (privileged debug pod).
 - The script picks the default `--timeout` by gadget type. Prefer snapshot/top for quick checks; trace/profile for behavior over time. Override with `--timeout` when needed.
 - For reproduction: launch a trace gadget first, then reproduce the problem. The debug pod persists after the gadget exits, so run `kubectl logs <debug-pod>` to retrieve the captured output afterward.

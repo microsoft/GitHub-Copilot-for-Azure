@@ -38,6 +38,7 @@ Activate this skill when user wants to:
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
 6. Route AKS incidents to the dedicated AKS troubleshooting document
+7. When a bundled diagnostic script (e.g. `appservice-diagnostics`, `containerapp-diagnostics`, `pod-evidence`, `run-ig`, `test-messaging-connectivity`) fits the scenario, run it as your first diagnostic action using the identifiers already given — pass `--subscription` if the resource is outside the active subscription, and use the script's own safe defaults (e.g. `pod-evidence --all-failing`, `run-ig --dry-run`) when a specific target is unknown — instead of pausing to re-collect parameters or approval the request already implies
 
 ---
 
@@ -74,6 +75,18 @@ Activate this skill when user wants to:
 ---
 
 ## Quick Reference
+
+### Bundled Diagnostic Scripts (run first per Rule 7)
+
+| Script | Scenario | Location |
+|--------|----------|----------|
+| `appservice-diagnostics` | App Service config, deployments, settings, domains | [scripts/](scripts/appservice-diagnostics.sh) |
+| `containerapp-diagnostics` | Container Apps revisions, replicas, logs | [scripts/](scripts/containerapp-diagnostics.sh) |
+| `pod-evidence` | AKS pod/node evidence collection | [scripts/](scripts/pod-evidence.sh) |
+| `run-ig` | AKS Inspektor Gadget traces | [scripts/](scripts/run-ig.sh) |
+| `test-messaging-connectivity` | Event Hubs/Service Bus connectivity checks | [scripts/](scripts/test-messaging-connectivity.sh) |
+
+Each has a `.ps1` equivalent alongside the `.sh` version. Fall back to the raw commands below only when no bundled script fits the scenario.
 
 ### Common Diagnostic Commands
 

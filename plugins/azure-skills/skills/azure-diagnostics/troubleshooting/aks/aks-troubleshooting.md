@@ -94,7 +94,7 @@ kubectl describe pod <pod-name> -n <namespace>
 kubectl logs <pod-name> -n <namespace> --previous
 ```
 
-For unhealthy pods, gather the full read-only evidence bundle (describe, current + previous logs, resources vs usage) with the pod-evidence script instead of running the commands one by one — [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) / [`../../scripts/pod-evidence.ps1`](../../scripts/pod-evidence.ps1):
+For unhealthy pods, gather the full read-only evidence bundle (describe, current + previous logs, resources vs usage) with the pod-evidence script instead of running the commands one by one — [`../../scripts/pod-evidence.sh`](../../scripts/pod-evidence.sh) / [`../../scripts/pod-evidence.ps1`](../../scripts/pod-evidence.ps1). If the exact pod name isn't known yet, run it with `--all-failing` instead of pausing to ask for the pod name first:
 
 ```bash
 ../../scripts/pod-evidence.sh <pod-name> -n <namespace>
