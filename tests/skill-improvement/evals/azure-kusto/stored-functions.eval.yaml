@@ -14,7 +14,7 @@ scoring:
 stimuli:
   - name: "Discover stored functions safely"
     prompt: "List the functions in this Kusto database and show me how to inspect one before I call it."
-    rubric: &rubric
+    rubric:
       - The response gives a plausible read-only workflow to enumerate stored functions and inspect a selected function's definition, parameters, and body before invocation.
       - The response explains how to validate required arguments and dependencies and uses placeholders or requests cluster and database context instead of fabricating results.
       - The response avoids altering, creating, or invoking an unknown function before its definition and inputs are understood.
@@ -34,6 +34,10 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
   - name: "Troubleshoot stored function schema drift"
     prompt: "A stored Kusto function started failing after its source table changed. Help me compare the function definition with the current schema and propose a safe fix."
-    rubric: *rubric
+    rubric:
+      - The response retrieves or requests the stored function definition and current source-table schema, then compares referenced columns and expected types or shapes to identify the incompatible dependency.
+      - The response proposes a concrete compatible revision or normalization pattern based on that comparison, with placeholders where the replacement schema is not known.
+      - The response tests the revised body as an ad hoc query or temporary function and checks representative callers before recommending any stored-function alteration.
+      - Any persistent change is presented as a separate confirmed action with rollback or restoration guidance, not as part of the initial read-only diagnosis.
     tags: *tags
     graders: *graders

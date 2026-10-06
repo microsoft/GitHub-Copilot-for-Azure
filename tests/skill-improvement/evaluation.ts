@@ -1,10 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
 import type {
+  EvaluationSet,
   EvaluationCondition,
   SkillImprovementRunSpec,
 } from "./config.ts";
-import { resolveEvaluationPath } from "./config.ts";
+import {
+  evaluationFilesForCondition,
+  materializeEvaluationFile,
+  resolveEvaluationPath,
+} from "./config.ts";
 import {
   commandName,
   runProcess,
@@ -106,6 +111,7 @@ type GenerationTask = {
 
 type GeneratedAnswers = GenerationTask & {
   answerFile: string;
+  evalSpecFile: string;
   runDirectory: string;
   count: number;
 };
@@ -180,6 +186,10 @@ async function generateAnswers(
     slug(task.evalFile)
   );
   fs.mkdirSync(taskDirectory, { recursive: true });
+  const evalSpecFile = materializeEvaluationFile(
+    evalPath,
+    path.join(taskDirectory, task.evalFile)
+  );
   const answerFile = path.join(taskDirectory, "answers.jsonl");
   const stderrFile = path.join(taskDirectory, "vally.stderr.log");
   const env: NodeJS.ProcessEnv = {
@@ -197,7 +207,7 @@ async function generateAnswers(
     "@microsoft/vally-cli",
     "eval",
     "--eval-spec",
-    evalPath,
+    evalSpecFile,
     "--executor-plugin",
     path.join(testsDirectory, "vally", "vally-executor.ts"),
     "--grader-plugin",
@@ -233,6 +243,7 @@ async function generateAnswers(
   return {
     ...task,
     answerFile,
+    evalSpecFile,
     runDirectory,
     count,
   };
@@ -250,11 +261,6 @@ async function gradeAnswers(
 ): Promise<JudgedTrial[]> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
-  const evalPath = resolveEvaluationPath(
-    evalRepoRoot,
-    spec,
-    generated.evalFile
-  );
   const judgeDirectory = path.join(
     outputRoot,
     "judgments",
@@ -271,7 +277,7 @@ async function gradeAnswers(
     "@microsoft/vally-cli",
     "grade",
     "--eval-spec",
-    evalPath,
+    generated.evalSpecFile,
     "--grader-plugin",
     path.join(testsDirectory, "vally", "vally-graders.ts"),
     "--judge-model",
@@ -320,14 +326,15 @@ export async function runEvaluationBatch(
   outputRoot: string,
   spec: SkillImprovementRunSpec,
   phase: string,
-  evalFiles: string[],
+  evaluationSet: EvaluationSet,
   conditions: EvaluationCondition[],
   deadline: number,
   iteration?: number,
 ): Promise<EvaluationBatch> {
   const tasks: GenerationTask[] = conditions.flatMap(condition =>
     spec.models.answers.flatMap(answerModel =>
-      evalFiles.map(evalFile => ({ condition, answerModel, evalFile }))
+      evaluationFilesForCondition(spec, condition, evaluationSet)
+        .map(evalFile => ({ condition, answerModel, evalFile }))
     )
   );
   const generated: GeneratedAnswers[] = new Array(tasks.length);

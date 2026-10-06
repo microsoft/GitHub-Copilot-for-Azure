@@ -82,6 +82,14 @@ export type AcceptanceDecision = {
   gates: AcceptanceGate[];
 };
 
+export type RefinementDecision = {
+  retained: boolean;
+  reasons: string[];
+  comparison: Comparison;
+  skillMarkdownTokenIncreasePercent: number;
+  gates: AcceptanceGate[];
+};
+
 export type IterationReport = {
   iteration: number;
   candidateCommit?: string;
@@ -90,6 +98,7 @@ export type IterationReport = {
   changedFiles: string[];
   validationErrors: string[];
   decision?: AcceptanceDecision;
+  refinementDecision?: RefinementDecision;
   trials?: AggregatedTrial[];
 };
 
@@ -394,10 +403,101 @@ export function decideAcceptance(
   };
 }
 
+export function decideRefinement(
+  spec: SkillImprovementRunSpec,
+  referenceTrials: AggregatedTrial[],
+  candidateTrials: AggregatedTrial[],
+  baselineSkillTokens: number,
+  candidateSkillTokens: number,
+): RefinementDecision {
+  const comparison = compareTrials(referenceTrials, candidateTrials);
+  const reasons: string[] = [];
+  const gates: AcceptanceGate[] = [];
+  const progressPassed = comparison.qualityImprovementPoints > 0
+    || comparison.scoreImprovementPoints
+      >= spec.refinement.minimumScoreImprovementPoints;
+  gates.push({
+    label: "Refinement progress",
+    observed: comparison.qualityImprovementPoints > 0
+      ? `${comparison.qualityImprovementPoints.toFixed(2)} quality points`
+      : `${comparison.scoreImprovementPoints.toFixed(2)} score points`,
+    requirement:
+      `positive quality improvement or at least ${spec.refinement.minimumScoreImprovementPoints.toFixed(2)} score points`,
+    passed: progressPassed,
+  });
+  if (!progressPassed) {
+    reasons.push(
+      `Candidate improved quality by ${comparison.qualityImprovementPoints.toFixed(2)} points `
+      + `and score by ${comparison.scoreImprovementPoints.toFixed(2)} points; `
+      + `positive quality improvement or ${spec.refinement.minimumScoreImprovementPoints.toFixed(2)} score points required.`
+    );
+  }
+
+  const qualityBoundaryPassed = comparison.qualityImprovementPoints
+    >= -spec.refinement.maximumQualityRegressionPoints;
+  gates.push({
+    label: "Aggregate quality boundary",
+    observed: `${comparison.qualityImprovementPoints.toFixed(2)} points`,
+    requirement:
+      `no worse than -${spec.refinement.maximumQualityRegressionPoints.toFixed(2)} points`,
+    passed: qualityBoundaryPassed,
+  });
+  if (!qualityBoundaryPassed) {
+    reasons.push(
+      `Aggregate quality regressed by ${Math.abs(comparison.qualityImprovementPoints).toFixed(2)} points; `
+      + `${spec.refinement.maximumQualityRegressionPoints.toFixed(2)} allowed while refining.`
+    );
+  }
+
+  const skillIncreasePercent = baselineSkillTokens === 0
+    ? 0
+    : ((candidateSkillTokens - baselineSkillTokens) / baselineSkillTokens) * 100;
+  const skillGrowthPassed =
+    skillIncreasePercent <= spec.limits.maxSkillTokenIncreasePercent;
+  gates.push({
+    label: "Skill Markdown token growth",
+    observed: `${skillIncreasePercent.toFixed(2)}%`,
+    requirement: `at most ${spec.limits.maxSkillTokenIncreasePercent.toFixed(2)}%`,
+    passed: skillGrowthPassed,
+  });
+  if (!skillGrowthPassed) {
+    reasons.push(
+      `Estimated skill tokens increased by ${skillIncreasePercent.toFixed(2)}%; `
+      + `${spec.limits.maxSkillTokenIncreasePercent.toFixed(2)}% allowed.`
+    );
+  }
+
+  if (spec.acceptance.minimumSkillInvocationRate !== undefined) {
+    const invocationPassed = comparison.candidate.skillInvocationRate
+      >= spec.acceptance.minimumSkillInvocationRate;
+    gates.push({
+      label: "Target Skill invocation rate",
+      observed: percent(comparison.candidate.skillInvocationRate),
+      requirement: `at least ${percent(spec.acceptance.minimumSkillInvocationRate)}`,
+      passed: invocationPassed,
+    });
+    if (!invocationPassed) {
+      reasons.push(
+        `Target skill invocation rate was ${(comparison.candidate.skillInvocationRate * 100).toFixed(1)}%; `
+        + `${(spec.acceptance.minimumSkillInvocationRate * 100).toFixed(1)}% required.`
+      );
+    }
+  }
+
+  return {
+    retained: reasons.length === 0,
+    reasons,
+    comparison,
+    skillMarkdownTokenIncreasePercent: round(skillIncreasePercent, 2),
+    gates,
+  };
+}
+
 export function buildFailurePacket(
   spec: SkillImprovementRunSpec,
   trials: AggregatedTrial[],
   previousDecision?: AcceptanceDecision,
+  previousRefinementDecision?: RefinementDecision,
 ): string {
   const failures = trials
     .filter(trial => !trial.passed || trial.judgeDisagreement)
@@ -410,9 +510,19 @@ export function buildFailurePacket(
     "",
   ];
   if (previousDecision && !previousDecision.accepted) {
-    lines.push("## Previous candidate rejection", "");
+    lines.push(
+      previousRefinementDecision?.retained
+        ? "## Previous candidate retained for refinement"
+        : "## Previous candidate rejection",
+      ""
+    );
     for (const reason of previousDecision.reasons) {
       lines.push(`- ${reason}`);
+    }
+    if (previousRefinementDecision && !previousRefinementDecision.retained) {
+      for (const reason of previousRefinementDecision.reasons) {
+        lines.push(`- Refinement boundary: ${reason}`);
+      }
     }
     lines.push("");
   }
@@ -569,9 +679,12 @@ function renderBaselineArms(report: SkillImprovementReport): string[] {
   return lines;
 }
 
-function renderAcceptanceGates(decision: AcceptanceDecision): string[] {
+function renderDecisionGates(
+  heading: string,
+  decision: AcceptanceDecision | RefinementDecision,
+): string[] {
   return [
-    "| Acceptance gate | Observed | Requirement | Result |",
+    `| ${heading} | Observed | Requirement | Result |`,
     "| --- | --- | --- | --- |",
     ...decision.gates.map(gate =>
       `| ${gate.label} | ${gate.observed} | ${gate.requirement} | `
@@ -685,9 +798,23 @@ export function renderReport(report: SkillImprovementReport): string {
         `- Skill Markdown token growth (acceptance gate): ${iteration.decision.skillMarkdownTokenIncreasePercent >= 0 ? "+" : ""}${iteration.decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%`,
         ""
       );
-      lines.push(...renderAcceptanceGates(iteration.decision), "");
+      lines.push(...renderDecisionGates("Acceptance gate", iteration.decision), "");
       if (iteration.decision.reasons.length > 0) {
         lines.push(...iteration.decision.reasons.map(reason => `- ${reason}`), "");
+      }
+      if (iteration.refinementDecision && !iteration.decision.accepted) {
+        lines.push(
+          `Refinement: **${iteration.refinementDecision.retained ? "retained for the next iteration" : "discarded"}**`,
+          "",
+          ...renderDecisionGates("Refinement gate", iteration.refinementDecision),
+          ""
+        );
+        if (iteration.refinementDecision.reasons.length > 0) {
+          lines.push(
+            ...iteration.refinementDecision.reasons.map(reason => `- ${reason}`),
+            ""
+          );
+        }
       }
       lines.push(...renderChangedOutcomes(comparison));
     }
@@ -766,8 +893,15 @@ export function renderReportSummary(report: SkillImprovementReport): string {
   ];
   for (const iteration of report.iterations) {
     const decision = iteration.decision;
+    const iterationDecision = decision
+      ? decision.accepted
+        ? "Accepted"
+        : iteration.refinementDecision?.retained
+          ? "Retained for refinement"
+          : "Rejected"
+      : "Not evaluated";
     lines.push(
-      `| ${iteration.iteration} | ${decision ? (decision.accepted ? "Accepted" : "Rejected") : "Not evaluated"} | `
+      `| ${iteration.iteration} | ${iterationDecision} | `
       + `${decision ? percent(decision.comparison.candidate.passRate) : "N/A"} | `
       + `${decision ? `${decision.comparison.qualityImprovementPoints.toFixed(2)} points` : "N/A"} | `
       + `${decision ? `${decision.comparison.averageAnswerTokenChangePercent.toFixed(2)}%` : "N/A"} | `
@@ -778,7 +912,14 @@ export function renderReportSummary(report: SkillImprovementReport): string {
   const reasons = report.iterations.flatMap(iteration => [
     ...iteration.validationErrors.map(reason => `- Iteration ${iteration.iteration} validation: ${reason}`),
     ...(iteration.decision?.reasons ?? []).map(
-      reason => `- Iteration ${iteration.iteration} rejection: ${reason}`
+      reason => `- Iteration ${iteration.iteration} acceptance: ${reason}`
+    ),
+    ...(
+      iteration.refinementDecision && !iteration.refinementDecision.retained
+        ? iteration.refinementDecision.reasons.map(
+          reason => `- Iteration ${iteration.iteration} refinement: ${reason}`
+        )
+        : []
     ),
   ]);
   lines.push(...(reasons.length > 0 ? reasons : ["- None"]), "");
@@ -790,9 +931,17 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     lines.push(
       `## Iteration ${iteration.iteration} acceptance gates`,
       "",
-      ...renderAcceptanceGates(iteration.decision),
+      ...renderDecisionGates("Acceptance gate", iteration.decision),
       ""
     );
+    if (iteration.refinementDecision && !iteration.decision.accepted) {
+      lines.push(
+        `## Iteration ${iteration.iteration} refinement gates`,
+        "",
+        ...renderDecisionGates("Refinement gate", iteration.refinementDecision),
+        ""
+      );
+    }
     lines.push(...renderChangedOutcomes(iteration.decision.comparison));
     if (iteration.candidatePatchPath) {
       lines.push(`- Candidate patch: \`${iteration.candidatePatchPath}\``);

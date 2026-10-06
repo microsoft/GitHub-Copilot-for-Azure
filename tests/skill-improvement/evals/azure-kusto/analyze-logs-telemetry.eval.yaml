@@ -14,10 +14,10 @@ scoring:
 stimuli:
   - name: "Analyze deployment error spike"
     prompt: "AppLogs has Timestamp, Service, Level, Message, and DeploymentId. Write KQL to compare hourly error rates before and after a deployment six hours ago and explain how to interpret it."
-    rubric: &rubric
-      - The response provides plausible KQL that uses the supplied schema and time scope to answer the analysis question.
-      - The response computes meaningful rates, trends, correlations, or segments rather than only returning raw logs, and guards invalid arithmetic where relevant.
-      - The interpretation distinguishes evidence from causation and identifies useful follow-up dimensions or checks.
+    rubric:
+      - The KQL uses `AppLogs`, defines hourly bins on both sides of the deployment six hours ago, and identifies errors from `Level`.
+      - The query computes an hourly error rate with both error and total counts and guards against division by zero.
+      - The interpretation compares pre- and post-deployment patterns without treating temporal association as proof of causation and suggests a focused check by `Service` or `DeploymentId`.
     tags: &tags
       type: integration
       tier: full
@@ -34,46 +34,73 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
   - name: "Analyze regional latency"
     prompt: "Requests contains Timestamp, Region, DurationMs, and Success. Analyze p50 and p95 latency plus failure rate by Region over the last day."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `Requests` to the last day and groups results by `Region`.
+      - The query calculates p50 and p95 of `DurationMs` and a failure rate from `Success`.
+      - The failure-rate arithmetic is robust to empty groups and the output clearly labels the requested metrics.
     tags: *tags
     graders: *graders
   - name: "Analyze noisy exception messages"
     prompt: "Exceptions contains Timestamp, ExceptionType, Message, and Service. Write KQL to find dominant exception types and representative messages over seven days without returning every row."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `Exceptions` to seven days and summarizes frequency by `ExceptionType`, optionally segmented by `Service`.
+      - The query returns a bounded representative message for each summarized group using a valid aggregation or ranked sample rather than all raw rows.
+      - The result is ordered or limited so dominant exception types are identifiable.
     tags: *tags
     graders: *graders
   - name: "Analyze device disconnects"
     prompt: "DeviceEvents has Timestamp, DeviceId, Region, EventType. Analyze disconnect frequency and affected unique devices by Region in hourly bins for 48 hours."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `DeviceEvents` to 48 hours and to disconnect events using `EventType`.
+      - The query summarizes disconnect count and distinct affected `DeviceId` count by `Region` and one-hour bins.
+      - The output is chronological and keeps both requested measures distinct.
     tags: *tags
     graders: *graders
   - name: "Analyze authentication failures"
     prompt: "AuthEvents has Timestamp, Result, FailureReason, ClientType, UserId. Analyze failure rates and top reasons by ClientType over the last 24 hours."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `AuthEvents` to the last 24 hours and derives failures from `Result`.
+      - The query computes failure counts, total counts, and a guarded failure rate by `ClientType`.
+      - The response also ranks or summarizes the leading `FailureReason` values for each client type without exposing unnecessary user-level rows.
     tags: *tags
     graders: *graders
   - name: "Analyze dependency bottlenecks"
     prompt: "Dependencies has Timestamp, Target, Type, DurationMs, Success. Find dependency targets with high p95 latency and meaningful traffic over the last six hours."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `Dependencies` to the last six hours and summarizes request volume and p95 `DurationMs` by `Target`, with `Type` optionally retained as a dimension.
+      - The query applies an explicit minimum-volume condition so low-traffic targets are not ranked as meaningful bottlenecks solely by latency.
+      - The result orders or filters targets so high-p95, sufficiently trafficked dependencies are easy to identify.
     tags: *tags
     graders: *graders
   - name: "Analyze queue processing lag"
     prompt: "QueueEvents has EnqueuedAt, ProcessedAt, QueueName, Success. Write KQL to analyze processing lag percentiles and failures by queue for the last day."
-    rubric: *rubric
+    rubric:
+      - The KQL bounds rows to the last day using an appropriate queue timestamp and computes lag as `ProcessedAt - EnqueuedAt`.
+      - The query summarizes multiple lag percentiles by `QueueName`.
+      - The query includes failure count or rate by queue and handles missing `ProcessedAt` values coherently rather than treating them as valid lag durations.
     tags: *tags
     graders: *graders
   - name: "Analyze tenant error concentration"
     prompt: "ApiEvents contains Timestamp, TenantId, Success, StatusCode. Determine whether errors over the last day are concentrated in a few tenants while protecting against tiny sample sizes."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `ApiEvents` to the last day and summarizes total requests, errors, and error rate by `TenantId`.
+      - The query protects against tiny samples with an explicit minimum-volume threshold or a statistically meaningful alternative.
+      - The output supports concentration analysis by ranking tenant error contribution or comparing top tenants with the overall error total.
     tags: *tags
     graders: *graders
   - name: "Analyze CPU saturation periods"
     prompt: "HostMetrics has Timestamp, Host, CpuPercent. Identify hosts and time bins with sustained high CPU over the last 12 hours rather than isolated spikes."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `HostMetrics` to the last 12 hours and aggregates `CpuPercent` by `Host` and a stated time bin.
+      - The query defines sustained high CPU using more than a single raw sample, such as high average or percentile across a bin plus consecutive-bin or duration logic.
+      - The result identifies the affected hosts and periods and states the chosen saturation threshold.
     tags: *tags
     graders: *graders
   - name: "Analyze funnel drop-off"
     prompt: "CheckoutEvents has Timestamp, SessionId, Step, Success. Write KQL to summarize unique sessions reaching each checkout step and estimate drop-off over seven days."
-    rubric: *rubric
+    rubric:
+      - The KQL filters `CheckoutEvents` to seven days and counts distinct `SessionId` values reaching each `Step`.
+      - The response defines or derives an ordering for checkout steps rather than assuming alphabetical order represents funnel order.
+      - The query estimates drop-off between consecutive steps or relative to the starting step with guarded percentage arithmetic.
     tags: *tags
     graders: *graders

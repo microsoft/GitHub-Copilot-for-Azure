@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import {
+  execFileSync,
+  spawn,
+} from "node:child_process";
 import type { WriteStream } from "node:fs";
 
 export type ProcessOptions = {
@@ -30,7 +33,11 @@ function finishStream(stream: WriteStream | undefined): Promise<void> {
 }
 
 export function commandName(name: string): string {
-  return process.platform === "win32" && (name === "npx" || name === "npm")
+  return process.platform === "win32" && (
+    name === "npx"
+    || name === "npm"
+    || name === "az"
+  )
     ? `${name}.cmd`
     : name;
 }
@@ -39,6 +46,7 @@ type ProcessRuntime = {
   platform: NodeJS.Platform;
   nodeExecutable: string;
   nodeInstallDirectory: string;
+  azureCliPython?: string;
 };
 
 const defaultProcessRuntime: ProcessRuntime = {
@@ -46,6 +54,25 @@ const defaultProcessRuntime: ProcessRuntime = {
   nodeExecutable: process.execPath,
   nodeInstallDirectory: path.dirname(process.execPath),
 };
+
+function findAzureCliPython(): string {
+  let launcher: string;
+  try {
+    launcher = execFileSync("where.exe", ["az.cmd"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).split(/\r?\n/).find(Boolean) ?? "";
+  } catch {
+    launcher = "";
+  }
+  const python = launcher
+    ? path.resolve(path.dirname(launcher), "..", "python.exe")
+    : "";
+  if (!python || !fs.existsSync(python)) {
+    throw new Error("Unable to resolve the Azure CLI Python executable.");
+  }
+  return python;
+}
 
 export function resolveProcessLaunch(
   command: string,
@@ -56,6 +83,12 @@ export function resolveProcessLaunch(
     return { command, args };
   }
   const commandBaseName = path.basename(command).toLowerCase();
+  if (commandBaseName === "az.cmd") {
+    return {
+      command: runtime.azureCliPython ?? findAzureCliPython(),
+      args: ["-IBm", "azure.cli", ...args],
+    };
+  }
   if (commandBaseName !== "npm.cmd" && commandBaseName !== "npx.cmd") {
     throw new Error(
       `Cannot safely execute Windows batch command without a shell: ${command}`
