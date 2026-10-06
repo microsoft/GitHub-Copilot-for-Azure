@@ -12,11 +12,5 @@
       "resourceGroupNameBase": "rg-fixture-resource-lookup-missing-tag",
       "parameters": []
     }
-  ],
-  "postProvisionScript": {
-    "path": "postProvision.ts"
-  },
-  "postTestScript": {
-    "path": "postTest.ts"
-  }
+  ]
 }
