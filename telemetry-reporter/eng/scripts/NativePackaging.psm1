@@ -1,6 +1,8 @@
+#Requires -Version 7
+
 Set-StrictMode -Version Latest
 
-function Get-NativeRuntimeIdentifier {
+function Get-NativeRuntimeIdentifierList {
     return @(
         'win-x64', 'win-arm64',
         'osx-x64', 'osx-arm64',
@@ -52,7 +54,7 @@ function Get-ValidatedNativePackage {
         [switch] $Symbols
     )
 
-    if ((Get-NativeRuntimeIdentifier) -notcontains $RuntimeIdentifier) {
+    if ((Get-NativeRuntimeIdentifierList) -notcontains $RuntimeIdentifier) {
         throw "Runtime identifier '$RuntimeIdentifier' is not supported."
     }
 
@@ -115,4 +117,4 @@ function Get-ValidatedNativePackage {
     }
 }
 
-Export-ModuleMember -Function Get-NativeRuntimeIdentifier, Get-NativeBuildTopology, Get-ValidatedNativePackage
+Export-ModuleMember -Function Get-NativeRuntimeIdentifierList, Get-NativeBuildTopology, Get-ValidatedNativePackage

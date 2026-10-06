@@ -341,7 +341,7 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
   it("keeps project, parameter validation, manifest and release target lists aligned", () => {
     const result = runPowerShell(`
       Import-Module ${psQuote(join(scriptRoot, "NativePackaging.psm1"))} -Force
-      $targets = @(Get-NativeRuntimeIdentifier)
+      $targets = @(Get-NativeRuntimeIdentifierList)
       $project = [xml](Get-Content ${psQuote(join(repoRoot, "telemetry-reporter", "src", "ghcfa-telem", "ghcfa-telem.csproj"))} -Raw)
       $projectTargets = $project.Project.PropertyGroup[0].RuntimeIdentifiers.Split(';')
       if (@(Compare-Object $targets $projectTargets).Count -ne 0) { throw 'Project RIDs differ.' }
@@ -353,6 +353,16 @@ describe.skipIf(!powerShellAvailable)("Telemetry Native AOT packaging", () => {
       if (@(Compare-Object $targets $parameterTargets).Count -ne 0) { throw 'Parameter RIDs differ.' }
     `);
     expectSuccess(result);
+  });
+
+  it.skipIf(process.platform !== "win32")("rejects module imports under Windows PowerShell 5.1", () => {
+    const result = spawnSync("powershell.exe", [
+      "-NoProfile", "-NonInteractive", "-Command",
+      `Import-Module ${psQuote(join(scriptRoot, "NativePackaging.psm1"))} -ErrorAction Stop`,
+    ], { encoding: "utf8", timeout: 30_000 });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(result.stderr).toMatch(/requires[\s\S]*PowerShell 7/i);
   });
 
   it("rebuilds for musl toolchain and packaging helper changes, not installer changes", () => {

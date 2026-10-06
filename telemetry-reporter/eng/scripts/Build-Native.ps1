@@ -23,7 +23,7 @@ param(
 Set-StrictMode -Version Latest
 
 Import-Module (Join-Path $PSScriptRoot 'NativePackaging.psm1') -Force -ErrorAction Stop
-$supportedRuntimeIdentifiers = @(Get-NativeRuntimeIdentifier)
+$supportedRuntimeIdentifiers = @(Get-NativeRuntimeIdentifierList)
 $currentRuntimeIdentifier = [System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier
 if ([string]::IsNullOrWhiteSpace($RuntimeIdentifier)) {
     $RuntimeIdentifier = $currentRuntimeIdentifier

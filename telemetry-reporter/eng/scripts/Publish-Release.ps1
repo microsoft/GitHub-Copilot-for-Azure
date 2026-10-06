@@ -16,7 +16,7 @@ param(
 Set-StrictMode -Version Latest
 Import-Module (Join-Path $PSScriptRoot 'NativePackaging.psm1') -Force -ErrorAction Stop
 
-$runtimeIdentifiers = @(Get-NativeRuntimeIdentifier)
+$runtimeIdentifiers = @(Get-NativeRuntimeIdentifierList)
 
 function Invoke-GitHubCli {
     param(

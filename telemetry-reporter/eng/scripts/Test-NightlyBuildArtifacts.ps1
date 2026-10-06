@@ -28,7 +28,7 @@ if (-not (Test-Path -LiteralPath $PipelineWorkspace -PathType Container)) {
     exit 2
 }
 
-$runtimeIdentifiers = @(Get-NativeRuntimeIdentifier)
+$runtimeIdentifiers = @(Get-NativeRuntimeIdentifierList)
 $manifestFiles = @()
 $versions = @()
 

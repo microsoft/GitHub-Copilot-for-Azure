@@ -12,6 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
 import { basename, delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -69,7 +70,7 @@ type CopilotHookEntry = {
 };
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
-const TEST_DIR = mkdtempSync(join(REPO_ROOT, ".azure-telemetry-hooks-"));
+const TEST_DIR = mkdtempSync(join(tmpdir(), "azure-telemetry-hooks-"));
 const BIN_DIR = join(TEST_DIR, "bin");
 const SCRATCH_DIR = join(TEST_DIR, "scratch");
 const CAPTURE_FILE = join(TEST_DIR, "npx-args.txt");
