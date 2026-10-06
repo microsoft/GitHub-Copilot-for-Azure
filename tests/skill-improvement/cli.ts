@@ -2,7 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadRunSpec, createRunPlan, enforceRunLimits } from "./config.ts";
+import {
+  loadRunSpec,
+  loadRunSpecMetadata,
+  createRunPlan,
+  enforceRunLimits,
+} from "./config.ts";
 import { executeSkillImprovement } from "./engine.ts";
 import {
   cleanupManagedResources,
@@ -147,6 +152,15 @@ function currentBranch(): string {
   return branch;
 }
 
+export function loadGitHubDispatchDefaults(configPath: string): {
+  baselineRef: string;
+} {
+  const metadata = loadRunSpecMetadata(configPath);
+  return {
+    baselineRef: metadata.target.baselineRef,
+  };
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (!args.command || !args.config) {
@@ -156,27 +170,28 @@ async function main(): Promise<void> {
   }
   validateCommandOptions(args);
   const configPath = resolveConfig(args.config);
-  const spec = loadRunSpec(configPath);
   if (args.command === "validate") {
     validate(configPath);
     return;
   }
+  if (args.command === "run" && args.executor === "github") {
+    const defaults = loadGitHubDispatchDefaults(configPath);
+    await dispatchGitHub(
+      configPath,
+      args.baselineRef ?? defaults.baselineRef,
+      args.workflowRef ?? currentBranch(),
+      args.createDraftPr,
+      args.prBase ?? "main"
+    );
+    return;
+  }
+  const spec = loadRunSpec(configPath);
   if (args.command === "prepare-resources") {
     await prepareManagedResources(spec, repoRoot);
     return;
   }
   if (args.command === "cleanup-resources") {
     await cleanupManagedResources(spec, repoRoot);
-    return;
-  }
-  if (args.command === "run" && args.executor === "github") {
-    await dispatchGitHub(
-      configPath,
-      args.baselineRef ?? spec.target.baselineRef,
-      args.workflowRef ?? currentBranch(),
-      args.createDraftPr,
-      args.prBase ?? "main"
-    );
     return;
   }
   if (args.command !== "run" && args.command !== "execute") {

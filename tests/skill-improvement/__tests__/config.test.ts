@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { stringify } from "yaml";
 import {
   createRunPlan,
   enforceRunLimits,
@@ -73,7 +74,7 @@ describe("skill improvement configuration", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
     ), {
-      AZURE_SUBSCRIPTION_ID: "subscription-from-environment",
+      AZURE_EVALS_SUBSCRIPTION_ID: "subscription-from-environment",
       AZURE_EVALS_RESOURCE_GROUP: "resource-group-from-environment",
     });
 
@@ -111,8 +112,26 @@ describe("skill improvement configuration", () => {
       "Missing environment variables referenced by"
       + " "
       + fileURLToPath(new URL("../specs/azure-kusto.yaml", import.meta.url))
-      + ": AZURE_EVALS_RESOURCE_GROUP, AZURE_SUBSCRIPTION_ID"
+      + ": AZURE_EVALS_RESOURCE_GROUP, AZURE_EVALS_SUBSCRIPTION_ID"
     );
+  });
+
+  test("rejects unsupported run-spec environment variables", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
+    const configPath = path.join(root, "run.yaml");
+    const runSpec = spec();
+    runSpec.target.baselineRef = "${GH_TOKEN}";
+    fs.writeFileSync(configPath, stringify(runSpec), "utf8");
+
+    try {
+      expect(() => loadRunSpec(configPath, {
+        GH_TOKEN: "must-not-be-read",
+      })).toThrow(
+        `Unsupported environment variables referenced by ${configPath}: GH_TOKEN`
+      );
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   test("materializes evaluation stimuli with environment values", () => {
@@ -121,14 +140,14 @@ describe("skill improvement configuration", () => {
     const destination = path.join(root, "resolved.eval.yaml");
     fs.writeFileSync(
       source,
-      "stimuli:\n  - prompt: Use ${SUBSCRIPTION_ID} in ${RESOURCE_GROUP}.\n",
+      "stimuli:\n  - prompt: Use ${AZURE_EVALS_SUBSCRIPTION_ID} in ${AZURE_EVALS_RESOURCE_GROUP}.\n",
       "utf8"
     );
 
     try {
       materializeEvaluationFile(source, destination, {
-        SUBSCRIPTION_ID: "subscription-value",
-        RESOURCE_GROUP: "resource-group-value",
+        AZURE_EVALS_SUBSCRIPTION_ID: "subscription-value",
+        AZURE_EVALS_RESOURCE_GROUP: "resource-group-value",
       });
       expect(fs.readFileSync(destination, "utf8")).toContain(
         "Use subscription-value in resource-group-value."
@@ -145,13 +164,57 @@ describe("skill improvement configuration", () => {
     const destination = path.join(root, "resolved.eval.yaml");
     fs.writeFileSync(
       source,
-      "stimuli:\n  - prompt: Use ${SUBSCRIPTION_ID}.\n",
+      "stimuli:\n  - prompt: Use ${AZURE_EVALS_SUBSCRIPTION_ID}.\n",
       "utf8"
     );
 
     try {
       expect(() => materializeEvaluationFile(source, destination, {})).toThrow(
-        `Missing environment variables referenced by ${source}: SUBSCRIPTION_ID`
+        `Missing environment variables referenced by ${source}: AZURE_EVALS_SUBSCRIPTION_ID`
+      );
+      expect(fs.existsSync(destination)).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects unsupported evaluation environment variables", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
+    const source = path.join(root, "source.eval.yaml");
+    const destination = path.join(root, "resolved.eval.yaml");
+    fs.writeFileSync(
+      source,
+      "stimuli:\n  - prompt: Never expose ${GH_TOKEN}.\n",
+      "utf8"
+    );
+
+    try {
+      expect(() => materializeEvaluationFile(source, destination, {
+        GH_TOKEN: "must-not-be-read",
+      })).toThrow(
+        `Unsupported environment variables referenced by ${source}: GH_TOKEN`
+      );
+      expect(fs.existsSync(destination)).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects the Azure login subscription in evaluation content", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
+    const source = path.join(root, "source.eval.yaml");
+    const destination = path.join(root, "resolved.eval.yaml");
+    fs.writeFileSync(
+      source,
+      "stimuli:\n  - prompt: Use ${AZURE_SUBSCRIPTION_ID}.\n",
+      "utf8"
+    );
+
+    try {
+      expect(() => materializeEvaluationFile(source, destination, {
+        AZURE_SUBSCRIPTION_ID: "login-subscription",
+      })).toThrow(
+        `Unsupported environment variables referenced by ${source}: AZURE_SUBSCRIPTION_ID`
       );
       expect(fs.existsSync(destination)).toBe(false);
     } finally {
@@ -444,6 +507,66 @@ describe("skill improvement configuration", () => {
     valid.evaluations.heldOut = [];
     valid.experiment.conditions[3].heldOutEvaluations = ["held-out.eval.yaml"];
     expect(() => validateRunSpec(valid)).not.toThrow();
+  });
+
+  test("rejects held-out evidence scoped only to a skill-disabled condition", () => {
+    const invalid = spec();
+    invalid.evaluations.heldOut = [];
+    invalid.experiment.conditions[0].heldOutEvaluations = ["held-out.eval.yaml"];
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "condition-specific held-out evaluation is required"
+    );
+  });
+
+  test("excludes skill-disabled condition-specific held-out files from planning", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-config-"));
+    const evalDirectory = path.join(
+      root,
+      "tests",
+      "skill-improvement",
+      "evals",
+      "azure-kusto"
+    );
+    fs.mkdirSync(evalDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(evalDirectory, "quality.eval.yaml"),
+      "stimuli:\n  - name: one\n",
+      "utf8"
+    );
+    fs.writeFileSync(
+      path.join(evalDirectory, "candidate-held-out.eval.yaml"),
+      "stimuli:\n  - name: candidate\n",
+      "utf8"
+    );
+    fs.writeFileSync(
+      path.join(evalDirectory, "disabled-held-out.eval.yaml"),
+      "stimuli:\n  - name: disabled-one\n  - name: disabled-two\n",
+      "utf8"
+    );
+    const runSpec = spec();
+    runSpec.evaluations.heldOut = [];
+    runSpec.experiment.conditions[0].heldOutEvaluations = [
+      "disabled-held-out.eval.yaml",
+    ];
+    runSpec.experiment.conditions[1].heldOutEvaluations = [
+      "candidate-held-out.eval.yaml",
+    ];
+
+    try {
+      const plan = createRunPlan(root, runSpec);
+      expect(plan.heldOutPromptCount).toBe(1);
+      expect(plan.heldOutAnswerGenerations).toBeGreaterThan(0);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("requires a candidate iteration for held-out improvement", () => {
+    const invalid = spec();
+    invalid.limits.maxIterations = 0;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "requireHeldOutImprovement requires at least one candidate iteration"
+    );
   });
 
   test("validates requireHeldOutImprovement without an invocation threshold", () => {

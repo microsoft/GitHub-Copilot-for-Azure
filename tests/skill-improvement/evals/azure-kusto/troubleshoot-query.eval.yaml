@@ -52,7 +52,7 @@ stimuli:
     prompt: "My KQL fails when I write `let cutoff = Events | summarize max(Timestamp); Events | where Timestamp > cutoff`. Explain and correct the scalar handling."
     rubric:
       - The response explains that the summarize expression assigned to `cutoff` is tabular while the `where` comparison needs a scalar.
-      - The correction uses `toscalar(...)`, `scalar(...)`, or an equivalent valid Kusto scalar extraction around the maximum timestamp query.
+      - The correction uses `toscalar(...)` or an equivalent valid Kusto scalar extraction around the maximum timestamp query.
       - The final KQL compares `Events.Timestamp` with the extracted scalar and notes the behavioral consequence of filtering after the table's maximum timestamp.
     tags: *tags
     graders: *graders

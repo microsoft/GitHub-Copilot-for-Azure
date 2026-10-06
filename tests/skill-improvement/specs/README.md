@@ -207,7 +207,7 @@ A run can start and stop a persistent Azure Data Explorer cluster:
 ```yaml
 resources:
   kusto:
-    subscriptionId: ${AZURE_SUBSCRIPTION_ID}
+    subscriptionId: ${AZURE_EVALS_SUBSCRIPTION_ID}
     resourceGroup: ${AZURE_EVALS_RESOURCE_GROUP}
     clusterName: evaluationkusto
     databaseName: IntegrationTests
@@ -217,10 +217,13 @@ resources:
 ```
 
 `${ENV_VAR}` references in run specifications and evaluation files are
-expanded when loaded. Validation fails with the names of any unset or empty
-variables; values are never silently defaulted. The GitHub workflow maps
-`AZURE_SUBSCRIPTION_ID` and `AZURE_EVALS_RESOURCE_GROUP` from repository
-variables. Expanded evaluation files are materialized before
+expanded when loaded only for the non-secret `AZURE_EVALS_SUBSCRIPTION_ID` and
+`AZURE_EVALS_RESOURCE_GROUP` allowlist. Unsupported placeholders are rejected
+without reading their environment values. Validation also fails with the names
+of any unset or empty allowed variables; values are never silently defaulted.
+The GitHub workflow maps both evaluation values from repository variables,
+separately from `AZURE_SUBSCRIPTION_ID`, which remains the Azure login
+subscription. Expanded evaluation files are materialized before
 Vally starts, so agent-visible stimulus text contains the resolved values.
 
 The executor starts a stopped cluster, waits for the management state to become

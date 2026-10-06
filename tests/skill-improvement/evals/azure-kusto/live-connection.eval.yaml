@@ -16,7 +16,7 @@ stimuli:
     prompt: >-
       Use available read-only Azure or Kusto operations to verify cluster
       ghcfaevalskusto in resource group ${AZURE_EVALS_RESOURCE_GROUP} and
-      subscription ${AZURE_SUBSCRIPTION_ID}. List its databases and tell me
+      subscription ${AZURE_EVALS_SUBSCRIPTION_ID}. List its databases and tell me
       whether IntegrationTests exists. Do not create or modify anything.
     rubric:
       - The response invokes the azure-kusto skill and uses available read-only Azure or Kusto tooling rather than only describing hypothetical steps.
@@ -41,7 +41,7 @@ stimuli:
       In the IntegrationTests database on ghcfaevalskusto, inspect the AppLogs
       schema and run a read-only KQL query for rows from 2026-09-20 through
       2026-09-22 inclusive. Report the count by Severity, ordered by Severity.
-      Use subscription ${AZURE_SUBSCRIPTION_ID} and resource group
+      Use subscription ${AZURE_EVALS_SUBSCRIPTION_ID} and resource group
       ${AZURE_EVALS_RESOURCE_GROUP}.
     rubric:
       - The response invokes the azure-kusto skill, inspects the live AppLogs schema, and executes the query through available read-only Kusto tooling.
@@ -57,7 +57,7 @@ stimuli:
       2000 milliseconds between 2026-09-20 and 2026-09-23. Include OperationId,
       Endpoint, Dependency, and dependency duration. The resource group is
       ${AZURE_EVALS_RESOURCE_GROUP} and the subscription is
-      ${AZURE_SUBSCRIPTION_ID}.
+      ${AZURE_EVALS_SUBSCRIPTION_ID}.
     rubric:
       - The response invokes the azure-kusto skill, inspects both live table schemas, and executes a bounded read-only join through available Kusto tooling.
       - The join uses OperationId, filters failed requests and dependency DurationMs greater than 2000, and projects the requested fields.
@@ -70,7 +70,7 @@ stimuli:
       FailedRequestsByRegion, inspect its parameters before calling it, and
       invoke it read-only for 2026-09-20 through 2026-09-23. Report the failure
       count by region. Use resource group ${AZURE_EVALS_RESOURCE_GROUP} and
-      subscription ${AZURE_SUBSCRIPTION_ID}.
+      subscription ${AZURE_EVALS_SUBSCRIPTION_ID}.
     rubric:
       - The response invokes the azure-kusto skill and uses available live read-only Kusto operations to discover and inspect FailedRequestsByRegion before invocation.
       - The function is called with the requested bounded datetime arguments rather than invoked without inspecting its signature.

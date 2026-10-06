@@ -86,6 +86,10 @@ export type RunPlan = {
 };
 
 const ENVIRONMENT_VARIABLE_PATTERN = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+const ALLOWED_ENVIRONMENT_VARIABLES = new Set([
+  "AZURE_EVALS_RESOURCE_GROUP",
+  "AZURE_EVALS_SUBSCRIPTION_ID",
+]);
 
 export function expandEnvironmentVariables<T>(
   value: T,
@@ -93,11 +97,16 @@ export function expandEnvironmentVariables<T>(
   environment: NodeJS.ProcessEnv = process.env,
 ): T {
   const missing = new Set<string>();
+  const unsupported = new Set<string>();
   const expand = (current: unknown): unknown => {
     if (typeof current === "string") {
       return current.replace(
         ENVIRONMENT_VARIABLE_PATTERN,
         (placeholder, name: string) => {
+          if (!ALLOWED_ENVIRONMENT_VARIABLES.has(name)) {
+            unsupported.add(name);
+            return placeholder;
+          }
           const environmentValue = environment[name];
           if (environmentValue === undefined || environmentValue.length === 0) {
             missing.add(name);
@@ -118,6 +127,12 @@ export function expandEnvironmentVariables<T>(
     return current;
   };
   const expanded = expand(value) as T;
+  if (unsupported.size > 0) {
+    throw new Error(
+      `Unsupported environment variables referenced by ${source}: `
+      + Array.from(unsupported).sort().join(", ")
+    );
+  }
   if (missing.size > 0) {
     throw new Error(
       `Missing environment variables referenced by ${source}: `
@@ -400,6 +415,14 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     spec.limits?.maxSkillTokenIncreasePercent,
     "limits.maxSkillTokenIncreasePercent"
   );
+  if (
+    spec.acceptance.requireHeldOutImprovement
+    && (!spec.improvementAgent.enabled || spec.limits.maxIterations === 0)
+  ) {
+    throw new Error(
+      "requireHeldOutImprovement requires at least one candidate iteration."
+    );
+  }
   if (spec.output?.issue !== "always" && spec.output?.issue !== "never") {
     throw new Error("output.issue must be 'always' or 'never'.");
   }
@@ -425,6 +448,26 @@ export function loadRunSpec(
   return validateRunSpec(
     readExpandedYaml<SkillImprovementRunSpec>(resolvedPath, environment)
   );
+}
+
+export type RunSpecMetadata = {
+  target: {
+    baselineRef: string;
+  };
+};
+
+export function loadRunSpecMetadata(filePath: string): RunSpecMetadata {
+  const resolvedPath = path.resolve(filePath);
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`Run specification not found: ${resolvedPath}`);
+  }
+  const metadata = parse(fs.readFileSync(resolvedPath, "utf8")) as RunSpecMetadata;
+  requireNonEmptyString(metadata?.target?.baselineRef, "target.baselineRef");
+  return {
+    target: {
+      baselineRef: metadata.target.baselineRef,
+    },
+  };
 }
 
 function isInsideDirectory(parent: string, candidate: string): boolean {
@@ -505,7 +548,9 @@ export function hasHeldOutEvaluations(
   return (
     (spec.evaluations.heldOut?.length ?? 0) > 0
     || spec.experiment.conditions.some(
-      condition => (condition.heldOutEvaluations?.length ?? 0) > 0
+      condition =>
+        condition.skill === "enabled"
+        && (condition.heldOutEvaluations?.length ?? 0) > 0
     )
   );
 }
@@ -525,6 +570,9 @@ export function evaluationFilesForCondition(
 }
 
 export function createRunPlan(repoRoot: string, spec: SkillImprovementRunSpec): RunPlan {
+  const candidateConditions = spec.experiment.conditions.filter(
+    condition => condition.skill === "enabled"
+  );
   const developmentFiles = Array.from(new Set([
     ...spec.evaluations.development,
     ...spec.experiment.conditions.flatMap(
@@ -533,7 +581,7 @@ export function createRunPlan(repoRoot: string, spec: SkillImprovementRunSpec): 
   ]));
   const heldOutFiles = Array.from(new Set([
     ...(spec.evaluations.heldOut ?? []),
-    ...spec.experiment.conditions.flatMap(
+    ...candidateConditions.flatMap(
       condition => condition.heldOutEvaluations ?? []
     ),
   ]));
@@ -549,9 +597,6 @@ export function createRunPlan(repoRoot: string, spec: SkillImprovementRunSpec): 
   );
   const answerModels = spec.models.answers.length;
   const repetitions = spec.experiment.repetitions;
-  const candidateConditions = spec.experiment.conditions.filter(
-    condition => condition.skill === "enabled"
-  );
   const plannedIterations = spec.improvementAgent.enabled
     ? spec.limits.maxIterations
     : 0;

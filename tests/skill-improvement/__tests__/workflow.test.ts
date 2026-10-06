@@ -8,6 +8,10 @@ const workflow = fs.readFileSync(
 );
 
 describe("skill improvement workflow", () => {
+  test("allows setup and cleanup headroom beyond the engine deadline", () => {
+    expect(workflow).toContain("timeout-minutes: 420");
+  });
+
   test("serializes runs sharing the same run specification", () => {
     expect(workflow).toContain(
       "group: skill-improvement-${{ inputs.run-spec }}"
@@ -70,6 +74,9 @@ describe("skill improvement workflow", () => {
   test("always stops managed evaluation resources after execution", () => {
     expect(workflow).toContain(
       "AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}"
+    );
+    expect(workflow).toContain(
+      "AZURE_EVALS_SUBSCRIPTION_ID: ${{ vars.AZURE_EVALS_SUBSCRIPTION_ID }}"
     );
     expect(workflow).toContain(
       "AZURE_EVALS_RESOURCE_GROUP: ${{ vars.AZURE_EVALS_RESOURCE_GROUP }}"

@@ -125,6 +125,11 @@ directory. Vally first saves answers with `--skip-grade`, then re-grades those
 trajectories with each judge. The improvement agent receives development
 failures and prior rejection reasons, never held-out evidence.
 
+The workflow job allows 420 minutes. This leaves 40 minutes of setup and
+cleanup headroom beyond the current 360-minute engine limit plus the managed
+Kusto cluster's 20-minute startup timeout; the engine deadline remains the
+authoritative evaluation limit.
+
 Run specifications may reference only filenames inside a repository-relative
 `tests/skill-improvement/evals/<name>` root. These suites are opt-in and are not
 discovered by the nightly `evals/` integration workflow.
@@ -132,13 +137,16 @@ discovered by the nightly `evals/` integration workflow.
 Conditions may add `developmentEvaluations` or `heldOutEvaluations`. Use this
 for suites that require capabilities available only in that arm, such as live
 Azure MCP access. Common evaluation files still run in every configured arm.
+Condition-specific held-out files count only on Skill-enabled candidate arms,
+matching the held-out baseline and candidate batches executed by the engine.
 
 An optional `resources.kusto` block manages a persistent ADX test cluster. The
 local and GitHub executors start the stopped cluster, wait for the management
 state and a data-plane health query, run evaluations, and request a stop in a
 `finally` path. The workflow also performs an independent `always()` cleanup
 as a fallback. Schema and deterministic seed data for the Kusto environment
-are versioned under `resources/azure-kusto/`.
+are externally maintained; `resources/azure-kusto/` documents the persistent
+environment and its lifecycle contract.
 
 Resource lifecycle can also be exercised independently from `tests`:
 
