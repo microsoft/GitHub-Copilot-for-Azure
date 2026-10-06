@@ -215,17 +215,6 @@ Future runs of the provision script will provision the updated version of the fi
 - Use the cleanup script with the manifest to delete all resource groups with matching `fixtureId` and values.
 - Remove the test case and all the files for its fixtures.
 
-## Questions and answers
-
-Q: Why do we require `postProvision` scripts to be written in TypeScript?
-A: This is primarily for a cross-platform development experience. Windows development machines usually do not have Bash, and non-Windows development machines usually do not have PowerShell. Developing in the repository already requires TypeScript, so this approach works for everyone contributing to it.
-
-Q: Why do we make the custom vally executor run the provision script?
-A: Vally runs environment commands from the test workspace, which is located in the system's temporary directory. This makes external scripts difficult to use because navigating the file system to locate them is difficult. The custom Vally executor knows the location of the test repository, so it can locate the script file more easily.
-
-Q: Why don't we always persist fixtures for readOnly fixtures by default?
-A: Some resource types, such as database servers and compute, can incur significant costs over time. The persistent feature is an opt-in feature since it requires the author to be careful with costs.
-
 ## References
 
 - [vally-eval](./.github/skills/vally-eval/)
