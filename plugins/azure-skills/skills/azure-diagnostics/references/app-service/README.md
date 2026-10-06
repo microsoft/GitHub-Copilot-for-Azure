@@ -168,17 +168,19 @@ az webapp config ssl show --certificate-name CERT -g RG
 | `mcp_azure_mcp_monitor` | `monitor_resource_log_query` | Run KQL against Log Analytics |
 | `mcp_azure_mcp_resourcehealth` | `get` | Check platform-level health status |
 
-> 💡 **Tip:** Start with `mcp_azure_mcp_appservice` (`diagnose`) — it automatically runs relevant detectors and surfaces the most likely root cause before you dig into logs manually.
+> 💡 **Tip:** `mcp_azure_mcp_appservice` (`diagnose`) gives AI-powered root-cause hints, but it
+> does not replace the evidence bundle below — run both.
 
 ---
 
 ## Combined Diagnostic Script
 
-Use the [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) script
-([PowerShell](../../scripts/appservice-diagnostics.ps1)) to collect everything in one call.
-It prints clearly labeled sections — app config, recent deployments, app settings, and
-custom domains — and a summary line describing what it collected. Interpreting the output
-remains your job.
+Always run the [`appservice-diagnostics`](../../scripts/appservice-diagnostics.sh) script
+([PowerShell](../../scripts/appservice-diagnostics.ps1)) to collect the raw evidence bundle in
+one call, even when MCP tools are available for AI analysis. MCP's `diagnose` summarizes
+likely causes; this script gathers the underlying app config, recent deployments, app
+settings, and custom domains — and a summary line describing what it collected — so you have
+the primary evidence to cite. Interpreting the output remains your job.
 
 ```powershell
 ..\..\scripts\appservice-diagnostics.ps1 -Name <app> -ResourceGroup <rg>

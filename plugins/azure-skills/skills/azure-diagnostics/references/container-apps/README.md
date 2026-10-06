@@ -95,11 +95,12 @@ az containerapp logs show --name APP -g RG --type system
 
 ### Get All Diagnostic Info
 
-Use the [`containerapp-diagnostics`](../../scripts/containerapp-diagnostics.sh) script
-([PowerShell](../../scripts/containerapp-diagnostics.ps1)) to collect everything in one
-call. It prints clearly labeled sections — revisions, registry config, ingress config, and
-recent logs — and a summary line describing what it collected. Interpreting the output
-remains your job.
+Always run the [`containerapp-diagnostics`](../../scripts/containerapp-diagnostics.sh) script
+([PowerShell](../../scripts/containerapp-diagnostics.ps1)) to collect the raw evidence bundle
+in one call, even when MCP diagnostic tools are available for AI analysis — they summarize
+likely causes but don't replace this evidence. It prints clearly labeled sections —
+revisions, registry config, ingress config, and recent logs — and a summary line describing
+what it collected. Interpreting the output remains your job.
 
 ```powershell
 ..\..\scripts\containerapp-diagnostics.ps1 -Name <app> -ResourceGroup <rg>

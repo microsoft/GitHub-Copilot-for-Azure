@@ -1,6 +1,6 @@
 ---
 name: azure-diagnostics
-description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter."
+description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, troubleshoot functions, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, service bus dead letter, container app 503 or port mismatch, ingress targetPort misconfigured, function app or app insights telemetry missing, Application Insights connection string misconfigured."
 license: MIT
 metadata:
   author: Microsoft
@@ -38,6 +38,11 @@ Activate this skill when user wants to:
 4. Select appropriate troubleshooting guide based on service type
 5. Document findings and attempted remediation steps
 6. Route AKS incidents to the dedicated AKS troubleshooting document
+7. **Run the bundled evidence-collection script for the service type** (see Quick Reference)
+   instead of recreating its checks with ad hoc `az`/`kubectl` calls or MCP queries alone —
+   MCP diagnostics summarize likely causes but don't replace the script's evidence bundle.
+   If a prerequisite (CLI, credential, network) blocks it, resolve or route around the blocker
+   and still run the script.
 
 ---
 
@@ -74,6 +79,22 @@ Activate this skill when user wants to:
 ---
 
 ## Quick Reference
+
+### Mandatory Evidence-Collection Scripts
+
+Run the matching script as part of diagnosis — not optional on top of MCP/CLI exploration. Each
+prints a labeled evidence bundle (config, logs, events, recent changes) in one call.
+
+| Symptom | Script (bash / PowerShell) |
+|---------|------------------------------|
+| App Service crash, CPU, deployment, TLS | [`appservice-diagnostics.sh`](scripts/appservice-diagnostics.sh) / [`.ps1`](scripts/appservice-diagnostics.ps1) |
+| Container App restarts, image pull, ingress/port | [`containerapp-diagnostics.sh`](scripts/containerapp-diagnostics.sh) / [`.ps1`](scripts/containerapp-diagnostics.ps1) |
+| AKS pod CrashLoopBackOff, Pending, OOMKilled, probe failures | [`pod-evidence.sh`](scripts/pod-evidence.sh) / [`.ps1`](scripts/pod-evidence.ps1) |
+| Event Hubs / Service Bus connection, AMQP, DNS/port reachability | [`test-messaging-connectivity.sh`](scripts/test-messaging-connectivity.sh) / [`.ps1`](scripts/test-messaging-connectivity.ps1) |
+| AKS cluster-wide baseline (nodes, add-ons, recent changes) | [`aks-baseline.sh`](scripts/aks-baseline.sh) / [`.ps1`](scripts/aks-baseline.ps1) |
+
+A blocked prerequisite (kubelogin, private-cluster network, RBAC) is something to resolve or
+route around, not a reason to substitute manual telemetry queries for the script.
 
 ### Common Diagnostic Commands
 

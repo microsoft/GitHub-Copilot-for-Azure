@@ -32,7 +32,12 @@ See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input
 - first observed time or recent change window
 - impacted namespace, workload, service, or ingress when known
 
-If cluster identity is missing, stop and ask for it.
+If cluster identity is missing, first try to resolve it from the current `az` default
+subscription and `kubectl` context (`kubectl config current-context`, `az aks list`) before
+asking the user. Only stop and ask when it genuinely cannot be determined that way. A missing
+pod name is not a reason to stop: run the read-only evidence scripts (e.g.
+`pod-evidence --all-failing`) to discover and gather evidence for every unhealthy pod, then
+narrow down from the results.
 
 ## Scope Buckets
 
