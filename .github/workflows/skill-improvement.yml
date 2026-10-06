@@ -40,7 +40,7 @@ jobs:
     name: Improve skill
     runs-on: ubuntu-latest
     timeout-minutes: 420
-    environment: cideploytest
+    environment: skill-improvement-evals
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
@@ -215,8 +215,13 @@ jobs:
         shell: bash
         env:
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER }}
           SKILL: ${{ steps.metadata.outputs.skill }}
         run: |
+          if [[ -z "$STORAGE_CONTAINER" ]]; then
+            echo "::error::SKILL_IMPROVEMENT_STORAGE_CONTAINER must be configured when REPORT_STORAGE_ACCOUNT is set."
+            exit 1
+          fi
           DATE=$(date -u +%Y-%m-%d)
           SKILL="${SKILL:-unknown}"
           PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"
@@ -226,7 +231,7 @@ jobs:
           (cd tests && npx tsx skill-improvement/redact-output.ts "$UPLOAD_OUTPUT")
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
-            --destination "skill-improvement-runs" \
+            --destination "$STORAGE_CONTAINER" \
             --destination-path "$PREFIX" \
             --source "$UPLOAD_OUTPUT" \
             --auth-mode login \

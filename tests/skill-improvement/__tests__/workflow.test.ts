@@ -8,6 +8,11 @@ const workflow = fs.readFileSync(
 );
 
 describe("skill improvement workflow", () => {
+  test("uses the dedicated evaluation environment", () => {
+    expect(workflow).toContain("environment: skill-improvement-evals");
+    expect(workflow).not.toContain("environment: cideploytest");
+  });
+
   test("allows setup and cleanup headroom beyond the engine deadline", () => {
     expect(workflow).toContain("timeout-minutes: 420");
   });
@@ -36,10 +41,16 @@ describe("skill improvement workflow", () => {
     expect(workflow).toContain("- name: Publish report to Azure Storage");
     expect(workflow).toContain("if: always() && vars.REPORT_STORAGE_ACCOUNT != ''");
     expect(workflow).toContain("STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}");
+    expect(workflow).toContain(
+      "STORAGE_CONTAINER: ${{ vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER }}"
+    );
     expect(dispatchConfiguration).not.toMatch(/storage|container|prefix/i);
-    expect(workflow).not.toContain("SKILL_IMPROVEMENT_STORAGE_CONTAINER");
-    expect(workflow).not.toContain("STORAGE_CONTAINER:");
-    expect(workflow).toContain('--destination "skill-improvement-runs"');
+    expect(workflow).toContain(
+      "SKILL_IMPROVEMENT_STORAGE_CONTAINER must be configured when REPORT_STORAGE_ACCOUNT is set."
+    );
+    expect(workflow).toContain('if [[ -z "$STORAGE_CONTAINER" ]]');
+    expect(workflow).toContain('--destination "$STORAGE_CONTAINER"');
+    expect(workflow).not.toContain('--destination "skill-improvement-runs"');
     expect(workflow).toContain('PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"');
     expect(workflow).toContain("redact-output.ts");
     expect(workflow).toContain("az storage blob upload-batch");
@@ -53,6 +64,9 @@ describe("skill improvement workflow", () => {
       workflow.indexOf("- name: Create result issue")
     );
     expect(publishStep).not.toContain("continue-on-error");
+    expect(publishStep.indexOf('if [[ -z "$STORAGE_CONTAINER" ]]')).toBeLessThan(
+      publishStep.indexOf("az storage blob upload-batch")
+    );
     expect(publishStep).not.toContain("az storage container create");
     expect(publishStep).not.toContain("az storage container set-permission");
     expect(publishStep).toContain("--only-show-errors");

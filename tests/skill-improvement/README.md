@@ -80,24 +80,27 @@ retains the complete GitHub artifact for 30 days. `output.issue: never` creates
 no issue; `output.issue: always` remains an explicit opt-in. Draft PR creation
 still requires an accepted candidate and does not require a result issue.
 
-When the repository variable `REPORT_STORAGE_ACCOUNT` is configured, **Publish
-report to Azure Storage** uploads a repository-standard best-effort-redacted
-copy of the complete run output using OIDC and `--auth-mode login` to:
+In the `skill-improvement-evals` GitHub environment, configure both repository
+variables `REPORT_STORAGE_ACCOUNT` and
+`SKILL_IMPROVEMENT_STORAGE_CONTAINER`. **Publish report to Azure Storage**
+uploads a repository-standard best-effort-redacted copy of the complete run
+output using OIDC and `--auth-mode login` to:
 
-`${REPORT_STORAGE_ACCOUNT}/skill-improvement-runs/<UTC-date>/<GitHub-run-id>/<skill>/`
+`${REPORT_STORAGE_ACCOUNT}/${SKILL_IMPROVEMENT_STORAGE_CONTAINER}/<UTC-date>/<GitHub-run-id>/<skill>/`
 
-If the variable is absent, publishing is skipped and the complete 30-day
-GitHub artifact remains available. When the repository variable
-`REPORT_STORAGE_ACCOUNT` is set, publishing is required and an Azure Storage
-failure fails the job.
+If `REPORT_STORAGE_ACCOUNT` is absent, publishing is skipped and the complete
+30-day GitHub artifact remains available. When it is set, publishing is
+required: a missing or empty `SKILL_IMPROVEMENT_STORAGE_CONTAINER` fails
+explicitly before Azure CLI is invoked, and an Azure Storage failure fails the
+job.
 
-The `skill-improvement-runs` container must already exist and must not allow
-public access. Access is RBAC-based; no keys, SAS tokens, connection strings,
-or public URLs are emitted. Successful uploads are quiet; upload errors still
-fail the workflow. Raw trajectories can contain prompts, outputs, and tool
-evidence. Pattern-based redaction reduces known secret exposure but is not
-comprehensive, so restrict container access and configure lifecycle/retention
-according to repository policy.
+The configured storage account and container must identify a pre-existing
+private destination. Access is OIDC/RBAC-based; no keys, SAS tokens, connection
+strings, or public URLs are emitted. Successful uploads are quiet; upload
+errors still fail the workflow. Raw trajectories can contain prompts, outputs,
+and tool evidence. Pattern-based redaction reduces known secret exposure but is
+not comprehensive, so restrict container access and configure
+lifecycle/retention according to repository policy.
 
 ## Commands
 
