@@ -1,6 +1,9 @@
 import type { SessionEvent, SystemMessageConfig } from "@github/copilot-sdk";
 import { type SkillRef } from "./skill-loader.ts";
 
+/**
+ * Token usage measurements of an agent run.
+ */
 export type TokenUsage = {
   /** Total input tokens across all LLM calls */
   inputTokens: number;
@@ -26,26 +29,29 @@ export type TokenUsage = {
   }>;
 }
 
+/**
+ * Data reflecting what had happened during an agent run.
+ */
 export type AgentMetadata = {
   /**
-   * Events emitted by the Copilot SDK agent during the agent run.
+   * Copilot SDK events of the agent run.
+   * If the underlying agent client emit incompatible events, they must be converted to Copilot SDK compatible events and stored here.
    */
   events: SessionEvent[];
 
   /**
    * Comments made by the test author.
-   * These comments will be added to the agentMetadata markdown for an LLM or human reviewer to read.
+   * These comments will be added to the final formatted report.
    */
   testComments: string[];
 
   /**
-   * Token usage and cost data extracted from assistant.usage and session.shutdown events.
+   * Token usage and cost data extracted for the agent run.
    */
   tokenUsage?: TokenUsage;
 
   /**
-   * Number of assistant turns that started during the run,
-   * counted from `assistant.turn_start` events.
+   * Number of turns that started during the run.
    */
   turnCount: number;
 
@@ -72,20 +78,56 @@ export type AgentMetadata = {
 }
 
 export type AgentRunConfig = {
+  /**
+   * An optional function to configure the test workspace.
+   * The test runner will create an empty workspace, initialize it following the environment config
+   * of the vally stimuli, and then call this function.
+   * @param workspace The absolute path to the test workspace directory.
+   */
   setup?: (workspace: string) => Promise<void>;
+
+  /**
+   * Additional environment variables to set/override on top of those inherited from the parent process.
+   */
   env?: Record<string, string>;
+
+  /**
+   * The model to use for the test run.
+   * Note: different agent client may refer to the same model using different names.
+   */
   model?: string;
+
+  /**
+   * The first user prompt to send to the agent.
+   */
   prompt: string;
-  shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
-  nonInteractive?: boolean;
+
+  /**
+   * Subsequent user prompts to send to the agent.
+   */
   followUp?: string[];
+
+  /**
+   * If provided, the agent will call this function to determine if it should early terminate the run.
+   * @param metadata Data reflecting what had happened so far
+   * @returns Whether to early terminate
+   */
+  shouldEarlyTerminate?: (metadata: AgentMetadata) => boolean;
+
+  /**
+   * If provided, the system prompt will be modified according to the provided config.
+   */
   systemPrompt?: SystemMessageConfig;
 
   /**
    * Optional. An absolute path to a directory.
-   * if not specified, the agent will create a temporary directory and use it as the workspace.
+   * if not specified, the agent runner will create a temporary directory and use it as the workspace.
    */
   workspace?: string;
+
+  /**
+   * Whether to preserve the test workspace after the test run finishes.
+   */
   preserveWorkspace?: boolean;
 
   /**
@@ -97,7 +139,6 @@ export type AgentRunConfig = {
 
   /**
    * Maximum number of assistant turns allowed before the run is aborted.
-   * Each `assistant.turn_start` event counts as one turn.
    * If undefined, there is no turn limit.
    */
   maxTurns?: number;
@@ -125,8 +166,8 @@ export type AgentRunConfig = {
 
 export interface IAgentRunner {
   /**
- * Executes an agent run and returns the metadata collected during the session.
- */
+   * Executes an agent run and returns the metadata collected during the session.
+   */
   run(runConfig: AgentRunConfig): Promise<AgentMetadata>;
 
   /**

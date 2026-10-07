@@ -79,7 +79,6 @@ export class CopilotSdkAgentRunner implements Executor {
       model: model,
       prompt: prompt,
       shouldEarlyTerminate: shouldEarlyTerminate,
-      nonInteractive: true,
       followUp: followUps,
       systemPrompt: systemPrompt,
       timeout: timeout,

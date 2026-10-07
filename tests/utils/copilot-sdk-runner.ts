@@ -653,7 +653,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
       }
 
       // Copilot client with yolo mode
-      const cliArgs: string[] = runConfig.nonInteractive ? ["--yolo"] : [];
+      const cliArgs: string[] = ["--yolo"];
       if (process.env.DEBUG && isTest()) {
         cliArgs.push("--log-dir");
         cliArgs.push(buildTestCaseDirPath(getTestName()));
