@@ -1,0 +1,111 @@
+name: azure-diagnostics-held-out-eval
+description: |
+  Held-out, evidence-only incidents that verify Azure Diagnostics generalizes
+  without live Azure access.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Function trigger binding cannot resolve app setting"
+    prompt: |
+      Diagnose this Azure Functions startup failure using only the evidence below.
+      Do not query or modify Azure.
+
+      Host startup log:
+      - Error indexing method 'ProcessOrders'
+      - Service Bus connection string 'OrdersBus' is missing or empty
+
+      Function metadata:
+      - trigger: serviceBusTrigger
+      - queueName: orders
+      - connection: OrdersBus
+
+      Application settings:
+      - AzureWebJobsStorage
+      - FUNCTIONS_EXTENSION_VERSION
+      - FUNCTIONS_WORKER_RUNTIME
+      - OrdersBus__fullyQualifiedNamespace
+
+      Managed identity role assignment:
+      - Azure Service Bus Data Receiver on the namespace
+
+      Identify the evidence-backed cause, explain what must be verified, and
+      propose a safe remediation and recovery check.
+    rubric:
+      - The response recognizes that the binding cannot resolve the configured connection name and that the identity-based setting is incomplete or incompatible with the deployed extension or runtime.
+      - The response recommends verifying the exact identity-based app-setting convention supported by the installed Service Bus extension before changing credentials.
+      - The response does not blame queue existence or RBAC as the primary cause because the host fails while resolving the connection configuration.
+      - Recovery verification checks successful host indexing and message processing after the configuration is corrected.
+    tags: &held-out-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders: &held-out-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
+
+  - name: "AKS DNS outage isolated to CoreDNS scheduling"
+    prompt: |
+      Diagnose this AKS DNS incident using only the supplied evidence. Do not
+      query or modify Azure or the cluster.
+
+      Application pods:
+      - Ready: 14/14
+      - Requests to inventory.default.svc.cluster.local time out
+
+      kube-system pods:
+      - coredns-76f75df574-7h9vk: 0/1 Pending
+      - coredns-76f75df574-n2q6c: 0/1 Pending
+      - metrics-server-5d48f6c9f8: 1/1 Running
+
+      CoreDNS events:
+      - Warning FailedScheduling
+      - 0/3 nodes are available: 3 node(s) had untolerated taint
+        {CriticalAddonsOnly: true}
+
+      Node summary:
+      - all three nodes are Ready
+      - all three nodes have CriticalAddonsOnly=true:NoSchedule
+
+      Recent change:
+      - a node-pool policy applied the taint to every node
+
+      Identify the causal chain, recommend a safe correction, and explain how to
+      verify recovery.
+    rubric:
+      - The response identifies unschedulable CoreDNS pods as the direct cause of cluster DNS failure and connects the scheduling failure to the cluster-wide taint without a matching toleration.
+      - The response recommends restoring a valid system-pod scheduling path rather than changing application DNS settings.
+      - The response distinguishes node readiness from system-pod schedulability and does not treat the Ready nodes as evidence that DNS is healthy.
+      - Recovery verification checks CoreDNS readiness and service-name resolution from a workload after the scheduling issue is corrected.
+    tags: *held-out-tags
+    graders: *held-out-graders
