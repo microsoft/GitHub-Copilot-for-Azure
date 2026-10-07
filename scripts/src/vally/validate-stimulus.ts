@@ -42,9 +42,18 @@ type EvalSuite = {
 };
 
 const REQUIRED_TAG_KEYS = ["type", "tier", "cost", "area"] as const;
+const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function compilePattern(pattern: string): RegExp {
+  const inlineFlags = INLINE_PATTERN_FLAGS.exec(pattern);
+  if (inlineFlags) {
+    return new RegExp(pattern.slice(inlineFlags[0].length), inlineFlags[1]);
+  }
+  return new RegExp(pattern);
 }
 
 function validateJsonObjectTag(
@@ -118,7 +127,7 @@ export function validateEarlyTerminatePatterns(value: string | undefined): strin
       }
 
       try {
-        new RegExp(pattern);
+        compilePattern(pattern);
       } catch {
         return `tags.earlyTerminate[${conditionIndex}].${patternName} must be a valid JavaScript regular expression`;
       }

@@ -12,11 +12,21 @@ describe("validateEarlyTerminatePatterns", () => {
     expect(validateEarlyTerminatePatterns(value)).toBeUndefined();
   });
 
-  it("rejects unsupported inline regular expression flags", () => {
+  it("accepts supported leading inline regular expression flags", () => {
     const value = JSON.stringify([{
       type: "tool-call-result",
       toolPattern: "^(bash|powershell|pwsh)$",
       argsPattern: "(?i)pod-evidence\\.(sh|ps1)",
+    }]);
+
+    expect(validateEarlyTerminatePatterns(value)).toBeUndefined();
+  });
+
+  it("rejects unsupported inline regular expression flags", () => {
+    const value = JSON.stringify([{
+      type: "tool-call-result",
+      toolPattern: "^(bash|powershell|pwsh)$",
+      argsPattern: "(?x)pod-evidence\\.(sh|ps1)",
     }]);
 
     expect(validateEarlyTerminatePatterns(value)).toBe(

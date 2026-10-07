@@ -5,6 +5,16 @@ import type { SystemMessageConfig } from "@github/copilot-sdk";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
+const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
+
+export function compileEarlyTerminatePattern(pattern: string): RegExp {
+  const inlineFlags = INLINE_PATTERN_FLAGS.exec(pattern);
+  if (inlineFlags) {
+    return new RegExp(pattern.slice(inlineFlags[0].length), inlineFlags[1]);
+  }
+  return new RegExp(pattern);
+}
+
 /**
  * When any of the early termination condition is satisfied,
  * the custom executor will terminate the agent and hand over
@@ -112,14 +122,14 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
               return true;
             }
           } else if (condition.type === "assistant-message-match") {
-            const contentPattern = new RegExp(condition.contentPattern);
+            const contentPattern = compileEarlyTerminatePattern(condition.contentPattern);
             if (contentPattern.test(getAllAssistantMessages(agentMetadata))) {
               agentMetadata.testComments.push(`Early terminate due to assistant message matching pattern: ${condition.contentPattern}`);
               return true;
             }
           } else if (condition.type === "tool-call-match") {
-            const toolPattern = new RegExp(condition.toolPattern);
-            const argsPattern = new RegExp(condition.argsPattern);
+            const toolPattern = compileEarlyTerminatePattern(condition.toolPattern);
+            const argsPattern = compileEarlyTerminatePattern(condition.argsPattern);
             const matched = getToolCalls(agentMetadata).some((event) => {
               return toolPattern.test(event.data.toolName)
                 && argsPattern.test(argsString(event));
@@ -129,8 +139,10 @@ export function getEarlyTerminateCondition(tags: Record<string, string[] | strin
               return true;
             }
           } else if (condition.type === "tool-call-result") {
-            const toolPattern = new RegExp(condition.toolPattern);
-            const argsPattern = condition.argsPattern ? new RegExp(condition.argsPattern) : undefined;
+            const toolPattern = compileEarlyTerminatePattern(condition.toolPattern);
+            const argsPattern = condition.argsPattern
+              ? compileEarlyTerminatePattern(condition.argsPattern)
+              : undefined;
             const completedIds = new Set(
               agentMetadata.events
                 .filter((event) => event.type === "tool.execution_complete")

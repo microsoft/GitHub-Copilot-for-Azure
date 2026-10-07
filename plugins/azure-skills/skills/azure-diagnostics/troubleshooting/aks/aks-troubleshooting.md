@@ -39,9 +39,11 @@ exactly one AKS cluster is visible, run `az aks get-credentials` for it to estab
 context, then proceed with the relevant script's discovery/auto-select mode (e.g.
 `pod-evidence.sh --all-failing`). Only stop and ask for subscription/resource
 group/cluster name if that discovery finds zero or multiple ambiguous candidates. If
-`kubectl` already has an active context, don't block evidence-gathering on a missing
-subscription/resource-group/pod name — go straight to the script's discovery/auto-select
-mode and only ask for remaining details if that discovery comes up empty.
+`kubectl` already has an active context, verify that its cluster matches the incident
+before collecting evidence. Use the context only when the user confirms it or its
+cluster/subscription/resource-group matches known incident details; otherwise ask which
+cluster to use. After confirmation, use the script's discovery/auto-select mode and ask
+for remaining details only if discovery comes up empty.
 
 ## Scope Buckets
 
@@ -108,8 +110,9 @@ known yet, use `--all-failing` to auto-discover it instead of asking the user fo
 
 See [pod-failures.md](pod-failures.md) for how to interpret the digest.
 
-Only fall back to the individual commands below if the script itself is unavailable
-(e.g. `kubectl` missing) or you need a check it doesn't cover:
+Only fall back to the individual commands below if the bundled script is unavailable or
+you need a check it doesn't cover. If `kubectl` is missing or unconfigured, install or
+configure it before running Kubernetes-side checks:
 
 ```bash
 az aks show -g <resource-group> -n <cluster-name>
