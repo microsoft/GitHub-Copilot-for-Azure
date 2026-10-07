@@ -11,7 +11,9 @@ evaluations:
   root: evals/azure-skills/azure-diagnostics
   development:
     - eval.yaml
+    - fixture-evidence.eval.yaml
     - response-quality.eval.yaml
+    - routing-ownership.eval.yaml
     - script-invocation.eval.yaml
   heldOut:
     - held-out.eval.yaml
@@ -49,8 +51,8 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 140
-  maxJudgeCalls: 140
+  maxAnswerGenerations: 200
+  maxJudgeCalls: 200
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
