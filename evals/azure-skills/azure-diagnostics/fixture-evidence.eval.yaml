@@ -27,7 +27,7 @@ stimuli:
       - The response distinguishes successful artifact transfer from successful application startup.
       - The remediation builds before packaging and verifies the compiled output is included in the deployment artifact.
       - Recovery verification checks startup logs and a successful HTTP response after redeployment.
-    environment:
+    agent_environment:
       files:
         - src: fixture/appservice-deployment.txt
           dest: appservice-deployment.txt
@@ -64,7 +64,7 @@ stimuli:
       - The response distinguishes node readiness from CoreDNS schedulability.
       - The remediation restores a schedulable path for system pods rather than changing application DNS configuration.
       - Recovery verification checks CoreDNS readiness and service-name resolution from a workload.
-    environment:
+    agent_environment:
       files:
         - src: fixture/aks-coredns.txt
           dest: aks-coredns.txt
