@@ -14,10 +14,10 @@ scoring:
 stimuli:
   - name: "Diagnose forbidden database queries"
     prompt: "I can see my ADX cluster, but queries against the database return Forbidden. Help me identify which access and connection checks to make."
-    rubric: &rubric
-      - The response separates Azure resource visibility from Kusto database authorization and checks identity, tenant, cluster URI, database name, and effective database permissions.
-      - The response proposes a safe, read-only diagnostic sequence and distinguishes authentication, RBAC or Kusto principals, network restrictions, and database permission failures.
-      - The response asks for missing environment details or shows placeholders rather than inventing identifiers, permissions, or observed results.
+    rubric:
+      - The response explains that seeing the Azure resource does not prove the active identity has Kusto database query permission.
+      - The response gives an evidence-first sequence that verifies the active identity and tenant, cluster URI and database name, network reachability, and effective Kusto database principal permissions.
+      - The response distinguishes authentication, network, and database authorization failures and does not claim which one occurred without diagnostic evidence.
     tags: &tags
       type: integration
       tier: full
@@ -34,6 +34,9 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
   - name: "Diagnose environment-specific cluster connection"
     prompt: "My Kusto cluster URL works in the portal but not from this environment. Help me verify the URI, authentication, network access, and database permissions without changing anything."
-    rubric: *rubric
+    rubric:
+      - The response verifies the exact cluster URI used in the failing environment, including host spelling and expected Azure cloud suffix, rather than assuming the portal URL is reused correctly.
+      - The response proposes read-only checks for the environment's active identity or token context, tenant, DNS or network path, and Kusto database permission.
+      - The response orders checks to isolate URI, authentication, network, and authorization causes and avoids proposing configuration or permission changes as part of diagnosis.
     tags: *tags
     graders: *graders

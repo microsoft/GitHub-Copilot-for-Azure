@@ -1,4 +1,4 @@
-name: Sync skill references to Azure MCP repo
+name: Sync skill and reference allowlists
 
 on:
   schedule:
@@ -13,18 +13,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sync-to-azure-mcp:
+  generate-allowlists:
     if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the current repo
       - name: Checkout current repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: source-repo
+          persist-credentials: false
 
-      # 2. Setup Node.js and generate JSON files
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -38,6 +37,8 @@ jobs:
 
       - name: Generate allowlist JSON files
         working-directory: source-repo/scripts
+        env:
+          ALLOWLIST_DIR: ${{ github.workspace }}/generated-allowlists
         run: |
           PLUGIN_PATHS=()
           for plugin_dir in ../plugins/*; do
@@ -51,71 +52,111 @@ jobs:
             exit 1
           fi
 
-          npm run generateMcpAllowlists -- "${PLUGIN_PATHS[@]}" "${{ github.workspace }}"
+          mkdir -p "$ALLOWLIST_DIR"
+          npm run generateMcpAllowlists -- "${PLUGIN_PATHS[@]}" "$ALLOWLIST_DIR"
 
-      # 3. Generate a short-lived token from the GitHub App for microsoft/mcp
-      - name: Generate token for microsoft/mcp
-        id: mcp-token
+      - name: Upload generated allowlists
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: plugin-allowlists
+          path: |
+            generated-allowlists/allowed-skill-names.json
+            generated-allowlists/allowed-plugin-file-references.json
+          if-no-files-found: error
+
+  sync-allowlists:
+    if: github.repository == 'microsoft/GitHub-Copilot-for-Azure'
+    needs: generate-allowlists
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repository: mcp
+            resource-directory: servers/Azure.Mcp.Server/src/Resources
+            branch: sync/azure-skills-references
+            pr-title: Sync skill references from GitHub-Copilot-for-Azure
+          - repository: GitHub-Copilot-for-Azure
+            resource-directory: telemetry-reporter/resources
+            branch: sync/telemetry-reporter-allowlists
+            pr-title: 'chore: sync telemetry reporter allowlists'
+    env:
+      TARGET_REPO: microsoft/${{ matrix.repository }}
+      RESOURCE_DIR: ${{ matrix.resource-directory }}
+      BRANCH_NAME: ${{ matrix.branch }}
+      PR_TITLE: ${{ matrix.pr-title }}
+      SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+      SOURCE_COMMIT: ${{ github.sha }}
+
+    steps:
+      - name: Download generated allowlists
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: plugin-allowlists
+          path: generated-allowlists
+
+      - name: Generate token for target repo
+        id: target-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
           private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
           owner: microsoft
-          repositories: mcp
+          repositories: ${{ matrix.repository }}
 
-      - name: Clone microsoft/mcp and create feature branch
+      - name: Clone target repo and create feature branch
         env:
-          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
+          GH_TOKEN: ${{ steps.target-token.outputs.token }}
         run: |
-          gh repo clone microsoft/mcp mcp-repo -- --branch main --single-branch
+          gh repo clone "$TARGET_REPO" target-repo -- --branch main --single-branch
 
-          cd mcp-repo
-          BRANCH_NAME="sync/azure-skills-references"
+          cd target-repo
           git checkout -b "$BRANCH_NAME"
-          echo "BRANCH_NAME=$BRANCH_NAME" >> "$GITHUB_ENV"
 
-      # 4. Copy generated JSON files to the target location in microsoft/mcp
       - name: Copy JSON files to target repo
         run: |
-          TARGET_DIR="mcp-repo/servers/Azure.Mcp.Server/src/Resources"
-          cp allowed-skill-names.json "$TARGET_DIR/allowed-skill-names.json"
-          cp allowed-plugin-file-references.json "$TARGET_DIR/allowed-plugin-file-references.json"
+          TARGET_DIR="target-repo/$RESOURCE_DIR"
+          cp generated-allowlists/allowed-skill-names.json "$TARGET_DIR/allowed-skill-names.json"
+          cp generated-allowlists/allowed-plugin-file-references.json "$TARGET_DIR/allowed-plugin-file-references.json"
 
-      # 5. Commit and push changes
       - name: Commit and push changes
         id: commit
-        working-directory: mcp-repo
+        working-directory: target-repo
         env:
-          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
+          GH_TOKEN: ${{ steps.target-token.outputs.token }}
         run: |
           gh auth setup-git
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add -- \
-            servers/Azure.Mcp.Server/src/Resources/allowed-skill-names.json \
-            servers/Azure.Mcp.Server/src/Resources/allowed-plugin-file-references.json
+            "$RESOURCE_DIR/allowed-skill-names.json" \
+            "$RESOURCE_DIR/allowed-plugin-file-references.json"
           if git diff --cached --quiet; then
             echo "No changes to sync."
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           else
-            git commit -m "Sync skill references from GitHub-Copilot-for-Azure"
+            DIFF_EXIT_CODE=$?
+            if [ "$DIFF_EXIT_CODE" -ne 1 ]; then
+              echo "::error::Failed to compare staged allowlists." >&2
+              exit "$DIFF_EXIT_CODE"
+            fi
+
+            git commit -m "$PR_TITLE"
             git push --force origin "$BRANCH_NAME"
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      # 6. Create or update Pull Request in microsoft/mcp
       - name: Create or update Pull Request
         if: steps.commit.outputs.has_changes == 'true'
+        working-directory: target-repo
         env:
-          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
+          GH_TOKEN: ${{ steps.target-token.outputs.token }}
         run: |
-          cd mcp-repo
-          PR_TITLE="Sync skill references from GitHub-Copilot-for-Azure"
-          PR_BODY="Automated sync of \`allowed-skill-names.json\` and \`allowed-plugin-file-references.json\` from [GitHub-Copilot-for-Azure](${{ github.server_url }}/${{ github.repository }}) at commit \`${{ github.sha }}\`."
+          PR_BODY="Skill and reference-file allowlists can drift as plugin sources change. This automated PR refreshes \`$RESOURCE_DIR/allowed-skill-names.json\` and \`$RESOURCE_DIR/allowed-plugin-file-references.json\` with the lists generated from [GitHub-Copilot-for-Azure]($SOURCE_URL) at commit \`$SOURCE_COMMIT\`. The Azure MCP and standalone telemetry reporter updates are proposed in separate PRs using the same generated snapshot; reporter builds and releases remain unchanged."
 
           EXISTING_PR=$(gh pr list \
-            --repo "microsoft/mcp" \
+            --repo "$TARGET_REPO" \
             --head "$BRANCH_NAME" \
             --base "main" \
             --state open \
@@ -125,13 +166,13 @@ jobs:
           if [ -n "$EXISTING_PR" ]; then
             echo "Updating existing PR #$EXISTING_PR"
             gh pr edit "$EXISTING_PR" \
-              --repo "microsoft/mcp" \
+              --repo "$TARGET_REPO" \
               --title "$PR_TITLE" \
               --body "$PR_BODY"
           else
             echo "Creating new PR"
             gh pr create \
-              --repo "microsoft/mcp" \
+              --repo "$TARGET_REPO" \
               --base "main" \
               --head "$BRANCH_NAME" \
               --title "$PR_TITLE" \

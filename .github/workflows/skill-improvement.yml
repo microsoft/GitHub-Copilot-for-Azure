@@ -32,19 +32,21 @@ on:
         default: "main"
 
 concurrency:
-  group: skill-improvement-${{ inputs.run-spec }}-${{ inputs.baseline-ref }}
+  group: skill-improvement-${{ inputs.run-spec }}
   cancel-in-progress: false
 
 jobs:
   improve:
     name: Improve skill
     runs-on: ubuntu-latest
-    timeout-minutes: 360
-    environment: cideploytest
+    timeout-minutes: 420
+    environment: skill-improvement-evals
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_EVALS_SUBSCRIPTION_ID: ${{ vars.AZURE_EVALS_SUBSCRIPTION_ID }}
+      AZURE_EVALS_RESOURCE_GROUP: ${{ vars.AZURE_EVALS_RESOURCE_GROUP }}
       RUN_OUTPUT: tests/skill-improvement-runs/${{ github.run_id }}
       BASELINE_REF: ${{ inputs.baseline-ref || github.ref_name }}
       GH_TOKEN: ${{ github.token }}
@@ -131,6 +133,15 @@ jobs:
             --baseline-ref "${BASELINE_REF}" \
             --output "../${RUN_OUTPUT}"
 
+      - name: Ensure managed evaluation resources are stopped
+        if: always()
+        working-directory: tests
+        env:
+          RUN_SPEC: ${{ inputs.run-spec }}
+        run: |
+          npm run skill-improvement -- cleanup-resources \
+            --config "../${RUN_SPEC}"
+
       - name: Ensure a report exists
         if: always()
         shell: bash
@@ -204,8 +215,13 @@ jobs:
         shell: bash
         env:
           STORAGE_ACCOUNT: ${{ vars.REPORT_STORAGE_ACCOUNT }}
+          STORAGE_CONTAINER: ${{ vars.SKILL_IMPROVEMENT_STORAGE_CONTAINER }}
           SKILL: ${{ steps.metadata.outputs.skill }}
         run: |
+          if [[ -z "$STORAGE_CONTAINER" ]]; then
+            echo "::error::SKILL_IMPROVEMENT_STORAGE_CONTAINER must be configured when REPORT_STORAGE_ACCOUNT is set."
+            exit 1
+          fi
           DATE=$(date -u +%Y-%m-%d)
           SKILL="${SKILL:-unknown}"
           PREFIX="${DATE}/${GITHUB_RUN_ID}/${SKILL}/"
@@ -215,7 +231,7 @@ jobs:
           (cd tests && npx tsx skill-improvement/redact-output.ts "$UPLOAD_OUTPUT")
           az storage blob upload-batch \
             --account-name "$STORAGE_ACCOUNT" \
-            --destination "skill-improvement-runs" \
+            --destination "$STORAGE_CONTAINER" \
             --destination-path "$PREFIX" \
             --source "$UPLOAD_OUTPUT" \
             --auth-mode login \
@@ -258,11 +274,22 @@ jobs:
           git push origin "$branch"
           echo "branch=$branch" >> "$GITHUB_OUTPUT"
 
+      - name: Generate token for draft pull request
+        if: steps.candidate.outputs.branch != ''
+        id: draft-pr-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.GHCP4A_BOT_APP_ID }}
+          private-key: ${{ secrets.GHCP4A_BOT_PRIVATE_KEY }}
+          owner: microsoft
+          repositories: GitHub-Copilot-for-Azure
+
       - name: Create draft pull request
         if: steps.candidate.outputs.branch != ''
         id: pr
         shell: bash
         env:
+          GH_TOKEN: ${{ steps.draft-pr-token.outputs.token }}
           PR_BASE: ${{ inputs.pr-base }}
         run: |
           body_file="$RUNNER_TEMP/skill-improvement-pr-body.md"
@@ -288,6 +315,8 @@ jobs:
       - name: Link draft pull request from issue
         if: steps.issue.outputs.url != '' && steps.pr.outputs.url != ''
         shell: bash
+        env:
+          GH_TOKEN: ${{ steps.draft-pr-token.outputs.token }}
         run: |
           issue_number="${{ steps.issue.outputs.url }}"
           issue_number="${issue_number##*/}"

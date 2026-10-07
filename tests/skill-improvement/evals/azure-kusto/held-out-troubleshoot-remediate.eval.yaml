@@ -1,0 +1,120 @@
+# Held-out synthetic scenarios informed only by aggregate usage intent:
+# troubleshoot and remediate. No production prompt text is used.
+name: azure-kusto-held-out-troubleshoot-remediate
+description: Unseen Kusto troubleshooting and remediation scenarios for final candidate validation.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Recover after a timestamp column rename"
+    prompt: "A query that worked yesterday now says the timestamp column does not exist after a table deployment. Diagnose the change and show a safe way to restore the last-hour query without assuming the replacement column name."
+    rubric:
+      - The response treats schema drift as a hypothesis and uses read-only table schema discovery before selecting a replacement timestamp column.
+      - The response provides a bounded correction pattern with clearly marked placeholders and verifies datetime type and recent data before claiming recovery.
+      - The response avoids inventing the new column name or recommending a mutating schema change as the first action.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Diagnose access loss after identity rotation"
+    prompt: "Our automation could query an ADX database until its workload identity was rotated. The cluster is still visible, but queries now return Forbidden. Walk me through evidence-first diagnosis and safe recovery."
+    rubric:
+      - The response distinguishes Azure resource visibility, token tenant or audience, network access, and Kusto database principal authorization.
+      - The response proposes read-only identity and effective-access checks before recommending a permission change.
+      - Any role or principal remediation is least privilege, explicitly confirmed before mutation, and followed by a bounded verification query.
+    tags: *tags
+    graders: *graders
+
+  - name: "Troubleshoot JSON ingestion mapping drift"
+    prompt: "New JSON events stopped appearing after the producer added nesting and renamed two properties. Historical rows are still queryable. Diagnose whether ingestion mapping drift is the cause and describe how to validate a fix safely."
+    rubric:
+      - The response separates ingestion failure from query-time filtering and checks ingestion failures, mappings, source payload shape, and recent ingestion evidence.
+      - The response explains how renamed or nested JSON paths can break mapping without claiming that mapping drift is proven before inspection.
+      - The response keeps diagnosis read-only first and treats mapping alteration or re-ingestion as confirmed, reversible follow-up work.
+    tags: *tags
+    graders: *graders
+
+  - name: "Resolve a cross-cluster query failure"
+    prompt: "A cross-cluster KQL query now fails only for the remote side after an environment change. Help me isolate endpoint, database, permission, and schema causes before rewriting the query."
+    rubric:
+      - The response verifies the remote cluster URI, database visibility, identity permissions, network reachability, and referenced schema independently.
+      - The response uses a minimal remote query to separate connectivity or authorization failures from KQL correctness.
+      - The response does not infer the remote resource identity from naming alone or recommend broad access grants.
+    tags: *tags
+    graders: *graders
+
+  - name: "Repair a stored function after source schema drift"
+    prompt: "A stored Kusto function began failing after its source table changed. Show how to identify the incompatible expression, propose a compatible revision, and verify callers before changing the function."
+    rubric:
+      - The response compares the stored function definition with the current source schema and traces referenced columns and types to identify the incompatible expression from evidence.
+      - The response proposes a concrete compatible revision or normalization pattern that preserves the function's intended output, without inventing unknown replacement fields.
+      - The response validates the revised body as an ad hoc query or temporary function and checks representative callers or dependent functions before replacement.
+      - The response treats persistent alteration as a separate confirmed action and includes a rollback path.
+    tags: *tags
+    graders: *graders
+
+  - name: "Investigate delayed materialized-view results"
+    prompt: "A dashboard backed by a Kusto materialized view is missing the newest data, while the source table has current rows. Diagnose the lag without immediately rebuilding the view."
+    rubric:
+      - The response compares source freshness with materialized-view health, status, lag, and query behavior using read-only checks.
+      - The response considers ingestion time, materialization backlog or failures, lookback semantics, and dashboard time filters.
+      - The response avoids destructive rebuild guidance as the first step and defines measurable evidence for recovery.
+    tags: *tags
+    graders: *graders
+
+  - name: "Diagnose memory-limit failures after cardinality growth"
+    prompt: "A daily KQL job started exceeding memory limits after tenant cardinality increased. Preserve the result semantics while finding a safer query plan."
+    rubric:
+      - The response requests or inspects the query plan, row volume, key cardinality, time scope, and operator causing pressure before prescribing a rewrite.
+      - The response suggests semantics-preserving techniques such as early filtering and projection, staged aggregation, join strategy based on input sizes, or bounded partitioning.
+      - The response does not promise improvement without measurement and includes a representative validation comparison.
+    tags: *tags
+    graders: *graders
+
+  - name: "Explain intermittent dashboard gaps"
+    prompt: "A five-minute ADX time chart has intermittent missing buckets even though events eventually arrive. Help determine whether the issue is ingestion delay, event-time filtering, or the query's binning strategy."
+    rubric:
+      - The response compares event time with ingestion time and checks late-arrival distribution before attributing the gaps.
+      - The response distinguishes summarize-by-bin output from a gap-filled series and provides plausible guarded KQL patterns.
+      - The response preserves the five-minute requirement and proposes a measurable way to validate the diagnosis over a bounded period.
+    tags: *tags
+    graders: *graders
+
+  - name: "Recover a query after a string-to-dynamic type change"
+    prompt: "A query that parses a JSON string now fails because the same column was changed to dynamic. Show how to confirm the type change and support both old and new records safely."
+    rubric:
+      - The response verifies the current schema and samples bounded values before changing parsing behavior.
+      - The response explains the string-versus-dynamic handling difference and gives plausible KQL that safely normalizes mixed historical values.
+      - The response checks null or malformed values and validates equivalent output instead of blindly applying parse_json.
+    tags: *tags
+    graders: *graders
+
+  - name: "Troubleshoot and verify recovery across two turns"
+    turns:
+      - "Our request-failure query stopped returning rows after last night's deployment, but the service is still producing errors. Diagnose it without guessing the table schema."
+      - "Assume discovery shows the status field changed from integer StatusCode to string ResultCode. Update the approach and explain how you would prove the corrected query is complete."
+    rubric:
+      - The first response checks table and schema changes, time boundaries, ingestion freshness, and filter assumptions before selecting a cause.
+      - The follow-up uses the supplied schema change, handles string result codes correctly, and retains a bounded time range and result size.
+      - Verification compares corrected results with independent error evidence or totals and clearly separates observed facts from remaining hypotheses.
+    tags: *tags
+    graders: *graders
