@@ -118,11 +118,10 @@ export class IntegrationTestAgentRunner implements Executor {
         manifest = readManifest(absoluteManifestPath);
 
         provisionOutput = provisionManifest(absoluteManifestPath, manifest);
-        console.log("provisionOutput", provisionOutput);
-        const parsedProvisionStdout: ProvisionScriptOutput = JSON.parse(provisionOutput.stdout);
-        const azureScopePrompt = getAzureScopePrompt(parsedProvisionStdout);
+        const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput.output);
+        const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
         runConfig.prompt += `\n${azureScopePrompt}`;
-        fixtureResourceGroups = parsedProvisionStdout.resourceGroups;
+        fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
         postTestScriptConfig = manifest.postTestScript;
         persistFixture = !!manifest.persist;
       }

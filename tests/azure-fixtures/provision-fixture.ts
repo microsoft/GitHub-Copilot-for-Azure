@@ -281,7 +281,7 @@ function markFixturesCompleted(context: FixtureRunContext) {
 
 export type ProvisionManifestOutput = {
   context: FixtureRunContext,
-  stdout: string
+  output: string
 };
 
 export function provisionManifest(manifestPath: string, manifest: FixtureManifest): ProvisionManifestOutput {
@@ -307,7 +307,7 @@ export function provisionManifest(manifestPath: string, manifest: FixtureManifes
     };
     return {
       context: context,
-      stdout: JSON.stringify(output, null, 2)
+      output: JSON.stringify(output, null, 2)
     };
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
