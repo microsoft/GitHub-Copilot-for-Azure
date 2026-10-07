@@ -39,7 +39,7 @@ Activate this skill when user wants to:
 4. Check resource health before deep-diving into logs
 5. Select appropriate troubleshooting guide based on service type
 6. Document findings and attempted remediation steps
-7. Prefer the bundled diagnostic scripts (`scripts/appservice-diagnostics.*`, `scripts/pod-evidence.*`, `scripts/aks-baseline.*`) over ad hoc one-off CLI/MCP calls when they cover the needed evidence — run them directly as the first action, don't just describe the equivalent checks
+7. Prefer bundled diagnostic scripts over ad hoc calls for permitted live collection when identifiers are known. If supplied evidence suffices or live access is prohibited, don't run them; otherwise run the applicable script first.
 8. Route AKS incidents to the dedicated AKS troubleshooting document
 
 ---

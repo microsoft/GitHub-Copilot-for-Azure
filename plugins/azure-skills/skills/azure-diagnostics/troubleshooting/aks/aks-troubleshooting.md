@@ -33,12 +33,14 @@ See [references/aks-mcp.md](references/aks-mcp.md), [references/structured-input
 - impacted namespace, workload, service, or ingress when known
 
 If cluster identity is missing and no `kubectl` context is active, don't stop and ask
-immediately — first try read-only auto-discovery: run `az aks list` (across all
-accessible subscriptions, not just the current default) to find candidate clusters. If
-exactly one AKS cluster is visible, run `az aks get-credentials` for it to establish a
-context, then proceed with the relevant script's discovery/auto-select mode (e.g.
-`pod-evidence.sh --all-failing`). Only stop and ask for subscription/resource
-group/cluster name if that discovery finds zero or multiple ambiguous candidates. If
+immediately. Resolve the subscription from the request or confirmed existing context.
+If none is known, list accessible subscriptions and ask the user to select one; don't
+scan AKS resources across every subscription automatically. Run `az aks list
+--subscription <subscription-id>` in the selected subscription. If exactly one cluster
+is found, establish context with `az aks get-credentials --subscription
+<subscription-id> --resource-group <resource-group> --name <cluster-name>`, then use the
+relevant script's discovery/auto-select mode (e.g. `pod-evidence.sh --all-failing`). If
+zero or multiple clusters are found, ask the user to identify the target. If
 `kubectl` already has an active context, verify that its cluster matches the incident
 before collecting evidence. Use the context only when the user confirms it or its
 cluster/subscription/resource-group matches known incident details; otherwise ask which
