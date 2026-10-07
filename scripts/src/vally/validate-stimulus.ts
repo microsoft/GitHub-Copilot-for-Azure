@@ -42,9 +42,23 @@ type EvalSuite = {
 };
 
 const REQUIRED_TAG_KEYS = ["type", "tier", "cost", "area"] as const;
+const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
+const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function compilePattern(pattern: string): RegExp {
+  const scopedInlineFlags = SCOPED_INLINE_PATTERN_FLAGS.exec(pattern);
+  if (scopedInlineFlags) {
+    return new RegExp(scopedInlineFlags[2], scopedInlineFlags[1]);
+  }
+  const inlineFlags = INLINE_PATTERN_FLAGS.exec(pattern);
+  if (inlineFlags) {
+    return new RegExp(pattern.slice(inlineFlags[0].length), inlineFlags[1]);
+  }
+  return new RegExp(pattern);
 }
 
 function validateJsonObjectTag(
@@ -88,6 +102,44 @@ function validateJsonObjectTag(
     `tags.${tagName} must be parsable JSON`,
   );
   return false;
+}
+
+export function validateEarlyTerminatePatterns(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+
+  if (!Array.isArray(parsed)) {
+    return undefined;
+  }
+
+  for (const [conditionIndex, condition] of parsed.entries()) {
+    if (!isPlainObject(condition)) {
+      continue;
+    }
+
+    for (const patternName of ["toolPattern", "argsPattern", "contentPattern"] as const) {
+      const pattern = condition[patternName];
+      if (typeof pattern !== "string") {
+        continue;
+      }
+
+      try {
+        compilePattern(pattern);
+      } catch {
+        return `tags.earlyTerminate[${conditionIndex}].${patternName} must be a valid JavaScript regular expression`;
+      }
+    }
+  }
+
+  return undefined;
 }
 
 function validateSingleRule(
@@ -441,6 +493,19 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         "earlyTerminate",
         typedStimulus.tags?.earlyTerminate,
       )) {
+        fileHasErrors = true;
+      }
+
+      const earlyTerminatePatternError = validateEarlyTerminatePatterns(
+        typedStimulus.tags?.earlyTerminate,
+      );
+      if (earlyTerminatePatternError) {
+        reportValidationError(
+          displayPath,
+          stimulusIndex,
+          typedStimulus.name,
+          earlyTerminatePatternError,
+        );
         fileHasErrors = true;
       }
 
