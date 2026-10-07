@@ -14,7 +14,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, type AgentRunConfig } from "../utils/agent-runner";
+import { useAgentRunner, } from "../utils/copilot-sdk-runner";
+import { type AgentRunConfig } from "../utils/agent-runner";
 import { redactSecrets } from "../utils/redact";
 
 const __filename = fileURLToPath(import.meta.url);
