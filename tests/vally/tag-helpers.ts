@@ -6,8 +6,13 @@ import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
+const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
 
 export function compileEarlyTerminatePattern(pattern: string): RegExp {
+  const scopedInlineFlags = SCOPED_INLINE_PATTERN_FLAGS.exec(pattern);
+  if (scopedInlineFlags) {
+    return new RegExp(scopedInlineFlags[2], scopedInlineFlags[1]);
+  }
   const inlineFlags = INLINE_PATTERN_FLAGS.exec(pattern);
   if (inlineFlags) {
     return new RegExp(pattern.slice(inlineFlags[0].length), inlineFlags[1]);

@@ -43,12 +43,17 @@ type EvalSuite = {
 
 const REQUIRED_TAG_KEYS = ["type", "tier", "cost", "area"] as const;
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
+const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function compilePattern(pattern: string): RegExp {
+  const scopedInlineFlags = SCOPED_INLINE_PATTERN_FLAGS.exec(pattern);
+  if (scopedInlineFlags) {
+    return new RegExp(scopedInlineFlags[2], scopedInlineFlags[1]);
+  }
   const inlineFlags = INLINE_PATTERN_FLAGS.exec(pattern);
   if (inlineFlags) {
     return new RegExp(pattern.slice(inlineFlags[0].length), inlineFlags[1]);

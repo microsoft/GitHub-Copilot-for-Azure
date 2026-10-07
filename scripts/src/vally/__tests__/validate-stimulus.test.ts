@@ -22,6 +22,15 @@ describe("validateEarlyTerminatePatterns", () => {
     expect(validateEarlyTerminatePatterns(value)).toBeUndefined();
   });
 
+  it("accepts supported whole-pattern scoped flags", () => {
+    const value = JSON.stringify([{
+      type: "assistant-message-match",
+      contentPattern: "(?i:ready to proceed|ready to deploy)",
+    }]);
+
+    expect(validateEarlyTerminatePatterns(value)).toBeUndefined();
+  });
+
   it("rejects unsupported inline regular expression flags", () => {
     const value = JSON.stringify([{
       type: "tool-call-result",
