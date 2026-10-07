@@ -63,6 +63,11 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
 
   - name: "Container App returns 503 after target port change"
     prompt: |

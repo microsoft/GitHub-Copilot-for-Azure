@@ -1,0 +1,72 @@
+name: azure-diagnostics-fixture-evidence-eval
+description: |
+  Verifies diagnosis from supplied command output without live resource access.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Diagnose App Service packaging failure from fixture"
+    prompt: |
+      Read appservice-deployment.txt and diagnose the 503 using only that evidence.
+      Do not query or modify Azure. Explain the root cause, rule out the most
+      plausible alternative, and provide verification and remediation steps.
+    rubric:
+      - The response identifies that the deployed artifact lacks the compiled dist/server.js expected by the start command because the pipeline packages TypeScript source without running the build.
+      - The response distinguishes successful artifact transfer from successful application startup.
+      - The remediation builds before packaging and verifies the compiled output is included in the deployment artifact.
+      - Recovery verification checks startup logs and a successful HTTP response after redeployment.
+    environment:
+      files:
+        - src: fixture/appservice-deployment.txt
+          dest: appservice-deployment.txt
+    tags: &fixture-tags
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders: &fixture-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
+
+  - name: "Diagnose AKS DNS failure from fixture"
+    prompt: |
+      Read aks-coredns.txt and diagnose the cluster DNS outage using only that
+      evidence. Do not query or modify Azure or Kubernetes. Explain the causal
+      chain and give safe verification and remediation steps.
+    rubric:
+      - The response identifies that CoreDNS cannot schedule because every node has a NoSchedule taint without a matching toleration, causing service-name resolution to fail.
+      - The response distinguishes node readiness from CoreDNS schedulability.
+      - The remediation restores a schedulable path for system pods rather than changing application DNS configuration.
+      - Recovery verification checks CoreDNS readiness and service-name resolution from a workload.
+    environment:
+      files:
+        - src: fixture/aks-coredns.txt
+          dest: aks-coredns.txt
+    tags: *fixture-tags
+    graders: *fixture-graders

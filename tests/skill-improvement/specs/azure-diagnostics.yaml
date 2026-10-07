@@ -13,7 +13,8 @@ evaluations:
     - eval.yaml
     - response-quality.eval.yaml
     - script-invocation.eval.yaml
-  heldOut: []
+  heldOut:
+    - held-out.eval.yaml
 
 models:
   answers:
@@ -40,7 +41,7 @@ acceptance:
   maximumEvalRegressionPoints: 5
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: false
+  requireHeldOutImprovement: true
 
 refinement:
   minimumScoreImprovementPoints: 1
