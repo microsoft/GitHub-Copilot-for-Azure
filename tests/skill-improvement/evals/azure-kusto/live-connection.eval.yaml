@@ -1,0 +1,126 @@
+name: azure-kusto-live-connection
+description: Read-only scenarios that verify live Kusto access against the persistent evaluation cluster.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Verify the persistent evaluation database"
+    prompt: >-
+      Use available read-only Azure or Kusto operations to verify cluster
+      ghcfaevalskusto in resource group ${AZURE_EVALS_RESOURCE_GROUP} and
+      subscription ${AZURE_EVALS_SUBSCRIPTION_ID}. List its databases and tell me
+      whether IntegrationTests exists. Do not create or modify anything.
+    rubric:
+      - The response invokes the azure-kusto skill and uses available read-only Azure or Kusto tooling rather than only describing hypothetical steps.
+      - The response uses cluster discovery followed by database discovery with the supplied subscription, resource group, and cluster identifiers.
+      - The response reports from tool evidence that IntegrationTests exists and keeps every operation read-only.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: live-connection
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Query known severity counts"
+    prompt: >-
+      In the IntegrationTests database on ghcfaevalskusto, inspect the AppLogs
+      schema and run a read-only KQL query for rows from 2026-09-20 through
+      2026-09-22 inclusive. Report the count by Severity, ordered by Severity.
+      Use subscription ${AZURE_EVALS_SUBSCRIPTION_ID} and resource group
+      ${AZURE_EVALS_RESOURCE_GROUP}.
+    rubric:
+      - The response invokes the azure-kusto skill, inspects the live AppLogs schema, and executes the query through available read-only Kusto tooling.
+      - The query uses the requested bounded date interval and summarizes by the real Severity column rather than inventing fields.
+      - The reported live counts are Critical 1, Error 3, Info 1, and Warning 1, with no mutation of the database.
+    tags: *tags
+    graders: *graders
+  - name: "Join known request dependencies"
+    prompt: >-
+      Use the live IntegrationTests database on ghcfaevalskusto to inspect the
+      Requests and Dependencies schemas, then run a bounded read-only join on
+      OperationId. Return failed requests whose dependency duration exceeded
+      2000 milliseconds between 2026-09-20 and 2026-09-23. Include OperationId,
+      Endpoint, Dependency, and dependency duration. The resource group is
+      ${AZURE_EVALS_RESOURCE_GROUP} and the subscription is
+      ${AZURE_EVALS_SUBSCRIPTION_ID}.
+    rubric:
+      - The response invokes the azure-kusto skill, inspects both live table schemas, and executes a bounded read-only join through available Kusto tooling.
+      - The join uses OperationId, filters failed requests and dependency DurationMs greater than 2000, and projects the requested fields.
+      - The live result identifies op-002 with Payments at 2600 milliseconds and op-005 with Inventory at 3500 milliseconds.
+    tags: *tags
+    graders: *graders
+  - name: "Inspect and invoke the known stored function"
+    prompt: >-
+      In IntegrationTests on ghcfaevalskusto, discover the stored function
+      FailedRequestsByRegion, inspect its parameters before calling it, and
+      invoke it read-only for 2026-09-20 through 2026-09-23. Report the failure
+      count by region. Use resource group ${AZURE_EVALS_RESOURCE_GROUP} and
+      subscription ${AZURE_EVALS_SUBSCRIPTION_ID}.
+    rubric:
+      - The response invokes the azure-kusto skill and uses available live read-only Kusto operations to discover and inspect FailedRequestsByRegion before invocation.
+      - The function is called with the requested bounded datetime arguments rather than invoked without inspecting its signature.
+      - The live result reports eastus2 with 2 failures and westus2 with 1 failure and does not alter the function or database.
+    tags: *tags
+    graders: *graders
+  - name: "Discover the evaluation database from a cluster name"
+    prompt: >-
+      Find the Azure Data Explorer cluster named ghcfaevalskusto that I can
+      access and tell me whether it has a database called IntegrationTests.
+      Keep this read-only.
+    rubric:
+      - The response invokes the azure-kusto skill and uses live Azure discovery rather than asking the user to supply the subscription and resource group immediately.
+      - The response resolves the cluster through accessible subscription and cluster evidence, then lists its databases through available read-only Azure or Kusto tooling.
+      - The response reports from tool evidence that IntegrationTests exists, identifies the resolved resource context, and performs no mutation.
+    tags: *tags
+    graders: *graders
+  - name: "Summarize errors from partial resource context"
+    prompt: >-
+      On https://ghcfaevalskusto.eastus2.kusto.windows.net, use the
+      IntegrationTests data to summarize Error and Critical events by service
+      and severity for September 20 through September 22, 2026.
+    rubric:
+      - The response invokes the azure-kusto skill, resolves the supplied cluster endpoint, and uses live read-only schema discovery and query execution.
+      - The query uses AppLogs only after discovering a compatible schema, applies the bounded date and severity filters, and summarizes by Service and Severity.
+      - The live result reports Checkout with 2 Error and 1 Critical events and Identity with 1 Error event without inventing additional groups.
+    tags: *tags
+    graders: *graders
+  - name: "Investigate checkout failures from user intent"
+    prompt: >-
+      Why were checkout requests failing in our IntegrationTests Kusto data
+      between September 20 and September 22? Check whether slow dependencies
+      contributed and show me the evidence. The cluster is ghcfaevalskusto.
+    rubric:
+      - The response invokes the azure-kusto skill and discovers the relevant live Requests and Dependencies schemas before choosing join fields or failure indicators.
+      - The response executes a bounded read-only correlation that filters failed checkout requests and evaluates dependency duration without requiring the user to prescribe the query.
+      - The evidence identifies op-002 with Payments at 2600 milliseconds and op-005 with Inventory at 3500 milliseconds and does not claim causation beyond the observed correlation.
+    tags: *tags
+    graders: *graders
+  - name: "Refine a live failure investigation across turns"
+    turns:
+      - >-
+        In IntegrationTests on ghcfaevalskusto, show how many requests failed
+        in each region from September 20 through September 22, 2026.
+      - >-
+        Now narrow that to checkout failures and check whether they line up
+        with dependencies slower than two seconds.
+    rubric:
+      - The first response invokes the azure-kusto skill, discovers the live Requests schema, and reports eastus2 with 2 failed requests and westus2 with 1 for the bounded interval.
+      - The follow-up preserves the established cluster, database, date range, and discovered schema context rather than restarting with invented resource details.
+      - The follow-up uses a live read-only join and identifies op-002 with Payments at 2600 milliseconds and op-005 with Inventory at 3500 milliseconds.
+    tags: *tags
+    graders: *graders

@@ -74,6 +74,30 @@ jobs:
       - name: Validate shebang shell scripts are executable
         run: npm run check:shell-scripts
 
+  line-endings:
+    name: Line Endings
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: scripts/package.json
+
+      - name: Install scripts dependencies
+        working-directory: ./scripts
+        run: npm ci --ignore-scripts
+
+      - name: Validate tracked text files use LF line endings
+        run: npm run check:line-endings
+
   eslint:
     name: ESLint
     runs-on: ubuntu-latest

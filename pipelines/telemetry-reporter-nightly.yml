@@ -143,6 +143,7 @@ extends:
                     -PipelineWorkspace '$(Pipeline.Workspace)'
                     -ManifestPath '$(Build.ArtifactStagingDirectory)/manifest/build-manifest.json'
                     -BuildId '$(Build.BuildId)'
+                    -BuildReason '$(Build.Reason)'
                     -SourceVersion '$(Build.SourceVersion)'
 
               - task: 1ES.PublishPipelineArtifact@1
@@ -150,3 +151,100 @@ extends:
                 inputs:
                   artifactName: telemetry-reporter_manifest
                   targetPath: $(Build.ArtifactStagingDirectory)/manifest
+
+              - ${{ if and(eq(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}:
+                - task: PowerShell@2
+                  displayName: Stage release tools
+                  inputs:
+                    pwsh: true
+                    targetType: inline
+                    script: |
+                      $targetPath = '$(Build.ArtifactStagingDirectory)/release_tools'
+                      New-Item -ItemType Directory -Path $targetPath -Force -ErrorAction Stop | Out-Null
+                      Copy-Item `
+                        -LiteralPath '$(Build.SourcesDirectory)/eng/common/scripts/Add-RetentionLease.ps1' `
+                        -Destination $targetPath `
+                        -ErrorAction Stop
+                      Copy-Item `
+                        -LiteralPath '$(Build.SourcesDirectory)/eng/common/scripts/login-to-github.ps1' `
+                        -Destination $targetPath `
+                        -ErrorAction Stop
+                      Copy-Item `
+                        -LiteralPath '$(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Publish-Release.ps1' `
+                        -Destination $targetPath `
+                        -ErrorAction Stop
+
+                - task: 1ES.PublishPipelineArtifact@1
+                  displayName: Publish release tools
+                  inputs:
+                    artifactName: release_tools
+                    targetPath: $(Build.ArtifactStagingDirectory)/release_tools
+
+      - ${{ if and(eq(variables['Build.Reason'], 'Manual'), eq(variables['Build.SourceBranch'], 'refs/heads/main')) }}:
+        - stage: Release
+          displayName: Publish GitHub release
+          dependsOn: Verify
+          condition: succeeded()
+          jobs:
+            - deployment: Release
+              displayName: Create telemetry reporter release
+              environment: package-publish
+              templateContext:
+                type: releaseJob
+                isProduction: true
+                inputs:
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_manifest
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_manifest
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_win-x64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_win-x64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_win-arm64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_win-arm64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_osx-x64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_osx-x64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_osx-arm64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_osx-arm64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_linux-x64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_linux-x64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_linux-arm64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_linux-arm64
+                  - input: pipelineArtifact
+                    artifactName: release_tools
+                    targetPath: $(Pipeline.Workspace)/release_tools
+              pool:
+                name: azsdk-pool
+                image: ubuntu-24.04
+                os: linux
+              strategy:
+                runOnce:
+                  deploy:
+                    steps:
+                      - template: /eng/common/pipelines/templates/steps/retain-run.yml@self
+                        parameters:
+                          ScriptDirectory: $(Pipeline.Workspace)/release_tools
+
+                      - template: /eng/common/pipelines/templates/steps/login-to-github.yml@self
+                        parameters:
+                          TokenOwners:
+                            - Microsoft
+                          ScriptDirectory: $(Pipeline.Workspace)/release_tools
+
+                      - task: PowerShell@2
+                        displayName: Create GitHub release
+                        inputs:
+                          pwsh: true
+                          filePath: $(Pipeline.Workspace)/release_tools/Publish-Release.ps1
+                          arguments: >
+                            -PipelineWorkspace '$(Pipeline.Workspace)'
+                            -ManifestPath '$(Pipeline.Workspace)/telemetry-reporter_manifest/build-manifest.json'
+                            -Repository 'microsoft/GitHub-Copilot-for-Azure'
+                            -ExpectedBuildId '$(Build.BuildId)'
+                            -ExpectedSourceVersion '$(Build.SourceVersion)'
+                        env:
+                          GH_TOKEN: $(GH_TOKEN)

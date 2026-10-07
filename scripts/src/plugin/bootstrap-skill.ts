@@ -69,7 +69,7 @@ function appendCodeOwnerIfMissing(
   lines.splice(
     insertionIndex,
     0,
-    `${entryPath} [required-codeowner-1] [required-codeowner-2] @RickWinter`,
+    `${entryPath} [required-codeowner-1] [required-codeowner-2] @microsoft/github-copilot-for-azure-writers`,
   );
   fs.writeFileSync(codeOwnersPath, lines.join("\n"));
 }

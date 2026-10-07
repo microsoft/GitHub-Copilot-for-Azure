@@ -14,10 +14,10 @@ scoring:
 stimuli:
   - name: "Fix empty exact-time filter"
     prompt: "Events has rows today, but `Events | where Timestamp == ago(1d) | where State contains \"failed\"` returns none. Diagnose it, correct it for the last day, and give one follow-up check."
-    rubric: &rubric
-      - The response accurately identifies the primary KQL correctness or performance problem stated in the prompt.
-      - The corrected query is syntactically plausible, preserves the requested semantics, and applies selective time filters early.
-      - The explanation includes a focused validation or follow-up check and does not claim unobserved results.
+    rubric:
+      - The response explains that equality with `ago(1d)` matches only an exact instant rather than all rows from the last day.
+      - The corrected KQL uses a last-day range on `Timestamp` and retains the case-insensitive `State contains "failed"` predicate.
+      - The response gives one focused follow-up check, such as inspecting recent timestamp ranges or state values, without claiming observed results.
     tags: &tags
       type: integration
       tier: full
@@ -34,46 +34,73 @@ stimuli:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
   - name: "Optimize late-filter join"
     prompt: "This is slow: `Requests | join kind=inner (Dependencies) on OperationId | where Timestamp > ago(24h)`. Rewrite it for two large tables and explain the main improvements."
-    rubric: *rubric
+    rubric:
+      - The rewrite applies a 24-hour time filter independently to both `Requests` and `Dependencies` before the join, using disambiguated timestamp columns where needed.
+      - The query projects only required columns before joining and preserves the inner join on `OperationId`.
+      - The explanation ties any join strategy suggestion to input sizes and key cardinality rather than promising that one hint is universally faster.
     tags: *tags
     graders: *graders
   - name: "Fix summarize grouping error"
     prompt: "Why does `Events | summarize count(), Service by bin(Timestamp, 1h)` fail? Provide the corrected hourly count by Service."
-    rubric: *rubric
+    rubric:
+      - The response explains that `Service` cannot appear as a bare aggregation expression and must be included after `by` or aggregated.
+      - The corrected KQL summarizes `count()` by `Service` and `bin(Timestamp, 1h)`.
+      - The output represents hourly counts per service without adding unrelated query requirements.
     tags: *tags
     graders: *graders
   - name: "Fix scalar versus tabular expression"
     prompt: "My KQL fails when I write `let cutoff = Events | summarize max(Timestamp); Events | where Timestamp > cutoff`. Explain and correct the scalar handling."
-    rubric: *rubric
+    rubric:
+      - The response explains that the summarize expression assigned to `cutoff` is tabular while the `where` comparison needs a scalar.
+      - The correction uses `toscalar(...)` or an equivalent valid Kusto scalar extraction around the maximum timestamp query.
+      - The final KQL compares `Events.Timestamp` with the extracted scalar and notes the behavioral consequence of filtering after the table's maximum timestamp.
     tags: *tags
     graders: *graders
   - name: "Fix contains casing mismatch"
     prompt: "A query using `State contains_cs \"failed\"` misses rows containing Failed and FAILED. Correct it and explain the semantic difference."
-    rubric: *rubric
+    rubric:
+      - The corrected predicate uses case-insensitive `contains` or an equivalent normalization to match `failed`, `Failed`, and `FAILED`.
+      - The response accurately distinguishes `contains_cs` as case-sensitive from `contains` as case-insensitive.
+      - The response preserves substring matching semantics rather than silently changing the request to exact equality.
     tags: *tags
     graders: *graders
   - name: "Fix integer division rate"
     prompt: "My error-rate query returns zero: `summarize Errors=countif(not(Success)), Total=count() | extend Rate=Errors/Total*100`. Make the calculation robust."
-    rubric: *rubric
+    rubric:
+      - The correction converts at least one operand to `real` or otherwise ensures non-integer division.
+      - The query explicitly handles `Total == 0` to avoid invalid or misleading rate output.
+      - The result retains `Errors`, `Total`, and a percentage rate derived from those counts.
     tags: *tags
     graders: *graders
   - name: "Fix join duplicate columns"
     prompt: "After joining Requests and Dependencies on OperationId, references to Timestamp are ambiguous. Show a clear KQL pattern for preserving and naming both timestamps."
-    rubric: *rubric
+    rubric:
+      - The KQL renames or projects `Requests.Timestamp` and `Dependencies.Timestamp` to distinct names before the join.
+      - The query joins on `OperationId` and projects both timestamp values with unambiguous output names.
+      - The response avoids relying on unstable automatically suffixed column names as the primary solution.
     tags: *tags
     graders: *graders
   - name: "Fix malformed JSON parsing"
     prompt: "`extend p=parse_json(Properties) | project p.tenantId` behaves inconsistently because some Properties values are invalid. Provide safer diagnostic KQL."
-    rubric: *rubric
+    rubric:
+      - The KQL preserves the original `Properties` value and creates a parsed value so malformed inputs can be diagnosed rather than silently discarded.
+      - The query separates or flags rows where parsing or tenant extraction fails and safely converts `tenantId` to a scalar value.
+      - The diagnostic is bounded and returns representative malformed values or counts instead of every row.
     tags: *tags
     graders: *graders
   - name: "Fix time-series gaps"
     prompt: "A summarize-by-bin chart omits quiet five-minute periods. Rewrite the query to provide a continuous 24-hour series with zero-filled gaps."
-    rubric: *rubric
+    rubric:
+      - The KQL defines an explicit 24-hour range with five-minute steps.
+      - The query uses `make-series ... default=0`, range union plus summarize, or another valid Kusto gap-filling pattern.
+      - The output associates every five-minute bucket with a zero or observed value and is suitable for chronological charting.
     tags: *tags
     graders: *graders
   - name: "Fix unbounded regex query"
     prompt: "This query times out: `Logs | where Message matches regex @\"error.*timeout\" | summarize count() by Service`. Optimize it while preserving intent for the last seven days."
-    rubric: *rubric
+    rubric:
+      - The rewrite adds an early seven-day time filter and projects only fields needed for filtering and aggregation.
+      - The query replaces or precedes the regex with cheaper selective predicates that preserve the requirement that `error` occurs before `timeout`, using regex only if necessary for exact semantics.
+      - The result still summarizes matching log count by `Service`, and the explanation does not promise a measured speedup without execution evidence.
     tags: *tags
     graders: *graders
