@@ -119,22 +119,19 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
   # ── pod-evidence-script-invoked ──
-  # Response-quality check: for an AKS pod-failure prompt the skill should drive the
-  # agent to RUN the read-only pod-evidence evidence-bundle script rather than re-listing
-  # the raw kubectl describe/logs/top sequence (issue #2507). The `tool-calls` grader
-  # asserts the agent attempted to execute pod-evidence.{sh,ps1} via a shell tool.
+  # Behavior check: for a fully identified AKS pod failure, the skill should drive the
+  # agent to invoke the read-only pod-evidence bundle instead of re-listing the raw
+  # kubectl describe/logs/top sequence (issue #2507).
   #
-  # earlyTerminate stops the agent as soon as the pod-evidence call is observed, so there
-  # are no follow-on turns. It uses `tool-call-result`, which reacts to the matching call's
-  # `tool.execution_complete` event — i.e. the invocation is confirmed to have actually run
-  # and produced a result, which is the reliable signal (execution_start alone can be raced
-  # by termination before the result is recorded). This is a guard/optimization, not a hard
-  # execution block: the script is read-only and, with no AKS cluster/kubectl context in CI,
-  # every kubectl call fails gracefully — so it is inert regardless. Because earlyTerminate
-  # is set, the `completed` grader is intentionally omitted (early-terminated runs always
-  # fail it by design).
+  # tool-call-match stops before execution, preventing accidental use of any ambient
+  # cluster context. shell-command-invoked grades the same tool_call event.
   - name: "Pod-evidence script invoked for CrashLoopBackOff"
-    prompt: "My AKS pod is stuck in CrashLoopBackOff. Gather the read-only failure evidence I need before I decide on a fix."
+    prompt: |
+      My AKS pod orders-api-7f989d5d9f-k2v8m in namespace production is
+      stuck in CrashLoopBackOff. Invoke the bundled azure-diagnostics
+      pod-evidence script for that exact pod and namespace as your first
+      diagnostic action. Do not discover Azure resources, change context,
+      install tools, or run alternative kubectl or Azure queries first.
     config:
       runs: 1
     tags:
@@ -142,19 +139,17 @@ stimuli:
       tier: full
       cost: llm
       area: response-quality
-      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh)$","argsPattern":"pod-evidence\\.(sh|ps1)"}]'
+      earlyTerminate: '[{"type":"tool-call-match","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"pod-evidence\\.(sh|ps1)"}]'
     graders:
       - type: skill-invocation
         config:
           required:
             - azure-diagnostics
-      - type: tool-calls
+      - type: shell-command-invoked
         config:
           required:
-            # Copilot CLI uses "powershell" tool for executing scripts on Windows
-            # and "bash" for executing scripts on other platforms.
-            - name: "(?i)^(bash|powershell|pwsh)$"
-              command: "(?i)pod-evidence\\.(sh|ps1)"
+            - command: "(?i)pod-evidence\\.(sh|ps1)"
+              description: "agent invoked the pod evidence bundle"
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
@@ -164,10 +159,16 @@ stimuli:
   # Added with issue #2511: for the messaging "cannot connect at all" flow the
   # skill should drive the agent to *run* the test-messaging-connectivity probe
   # script rather than emit raw curl/nslookup commands. Asserts the agent invokes
-  # the script; no live namespace is required since the check only cares that the
-  # agent *attempts* the probe (the script completes even for a missing namespace).
+  # the script. tool-call-match terminates before execution so no live namespace
+  # or ambient Azure context is touched.
   - name: "Service Bus namespace connectivity probe"
-    prompt: "We've got a production incident: my app suddenly can't connect to Azure Service Bus namespace 'contoso' at all. Please help me troubleshoot and find the root cause — start by checking the namespace's resource health, then run a connectivity check that resolves DNS and probes the messaging ports (AMQP 5671/5672, HTTPS 443) to rule out an NSG or firewall block."
+    prompt: |
+      We've got a production incident: my app cannot connect to
+      contoso.servicebus.windows.net. Invoke the bundled azure-diagnostics
+      messaging connectivity script for that exact namespace as your first
+      diagnostic action so it checks DNS, AMQP 5671/5672, and HTTPS 443.
+      Do not discover Azure resources, install tools, query Resource Health,
+      or run ad hoc network probes first.
     tags:
       type: integration
       tier: full

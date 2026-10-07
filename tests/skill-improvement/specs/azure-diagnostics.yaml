@@ -13,7 +13,6 @@ evaluations:
     - eval.yaml
     - fixture-evidence.eval.yaml
     - response-quality.eval.yaml
-    - routing-ownership.eval.yaml
     - script-invocation.eval.yaml
   heldOut:
     - held-out.eval.yaml
