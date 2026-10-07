@@ -3,6 +3,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const GHCP_PLUGIN_DIRNAME = "ghcp";
 
 function listDirectories(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true })
@@ -25,6 +26,11 @@ export function collectPluginSkills() {
       plugins[pluginName] = [];
     }
   }
+
+  // Collect skills in .github/skills as if they are in a plugin named "ghcp"
+  const githubSkillsDir = resolve(repoRoot, ".github", "skills");
+  const skills = listDirectories(githubSkillsDir);
+  plugins[GHCP_PLUGIN_DIRNAME] = skills;
 
   const output = { plugins };
   const outputPath = resolve(repoRoot, "dashboard", "data", "plugin-skills.json");

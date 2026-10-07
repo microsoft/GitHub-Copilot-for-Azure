@@ -180,7 +180,7 @@ function parseCliOptions(argv: string[]): CliOptions {
 
     if (arg === "--plugin") {
       const value = argv[i + 1];
-      if (!value || value.startsWith("--")) {
+      if (value === undefined || value.startsWith("--")) {
         throw new Error("Missing value for --plugin");
       }
       plugin = value;
@@ -273,8 +273,8 @@ function printUsage(): void {
     "Usage: tsx tests/run-vally-test.ts [options] [-- <vally args>]",
     "",
     "Options:",
-    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: azure-skills). Note that a plugin's dirname may be different from its name.",
-    "  --skill <name>            Skill name used by this wrapper",
+    "  --plugin <name>           Plugin dirname for plugin content and eval specs (default: \"azure-skills\"). A plugin's dirname may be different from its name. When plugin dirname is \"ghcp\", the test runner loads skills from .github/skills/ instead.",
+    "  --skill <name>            Required: Skill name used by this wrapper",
     "  --pass-rate <0..1>        Required pass rate for each aggregated test (default: 0.75)",
     "  --help                    Show this help",
     "",
