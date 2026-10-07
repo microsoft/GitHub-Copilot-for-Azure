@@ -2,8 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadRunSpec, createRunPlan, enforceRunLimits } from "./config.ts";
+import {
+  loadRunSpec,
+  loadRunSpecMetadata,
+  createRunPlan,
+  enforceRunLimits,
+} from "./config.ts";
 import { executeSkillImprovement } from "./engine.ts";
+import {
+  cleanupManagedResources,
+  prepareManagedResources,
+} from "./managed-resources.ts";
 import { runProcess } from "./process.ts";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,6 +36,8 @@ export function usage(): string {
     "  npm run skill-improvement -- validate --config <run-spec.yaml>",
     "  npm run skill-improvement -- run --config <run-spec.yaml> [--executor local|github]",
     "  npm run skill-improvement -- execute --config <run-spec.yaml> --output <directory>",
+    "  npm run skill-improvement -- prepare-resources --config <run-spec.yaml>",
+    "  npm run skill-improvement -- cleanup-resources --config <run-spec.yaml>",
     "",
     "Options:",
     "  --executor <local|github>  Run locally or dispatch the GitHub workflow",
@@ -141,6 +152,15 @@ function currentBranch(): string {
   return branch;
 }
 
+export function loadGitHubDispatchDefaults(configPath: string): {
+  baselineRef: string;
+} {
+  const metadata = loadRunSpecMetadata(configPath);
+  return {
+    baselineRef: metadata.target.baselineRef,
+  };
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   if (!args.command || !args.config) {
@@ -150,19 +170,28 @@ async function main(): Promise<void> {
   }
   validateCommandOptions(args);
   const configPath = resolveConfig(args.config);
-  const spec = loadRunSpec(configPath);
   if (args.command === "validate") {
     validate(configPath);
     return;
   }
   if (args.command === "run" && args.executor === "github") {
+    const defaults = loadGitHubDispatchDefaults(configPath);
     await dispatchGitHub(
       configPath,
-      args.baselineRef ?? spec.target.baselineRef,
+      args.baselineRef ?? defaults.baselineRef,
       args.workflowRef ?? currentBranch(),
       args.createDraftPr,
       args.prBase ?? "main"
     );
+    return;
+  }
+  const spec = loadRunSpec(configPath);
+  if (args.command === "prepare-resources") {
+    await prepareManagedResources(spec, repoRoot);
+    return;
+  }
+  if (args.command === "cleanup-resources") {
+    await cleanupManagedResources(spec, repoRoot);
     return;
   }
   if (args.command !== "run" && args.command !== "execute") {
@@ -178,11 +207,17 @@ async function main(): Promise<void> {
     );
   fs.mkdirSync(outputDirectory, { recursive: true });
   fs.copyFileSync(configPath, path.join(outputDirectory, "run-spec.yaml"));
-  const report = await executeSkillImprovement(spec, {
-    repoRoot,
-    outputDirectory,
-    baselineRef: args.baselineRef,
-  });
+  let report;
+  try {
+    await prepareManagedResources(spec, repoRoot);
+    report = await executeSkillImprovement(spec, {
+      repoRoot,
+      outputDirectory,
+      baselineRef: args.baselineRef,
+    });
+  } finally {
+    await cleanupManagedResources(spec, repoRoot);
+  }
   console.log(`Skill improvement report: ${path.join(outputDirectory, "report.md")}`);
   if (args.command === "execute" && !report.finalAccepted) {
     console.log("No candidate satisfied the configured acceptance rules.");

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { parse } from "yaml";
+import { parse, stringify } from "yaml";
 
 export type SkillState = "enabled" | "disabled";
 export type McpState = "enabled" | "disabled";
@@ -9,6 +9,8 @@ export type EvaluationCondition = {
   name: string;
   skill: SkillState;
   mcp: McpState;
+  developmentEvaluations?: string[];
+  heldOutEvaluations?: string[];
 };
 
 export type SkillImprovementRunSpec = {
@@ -44,6 +46,21 @@ export type SkillImprovementRunSpec = {
     minimumSkillInvocationRate?: number;
     requireHeldOutImprovement?: boolean;
   };
+  refinement: {
+    minimumScoreImprovementPoints: number;
+    maximumQualityRegressionPoints: number;
+  };
+  resources?: {
+    kusto?: {
+      subscriptionId: string;
+      resourceGroup: string;
+      clusterName: string;
+      databaseName: string;
+      startBeforeRun: boolean;
+      stopAfterRun: boolean;
+      startupTimeoutMinutes: number;
+    };
+  };
   limits: {
     maxIterations: number;
     maxAnswerGenerations: number;
@@ -67,6 +84,84 @@ export type RunPlan = {
   maximumAnswerGenerations: number;
   maximumJudgeCalls: number;
 };
+
+const ENVIRONMENT_VARIABLE_PATTERN = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+const ALLOWED_ENVIRONMENT_VARIABLES = new Set([
+  "AZURE_EVALS_RESOURCE_GROUP",
+  "AZURE_EVALS_SUBSCRIPTION_ID",
+]);
+
+export function expandEnvironmentVariables<T>(
+  value: T,
+  source: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): T {
+  const missing = new Set<string>();
+  const unsupported = new Set<string>();
+  const expand = (current: unknown): unknown => {
+    if (typeof current === "string") {
+      return current.replace(
+        ENVIRONMENT_VARIABLE_PATTERN,
+        (placeholder, name: string) => {
+          if (!ALLOWED_ENVIRONMENT_VARIABLES.has(name)) {
+            unsupported.add(name);
+            return placeholder;
+          }
+          const environmentValue = environment[name];
+          if (environmentValue === undefined || environmentValue.length === 0) {
+            missing.add(name);
+            return placeholder;
+          }
+          return environmentValue;
+        }
+      );
+    }
+    if (Array.isArray(current)) {
+      return current.map(expand);
+    }
+    if (current && typeof current === "object") {
+      return Object.fromEntries(
+        Object.entries(current).map(([key, child]) => [key, expand(child)])
+      );
+    }
+    return current;
+  };
+  const expanded = expand(value) as T;
+  if (unsupported.size > 0) {
+    throw new Error(
+      `Unsupported environment variables referenced by ${source}: `
+      + Array.from(unsupported).sort().join(", ")
+    );
+  }
+  if (missing.size > 0) {
+    throw new Error(
+      `Missing environment variables referenced by ${source}: `
+      + Array.from(missing).sort().join(", ")
+    );
+  }
+  return expanded;
+}
+
+function readExpandedYaml<T>(
+  filePath: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): T {
+  return expandEnvironmentVariables(
+    parse(fs.readFileSync(filePath, "utf8")) as T,
+    filePath,
+    environment
+  );
+}
+
+export function materializeEvaluationFile(
+  sourcePath: string,
+  destinationPath: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): string {
+  const document = readExpandedYaml<unknown>(sourcePath, environment);
+  fs.writeFileSync(destinationPath, stringify(document), "utf8");
+  return destinationPath;
+}
 
 function requireNonEmptyString(value: unknown, field: string): asserts value is string {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -125,7 +220,18 @@ function validateEvalFiles(files: string[], field: string): void {
   }
 }
 
-const EVALUATION_ROOT_PREFIX = "tests/skill-improvement/evals";
+const EVALUATION_ROOT_PREFIXES = [
+  "tests/skill-improvement/evals",
+  "evals",
+] as const;
+const EVALUATION_ROOT_REQUIREMENT =
+  "tests/skill-improvement/evals or evals";
+
+function findEvaluationRootPrefix(value: string): string | undefined {
+  return EVALUATION_ROOT_PREFIXES.find(prefix =>
+    value === prefix || value.startsWith(`${prefix}/`)
+  );
+}
 
 function validateEvaluationRoot(value: unknown): asserts value is string {
   requireNonEmptyString(value, "evaluations.root");
@@ -136,23 +242,21 @@ function validateEvaluationRoot(value: unknown): asserts value is string {
     || value.includes("\0")
   ) {
     throw new Error(
-      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_PREFIX}.`
+      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_REQUIREMENT}.`
     );
   }
   const segments = value.split("/");
-  const rootSegments = EVALUATION_ROOT_PREFIX.split("/");
+  const rootPrefix = findEvaluationRootPrefix(value);
+  const rootSegments = rootPrefix?.split("/") ?? [];
   if (
+    rootPrefix === undefined ||
     segments.some(segment => segment.length === 0 || segment === "." || segment === "..")
     || segments.slice(rootSegments.length).some(
       segment => !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segment)
     )
-    || (
-      value !== EVALUATION_ROOT_PREFIX
-      && !value.startsWith(`${EVALUATION_ROOT_PREFIX}/`)
-    )
   ) {
     throw new Error(
-      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_PREFIX}.`
+      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_REQUIREMENT}.`
     );
   }
 }
@@ -199,6 +303,30 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     }
     if (conditionNames.has(condition.name)) {
       throw new Error(`Duplicate condition name: ${condition.name}`);
+    }
+    for (const field of [
+      "developmentEvaluations",
+      "heldOutEvaluations",
+    ] as const) {
+      const files = condition[field];
+      if (files === undefined) {
+        continue;
+      }
+      validateStringArray(
+        files,
+        `experiment.conditions[].${field}`,
+        true
+      );
+      validateEvalFiles(files, `experiment.conditions[].${field}`);
+      const commonFiles = field === "developmentEvaluations"
+        ? spec.evaluations.development
+        : spec.evaluations.heldOut ?? [];
+      const overlap = files.filter(file => commonFiles.includes(file));
+      if (overlap.length > 0) {
+        throw new Error(
+          `${condition.name} ${field} duplicates common evaluation files: ${overlap.join(", ")}`
+        );
+      }
     }
     conditionNames.add(condition.name);
   }
@@ -252,10 +380,38 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   }
   if (
     spec.acceptance.requireHeldOutImprovement
-    && (spec.evaluations.heldOut?.length ?? 0) === 0
+    && !hasHeldOutEvaluations(spec)
   ) {
     throw new Error(
-      "evaluations.heldOut must contain at least one file when requireHeldOutImprovement is true."
+      "At least one common or condition-specific held-out evaluation is required "
+      + "when requireHeldOutImprovement is true."
+    );
+  }
+
+  requireNonNegativeNumber(
+    spec.refinement?.minimumScoreImprovementPoints,
+    "refinement.minimumScoreImprovementPoints"
+  );
+  requireNonNegativeNumber(
+    spec.refinement?.maximumQualityRegressionPoints,
+    "refinement.maximumQualityRegressionPoints"
+  );
+
+  const kusto = spec.resources?.kusto;
+  if (kusto) {
+    requireNonEmptyString(kusto.subscriptionId, "resources.kusto.subscriptionId");
+    requireNonEmptyString(kusto.resourceGroup, "resources.kusto.resourceGroup");
+    requireNonEmptyString(kusto.clusterName, "resources.kusto.clusterName");
+    requireNonEmptyString(kusto.databaseName, "resources.kusto.databaseName");
+    if (typeof kusto.startBeforeRun !== "boolean") {
+      throw new Error("resources.kusto.startBeforeRun must be a boolean.");
+    }
+    if (typeof kusto.stopAfterRun !== "boolean") {
+      throw new Error("resources.kusto.stopAfterRun must be a boolean.");
+    }
+    requirePositiveInteger(
+      kusto.startupTimeoutMinutes,
+      "resources.kusto.startupTimeoutMinutes"
     );
   }
 
@@ -268,6 +424,14 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     spec.limits?.maxSkillTokenIncreasePercent,
     "limits.maxSkillTokenIncreasePercent"
   );
+  if (
+    spec.acceptance.requireHeldOutImprovement
+    && (!spec.improvementAgent.enabled || spec.limits.maxIterations === 0)
+  ) {
+    throw new Error(
+      "requireHeldOutImprovement requires at least one candidate iteration."
+    );
+  }
   if (spec.output?.issue !== "always" && spec.output?.issue !== "never") {
     throw new Error("output.issue must be 'always' or 'never'.");
   }
@@ -282,12 +446,37 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   return spec;
 }
 
-export function loadRunSpec(filePath: string): SkillImprovementRunSpec {
+export function loadRunSpec(
+  filePath: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): SkillImprovementRunSpec {
   const resolvedPath = path.resolve(filePath);
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(`Run specification not found: ${resolvedPath}`);
   }
-  return validateRunSpec(parse(fs.readFileSync(resolvedPath, "utf8")));
+  return validateRunSpec(
+    readExpandedYaml<SkillImprovementRunSpec>(resolvedPath, environment)
+  );
+}
+
+export type RunSpecMetadata = {
+  target: {
+    baselineRef: string;
+  };
+};
+
+export function loadRunSpecMetadata(filePath: string): RunSpecMetadata {
+  const resolvedPath = path.resolve(filePath);
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(`Run specification not found: ${resolvedPath}`);
+  }
+  const metadata = parse(fs.readFileSync(resolvedPath, "utf8")) as RunSpecMetadata;
+  requireNonEmptyString(metadata?.target?.baselineRef, "target.baselineRef");
+  return {
+    target: {
+      baselineRef: metadata.target.baselineRef,
+    },
+  };
 }
 
 function isInsideDirectory(parent: string, candidate: string): boolean {
@@ -306,9 +495,15 @@ export function resolveEvaluationPath(
 ): string {
   validateEvalFiles([file], "evaluation file");
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
+  const evaluationRootPrefix = findEvaluationRootPrefix(spec.evaluations.root);
+  if (evaluationRootPrefix === undefined) {
+    throw new Error(
+      `Evaluation root must be inside ${EVALUATION_ROOT_REQUIREMENT}: ${spec.evaluations.root}`
+    );
+  }
   const allowedRoot = path.join(
     resolvedRepoRoot,
-    ...EVALUATION_ROOT_PREFIX.split("/")
+    ...evaluationRootPrefix.split("/")
   );
   const configuredRoot = path.join(
     resolvedRepoRoot,
@@ -316,7 +511,7 @@ export function resolveEvaluationPath(
   );
   if (!isInsideDirectory(allowedRoot, configuredRoot)) {
     throw new Error(
-      `Evaluation root escapes ${EVALUATION_ROOT_PREFIX}: ${spec.evaluations.root}`
+      `Evaluation root escapes ${evaluationRootPrefix}: ${spec.evaluations.root}`
     );
   }
   if (!fs.existsSync(configuredRoot)) {
@@ -332,7 +527,7 @@ export function resolveEvaluationPath(
     || !isInsideDirectory(realAllowedRoot, realConfiguredRoot)
   ) {
     throw new Error(
-      `Evaluation root escapes ${EVALUATION_ROOT_PREFIX}: ${spec.evaluations.root}`
+      `Evaluation root escapes ${evaluationRootPrefix}: ${spec.evaluations.root}`
     );
   }
   const evalPath = path.join(realConfiguredRoot, file);
@@ -352,7 +547,7 @@ export function resolveEvaluationPath(
 function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
   return files.reduce((total, file) => {
     const evalPath = resolveEvaluationPath(repoRoot, spec, file);
-    const document = parse(fs.readFileSync(evalPath, "utf8")) as { stimuli?: unknown[] };
+    const document = readExpandedYaml<{ stimuli?: unknown[] }>(evalPath);
     if (!Array.isArray(document.stimuli) || document.stimuli.length === 0) {
       throw new Error(`Eval file contains no stimuli: ${evalPath}`);
     }
@@ -360,37 +555,92 @@ function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: st
   }, 0);
 }
 
+export type EvaluationSet = "development" | "heldOut";
+
+export function hasHeldOutEvaluations(
+  spec: SkillImprovementRunSpec,
+): boolean {
+  return (
+    (spec.evaluations.heldOut?.length ?? 0) > 0
+    || spec.experiment.conditions.some(
+      condition =>
+        condition.skill === "enabled"
+        && (condition.heldOutEvaluations?.length ?? 0) > 0
+    )
+  );
+}
+
+export function evaluationFilesForCondition(
+  spec: SkillImprovementRunSpec,
+  condition: EvaluationCondition,
+  evaluationSet: EvaluationSet,
+): string[] {
+  const commonFiles = evaluationSet === "development"
+    ? spec.evaluations.development
+    : spec.evaluations.heldOut ?? [];
+  const conditionFiles = evaluationSet === "development"
+    ? condition.developmentEvaluations ?? []
+    : condition.heldOutEvaluations ?? [];
+  return [...commonFiles, ...conditionFiles];
+}
+
 export function createRunPlan(repoRoot: string, spec: SkillImprovementRunSpec): RunPlan {
+  const candidateConditions = spec.experiment.conditions.filter(
+    condition => condition.skill === "enabled"
+  );
+  const developmentFiles = Array.from(new Set([
+    ...spec.evaluations.development,
+    ...spec.experiment.conditions.flatMap(
+      condition => condition.developmentEvaluations ?? []
+    ),
+  ]));
+  const heldOutFiles = Array.from(new Set([
+    ...(spec.evaluations.heldOut ?? []),
+    ...candidateConditions.flatMap(
+      condition => condition.heldOutEvaluations ?? []
+    ),
+  ]));
   const developmentPromptCount = countStimuli(
     repoRoot,
     spec,
-    spec.evaluations.development
+    developmentFiles
   );
   const heldOutPromptCount = countStimuli(
     repoRoot,
     spec,
-    spec.evaluations.heldOut ?? []
+    heldOutFiles
   );
   const answerModels = spec.models.answers.length;
   const repetitions = spec.experiment.repetitions;
-  const baselineConditions = spec.experiment.conditions.length;
-  const candidateConditions = spec.experiment.conditions.filter(
-    condition => condition.skill === "enabled"
-  ).length;
   const plannedIterations = spec.improvementAgent.enabled
     ? spec.limits.maxIterations
     : 0;
-  const baselineAnswerGenerations =
-    developmentPromptCount * answerModels * repetitions * baselineConditions;
-  const candidateAnswerGenerationsPerIteration =
-    developmentPromptCount * answerModels * repetitions * candidateConditions;
+  const generationCount = (
+    conditions: EvaluationCondition[],
+    evaluationSet: EvaluationSet,
+  ): number => conditions.reduce(
+    (total, condition) => total + countStimuli(
+      repoRoot,
+      spec,
+      evaluationFilesForCondition(spec, condition, evaluationSet)
+    ),
+    0
+  ) * answerModels * repetitions;
+  const baselineAnswerGenerations = generationCount(
+    spec.experiment.conditions,
+    "development"
+  );
+  const candidateAnswerGenerationsPerIteration = generationCount(
+    candidateConditions,
+    "development"
+  );
   const heldOutAnswerGenerations = (
     heldOutPromptCount === 0
     || !spec.acceptance.requireHeldOutImprovement
     || plannedIterations === 0
   )
     ? 0
-    : heldOutPromptCount * answerModels * repetitions * candidateConditions * 2;
+    : generationCount(candidateConditions, "heldOut") * 2;
   const maximumAnswerGenerations =
     baselineAnswerGenerations
     + candidateAnswerGenerationsPerIteration * plannedIterations
