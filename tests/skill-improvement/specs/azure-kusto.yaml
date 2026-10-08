@@ -34,9 +34,15 @@ models:
 experiment:
   repetitions: 1
   conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
@@ -68,8 +74,8 @@ resources:
 
 limits:
   maxIterations: 3
-  maxAnswerGenerations: 800
-  maxJudgeCalls: 800
+  maxAnswerGenerations: 950
+  maxJudgeCalls: 950
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15

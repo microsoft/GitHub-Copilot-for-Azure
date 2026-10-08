@@ -7,209 +7,26 @@ metadata:
   version: "0.0.0-placeholder"
 ---
 
-# Azure Data Explorer (Kusto) Query & Analytics
+# Azure Data Explorer (Kusto)
 
-Execute KQL queries and manage Azure Data Explorer resources for fast, scalable big data analytics on log, telemetry, and time series data.
+## Workflow
 
-## Overview
+1. Resolve subscription, resource group, cluster, and database from input or read-only discovery. Never invent identifiers.
+2. Inspect required table schemas and function signatures before writing KQL. Use only verified names, types, join keys, and parameters.
+3. Run read-only KQL with early filters, requested time bounds, and limited exploratory output. Mutate nothing unless explicitly requested.
+4. Report evidence and distinguish empty results, missing objects, and failures.
 
-This skill enables querying and managing Azure Data Explorer (Kusto), a fast and highly scalable data exploration service optimized for log and telemetry data. Azure Data Explorer provides sub-second query performance on billions of records using the Kusto Query Language (KQL).
+## Multi-source Discovery
 
-Key capabilities:
-- **Query Execution**: Run KQL queries against massive datasets
-- **Schema Exploration**: Discover tables, columns, and data types
-- **Resource Management**: List clusters and databases
-- **Analytics**: Aggregations, time series, anomaly detection, machine learning
+When location is unknown, derive a finite candidate set. Batch read-only metadata listing across each candidate Kusto database or Log Analytics workspace, match the exact table, then query confirmed matches. An empty table is still a match. Report "not found" only after checking the full set; combine sources when required.
 
-## Core Workflow
+## Azure MCP Contract
 
-1. **Discover Resources**: List available clusters and databases in subscription. If the target table's location is unknown and multiple candidate clusters, databases, or Log Analytics workspaces exist, batch the search (see Pattern 6) and only report "not found" after all candidates are checked.
-2. **Explore Schema**: Retrieve table structures to understand data model
-3. **Query Data**: Execute KQL queries for analysis, filtering, aggregation
-4. **Analyze Results**: Process query output for insights and reporting
+Prefer `kusto_cluster_list`, `kusto_database_list`, `kusto_table_schema_get`, and `kusto_query`. Supply required `subscription`, `cluster`, `database`, `table`, or `query`; use `resource-group` and `tenant` to disambiguate. Preserve discovered identifiers.
 
-## Query Patterns
+## Failure Handling
 
-### Pattern 1: Basic Data Retrieval
-Fetch recent records from a table with simple filtering.
-
-**Example KQL**:
-```kql
-Events
-| where Timestamp > ago(1h)
-| take 100
-```
-
-**Use for**: Quick data inspection, recent event retrieval
-
-### Pattern 2: Aggregation Analysis
-Summarize data by dimensions for insights and reporting.
-
-**Example KQL**:
-```kql
-Events
-| summarize count() by EventType, bin(Timestamp, 1h)
-| order by count_ desc
-```
-
-**Use for**: Event counting, distribution analysis, top-N queries
-
-### Pattern 3: Time Series Analytics
-Analyze data over time windows for trends and patterns.
-
-**Example KQL**:
-```kql
-Telemetry
-| where Timestamp > ago(24h)
-| summarize avg(ResponseTime), percentiles(ResponseTime, 50, 95, 99) by bin(Timestamp, 5m)
-| render timechart
-```
-
-**Use for**: Performance monitoring, trend analysis, anomaly detection
-
-### Pattern 4: Join and Correlation
-Combine multiple tables for cross-dataset analysis.
-
-**Example KQL**:
-```kql
-Events
-| where EventType == "Error"
-| join kind=inner (
-    Logs
-    | where Severity == "Critical"
-) on CorrelationId
-| project Timestamp, EventType, LogMessage, Severity
-```
-
-**Use for**: Root cause analysis, correlated event tracking
-
-### Pattern 5: Schema Discovery
-Explore table structure before querying.
-
-**Tools**: `kusto_table_schema_get`
-
-**Use for**: Understanding data model, query planning
-
-### Pattern 6: Batch Search Across Candidate Sources
-When a table's location is unknown and there are several candidate clusters, databases, or workspaces, batch read-only metadata discovery instead of querying candidates one at a time. List tables in each candidate database or workspace and match the exact table name before querying data.
-
-After confirming which sources contain the table, query those sources together when needed:
-```kql
-union workspace('ws1').Requests, workspace('ws2').Requests
-| take 1
-```
-
-**Use for**: Locating a table among many candidate resources without confusing an empty result with a missing table
-
-## Key Data Fields
-
-When executing queries, common field patterns:
-- **Timestamp**: Time of event (datetime) - use `ago()`, `between()`, `bin()` for time filtering
-- **EventType/Category**: Classification field for grouping
-- **CorrelationId/SessionId**: For tracing related events
-- **Severity/Level**: For filtering by importance
-- **Dimensions**: Custom properties for grouping and filtering
-
-## Result Format
-
-Query results include:
-- **Columns**: Field names and data types
-- **Rows**: Data records matching query
-- **Statistics**: Row count, execution time, resource utilization
-- **Visualization**: Chart rendering hints (timechart, barchart, etc.)
-
-## KQL Best Practices
-
-**🔵 Query Patterns:**
-- Use `summarize` for aggregations instead of `count()` alone
-- Use `bin()` for time bucketing in time series
-- Use `project` to select only needed columns
-- Use `extend` to add calculated fields
-
-**🟡 Common Functions:**
-- `ago(timespan)`: Relative time (ago(1h), ago(7d))
-- `between(start .. end)`: Range filtering
-- `startswith()`, `contains()`, `matches regex`: String filtering
-- `parse`, `extract`: Extract values from strings
-- `percentiles()`, `avg()`, `sum()`, `max()`, `min()`: Aggregations
-
-## Best Practices
-
-- Filter early with time range filters to optimize query performance and use indexed columns first
-- Use `take` or `limit` for exploratory queries to avoid large result sets
-- Leverage `summarize` for aggregations instead of client-side processing
-- Store frequently-used queries as functions in the database
-- Use materialized views for repeated aggregations
-- Monitor query performance and resource consumption
-- Apply data retention policies to manage storage costs
-- Use streaming ingestion for real-time analytics (< 1 second latency)
-- Integrate with Azure Monitor for operational insights
-
-## MCP Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| `kusto_cluster_list` | List all Azure Data Explorer clusters in a subscription |
-| `kusto_database_list` | List all databases in a specific Kusto cluster |
-| `kusto_query` | Execute KQL queries against a Kusto database |
-| `kusto_table_schema_get` | Retrieve schema information for a specific table |
-
-**Required Parameters**:
-- `subscription`: Azure subscription ID or display name
-- `cluster`: Kusto cluster name (e.g., "mycluster")
-- `database`: Database name
-- `query`: KQL query string (for query operations)
-- `table`: Table name (for schema operations)
-
-**Optional Parameters**:
-- `resource-group`: Resource group name (for listing operations)
-- `tenant`: Azure AD tenant ID
-
-## Fallback Strategy: Azure CLI Commands
-
-If Azure MCP Kusto tools fail, timeout, or are unavailable, use Azure CLI commands as fallback.
-
-### CLI Command Reference
-
-| Operation | Azure CLI Command |
-|-----------|-------------------|
-| List clusters | `az kusto cluster list --resource-group <rg-name>` |
-| List databases | `az kusto database list --cluster-name <cluster> --resource-group <rg-name>` |
-| Show cluster | `az kusto cluster show --name <cluster> --resource-group <rg-name>` |
-| Show database | `az kusto database show --cluster-name <cluster> --database-name <db> --resource-group <rg-name>` |
-
-### KQL Query via Azure CLI
-
-For queries, use the Kusto REST API or direct cluster URL:
-```bash
-az rest --method post \
-  --url "https://<cluster>.<region>.kusto.windows.net/v1/rest/query" \
-  --body "{ \"db\": \"<database>\", \"csl\": \"<kql-query>\" }"
-```
-
-### When to Fallback
-
-Switch to Azure CLI when:
-- MCP tool returns timeout error (queries > 60 seconds)
-- MCP tool returns "service unavailable" or connection errors
-- Authentication failures with MCP tools
-- Empty response when database is known to have data
-
-## Common Issues
-
-- **Access Denied**: Verify database permissions (Viewer role minimum for queries)
-- **Query Timeout**: Optimize query with time filters, reduce result set, or increase timeout
-- **Syntax Error**: Validate KQL syntax - common issues: missing pipes, incorrect operators
-- **Empty Results**: Check time range filters (may be too restrictive), verify table name
-- **Table Location Unknown**: Use Pattern 6 to batch-search all candidate sources before concluding the data does not exist
-- **Cluster Not Found**: Check cluster name format (exclude ".kusto.windows.net" suffix)
-- **High CPU Usage**: Query too broad - add filters, reduce time range, limit aggregations
-- **Ingestion Lag**: Streaming data may have 1-30 second delay depending on ingestion method
-
-## Use Cases
-
-- **Log Analytics**: Application logs, system logs, audit logs
-- **IoT Analytics**: Sensor data, device telemetry, real-time monitoring
-- **Security Analytics**: SIEM data, threat detection, security event correlation
-- **APM**: Application performance metrics, user behavior, error tracking
-- **Business Intelligence**: Clickstream analysis, user analytics, operational KPIs
+- Access denied: name the resource and required read permission; do not call it absent.
+- Unknown object/syntax/type or empty results: recheck metadata, context, and bounds; never guess.
+- Timeout: narrow time, filter earlier, project fewer columns, or limit results.
+- MCP unavailable: report it. If Azure CLI exists, use it for discovery and `az rest` for queries; never present instructions as executed evidence.
