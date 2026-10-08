@@ -1,0 +1,100 @@
+name: azure-search-nav-routing-eval
+description: |
+  Routing evaluation for azure-search-nav — verifies the skill is invoked when
+  a user asks for a portal deep link to a specific blade/menu item on a
+  supported resource, and is not invoked for unrelated AKS troubleshooting or
+  generic navigation requests.
+
+tags:
+  type: integration
+  skill: azure-search-nav
+
+defaults:
+  runs: 5
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Portal link for AKS image cleaner setting"
+    prompt: |
+      Where in the Azure portal do I turn on image cleaner for my AKS cluster
+      https://portal.azure.com/#@contoso.onmicrosoft.com/resource/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/demo-rg/providers/Microsoft.ContainerService/managedClusters/demo-cluster/overview?
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      skill: azure-search-nav
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-search-nav"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-search-nav
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Portal link for VM disk blade"
+    prompt: |
+      Construct a portal link for the disk encryption blade on my VM at
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/demo-rg/providers/Microsoft.Compute/virtualMachines/demo-vm
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      skill: azure-search-nav
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-search-nav"},{"type":"tool-call-count","count":10}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-search-nav
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: unrelated AKS troubleshooting"
+    prompt: |
+      My AKS cluster's node pool is failing to scale up with a
+      VMExtensionProvisioningError. Investigate the live incident.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing-negative
+      requiredSkills:
+        - azure-search-nav
+        - aks-troubleshooting
+    graders:
+      - type: skill-invocation
+        config:
+          required: [aks-troubleshooting]
+          disallowed: [azure-search-nav]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: generic portal navigation question"
+    prompt: |
+      In general, where does the Azure portal usually put diagnostic settings
+      for a resource? No specific resource or link is involved.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing-negative
+      requiredSkills:
+        - azure-search-nav
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed: [azure-search-nav]
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
