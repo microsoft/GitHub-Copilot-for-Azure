@@ -41,39 +41,39 @@ const __dirname = path.dirname(__filename);
 
 const TOKEN_SUMMARY_FILENAME = "token-summary.jsonl";
 
-/** A single record as written by agent-runner.ts writeTokenUsageJson. */
+/** A single record as written by copilot-sdk-runner.ts writeTokenUsageJson. */
 interface TokenSummaryRecord {
-    testName: string;
-    timestamp?: string;
-    model?: string;
-    inputTokens?: number;
-    outputTokens?: number;
-    cacheReadTokens?: number;
-    cacheWriteTokens?: number;
-    totalApiDurationMs?: number;
-    apiCallCount?: number;
+  testName: string;
+  timestamp?: string;
+  model?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  totalApiDurationMs?: number;
+  apiCallCount?: number;
 }
 
 /** One aggregated, table-ready row for a single test within a run. */
 interface AggregatedUsage {
-    testName: string;
-    model: string;
-    timestamp: string;
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens: number;
-    cacheWriteTokens: number;
-    /**
-     * Total LLM API duration in ms, summed across the test's records. Left
-     * undefined when no record carried the metric, so absence is preserved
-     * (rendered as a gap downstream) rather than written as a real `0`.
-     */
-    durationMs?: number;
-    /**
-     * Number of LLM round-trips ("turns"), summed across the test's records.
-     * Undefined when no record carried the metric (see {@link durationMs}).
-     */
-    turns?: number;
+  testName: string;
+  model: string;
+  timestamp: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  /**
+   * Total LLM API duration in ms, summed across the test's records. Left
+   * undefined when no record carried the metric, so absence is preserved
+   * (rendered as a gap downstream) rather than written as a real `0`.
+   */
+  durationMs?: number;
+  /**
+   * Number of LLM round-trips ("turns"), summed across the test's records.
+   * Undefined when no record carried the metric (see {@link durationMs}).
+   */
+  turns?: number;
 }
 
 /**
@@ -144,8 +144,8 @@ function assertValidTableName(name: string): void {
   if (!/^[A-Za-z][A-Za-z0-9]{2,62}$/.test(name)) {
     throw new Error(
       `Invalid TOKEN_USAGE_TABLE_NAME '${name}'. Azure Table names must be ` +
-        "alphanumeric only (no hyphens, underscores, or dots), must start with a " +
-        "letter, and be 3-63 characters long (e.g. 'integrationtokenusage').",
+      "alphanumeric only (no hyphens, underscores, or dots), must start with a " +
+      "letter, and be 3-63 characters long (e.g. 'integrationtokenusage').",
     );
   }
 }
@@ -290,7 +290,7 @@ async function main(): Promise<void> {
 
   console.log(
     `Uploading token usage to ${tableEndpoint} table='${tableName}' ` +
-      `(skill='${skill}', branch='${branch}', run='${runId}', rows=${aggregated.length}).`,
+    `(skill='${skill}', branch='${branch}', run='${runId}', rows=${aggregated.length}).`,
   );
 
   // Ensure the table exists (idempotent; ignores "already exists").
@@ -339,7 +339,7 @@ async function main(): Promise<void> {
     } catch (err) {
       console.error(
         `upsertEntity failed for table='${tableName}' ` +
-          `partitionKey='${partitionKey}' rowKey='${rowKey}': ${formatAzureError(err)}`,
+        `partitionKey='${partitionKey}' rowKey='${rowKey}': ${formatAzureError(err)}`,
       );
       throw err;
     }
@@ -357,7 +357,7 @@ main().catch((err) => {
   if (isPermissionError(err)) {
     console.warn(
       "WARNING: Skipping token usage upload - the workflow identity lacks " +
-        "'Storage Table Data Contributor' on the storage account. Grant the role to enable uploads.",
+      "'Storage Table Data Contributor' on the storage account. Grant the role to enable uploads.",
     );
     return;
   }

@@ -10,6 +10,8 @@ param(
     [string] $Version
 )
 
+$toolName = 'ghcfa-telem'
+
 # Writes an installer failure to the error stream without terminating the script.
 function Write-InstallerError {
     param([string] $Message)
@@ -72,7 +74,7 @@ function Get-TelemetryTarget {
         OperatingSystem = $operatingSystem
         Architecture = $architecture
         RuntimeIdentifier = "$operatingSystem-$architecture"
-        BinaryName = $(if ($operatingSystem -eq 'win') { 'ghcfa-telem.exe' } else { 'ghcfa-telem' })
+        BinaryName = $(if ($operatingSystem -eq 'win') { "${toolName}.exe" } else { $toolName })
     }
 }
 
@@ -125,9 +127,9 @@ try {
 
     $temporaryDirectory = Join-Path `
         ([System.IO.Path]::GetTempPath()) `
-        "ghcfa-telem-$([guid]::NewGuid().ToString('N'))"
+        "${toolName}-$([guid]::NewGuid().ToString('N'))"
     $extractDirectory = Join-Path $temporaryDirectory 'extracted'
-    $assetName = "ghcfa-telem-$Version-$($target.RuntimeIdentifier).zip"
+    $assetName = "${toolName}-$Version-$($target.RuntimeIdentifier).zip"
     $archivePath = Join-Path $temporaryDirectory $assetName
 
     New-Item -ItemType Directory -Path $extractDirectory -Force -ErrorAction Stop | Out-Null
@@ -142,7 +144,7 @@ try {
             -ErrorAction Stop
     }
     else {
-        $downloadUrl = "https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-$Version/$assetName"
+        $downloadUrl = "https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/${toolName}-$Version/$assetName"
         Invoke-WebRequest `
             -Uri $downloadUrl `
             -OutFile $archivePath `

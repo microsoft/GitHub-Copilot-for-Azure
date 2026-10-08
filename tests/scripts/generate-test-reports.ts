@@ -14,7 +14,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, type AgentRunConfig } from "../utils/agent-runner";
+import { useAgentRunner, } from "../utils/copilot-sdk-runner";
+import { type AgentRunConfig } from "../utils/agent-runner";
 import { redactSecrets } from "../utils/redact";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -70,7 +71,6 @@ function filterSubdirectoriesBySkill(subdirectories: string[], skill: string, te
     const subdirName = path.basename(subdir);
 
     // Skill name in the subdirectory name ends at the first underscore character.
-    // See tests/eslint-rules/integration-test-name.mjs for details.
     const terminatorIndex = subdirName.indexOf("_");
     const skillName = subdirName.substring(0, terminatorIndex);
     const testResult = testResults[subdirName];

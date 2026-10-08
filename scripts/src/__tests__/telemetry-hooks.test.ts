@@ -82,6 +82,7 @@ const FAILED_LAUNCH_BIN_DIR = join(TEST_DIR, "failed-launch-bin");
 const INSTALL_CACHE_DIR = join(TEST_DIR, "telemetry-cache");
 const TELEMETRY_ARCHIVE_DIR = join(TEST_DIR, "telemetry-archive");
 const TELEMETRY_ZIP_PATH = join(TEST_DIR, "ghcfa-telem-local.zip");
+const DOWNLOAD_CAPTURE_FILE = join(TEST_DIR, "download-url.txt");
 const INVALID_TELEMETRY_ZIP_PATH = join(TEST_DIR, "invalid-telemetry.zip");
 const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
@@ -102,7 +103,8 @@ const DISPATCHER_PATH = join(HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
 const MCP_PUBLISHER = "Azure MCP (npx -y @azure/mcp@latest)";
-const STANDALONE_PUBLISHER = "Standalone ghcfa-telem (version 0.1.0)";
+const TELEMETRY_REPORTER_VERSION = "0.1.10-g8cc1aa1c56";
+const STANDALONE_PUBLISHER = `Standalone ghcfa-telem (version ${TELEMETRY_REPORTER_VERSION})`;
 const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
 const PUBLISHER_STDERR = "test-only-private-publisher-stderr";
 const PRIVATE_EVENT_DATA = "test-only-private-event-data";
@@ -349,21 +351,67 @@ function runInstaller(
   shell: ShellCase,
   cacheDirectory: string,
   zipPath: string,
-  version = "0.1.0",
+  version = TELEMETRY_REPORTER_VERSION,
+  mockDownload = false,
 ): ReturnType<typeof spawnSync> {
   const extension = shell.name === "Bash" ? "sh" : "ps1";
   const scriptPath = join(HOOKS_DIR, `install-telemetry.${extension}`);
-  const versionArgs = shell.name === "Bash" ? ["--version", version] : ["-Version", version];
+  const versionArgs = [
+    shell.name === "Bash" ? "--version" : "-Version",
+    version,
+  ];
+  let installerArgs = [...shell.args(scriptPath), ...versionArgs];
+  if (mockDownload) {
+    if (shell.name === "Bash") {
+      installerArgs = [
+        "-c",
+        [
+          "curl() {",
+          "  local output=\"\"",
+          "  while [ \"$#\" -gt 0 ]; do",
+          "    case \"$1\" in",
+          "      --output) output=\"$2\"; shift 2 ;;",
+          "      https://*) printf '%s\\n' \"$1\" > \"$TELEMETRY_TEST_DOWNLOAD_URL\" || return 1; shift ;;",
+          "      *) shift ;;",
+          "    esac",
+          "  done",
+          "  cp -- \"$TELEMETRY_TEST_DOWNLOAD_ARCHIVE\" \"$output\"",
+          "}",
+          "source \"$1\" --version \"$2\"",
+        ].join("\n"),
+        "bash",
+        pathForShell(shell, scriptPath),
+        version,
+      ];
+    } else {
+      installerArgs = [
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        [
+          "function Invoke-WebRequest {",
+          "  [CmdletBinding()]",
+          "  param([string] $Uri, [string] $OutFile, [switch] $UseBasicParsing)",
+          "  [System.IO.File]::WriteAllText($env:TELEMETRY_TEST_DOWNLOAD_URL, $Uri)",
+          "  Copy-Item -LiteralPath $env:TELEMETRY_TEST_DOWNLOAD_ARCHIVE -Destination $OutFile -ErrorAction Stop",
+          "}",
+          `& ${quotePowerShell(scriptPath)} -Version ${quotePowerShell(version)}`,
+        ].join("\n"),
+      ];
+    }
+  }
   const commandPath =
     shell.name === "Bash" && process.platform === "win32"
       ? `${pathForShell(shell, BIN_DIR)}:/usr/bin:/bin`
       : `${BIN_DIR}${delimiter}${process.env.PATH ?? ""}`;
-  return spawnSync(resolveCommand(shell.command), [...shell.args(scriptPath), ...versionArgs], {
+  return spawnSync(resolveCommand(shell.command), installerArgs, {
     encoding: "utf8",
     env: {
       ...process.env,
       PATH: commandPath,
       AZURE_SKILLS_TELEMETRY_ZIP_PATH: zipPath,
+      TELEMETRY_TEST_DOWNLOAD_URL: pathForShell(shell, DOWNLOAD_CAPTURE_FILE),
+      TELEMETRY_TEST_DOWNLOAD_ARCHIVE: pathForShell(shell, TELEMETRY_ZIP_PATH),
       LOCALAPPDATA: cacheDirectory,
       XDG_CACHE_HOME: cacheDirectory,
       TMPDIR: pathForShell(shell, SCRATCH_DIR),
@@ -466,6 +514,7 @@ foreach ($definition in $definitions) {
     Invoke-Expression $body
 }
 try {
+    $toolName = 'ghcfa-telem'
     $Version = $env:INSTALLER_TEST_VERSION
     $target = Get-TelemetryTarget
     $cacheRoot = Get-TelemetryCacheRoot -OperatingSystem $target.OperatingSystem
@@ -812,23 +861,46 @@ describe.each(shells)("Telemetry reporter installer ($name)", shell => {
 });
 
 describe("Telemetry reporter release download", () => {
-  it("constructs versioned release URLs from the requested version and detected RID", () => {
-    const bashInstaller = readFileSync(
-      join(SOURCE_HOOKS_DIR, "install-telemetry.sh"),
+  it("pins both hooks to the published reporter version", () => {
+    const bashHook = readFileSync(
+      join(SOURCE_HOOKS_DIR, "track-telemetry.sh"),
       "utf8",
     );
-    const powerShellInstaller = readFileSync(
-      join(SOURCE_HOOKS_DIR, "install-telemetry.ps1"),
+    const powerShellHook = readFileSync(
+      join(SOURCE_HOOKS_DIR, "track-telemetry.ps1"),
       "utf8",
     );
 
-    expect(bashInstaller).toContain(
-      'DOWNLOAD_URL="https://github.com/${REPOSITORY}/releases/download/ghcfa-telem-${VERSION}/${ASSET_NAME}"',
+    expect(bashHook).toContain(
+      `TELEMETRY_REPORTER_VERSION="${TELEMETRY_REPORTER_VERSION}"`,
     );
-    expect(powerShellInstaller).toContain(
-      '$downloadUrl = "https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-$Version/$assetName"',
+    expect(powerShellHook).toContain(
+      `$telemetryReporterVersion = "${TELEMETRY_REPORTER_VERSION}"`,
     );
   });
+
+  it.each(shells)("downloads the prefixed release tag and RID-specific asset ($name)", shell => {
+    const cacheDirectory = join(INSTALL_CACHE_DIR, `download-installer-${shell.name}`);
+    rmSync(cacheDirectory, { recursive: true, force: true });
+    rmSync(DOWNLOAD_CAPTURE_FILE, { force: true });
+
+    const result = runInstaller(shell, cacheDirectory, "", TELEMETRY_REPORTER_VERSION, true);
+    expect(result.error).toBeUndefined();
+    expect(result.status, String(result.stderr)).toBe(0);
+    const installedPath = String(result.stdout).trim();
+    expect(installedPathExists(shell, installedPath)).toBe(true);
+    const rid = basename(dirname(installedPath));
+    expect([
+      "win-x64", "win-arm64", "osx-x64", "osx-arm64", "linux-x64", "linux-arm64",
+      "linux-musl-x64", "linux-musl-arm64",
+    ]).toContain(rid);
+    expect(installedPath.replaceAll("\\", "/")).toContain(
+      `/${TELEMETRY_REPORTER_VERSION}/${rid}/ghcfa-telem`,
+    );
+    expect(readFileSync(DOWNLOAD_CAPTURE_FILE, "utf8").trim()).toBe(
+      `https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-${TELEMETRY_REPORTER_VERSION}/ghcfa-telem-${TELEMETRY_REPORTER_VERSION}-${rid}.zip`,
+    );
+  }, 30_000);
 });
 
 describe.each(shells)("Telemetry reporter installer detection ($name)", shell => {
@@ -1057,7 +1129,7 @@ describe.each(shells)("Session start telemetry hook ($name)", shell => {
       expect(firstArgs).not.toContain("plugin-telemetry");
       expectArg(firstArgs, "--tool-name", "get_azure_bestpractices");
       expect(readDebugLog()).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Args:`);
-      expect(readDebugLog()).toMatch(/Executable: .*[\\/]0\.1\.0[\\/].*[\\/]ghcfa-telem/);
+      expect(readDebugLog().replaceAll("\\", "/")).toContain(`/${TELEMETRY_REPORTER_VERSION}/`);
 
       const firstArgsTimestampIndex = firstArgs.indexOf("--timestamp");
       firstArgs.splice(firstArgsTimestampIndex, 2);
