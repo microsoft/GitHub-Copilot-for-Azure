@@ -49,6 +49,7 @@
 /plugins/azure-skills/skills/azure-app-onboard/ @vaibbavisk20 @kunalsuri-microsoft @microsoft/github-copilot-for-azure-writers
 /plugins/azure-skills/skills/azure-app-onboard-prereq/ @vaibbavisk20 @kunalsuri-microsoft @microsoft/github-copilot-for-azure-writers
 /plugins/azure-advisor/ @aparguptajs @ankiga-MSFT @microsoft/github-copilot-for-azure-writers
+/plugins/aks-skills/ @nikhilkaul1234 @brrusino @microsoft/github-copilot-for-azure-writers
 
 # Plugin skills evals owners (multi-plugin)
 /evals/foundry-iq-skills/foundry-iq/ @hustcalm @valangar @microsoft/github-copilot-for-azure-writers
@@ -80,6 +81,7 @@
 /evals/azure-skills/microsoft-foundry/ @ankitbko @tendau @XOEEst @anchenyi @XiaofuHuang @jugonzales @vebudumu @microsoft/github-copilot-for-azure-writers
 /evals/azure-skills/python-appservice-deploy/ @glaming1 @microsoft/github-copilot-for-azure-writers
 /evals/azure-advisor/ @aparguptajs @ankiga-MSFT @microsoft/github-copilot-for-azure-writers
+/evals/aks-skills/ @nikhilkaul1234 @brrusino @microsoft/github-copilot-for-azure-writers
 
 # azure-local-skills plugin owners
 /plugins/azure-local-skills/ @tfrankland2 @cesquedamsft @microsoft/github-copilot-for-azure-writers
