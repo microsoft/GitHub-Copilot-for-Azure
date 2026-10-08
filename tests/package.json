@@ -22,6 +22,7 @@
     "node": "^22.14.0 || >=24"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.287",
     "@azure/data-tables": "^13.3.2",
     "@azure/identity": "^4.13.1",
     "@eslint/js": "^10.0.0",

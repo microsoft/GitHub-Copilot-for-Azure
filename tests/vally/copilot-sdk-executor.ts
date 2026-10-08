@@ -5,11 +5,11 @@ import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.t
 import { normalizeTestName } from "./utils.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
-import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
+import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory } from "@microsoft/vally";
 import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
 import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
-import { dirname } from "node:path";
-import { useAgentRunner, createMarkdownReport } from "../utils/copilot-sdk-runner.ts";
+import { useAgentRunner, } from "../utils/copilot-sdk-runner.ts";
+import { convertToTrajectoryEvents, createMarkdownReport, getAzureScopePrompt } from "../utils/agent-runner.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,10 +29,7 @@ export class CopilotSdkAgentRunner implements Executor {
     const tags = stimulus.tags;
     const skillName = getSkillName(tags);
     const normalizedTestName = normalizeTestName(skillName, stimulus.name);
-    const agentRunner = useAgentRunner({
-      isTest: true,
-      testName: normalizedTestName
-    });
+    const agentRunner = useAgentRunner({ testName: normalizedTestName });
 
     // When custom executor is executed, vally has initialized the test workspace for us.
     const workDir = options.workDir;
@@ -143,7 +140,7 @@ export class CopilotSdkAgentRunner implements Executor {
       await agentRunner.cleanup();
 
       if (postTestScriptConfig) {
-        runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!));
+        runPostTestScript(provisionOutput!.context, manifest!, path.dirname(absoluteManifestPath!));
       }
 
       // Vally will run the graders and produce results.jsonl.
@@ -187,148 +184,6 @@ export class CopilotSdkAgentRunner implements Executor {
   }
 }
 
-function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
-  const result: TrajectoryEvent[] = [];
-
-  // tool.execution_complete only carries `toolCallId`, not `toolName`. Build
-  // a lookup so we can populate `tool_result.data.toolName` from the matching
-  // tool.execution_start event.
-  const toolNameByCallId = new Map<string, string>();
-  for (const e of agentMetadata.events) {
-    if (e.type === "tool.execution_start") {
-      toolNameByCallId.set(e.data.toolCallId, e.data.toolName);
-    }
-  }
-
-  for (const e of agentMetadata.events) {
-    const timestamp = e.timestamp ? new Date(e.timestamp) : undefined;
-
-    if (e.type === "assistant.message") {
-      result.push({
-        type: "assistant_message",
-        timestamp,
-        data: {
-          content: e.data.content,
-        },
-      });
-    } else if (e.type === "assistant.reasoning") {
-      result.push({
-        type: "reasoning",
-        timestamp,
-        data: {
-          content: e.data.content,
-        },
-      });
-    } else if (e.type === "user.message") {
-      result.push({
-        type: "user_message",
-        timestamp,
-        data: {
-          content: e.data.content,
-          agent_mode: e.data.agentMode,
-        },
-      });
-    } else if (e.type === "assistant.turn_start") {
-      result.push({
-        type: "turn_start",
-        timestamp,
-        data: {
-          turnId: e.data.turnId,
-        },
-      });
-    } else if (e.type === "assistant.turn_end") {
-      result.push({
-        type: "turn_end",
-        timestamp,
-        data: {
-          turnId: e.data.turnId,
-        },
-      });
-    } else if (e.type === "tool.execution_start") {
-      if (e.data.toolName === "skill") {
-        // Note: Although this type is defined, Copilot CLI in practice treat skills as tool calls.
-        // We look for tool call events for skill and convert them into skill events.
-        const args = e.data.arguments;
-        let skillName: string;
-        if (typeof args === "object" && !Array.isArray(args)) {
-          skillName = (args?.skill as string) ?? "unknown";
-        } else {
-          skillName = "unknown";
-        }
-        result.push({
-          type: "skill_activation",
-          timestamp,
-          data: {
-            name: skillName,
-            path: "todo: not supported"
-          },
-        });
-      }
-      result.push({
-        type: "tool_call",
-        timestamp,
-        data: {
-          toolName: e.data.toolName,
-          toolCallId: e.data.toolCallId,
-          arguments: e.data.arguments,
-        },
-      });
-    } else if (e.type === "tool.execution_complete") {
-      const toolName = toolNameByCallId.get(e.data.toolCallId) ?? "unknown";
-      result.push({
-        type: "tool_result",
-        timestamp,
-        data: {
-          toolName,
-          toolCallId: e.data.toolCallId,
-          success: e.data.success,
-          result: e.data.result ?? e.data.error,
-        },
-      });
-    } else if (e.type === "assistant.usage") {
-      result.push({
-        type: "token_usage",
-        timestamp,
-        data: {
-          model: e.data.model,
-          inputTokens: e.data.inputTokens ?? -1,
-          outputTokens: e.data.outputTokens ?? -1,
-          cacheReadTokens: e.data.cacheReadTokens,
-          cacheWriteTokens: e.data.cacheWriteTokens,
-        },
-      });
-    } else if (e.type === "skill.invoked") {
-      // Note: Although this type is defined, Copilot CLI in practice treat skills as tool calls.
-      // We look for tool call events for skill and convert them into skill events.
-      result.push({
-        type: "skill_activation",
-        timestamp,
-        data: {
-          name: e.data.name,
-          path: e.data.path
-        },
-      });
-    } else if (e.type === "session.error") {
-      result.push({
-        type: "error",
-        timestamp,
-        data: {
-          message: e.data.message,
-          type: e.data.errorType,
-          url: e.data.url,
-          code: e.data.statusCode,
-        },
-      });
-    }
-  }
-
-  return result;
-}
-
 export function registerExecutors(registry: ExecutorRegistry): void {
   registry.register(new CopilotSdkAgentRunner());
-}
-
-function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): string {
-  return `Limit your operations in the following resource groups: ${JSON.stringify(fixtureOutput.resourceGroups)}. Never read or modify resources outside these resource groups.`;
 }
