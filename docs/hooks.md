@@ -44,14 +44,16 @@ The `plugin-telemetry` command requires a session ID, so the hook does not repor
 
 The hooks continue to publish through `npx -y @azure/mcp@latest` by default.
 Set `AZURE_SKILLS_USE_STANDALONE_TELEMETRY=true` to opt into the standalone
-Native AOT reporter. The hooks currently request reporter version `0.1.0` and
-install the matching release asset:
+Native AOT reporter. The shared tracking scripts pin the reporter version and
+install the matching asset from the `ghcfa-telem-<version>` release tag.
+Here, `<version>` is the pinned reporter version and `<rid>` is the detected
+runtime identifier:
 
 ```text
-https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/0.1.0/ghcfa-telem-0.1.0-<rid>.zip
+https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-<version>/ghcfa-telem-<version>-<rid>.zip
 ```
 
-Until that release exists, set `AZURE_SKILLS_TELEMETRY_ZIP_PATH` to a local
+To test a local build, set `AZURE_SKILLS_TELEMETRY_ZIP_PATH` to a local
 runtime ZIP produced by `telemetry-reporter/eng/scripts/Build-Native.ps1`.
 The ZIP override does not enable the standalone path by itself; the rollout
 variable must also be set to `true`.
@@ -89,8 +91,8 @@ abbreviating event arguments:
 
 ```text
 Publisher: Azure MCP (npx -y @azure/mcp@latest) | Args: server plugin-telemetry ...
-Publisher: Standalone ghcfa-telem (version 0.1.0) | Args: --plugin-name ...
-Publisher: Standalone ghcfa-telem (version 0.1.0) | Executable: <installed-path>
+Publisher: Standalone ghcfa-telem (version <version>) | Args: --plugin-name ...
+Publisher: Standalone ghcfa-telem (version <version>) | Executable: <installed-path>
 ```
 
 Standalone arguments omit `server plugin-telemetry`, matching the executable's
@@ -98,9 +100,9 @@ actual invocation. Failure entries identify the same publisher and distinguish
 installation from execution:
 
 ```text
-Publisher: Standalone ghcfa-telem (version 0.1.0) | Installation failed with status 1: <installer-diagnostic>
-Publisher: Standalone ghcfa-telem (version 0.1.0) | Installation failed: installer returned no executable path.
-Publisher: Standalone ghcfa-telem (version 0.1.0) | Execution failed with status 1.
+Publisher: Standalone ghcfa-telem (version <version>) | Installation failed with status 1: <installer-diagnostic>
+Publisher: Standalone ghcfa-telem (version <version>) | Installation failed: installer returned no executable path.
+Publisher: Standalone ghcfa-telem (version <version>) | Execution failed with status 1.
 Publisher: Azure MCP (npx -y @azure/mcp@latest) | Execution failed with status 1.
 ```
 
