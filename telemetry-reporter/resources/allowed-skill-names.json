@@ -1,9 +1,5 @@
 {
   "skills": {
-    "azure-advisor": [
-      "azure-advisor",
-      "azure-advisor-actionability"
-    ],
     "azure-kusto-graph-skills": [
       "azure-kusto-graph",
       "azure-kusto-irql",

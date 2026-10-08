@@ -94,22 +94,6 @@ public sealed class PluginTelemetryValidatorTests
             result.Message);
     }
 
-    [Theory]
-    [InlineData("azure-advisor")]
-    [InlineData("azure-advisor-actionability")]
-    public void ValidateAndNormalize_AcceptsAdvisorSkills(string skillName)
-    {
-        var options = new PluginTelemetryOptions
-        {
-            Timestamp = "timestamp",
-            EventType = "event",
-            SessionId = "session",
-            SkillName = skillName
-        };
-
-        Assert.True(_validator.ValidateAndNormalize(options).IsValid);
-    }
-
     [Fact]
     public void ValidateAndNormalize_RejectsUnknownFileReference()
     {
