@@ -220,7 +220,18 @@ function validateEvalFiles(files: string[], field: string): void {
   }
 }
 
-const EVALUATION_ROOT_PREFIX = "tests/skill-improvement/evals";
+const EVALUATION_ROOT_PREFIXES = [
+  "tests/skill-improvement/evals",
+  "evals",
+] as const;
+const EVALUATION_ROOT_REQUIREMENT =
+  "tests/skill-improvement/evals or evals";
+
+function findEvaluationRootPrefix(value: string): string | undefined {
+  return EVALUATION_ROOT_PREFIXES.find(prefix =>
+    value === prefix || value.startsWith(`${prefix}/`)
+  );
+}
 
 function validateEvaluationRoot(value: unknown): asserts value is string {
   requireNonEmptyString(value, "evaluations.root");
@@ -231,23 +242,21 @@ function validateEvaluationRoot(value: unknown): asserts value is string {
     || value.includes("\0")
   ) {
     throw new Error(
-      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_PREFIX}.`
+      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_REQUIREMENT}.`
     );
   }
   const segments = value.split("/");
-  const rootSegments = EVALUATION_ROOT_PREFIX.split("/");
+  const rootPrefix = findEvaluationRootPrefix(value);
+  const rootSegments = rootPrefix?.split("/") ?? [];
   if (
+    rootPrefix === undefined ||
     segments.some(segment => segment.length === 0 || segment === "." || segment === "..")
     || segments.slice(rootSegments.length).some(
       segment => !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(segment)
     )
-    || (
-      value !== EVALUATION_ROOT_PREFIX
-      && !value.startsWith(`${EVALUATION_ROOT_PREFIX}/`)
-    )
   ) {
     throw new Error(
-      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_PREFIX}.`
+      `evaluations.root must be a repository-relative directory inside ${EVALUATION_ROOT_REQUIREMENT}.`
     );
   }
 }
@@ -486,9 +495,15 @@ export function resolveEvaluationPath(
 ): string {
   validateEvalFiles([file], "evaluation file");
   const resolvedRepoRoot = fs.realpathSync(repoRoot);
+  const evaluationRootPrefix = findEvaluationRootPrefix(spec.evaluations.root);
+  if (evaluationRootPrefix === undefined) {
+    throw new Error(
+      `Evaluation root must be inside ${EVALUATION_ROOT_REQUIREMENT}: ${spec.evaluations.root}`
+    );
+  }
   const allowedRoot = path.join(
     resolvedRepoRoot,
-    ...EVALUATION_ROOT_PREFIX.split("/")
+    ...evaluationRootPrefix.split("/")
   );
   const configuredRoot = path.join(
     resolvedRepoRoot,
@@ -496,7 +511,7 @@ export function resolveEvaluationPath(
   );
   if (!isInsideDirectory(allowedRoot, configuredRoot)) {
     throw new Error(
-      `Evaluation root escapes ${EVALUATION_ROOT_PREFIX}: ${spec.evaluations.root}`
+      `Evaluation root escapes ${evaluationRootPrefix}: ${spec.evaluations.root}`
     );
   }
   if (!fs.existsSync(configuredRoot)) {
@@ -512,7 +527,7 @@ export function resolveEvaluationPath(
     || !isInsideDirectory(realAllowedRoot, realConfiguredRoot)
   ) {
     throw new Error(
-      `Evaluation root escapes ${EVALUATION_ROOT_PREFIX}: ${spec.evaluations.root}`
+      `Evaluation root escapes ${evaluationRootPrefix}: ${spec.evaluations.root}`
     );
   }
   const evalPath = path.join(realConfiguredRoot, file);
