@@ -1,0 +1,59 @@
+name: azure-diagnostics-improvement
+
+target:
+  plugin: azure-skills
+  skill: azure-diagnostics
+  baselineRef: main
+  editablePaths:
+    - plugins/azure-skills/skills/azure-diagnostics/**
+
+evaluations:
+  root: evals/azure-skills/azure-diagnostics
+  development:
+    - eval.yaml
+    - response-quality.eval.yaml
+    - script-invocation.eval.yaml
+  heldOut: []
+
+models:
+  answers:
+    - gpt-5.6-sol
+  judges:
+    - claude-opus-4.8
+
+experiment:
+  repetitions: 1
+  conditions:
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: Skill + MCP
+      skill: enabled
+      mcp: enabled
+
+improvementAgent:
+  enabled: true
+  model: claude-sonnet-5
+
+acceptance:
+  minimumQualityImprovementPoints: 2
+  maximumEvalRegressionPoints: 5
+  maximumModelRegressionPoints: 5
+  minimumSkillInvocationRate: 0.8
+  requireHeldOutImprovement: false
+
+refinement:
+  minimumScoreImprovementPoints: 1
+  maximumQualityRegressionPoints: 0
+
+limits:
+  maxIterations: 2
+  maxAnswerGenerations: 140
+  maxJudgeCalls: 140
+  maxDurationMinutes: 360
+  maxConcurrentJobs: 5
+  maxSkillTokenIncreasePercent: 15
+
+output:
+  issue: never
+  draftPullRequest: accepted-candidate-only

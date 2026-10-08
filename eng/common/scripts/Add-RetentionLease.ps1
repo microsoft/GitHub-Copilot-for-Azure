@@ -11,7 +11,7 @@ param(
     [int] $RunId,
     [int] $DaysValid = 731,
     [string] $OwnerId = 'azure-sdk-pipeline-automation',
-    [string] $AccessToken = $env:SYSTEMACCESSTOKEN
+    [string] $AccessToken = $env:SYSTEM_ACCESSTOKEN
 )
 
 Set-StrictMode -Version Latest
@@ -80,14 +80,14 @@ try {
             -ErrorAction Stop
     }
 
-    $requestBody = @(
+    $requestBody = ConvertTo-Json -InputObject @(
         [ordered]@{
             definitionId = $DefinitionId
             runId = $RunId
             ownerId = $OwnerId
             daysValid = $DaysValid
         }
-    ) | ConvertTo-Json -Depth 3
+    ) -Depth 3
     $createdLease = Invoke-RestMethod `
         -Method Post `
         -Uri "${baseUri}?api-version=6.0-preview.1" `

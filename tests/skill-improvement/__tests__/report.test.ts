@@ -4,6 +4,7 @@ import path from "node:path";
 import {
   aggregateJudgments,
   decideAcceptance,
+  decideRefinement,
   renderReport,
   renderReportSummary,
   writeReport,
@@ -76,6 +77,10 @@ function spec(): SkillImprovementRunSpec {
       maximumModelRegressionPoints: 5,
       minimumSkillInvocationRate: 0.8,
     },
+    refinement: {
+      minimumScoreImprovementPoints: 1,
+      maximumQualityRegressionPoints: 0,
+    },
     limits: {
       maxIterations: 1,
       maxAnswerGenerations: 20,
@@ -124,6 +129,39 @@ describe("skill improvement reporting", () => {
       .toThrow("1 missing candidate, 0 unexpected candidate");
   });
 
+  test("retains score progress for another refinement iteration", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0.5, 100),
+      judged("two", "model-a", "judge-a", true, 0.8, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0.55, 100),
+      judged("two", "model-a", "judge-a", true, 0.8, 100),
+    ]);
+
+    const decision = decideRefinement(spec(), reference, candidate, 1000, 1000);
+
+    expect(decision.retained).toBe(true);
+    expect(decision.comparison.qualityImprovementPoints).toBe(0);
+    expect(decision.comparison.scoreImprovementPoints).toBe(2.5);
+  });
+
+  test("rejects refinement that crosses the aggregate quality boundary", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 0.8, 100),
+      judged("two", "model-a", "judge-a", true, 0.8, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0.9, 100),
+      judged("two", "model-a", "judge-a", true, 0.9, 100),
+    ]);
+
+    const decision = decideRefinement(spec(), reference, candidate, 1000, 1000);
+
+    expect(decision.retained).toBe(false);
+    expect(decision.reasons.join("\n")).toContain("Aggregate quality regressed");
+  });
+
   test("renders a decision-first summary with every arm, gate, reason, and changed outcome", () => {
     const runSpec = spec();
     const baselineTrials = runSpec.experiment.conditions.flatMap(condition =>
@@ -158,6 +196,13 @@ describe("skill improvement reporting", () => {
       judged("one", "model-a", "judge-b", false, 0.2, 130, skillWithMcp, false),
     ]);
     const decision = decideAcceptance(runSpec, reference, candidate, 1000, 1300);
+    const refinementDecision = decideRefinement(
+      runSpec,
+      reference,
+      candidate,
+      1000,
+      1300
+    );
     const report: SkillImprovementReport = {
       runId: "run",
       generatedAt: "2026-09-08T00:00:00Z",
@@ -182,6 +227,7 @@ describe("skill improvement reporting", () => {
         changedFiles: ["plugins/azure-skills/skills/azure-kusto/SKILL.md"],
         validationErrors: ["frontmatter validation failed", "reference validation failed"],
         decision,
+        refinementDecision,
         trials: candidate,
       }],
       finalAccepted: false,
@@ -200,6 +246,8 @@ describe("skill improvement reporting", () => {
     expect(rendered).toContain("Worst answer-model regression");
     expect(rendered).toContain("Worst evaluation regression");
     expect(rendered).toContain("Target Skill invocation rate");
+    expect(rendered).toContain("refinement gates");
+    expect(rendered).toContain("Refinement progress");
     for (const reason of [...decision.reasons, ...report.iterations[0].validationErrors]) {
       expect(rendered).toContain(reason);
     }

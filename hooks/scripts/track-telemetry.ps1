@@ -1,5 +1,6 @@
 # Telemetry tracking hook for Azure Copilot Skills
-# Reads JSON input from stdin, tracks relevant events, and publishes via MCP
+# Reads JSON input from stdin, tracks relevant events, and publishes telemetry
+# Exit codes: 0 = hook continues, including telemetry failures
 #
 # === Client Format Reference ===
 #
@@ -82,6 +83,12 @@
 #                             root of the skill folder the reference lives in
 #    - Example: azure-validate/references/recipes/azd/README.md
 #
+# === Plugin Identity ===
+#
+# Every tracked event includes the plugin name and version read from the
+# installed copy's .plugin/plugin.json manifest. This lets the existing
+# telemetry receiver attribute sibling-plugin events without adding fields.
+#
 # === Reference File Detection ===
 #
 # When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
@@ -107,6 +114,11 @@
 #     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
 #     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     aks-skills:
+#     - .copilot/installed-plugins/<catalog-name>/aks-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/aks-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/aks-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/aks-skills/skills/...
 #     azure-local-skills:
 #     - .copilot/installed-plugins/<catalog-name>/azure-local-skills/skills/...
 #     - .claude/plugins/cache/azure-skills/azure-local-skills/<version>/skills/...
@@ -123,8 +135,9 @@
 #
 # If the AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, the script will create
 # a "raw-input" subdirectory and write each raw JSON input to a timestamped file
-# for debugging. It will also append a "telemetry.log" file with MCP args for
-# each tracked event.
+# for debugging. It will also append a "telemetry.log" file identifying the
+# publisher and arguments for each tracked event, the standalone version and
+# executable path, and publisher installation/execution failures.
 #
 # When using `--plugin-dir` to load a local plugin the AZURE_SKILLS_PLUGIN_ROOT
 # env var should be set so that the script can detect local skill paths for
@@ -269,6 +282,22 @@ function Get-PluginManifest {
         return $manifest
     } catch { }
     return $null
+}
+
+# Return true unless this hook's plugin ships a .mcp.json that does not
+# configure the named server. A plugin with an empty .mcp.json (for example
+# aks-skills) must not report MCP calls owned by a co-installed plugin; a
+# plugin with no .mcp.json at all keeps the pre-existing behavior.
+function Test-OwnsMcpServer {
+    param([string]$ServerName)
+    if ([string]::IsNullOrWhiteSpace($ServerName)) { return $false }
+    $mcpConfigPath = Join-Path (Split-Path -Parent $skillsDir) '.mcp.json'
+    if (-not (Test-Path -LiteralPath $mcpConfigPath)) { return $true }
+    try {
+        $config = Get-Content -LiteralPath $mcpConfigPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+        return $config.mcpServers -and ($config.mcpServers.PSObject.Properties.Name -contains $ServerName)
+    } catch { }
+    return $false
 }
 
 # === Main Processing ===
@@ -419,17 +448,27 @@ if ($isSessionStart) {
 
 # Check for skill invocation via 'skill'/'Skill' tool
 if ($toolName -eq "skill" -or $toolName -eq "Skill") {
-    $skillName = $toolInput.skill
-    # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
-    # Strip it to get the actual skill name for the allowlist
-    if ($skillName -and $skillName.StartsWith("azure:")) {
-        $skillName = $skillName.Substring(6)
+    $requestedSkillName = $toolInput.skill
+    $ownManifest = Get-PluginManifest -ClientName $clientName
+    $pluginName = if ($ownManifest) { $ownManifest.name } else { $null }
+    $skillName = $requestedSkillName
+    # Native plugin invocations use "<plugin-name>:<skill-name>". Strip only
+    # this hook copy's own namespace so another plugin cannot claim the call.
+    if ($requestedSkillName -and $requestedSkillName.Contains(":")) {
+        $skillParts = $requestedSkillName -split ':', 2
+        if ($pluginName -and $skillParts[0] -eq $pluginName) {
+            $skillName = $skillParts[1]
+        } else {
+            $skillName = $null
+        }
     }
-    $skillMdPath = Join-Path $skillsDir (Join-Path $skillName 'SKILL.md')
-    if ($skillName -and (Test-Path -LiteralPath $skillMdPath) -and (Test-OwnedSkillPath $skillMdPath)) {
-        $eventType = "skill_invocation"
-        $shouldTrack = $true
-        $skillVersion = Get-SkillVersion $skillMdPath
+    if ($skillName) {
+        $skillMdPath = Join-Path $skillsDir (Join-Path $skillName 'SKILL.md')
+        if ((Test-Path -LiteralPath $skillMdPath) -and (Test-OwnedSkillPath $skillMdPath)) {
+            $eventType = "skill_invocation"
+            $shouldTrack = $true
+            $skillVersion = Get-SkillVersion $skillMdPath
+        }
     }
 }
 
@@ -468,7 +507,7 @@ if ($toolName -eq "view" -or $toolName -eq "Read" -or $toolName -eq "read_file")
 # Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
 #               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
-if ($toolName) {
+if ($toolName -and (Test-OwnsMcpServer -ServerName "azure")) {
     if ($clientName -eq "cursor" -and $hookEventName -eq "afterMCPExecution" -and $mcpServerName -eq "azure") {
         $azureToolName = $toolName
         if ($azureToolName.StartsWith("MCP:", [System.StringComparison]::Ordinal)) {
@@ -555,6 +594,9 @@ if ($shouldTrack) {
     if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }
 
     if ($env:AZURE_SKILLS_USE_STANDALONE_TELEMETRY -eq "true") {
+        $publisher = "Standalone ghcfa-telem (version $telemetryReporterVersion)"
+        $reporterArguments = $mcpArgs[2..($mcpArgs.Count - 1)]
+        Write-TelemetryDebugLog -Content "Publisher: $publisher | Args: $($reporterArguments -join ' ')"
         $installerPath = Join-Path $scriptDir 'install-telemetry.ps1'
         $powerShellExecutable = (Get-Process -Id $PID).Path
         $installerArguments = @(
@@ -570,34 +612,47 @@ if ($shouldTrack) {
         $installerArguments += '-Version'
         $installerArguments += $telemetryReporterVersion
 
-        $installerOutput = @(& $powerShellExecutable @installerArguments 2>&1)
+        # Capture installer stderr without changing the hook's fail-open error preference.
+        $installerOutput = @(& {
+            $ErrorActionPreference = 'Continue'
+            & $powerShellExecutable @installerArguments 2>&1
+        })
         $installerStatus = $LASTEXITCODE
-        if ($installerStatus -eq 0 -and $installerOutput.Count -gt 0) {
+        if ($installerStatus -eq 0 -and $installerOutput.Count -gt 0 -and
+            -not [string]::IsNullOrWhiteSpace([string]$installerOutput[-1])) {
             $reporterPath = [string]$installerOutput[-1]
-            $reporterArguments = $mcpArgs[2..($mcpArgs.Count - 1)]
+            Write-TelemetryDebugLog -Content "Publisher: $publisher | Executable: $reporterPath"
             try {
                 & $reporterPath @reporterArguments 2>&1 | Out-Null
                 $reporterStatus = $LASTEXITCODE
                 if ($reporterStatus -ne 0) {
-                    Write-TelemetryDebugLog -Content "Standalone telemetry reporter exited with status $reporterStatus."
+                    Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed with status $reporterStatus."
                 }
             } catch {
-                Write-TelemetryDebugLog -Content "Standalone telemetry reporter failed: $($_.Exception.Message)"
+                Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed to start."
             }
         }
+        elseif ($installerStatus -eq 0) {
+            Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed: installer returned no executable path."
+        }
         else {
-            Write-TelemetryDebugLog -Content "Standalone telemetry reporter installation failed: $($installerOutput -join ' ')"
+            Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed with status ${installerStatus}: $($installerOutput -join ' ')"
         }
     }
     else {
         # Preserve the existing publisher unless the standalone path is explicitly enabled.
+        $publisher = "Azure MCP (npx -y @azure/mcp@latest)"
+        Write-TelemetryDebugLog -Content "Publisher: $publisher | Args: $($mcpArgs -join ' ')"
         try {
             & npx -y @azure/mcp@latest @mcpArgs 2>&1 | Out-Null
-        } catch { }
+            $publisherStatus = $LASTEXITCODE
+            if ($publisherStatus -ne 0) {
+                Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed with status $publisherStatus."
+            }
+        } catch {
+            Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed to start."
+        }
     }
-
-    # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the telemetry.log file in that directory (for debugging)
-    Write-TelemetryDebugLog -Content "MCP Args: $($mcpArgs -join ' ')"
 }
 
 # Output success to stdout (required by hooks)

@@ -2,8 +2,35 @@
 
 `ghcfa-telem` is a stripped-down .NET implementation of the Azure MCP
 `server plugin-telemetry` command. It produces an executable named
-`ghcfa-telem` and consumes pinned Azure MCP allowlist resources from
-`resources\`.
+`ghcfa-telem` and embeds telemetry allowlist resources from `resources\`.
+
+## Allowlist maintenance
+
+The [allowlist synchronization workflow](../.github/workflows/sync-to-azure-mcp.yml)
+runs on weekdays or by manual dispatch. It generates `allowed-skill-names.json`
+and `allowed-plugin-file-references.json` once from this repository's plugin
+sources, then proposes separate PRs in `microsoft/mcp` and this repository.
+Here, those PRs update only the two files under `telemetry-reporter/resources/`.
+Unchanged lists produce no commit or PR; subsequent changes reuse the open PR
+on the destination's stable bot-owned branch. Either destination can succeed
+independently of the other.
+
+The workflow uses `GHCP4A_BOT_APP_ID` and `GHCP4A_BOT_PRIVATE_KEY`. The GitHub
+App must be installed on both repositories with Contents and Pull requests
+write access; each job requests a token scoped to its destination. App tokens
+allow the resulting PRs to trigger normal validation workflows.
+
+`allowed-tool-names.json` remains a pinned Azure MCP snapshot, as do the runtime
+compatibility values in `CompatibilityConstants`. Generating the skill and
+reference lists does not upgrade that source revision or synchronize tool names.
+Tool-name synchronization is tracked separately in
+[microsoft/GitHub-Copilot-for-Azure-pr#393](https://github.com/microsoft/GitHub-Copilot-for-Azure-pr/issues/393).
+
+Merging an allowlist PR updates the resources embedded by subsequent reporter
+builds, but does not publish a new reporter release. This only partially
+addresses
+[microsoft/GitHub-Copilot-for-Azure-pr#390](https://github.com/microsoft/GitHub-Copilot-for-Azure-pr/issues/390);
+the reporter build and release processes remain unchanged.
 
 ## Telemetry policy
 
@@ -30,6 +57,15 @@ dotnet build .\ghcfa-telem.slnx --configuration Release
 calculates the executable and library versions from `version.json`. The
 starting major and minor version is `0.1`, and `pathFilters: ["."]` limits
 version-height changes to commits that modify this directory.
+
+Telemetry reports the reporter's full NBGV informational version, including
+commit metadata, in the event's `Version` property, the OpenTelemetry
+`service.version` resource attribute, and the activity-source version.
+The event's `McpServerNameV2` property identifies the executable as `ghcfa-telem`.
+The activity-source name remains `Azure.Mcp.Server`, and the OpenTelemetry
+service name remains `azmcp`.
+`CompatibilityConstants.AzureMcpCommit` separately pins the Azure MCP source
+revision used for implementation and allowlist synchronization.
 
 ## Native AOT builds
 

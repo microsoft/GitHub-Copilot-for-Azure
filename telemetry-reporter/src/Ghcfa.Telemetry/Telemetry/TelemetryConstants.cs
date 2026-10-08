@@ -5,6 +5,8 @@ namespace Ghcfa.Telemetry.Telemetry;
 /// </summary>
 internal static class TelemetryConstants
 {
+    public const string ProductName = "ghcfa-telem";
+    public const string ProductVersion = ThisAssembly.AssemblyInformationalVersion;
     public const string ActivityName = "PluginExecuted";
     public const string EventId = "EventId";
     public const string McpServerName = "McpServerNameV2";

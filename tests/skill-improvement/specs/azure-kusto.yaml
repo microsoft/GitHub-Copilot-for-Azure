@@ -21,7 +21,9 @@ evaluations:
     - troubleshoot-query.eval.yaml
     - troubleshoot-schema-table.eval.yaml
     - visualize-dashboard.eval.yaml
-  heldOut: []
+    - live-connection.eval.yaml
+  heldOut:
+    - held-out-troubleshoot-remediate.eval.yaml
 
 models:
   answers:
@@ -32,15 +34,9 @@ models:
 experiment:
   repetitions: 1
   conditions:
-    - name: Agent only
-      skill: disabled
-      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
-    - name: MCP only
-      skill: disabled
-      mcp: enabled
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
@@ -54,12 +50,26 @@ acceptance:
   maximumEvalRegressionPoints: 5
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: false
+  requireHeldOutImprovement: true
+
+refinement:
+  minimumScoreImprovementPoints: 1
+  maximumQualityRegressionPoints: 0
+
+resources:
+  kusto:
+    subscriptionId: ${AZURE_EVALS_SUBSCRIPTION_ID}
+    resourceGroup: ${AZURE_EVALS_RESOURCE_GROUP}
+    clusterName: ghcfaevalskusto
+    databaseName: IntegrationTests
+    startBeforeRun: true
+    stopAfterRun: true
+    startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 2
-  maxAnswerGenerations: 700
-  maxJudgeCalls: 700
+  maxIterations: 3
+  maxAnswerGenerations: 800
+  maxJudgeCalls: 800
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15

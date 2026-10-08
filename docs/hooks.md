@@ -74,6 +74,48 @@ fail-open for the host hook and do not fall back to `npx`. This makes rollout
 testing deterministic while preserving the existing publisher for everyone
 who has not enabled the new path.
 
+## Telemetry debug logs
+
+Set `AZURE_SKILLS_TELEMETRY_LOG_DIR` to a writable directory to enable hook
+debugging. Both hooks append timestamped entries to `telemetry.log` in that
+directory and save raw hook inputs under `raw-input/`. Debugging remains opt-in;
+these files contain existing event arguments and raw inputs, so treat them as
+potentially sensitive.
+
+Each attempted event identifies its selected publisher before installation or
+execution. Azure MCP entries name the npx command; standalone entries name
+`ghcfa-telem` and the pinned version. A successful installation or cache lookup
+also logs the resolved executable path. For example, omitting timestamps and
+abbreviating event arguments:
+
+```text
+Publisher: Azure MCP (npx -y @azure/mcp@latest) | Args: server plugin-telemetry ...
+Publisher: Standalone ghcfa-telem (version 0.1.0) | Args: --plugin-name ...
+Publisher: Standalone ghcfa-telem (version 0.1.0) | Executable: <installed-path>
+```
+
+Standalone arguments omit `server plugin-telemetry`, matching the executable's
+actual invocation. Failure entries identify the same publisher and distinguish
+installation from execution:
+
+```text
+Publisher: Standalone ghcfa-telem (version 0.1.0) | Installation failed with status 1: <installer-diagnostic>
+Publisher: Standalone ghcfa-telem (version 0.1.0) | Installation failed: installer returned no executable path.
+Publisher: Standalone ghcfa-telem (version 0.1.0) | Execution failed with status 1.
+Publisher: Azure MCP (npx -y @azure/mcp@latest) | Execution failed with status 1.
+```
+
+A successful installer exit without an executable path is reported as a
+contract failure, not as an installation failure with status `0`.
+
+PowerShell logs `Execution failed to start.` when invocation throws; Bash reports
+the shell exit status, such as `126` when an executable cannot run or `127` for
+a missing executable. Publisher output is suppressed rather than added to the
+log. Installer diagnostics are retained.
+Logging does not change publisher selection, telemetry opt-out, or fail-open
+behavior: the hook still returns `{"continue":true}`, and standalone failures
+never trigger an npx fallback.
+
 ## Misc
 
 Most clients look for `hooks/hooks.json` as the default hook configuration and try to use it if no explicit `hooks` property is defined in the plugin manifest. We decided to explicitly define a hooks manifest for every client because it's impossible to create one hooks manifest for all clients. Copilot/VS Code, Claude and Cursor use mutually exclusive schema for hooks manifest, which means the manifest is guaranteed to cause syntax errors in one or more clients. Besides, clients use different variables to represent the plugin root. Having the incorrect variable will cause the client to fail to resolve the script path, resulting in runtime failures.

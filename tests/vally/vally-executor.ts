@@ -1,11 +1,18 @@
-import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { computeMetrics } from "@microsoft/vally";
+import { fileURLToPath } from "url";
+import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
+import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
+import { normalizeTestName } from "./utils.ts";
+import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
-import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
-import { getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
-import { normalizeTestName } from "./utils.ts";
-import { listPlugins, type SkillRef } from "../utils/skill-loader.ts";
+import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
+import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * The model to use for the agent run.
@@ -42,8 +49,9 @@ export class IntegrationTestAgentRunner implements Executor {
     // Detect the owning plugin of the required skills and construct SkillRef objects for downstream processing
     const plugins = listPlugins();
     const requiredSkillRefs: SkillRef[] = [];
+    const plugin: Plugin | undefined = plugins.find(plugin => plugin.skills.some(skillRef => skillRef.name === skillName));
     (requiredSkills ?? [skillName]).forEach(s => {
-      const owningPlugin = plugins.filter(plugin => plugin.skills.some(skillRef => skillRef.name === s)).at(0);
+      const owningPlugin = plugins.find(plugin => plugin.skills.some(skillRef => skillRef.name === s));
       if (owningPlugin) {
         requiredSkillRefs.push({
           pluginDirname: owningPlugin.dirname,
@@ -87,45 +95,92 @@ export class IntegrationTestAgentRunner implements Executor {
       preserveWorkspace: true
     };
 
-    const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
-    const completedAt = new Date();
-    const events = convertToTrajectoryEvents(agentMetadata);
-    const metrics = computeMetrics(events);
+    let fixtureResourceGroups: string[] = [];
+    let postTestScriptConfig: PostTestScriptConfig | undefined;
+    let persistFixture: boolean = false;
+    let provisionOutput: ProvisionManifestOutput | undefined;
+    let manifest: FixtureManifest | undefined;
+    let absoluteManifestPath: string | undefined;
+    const relativeManifestPath = getAzureFixtureManifestPath(tags);
+    try {
+      // Provision azure fixture if it's defined
+      if (!plugin?.dirname) {
+        // <repo-root>/evals/<plugin-dir>/<skill-name>/<relative-manifest-path>
+        throw new Error(`Unable to resolve plugin for skill ${skillName}`);
+      }
+      if (relativeManifestPath) {
+        const fixtureBaseDir = path.resolve(__dirname, `../../evals/${plugin.dirname}/${skillName}`);
+        absoluteManifestPath = path.resolve(fixtureBaseDir, relativeManifestPath);
+        const rel = path.relative(fixtureBaseDir, absoluteManifestPath);
+        if (rel.startsWith("..") || path.isAbsolute(rel)) {
+          throw new Error(`azureFixture must resolve under ${fixtureBaseDir}: ${relativeManifestPath}`);
+        }
+        manifest = readManifest(absoluteManifestPath);
 
-    const agentOutput = events
-      .filter(e => e.type === "assistant_message")
-      .map(e => e.data.content)
-      .join("\n");
+        provisionOutput = provisionManifest(absoluteManifestPath, manifest);
+        const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput.output);
+        const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
+        runConfig.prompt += `\n${azureScopePrompt}`;
+        fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
+        postTestScriptConfig = manifest.postTestScript;
+        persistFixture = !!manifest.persist;
+      }
 
-    const sessionId = agentMetadata.events
-      .filter(e => e.type === "session.start")
-      .at(0)?.id;
+      const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);
+      const completedAt = new Date();
+      const events = convertToTrajectoryEvents(agentMetadata);
+      const metrics = computeMetrics(events);
 
-    await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
-    await agentRunner.cleanup();
+      const agentOutput = events
+        .filter(e => e.type === "assistant_message")
+        .map(e => e.data.content)
+        .join("\n");
 
-    // Vally will run the graders and produce results.jsonl.
-    // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
+      const sessionId = agentMetadata.events
+        .filter(e => e.type === "session.start")
+        .at(0)?.id;
 
-    return {
-      id: crypto.randomUUID(),
-      stimulus,
-      events,
-      output: agentOutput,
-      workDir: options.workDir,
-      metadata: {
-        startedAt,
-        completedAt,
-        model: model,
-        executor: this.name,
-        skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
-        sessionID: sessionId ?? "unknown",
-      },
-      metrics: {
-        ...metrics,
-        wallTimeMs: completedAt.getTime() - startedAt.getTime(),
-      },
-    };
+      await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
+      await agentRunner.cleanup();
+
+      if (postTestScriptConfig) {
+        runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!));
+      }
+
+      // Vally will run the graders and produce results.jsonl.
+      // After the all suites complete, we can process the results.json; file and recover our testResults.json file for dashboard consumption. 
+
+      return {
+        id: crypto.randomUUID(),
+        stimulus,
+        events,
+        output: agentOutput,
+        workDir: options.workDir,
+        metadata: {
+          startedAt,
+          completedAt,
+          model: model,
+          executor: this.name,
+          skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
+          sessionID: sessionId ?? "unknown",
+        },
+        metrics: {
+          ...metrics,
+          wallTimeMs: completedAt.getTime() - startedAt.getTime(),
+        },
+      };
+    } finally {
+      // Delete the fixtures provisioned for this test run
+      if (!persistFixture) {
+        for (const resourceGroupName of fixtureResourceGroups) {
+          try {
+            deleteResourceGroup(resourceGroupName);
+          } catch {
+            // Suppress cleanup failures so they do not mask test results.
+          }
+        }
+      }
+    }
   }
 
   async shutdown(): Promise<void> {
@@ -273,4 +328,8 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
 
 export function registerExecutors(registry: ExecutorRegistry): void {
   registry.register(new IntegrationTestAgentRunner());
+}
+
+function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): string {
+  return `Limit your operations in the following resource groups: ${JSON.stringify(fixtureOutput.resourceGroups)}. Never read or modify resources outside these resource groups.`;
 }
