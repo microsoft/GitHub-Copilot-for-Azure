@@ -20,7 +20,7 @@ metadata:
 
 When location is unknown, derive a finite candidate set. Batch read-only metadata listing across each candidate Kusto database or Log Analytics workspace, match the exact table, then query confirmed matches. An empty table is still a match. Report "not found" only after checking the full set; combine sources when required.
 
-## Azure MCP Contract
+## Kusto MCP Tools
 
 Prefer `kusto_cluster_list`, `kusto_database_list`, `kusto_table_schema_get`, and `kusto_query`. Supply required `subscription`, `cluster`, `database`, `table`, or `query`; use `resource-group` and `tenant` to disambiguate. Preserve discovered identifiers.
 
