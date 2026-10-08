@@ -1,15 +1,13 @@
-import { computeMetrics } from "@microsoft/vally";
-import { fileURLToPath } from "url";
+import { type AgentMetadata, type AgentRunConfig, convertToTrajectoryEvents, createMarkdownReport, getAzureScopePrompt } from "../utils/agent-runner.ts";
+import { computeMetrics, type Executor, type ExecutorOptions, type ExecutorRegistry, type Stimulus, type Trajectory } from "@microsoft/vally";
+import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, type ProvisionScriptOutput, readManifest } from "../azure-fixtures/fixture-common.ts";
 import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
 import { normalizeTestName } from "./utils.ts";
-import * as path from "node:path";
-import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
-import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory } from "@microsoft/vally";
-import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
 import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
-import { useAgentRunner, } from "../utils/copilot-sdk-runner.ts";
-import { convertToTrajectoryEvents, createMarkdownReport, getAzureScopePrompt } from "../utils/agent-runner.ts";
+import { useClaudeAgentRunner } from "../utils/claude-sdk-runner.ts";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,8 +17,8 @@ const __dirname = path.dirname(__filename);
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
-export class CopilotSdkAgentRunner implements Executor {
-  name = "copilot-sdk-agent-runner";
+export class ClaudeSdkExecutor implements Executor {
+  name = "claude-sdk-agent-runner"
   supportsMultiTurn = true;
   supportsPreparedWorkspace = true;
 
@@ -29,7 +27,7 @@ export class CopilotSdkAgentRunner implements Executor {
     const tags = stimulus.tags;
     const skillName = getSkillName(tags);
     const normalizedTestName = normalizeTestName(skillName, stimulus.name);
-    const agentRunner = useAgentRunner({ testName: normalizedTestName });
+    const agentRunner = useClaudeAgentRunner({ testName: normalizedTestName });
 
     // When custom executor is executed, vally has initialized the test workspace for us.
     const workDir = options.workDir;
@@ -185,5 +183,5 @@ export class CopilotSdkAgentRunner implements Executor {
 }
 
 export function registerExecutors(registry: ExecutorRegistry): void {
-  registry.register(new CopilotSdkAgentRunner());
+  registry.register(new ClaudeSdkExecutor());
 }
