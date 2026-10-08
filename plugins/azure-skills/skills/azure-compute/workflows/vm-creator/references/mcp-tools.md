@@ -4,12 +4,12 @@ The Azure MCP server exposes the `compute` area as a single namespace proxy: `mc
 
 ## Read-only validation (Step 4)
 
-Azure MCP has no command to list VM sizes or images or to recommend a region, and its `quota_usage_check` returns only a partial view (at most three sizes per family). Run these checks with the Azure CLI:
+Azure MCP has no command to list VM sizes or images or to recommend a region, and its `quota_usage_check` returns only a partial view (at most three sizes per family). Run these checks with the Azure CLI, adding `--subscription <subscription>` (the deployment subscription) to each:
 
 | Check | Command |
 |---|---|
 | Size available in region | `az vm list-skus --location <region> --size <size> --resource-type virtualMachines --output table` (`--size` matches partial names; check the exact row and its `Restrictions`) |
-| Image available in region | `az vm image show --location <region> --urn <urn>`; `az vm image list --output table` maps aliases to URNs |
+| Image available in region | `az vm image show --location <region> --urn <urn>`; `az vm image list --output table` maps aliases to URNs. For a `/sharedGalleries/` ID, use `az sig image-version show-shared` (see [validation-gates.md](validation-gates.md)) |
 | vCPU quota (family and regional) | `az vm list-usage --location <region> --output table` (see [vm-quotas.md](../../../references/vm-quotas.md)) |
 | Regions offering the size | `az vm list-skus --size <size> --resource-type virtualMachines --output table` (no `--location`; a default location set with `az config` would limit it to that region) |
 
