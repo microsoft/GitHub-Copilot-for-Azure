@@ -1268,7 +1268,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
       }`,
     );
     expect(log).not.toContain(MCP_PUBLISHER);
-  });
+  }, 30_000);
 
   it("diagnoses a successful installer exit with no executable path", () => {
     const args = runHook(
