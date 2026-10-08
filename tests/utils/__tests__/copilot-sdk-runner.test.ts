@@ -1,5 +1,5 @@
 /**
- * Tests for agent-runner utility
+ * Tests for copilot-sdk-runner utility
  * 
  * Specifically tests the fix for the test runner async operation leak
  * where event listeners continue after test completion.
@@ -7,7 +7,7 @@
 
 import { describe, expect, test } from "vitest";
 
-describe("agent-runner", () => {
+describe("copilot-sdk-runner", () => {
   describe("event listener cleanup", () => {
     test("isComplete flag prevents event processing after completion", () => {
       // This test verifies the fix for the issue where console.log

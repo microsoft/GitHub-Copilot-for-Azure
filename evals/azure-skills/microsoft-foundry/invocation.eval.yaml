@@ -11,7 +11,7 @@ tags:
 defaults:
   runs: 1
   timeout: "5m"
-  executor: integration-test-agent-runner
+  executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
 
 scoring:
