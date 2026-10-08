@@ -71,7 +71,6 @@ function filterSubdirectoriesBySkill(subdirectories: string[], skill: string, te
     const subdirName = path.basename(subdir);
 
     // Skill name in the subdirectory name ends at the first underscore character.
-    // See tests/eslint-rules/integration-test-name.mjs for details.
     const terminatorIndex = subdirName.indexOf("_");
     const skillName = subdirName.substring(0, terminatorIndex);
     const testResult = testResults[subdirName];
