@@ -91,21 +91,15 @@ Explore table structure before querying.
 **Use for**: Understanding data model, query planning
 
 ### Pattern 6: Batch Search Across Candidate Sources
-When a table's location is unknown and there are several candidate clusters, databases, or workspaces, check them together instead of one at a time.
+When a table's location is unknown and there are several candidate clusters, databases, or workspaces, batch read-only metadata discovery instead of querying candidates one at a time. List tables in each candidate database or workspace and match the exact table name before querying data.
 
-**Example KQL** (ADX clusters/databases):
-```kql
-search in (cluster('c1').database('d1'), cluster('c2').database('d2')) Requests
-| take 1
-```
-
-**Example KQL** (Log Analytics cross-workspace):
+After confirming which sources contain the table, query those sources together when needed:
 ```kql
 union workspace('ws1').Requests, workspace('ws2').Requests
 | take 1
 ```
 
-**Use for**: Locating a table among many candidate resources without exhausting the turn budget
+**Use for**: Locating a table among many candidate resources without confusing an empty result with a missing table
 
 ## Key Data Fields
 
