@@ -113,8 +113,7 @@ detect_target() {
             fi
 
             if [ "$is_musl" = "true" ]; then
-                error "The standalone telemetry reporter does not yet support Alpine or musl Linux."
-                return 1
+                OS="linux-musl"
             fi
             ;;
         Darwin)

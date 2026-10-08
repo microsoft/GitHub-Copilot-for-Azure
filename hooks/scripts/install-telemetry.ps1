@@ -30,6 +30,7 @@ function Get-TelemetryTarget {
         $operatingSystem = 'osx'
     }
     elseif ($runtime::IsOSPlatform($platform::Linux)) {
+        $operatingSystem = 'linux'
         $isMusl = Test-Path -LiteralPath '/etc/alpine-release' -PathType Leaf
 
         if (-not $isMusl -and (Test-Path -LiteralPath '/etc/os-release' -PathType Leaf)) {
@@ -56,10 +57,8 @@ function Get-TelemetryTarget {
         }
 
         if ($isMusl) {
-            throw 'The standalone telemetry reporter does not yet support Alpine or musl Linux.'
+            $operatingSystem = 'linux-musl'
         }
-
-        $operatingSystem = 'linux'
     }
     else {
         throw "Unsupported operating system: $($runtime::OSDescription)"
