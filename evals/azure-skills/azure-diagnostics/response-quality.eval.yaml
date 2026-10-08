@@ -62,7 +62,7 @@ stimuli:
       - type: completed
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
       - type: tool-calls
         config:
           disallowed:

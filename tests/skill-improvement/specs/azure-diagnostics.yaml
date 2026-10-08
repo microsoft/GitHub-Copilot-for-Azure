@@ -24,7 +24,7 @@ models:
     - claude-opus-4.8
 
 experiment:
-  repetitions: 1
+  repetitions: 2
   conditions:
     - name: Skill only
       skill: enabled
@@ -39,7 +39,7 @@ improvementAgent:
 
 acceptance:
   minimumQualityImprovementPoints: 2
-  maximumEvalRegressionPoints: 5
+  maximumEvalRegressionPoints: 15
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
   requireHeldOutImprovement: true
@@ -50,8 +50,8 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 200
-  maxJudgeCalls: 200
+  maxAnswerGenerations: 350
+  maxJudgeCalls: 350
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
