@@ -29,7 +29,7 @@ Activate this skill when user wants to:
 - Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 - Troubleshoot Azure VM connectivity issues (RDP/SSH failures, port 3389/22 timeouts, NSG or firewall blocking, credential resets)
 - Troubleshoot Azure Messaging SDK issues (Event Hubs, Service Bus connection failures, AMQP errors, message lock issues)
-- Root-cause a symptom that looks like a healthy-runtime-but-wrong-destination problem (e.g., telemetry/messages stop flowing to the expected resource after a config change) — invoke this skill for the matrix even when MCP tools could answer the surface question alone, and even when the request is evidence-only (supplied logs/metrics with no live Azure queries) rather than a live investigation
+- Root-cause a symptom that looks like a healthy-runtime-but-wrong-destination problem (e.g., telemetry/messages stop flowing to the expected resource after a config change) — invoke this skill for the matrix even when MCP tools could answer the surface question alone
 
 ## Rules
 
