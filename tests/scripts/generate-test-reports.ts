@@ -12,10 +12,10 @@
  */
 
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, } from "../utils/copilot-sdk-runner";
-import { type AgentRunConfig } from "../utils/agent-runner";
+import { CopilotClient, type CopilotSession, type SystemMessageConfig } from "@github/copilot-sdk";
 import { redactSecrets } from "../utils/redact";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,8 +30,12 @@ const TEST_RUN_PREFIX = "test-run-";
 const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
 const SKILL_REPORT_SUFFIX = "-SKILL-REPORT.md";
-const agent = useAgentRunner({
-  isTest: false
+const AGENT_TIMEOUT_MS = 30 * 60 * 1000;
+const client = new CopilotClient({
+  mode: "empty",
+  baseDirectory: path.join(os.homedir(), ".copilot"),
+  logLevel: process.env.DEBUG ? "all" : "error",
+  workingDirectory: process.cwd()
 });
 
 type TestResult = {
@@ -39,6 +43,28 @@ type TestResult = {
 };
 
 type TestResults = Record<string, TestResult>;
+
+async function generateReport(prompt: string, systemMessage?: SystemMessageConfig): Promise<string> {
+  let session: CopilotSession | undefined;
+
+  try {
+    session = await client.createSession({
+      model: process.env.MODEL_OVERRIDE?.trim() || "claude-sonnet-5",
+      availableTools: [],
+      systemMessage,
+      enableSessionTelemetry: false
+    });
+
+    const response = await session.sendAndWait({ prompt }, AGENT_TIMEOUT_MS);
+    if (!response?.data.content) {
+      throw new Error("Copilot completed without returning report content");
+    }
+
+    return response.data.content;
+  } finally {
+    await session?.disconnect();
+  }
+}
 
 /**
  * Parse command-line arguments.
@@ -133,9 +159,8 @@ async function processSubdirectory(subdirPath: string, reportTemplate: string, t
 
   console.log("    Generating report...");
 
-  // Use agent runner to generate consolidated report for this subdirectory
-  const config: AgentRunConfig = {
-    prompt: `You are a test report generator. Your job is to read test data and output a formatted markdown report.
+  const reportContent = await generateReport(
+    `You are a test report generator. Your job is to read test data and output a formatted markdown report.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
 
@@ -156,21 +181,10 @@ ${consolidatedContent}
 ---
 
 OUTPUT THE REPORT NOW (starting with the # heading):`
-  };
-
-  const agentMetadata = await agent.run(config);
-
-  // Extract assistant messages from events
-  const assistantMessages: string[] = [];
-  for (const event of agentMetadata.events) {
-    if (event.type === "assistant.message" && event.data.content) {
-      assistantMessages.push(event.data.content as string);
-    }
-  }
+  );
 
   // Save the consolidated report in the subdirectory
   const outputPath = path.join(subdirPath, `test${CONSOLIDATED_REPORT_SUFFIX}`);
-  const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
   console.log(`    ✅ Generated: test${CONSOLIDATED_REPORT_SUFFIX}`);
@@ -204,8 +218,8 @@ async function generateSkillReport(reportPaths: string[], runPath: string, runNa
   // Load the per-skill aggregated report template
   const aggregatedTemplate = fs.readFileSync(AGGREGATED_TEMPLATE_PATH, "utf-8");
 
-  const config: AgentRunConfig = {
-    prompt: `You are a per-skill test report generator. You will receive multiple individual test reports that all belong to the skill "${skill}", and you must combine them into one comprehensive per-skill summary. There are two kinds of test reports, skill-invocation tests and others. Skill invocations tests are simplified test cases that only measures whether a skill is invoked. Many such tests are optimized to terminate the execution if the expected skill is invoked or if the expected skill isn't invoked early enough. Other tests are full end to end tests which will have complete agent execution and will result in updates to the surrounding environment, such as the test workspace or Azure resources. Evaluate each test report based on the category of it.
+  const reportContent = await generateReport(
+    `You are a per-skill test report generator. You will receive multiple individual test reports that all belong to the skill "${skill}", and you must combine them into one comprehensive per-skill summary. There are two kinds of test reports, skill-invocation tests and others. Skill invocations tests are simplified test cases that only measures whether a skill is invoked. Many such tests are optimized to terminate the execution if the expected skill is invoked or if the expected skill isn't invoked early enough. Other tests are full end to end tests which will have complete agent execution and will result in updates to the surrounding environment, such as the test workspace or Azure resources. Evaluate each test report based on the category of it.
 
 CRITICAL: Output ONLY the markdown report itself. Do NOT include any preamble, explanations, or meta-commentary about what you're doing.
 
@@ -226,25 +240,14 @@ ${allReportsContent}
 ---
 
 OUTPUT THE SKILL REPORT NOW (starting with the # heading):`,
-    systemPrompt: {
+    {
       mode: "append",
       content: "**Important**: Skills and MCP tools are different. When summarizing statistics related to skills, don't count MCP tool invocations. Skills are explicitly called out as skills in the context. MCP servers appear to be regular tool calls except that they are from an MCP server."
     }
-  };
-
-  const agentMetadata = await agent.run(config);
-
-  // Extract assistant messages from events
-  const assistantMessages: string[] = [];
-  for (const event of agentMetadata.events) {
-    if (event.type === "assistant.message" && event.data.content) {
-      assistantMessages.push(event.data.content as string);
-    }
-  }
+  );
 
   // Save the skill report at the root of the test run
   const outputPath = path.join(runPath, getSkillReportFileName(runName, skill));
-  const reportContent = assistantMessages.join("\n\n");
   fs.writeFileSync(outputPath, reportContent, "utf-8");
 
   console.log(`\n  ✅ Generated skill report: ${getSkillReportFileName(runName, skill)}`);
@@ -336,9 +339,19 @@ async function main() {
   await processTestRun(targetPath, skill);
 }
 
-main().then(() => {
-  process.exit(0);
-}).catch(error => {
-  console.error("Error:", error);
-  process.exit(1);
-});
+async function run(): Promise<void> {
+  try {
+    await main();
+  } catch (error) {
+    console.error("Error:", error);
+    process.exitCode = 1;
+  } finally {
+    const stopErrors = await client.stop();
+    if (stopErrors.length > 0) {
+      console.error("Copilot client cleanup errors:", new AggregateError(stopErrors));
+      process.exitCode = 1;
+    }
+  }
+}
+
+void run();
