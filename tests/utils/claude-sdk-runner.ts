@@ -21,6 +21,7 @@ import {
 import { getSkillsForTest } from "./skill-loader.ts";
 
 type AssistantMessageEvent = Extract<SessionEvent, { type: "assistant.message" }>;
+type AssistantUsageEvent = Extract<SessionEvent, { type: "assistant.usage" }>;
 type UserMessageEvent = Extract<SessionEvent, { type: "user.message" }>;
 const MISSING_MESSAGE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 type ToolCall = {
@@ -30,8 +31,14 @@ type ToolCall = {
 type PendingSkill = {
   requestedName: string;
 };
+type AssistantUsageSnapshot = {
+  model: string;
+  usage: SDKAssistantMessage["message"]["usage"];
+};
 type TranslationState = {
   assistantEvents: Map<string, AssistantMessageEvent>;
+  assistantUsageEvents: Map<string, AssistantUsageEvent>;
+  assistantUsageByMessageId: Map<string, AssistantUsageSnapshot>;
   mcpServerNames: string[];
   pendingSkill?: PendingSkill;
   toolCalls: Map<string, ToolCall>;
@@ -99,6 +106,8 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
     };
     const translationState: TranslationState = {
       assistantEvents: new Map(),
+      assistantUsageEvents: new Map(),
+      assistantUsageByMessageId: new Map(),
       mcpServerNames: [],
       toolCalls: new Map(),
       userEvents: new Map(),
@@ -286,6 +295,10 @@ function appendSessionEvents(
     return appendUserResponse(metadata, state, message, model, lastEventId);
   }
 
+  if (message.type === "assistant") {
+    updateAssistantTokenUsage(metadata, state, message, lastEventId);
+  }
+
   if (message.type === "assistant" && message.parent_tool_use_id === null) {
     return appendAssistantResponse(metadata, state, message, lastEventId);
   }
@@ -293,8 +306,6 @@ function appendSessionEvents(
   if (message.type !== "result") {
     return lastEventId;
   }
-
-  appendTokenUsage(metadata.tokenUsage!, message);
 
   const isError = message.subtype !== "success" || message.is_error;
   let messageEventIndex = 0;
@@ -366,21 +377,73 @@ function createEmptyTokenUsage(): TokenUsage {
   };
 }
 
-function appendTokenUsage(
-  tokenUsage: TokenUsage,
-  message: Extract<SDKMessage, { type: "result" }>,
+function updateAssistantTokenUsage(
+  metadata: AgentMetadata,
+  state: TranslationState,
+  message: SDKAssistantMessage,
+  parentId: string | null,
 ): void {
-  tokenUsage.inputTokens += message.usage.input_tokens;
-  tokenUsage.outputTokens += message.usage.output_tokens;
-  tokenUsage.cacheReadTokens += message.usage.cache_read_input_tokens ?? 0;
-  tokenUsage.cacheWriteTokens += message.usage.cache_creation_input_tokens ?? 0;
-  tokenUsage.totalApiDurationMs += message.duration_api_ms;
-  tokenUsage.apiCallCount += message.num_turns;
-
-  const models = Object.keys(message.modelUsage);
-  if (models.length === 1) {
-    tokenUsage.model = models[0];
+  const usage = message.message.usage;
+  if (!usage) {
+    return;
   }
+
+  const tokenUsage = metadata.tokenUsage!;
+  state.assistantUsageByMessageId.set(message.message.id, {
+    model: message.message.model,
+    usage,
+  });
+
+  tokenUsage.inputTokens = 0;
+  tokenUsage.outputTokens = 0;
+  tokenUsage.cacheReadTokens = 0;
+  tokenUsage.cacheWriteTokens = 0;
+  tokenUsage.apiCallCount = state.assistantUsageByMessageId.size;
+  tokenUsage.model = message.message.model;
+  tokenUsage.perCallUsage = [];
+
+  for (const [messageId, snapshot] of state.assistantUsageByMessageId) {
+    const assistantUsage = snapshot.usage;
+    tokenUsage.inputTokens += assistantUsage.input_tokens;
+    tokenUsage.outputTokens += assistantUsage.output_tokens;
+    tokenUsage.cacheReadTokens += assistantUsage.cache_read_input_tokens ?? 0;
+    tokenUsage.cacheWriteTokens += assistantUsage.cache_creation_input_tokens ?? 0;
+    tokenUsage.perCallUsage.push({
+      model: snapshot.model,
+      inputTokens: assistantUsage.input_tokens,
+      outputTokens: assistantUsage.output_tokens,
+      cacheReadTokens: assistantUsage.cache_read_input_tokens ?? 0,
+      cacheWriteTokens: assistantUsage.cache_creation_input_tokens ?? 0,
+      durationMs: 0,
+      initiator: messageId,
+    });
+  }
+
+  const eventData: AssistantUsageEvent["data"] = {
+    apiCallId: message.message.id,
+    cacheReadTokens: usage.cache_read_input_tokens ?? 0,
+    cacheWriteTokens: usage.cache_creation_input_tokens ?? 0,
+    inputTokens: usage.input_tokens,
+    model: message.message.model,
+    outputTokens: usage.output_tokens,
+  };
+  const existingEvent = state.assistantUsageEvents.get(message.message.id);
+  if (existingEvent) {
+    existingEvent.data = eventData;
+    existingEvent.timestamp = getMessageTimestamp(message);
+    return;
+  }
+
+  const event: AssistantUsageEvent = {
+    type: "assistant.usage",
+    id: `${message.uuid}-usage`,
+    parentId,
+    timestamp: getMessageTimestamp(message),
+    ephemeral: true,
+    data: eventData,
+  };
+  metadata.events.push(event);
+  state.assistantUsageEvents.set(message.message.id, event);
 }
 
 function appendAssistantResponse(

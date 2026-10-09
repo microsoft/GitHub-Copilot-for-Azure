@@ -1,7 +1,15 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi,
+} from "vitest";
+import { convertToTrajectoryEvents } from "../agent-runner.ts";
 import { useClaudeAgentRunner } from "../claude-sdk-runner.ts";
 
 const mocks = vi.hoisted(() => ({
@@ -73,6 +81,11 @@ describe("claude-sdk-runner", () => {
           model: "claude-sonnet-5",
           role: "assistant",
           content: [{ type: "text", text: "Done" }],
+          usage: usage({
+            inputTokens: 2,
+            outputTokens: 5,
+            cacheWriteTokens: 43993,
+          }),
         },
       },
       {
@@ -110,7 +123,7 @@ describe("claude-sdk-runner", () => {
     expect(skillEvent?.id).toBe("skill-content");
     expect(skillEvent?.data).toMatchObject({
       name: "azure-ai",
-      path: "/plugins/azure-skills/skills/azure-ai/SKILL.md",
+      path: path.join("/plugins/azure-skills/skills/azure-ai", "SKILL.md"),
       content: "# Azure AI Services",
       pluginName: "azure",
       source: "plugin",
@@ -161,24 +174,196 @@ describe("claude-sdk-runner", () => {
     });
     expect(metadata.skillFiles).toEqual({
       "azure-ai": [
-        path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
-        path.join(mocks.skillsDirectory, "azure-ai", "references", "search.md"),
+        normalizePath(path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md")),
+        normalizePath(path.join(mocks.skillsDirectory, "azure-ai", "references", "search.md")),
       ],
     });
     expect(metadata.tokenUsage).toEqual({
-      inputTokens: 8,
-      outputTokens: 1019,
-      cacheReadTokens: 144136,
-      cacheWriteTokens: 118482,
-      totalApiDurationMs: 13460,
-      apiCallCount: 5,
+      inputTokens: 2,
+      outputTokens: 5,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 43993,
+      totalApiDurationMs: 0,
+      apiCallCount: 4,
       model: "claude-sonnet-5",
-      perCallUsage: [],
+      perCallUsage: [
+        {
+          model: "claude-sonnet-5",
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          durationMs: 0,
+          initiator: "message-1",
+        },
+        {
+          model: "claude-sonnet-5",
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          durationMs: 0,
+          initiator: "message-2",
+        },
+        {
+          model: "claude-sonnet-5",
+          inputTokens: 0,
+          outputTokens: 0,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          durationMs: 0,
+          initiator: "message-3",
+        },
+        {
+          model: "claude-sonnet-5",
+          inputTokens: 2,
+          outputTokens: 5,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 43993,
+          durationMs: 0,
+          initiator: "message-4",
+        },
+      ],
     });
+    const trajectoryEvents = convertToTrajectoryEvents(metadata);
+    const skillActivations = trajectoryEvents.filter(
+      event => event.type === "skill_activation",
+    );
+    expect(skillActivations).toHaveLength(1);
+    expect(skillActivations[0].data).toMatchObject({
+      name: "azure-ai",
+      path: path.join("/plugins/azure-skills/skills/azure-ai", "SKILL.md"),
+    });
+    expect(
+      trajectoryEvents.some(event =>
+        event.type === "token_usage"
+        && ((event.data.inputTokens ?? 0) > 0 || (event.data.outputTokens ?? 0) > 0)),
+    ).toBe(true);
     expect(metadata.events[0].id).toBe("init-1");
     expect(metadata.events[0].timestamp).toBe("1970-01-01T00:00:00.000Z");
     expect(metadata.events.at(-1)?.type).toBe("assistant.turn_end");
     expect(metadata.events.at(-1)?.id).toBe("result-1");
+  });
+
+  test("reports assistant usage when the run is early terminated", async () => {
+    const messages = [
+      {
+        type: "system",
+        subtype: "init",
+        session_id: "session-1",
+        uuid: "init-1",
+        claude_code_version: "2.1.287",
+        model: "claude-sonnet-5",
+        mcp_servers: [],
+      },
+      {
+        type: "assistant",
+        uuid: "assistant-1",
+        session_id: "session-1",
+        parent_tool_use_id: null,
+        message: {
+          id: "message-1",
+          model: "claude-sonnet-5",
+          role: "assistant",
+          content: [{ type: "text", text: "Ready to stop" }],
+          usage: usage({
+            inputTokens: 3,
+            outputTokens: 7,
+            cacheReadTokens: 100,
+            cacheWriteTokens: 200,
+          }),
+        },
+      },
+    ] as unknown as SDKMessage[];
+    mocks.query.mockReturnValue(toAsyncIterable(messages));
+
+    const runner = useClaudeAgentRunner({ testName: "early-termination" });
+    const metadata = await runner.run({
+      model: "claude-sonnet-5",
+      prompt: "Stop after the first response.",
+      shouldEarlyTerminate: currentMetadata =>
+        currentMetadata.events.some(event => event.type === "assistant.message"),
+    });
+
+    expect(metadata.tokenUsage).toMatchObject({
+      inputTokens: 3,
+      outputTokens: 7,
+      cacheReadTokens: 100,
+      cacheWriteTokens: 200,
+      totalApiDurationMs: 0,
+      apiCallCount: 1,
+      model: "claude-sonnet-5",
+    });
+  });
+
+  test("uses the latest cumulative usage snapshot for each assistant message", async () => {
+    const messages = [
+      {
+        type: "system",
+        subtype: "init",
+        session_id: "session-1",
+        uuid: "init-1",
+        claude_code_version: "2.1.287",
+        model: "claude-sonnet-5",
+        mcp_servers: [],
+      },
+      {
+        type: "assistant",
+        uuid: "assistant-thinking",
+        session_id: "session-1",
+        parent_tool_use_id: null,
+        message: {
+          id: "message-1",
+          model: "claude-sonnet-5",
+          role: "assistant",
+          content: [{ type: "thinking", thinking: "Working", signature: "signature" }],
+          usage: usage({
+            inputTokens: 2,
+            outputTokens: 3,
+          }),
+        },
+      },
+      {
+        type: "assistant",
+        uuid: "assistant-text",
+        session_id: "session-1",
+        parent_tool_use_id: null,
+        message: {
+          id: "message-1",
+          model: "claude-sonnet-5",
+          role: "assistant",
+          content: [{ type: "text", text: "Done" }],
+          usage: usage({
+            inputTokens: 2,
+            outputTokens: 5,
+          }),
+        },
+      },
+    ] as unknown as SDKMessage[];
+    mocks.query.mockReturnValue(toAsyncIterable(messages));
+
+    const runner = useClaudeAgentRunner({ testName: "usage-snapshots" });
+    const metadata = await runner.run({
+      model: "claude-sonnet-5",
+      prompt: "Complete the task.",
+    });
+
+    expect(metadata.tokenUsage).toMatchObject({
+      inputTokens: 2,
+      outputTokens: 5,
+      apiCallCount: 1,
+      perCallUsage: [
+        {
+          model: "claude-sonnet-5",
+          inputTokens: 2,
+          outputTokens: 5,
+          cacheReadTokens: 0,
+          cacheWriteTokens: 0,
+          durationMs: 0,
+          initiator: "message-1",
+        },
+      ],
+    });
   });
 });
 
@@ -199,7 +384,32 @@ function assistantToolMessage(
       model: "claude-sonnet-5",
       role: "assistant",
       content: [{ type: "tool_use", id: toolCallId, name, input }],
+      usage: usage(),
     },
+  };
+}
+
+function usage({
+  inputTokens = 0,
+  outputTokens = 0,
+  cacheReadTokens = 0,
+  cacheWriteTokens = 0,
+}: {
+  inputTokens?: number;
+  outputTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+} = {}): object {
+  return {
+    cache_creation: {
+      ephemeral_1h_input_tokens: 0,
+      ephemeral_5m_input_tokens: cacheWriteTokens,
+    },
+    cache_creation_input_tokens: cacheWriteTokens,
+    cache_read_input_tokens: cacheReadTokens,
+    inference_geo: "global",
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
   };
 }
 
@@ -232,4 +442,8 @@ function userTextMessage(uuid: string, text: string): unknown {
 
 async function* toAsyncIterable(messages: SDKMessage[]): AsyncGenerator<SDKMessage> {
   yield* messages;
+}
+
+function normalizePath(value: string): string {
+  return value.replaceAll("\\", "/");
 }
