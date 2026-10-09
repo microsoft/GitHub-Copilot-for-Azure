@@ -19,11 +19,12 @@ scoring:
 stimuli:
   - name: "Live AKS CoreDNS scheduling failure"
     prompt: |
-      Read live-context.txt. Applications in this isolated test cluster cannot
-      resolve Kubernetes service names. Diagnose the incident using read-only
-      Azure and Kubernetes commands. Do not modify the cluster. Identify the
-      evidence-backed cause, recommend the narrowest safe remediation, and
-      explain how an operator should verify recovery.
+      Use the azure-diagnostics skill. Read live-context.txt. Applications in
+      this isolated test cluster cannot resolve Kubernetes service names.
+      Diagnose the incident using read-only Azure and Kubernetes commands. Do
+      not modify the cluster. Identify the evidence-backed cause, recommend the
+      narrowest safe remediation, and explain how an operator should verify
+      recovery.
     rubric:
       - The response identifies that CoreDNS pods are Pending because every node has the diagnostics-live-coredns=true:NoSchedule taint without a matching toleration.
       - The response distinguishes Ready nodes from CoreDNS schedulability and connects the lack of ready CoreDNS pods to cluster DNS failure.
@@ -62,7 +63,7 @@ stimuli:
 
   - name: "Live AKS Service has no endpoints"
     prompt: |
-      Read live-context.txt. Requests to
+      Use the azure-diagnostics skill. Read live-context.txt. Requests to
       inventory.diagnostics-endpoints.svc.cluster.local time out, while other
       Kubernetes service names resolve normally. Diagnose the incident using
       read-only Azure and Kubernetes commands. Do not modify the cluster.
@@ -89,12 +90,12 @@ stimuli:
 
   - name: "Live AKS NetworkPolicy blocks DNS"
     prompt: |
-      Read live-context.txt. Pod dns-client in namespace diagnostics-network
-      cannot resolve Kubernetes service names, but CoreDNS is healthy and other
-      namespaces are unaffected. Diagnose the incident using read-only Azure
-      and Kubernetes commands. Do not modify the cluster. Identify the cause,
-      recommend the narrowest safe remediation, and explain how an operator
-      should verify recovery.
+      Use the azure-diagnostics skill. Read live-context.txt. Pod dns-client in
+      namespace diagnostics-network cannot resolve Kubernetes service names,
+      but CoreDNS is healthy and other namespaces are unaffected. Diagnose the
+      incident using read-only Azure and Kubernetes commands. Do not modify the
+      cluster. Identify the cause, recommend the narrowest safe remediation,
+      and explain how an operator should verify recovery.
     rubric:
       - The response identifies that NetworkPolicy deny-dns-egress selects the dns-client pod and allows TCP 443 but no UDP or TCP port 53 egress.
       - The response distinguishes a namespace-scoped egress-policy problem from CoreDNS scheduling, Service configuration, or a cluster-wide DNS outage.

@@ -135,7 +135,10 @@ spec:
       command:
         - sleep
         - "3600"
----
+EOF
+    kubectl -n diagnostics-network wait --for=condition=Ready pod/dns-client --timeout=5m
+
+    kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -152,7 +155,6 @@ spec:
         - protocol: TCP
           port: 443
 EOF
-    kubectl -n diagnostics-network wait --for=condition=Ready pod/dns-client --timeout=5m
     if kubectl -n diagnostics-network exec dns-client -- \
         nslookup kubernetes.default.svc.cluster.local; then
         echo "The DNS-blocking NetworkPolicy did not block the selected pod." >&2

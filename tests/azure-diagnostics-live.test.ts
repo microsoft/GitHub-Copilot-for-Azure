@@ -56,7 +56,10 @@ describe("Azure Diagnostics live AKS evaluations", () => {
       "evals/azure-skills/azure-diagnostics/live/eval.yaml",
     )) as {
       defaults?: { executor?: string };
-      stimuli?: Array<{ tags?: { liveScenario?: string; cost?: string } }>;
+      stimuli?: Array<{
+        prompt?: string;
+        tags?: { liveScenario?: string; cost?: string };
+      }>;
     };
 
     const scenarios = evaluation.stimuli?.map(
@@ -69,6 +72,9 @@ describe("Azure Diagnostics live AKS evaluations", () => {
       "dns-network-policy",
     ]);
     expect(evaluation.defaults?.executor).toBe("copilot-sdk-agent-runner");
+    expect(evaluation.stimuli?.every(
+      stimulus => stimulus.prompt?.includes("Use the azure-diagnostics skill."),
+    )).toBe(true);
     expect(evaluation.stimuli?.every(
       stimulus => stimulus.tags?.cost === "azure",
     )).toBe(true);
@@ -92,5 +98,8 @@ describe("Azure Diagnostics live AKS evaluations", () => {
     expect(script).toContain('"${action}_coredns_scheduling"');
     expect(script).toContain('"${action}_missing_service_endpoints"');
     expect(script).toContain('"${action}_dns_network_policy"');
+    expect(script.indexOf(
+      "wait --for=condition=Ready pod/dns-client",
+    )).toBeLessThan(script.indexOf("name: deny-dns-egress"));
   });
 });
