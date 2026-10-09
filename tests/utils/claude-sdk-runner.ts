@@ -125,7 +125,7 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
     try {
       await runConfig.setup?.(workspace);
 
-      const { skillsLoaded, skillDirectories } = await getSkillsForTest(
+      const { skillsLoaded, skillDirectories, disabledSkills } = await getSkillsForTest(
         runConfig.requiredSkills,
         runConfig.includeSkills,
       );
@@ -156,6 +156,9 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
         maxTurns: runConfig.maxTurns,
         model: runConfig.model,
         plugins,
+        skills: disabledSkills ? skillsLoaded.filter((ref) => {
+          return disabledSkills.every(disabledRef => disabledRef.name !== ref.name)
+        }).map(ref => ref.name) : undefined,
         systemPrompt: toClaudeSystemPrompt(runConfig),
       };
 
