@@ -159,8 +159,7 @@ export abstract class SdkAgentExecutor implements Executor {
           .filter(event => event.type === "assistant_message")
           .map(event => event.data.content)
           .join("\n");
-const sessionId = agentMetadata.events
-          .find(event => event.type === "session.start")?.data.sessionId;
+        const sessionId = agentMetadata.events.find(event => event.type === "session.start")?.data.sessionId;
 
         await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
 
