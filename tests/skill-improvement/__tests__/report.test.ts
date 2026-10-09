@@ -100,20 +100,13 @@ function decideHeldOut(
   candidate: AggregatedTrial[],
 ) {
   const runSpec = spec();
-  runSpec.heldOutAcceptance = {
-    enabled: true,
+  runSpec.acceptance = {
+    ...runSpec.acceptance,
     minimumQualityImprovementPoints: 0,
     maximumEvalRegressionPoints: 0,
     maximumModelRegressionPoints: 0,
   };
-  return decideAcceptance(
-    runSpec,
-    reference,
-    candidate,
-    1000,
-    1000,
-    runSpec.heldOutAcceptance
-  );
+  return decideAcceptance(runSpec, reference, candidate, 1000, 1000);
 }
 
 describe("skill improvement reporting", () => {

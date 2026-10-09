@@ -587,6 +587,18 @@ export async function executeSkillImprovement(
       && spec.heldOutAcceptance?.enabled
       && plan.heldOutPromptCount > 0
     ) {
+      const heldOutSpec: SkillImprovementRunSpec = {
+        ...spec,
+        acceptance: {
+          ...spec.acceptance,
+          minimumQualityImprovementPoints:
+            spec.heldOutAcceptance.minimumQualityImprovementPoints,
+          maximumEvalRegressionPoints:
+            spec.heldOutAcceptance.maximumEvalRegressionPoints,
+          maximumModelRegressionPoints:
+            spec.heldOutAcceptance.maximumModelRegressionPoints,
+        },
+      };
       const finalWorktree = path.join(worktreeRoot, "final-candidate");
       try {
         await createWorktree(options.repoRoot, finalWorktree, bestCandidateCommit!);
@@ -618,12 +630,11 @@ export async function executeSkillImprovement(
         addUsage(usage, candidateHeldOut);
         enforceActualUsage(spec, usage);
         const heldOutDecision = decideAcceptance(
-          spec,
+          heldOutSpec,
           aggregateJudgments(baselineHeldOut.trials),
           aggregateJudgments(candidateHeldOut.trials),
           baselineSkillTokens,
-          estimateSkillTokens(finalWorktree, spec),
-          spec.heldOutAcceptance
+          estimateSkillTokens(finalWorktree, spec)
         );
         heldOut = {
           decision: heldOutDecision,
