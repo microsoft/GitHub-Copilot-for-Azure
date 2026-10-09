@@ -10,18 +10,32 @@ function read(relativePath: string): string {
 }
 
 describe("Azure Diagnostics live AKS evaluations", () => {
-  test("remain manual and clean up the ephemeral resource group", () => {
+  test("run only by dispatch or an explicit same-repository PR label", () => {
     const workflow = parse(read(
       ".github/workflows/test-azure-diagnostics-live.yml",
     )) as {
-      on?: Record<string, unknown>;
-      jobs?: Record<string, { steps?: Array<Record<string, unknown>> }>;
+      on?: {
+        workflow_dispatch?: unknown;
+        pull_request?: { types?: string[] };
+        schedule?: unknown;
+      };
+      jobs?: Record<string, {
+        if?: string;
+        steps?: Array<Record<string, unknown>>;
+      }>;
     };
 
     expect(workflow.on).toHaveProperty("workflow_dispatch");
+    expect(workflow.on?.pull_request?.types).toEqual(["labeled"]);
     expect(workflow.on).not.toHaveProperty("schedule");
 
-    const steps = workflow.jobs?.["live-aks"]?.steps ?? [];
+    const liveJob = workflow.jobs?.["live-aks"];
+    expect(liveJob?.if).toContain("github.event.label.name == 'run-live-aks'");
+    expect(liveJob?.if).toContain(
+      "github.event.pull_request.head.repo.full_name == github.repository",
+    );
+
+    const steps = liveJob?.steps ?? [];
     const deployStep = steps.find(step =>
       step.name === "Deploy ephemeral AKS cluster from Bicep"
     );

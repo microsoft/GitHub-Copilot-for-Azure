@@ -18,14 +18,24 @@ on:
         required: false
         type: string
         default: eastus2
+  pull_request:
+    types:
+      - labeled
 
 concurrency:
-  group: azure-diagnostics-live-aks
+  group: azure-diagnostics-live-aks-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
   live-aks:
     name: Live AKS diagnostics
+    if: >-
+      github.event_name == 'workflow_dispatch'
+      || (
+        github.event_name == 'pull_request'
+        && github.event.label.name == 'run-live-aks'
+        && github.event.pull_request.head.repo.full_name == github.repository
+      )
     environment: cideploytest
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -33,7 +43,7 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      MODEL_OVERRIDE: ${{ inputs.model-override }}
+      MODEL_OVERRIDE: ${{ inputs.model-override || 'claude-sonnet-5' }}
       LIVE_EVAL_SPEC: ../evals/azure-skills/azure-diagnostics/live/eval.yaml
       LIVE_SCENARIO_SCRIPT: ../evals/azure-skills/azure-diagnostics/live/manage-scenario.sh
 
@@ -107,7 +117,7 @@ jobs:
           delete_after=$(date -u -d "+1 day" +%Y-%m-%d)
           az group create \
             --name "$LIVE_RESOURCE_GROUP" \
-            --location "${{ inputs.location }}" \
+            --location "${{ inputs.location || 'eastus2' }}" \
             --tags "DeleteAfter=${delete_after}" "Owners=KarishmaGhiya" \
               "Purpose=azure-diagnostics-live-evals" \
             --output none
@@ -118,7 +128,7 @@ jobs:
           az deployment group create \
             --resource-group "$LIVE_RESOURCE_GROUP" \
             --template-file ../evals/azure-skills/azure-diagnostics/live/infra/main.bicep \
-            --parameters clusterName="$LIVE_CLUSTER_NAME" location="${{ inputs.location }}" \
+            --parameters clusterName="$LIVE_CLUSTER_NAME" location="${{ inputs.location || 'eastus2' }}" \
             --output none
           az aks get-credentials \
             --resource-group "$LIVE_RESOURCE_GROUP" \

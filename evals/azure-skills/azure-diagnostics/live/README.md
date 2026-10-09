@@ -12,8 +12,10 @@ sequentially, and deletes the resource group even when a test fails.
 | DNS NetworkPolicy | Select one pod with an egress policy that omits port 53 | DNS is blocked only for the selected pod and namespace |
 
 The scenarios are disruptive or incur Azure cost, so they are not loaded by
-the normal nightly skill runner. Run them through the manual
-`Azure Diagnostics - live AKS evaluations` workflow.
+the normal nightly skill runner. To run them from a same-repository pull
+request, add the `run-live-aks` label. Remove and re-add the label to start
+another run. After the workflow is merged, it can also be started manually
+from the Actions tab.
 
 The workflow identity requires permission to create and delete resource groups,
 deploy AKS, and obtain cluster admin credentials in the integration-test
