@@ -101,5 +101,7 @@ describe("Azure Diagnostics live AKS evaluations", () => {
     expect(script.indexOf(
       "wait --for=condition=Ready pod/dns-client",
     )).toBeLessThan(script.indexOf("name: deny-dns-egress"));
+    expect(script).toContain("- infinity");
+    expect(script).toContain("describe pod/dns-client");
   });
 });

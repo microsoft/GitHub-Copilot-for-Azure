@@ -134,9 +134,13 @@ spec:
       image: registry.k8s.io/e2e-test-images/dnsutils:1.3
       command:
         - sleep
-        - "3600"
+        - infinity
 EOF
-    kubectl -n diagnostics-network wait --for=condition=Ready pod/dns-client --timeout=5m
+    if ! kubectl -n diagnostics-network wait \
+        --for=condition=Ready pod/dns-client --timeout=5m; then
+        kubectl -n diagnostics-network describe pod/dns-client >&2
+        exit 1
+    fi
 
     kubectl apply -f - <<'EOF'
 apiVersion: networking.k8s.io/v1
