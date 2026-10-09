@@ -32,7 +32,7 @@ models:
     - gpt-6-luna
 
 experiment:
-  repetitions: 1
+  repetitions: 5
   conditions:
     - name: Agent only
       skill: disabled
@@ -48,7 +48,7 @@ experiment:
       mcp: enabled
 
 improvementAgent:
-  enabled: true
+  enabled: false
   model: claude-sonnet-5
 
 acceptance:
@@ -58,7 +58,7 @@ acceptance:
   minimumSkillInvocationRate: 0.8
 
 heldOutAcceptance:
-  enabled: true
+  enabled: false
   minimumQualityImprovementPoints: 0
   maximumEvalRegressionPoints: 0
   maximumModelRegressionPoints: 0
@@ -78,9 +78,9 @@ resources:
     startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 3
-  maxAnswerGenerations: 950
-  maxJudgeCalls: 950
+  maxIterations: 0
+  maxAnswerGenerations: 1820
+  maxJudgeCalls: 1820
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
   generationWorkersPerVallyProcess: 1
