@@ -16,6 +16,18 @@ services:
 
 Use REST field names, normally `snake_case`, inside `tools[]`. azd strictly validates the harness and Copilot toolset; most other nested tool fields pass through to Foundry.
 
+## Direct tools
+
+Prefer direct tool definitions unless the user explicitly requests a Toolbox:
+
+```yaml
+tools:
+  - type: web_search
+  - type: code_interpreter
+```
+
+Read [Managed Harness Agent Tools](tools/managed-harness-agent/agent-tools.md) for the supported tools, required fields, connections, and per-tool authoring references.
+
 ## Toolbox attachment
 
 A Managed Harness Agent prefers direct tools. When the user explicitly requests an existing Toolbox, create or update it separately with `azd ai toolbox`, then attach its versioned MCP endpoint as a direct tool:
@@ -73,7 +85,7 @@ azd ai skill create issue-triage \
 
 Use the returned version in `azure.yaml`. For updates, run `azd ai skill update` and replace the pinned version.
 
-Do not declare `host: azure.ai.skill` in this phase: that would make `azd deploy` manage the Skill lifecycle. The current `azure.ai.agents` extension may reject object-form Skill references because its authoring schema still models `skills` as strings; treat that as a known extension bug rather than changing the intended Foundry payload.
+Do not declare `host: azure.ai.skill` in this phase: that would make `azd deploy` manage the Skill lifecycle.
 
 ## Validation
 
