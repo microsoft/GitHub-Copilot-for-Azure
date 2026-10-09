@@ -93,6 +93,7 @@ export abstract class SdkAgentExecutor implements Executor {
     const runConfig: AgentRunConfig = {
       workspace: workDir,
       env: {
+        ...options.env,
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
       },
       model,
