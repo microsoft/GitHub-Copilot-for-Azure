@@ -101,7 +101,11 @@ describe("Azure Diagnostics live AKS evaluations", () => {
     expect(script.indexOf(
       "wait --for=condition=Ready pod/dns-client",
     )).toBeLessThan(script.indexOf("name: deny-dns-egress"));
-    expect(script).toContain("- infinity");
+    expect(script).toContain("e2e-test-images/agnhost:2.53");
+    expect(script).toContain("- pause");
+    expect(script).toContain(
+      "/agnhost connect kubernetes.default.svc.cluster.local:443 --timeout=5s",
+    );
     expect(script).toContain("describe pod/dns-client");
   });
 });

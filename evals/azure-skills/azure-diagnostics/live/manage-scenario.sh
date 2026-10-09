@@ -130,11 +130,10 @@ metadata:
     app: dns-client
 spec:
   containers:
-    - name: client
-      image: registry.k8s.io/e2e-test-images/dnsutils:1.3
-      command:
-        - sleep
-        - infinity
+  - name: client
+    image: registry.k8s.io/e2e-test-images/agnhost:2.53
+    args:
+      - pause
 EOF
     if ! kubectl -n diagnostics-network wait \
         --for=condition=Ready pod/dns-client --timeout=5m; then
@@ -160,7 +159,7 @@ spec:
           port: 443
 EOF
     if kubectl -n diagnostics-network exec dns-client -- \
-        nslookup kubernetes.default.svc.cluster.local; then
+        /agnhost connect kubernetes.default.svc.cluster.local:443 --timeout=5s; then
         echo "The DNS-blocking NetworkPolicy did not block the selected pod." >&2
         exit 1
     fi
