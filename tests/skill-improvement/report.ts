@@ -113,6 +113,7 @@ export type SkillImprovementReport = {
   baselineSkillTokens: number;
   baselineTrials: AggregatedTrial[];
   iterations: IterationReport[];
+  terminationReason?: "no-actionable-failures";
   heldOut?: {
     decision: AcceptanceDecision;
     baselineTrials: AggregatedTrial[];
@@ -498,6 +499,7 @@ export function buildFailurePacket(
   trials: AggregatedTrial[],
   previousDecision?: AcceptanceDecision,
   previousRefinementDecision?: RefinementDecision,
+  previousValidationErrors: string[] = [],
 ): string {
   const failures = trials
     .filter(trial => !trial.passed || trial.judgeDisagreement)
@@ -525,6 +527,14 @@ export function buildFailurePacket(
       }
     }
     lines.push("");
+  }
+  if (previousValidationErrors.length > 0) {
+    lines.push(
+      "## Previous candidate validation failures",
+      "",
+      ...previousValidationErrors.map(error => `- ${error}`),
+      ""
+    );
   }
   lines.push("## Development failures and disagreements", "");
   for (const failure of failures) {
@@ -744,6 +754,9 @@ export function renderReport(report: SkillImprovementReport): string {
     `- Baseline: \`${report.baselineCommit}\``,
     `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
     `- Final acceptance: **${report.finalAccepted ? "passed" : "not passed"}**`,
+    ...(report.terminationReason
+      ? [`- Hill-climbing termination: \`${report.terminationReason}\``]
+      : []),
     `- Answer generations: ${report.usage.answerGenerations}/${report.spec.limits.maxAnswerGenerations}`,
     `- Judge calls: ${report.usage.judgeCalls}/${report.spec.limits.maxJudgeCalls}`,
     `- Duration: ${report.usage.durationMinutes.toFixed(1)}/${report.spec.limits.maxDurationMinutes} minutes`,
@@ -876,6 +889,9 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     `- Status: **${report.status}**`,
     `- Baseline: \`${report.baselineCommit}\``,
     `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
+    ...(report.terminationReason
+      ? [`- Hill-climbing termination: \`${report.terminationReason}\``]
+      : []),
     `- Answer models: ${report.spec.models.answers.map(model => `\`${model}\``).join(", ")}`,
     `- Judge models: ${report.spec.models.judges.map(model => `\`${model}\``).join(", ")}`,
     `- Answer generations: ${report.usage.answerGenerations}/${report.spec.limits.maxAnswerGenerations}`,
