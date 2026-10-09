@@ -147,7 +147,7 @@ describe("skill improvement configuration", () => {
       maximumEvalRegressionPoints: 0,
       maximumModelRegressionPoints: 0,
     });
-    expect(runSpec.experiment.repetitions).toBe(5);
+    expect(runSpec.experiment.repetitions).toBe(1);
     expect(runSpec.improvementAgent.enabled).toBe(false);
     expect(runSpec.limits.maxIterations).toBe(0);
     expect(runSpec.evaluations.heldOut).toEqual([
@@ -166,8 +166,8 @@ describe("skill improvement configuration", () => {
     expect(runSpec.resources?.kusto?.resourceGroup).toBe(
       "resource-group-from-environment"
     );
-    expect(runSpec.limits.maxAnswerGenerations).toBeGreaterThanOrEqual(550);
-    expect(runSpec.limits.maxJudgeCalls).toBeGreaterThanOrEqual(550);
+    expect(runSpec.limits.maxAnswerGenerations).toBe(364);
+    expect(runSpec.limits.maxJudgeCalls).toBe(364);
   });
 
   test("reports missing run-spec environment variables", () => {
