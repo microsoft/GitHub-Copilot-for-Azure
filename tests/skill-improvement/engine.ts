@@ -584,7 +584,7 @@ export async function executeSkillImprovement(
     let finalAccepted = Boolean(bestCandidateCommit);
     if (
       finalAccepted
-      && spec.acceptance.requireHeldOutImprovement
+      && spec.heldOutAcceptance?.enabled
       && plan.heldOutPromptCount > 0
     ) {
       const finalWorktree = path.join(worktreeRoot, "final-candidate");
@@ -622,7 +622,8 @@ export async function executeSkillImprovement(
           aggregateJudgments(baselineHeldOut.trials),
           aggregateJudgments(candidateHeldOut.trials),
           baselineSkillTokens,
-          estimateSkillTokens(finalWorktree, spec)
+          estimateSkillTokens(finalWorktree, spec),
+          spec.heldOutAcceptance
         );
         heldOut = {
           decision: heldOutDecision,

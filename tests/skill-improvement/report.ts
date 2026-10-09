@@ -82,6 +82,12 @@ export type AcceptanceDecision = {
   gates: AcceptanceGate[];
 };
 
+export type AcceptanceThresholds = {
+  minimumQualityImprovementPoints: number;
+  maximumEvalRegressionPoints: number;
+  maximumModelRegressionPoints: number;
+};
+
 export type RefinementDecision = {
   retained: boolean;
   reasons: string[];
@@ -306,59 +312,60 @@ export function decideAcceptance(
   candidateTrials: AggregatedTrial[],
   baselineSkillTokens: number,
   candidateSkillTokens: number,
+  thresholds: AcceptanceThresholds = spec.acceptance,
 ): AcceptanceDecision {
   const comparison = compareTrials(referenceTrials, candidateTrials);
   const reasons: string[] = [];
   const gates: AcceptanceGate[] = [];
   const qualityPassed =
     comparison.qualityImprovementPoints
-    >= spec.acceptance.minimumQualityImprovementPoints;
+    >= thresholds.minimumQualityImprovementPoints;
   gates.push({
     label: "Quality improvement",
     observed: `${comparison.qualityImprovementPoints.toFixed(2)} points`,
-    requirement: `at least ${spec.acceptance.minimumQualityImprovementPoints.toFixed(2)} points`,
+    requirement: `at least ${thresholds.minimumQualityImprovementPoints.toFixed(2)} points`,
     passed: qualityPassed,
   });
   if (!qualityPassed) {
     reasons.push(
       `Quality improved by ${comparison.qualityImprovementPoints.toFixed(2)} points; `
-      + `${spec.acceptance.minimumQualityImprovementPoints.toFixed(2)} required.`
+      + `${thresholds.minimumQualityImprovementPoints.toFixed(2)} required.`
     );
   }
   const worstModel = [...comparison.byModel]
     .sort((a, b) => a.differencePoints - b.differencePoints)[0];
   const modelRegressionPassed = !worstModel
-    || worstModel.differencePoints >= -spec.acceptance.maximumModelRegressionPoints;
+    || worstModel.differencePoints >= -thresholds.maximumModelRegressionPoints;
   gates.push({
     label: "Worst answer-model regression",
     observed: worstModel
       ? `${worstModel.differencePoints.toFixed(2)} points (${worstModel.name})`
       : "N/A",
-    requirement: `no worse than -${spec.acceptance.maximumModelRegressionPoints.toFixed(2)} points`,
+    requirement: `no worse than -${thresholds.maximumModelRegressionPoints.toFixed(2)} points`,
     passed: modelRegressionPassed,
   });
   if (!modelRegressionPassed && worstModel) {
     reasons.push(
       `${worstModel.name} regressed by ${Math.abs(worstModel.differencePoints).toFixed(2)} points; `
-      + `${spec.acceptance.maximumModelRegressionPoints.toFixed(2)} allowed.`
+      + `${thresholds.maximumModelRegressionPoints.toFixed(2)} allowed.`
     );
   }
   const worstEval = [...comparison.byEval]
     .sort((a, b) => a.differencePoints - b.differencePoints)[0];
   const evalRegressionPassed = !worstEval
-    || worstEval.differencePoints >= -spec.acceptance.maximumEvalRegressionPoints;
+    || worstEval.differencePoints >= -thresholds.maximumEvalRegressionPoints;
   gates.push({
     label: "Worst evaluation regression",
     observed: worstEval
       ? `${worstEval.differencePoints.toFixed(2)} points (${worstEval.name})`
       : "N/A",
-    requirement: `no worse than -${spec.acceptance.maximumEvalRegressionPoints.toFixed(2)} points`,
+    requirement: `no worse than -${thresholds.maximumEvalRegressionPoints.toFixed(2)} points`,
     passed: evalRegressionPassed,
   });
   if (!evalRegressionPassed && worstEval) {
     reasons.push(
       `${worstEval.name} regressed by ${Math.abs(worstEval.differencePoints).toFixed(2)} points; `
-      + `${spec.acceptance.maximumEvalRegressionPoints.toFixed(2)} allowed.`
+      + `${thresholds.maximumEvalRegressionPoints.toFixed(2)} allowed.`
     );
   }
   const skillIncreasePercent = baselineSkillTokens === 0
