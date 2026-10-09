@@ -236,6 +236,10 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
 
       for (const event of agentMetadata.events) {
         if (event.type === "assistant.usage") {
+          // Todo: fix a potential bug in input token computation
+          // The inputTokens reported by Copilot SDK is suspected to include the cacheWriteTokens.
+          // Recent models have started pricing inputTokens and cacheWriteTokens at different prices.
+          // We should find out if inputTokens includes cacheWriteTokens and subtract it before reporting to compute cost accurately.
           tokenUsage.inputTokens += event.data.inputTokens ?? 0;
           tokenUsage.outputTokens += event.data.outputTokens ?? 0;
           tokenUsage.cacheReadTokens += event.data.cacheReadTokens ?? 0;
@@ -247,6 +251,8 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
             model: event.data.model,
             inputTokens: event.data.inputTokens ?? 0,
             outputTokens: event.data.outputTokens ?? 0,
+            cacheReadTokens: event.data.cacheReadTokens ?? 0,
+            cacheWriteTokens: event.data.cacheWriteTokens ?? 0,
             durationMs: event.data.duration ?? 0,
             initiator: event.data.initiator,
           });

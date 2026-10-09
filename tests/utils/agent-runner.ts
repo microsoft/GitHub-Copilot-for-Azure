@@ -33,6 +33,8 @@ export type TokenUsage = {
     model: string;
     inputTokens: number;
     outputTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
     durationMs: number;
     initiator?: string;
   }>;
@@ -967,6 +969,12 @@ export function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): strin
 
 export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
   const result: TrajectoryEvent[] = [];
+  const invokedSkillNames = new Set(
+    agentMetadata.events
+      .filter((event): event is Extract<SessionEvent, { type: "skill.invoked" }> =>
+        event.type === "skill.invoked")
+      .map(event => event.data.name),
+  );
 
   // tool.execution_complete only carries `toolCallId`, not `toolName`. Build
   // a lookup so we can populate `tool_result.data.toolName` from the matching
@@ -1033,14 +1041,16 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
         } else {
           skillName = "unknown";
         }
-        result.push({
-          type: "skill_activation",
-          timestamp,
-          data: {
-            name: skillName,
-            path: "todo: not supported"
-          },
-        });
+        if (!invokedSkillNames.has(skillName)) {
+          result.push({
+            type: "skill_activation",
+            timestamp,
+            data: {
+              name: skillName,
+              path: "Not supported. Skill invocation detected from tool.execution_start event without matching skill.invoked event."
+            },
+          });
+        }
       }
       result.push({
         type: "tool_call",
