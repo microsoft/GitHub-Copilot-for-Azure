@@ -732,6 +732,8 @@ function renderChangedOutcomes(comparison: Comparison): string[] {
 }
 
 export function renderReport(report: SkillImprovementReport): string {
+  const baselineOnly = !report.spec.improvementAgent.enabled
+    || report.spec.limits.maxIterations === 0;
   const lines = [
     renderReportSummary(report).trimEnd(),
     "",
@@ -742,8 +744,12 @@ export function renderReport(report: SkillImprovementReport): string {
     `- Run ID: \`${report.runId}\``,
     `- Status: **${report.status}**`,
     `- Baseline: \`${report.baselineCommit}\``,
-    `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
-    `- Final acceptance: **${report.finalAccepted ? "passed" : "not passed"}**`,
+    ...(baselineOnly
+      ? ["- Candidate evaluation: **not configured (baseline-only run)**"]
+      : [
+        `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
+        `- Final acceptance: **${report.finalAccepted ? "passed" : "not passed"}**`,
+      ]),
     `- Answer generations: ${report.usage.answerGenerations}/${report.spec.limits.maxAnswerGenerations}`,
     `- Judge calls: ${report.usage.judgeCalls}/${report.spec.limits.maxJudgeCalls}`,
     `- Duration: ${report.usage.durationMinutes.toFixed(1)}/${report.spec.limits.maxDurationMinutes} minutes`,
@@ -863,11 +869,15 @@ export function renderReport(report: SkillImprovementReport): string {
 }
 
 export function renderReportSummary(report: SkillImprovementReport): string {
+  const baselineOnly = !report.spec.improvementAgent.enabled
+    || report.spec.limits.maxIterations === 0;
   const outcome = report.status === "failed"
     ? "RUN FAILED"
-    : report.finalAccepted
-      ? "ACCEPTED"
-      : "NOT ACCEPTED";
+    : baselineOnly
+      ? "BASELINE EVALUATION COMPLETED"
+      : report.finalAccepted
+        ? "ACCEPTED"
+        : "NOT ACCEPTED";
   const lines = [
     `# Final outcome: ${outcome}`,
     "",
@@ -875,7 +885,9 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     "",
     `- Status: **${report.status}**`,
     `- Baseline: \`${report.baselineCommit}\``,
-    `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
+    ...(baselineOnly
+      ? ["- Candidate evaluation: **not configured (baseline-only run)**"]
+      : [`- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`]),
     `- Answer models: ${report.spec.models.answers.map(model => `\`${model}\``).join(", ")}`,
     `- Judge models: ${report.spec.models.judges.map(model => `\`${model}\``).join(", ")}`,
     `- Answer generations: ${report.usage.answerGenerations}/${report.spec.limits.maxAnswerGenerations}`,
@@ -886,43 +898,54 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     "",
     ...renderBaselineArms(report),
     "",
-    "## Candidate decisions",
-    "",
-    "| Iteration | Decision | Candidate pass rate | Improvement | Avg. answer-token change (diagnostic) | Skill Markdown token growth (gate) |",
-    "| ---: | --- | ---: | ---: | ---: | ---: |",
   ];
-  for (const iteration of report.iterations) {
-    const decision = iteration.decision;
-    const iterationDecision = decision
-      ? decision.accepted
-        ? "Accepted"
-        : iteration.refinementDecision?.retained
-          ? "Retained for refinement"
-          : "Rejected"
-      : "Not evaluated";
+  if (baselineOnly) {
     lines.push(
-      `| ${iteration.iteration} | ${iterationDecision} | `
-      + `${decision ? percent(decision.comparison.candidate.passRate) : "N/A"} | `
-      + `${decision ? `${decision.comparison.qualityImprovementPoints.toFixed(2)} points` : "N/A"} | `
-      + `${decision ? `${decision.comparison.averageAnswerTokenChangePercent.toFixed(2)}%` : "N/A"} | `
-      + `${decision ? `${decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%` : "N/A"} |`
+      "## Candidate evaluation",
+      "",
+      "No candidate iterations were configured. This report evaluates the baseline arms only; acceptance and rejection do not apply.",
+      ""
     );
+  } else {
+    lines.push(
+      "## Candidate decisions",
+      "",
+      "| Iteration | Decision | Candidate pass rate | Improvement | Avg. answer-token change (diagnostic) | Skill Markdown token growth (gate) |",
+      "| ---: | --- | ---: | ---: | ---: | ---: |"
+    );
+    for (const iteration of report.iterations) {
+      const decision = iteration.decision;
+      const iterationDecision = decision
+        ? decision.accepted
+          ? "Accepted"
+          : iteration.refinementDecision?.retained
+            ? "Retained for refinement"
+            : "Rejected"
+        : "Not evaluated";
+      lines.push(
+        `| ${iteration.iteration} | ${iterationDecision} | `
+        + `${decision ? percent(decision.comparison.candidate.passRate) : "N/A"} | `
+        + `${decision ? `${decision.comparison.qualityImprovementPoints.toFixed(2)} points` : "N/A"} | `
+        + `${decision ? `${decision.comparison.averageAnswerTokenChangePercent.toFixed(2)}%` : "N/A"} | `
+        + `${decision ? `${decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%` : "N/A"} |`
+      );
+    }
+    lines.push("", "## Rejection and validation reasons", "");
+    const reasons = report.iterations.flatMap(iteration => [
+      ...iteration.validationErrors.map(reason => `- Iteration ${iteration.iteration} validation: ${reason}`),
+      ...(iteration.decision?.reasons ?? []).map(
+        reason => `- Iteration ${iteration.iteration} acceptance: ${reason}`
+      ),
+      ...(
+        iteration.refinementDecision && !iteration.refinementDecision.retained
+          ? iteration.refinementDecision.reasons.map(
+            reason => `- Iteration ${iteration.iteration} refinement: ${reason}`
+          )
+          : []
+      ),
+    ]);
+    lines.push(...(reasons.length > 0 ? reasons : ["- None"]), "");
   }
-  lines.push("", "## Rejection and validation reasons", "");
-  const reasons = report.iterations.flatMap(iteration => [
-    ...iteration.validationErrors.map(reason => `- Iteration ${iteration.iteration} validation: ${reason}`),
-    ...(iteration.decision?.reasons ?? []).map(
-      reason => `- Iteration ${iteration.iteration} acceptance: ${reason}`
-    ),
-    ...(
-      iteration.refinementDecision && !iteration.refinementDecision.retained
-        ? iteration.refinementDecision.reasons.map(
-          reason => `- Iteration ${iteration.iteration} refinement: ${reason}`
-        )
-        : []
-    ),
-  ]);
-  lines.push(...(reasons.length > 0 ? reasons : ["- None"]), "");
 
   for (const iteration of report.iterations) {
     if (!iteration.decision) {

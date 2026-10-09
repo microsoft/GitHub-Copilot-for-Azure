@@ -34,15 +34,21 @@ models:
 experiment:
   repetitions: 1
   conditions:
+    - name: Agent only
+      skill: disabled
+      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
+    - name: MCP only
+      skill: disabled
+      mcp: enabled
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
 
 improvementAgent:
-  enabled: true
+  enabled: false
   model: claude-sonnet-5
 
 acceptance:
@@ -50,7 +56,7 @@ acceptance:
   maximumEvalRegressionPoints: 5
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: true
+  requireHeldOutImprovement: false
 
 refinement:
   minimumScoreImprovementPoints: 1
@@ -67,9 +73,9 @@ resources:
     startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 3
-  maxAnswerGenerations: 800
-  maxJudgeCalls: 800
+  maxIterations: 0
+  maxAnswerGenerations: 364
+  maxJudgeCalls: 364
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15

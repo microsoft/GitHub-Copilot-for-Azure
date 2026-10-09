@@ -257,6 +257,45 @@ describe("skill improvement reporting", () => {
     expect(rendered).not.toContain(`${path.parse(process.cwd()).root}runner`);
   });
 
+  test("reports zero-iteration runs as completed baseline evaluations", () => {
+    const runSpec = spec();
+    runSpec.improvementAgent.enabled = false;
+    runSpec.limits.maxIterations = 0;
+    const report: SkillImprovementReport = {
+      runId: "run",
+      generatedAt: "2026-10-09T00:00:00Z",
+      status: "completed",
+      spec: runSpec,
+      plan: {
+        developmentPromptCount: 1,
+        heldOutPromptCount: 0,
+        baselineAnswerGenerations: 4,
+        candidateAnswerGenerationsPerIteration: 0,
+        heldOutAnswerGenerations: 0,
+        maximumAnswerGenerations: 4,
+        maximumJudgeCalls: 8,
+      },
+      baselineCommit: "abc",
+      baselineSkillTokens: 100,
+      baselineTrials: [],
+      iterations: [],
+      finalAccepted: false,
+      usage: { answerGenerations: 4, judgeCalls: 8, durationMinutes: 1 },
+    };
+
+    const summary = renderReportSummary(report);
+    const detailed = renderReport(report);
+
+    expect(summary.startsWith("# Final outcome: BASELINE EVALUATION COMPLETED")).toBe(true);
+    expect(summary).toContain("Candidate evaluation: **not configured (baseline-only run)**");
+    expect(summary).toContain("acceptance and rejection do not apply");
+    expect(summary).not.toContain("## Candidate decisions");
+    expect(summary).not.toContain("## Rejection and validation reasons");
+    expect(summary).not.toContain("NOT ACCEPTED");
+    expect(detailed).toContain("Candidate evaluation: **not configured (baseline-only run)**");
+    expect(detailed).not.toContain("Final acceptance: **not passed**");
+  });
+
   test("writes the concise summary and relative workflow metadata paths", () => {
     const runSpec = spec();
     const report: SkillImprovementReport = {
