@@ -36,6 +36,7 @@ describe("Azure Diagnostics live AKS evaluations", () => {
     );
 
     const steps = liveJob?.steps ?? [];
+    const checkoutStep = steps.find(step => step.name === "Checkout repository");
     const deployStep = steps.find(step =>
       step.name === "Deploy ephemeral AKS cluster from Bicep"
     );
@@ -43,6 +44,7 @@ describe("Azure Diagnostics live AKS evaluations", () => {
       step.name === "Delete ephemeral resource group"
     );
 
+    expect(checkoutStep?.with).toEqual({ "fetch-depth": 0 });
     expect(String(deployStep?.run)).toContain("live/infra/main.bicep");
     expect(cleanupStep?.if).toBe("always()");
     expect(String(cleanupStep?.run)).toContain("az group delete");
