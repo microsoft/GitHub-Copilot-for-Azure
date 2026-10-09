@@ -48,7 +48,12 @@ function spec(): SkillImprovementRunSpec {
       minimumQualityImprovementPoints: 2,
       maximumEvalRegressionPoints: 5,
       maximumModelRegressionPoints: 5,
-      requireHeldOutImprovement: true,
+    },
+    heldOutAcceptance: {
+      enabled: true,
+      minimumQualityImprovementPoints: 0,
+      maximumEvalRegressionPoints: 0,
+      maximumModelRegressionPoints: 0,
     },
     refinement: {
       minimumScoreImprovementPoints: 1,
@@ -84,7 +89,12 @@ describe("skill improvement configuration", () => {
     )).toBe(true);
     expect(runSpec.output.issue).toBe("never");
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
-    expect(runSpec.acceptance.requireHeldOutImprovement).toBe(true);
+    expect(runSpec.heldOutAcceptance).toEqual({
+      enabled: true,
+      minimumQualityImprovementPoints: 0,
+      maximumEvalRegressionPoints: 0,
+      maximumModelRegressionPoints: 0,
+    });
     expect(runSpec.evaluations.heldOut).toEqual([
       "held-out-troubleshoot-remediate.eval.yaml",
     ]);
@@ -495,7 +505,7 @@ describe("skill improvement configuration", () => {
     })).toThrow("maxAnswerGenerations");
   });
 
-  test("requires held-out files when held-out improvement is enabled", () => {
+  test("requires held-out files when held-out acceptance is enabled", () => {
     const invalid = spec();
     invalid.evaluations.heldOut = [];
     expect(() => validateRunSpec(invalid)).toThrow(
@@ -570,20 +580,41 @@ describe("skill improvement configuration", () => {
     }
   });
 
-  test("requires a candidate iteration for held-out improvement", () => {
+  test("requires a candidate iteration for held-out acceptance", () => {
     const invalid = spec();
     invalid.limits.maxIterations = 0;
     expect(() => validateRunSpec(invalid)).toThrow(
-      "requireHeldOutImprovement requires at least one candidate iteration"
+      "heldOutAcceptance requires at least one candidate iteration"
     );
   });
 
-  test("validates requireHeldOutImprovement without an invocation threshold", () => {
+  test("rejects the deprecated held-out improvement boolean", () => {
     const invalid = spec();
-    delete invalid.acceptance.minimumSkillInvocationRate;
-    invalid.acceptance.requireHeldOutImprovement = "yes" as unknown as boolean;
+    (invalid.acceptance as typeof invalid.acceptance & {
+      requireHeldOutImprovement?: boolean;
+    }).requireHeldOutImprovement = true;
     expect(() => validateRunSpec(invalid)).toThrow(
-      "acceptance.requireHeldOutImprovement must be a boolean"
+      "configure heldOutAcceptance instead"
+    );
+  });
+
+  test.each([
+    ["minimumQualityImprovementPoints", -1],
+    ["maximumEvalRegressionPoints", -1],
+    ["maximumModelRegressionPoints", -1],
+  ] as const)("rejects invalid held-out threshold %s", (field, value) => {
+    const invalid = spec();
+    invalid.heldOutAcceptance![field] = value;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      `heldOutAcceptance.${field}`
+    );
+  });
+
+  test("validates the held-out enabled flag", () => {
+    const invalid = spec();
+    invalid.heldOutAcceptance!.enabled = "yes" as unknown as boolean;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "heldOutAcceptance.enabled must be a boolean"
     );
   });
 

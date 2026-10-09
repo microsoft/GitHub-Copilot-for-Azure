@@ -8,6 +8,7 @@ import {
   renderReport,
   renderReportSummary,
   writeReport,
+  type AggregatedTrial,
   type SkillImprovementReport,
 } from "../report.ts";
 import type {
@@ -32,13 +33,14 @@ function judged(
   tokens: number,
   condition: EvaluationCondition = skillWithMcp,
   targetSkillInvoked = true,
+  evalFile = "quality.eval.yaml",
 ): JudgedTrial {
   return {
     phase: "candidate",
     condition,
     answerModel,
     judgeModel,
-    evalFile: "quality.eval.yaml",
+    evalFile,
     itemId,
     stimulus: itemId,
     area: "response-quality",
@@ -93,6 +95,20 @@ function spec(): SkillImprovementRunSpec {
   };
 }
 
+function decideHeldOut(
+  reference: AggregatedTrial[],
+  candidate: AggregatedTrial[],
+) {
+  const runSpec = spec();
+  runSpec.acceptance = {
+    ...runSpec.acceptance,
+    minimumQualityImprovementPoints: 0,
+    maximumEvalRegressionPoints: 0,
+    maximumModelRegressionPoints: 0,
+  };
+  return decideAcceptance(runSpec, reference, candidate, 1000, 1000);
+}
+
 describe("skill improvement reporting", () => {
   test("uses judge majority and accepts a quality improvement", () => {
     const reference = aggregateJudgments([
@@ -127,6 +143,83 @@ describe("skill improvement reporting", () => {
 
     expect(() => decideAcceptance(spec(), reference, candidate, 1000, 1000))
       .toThrow("1 missing candidate, 0 unexpected candidate");
+  });
+
+  test("accepts a saturated held-out baseline when the candidate does not regress", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+      judged("two", "model-a", "judge-a", true, 1, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+      judged("two", "model-a", "judge-a", true, 1, 100),
+    ]);
+    const decision = decideHeldOut(reference, candidate);
+
+    expect(decision.accepted).toBe(true);
+    expect(decision.comparison.qualityImprovementPoints).toBe(0);
+  });
+
+  test("keeps the development quality-improvement requirement unchanged", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+    ]);
+
+    const decision = decideAcceptance(spec(), reference, candidate, 1000, 1000);
+
+    expect(decision.accepted).toBe(false);
+    expect(decision.reasons.join("\n")).toContain("20.00 required");
+  });
+
+  test("rejects a held-out regression when no regression is allowed", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+      judged("two", "model-a", "judge-a", true, 1, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0, 100),
+      judged("two", "model-a", "judge-a", true, 1, 100),
+    ]);
+    const decision = decideHeldOut(reference, candidate);
+
+    expect(decision.accepted).toBe(false);
+    expect(decision.comparison.qualityImprovementPoints).toBe(-50);
+    expect(decision.reasons.join("\n")).toContain("0.00 required");
+  });
+
+  test("rejects a held-out per-evaluation regression with unchanged aggregate quality", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100, skillWithMcp, true, "one.eval.yaml"),
+      judged("two", "model-a", "judge-a", false, 0, 100, skillWithMcp, true, "two.eval.yaml"),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0, 100, skillWithMcp, true, "one.eval.yaml"),
+      judged("two", "model-a", "judge-a", true, 1, 100, skillWithMcp, true, "two.eval.yaml"),
+    ]);
+    const decision = decideHeldOut(reference, candidate);
+
+    expect(decision.accepted).toBe(false);
+    expect(decision.comparison.qualityImprovementPoints).toBe(0);
+    expect(decision.reasons.join("\n")).toContain("one.eval.yaml regressed");
+  });
+
+  test("rejects a held-out per-model regression with unchanged aggregate quality", () => {
+    const reference = aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+      judged("two", "model-b", "judge-a", false, 0, 100),
+    ]);
+    const candidate = aggregateJudgments([
+      judged("one", "model-a", "judge-a", false, 0, 100),
+      judged("two", "model-b", "judge-a", true, 1, 100),
+    ]);
+    const decision = decideHeldOut(reference, candidate);
+
+    expect(decision.accepted).toBe(false);
+    expect(decision.comparison.qualityImprovementPoints).toBe(0);
+    expect(decision.reasons.join("\n")).toContain("model-a regressed");
   });
 
   test("retains score progress for another refinement iteration", () => {

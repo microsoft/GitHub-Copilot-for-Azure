@@ -44,7 +44,12 @@ export type SkillImprovementRunSpec = {
     maximumEvalRegressionPoints: number;
     maximumModelRegressionPoints: number;
     minimumSkillInvocationRate?: number;
-    requireHeldOutImprovement?: boolean;
+  };
+  heldOutAcceptance?: {
+    enabled: boolean;
+    minimumQualityImprovementPoints: number;
+    maximumEvalRegressionPoints: number;
+    maximumModelRegressionPoints: number;
   };
   refinement: {
     minimumScoreImprovementPoints: number;
@@ -372,19 +377,44 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
       throw new Error("acceptance.minimumSkillInvocationRate must be between 0 and 1.");
     }
   }
-  if (
-    spec.acceptance.requireHeldOutImprovement !== undefined
-    && typeof spec.acceptance.requireHeldOutImprovement !== "boolean"
-  ) {
-    throw new Error("acceptance.requireHeldOutImprovement must be a boolean.");
+  const deprecatedHeldOutField = (
+    spec.acceptance as typeof spec.acceptance & {
+      requireHeldOutImprovement?: unknown;
+    }
+  ).requireHeldOutImprovement;
+  if (deprecatedHeldOutField !== undefined) {
+    throw new Error(
+      "acceptance.requireHeldOutImprovement is no longer supported; "
+      + "configure heldOutAcceptance instead."
+    );
   }
   if (
-    spec.acceptance.requireHeldOutImprovement
+    spec.heldOutAcceptance !== undefined
+    && typeof spec.heldOutAcceptance.enabled !== "boolean"
+  ) {
+    throw new Error("heldOutAcceptance.enabled must be a boolean.");
+  }
+  if (spec.heldOutAcceptance) {
+    requireNonNegativeNumber(
+      spec.heldOutAcceptance.minimumQualityImprovementPoints,
+      "heldOutAcceptance.minimumQualityImprovementPoints"
+    );
+    requireNonNegativeNumber(
+      spec.heldOutAcceptance.maximumEvalRegressionPoints,
+      "heldOutAcceptance.maximumEvalRegressionPoints"
+    );
+    requireNonNegativeNumber(
+      spec.heldOutAcceptance.maximumModelRegressionPoints,
+      "heldOutAcceptance.maximumModelRegressionPoints"
+    );
+  }
+  if (
+    spec.heldOutAcceptance?.enabled
     && !hasHeldOutEvaluations(spec)
   ) {
     throw new Error(
       "At least one common or condition-specific held-out evaluation is required "
-      + "when requireHeldOutImprovement is true."
+      + "when heldOutAcceptance is enabled."
     );
   }
 
@@ -425,11 +455,11 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     "limits.maxSkillTokenIncreasePercent"
   );
   if (
-    spec.acceptance.requireHeldOutImprovement
+    spec.heldOutAcceptance?.enabled
     && (!spec.improvementAgent.enabled || spec.limits.maxIterations === 0)
   ) {
     throw new Error(
-      "requireHeldOutImprovement requires at least one candidate iteration."
+      "heldOutAcceptance requires at least one candidate iteration."
     );
   }
   if (spec.output?.issue !== "always" && spec.output?.issue !== "never") {
@@ -636,7 +666,7 @@ export function createRunPlan(repoRoot: string, spec: SkillImprovementRunSpec): 
   );
   const heldOutAnswerGenerations = (
     heldOutPromptCount === 0
-    || !spec.acceptance.requireHeldOutImprovement
+    || !spec.heldOutAcceptance?.enabled
     || plannedIterations === 0
   )
     ? 0
