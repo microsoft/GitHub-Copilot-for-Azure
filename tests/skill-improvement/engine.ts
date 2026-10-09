@@ -460,10 +460,10 @@ export async function executeSkillImprovement(
   let previousDecision: AcceptanceDecision | undefined;
   let previousRefinementDecision: RefinementDecision | undefined;
   let previousRejectedPatchPath: string | undefined;
+  let previousValidationErrors: string[] = [];
   let finalPatchPath: string | undefined;
   let heldOut: SkillImprovementReport["heldOut"];
   let terminationReason: SkillImprovementReport["terminationReason"];
-  let hasValidationFailure = false;
   let report: SkillImprovementReport;
 
   try {
@@ -500,13 +500,12 @@ export async function executeSkillImprovement(
               previousDecision?.comparison.candidate.skillInvocationRate,
             skillMarkdownTokenIncreasePercent:
               previousDecision?.skillMarkdownTokenIncreasePercent,
-            hasValidationFailure,
+            hasValidationFailure: previousValidationErrors.length > 0,
           }
         )) {
           terminationReason = "no-actionable-failures";
           break;
         }
-        hasValidationFailure = false;
         const iterationDirectory = path.join(outputDirectory, `iteration-${iteration}`);
         fs.mkdirSync(iterationDirectory, { recursive: true });
         const worktree = path.join(worktreeRoot, `iteration-${iteration}`);
@@ -522,7 +521,8 @@ export async function executeSkillImprovement(
             spec,
             refinementTrials,
             previousDecision,
-            previousRefinementDecision
+            previousRefinementDecision,
+            previousValidationErrors
           );
           const failurePacketPath = writeFailurePacket(
             outputDirectory,
@@ -571,12 +571,13 @@ export async function executeSkillImprovement(
             );
           }
           if (iterationReport.validationErrors.length > 0) {
-            hasValidationFailure = true;
+            previousValidationErrors = [...iterationReport.validationErrors];
             previousDecision = undefined;
             previousRefinementDecision = undefined;
             previousRejectedPatchPath = candidatePatchPath;
             continue;
           }
+          previousValidationErrors = [];
 
           const candidateCommit = commitCandidate(worktree, iteration);
           iterationReport.candidateCommit = candidateCommit;

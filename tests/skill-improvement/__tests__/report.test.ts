@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   aggregateJudgments,
+  buildFailurePacket,
   decideAcceptance,
   decideRefinement,
   renderReport,
@@ -94,6 +95,22 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement reporting", () => {
+  test("includes previous validation failures in the next failure packet", () => {
+    const packet = buildFailurePacket(
+      spec(),
+      aggregateJudgments([
+        judged("one", "model-a", "judge-a", true, 1, 100),
+      ]),
+      undefined,
+      undefined,
+      ["Frontmatter validation failed.", "Reference validation failed."]
+    );
+
+    expect(packet).toContain("## Previous candidate validation failures");
+    expect(packet).toContain("- Frontmatter validation failed.");
+    expect(packet).toContain("- Reference validation failed.");
+  });
+
   test("uses judge majority and accepts a quality improvement", () => {
     const reference = aggregateJudgments([
       judged("one", "model-a", "judge-a", false, 0.5, 100),

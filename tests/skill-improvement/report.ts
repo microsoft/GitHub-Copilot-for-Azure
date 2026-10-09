@@ -499,6 +499,7 @@ export function buildFailurePacket(
   trials: AggregatedTrial[],
   previousDecision?: AcceptanceDecision,
   previousRefinementDecision?: RefinementDecision,
+  previousValidationErrors: string[] = [],
 ): string {
   const failures = trials
     .filter(trial => !trial.passed || trial.judgeDisagreement)
@@ -526,6 +527,14 @@ export function buildFailurePacket(
       }
     }
     lines.push("");
+  }
+  if (previousValidationErrors.length > 0) {
+    lines.push(
+      "## Previous candidate validation failures",
+      "",
+      ...previousValidationErrors.map(error => `- ${error}`),
+      ""
+    );
   }
   lines.push("## Development failures and disagreements", "");
   for (const failure of failures) {
