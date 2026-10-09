@@ -32,7 +32,7 @@ stimuli:
       area: routing
       requiredSkills:
         - azure-ai
-      # earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":3}]'
     graders:
       - type: skill-invocation
         config:
