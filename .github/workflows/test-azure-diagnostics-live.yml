@@ -1,0 +1,215 @@
+name: Azure Diagnostics - live AKS evaluations
+
+permissions:
+  id-token: write
+  contents: read
+  copilot-requests: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      model-override:
+        description: Model to use for the live evaluations
+        required: false
+        type: string
+        default: claude-sonnet-5
+      location:
+        description: Azure region for the ephemeral AKS cluster
+        required: false
+        type: string
+        default: eastus2
+
+concurrency:
+  group: azure-diagnostics-live-aks
+  cancel-in-progress: false
+
+jobs:
+  live-aks:
+    name: Live AKS diagnostics
+    environment: cideploytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      MODEL_OVERRIDE: ${{ inputs.model-override }}
+      LIVE_EVAL_SPEC: ../evals/azure-skills/azure-diagnostics/live/eval.yaml
+      LIVE_SCENARIO_SCRIPT: ../evals/azure-skills/azure-diagnostics/live/manage-scenario.sh
+
+    defaults:
+      run:
+        working-directory: tests
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Azure login
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Refresh Azure login every 240 seconds
+        shell: bash
+        run: |
+          while true; do
+            token=$(curl -s \
+              -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" \
+              | jq -r .value)
+            az login \
+              --service-principal \
+              --username "$AZURE_CLIENT_ID" \
+              --tenant "$AZURE_TENANT_ID" \
+              --federated-token "$token" \
+              --output none
+            sleep 240
+          done &
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Build plugin output
+        run: |
+          cd ..
+          npm ci --ignore-scripts
+          npm run build
+
+      - name: Setup Copilot CLI
+        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+        with:
+          token: ${{ github.token }}
+
+      - name: Install kubectl
+        run: sudo az aks install-cli
+
+      - name: Define ephemeral resource names
+        shell: bash
+        run: |
+          resource_group="rg-ghcfa-diag-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cluster_name="ghcfadiag${GITHUB_RUN_ID}${GITHUB_RUN_ATTEMPT}"
+          echo "LIVE_RESOURCE_GROUP=${resource_group}" >> "$GITHUB_ENV"
+          echo "LIVE_CLUSTER_NAME=${cluster_name}" >> "$GITHUB_ENV"
+
+      - name: Create resource group
+        shell: bash
+        run: |
+          delete_after=$(date -u -d "+1 day" +%Y-%m-%d)
+          az group create \
+            --name "$LIVE_RESOURCE_GROUP" \
+            --location "${{ inputs.location }}" \
+            --tags "DeleteAfter=${delete_after}" "Owners=KarishmaGhiya" \
+              "Purpose=azure-diagnostics-live-evals" \
+            --output none
+
+      - name: Deploy ephemeral AKS cluster from Bicep
+        shell: bash
+        run: |
+          az deployment group create \
+            --resource-group "$LIVE_RESOURCE_GROUP" \
+            --template-file ../evals/azure-skills/azure-diagnostics/live/infra/main.bicep \
+            --parameters clusterName="$LIVE_CLUSTER_NAME" location="${{ inputs.location }}" \
+            --output none
+          az aks get-credentials \
+            --resource-group "$LIVE_RESOURCE_GROUP" \
+            --name "$LIVE_CLUSTER_NAME" \
+            --admin \
+            --overwrite-existing
+          kubectl wait --for=condition=Ready nodes --all --timeout=10m
+          kubectl -n kube-system rollout status deployment/coredns --timeout=10m
+
+      - name: Write live test context
+        shell: bash
+        run: |
+          context=$(kubectl config current-context)
+          cat > ../evals/azure-skills/azure-diagnostics/live/fixture/live-context.txt <<EOF
+          AZURE DIAGNOSTICS LIVE AKS CONTEXT
+
+          Resource group: ${LIVE_RESOURCE_GROUP}
+          AKS cluster: ${LIVE_CLUSTER_NAME}
+          Kubernetes context: ${context}
+
+          The target is an isolated, ephemeral test cluster. Use only read-only
+          Azure and Kubernetes commands while diagnosing the requested scenario.
+          EOF
+
+      - name: Test CoreDNS scheduling diagnosis
+        id: coredns
+        continue-on-error: true
+        shell: bash
+        run: |
+          "$LIVE_SCENARIO_SCRIPT" setup coredns-scheduling
+          trap '"$LIVE_SCENARIO_SCRIPT" cleanup coredns-scheduling' EXIT
+          npm run test:vally -- \
+            --eval-spec "$LIVE_EVAL_SPEC" \
+            --tag liveScenario=coredns-scheduling \
+            --workers 1 \
+            --require-pass
+
+      - name: Test missing Service endpoints diagnosis
+        id: endpoints
+        continue-on-error: true
+        shell: bash
+        run: |
+          "$LIVE_SCENARIO_SCRIPT" setup missing-service-endpoints
+          trap '"$LIVE_SCENARIO_SCRIPT" cleanup missing-service-endpoints' EXIT
+          npm run test:vally -- \
+            --eval-spec "$LIVE_EVAL_SPEC" \
+            --tag liveScenario=missing-service-endpoints \
+            --workers 1 \
+            --require-pass
+
+      - name: Test DNS NetworkPolicy diagnosis
+        id: network-policy
+        continue-on-error: true
+        shell: bash
+        run: |
+          "$LIVE_SCENARIO_SCRIPT" setup dns-network-policy
+          trap '"$LIVE_SCENARIO_SCRIPT" cleanup dns-network-policy' EXIT
+          npm run test:vally -- \
+            --eval-spec "$LIVE_EVAL_SPEC" \
+            --tag liveScenario=dns-network-policy \
+            --workers 1 \
+            --require-pass
+
+      - name: Upload live evaluation artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: azure-diagnostics-live-aks-${{ github.run_id }}
+          path: |
+            tests/reports/
+            tests/results/
+          if-no-files-found: warn
+
+      - name: Delete ephemeral resource group
+        if: always()
+        shell: bash
+        run: |
+          if [ -n "${LIVE_RESOURCE_GROUP:-}" ] \
+            && [ "$(az group exists --name "$LIVE_RESOURCE_GROUP")" = "true" ]; then
+            az group delete \
+              --name "$LIVE_RESOURCE_GROUP" \
+              --yes
+          fi
+
+      - name: Fail when a live scenario failed
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.coredns.outcome }}" != "success" ] \
+            || [ "${{ steps.endpoints.outcome }}" != "success" ] \
+            || [ "${{ steps.network-policy.outcome }}" != "success" ]; then
+            echo "One or more live AKS evaluation scenarios failed." >&2
+            exit 1
+          fi
