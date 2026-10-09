@@ -859,8 +859,8 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
     // fail a test because capture failed.
     try {
       const toolUsagePath = deriveToolUsageFileName(reportTargetPath);
-      const sessionId =
-        agentMetadata.events.find((e) => e.type === "session.start")?.id ?? null;
+const sessionId =
+        agentMetadata.events.find((e) => e.type === "session.start")?.data.sessionId ?? null;
       const toolUsage: ToolUsageRecord = {
         testName,
         reportFile: path.basename(reportTargetPath),
