@@ -1,12 +1,12 @@
 import type { ExecutorRegistry } from "@microsoft/vally";
-import { useAgentRunner } from "../utils/copilot-sdk-runner.ts";
+import { useClaudeAgentRunner } from "../utils/claude-sdk-runner.ts";
 import { SdkAgentExecutor } from "./sdk-agent-executor.ts";
 
-export class CopilotSdkAgentRunner extends SdkAgentExecutor {
+export class ClaudeSdkExecutor extends SdkAgentExecutor {
   constructor() {
     super({
-      name: "copilot-sdk-agent-runner",
-      createRunner: useAgentRunner,
+      name: "claude-sdk-agent-runner",
+      createRunner: useClaudeAgentRunner,
     });
   }
 
@@ -16,5 +16,5 @@ export class CopilotSdkAgentRunner extends SdkAgentExecutor {
 }
 
 export function registerExecutors(registry: ExecutorRegistry): void {
-  registry.register(new CopilotSdkAgentRunner());
+  registry.register(new ClaudeSdkExecutor());
 }
