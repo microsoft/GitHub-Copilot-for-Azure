@@ -35,4 +35,4 @@ The agent runner must compute and save statistics after the run ends. These stat
 
 ## Executor
 
-TBD: Pending deduplication refactoring
+Vally executors are thin wrappers around the corresponding agent runners. The base [SdkAgentExecutor](../tests/vally/sdk-agent-executor.ts) class implements the common logic for preparing the test run environment and cleaning them up. It's recommended to implement an agent runner and reuse this executor base class for future vally executors.
