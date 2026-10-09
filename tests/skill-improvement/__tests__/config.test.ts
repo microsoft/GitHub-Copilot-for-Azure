@@ -84,7 +84,10 @@ describe("skill improvement configuration", () => {
     )).toBe(true);
     expect(runSpec.output.issue).toBe("never");
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
-    expect(runSpec.acceptance.requireHeldOutImprovement).toBe(true);
+    expect(runSpec.experiment.repetitions).toBe(5);
+    expect(runSpec.improvementAgent.enabled).toBe(false);
+    expect(runSpec.limits.maxIterations).toBe(0);
+    expect(runSpec.acceptance.requireHeldOutImprovement).toBe(false);
     expect(runSpec.evaluations.heldOut).toEqual([
       "held-out-troubleshoot-remediate.eval.yaml",
     ]);
