@@ -32,7 +32,7 @@ models:
     - claude-opus-4.8
 
 experiment:
-  repetitions: 5
+  repetitions: 1
   conditions:
     - name: Agent only
       skill: disabled
@@ -74,8 +74,8 @@ resources:
 
 limits:
   maxIterations: 0
-  maxAnswerGenerations: 1820
-  maxJudgeCalls: 1820
+  maxAnswerGenerations: 364
+  maxJudgeCalls: 364
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
