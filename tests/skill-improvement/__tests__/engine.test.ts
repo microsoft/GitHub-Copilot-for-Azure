@@ -4,11 +4,34 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import {
   changedFiles,
+  hasActionableFailureEvidence,
   unlinkDependencyLinks,
   writeCandidatePatch,
   writeFinalCandidatePatch,
 } from "../engine.ts";
+import type { AggregatedTrial } from "../report.ts";
 import { describe, expect, test } from "vitest";
+
+function trial(overrides: Partial<AggregatedTrial> = {}): AggregatedTrial {
+  return {
+    condition: { name: "Skill only", skill: "enabled", mcp: "disabled" },
+    answerModel: "model",
+    evalFile: "eval.yaml",
+    itemId: "item",
+    stimulus: "prompt",
+    area: "response-quality",
+    passed: true,
+    score: 1,
+    judgePasses: 1,
+    judgeCount: 1,
+    judgeDisagreement: false,
+    judgments: [],
+    output: "answer",
+    targetSkillInvoked: true,
+    totalTokens: 100,
+    ...overrides,
+  };
+}
 
 describe("worktree dependency cleanup", () => {
   test("unlinks dependency junctions without deleting their targets", () => {
@@ -155,4 +178,29 @@ describe("worktree dependency cleanup", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+});
+
+describe("hill-climbing actionability", () => {
+  test("stops when no actionable failure evidence remains", () => {
+    expect(hasActionableFailureEvidence([trial()], undefined, 15)).toBe(false);
+  });
+
+  test.each([
+    ["failed trial", [trial({ passed: false })], undefined, {}],
+    ["judge disagreement", [trial({ judgeDisagreement: true })], undefined, {}],
+    ["low retained skill invocation", [trial({ targetSkillInvoked: false })], 0.8, {}],
+    ["low candidate skill invocation", [trial()], 0.8, { candidateSkillInvocationRate: 0 }],
+    ["token growth", [trial()], undefined, { skillMarkdownTokenIncreasePercent: 16 }],
+    ["validation failure", [trial()], undefined, { hasValidationFailure: true }],
+  ] as const)(
+    "continues for %s",
+    (_name, trials, minimumInvocationRate, gateEvidence) => {
+      expect(hasActionableFailureEvidence(
+        [...trials],
+        minimumInvocationRate,
+        15,
+        gateEvidence
+      )).toBe(true);
+    }
+  );
 });

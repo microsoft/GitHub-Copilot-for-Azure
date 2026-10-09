@@ -127,6 +127,9 @@ The workflow calls the internal `execute` command with an explicit `--output`
 directory. Vally first saves answers with `--skip-grade`, then re-grades those
 trajectories with each judge. The improvement agent receives development
 failures and prior rejection reasons, never held-out evidence.
+Hill-climbing stops with `no-actionable-failures` before another agent call
+when no failed or disputed trials, invocation-rate failure, token-growth
+failure, or candidate-validation failure remains.
 
 The workflow job allows 420 minutes. This leaves 40 minutes of setup and
 cleanup headroom beyond the current 360-minute engine limit plus the managed

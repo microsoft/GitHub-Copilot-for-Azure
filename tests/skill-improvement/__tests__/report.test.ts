@@ -277,6 +277,7 @@ describe("skill improvement reporting", () => {
       baselineSkillTokens: 100,
       baselineTrials: [],
       iterations: [],
+      terminationReason: "no-actionable-failures",
       finalAccepted: true,
       finalPatchPath: "final-candidate.patch",
       usage: { answerGenerations: 0, judgeCalls: 0, durationMinutes: 1 },
@@ -287,6 +288,8 @@ describe("skill improvement reporting", () => {
       writeReport(output, report);
       expect(fs.readFileSync(path.join(output, "report-summary.md"), "utf8"))
         .toContain("# Final outcome: ACCEPTED");
+      expect(fs.readFileSync(path.join(output, "report-summary.md"), "utf8"))
+        .toContain("no-actionable-failures");
       expect(fs.existsSync(path.join(output, "issue-summary.md"))).toBe(false);
       expect(JSON.parse(
         fs.readFileSync(path.join(output, "workflow-outputs.json"), "utf8")

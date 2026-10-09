@@ -16,6 +16,7 @@ import {
   buildFailurePacket,
   decideAcceptance,
   decideRefinement,
+  summarizeTrials,
   writeReport,
   type AcceptanceDecision,
   type AggregatedTrial,
@@ -385,6 +386,39 @@ function enforceActualUsage(spec: SkillImprovementRunSpec, usage: Usage): void {
   }
 }
 
+export function hasActionableFailureEvidence(
+  trials: AggregatedTrial[],
+  minimumSkillInvocationRate: number | undefined,
+  maximumSkillTokenIncreasePercent: number,
+  gateEvidence: {
+    candidateSkillInvocationRate?: number;
+    skillMarkdownTokenIncreasePercent?: number;
+    hasValidationFailure?: boolean;
+  } = {},
+): boolean {
+  if (
+    gateEvidence.hasValidationFailure
+    || trials.some(trial => !trial.passed || trial.judgeDisagreement)
+  ) {
+    return true;
+  }
+  if (minimumSkillInvocationRate !== undefined) {
+    const currentInvocationRate = summarizeTrials(trials).skillInvocationRate;
+    if (
+      currentInvocationRate < minimumSkillInvocationRate
+      || (
+        gateEvidence.candidateSkillInvocationRate !== undefined
+        && gateEvidence.candidateSkillInvocationRate < minimumSkillInvocationRate
+      )
+    ) {
+      return true;
+    }
+  }
+  return gateEvidence.skillMarkdownTokenIncreasePercent !== undefined
+    && gateEvidence.skillMarkdownTokenIncreasePercent
+      > maximumSkillTokenIncreasePercent;
+}
+
 function writeFailurePacket(
   outputDirectory: string,
   iteration: number,
@@ -428,6 +462,8 @@ export async function executeSkillImprovement(
   let previousRejectedPatchPath: string | undefined;
   let finalPatchPath: string | undefined;
   let heldOut: SkillImprovementReport["heldOut"];
+  let terminationReason: SkillImprovementReport["terminationReason"];
+  let hasValidationFailure = false;
   let report: SkillImprovementReport;
 
   try {
@@ -455,6 +491,22 @@ export async function executeSkillImprovement(
 
     if (spec.improvementAgent.enabled) {
       for (let iteration = 1; iteration <= spec.limits.maxIterations; iteration += 1) {
+        if (!hasActionableFailureEvidence(
+          refinementTrials,
+          spec.acceptance.minimumSkillInvocationRate,
+          spec.limits.maxSkillTokenIncreasePercent,
+          {
+            candidateSkillInvocationRate:
+              previousDecision?.comparison.candidate.skillInvocationRate,
+            skillMarkdownTokenIncreasePercent:
+              previousDecision?.skillMarkdownTokenIncreasePercent,
+            hasValidationFailure,
+          }
+        )) {
+          terminationReason = "no-actionable-failures";
+          break;
+        }
+        hasValidationFailure = false;
         const iterationDirectory = path.join(outputDirectory, `iteration-${iteration}`);
         fs.mkdirSync(iterationDirectory, { recursive: true });
         const worktree = path.join(worktreeRoot, `iteration-${iteration}`);
@@ -519,6 +571,7 @@ export async function executeSkillImprovement(
             );
           }
           if (iterationReport.validationErrors.length > 0) {
+            hasValidationFailure = true;
             previousDecision = undefined;
             previousRefinementDecision = undefined;
             previousRejectedPatchPath = candidatePatchPath;
@@ -664,6 +717,7 @@ export async function executeSkillImprovement(
       baselineTrials,
       iterations,
       heldOut,
+      terminationReason,
       bestCandidateCommit,
       finalAccepted,
       finalPatchPath,
@@ -687,6 +741,7 @@ export async function executeSkillImprovement(
       baselineTrials,
       iterations,
       heldOut,
+      terminationReason,
       bestCandidateCommit,
       finalAccepted: false,
       usage: {
