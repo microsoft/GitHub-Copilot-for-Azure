@@ -1,13 +1,16 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getBlobContent } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { EXCLUDED_FILENAMES, getBlobContent } from "../blobEnumerator";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the raw content of a specific blob for download.
  * GET /api/download?path={blobPath}
  */
 async function downloadBlob(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "downloadBlob");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "downloadBlob");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const blobPath = request.query.get("path");
     if (!blobPath) {
@@ -19,12 +22,16 @@ async function downloadBlob(request: HttpRequest, context: InvocationContext): P
         return { status: 400, body: "Invalid path" };
     }
 
+    const rawFileName = blobPath.split("/").pop() ?? "";
+    if (EXCLUDED_FILENAMES.has(rawFileName)) {
+        return { status: 404, body: "Blob not found" };
+    }
+
     const container = request.query.get("container") || undefined;
 
     try {
         const content = await getBlobContent(blobPath, container);
-        const rawFileName = blobPath.split("/").pop() ?? "download";
-        const fileName = rawFileName.replace(/[\r\n"\\]/g, "_");
+        const fileName = (rawFileName || "download").replace(/[\r\n"\\]/g, "_");
 
         return {
             status: 200,

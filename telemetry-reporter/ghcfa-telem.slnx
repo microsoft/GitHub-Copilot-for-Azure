@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ghcfa-telem/ghcfa-telem.csproj" />
+    <Project Path="src/Ghcfa.Telemetry/Ghcfa.Telemetry.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Ghcfa.Telemetry.Tests/Ghcfa.Telemetry.Tests.csproj" />
+  </Folder>
+</Solution>

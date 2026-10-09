@@ -42,7 +42,7 @@ async def run(prompt: str) -> str:
         agent = Agent(
             name="Order Support",
             instructions=INSTRUCTIONS,
-            model=os.getenv("OPENAI_MODEL", "gpt-5.6-sol"),
+            model=os.getenv("OPENAI_MODEL", "gpt-5.4-nano"),
             mcp_servers=[mcp_server],
         )
         result = await Runner.run(agent, prompt)

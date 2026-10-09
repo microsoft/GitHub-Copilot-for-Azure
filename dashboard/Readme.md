@@ -97,7 +97,7 @@ last five runs. Use the Skill / Test / Branch filters to narrow the view.
 Data flow:
 
 - Each integration test already writes per-test token usage to
-  `token-summary.jsonl` (via `tests/utils/agent-runner.ts`).
+  `token-summary.jsonl` (via `tests/utils/copilot-sdk-runner.ts`).
 - The integration test pipelines upload that data **directly** to an Azure Table by
   running `npm run upload:token-usage` (`tests/scripts/upload-token-usage.ts`). One
   row is stored **per test, per branch, per run** in the `integrationtokenusage`

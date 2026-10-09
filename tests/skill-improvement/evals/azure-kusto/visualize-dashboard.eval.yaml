@@ -1,0 +1,106 @@
+name: azure-kusto-visualize-dashboard
+description: Ten matched scenarios for Kusto visualization and dashboard queries.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Dashboard request health time series"
+    prompt: "Write dashboard-ready KQL over Requests(Timestamp, Success, DurationMs) for request count, error-rate percentage, and p95 latency in five-minute bins over 24 hours."
+    rubric:
+      - The KQL filters `Requests` to 24 hours and produces five-minute time buckets.
+      - Each bucket includes request count, guarded error-rate percentage from `Success`, and p95 `DurationMs`.
+      - The output is chronological and dashboard-ready, with explicit handling or explanation of empty buckets.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Dashboard regional error bars"
+    prompt: "Build KQL for a dashboard bar chart showing request count and error percentage by Region over the last six hours from ApiEvents."
+    rubric:
+      - The KQL filters `ApiEvents` to the last six hours and groups by `Region`.
+      - The output includes request count and a guarded error percentage derived from an appropriate success or error field.
+      - The result shape is suitable for a regional bar chart and does not add an unrequested time-series dimension.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard top failing services"
+    prompt: "Create dashboard-ready KQL showing the top ten Services by failed request count in the last day, including total requests and failure rate."
+    rubric:
+      - The KQL filters the source to the last day and summarizes failed and total request counts by `Service`.
+      - The query computes a guarded failure rate and returns the ten services with the highest failed count.
+      - The output includes service, failed count, total count, and failure rate in a table or bar-chart-ready shape.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard latency heatmap data"
+    prompt: "Prepare KQL output suitable for a heatmap of p95 DurationMs by Region and hourly time bucket over seven days."
+    rubric:
+      - The KQL filters data to seven days and bins its timestamp into one-hour intervals.
+      - The query calculates p95 `DurationMs` grouped by both `Region` and hourly bucket.
+      - The output exposes time, region, and p95 latency in a shape suitable for heatmap configuration and chronological ordering.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard continuous CPU series"
+    prompt: "Write KQL for a 12-hour CPU time chart by Host using ten-minute bins, including sensible handling for missing time buckets."
+    rubric:
+      - The KQL bounds CPU data to 12 hours and aggregates a stated CPU measure by `Host` and ten-minute bins.
+      - The query uses a valid gap-filling pattern that produces missing host-time buckets with an explicitly justified value or null.
+      - The output preserves separate host series and chronological timestamps for charting.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard deployment markers"
+    prompt: "Create KQL datasets to visualize hourly error count and deployment events together for the last 48 hours using AppLogs and Deployments."
+    rubric:
+      - The response creates bounded 48-hour hourly error counts from `AppLogs` using a plausible error predicate.
+      - The response creates a compatible deployment-event dataset from `Deployments` that retains deployment time and useful marker metadata.
+      - The datasets can be overlaid or combined without conflating deployment events with error counts, and any assumed column names are clearly marked.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard status-code distribution"
+    prompt: "Write KQL for a dashboard chart showing the distribution of HTTP StatusCode values over the past day while grouping rare codes into Other."
+    rubric:
+      - The KQL filters events to the past day and counts rows by `StatusCode`.
+      - The query defines a reproducible rarity rule, such as a count threshold or top-N set, and maps all remaining codes to `Other`.
+      - The result re-aggregates after grouping so each displayed status category has one count suitable for charting.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard active-device trend"
+    prompt: "Build a daily time-series query for distinct active DeviceId values by Region over 30 days, suitable for a multi-line chart."
+    rubric:
+      - The KQL filters device events to 30 days and bins timestamps by one day.
+      - The query calculates distinct `DeviceId` count grouped by both day and `Region`.
+      - The output is chronological and shaped as separate regional series suitable for a multi-line chart.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard SLO compliance"
+    prompt: "Write dashboard KQL for hourly availability percentage from Requests.Success over seven days, with a 99.9 percent target visible in the output."
+    rubric:
+      - The KQL filters `Requests` to seven days and calculates guarded hourly availability percentage from `Success`.
+      - The output includes a constant or joined target value of 99.9 percent for every hour.
+      - The result is chronological and exposes actual availability and target as distinct chartable columns or series.
+    tags: *tags
+    graders: *graders
+  - name: "Dashboard slow endpoint table"
+    prompt: "Create KQL for a dashboard table of endpoints with request volume, p95 latency, and error rate over 24 hours, filtering out endpoints with fewer than 100 requests."
+    rubric:
+      - The KQL filters requests to 24 hours and summarizes request count, p95 latency, and guarded error rate by endpoint.
+      - The query filters out groups with fewer than 100 requests after aggregation.
+      - The result is ordered by a meaningful slow-endpoint measure and contains the requested table columns.
+    tags: *tags
+    graders: *graders

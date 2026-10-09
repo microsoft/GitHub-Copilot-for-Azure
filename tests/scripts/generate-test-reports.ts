@@ -14,7 +14,8 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
-import { useAgentRunner, type AgentRunConfig } from "../utils/agent-runner";
+import { useAgentRunner, } from "../utils/copilot-sdk-runner";
+import { type AgentRunConfig } from "../utils/agent-runner";
 import { redactSecrets } from "../utils/redact";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,9 +31,14 @@ const REPORT_SUFFIX = "-report.md";
 const CONSOLIDATED_REPORT_SUFFIX = "-consolidated-report.md";
 const SKILL_REPORT_SUFFIX = "-SKILL-REPORT.md";
 const agent = useAgentRunner({
-  isTest: false,
-  useJest: false
+  isTest: false
 });
+
+type TestResult = {
+  skillInvocationRate?: number;
+};
+
+type TestResults = Record<string, TestResult>;
 
 /**
  * Parse command-line arguments.
@@ -60,16 +66,17 @@ function parseArgs(argv: string[]): { skill: string } {
 /**
  * Filter subdirectories belonging to a specific skill.
  */
-function filterSubdirectoriesBySkill(subdirectories: string[], skill: string): string[] {
+function filterSubdirectoriesBySkill(subdirectories: string[], skill: string, testResults: TestResults): string[] {
   return subdirectories.filter(subdir => {
     const subdirName = path.basename(subdir);
 
     // Skill name in the subdirectory name ends at the first underscore character.
-    // See tests/eslint-rules/integration-test-name.mjs for details.
     const terminatorIndex = subdirName.indexOf("_");
     const skillName = subdirName.substring(0, terminatorIndex);
+    const testResult = testResults[subdirName];
+    const isSkillInvocationTest = testResult && Object.hasOwn(testResult, "skillInvocationRate");
 
-    return skillName === skill;
+    return skillName === skill && !isSkillInvocationTest;
   });
 }
 
@@ -91,7 +98,7 @@ function getMostRecentTestRun(): string | undefined {
 /**
  * Process a single subdirectory - generate ONE consolidated report for all .md files in it
  */
-async function processSubdirectory(subdirPath: string, reportTemplate: string): Promise<string | null> {
+async function processSubdirectory(subdirPath: string, reportTemplate: string, testResult: TestResult): Promise<string | null> {
   const subdirName = path.basename(subdirPath);
 
   // Find all markdown files in this subdirectory (non-recursive)
@@ -139,6 +146,10 @@ ${reportTemplate}
 ---
 
 ## Test Results Data
+
+${JSON.stringify(testResult, null, 2)}
+
+## Test trajectories
 
 ${consolidatedContent}
 
@@ -265,6 +276,12 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
 
   // Load the report template once
   const reportTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
+  const testResultsPath = path.join(runPath, "testResults.json");
+  if (!fs.existsSync(testResultsPath)) {
+    console.error(`Error: testResults.json not found in: ${runPath}`);
+    process.exit(1);
+  }
+  const testResults = JSON.parse(fs.readFileSync(testResultsPath, "utf-8")) as TestResults;
 
   // Find all subdirectories in the test run
   const entries = fs.readdirSync(runPath, { withFileTypes: true });
@@ -273,7 +290,7 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
     .map(entry => path.join(runPath, entry.name));
 
   // Filter subdirectories by skill
-  subdirectories = filterSubdirectoriesBySkill(subdirectories, skill);
+  subdirectories = filterSubdirectoriesBySkill(subdirectories, skill, testResults);
   if (subdirectories.length === 0) {
     console.error(`Error: No test results found for skill "${skill}" in: ${runPath}`);
     process.exit(1);
@@ -283,7 +300,8 @@ async function processTestRun(runPath: string, skill: string): Promise<void> {
   // Process each subdirectory and collect report paths
   const generatedReports: string[] = [];
   for (const subdir of subdirectories) {
-    const reportPath = await processSubdirectory(subdir, reportTemplate);
+    const subdirName = path.basename(subdir);
+    const reportPath = await processSubdirectory(subdir, reportTemplate, testResults[subdirName]);
     if (reportPath) {
       generatedReports.push(reportPath);
     }

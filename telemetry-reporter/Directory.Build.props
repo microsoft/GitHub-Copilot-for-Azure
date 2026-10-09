@@ -1,0 +1,30 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <TrimMode>full</TrimMode>
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>
+    <BuildNative Condition="'$(BuildNative)' == ''">false</BuildNative>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildNative)' == 'true'">
+    <DefineConstants>$(DefineConstants);BUILD_NATIVE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildNative)' == 'true' and $(RuntimeIdentifier.StartsWith('win'))">
+    <ControlFlowGuard>Guard</ControlFlowGuard>
+  </PropertyGroup>
+</Project>

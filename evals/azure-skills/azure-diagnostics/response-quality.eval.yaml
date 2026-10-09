@@ -1,0 +1,296 @@
+name: azure-diagnostics-response-quality-eval
+description: |
+  Offline, evidence-driven troubleshooting scenarios for Azure Diagnostics.
+  Evaluates root-cause analysis, safe remediation, and recovery verification
+  without requiring live Azure resources.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Container App image pull fails after managed identity change"
+    prompt: |
+      Diagnose this synthetic Azure Container App incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      The app worked until its registry configuration changed from admin
+      credentials to the app's system-assigned managed identity.
+
+      Evidence:
+      - Revision status: ActivationFailed
+      - System log: `Failed to pull image contoso.azurecr.io/orders:v42:
+        unauthorized: authentication required`
+      - Registry server: `contoso.azurecr.io`
+      - Registry identity: `system`
+      - The app's managed identity is enabled
+      - The ACR role assignments contain no AcrPull assignment for that identity
+
+      Identify the evidence-backed root cause, propose a safe remediation, and
+      explain how to verify recovery.
+    rubric:
+      - The response identifies the missing AcrPull authorization for the Container App managed identity as the root cause and ties it to the unauthorized pull evidence and configuration change.
+      - The remediation grants AcrPull to the exact managed identity at the narrow ACR scope and preserves managed-identity authentication rather than enabling registry admin credentials or exposing a password.
+      - The response recommends confirming the identity and registry resource IDs before changing RBAC and avoids claiming that a role assignment was applied.
+      - Recovery verification checks the new or retried revision reaches a healthy running state and confirms that image-pull errors disappear from system logs.
+    tags: &quality-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders: &quality-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Container App returns 503 after target port change"
+    prompt: |
+      Diagnose this synthetic Azure Container App incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      The application returned 200 responses before an ingress configuration
+      change and now returns 503.
+
+      Evidence:
+      - Active revision is Running
+      - Ingress targetPort is 8080
+      - Container log: `Server listening on 0.0.0.0:3000`
+      - System log reports failed connections to port 8080
+      - The image and application code did not change
+
+      Identify the root cause, recommend the safest correction, and describe
+      verification.
+    rubric:
+      - The response identifies the ingress target-port and application-listen-port mismatch as the root cause and rules out image startup failure using the supplied evidence.
+      - The remediation aligns one side of the configuration with the intended port, preferring the smallest reversible change and checking the Dockerfile or application PORT setting before choosing which side to change.
+      - The response does not recommend unrelated scaling, registry, or health-probe changes as the primary fix.
+      - Verification confirms the corrected revision is healthy, ingress reaches the expected port, and an HTTP request returns the expected successful response without new connection errors.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "App Service package deployment fails after setting change"
+    prompt: |
+      Diagnose this synthetic App Service deployment failure using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - The app setting `WEBSITE_RUN_FROM_PACKAGE=1` was enabled this morning
+      - The next deployment failed
+      - Deployment log: `Run-From-Package is enabled but package file was not found`
+      - The release pipeline completed its build but skipped the zip-deploy step
+      - The previously deployed version is still serving traffic
+
+      Explain the root cause, safe remediation, and recovery verification.
+    rubric:
+      - The response correlates the configuration and pipeline changes with the explicit missing-package deployment error and identifies the absent package deployment as the root cause.
+      - The remediation either restores the zip-deploy artifact step while retaining Run From Package or deliberately reverts the setting to the previously supported deployment model, with rollback safety and no unnecessary production restart.
+      - The response preserves the currently serving version until a corrected deployment is ready and does not suggest deleting production content or settings blindly.
+      - Verification checks deployment status and logs, confirms the intended package is mounted, and exercises a health or representative application endpoint.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "App Service high CPU after a release"
+    prompt: |
+      Diagnose this synthetic App Service performance regression using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - CPU rose from 25% to 96% within five minutes of deployment `d-1042`
+      - Memory remains at 42%
+      - Kudu Process Explorer shows one application process using 91% CPU
+      - Dependency latency and request volume are unchanged
+      - Rolling back to the previous slot is available
+
+      Identify the likely root cause, propose safe immediate and durable
+      remediation, and explain how to verify recovery.
+    rubric:
+      - The response attributes the regression to the newly deployed application process, supported by timing and process-level CPU evidence, while acknowledging that profiling is needed to identify the exact hot code path.
+      - Immediate mitigation prioritizes a safe rollback or slot swap and may mention temporary scaling as impact reduction, but does not present scaling as the durable root-cause fix.
+      - Durable remediation includes profiling or comparing the changed code path before redeployment and avoids unsupported claims about the precise bug.
+      - Verification compares CPU, response latency, error rate, and representative requests after rollback or correction and monitors long enough to confirm the regression does not recur.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Function telemetry disappears after connection string edit"
+    prompt: |
+      Diagnose this synthetic Azure Functions observability incident using only
+      the supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - Functions are still returning successful responses
+      - App Insights stopped receiving traces immediately after an app-setting edit
+      - `APPLICATIONINSIGHTS_CONNECTION_STRING` now references a different,
+        nonexistent Application Insights resource
+      - The expected App Insights resource remains healthy
+      - No function deployment occurred
+
+      Identify the root cause, recommend safe remediation, and describe how to
+      prove telemetry recovery.
+    rubric:
+      - The response identifies the incorrect APPLICATIONINSIGHTS_CONNECTION_STRING as the evidence-backed cause and distinguishes telemetry loss from a function execution outage.
+      - The remediation restores the verified connection string through the normal configuration or infrastructure source of truth, accounts for the app restart caused by an app-setting change, and avoids exposing secrets.
+      - The response recommends checking for configuration drift so the incorrect value is not reapplied and does not propose recreating the healthy App Insights resource.
+      - Verification sends a correlated test invocation, allows for telemetry ingestion delay, and confirms new requests, traces, or exceptions appear in the intended App Insights resource.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "AKS CrashLoopBackOff caused by memory limit"
+    prompt: |
+      Diagnose this synthetic AKS incident using only the supplied evidence. Do
+      not query or modify the cluster.
+
+      Evidence from the pod-evidence bundle:
+      - Pod status: CrashLoopBackOff
+      - Last termination reason: OOMKilled
+      - Exit code: 137
+      - Memory limit: 512Mi
+      - Memory usage immediately before restart: 507Mi
+      - Previous logs show normal request handling and no application exception
+
+      Identify the root cause, recommend a safe remediation strategy, and
+      explain how to verify recovery.
+    rubric:
+      - The response identifies memory-limit exhaustion as the root cause using OOMKilled, exit code 137, and usage near the 512Mi limit rather than blaming probes or generic application crashes.
+      - Immediate remediation safely adjusts memory resources or reduces load with rollout and rollback awareness, while durable remediation investigates memory growth or leaks instead of only increasing the limit indefinitely.
+      - The response considers requests, limits, node capacity, and workload behavior before selecting a new value and does not prescribe an arbitrary unlimited setting.
+      - Verification confirms the rollout becomes ready, restart count stabilizes, no new OOMKilled events occur, and memory remains within an observed safe range under representative load.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "AKS pod remains Pending because of an untolerated taint"
+    prompt: |
+      Diagnose this synthetic AKS scheduling incident using only the supplied
+      evidence. Do not query or modify the cluster.
+
+      Evidence:
+      - Pod status: Pending
+      - Scheduler event: `0/6 nodes are available: 3 node(s) had untolerated
+        taint {dedicated: payments}, 3 node(s) didn't match Pod's node affinity`
+      - The workload is intended to run only on the payments node pool
+      - Payments nodes have label `workload=payments`
+      - The pod has matching node affinity but no toleration
+      - CPU and memory capacity are available
+
+      Identify the root cause, propose the narrowest safe correction, and
+      describe verification.
+    rubric:
+      - The response identifies the missing toleration for the payments taint as the blocking cause and explains why the matching affinity alone is insufficient.
+      - The remediation adds a narrowly matching toleration to the workload specification or removes the taint only if the isolation policy is intentionally being changed; it does not weaken scheduling controls cluster-wide.
+      - The response checks the exact taint effect and intended isolation policy before proposing a manifest change and avoids unnecessary node scaling.
+      - Verification confirms the pod schedules onto the intended payments pool, becomes Ready, and retains the expected affinity and isolation behavior.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "VM RDP timeout caused by effective NSG deny rule"
+    prompt: |
+      Diagnose this synthetic Azure VM connectivity incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - VM power state: running
+      - Azure Resource Health: Available
+      - VM agent: Ready
+      - Public IP and route are present
+      - Network Watcher IP flow verify for TCP 3389 returns Deny
+      - Matched rule: NIC NSG `Deny-Internet-Inbound`, priority 100
+      - A subnet NSG allow rule for the administrator's IP has priority 200
+
+      Identify the root cause, recommend a safe remediation, and explain how to
+      verify recovery.
+    rubric:
+      - The response identifies the higher-priority NIC NSG deny rule as the root cause and explains why the lower-priority subnet allow rule cannot override it.
+      - The remediation proposes a narrowly scoped higher-priority allow for the administrator source or an approved secure access path such as Bastion, rather than opening RDP to the internet.
+      - The response requires confirmation before changing NSG rules and does not recommend password resets, VM restart, redeploy, or guest changes before fixing the proven network blocker.
+      - Verification reruns effective-rule or IP-flow checks and then confirms an RDP connection from the approved source while ensuring broader inbound access remains blocked.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "VM SSH connection refused because sshd is stopped"
+    prompt: |
+      Diagnose this synthetic Azure Linux VM incident using only the supplied
+      evidence. Do not query or modify Azure.
+
+      Evidence:
+      - VM and Resource Health are healthy
+      - Network Watcher allows TCP 22 from the administrator's IP
+      - TCP connection reaches the VM but returns `connection refused`
+      - Boot diagnostics show the OS completed startup
+      - Serial Console output shows `sshd.service: inactive (dead)`
+      - VM agent status is Ready
+
+      Identify the root cause, propose a safe remediation path, and explain how
+      to verify recovery.
+    rubric:
+      - The response identifies that SSH reaches the guest but no service is listening because sshd is stopped, distinguishing refusal from an NSG timeout or credential failure.
+      - The remediation uses an approved guest-access method after VM-agent preflight, or Serial Console, to inspect sshd configuration and start or enable the service; it does not reset credentials or open port 22 broadly.
+      - The response checks why sshd stopped, validates configuration before restart, and requests approval before extension-backed or guest-changing commands.
+      - Verification confirms sshd is active and listening, an SSH connection succeeds from the approved source, and logs show no immediate service failure.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Service Bus AMQP blocked while HTTPS remains reachable"
+    prompt: |
+      Diagnose this synthetic Service Bus connectivity incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence from the messaging connectivity probe:
+      - DNS resolution succeeds
+      - HTTPS port 443 succeeds
+      - AMQP ports 5671 and 5672 time out
+      - The namespace firewall allows the application's public IP
+      - The JavaScript client uses the default AMQP-over-TCP transport
+      - The incident began after an outbound firewall policy change
+
+      Identify the root cause, give safe remediation options, and describe how
+      to verify recovery.
+    rubric:
+      - The response identifies the outbound network policy blocking AMQP ports as the likely root cause, supported by successful DNS and HTTPS plus timed-out 5671 and 5672 after the firewall change.
+      - Remediation offers either narrowly allowing required AMQP traffic or intentionally configuring AMQP over WebSockets on port 443, with language-appropriate consideration for the JavaScript client.
+      - The response does not recommend changing namespace credentials, RBAC, or inbound NSG rules without evidence and notes proxy or TLS inspection checks if WebSockets also fail.
+      - Verification reruns the connectivity probe and confirms the client can establish a connection and complete a representative send or receive without recurring transport errors.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Service Bus MessageLockLost during long processing"
+    prompt: |
+      Diagnose this synthetic Service Bus processing incident using only the
+      supplied evidence. Do not query or modify Azure.
+
+      Evidence:
+      - Queue lock duration: 30 seconds
+      - Handler processing time: 75 to 95 seconds
+      - Automatic lock renewal is disabled
+      - Logs show MessageLockLost when completing messages
+      - No AMQP disconnects, idle-link detachments, or network errors are present
+      - Some messages are delivered again after the failure
+
+      Identify the root cause, propose safe remediation, and explain how to
+      verify recovery without risking duplicate side effects.
+    rubric:
+      - The response identifies processing beyond the 30-second lock without renewal as the evidence-backed root cause and distinguishes it from network-related lock loss.
+      - Remediation enables bounded automatic lock renewal, shortens or checkpoints processing, or deliberately adjusts lock duration within service limits; it does not rely on blind retries alone.
+      - The response addresses at-least-once delivery by recommending idempotent processing or deduplication before replaying affected messages.
+      - Verification measures processing and renewal behavior, confirms completion occurs before the effective lock expires, checks lock-lost and redelivery metrics, and validates that duplicate side effects do not occur.
+    tags: *quality-tags
+    graders: *quality-graders

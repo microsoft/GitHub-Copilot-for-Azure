@@ -1,6 +1,6 @@
 # Create Hosted Agent (azd ai)
 
-Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers new agents and continued development of existing agents, then drops you into a local inner-loop so you can iterate before deploying.
+Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI (`azd`) and the `azure.ai.agents` extension. The same flow covers new agents and continued development of existing agents, then drops you into a local inner-loop so you can iterate before deploying.
 
 > **Creating a new agent end-to-end from scratch?** Use [quick-start-hosted.md](quick-start-hosted.md) instead -- an opinionated happy-path with safe defaults. Stay here for anything not covered by the quickstart.
 
@@ -15,7 +15,7 @@ Scaffold a hosted Foundry agent project with the Azure Developer CLI (`azd`) and
 | Scaffold command | `azd ai agent init -m <manifestUrl> --deploy-mode code --runtime python_3_13 --entry-point main.py`, pass `--runtime dotnet_10 --entry-point MyAgent.dll` for .NET project (or `--src <dir>` when onboarding existing code) |
 | Local run | Follow [local-run](references/local-run.md) for the service's protocol-specific invocation path |
 | Deploy handoff | [deploy/deploy.md](../deploy/deploy.md) |
-| Sample catalog | `azd ai agent sample list --featured-only --output json` |
+| Sample catalog | `azd ai agent sample list --output json` |
 | Reference docs | [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md), [local-run](references/local-run.md), [toolbox.md](../toolbox/toolbox.md) |
 
 ## When to Use This Skill
@@ -36,16 +36,42 @@ For prompt agents (LLM + instructions, no container), use [create-prompt.md](cre
 | Local debugging | `azd ai agent run --no-client` | Limited |
 | Output | New immutable agent version per `azd deploy` | `agent_update` via MCP / SDK |
 
+## azd Sample Selection Guidance
+
+Use this azd sample selection guidance when the workflow refers to azd sample selection guidance.
+
+List the curated catalog (filter by language if known):
+
+```bash
+azd ai agent sample list --language python --output json
+```
+
+Capture the selected sample's `manifestUrl`.
+
+> **Important:** Always select the best-matching samples from `azd ai agent sample list` for the capabilities the user explicitly requested. Use advanced tool samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup. Starting with the right sample helps ensure that the implementation follows the established code patterns and best practices for that type of Foundry hosted agent. If `azd ai agent sample list` does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
+
+You should pick only one sample for `azd ai agent init`, but you can browse multiple samples relevant to the user's task as code references.
+
+> **Important:** When users want to create or continue working on LangChain/LangGraph agents, you MUST read and follow [LangChain and LangGraph hosting](references/langchain-langgraph-hosting.md) before selecting a sample or changing agent code.
+
 ## Workflow
 
 ### Step 1 -- Verify the environment
 
-Run the bundled Copilot app entry preflight directly without asking for approval. It detects the GitHub Copilot app and installs app-specific add-ons only in that environment:
+Run the bundled read-only Copilot app entry preflight without asking for approval; it locates the app's Copilot CLI and reports whether the `microsoft-foundry` canvas plugin needs installation:
 
 ```bash
 ./scripts/check-copilot-app-entry.sh     # macOS / Linux
 ./scripts/check-copilot-app-entry.ps1    # Windows (pwsh)
 ```
+
+Act on the summary prefixes:
+
+- `[OK]` -- nothing to do.
+- `[WARN]` -- non-blocking; continue.
+- `[ACTION]` -- try to resolve by using the exact plugin install command emitted by the preflight; ask before installing in interactive mode, and install directly in non-interactive mode.
+  - **On successful installation, you MUST print:** "The `microsoft-foundry` canvas extension is installed and will be available in a new session." Then rerun the preflight.
+  - If installation is declined or fails, warn and continue; do not retry.
 
 Then run the bundled verification script before any create/deploy command:
 
@@ -54,7 +80,7 @@ Then run the bundled verification script before any create/deploy command:
 ./scripts/verify-environment.ps1    # Windows (pwsh)
 ```
 
-Do not continue past Step 1 while any `[ACTION]` remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
+Do not continue past Step 1 while any `[ACTION]` from environment verification remains. Never run `az login` or `azd auth login` for the user. Missing authentication is a hard stop before any `azd ai agent init`, `azd provision`, `azd deploy`, or other deploy command.
 
 Act on the summary prefixes:
 
@@ -67,22 +93,46 @@ Branch on the agent status reported by `verify-environment`:
 - `not_deployed` -> Step 2.
 - `active` / `deployed` -> for code changes, continue to Step 4b; for deploy-only requests, use [deploy/deploy.md](../deploy/deploy.md); to add a tool, use [toolbox.md](../toolbox/toolbox.md).
 
-### Step 2 -- New or existing Foundry project?
+### Step 2 -- Collect necessary information
 
-Ask: "Do you want to create a new Foundry project, or use an existing one?" Skip the question when the workspace is already configured as a Foundry hosted agent, or when the prompt supplies an existing project endpoint / project ARM resource ID.
+Before asking, resolve values from the user's request, the workspace,
+`azure.yaml`, the Step 1 verification output, and `azd env get-values`. For each
+row, do not ask when its **When to skip** condition is met. Ask for all
+remaining applicable values in one `AskUserQuestion` round. Do not ask for
+values that are already resolved or irrelevant to the requested change.
+Populate each question with the default option below.
 
-- **New project** -- do NOT pass `--project-id`. `azd provision` (in deploy) will create it.
-- **Existing project with ARM resource ID** -- pass that exact ID to `azd ai agent init --project-id`.
-- **Existing project with Foundry project endpoint only** -- resolve the project ARM resource ID with the bundled script, then pass the returned `id` to `azd ai agent init --project-id`:
+| Value | When to skip | Default option | Notes |
+|-------|--------------|----------------|-------|
+| Project / agent name | The user provided one, or the existing code already defines one. | Project: `ai-project-<random>`; agent: the selected sample's agent name | Generate `<random>` using 6-8 lowercase alphanumeric characters. Pass the agent name to `azd ai agent init` with `--agent-name`; it sets the service key and agent name in `azure.yaml`. For a new Foundry project, set the project name after init with `azd env set AZURE_AI_PROJECT_NAME "<project-name>"` before running `azd provision`. |
+| Language | The user provided one, or the existing code already determines it. | Python | Supported languages: Python and .NET. |
+| Subscription | The active azd environment already contains the intended `AZURE_SUBSCRIPTION_ID`. | Active Azure subscription: `<subscription-name>` (`<subscription-id>`) | Resolve both values with `az account show --query "{name:name,id:id}" -o json`; the ID must be a subscription GUID. |
+| Region | The active azd environment already contains the intended `AZURE_LOCATION`, or this change does not provision regional resources. | `northcentralus` | Azure resource location. |
+| Foundry project | The workspace or azd environment is already configured with a Foundry project, or the user provided one. | New Foundry project | Offer a new or existing project. For a new project, do not pass `--project-id`; `azd provision` creates it. For an existing project, use its ARM resource ID with `azd ai agent init --project-id`. |
+| Foundry model deployment | The user provided one; it is already resolved from `azure.yaml` or the active azd environment; or the requested change does not affect model selection. | Official sample's model selection | If the user specifies a model deployment, collect its deployment name.|
+| Deploy mode | Always — resolve without asking. | `code` | Priority: explicit user request → existing configuration → `code` for a new agent. Use `container` only when explicitly requested or already configured. |
+| ACR | Deploy mode is `code`, or the ACR choice is already determined in the existing configs. | New Azure Container Registry | Offer a new or existing registry. When creating a new ACR, leave `AZURE_CONTAINER_REGISTRY_NAME`, `AZURE_CONTAINER_REGISTRY_ENDPOINT`, and `AZURE_CONTAINER_REGISTRY_RESOURCE_ID` unset; `azd provision` will create one. |
+
+If the user chooses an existing Foundry project and supplies only its endpoint,
+resolve the project ARM resource ID with the bundled script:
+
   ```bash
   ./scripts/resolve-project-id.sh --endpoint "<foundry-project-endpoint>"     # macOS / Linux
   ./scripts/resolve-project-id.ps1 -Endpoint "<foundry-project-endpoint>"     # Windows (pwsh)
   ```
-- **Existing project with neither endpoint nor ARM ID** -- ask for the ARM resource ID.
 
 Do not guess, derive, or construct the project ID from the endpoint. For `--project-id`, pass either the user-supplied project ARM resource ID or the `id` returned by Azure lookup / the bundled resolve script.
 
 > `azd ai agent init` initializes both the azd project and its environment. Run it directly in the target directory. For an existing Foundry project, also pass `--project-id <arm-id>`.
+
+When creating a new agent in an existing Foundry project, verify that the selected Foundry model deployment exists by running:
+
+```bash
+az cognitiveservices account deployment list \
+  --resource-group "<rg-name>" \
+  --name "<foundry-account-name>" \
+  --output table
+```
 
 ### Step 3 -- Choose the starting point
 
@@ -95,47 +145,47 @@ If unsure, inspect the workspace and user intent. Do not invent a manifest URL o
 
 ### Step 4a -- New agent: scaffold from a sample
 
-List the curated catalog (filter by language if known):
-
-```bash
-azd ai agent sample list --featured-only --language python --output json
-```
-
-Each entry has a `manifestUrl` and an `initCommand`. Prefer code deployment. `azd ai agent init` defaults to code deployment.
-
-For a generic new hosted agent request, start from the basic sample. Use tool/function-calling samples only when the user explicitly asks for external actions, APIs, tools, connectors, or data lookup.
-
-If `azd ai agent sample list --featured-only` does not return a suitable sample, remove `--featured-only` and rerun `azd ai agent sample list`. If that still does not return a suitable sample, choose one from the official [Foundry samples repository](https://github.com/microsoft-foundry/foundry-samples) and construct the manifest URL from its exact `azure.yaml` path, following the URL format returned by `azd ai agent sample list`.
+Follow [azd Sample Selection Guidance](#azd-sample-selection-guidance) and use the captured `manifestUrl` to scaffold the agent.
 
 Run `azd ai agent init`. `azd ai agent init` is sufficient to create new Foundry projects (or reuse an existing one) and create new Foundry agents. By default, you do not need to run `azd init` unless the user has specific initialization requirements.
 
-Python Example (add `--project-id "<resourceId>"` for an existing Foundry project; add `--agent-name <name>` if the user wants a custom name -- omit otherwise to keep the sample default):
+Python example (add `--project-id "<resourceId>"` for an existing Foundry project):
+
+Pass `--deploy-mode code` for code deploy (recommended), or `--deploy-mode container` for container deploy.
 
 ```bash
 azd ai agent init --no-prompt \
   -m "<manifestUrl>" \
   --deploy-mode code \
   --runtime python_3_13 \
-  --entry-point main.py
+  --entry-point main.py \
+  --agent-name "<agent-name>"
 ```
 
-Immediately after init, set the collected subscription and location on the active azd environment:
+After the `azd ai agent init` completes, go to the project folder and set the collected subscription and location on the active azd environment:
 
 ```bash
-azd env set \
-  AZURE_SUBSCRIPTION_ID="<subscription-id>" \
-  AZURE_LOCATION="<region>"
+azd env set AZURE_SUBSCRIPTION_ID "<subscription-id>"
+azd env set AZURE_LOCATION "<region>"
+```
+
+When creating a new Foundry project, also set its name before provisioning:
+
+```bash
+azd env set AZURE_AI_PROJECT_NAME "<project-name>"
 ```
 
 > `--agent-name` at init sets both the `azure.yaml` service key and its `name:` in one shot; renaming after init requires editing both in `azure.yaml`.
 
-Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
+Do not run `azd env new`, `azd env select`, or `azd env set` before `azd ai agent init` in a new temp/workspace; there is no azd project yet, so those commands fail and waste time. Do not chain `azd env set` after `azd ai agent init` on the same command line. The init command may scaffold the project into a subfolder, so run `azd env set` only after initialization completes and after changing to the scaffolded project directory. For an existing project, `--project-id` is enough during init. Set endpoint/model values immediately after init, once `azure.yaml` and the azd env exist.
 
 > Tip: if the manifest declares a `parameters:` block (check by `curl <manifestUrl>`), collect required values before init when an azd project already exists. In a new empty workspace, prefer a sample without required secrets; there is no azd env to set until init creates the project files.
 
-`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<name>/`, and `<service-dir>/.agentignore`. A successful direct-code init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
+`init` writes `azure.yaml` (or appends the agent service to it), the agent source under `src/<agent-name>/`, and `<service-dir>/.agentignore`. A successful code deploy init produces an `azure.yaml` service block (`host: azure.ai.agent`) with `codeConfiguration:`. For file shapes, see [azd-ai-cli](../azd-guidance/references/azd-ai-cli.md).
 
 #### Model deployments (azd Golden Path)
+
+Read [Foundry Model Reference](./references/foundry-model.md) and follow the steps in it when you want to query model related data.
 
 `azure.yaml services.ai-project.deployments[]` is the **single source of truth** for model deployments in azd-managed Foundry projects. Model deployments live under the dedicated `ai-project` service (`host: azure.ai.project`); the agent service links to it via `uses: [ai-project]` and references the model through its `environmentVariables`. The flow is:
 
@@ -174,6 +224,7 @@ Check the scaffold before local run:
    FOUNDRY_PROJECT_ENDPOINT=https://<account>.services.ai.azure.com/api/projects/<project>
    AZURE_AI_MODEL_DEPLOYMENT_NAME=<model-deployment-name>
    ```
+   Keep `.env` out of the deploy package: make sure the service directory's `.agentignore` lists `.env` (add it if missing).
 4. Prefer `--agent-name` at init time (above). Fallback only: if init already ran without it, rename the `azure.yaml` service key AND its `name:` to the same value, preserving its `project:` path.
 5. If you change CPU or memory, set it in the agent service's `container.resources` in `azure.yaml`.
 
@@ -183,36 +234,13 @@ Use when the workspace already contains an agent project or source code.
 
 First determine whether the workspace is already a Foundry hosted agent project.
 
-- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, run `azd ai agent sample list` to browse available samples for code reference.
-- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, follow the Re-host steps below.
+- **Existing Foundry hosted agent** -- preserve its project structure, make the requested changes, and continue. For Foundry-specific features, use `azd ai agent sample list` and follow the [azd Sample Selection Guidance](#azd-sample-selection-guidance) to choose a sample for code reference.
+- **Other existing agent** -- infer whether the user wants to re-host it on Foundry and ask only when the intended outcome is unclear. If re-hosting, read and follow [Re-host an existing agent](references/re-host.md), then continue to Step 5.
 
-#### Re-host: collect information
+If the user wants to switch the deploy mode from the default `code` mode to `container`, follow the
+[deploy mode selection](../deploy/deploy.md#deploy-mode-selection----hosted-agents) to update `azure.yaml`.
 
-Resolve two independent choices before initialization or edits:
-
-1. **Model** -- keep the existing model or use a Foundry model.
-2. **Agent framework** -- keep the existing framework or migrate it.
-
-Infer these choices from the user's request and current code. Ask only for information that remains unclear; skip questions when the intent is explicit or evident, such as an existing Foundry model integration. Do not switch or deploy a model, or migrate the framework, without user intent.
-
-#### Re-host: adapt and initialize
-
-Use `azd ai agent sample list --language <language> --output json` to find the closest relevant sample for adapter, protocol, and deployment guidance. Treat samples as boundary patterns, not replacement applications.
-
-After resolving the choices, run:
-
-```bash
-azd ai agent init --no-prompt \
-  --src ./src/my-agent \
-  --agent-name my-agent \
-  --deploy-mode code \
-  --runtime python_3_13 \
-  --entry-point <entry-point>
-```
-
-`--runtime` and `--entry-point` are required with `--deploy-mode code --no-prompt`. Use the existing executable entry point, or a new adapter file only when one is intentionally added. Runtimes: `python_3_13`, `python_3_14`, `dotnet_10`. `--deploy-mode container` builds from `Dockerfile`. For an existing Foundry project, add `--project-id "<resourceId>"`.
-
-Once the agent is configured as a Foundry hosted agent, make the requested changes and continue to the shared flow in Steps 5-8.
+Read [Foundry Model Reference](./references/foundry-model.md) and follow the steps in it when you want to query model related data.
 
 ### Step 5 -- Write the agent instruction file (required)
 
@@ -283,7 +311,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 
 ## Common Guidelines
 
-1. **Sample-first** -- always get `manifestUrl` from `azd ai agent sample list`.
+1. **Sample-first** -- select the sample and capture its `manifestUrl` according to the [azd Sample Selection Guidance](#azd-sample-selection-guidance).
 2. **Prefer azd over az** -- fall back to `az` only as a last resort, with explicit consent.
 3. **Don't auto-login** -- `az login` and `azd auth login` are user-owned browser flows; ask the user and stop.
 4. **JSON output** -- add `--output json` only to read-only `azd ai agent` commands such as `show`. Do not add it to `azd ai agent invoke`; invoke supports `default` and `raw`, not `json`.
@@ -296,7 +324,7 @@ See the canonical env-var registry: [azure-dev/cli/azd/docs/environment-variable
 > - **Project:** if the user named a project or asked to create one, go ahead; otherwise stop and ask before provisioning.
 > - **Toolbox/connection:** create it only when the user asked you to; otherwise leave the configs as placeholders and ask.
 
-Defaults when unspecified: greenfield + Python + `azd ai agent sample list --featured-only --language python`, choose the simplest recommended sample that matches the request, plus `--no-prompt` on every write. Always set the subscription and location after init as shown in Step 4a. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
+Defaults when unspecified: greenfield + Python + `azd ai agent sample list --language python --output json`, choose the samples based on [azd Sample Selection Guidance](#azd-sample-selection-guidance), plus `--no-prompt` on every write. Always set the subscription and location after init as shown in Step 4a. If creating a new project and the user did not provide a project name, auto-generate one using the pattern `ai-project-<random>` (6-8 lowercase alphanumeric characters). Show the generated name to the user but do not block on confirmation. If using an existing project, ensure `azd ai agent init` receives `--project-id`: use the supplied ARM ID, or run the Step 2 resolve script for the supplied Foundry project endpoint and pass the returned `id`. If the user did not ask to create a new project and did not supply an existing one (ARM ID / endpoint), stop and ask which to use before provisioning. If `az` or `azd` is missing, ask before installing in interactive mode; install directly in non-interactive mode. In any mode, never run `az login` or `azd auth login`; stop and ask the user to log in manually before re-running Step 1. If the manifest declares secret parameters, collect them with `ask_user` and set them via `azd env set PARAM_...` before init -- keep `--no-prompt` (do not fall into azd's interactive prompts).
 
 ## Error Handling
 

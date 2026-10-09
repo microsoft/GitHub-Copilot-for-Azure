@@ -20,8 +20,8 @@ tags:
 defaults:
   runs: 5
   timeout: "10m"
-  executor: integration-test-agent-runner
-  model: claude-sonnet-4.6
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
 
 scoring:
   threshold: 0.8

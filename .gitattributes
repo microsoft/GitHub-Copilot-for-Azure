@@ -1,2 +1,20 @@
-.github/workflows/*.lock.yml linguist-generated=true merge=ours
+# Normalize all text files to LF in the index and working tree.
+# Git converts CRLF to LF on commit for any file detected as text.
+* text=auto eol=lf
+
+.github/workflows/*.lock.yml linguist-generated=true
+
+*.cs text
+*.csproj text
+*.json text
+*.props text
+*.slnx text
+*.txt text
 *.sh text eol=lf
+
+*.gif binary
+*.ico binary
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.zip binary

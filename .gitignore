@@ -338,6 +338,7 @@ StyleCopReport.xml
 TestResult.xml
 tests/reports/
 tests/reports/.DS_Store
+tests/skill-improvement-runs/
 token-metadata.json
 UpgradeLog*.htm
 UpgradeLog*.XML
@@ -361,3 +362,14 @@ dashboard/**/dist/
 results/
 tmp/
 .vally-workspaces/
+
+# Additional local .NET outputs
+telemetry-reporter/.idea/
+telemetry-reporter/.vscode/
+coverage/
+coverage.*
+*.test
+*.trx
+*.temp
+.DS_Store
+Thumbs.db

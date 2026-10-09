@@ -8,7 +8,7 @@ function resolveContainerName(override?: string): string {
     return override || process.env.INTEGRATION_REPORTS_CONTAINER_NAME || DEFAULT_CONTAINER_NAME;
 }
 
-const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
+export const EXCLUDED_FILENAMES = new Set(["token-usage.json", "agent-metadata.json"]);
 
 function createNode(): BlobTreeNode {
     return { files: [], children: {} };

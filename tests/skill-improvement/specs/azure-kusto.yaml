@@ -1,0 +1,79 @@
+name: azure-kusto-improvement
+
+target:
+  plugin: azure-skills
+  skill: azure-kusto
+  baselineRef: main
+  editablePaths:
+    - plugins/azure-skills/skills/azure-kusto/**
+
+evaluations:
+  root: tests/skill-improvement/evals/azure-kusto
+  development:
+    - access-connectivity.eval.yaml
+    - analyze-logs-telemetry.eval.yaml
+    - author-run-query.eval.yaml
+    - discover-cluster-database.eval.yaml
+    - discover-schema-table.eval.yaml
+    - ingestion-health.eval.yaml
+    - stored-functions.eval.yaml
+    - telemetry-informed-scenarios.eval.yaml
+    - troubleshoot-query.eval.yaml
+    - troubleshoot-schema-table.eval.yaml
+    - visualize-dashboard.eval.yaml
+    - live-connection.eval.yaml
+  heldOut:
+    - held-out-troubleshoot-remediate.eval.yaml
+
+models:
+  answers:
+    - gpt-5.6-sol
+  judges:
+    - claude-opus-4.8
+
+experiment:
+  repetitions: 1
+  conditions:
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: Skill + MCP
+      skill: enabled
+      mcp: enabled
+
+improvementAgent:
+  enabled: true
+  model: claude-sonnet-5
+
+acceptance:
+  minimumQualityImprovementPoints: 2
+  maximumEvalRegressionPoints: 5
+  maximumModelRegressionPoints: 5
+  minimumSkillInvocationRate: 0.8
+  requireHeldOutImprovement: true
+
+refinement:
+  minimumScoreImprovementPoints: 1
+  maximumQualityRegressionPoints: 0
+
+resources:
+  kusto:
+    subscriptionId: ${AZURE_EVALS_SUBSCRIPTION_ID}
+    resourceGroup: ${AZURE_EVALS_RESOURCE_GROUP}
+    clusterName: ghcfaevalskusto
+    databaseName: IntegrationTests
+    startBeforeRun: true
+    stopAfterRun: true
+    startupTimeoutMinutes: 20
+
+limits:
+  maxIterations: 3
+  maxAnswerGenerations: 800
+  maxJudgeCalls: 800
+  maxDurationMinutes: 360
+  maxConcurrentJobs: 5
+  maxSkillTokenIncreasePercent: 15
+
+output:
+  issue: never
+  draftPullRequest: accepted-candidate-only

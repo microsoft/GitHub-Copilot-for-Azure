@@ -7,7 +7,8 @@
 
 import * as path from "path";
 import type { SessionEvent } from "@github/copilot-sdk";
-import { computeToolUsage, deriveToolUsageFileName } from "../agent-runner.ts";
+import { describe, expect, test } from "vitest";
+import { computeToolUsage, deriveToolUsageFileName } from "../copilot-sdk-runner.ts";
 
 // Minimal event factories. Cast through unknown because we only populate the
 // fields computeToolUsage reads; the full SessionEvent union is much larger.

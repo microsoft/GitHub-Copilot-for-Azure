@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
-import { getBlobBuffer } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { EXCLUDED_FILENAMES, getBlobBuffer } from "../blobEnumerator";
+import { validateRequestIdentity } from "../requestIdentity";
 
 /**
  * Returns the raw bytes of a specific blob (no Content-Disposition).
@@ -8,7 +8,10 @@ import { logRequestIdentity } from "../requestIdentity";
  * GET /api/fetch?path={blobPath}
  */
 async function fetchBlob(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "fetchBlob");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "fetchBlob");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const blobPath = request.query.get("path");
     if (!blobPath) {
@@ -18,6 +21,11 @@ async function fetchBlob(request: HttpRequest, context: InvocationContext): Prom
     // Prevent directory traversal
     if (blobPath.includes("..")) {
         return { status: 400, body: "Invalid path" };
+    }
+
+    const fileName = blobPath.split("/").pop() ?? "";
+    if (EXCLUDED_FILENAMES.has(fileName)) {
+        return { status: 404, body: "Blob not found" };
     }
 
     const container = request.query.get("container") || undefined;

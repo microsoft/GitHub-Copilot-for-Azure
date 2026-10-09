@@ -1,0 +1,82 @@
+name: evaluate-$(Date:yyyyMMdd)-$(Rev:r)
+
+trigger: none
+pr: none
+
+parameters:
+  - name: plugin
+    displayName: Plugin containing the skill to evaluate
+    type: string
+  - name: skill
+    displayName: Skill to evaluate
+    type: string
+  - name: pluginsDir
+    displayName: Directory containing plugins in the plugin repository
+    type: string
+    default: .github/plugins
+  - name: evalDir
+    displayName: Evaluation directory (auto uses evals/<plugin>)
+    type: string
+    default: auto
+  - name: azureServiceConnection
+    displayName: Azure Resource Manager workload-identity service connection
+    type: string
+    default: azure-evaluation-service-connection
+  - name: uploadArtifacts
+    displayName: Upload reports and raw results as a pipeline artifact
+    type: boolean
+    default: true
+  - name: storageAccount
+    displayName: Storage account for reports; use none to skip publishing
+    type: string
+    default: none
+
+# Replace `github-service-connection` with an authorized GitHub service
+# connection. Before use, replace refs/heads/main with a reviewed immutable
+# reference. Change pluginSource.name/ref when testing another plugin repository.
+resources:
+  repositories:
+    - repository: evaluationTemplates
+      type: github
+      endpoint: github-service-connection
+      name: microsoft/GitHub-Copilot-for-Azure
+      ref: refs/heads/main
+    - repository: pluginSource
+      type: github
+      endpoint: github-service-connection
+      name: microsoft/azure-skills
+      ref: refs/heads/main
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+  - job: evaluate
+    displayName: Evaluate ${{ parameters.plugin }}/${{ parameters.skill }}
+    timeoutInMinutes: 360
+    steps:
+      - checkout: self
+        displayName: Checkout evaluation repository
+        clean: true
+        fetchDepth: 1
+        path: s/caller
+        persistCredentials: false
+
+      # Add tools and other test prerequisites here before running the evaluation.
+
+      # Define COPILOT_GITHUB_TOKEN as a secret pipeline variable with the
+      # account-level Copilot Requests permission before running this pipeline.
+      - template: workflow-templates/azure-devops/evaluation-steps/action.yml@evaluationTemplates
+        parameters:
+          plugin: ${{ parameters.plugin }}
+          skill: ${{ parameters.skill }}
+          pluginsDir: ${{ parameters.pluginsDir }}
+          evalDir: ${{ parameters.evalDir }}
+          azureServiceConnection: ${{ parameters.azureServiceConnection }}
+          uploadArtifacts: ${{ parameters.uploadArtifacts }}
+          storageAccount: ${{ parameters.storageAccount }}
+
+      # Add result post-processing or custom publishing steps here. The template
+      # writes dashboard-compatible reports to
+      # $(Pipeline.Workspace)/s/eval-workspace/tests/reports and raw Vally results
+      # to $(Pipeline.Workspace)/s/eval-workspace/tests/results.

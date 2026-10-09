@@ -1,0 +1,98 @@
+#!/usr/bin/env pwsh
+#Requires -Version 7
+# Validates all downloaded runtime and symbol archives against their SHA-256 sidecars and writes the consolidated build manifest published by the pipeline.
+# Exit codes: 0 = success, 1 = artifact validation failed, 2 = invalid arguments.
+
+[CmdletBinding()]
+param(
+    [string] $PipelineWorkspace,
+    [string] $ManifestPath,
+    [string] $BuildId,
+    [string] $BuildReason,
+    [string] $SourceVersion
+)
+
+Set-StrictMode -Version Latest
+Import-Module (Join-Path $PSScriptRoot 'NativePackaging.psm1') -Force -ErrorAction Stop
+
+if ([string]::IsNullOrWhiteSpace($PipelineWorkspace) -or
+    [string]::IsNullOrWhiteSpace($ManifestPath) -or
+    [string]::IsNullOrWhiteSpace($BuildId) -or
+    [string]::IsNullOrWhiteSpace($BuildReason) -or
+    [string]::IsNullOrWhiteSpace($SourceVersion)) {
+    Write-Error 'PipelineWorkspace, ManifestPath, BuildId, BuildReason, and SourceVersion are required.'
+    exit 2
+}
+if (-not (Test-Path -LiteralPath $PipelineWorkspace -PathType Container)) {
+    Write-Error "Pipeline workspace '$PipelineWorkspace' does not exist."
+    exit 2
+}
+
+$runtimeIdentifiers = @(Get-NativeRuntimeIdentifierList)
+$manifestFiles = @()
+$versions = @()
+
+try {
+    foreach ($runtimeIdentifier in $runtimeIdentifiers) {
+        $artifactDirectory = Join-Path $PipelineWorkspace "telemetry-reporter_$runtimeIdentifier"
+        if (-not (Test-Path -LiteralPath $artifactDirectory -PathType Container)) {
+            throw "Artifact directory '$artifactDirectory' was not downloaded."
+        }
+
+        $runtimeArchives = @(
+            Get-ChildItem -LiteralPath $artifactDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier.zip" -ErrorAction Stop
+        )
+        $symbolArchives = @(
+            Get-ChildItem -LiteralPath $artifactDirectory -File -Filter "ghcfa-telem-*-$runtimeIdentifier-symbols.zip" -ErrorAction Stop
+        )
+        if ($runtimeArchives.Count -ne 1 -or $symbolArchives.Count -ne 1) {
+            throw "Expected one runtime and one symbols archive for '$runtimeIdentifier'."
+        }
+
+        $versionMatch = [regex]::Match(
+            $runtimeArchives[0].Name,
+            "^ghcfa-telem-(.+)-$([regex]::Escape($runtimeIdentifier))\.zip$"
+        )
+        if (-not $versionMatch.Success) {
+            throw "Unable to parse the version from '$($runtimeArchives[0].Name)'."
+        }
+        $version = $versionMatch.Groups[1].Value
+        if ($symbolArchives[0].Name -ne "ghcfa-telem-$version-$runtimeIdentifier-symbols.zip") {
+            throw "Runtime and symbols package versions do not match for '$runtimeIdentifier'."
+        }
+        $versions += $version
+
+        foreach ($archive in @($runtimeArchives[0], $symbolArchives[0])) {
+            $package = Get-ValidatedNativePackage -ArchivePath $archive.FullName `
+                -RuntimeIdentifier $runtimeIdentifier -Symbols:($archive -eq $symbolArchives[0])
+            $manifestFiles += [ordered]@{
+                runtimeIdentifier = $runtimeIdentifier
+                file = $package.File
+                sha256 = $package.Sha256
+            }
+        }
+    }
+
+    $uniqueVersions = @($versions | Sort-Object -Unique)
+    if ($uniqueVersions.Count -ne 1) {
+        throw "Expected one package version across the matrix; found: $($uniqueVersions -join ', ')."
+    }
+
+    $manifestDirectory = Split-Path -Parent $ManifestPath
+    New-Item -ItemType Directory -Path $manifestDirectory -Force -ErrorAction Stop | Out-Null
+    [ordered]@{
+        buildId = $BuildId
+        buildReason = $BuildReason
+        sourceVersion = $SourceVersion
+        version = $uniqueVersions[0]
+        releaseTag = "ghcfa-telem-$($uniqueVersions[0])"
+        runtimeIdentifiers = $runtimeIdentifiers
+        files = $manifestFiles
+    } |
+        ConvertTo-Json -Depth 10 |
+        Set-Content -LiteralPath $ManifestPath -Encoding utf8 -ErrorAction Stop
+}
+catch {
+    Write-Error $_
+    exit 1
+}

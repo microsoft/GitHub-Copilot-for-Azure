@@ -4,7 +4,7 @@ description: "Author, validate, and run Vally evaluation suites for agent skills
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Vally eval suites
@@ -21,15 +21,9 @@ Vally eval suites for azure-skills plugin have the following file layout. The sh
 
 Use meaningful file names to categorize tests. If a skill needs fixture files for its eval suites, it should organize such fixture files in a `fixture` directory under its directory, e.g. `<repo-root>/evals/azure-skills/azure-ai/fixture/`. The [vally test runner](/tests/run-vally-test.ts) and [stimulus validation script](/scripts/src/vally/validate-stimulus.ts) will load all `*.yaml` files except for those under a `fixture/` directory. Make sure to put all fixture files under the `fixture/` directory.
 
-## Migrate integration tests
-
-azure-skills plugin have implemented JavaScript integration test using Jest as the underlying test runner. All such integration tests are under `tests/**/integration.test.ts` files.
-
-To migrate integration test for a skill to vally suites, create its eval suite spec at `<repo-root>/evals/<plugin-dirname>/<skill-name>/eval.yaml`, add a suite that runs the same prompt and uses vally's built-in graders to grade the trajectory of the agent run. If the integration test grades the agent run in a way that vally's built-in graders don't support, refer to the official documentation on how to create a custom grader [writing-custom-grader](https://microsoft.github.io/vally/guides/writing-custom-graders/).
-
 ## Why is there a custom executor
 
-The legacy Jest based integration test framework implemented features that vally doesn't support yet, such as early termination, follow up, system prompt modification, screenshot taking, etc. Besides, [test-all-integration](/.github/workflows/test-all-integration.yml) runs automated integration tests, collects its exported data and feeds the data to a dashboard web app under `<repo-root>/dashboard/` to monitor skill integration test results.
+Our custom executor implemented features that vally doesn't support yet, such as early termination, system prompt modification, screenshot taking, etc. Besides, [test-all-integration](/.github/workflows/test-all-integration.yml) runs automated integration tests, collects its exported data and feeds the data to a dashboard web app under `<repo-root>/dashboard/` to monitor skill integration test results.
 
 If you intend to have your vally suites use any of the extended features or have their results be consumed by the dashboard, you **MUST** use the custom executor in your vally suites.
 
@@ -38,6 +32,13 @@ If you intend to have your vally suites use any of the extended features or have
 The custom executor uses special tag values to control the behavior of the custom executor. See [tag-helpers.ts](../../../tests/vally/tag-helpers.ts) to learn what special tags are supported.
 
 > Note: If an eval suite specifies an earlyTerminate condition, the suite MUST NOT use the `completed` grader because early terminated runs will always fail the `completed` grader by design.
+
+Here are the advanced features implemented by the custom executor using tags.
+
+- Early termination: terminate a test run based on custom conditions
+- System prompt: use a customized system prompt
+- Screenshot: take screenshot of a web app at the end of the test
+- Azure fixture: provision Azure resources and present them to the agent as context. See [azure-fixtures](./references/azure-fixture.md) for more details.
 
 ## Validate vally eval suites
 
@@ -88,7 +89,7 @@ npx @microsoft/vally-cli grade --eval-spec ../evals/<plugin-dirname>/<skill-name
 ../../../tests/vally/vally-graders.ts --verbose < results/<test-run-name>/results.jsonl
 ```
 
-Note that the grader plugin's path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-skills/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
+Note that the grader plugin's path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-skills/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/copilot-sdk-executor.ts`.
 
 ### Collect test results
 

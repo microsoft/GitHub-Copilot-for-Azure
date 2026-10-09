@@ -1,7 +1,7 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { TableClient } from "@azure/data-tables";
 import { AzureCliCredential, ManagedIdentityCredential } from "@azure/identity";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 import { resolveSkillFilter } from "../blobEnumerator";
 
 const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
@@ -49,7 +49,10 @@ function skillSetClause(skills: Set<string>): string | undefined {
  * usage plus the run's total API duration and turn (LLM round-trip) count.
  */
 async function getTestRunMetrics(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getTestRunMetrics");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getTestRunMetrics");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const filterSkill = request.query.get("skill") || undefined;
     const filterTest = request.query.get("test") || undefined;
@@ -122,7 +125,10 @@ async function getTestRunMetrics(request: HttpRequest, context: InvocationContex
  * GET /api/test-run-metrics/filters
  */
 async function getTestRunMetricsFilters(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getTestRunMetricsFilters");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getTestRunMetricsFilters");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     try {
         const tableClient = getTestRunMetricsTableClient();

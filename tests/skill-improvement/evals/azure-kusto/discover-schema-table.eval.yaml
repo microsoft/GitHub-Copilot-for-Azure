@@ -1,0 +1,106 @@
+name: azure-kusto-discover-schema-table
+description: Ten matched scenarios for table and schema discovery.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Find checkout telemetry table"
+    prompt: "I need to analyze checkout failures in an ADX database but do not know the table or columns. Describe how to discover the relevant table and inspect its schema before writing KQL."
+    rubric:
+      - The response uses a logical table discovery then schema inspection sequence rather than inventing a schema.
+      - The response identifies `kusto_table_schema_get` or the equivalent for candidate tables and looks for checkout, outcome, and event-time fields and their types.
+      - When metadata is ambiguous, the response proposes a bounded sample or aggregate inspection and does not claim which table contains failures without evidence.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Inspect a known table schema"
+    prompt: "Before querying ApiRequests, retrieve its ADX schema and explain which columns could represent event time, latency, status, and correlation."
+    rubric:
+      - The response retrieves the schema for the known `ApiRequests` table with `kusto_table_schema_get` or the equivalent metadata operation.
+      - The response maps candidate columns to event time, latency, status, and correlation based on names and data types, while marking ambiguities for validation.
+      - The response does not invent actual `ApiRequests` columns or claim a mapping without returned schema evidence.
+    tags: *tags
+    graders: *graders
+  - name: "Discover ingestion timestamp"
+    prompt: "I do not know whether my SecurityEvents table uses Timestamp, TimeGenerated, or another datetime column. Show how to determine the correct time field safely."
+    rubric:
+      - The response inspects the `SecurityEvents` schema and identifies datetime-typed candidate fields rather than assuming a conventional name.
+      - The response uses a bounded query to compare candidate values, null prevalence, and recent ranges when schema metadata alone is insufficient.
+      - The response distinguishes the event-time field from Kusto `ingestion_time()` and avoids claiming a selected field without evidence.
+    tags: *tags
+    graders: *graders
+  - name: "Find tables containing device data"
+    prompt: "Help me discover which tables in my Kusto database likely contain DeviceId telemetry, then verify the schema before selecting one."
+    rubric:
+      - The response enumerates database tables and inspects candidate schemas for a `DeviceId` field or a clearly equivalent device identifier.
+      - The workflow validates the candidate field's type and relevant time or event columns before selecting a table.
+      - The response uses bounded data inspection only when needed and does not claim that a table contains device telemetry without metadata or query evidence.
+    tags: *tags
+    graders: *graders
+  - name: "Identify dynamic columns"
+    prompt: "Find whether table AppEvents has any dynamic JSON columns and explain how schema types guide parsing in the final query."
+    rubric:
+      - The response retrieves the `AppEvents` schema and identifies columns whose declared Kusto type is `dynamic`.
+      - The response explains that dynamic values can be accessed as property bags while string JSON requires parsing before property access.
+      - The response avoids naming actual dynamic columns unless they come from schema evidence and suggests bounded shape inspection for candidate fields.
+    tags: *tags
+    graders: *graders
+  - name: "Discover join keys"
+    prompt: "I need to correlate Requests and Dependencies but do not know their shared key. Describe a schema-first workflow to identify a valid join key."
+    rubric:
+      - The response inspects both `Requests` and `Dependencies` schemas and compares candidate identifier columns by name and compatible type.
+      - The workflow validates candidate keys with bounded overlap, null, and uniqueness or multiplicity checks before choosing a join.
+      - The response considers expected relationship semantics and does not assume `OperationId` or another conventional key without evidence.
+    tags: *tags
+    graders: *graders
+  - name: "Find error classification fields"
+    prompt: "Determine which columns in Operations could classify success, failure, status code, and exception category before authoring an error query."
+    rubric:
+      - The response retrieves the `Operations` schema and identifies candidate fields for outcome, status code, and exception category from their names and types.
+      - The response validates candidate value domains with bounded summaries before deciding how success and failure should be classified.
+      - The response defers authoring the final error predicate until the schema and representative values are known and does not invent columns.
+    tags: *tags
+    graders: *graders
+  - name: "Check column type before aggregation"
+    prompt: "Confirm the type of DurationMs in ApiLogs before calculating averages, and explain what conversion is needed if it is stored as string."
+    rubric:
+      - The response inspects the `ApiLogs` schema and explicitly verifies the declared type of `DurationMs`.
+      - If `DurationMs` is string, the response recommends a safe numeric conversion such as `todouble()` or `toreal()` and handles conversion failures or nulls before averaging.
+      - The response does not assert the actual type without schema evidence and gives a bounded validation query for converted values.
+    tags: *tags
+    graders: *graders
+  - name: "Discover table retention clues"
+    prompt: "I expected 90 days of data but only see recent rows. Explain which schema and bounded data checks you would perform before concluding retention is wrong."
+    rubric:
+      - The response verifies the table and its candidate event-time column and type before using it to judge data age.
+      - The response uses bounded min/max and sampled time-distribution queries, and compares event time with ingestion time or alternate timestamp fields when relevant.
+      - The response treats retention as only one hypothesis and does not require or claim retention-policy findings that the supplied environment cannot provide.
+    tags: *tags
+    graders: *graders
+  - name: "Map business concepts to columns"
+    prompt: "I need customer, order value, checkout state, and event time from an unfamiliar CommerceEvents table. Describe how to inspect and validate candidate columns without guessing."
+    rubric:
+      - The response retrieves the `CommerceEvents` schema and identifies candidate columns for all four requested concepts from names and compatible types.
+      - The workflow validates candidate value shapes, null prevalence, and representative bounded values before accepting each mapping.
+      - The response marks ambiguous mappings for user confirmation or further evidence and does not invent a schema or silently substitute missing concepts.
+    tags: *tags
+    graders: *graders

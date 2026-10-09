@@ -1,6 +1,6 @@
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { enumerateBlobs, filterBlobTreeBySkills, getBlobContent, resolveSkillFilter } from "../blobEnumerator";
-import { logRequestIdentity } from "../requestIdentity";
+import { validateRequestIdentity } from "../requestIdentity";
 import { SKILL_REPORT_PATTERN } from "../skillReport";
 import type { BlobTree, BlobTreeNode } from "../shared/blobTree";
 
@@ -25,7 +25,10 @@ function collectSkillReportPaths(node: BlobTreeNode): string[] {
  * GET /api/reports/{date}
  */
 async function getReports(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    logRequestIdentity(request, context, "getReports");
+    const unauthorizedResponse = validateRequestIdentity(request, context, "getReports");
+    if (unauthorizedResponse) {
+        return unauthorizedResponse;
+    }
 
     const date = request.params.date;
     if (!date) {
@@ -38,6 +41,11 @@ async function getReports(request: HttpRequest, context: InvocationContext): Pro
     const skillFilter = await resolveSkillFilter(request.query.get("plugin") || undefined);
     if (skillFilter) {
         filterBlobTreeBySkills(tree, skillFilter);
+    }
+
+    const skill = request.query.get("skill");
+    if (skill) {
+        filterBlobTreeBySkills(tree, new Set([skill]));
     }
 
     const dateNode = tree[date];

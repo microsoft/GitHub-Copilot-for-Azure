@@ -28,10 +28,13 @@ on:
       model-override:
         description: "Model to use for testing"
         required: false
-        type: choice
-        options:
-          - claude-sonnet-4.6
-          - claude-opus-4.6
+        type: string
+        default: claude-sonnet-5
+      no-skills:
+        description: "Optional: whether to override the run to load no skills"
+        required: false
+        type: boolean
+        default: false
       skill-test-pattern:
         description: "Optional: pattern by name or describe block for filtering skill tests. This parameter does not apply to azure-deploy tests"
         required: false
@@ -42,19 +45,6 @@ on:
         required: false
         type: string
         default: ""
-      debug:
-        description: "Whether to set DEBUG=1 for jest tests"
-        required: false
-        type: boolean
-        default: false
-
-# SCHEDULE CONFIGURATION
-# Customize the inputs for each scheduled run by modifying these env vars.
-# Skills for each schedule are defined in tests/skills.json under integrationTestSchedule.
-env:
-  SCHEDULED_DEBUG_21: "false" # debug flag for 9:00 PM PST run
-  SCHEDULED_DEBUG_00: "false" # debug flag for 12:00 AM PST run
-  SCHEDULED_DEBUG_04: "false" # debug flag for 4:00 AM PST run
 
 jobs:
   resolve-inputs:
@@ -64,7 +54,6 @@ jobs:
     outputs:
       skills: ${{ steps.resolve.outputs.skills }}
       deploy-test-pattern: ${{ steps.resolve.outputs.deploy-test-pattern }}
-      debug: ${{ steps.resolve.outputs.debug }}
     steps:
       - name: Checkout repository
         if: github.event_name == 'schedule'
@@ -76,11 +65,7 @@ jobs:
         env:
           INPUT_SKILLS: ${{ inputs.skills }}
           INPUT_DEPLOY_TEST_PATTERN: ${{ inputs.deploy-test-pattern }}
-          INPUT_DEBUG: ${{ inputs.debug }}
           EVENT_SCHEDULE: ${{ github.event.schedule }}
-          SCHEDULED_DEBUG_21: ${{ env.SCHEDULED_DEBUG_21 }}
-          SCHEDULED_DEBUG_00: ${{ env.SCHEDULED_DEBUG_00 }}
-          SCHEDULED_DEBUG_04: ${{ env.SCHEDULED_DEBUG_04 }}
         with:
           script: |
             const eventName = context.eventName;
@@ -89,7 +74,6 @@ jobs:
               // Manual trigger - use provided inputs
               core.setOutput("skills", process.env.INPUT_SKILLS);
               core.setOutput("deploy-test-pattern", process.env.INPUT_DEPLOY_TEST_PATTERN);
-              core.setOutput("debug", process.env.INPUT_DEBUG);
             } else {
               // Scheduled trigger - read from tests/skills.json
               const cron = process.env.EVENT_SCHEDULE;
@@ -114,20 +98,6 @@ jobs:
               const skills = skillsList.join(",");
               core.info(`Skills from schedule config: ${skills}`);
               core.setOutput("skills", skills);
-
-              // Set debug flag based on the schedule slot
-              const debugMap = {
-                "0 5 * * 2-6":  process.env.SCHEDULED_DEBUG_21,
-                "0 8 * * 2-6":  process.env.SCHEDULED_DEBUG_00,
-                "0 12 * * 2-6": process.env.SCHEDULED_DEBUG_04,
-              };
-
-              if (!(cron in debugMap)) {
-                core.setFailed(`Unknown schedule: ${cron}`);
-                return;
-              }
-
-              core.setOutput("debug", debugMap[cron]);
             }
 
   setup:
@@ -168,7 +138,7 @@ jobs:
     with:
       model-override: ${{ inputs.model-override }}
       test-pattern: ${{ needs.resolve-inputs.outputs.deploy-test-pattern }}
-      debug: ${{ needs.resolve-inputs.outputs.debug == 'true' }}
+      no-skills: ${{ inputs.no-skills || false }}
 
   test:
     name: Integration – ${{ matrix.skill }}
@@ -177,8 +147,6 @@ jobs:
     environment: cideploytest
     runs-on: ubuntu-latest
     env:
-      # Skills that should be tested using jest in a JSON array
-      JEST_SKILLS: '["azure-skills/microsoft-foundry"]'
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
@@ -199,7 +167,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install azd
-        uses: Azure/setup-azd@634ad924cf8baef2257898ba5663be8d19f15aca # v2
+        uses: Azure/setup-azd@0b7e3a35ab00f2eee7080c845eb39c3f0ebfa553 # v2
 
       - name: Log in with Azure (Federated Credentials)
         run: |
@@ -210,7 +178,7 @@ jobs:
         shell: pwsh
 
       - name: Azure login
-        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
@@ -273,25 +241,10 @@ jobs:
       # Test failures now fail the job (continue-on-error: false), while report steps still run via if: always().
       # Skill authors should use the reports to identify issues and polish their skills/tests.
 
-      - name: Run integration tests – ${{ matrix.skill }}
-        if: ${{ contains(fromJson(env.JEST_SKILLS), matrix.skill) }}
-        env:
-          DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
-          TEST_RUN_ID: all-integration
-          MODEL_OVERRIDE: ${{ inputs.model-override }}
-          SKILL_TEST_PATTERN: ${{ inputs.skill-test-pattern }}
-          SKILL: ${{ matrix.skill }}
-        run: |
-          PLUGIN_DIR="${SKILL%%/*}"
-          SKILL_NAME="${SKILL##*/}"
-          npm run test:integration "$SKILL_NAME" "$SKILL_TEST_PATTERN"
-        continue-on-error: false
-
       # Override the number of concurrent workers to 2 to prevent a GitHub hosted Actions runner running out of memory.
       - name: Run integration tests (vally) - ${{ matrix.skill }}
-        if: ${{ !contains(fromJson(env.JEST_SKILLS), matrix.skill) }}
         env:
-          DEBUG: ${{ needs.resolve-inputs.outputs.debug == 'true' && '1' || '' }}
+          NO_SKILLS: ${{ inputs.no-skills && 'true' || '' }}
           TEST_RUN_ID: all-integration
           MODEL_OVERRIDE: ${{ inputs.model-override }}
           SKILL: ${{ matrix.skill }}

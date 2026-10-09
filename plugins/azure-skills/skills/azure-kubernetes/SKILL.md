@@ -18,8 +18,8 @@ description: "Plan, create, configure, and review production-ready Azure Kuberne
 |----------|-------|
 | Best for | AKS cluster planning (Day-0) and posture review / compliance audit (Day-2) |
 | MCP Tools | `mcp_azure_mcp_aks` |
-| CLI | `az aks create`, `az aks show`, `az aks nodepool list`, `kubectl get`, `kubectl describe` |
-| Related skills | azure-kubernetes-app-deploy (deploy an app to an existing cluster), azure-diagnostics (troubleshooting AKS), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic) |
+| CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
+| Related skills | azure-kubernetes-app-deploy (deploy an app to an existing cluster), azure-diagnostics (baseline AKS troubleshooting), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic), optional `aks-skills` operations add-on (focused incident, exact-signature, packet-capture, and GPU Day-2 workflows) |
 
 ## When to Use This Skill
 Activate this skill when user wants to:
@@ -38,6 +38,11 @@ Activate this skill when user wants to:
 > configures the *cluster*. To containerize an app and deploy it to a cluster
 > that already exists (Dockerfile + manifests + Deployment Safeguards), use the
 > `azure-kubernetes-app-deploy` sub-skill instead.
+
+> **Deeper operational task?** Keep Day-0 planning and basic operations in this
+> base skill. Load [optional-aks-operations.md](./references/optional-aks-operations.md)
+> only when a focused optional AKS operational skill could improve the current
+> task.
 
 ## Rules
 1. Start with the user's requirements for provisioning compute, networking, security, and other settings.

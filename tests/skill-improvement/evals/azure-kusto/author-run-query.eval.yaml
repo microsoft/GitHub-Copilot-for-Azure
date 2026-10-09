@@ -1,0 +1,106 @@
+name: azure-kusto-author-run-query
+description: Ten matched scenarios for authoring and running KQL.
+tags:
+  type: integration
+  skill: azure-kusto
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+scoring:
+  threshold: 0.7
+stimuli:
+  - name: "Query recent application errors"
+    prompt: "Write KQL for table AppLogs to return Timestamp, Service, Message, and CorrelationId for Error or Critical rows in the last two hours, newest first, limited to 200 rows."
+    rubric:
+      - The KQL queries `AppLogs` and filters `Timestamp` to the last two hours.
+      - The query includes both Error and Critical rows, projects exactly the requested fields, and sorts newest first.
+      - The query limits the result to 200 rows and does not claim that it was executed or report fabricated results.
+    tags: &tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders: &graders
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+  - name: "Aggregate hourly checkout failures"
+    prompt: "Write a KQL query over CheckoutEvents for the last seven days that counts failed checkouts by Region and one-hour bins, ordered chronologically."
+    rubric:
+      - The KQL queries `CheckoutEvents` and applies a seven-day time filter using a plausible event-time column.
+      - The query filters or conditionally counts failed checkouts and summarizes counts by `Region` and one-hour time bins.
+      - The result is ordered chronologically, with region ordering allowed as a secondary key.
+    tags: *tags
+    graders: *graders
+  - name: "Calculate API latency percentiles"
+    prompt: "Using Requests(Timestamp, Endpoint, DurationMs, Success), write KQL for p50, p95, and p99 latency by Endpoint over the last 24 hours, excluding failed requests."
+    rubric:
+      - The KQL filters `Requests` to the last 24 hours and excludes rows where `Success` is false.
+      - The query calculates 50th, 95th, and 99th percentiles of `DurationMs` using valid Kusto percentile aggregation.
+      - The percentile results are grouped by `Endpoint` and clearly named or otherwise identifiable.
+    tags: *tags
+    graders: *graders
+  - name: "Find top exception types"
+    prompt: "Author KQL over Exceptions for the past day to show the ten most frequent ExceptionType values with counts and the latest occurrence."
+    rubric:
+      - The KQL filters `Exceptions` to the past day using a plausible time column.
+      - The query summarizes both row count and latest occurrence by `ExceptionType`.
+      - The result returns the ten highest counts in descending frequency order.
+    tags: *tags
+    graders: *graders
+  - name: "Correlate requests and dependencies"
+    prompt: "Write KQL joining Requests and Dependencies on OperationId for the last six hours, returning failed requests whose dependency duration exceeded 2 seconds."
+    rubric:
+      - The KQL applies the six-hour bound to both `Requests` and `Dependencies` before joining them.
+      - The query joins the tables on `OperationId` and filters requests to failed outcomes.
+      - The dependency duration predicate correctly represents greater than two seconds, with units made explicit or converted when needed.
+    tags: *tags
+    graders: *graders
+  - name: "Parse JSON telemetry properties"
+    prompt: "The Telemetry.Properties column is JSON. Write KQL for the last hour that extracts tenantId and featureName, then counts events by both values."
+    rubric:
+      - The KQL filters `Telemetry` to the last hour before JSON extraction.
+      - The query parses or accesses `Properties` as JSON and extracts `tenantId` and `featureName` into scalar values.
+      - The result counts events grouped by both extracted values.
+    tags: *tags
+    graders: *graders
+  - name: "Compute daily active devices"
+    prompt: "Write KQL over DeviceEvents to calculate distinct active DeviceId values per day for the last 30 days."
+    rubric:
+      - The KQL filters `DeviceEvents` to the last 30 days.
+      - The query bins the event time by one day and calculates distinct `DeviceId` values for each bin.
+      - The response returns a chronological daily series or includes ordering suitable for one.
+    tags: *tags
+    graders: *graders
+  - name: "Detect response-time anomalies"
+    prompt: "Author KQL over ApiMetrics for a seven-day five-minute response-time series and use an appropriate Kusto series function to flag anomalies."
+    rubric:
+      - The KQL creates a bounded seven-day response-time series from `ApiMetrics` with five-minute bins.
+      - The query uses an appropriate Kusto series anomaly function, such as `series_decompose_anomalies`, on the aggregated series.
+      - The output expands or otherwise exposes anomaly flags together with their timestamps and response-time values.
+    tags: *tags
+    graders: *graders
+  - name: "Compare current and previous periods"
+    prompt: "Write KQL that compares error counts in AppLogs for the last 24 hours against the preceding 24 hours and returns both counts plus percentage change."
+    rubric:
+      - The KQL defines non-overlapping current and preceding 24-hour windows over `AppLogs`.
+      - The query applies a plausible error predicate consistently to both periods and returns both counts in one result.
+      - The percentage-change calculation uses a non-integer numeric expression and handles a zero previous-period count explicitly.
+    tags: *tags
+    graders: *graders
+  - name: "Run a bounded exploratory query"
+    prompt: "I want you to inspect recent rows from table AuditEvents in my ADX database. Provide a safe exploratory KQL query and explain how you would execute it through Azure Kusto MCP."
+    rubric:
+      - The response provides a read-only `AuditEvents` query with a recent time bound, deterministic ordering, and a modest row limit.
+      - The response explains execution through `kusto_query` or the equivalent Azure Kusto MCP operation and identifies the required subscription, cluster, database, and query inputs.
+      - The response requests or uses placeholders for missing resource identifiers and does not fabricate inspected rows or execution results.
+    tags: *tags
+    graders: *graders

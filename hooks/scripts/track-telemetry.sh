@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Telemetry tracking hook for Azure Copilot Skills
-# Reads JSON input from stdin, tracks relevant events, and publishes via MCP
+# Reads JSON input from stdin, tracks relevant events, and publishes telemetry
+# Exit codes: 0 = hook continues, including telemetry failures
 #
 # === Client Format Reference ===
 #
@@ -18,6 +19,13 @@
 #   - MCP prefix:     mcp__plugin_azure_azure__<command>  (double underscores)
 #   - Skill prefix:   azure:<skill-name>  (e.g., azure:azure-prepare)
 #   - Detection:      has "hook_event_name", tool_use_id does NOT contain "__vscode"
+#
+# Cursor:
+#   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
+#   - Tool names:     PascalCase for file reads (Read); raw MCP tool name from afterMCPExecution
+#   - Skill paths:    .cursor/plugins/cache/<catalog>/azure/<revision>/skills/<name>/SKILL.md
+#   - Detection:      has "hook_event_name" and "cursor_version"
+#   - MCP detection:  afterMCPExecution event with mcp_server_name "azure"
 #
 # VS Code:
 #   - Field names:    snake_case (tool_name, session_id, tool_input, hook_event_name)
@@ -44,7 +52,8 @@
 #
 # 2. tool_invocation
 #    - Triggered when: a tool matching an Azure MCP prefix is called
-#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*)
+#      (azure-*, mcp__plugin_azure_azure__*, mcp_azure_mcp_*), or when Cursor
+#      sends afterMCPExecution with mcp_server_name "azure"
 #    - Tracked field: --tool-name <toolName>
 #
 # 3. reference_file_read
@@ -55,7 +64,17 @@
 #    - Tracked fields: --file-reference <relative-path-after-skills/>,
 #      --skill-version <version>
 #
-# === Skill Version ===
+# 4. session_start
+#    - Triggered when: a client starts or resumes an agent session
+#    - Tracked fields: --plugin-name <name>, --plugin-version <version>,
+#      --client-name <client>, and --session-id <id>
+#
+# === Plugin and Skill Versions ===
+#
+# The plugin name and version are read from the active client's plugin.json:
+#   - Copilot CLI / VS Code: .plugin/plugin.json
+#   - Claude Code:           .claude-plugin/plugin.json
+#   - Cursor:                .cursor-plugin/plugin.json
 #
 # The skill version is read from the SKILL.md frontmatter (metadata.version),
 # which the build stamps at package time. It is resolved as follows:
@@ -66,21 +85,48 @@
 #                             root of the skill folder the reference lives in
 #    - Example: azure-validate/references/recipes/azd/README.md
 #
+# === Plugin Identity ===
+#
+# Every tracked event includes the plugin name and version read from the
+# installed copy's .plugin/plugin.json manifest. This lets the existing
+# telemetry receiver attribute sibling-plugin events without adding fields.
+#
 # === Reference File Detection ===
 #
-# When a file read tool is invoked (Copilot CLI: "view", Claude Code: "Read",
-# VS Code: "read_file"), the script extracts the file path from the tool input
+# When a file read tool is invoked (Copilot CLI: "view", Claude Code/Cursor:
+# "Read", VS Code: "read_file"), the script extracts the file path from the tool input
 # and checks if it falls within a recognized azure-skills folder:
 #
 #   Path field lookup order:
 #     - toolArgs.path / toolArgs.filePath       (Copilot CLI)
 #     - tool_input.filePath / tool_input.file_path / tool_input.path  (Claude Code / VS Code)
 #
-#   Recognized azure-skills install paths:
-#     - .copilot/installed-plugins/azure-skills/azure/skills/...
+#   Recognized install paths (one set per plugin, see is_azure_skills_path):
+#     azure-skills:
+#     - .copilot/installed-plugins/<catalog-name>/azure/skills/...
+#       (<catalog-name> is the marketplace/catalog folder the plugin was
+#       installed under, e.g. "awesome-copilot" — it does not necessarily
+#       match the plugin's own name, "azure")
 #     - .claude/plugins/cache/azure-skills/azure/<version>/skills/...
 #     - .claude/plugins/cache/claude-plugins-official/azure/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure/<revision>/skills/...
 #     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/...
+#     azure-kusto-graph-skills:
+#     - .copilot/installed-plugins/<catalog-name>/azure-kusto-graph-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/azure-kusto-graph-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-kusto-graph-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-kusto-graph-skills/skills/...
+#     aks-skills:
+#     - .copilot/installed-plugins/<catalog-name>/aks-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/aks-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/aks-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/aks-skills/skills/...
+#     azure-local-skills:
+#     - .copilot/installed-plugins/<catalog-name>/azure-local-skills/skills/...
+#     - .claude/plugins/cache/azure-skills/azure-local-skills/<version>/skills/...
+#     - .cursor/plugins/cache/<catalog-name>/azure-local-skills/<revision>/skills/...
+#     - .vscode/agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-local-skills/skills/...
+#     shared:
 #     - .agents/skills/...
 #
 #   If the path matches AND is not a SKILL.md file, the relative path after
@@ -91,14 +137,17 @@
 #
 # If the AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, the script will create
 # a "raw-input" subdirectory and write each raw JSON input to a timestamped file
-# for debugging. It will also append a "telemetry.log" file with MCP args for
-# each tracked event.
+# for debugging. It will also append a "telemetry.log" file identifying the
+# publisher and arguments for each tracked event, the standalone version and
+# executable path, and publisher installation/execution failures.
 #
 # When using `--plugin-dir` to load a local plugin the AZURE_SKILLS_PLUGIN_ROOT
 # env var should be set so that the script can detect local skill paths for
 # reference_file_read events.
 
 set +e  # Don't exit on errors - fail silently for privacy
+
+TELEMETRY_REPORTER_VERSION="0.1.10-g8cc1aa1c56"
 
 # Skip telemetry if opted out
 if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then
@@ -138,6 +187,20 @@ write_telemetry_debug_log() {
 # <script-dir>/../../skills/<name>/SKILL.md is the skill definition.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd)"
 SKILLS_DIR="$(cd "$SCRIPT_DIR/../.." 2>/dev/null && pwd)/skills"
+PLUGIN_PATH_ALLOW_PATTERN="$SCRIPT_DIR/pluginPathAllowPattern.sh"
+
+# Return true only when a target belongs to this hook's plugin. Since this hook
+# is copied into every plugin, comparing through the skills directory prevents
+# each installed copy from reporting the same skill or reference event.
+is_owned_skill_path() {
+    # targetPath is either path to the SKILL.md or to a reference file
+    local targetPath="$1"
+    local skillsRootNorm
+    local targetPathNorm
+    skillsRootNorm=$(echo "$SKILLS_DIR" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g; s|/$||')
+    targetPathNorm=$(echo "$targetPath" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
+    [[ "$targetPathNorm" == "$skillsRootNorm/"* ]]
+}
 
 # Extract the skill version from a SKILL.md frontmatter (metadata.version).
 # Prints nothing if the file or version cannot be read.
@@ -153,6 +216,59 @@ get_skill_version() {
         | grep -E '^[[:space:]]*version:[[:space:]]*' \
         | head -1 \
         | sed -E 's/^[[:space:]]*version:[[:space:]]*//; s/^["'"'"']//; s/["'"'"'][[:space:]]*$//; s/[[:space:]]*$//'
+}
+
+# Extract one field from the plugin manifest for the active client.
+# Prints nothing if the file or expected JSON value cannot be read.
+get_plugin_field() {
+    local clientName="$1"
+    local fieldName="$2"
+    local manifestDir=".plugin"
+    local pluginManifestPath
+
+    case "$clientName" in
+        cursor)
+            manifestDir=".cursor-plugin"
+            ;;
+        claude-code)
+            manifestDir=".claude-plugin"
+            ;;
+    esac
+
+    pluginManifestPath="$(dirname "$SKILLS_DIR")/$manifestDir/plugin.json"
+    [ -f "$pluginManifestPath" ] || return 0
+    node -e '
+        try {
+            const manifest = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            const value = manifest[process.argv[2]];
+            if (typeof value === "string" && value) process.stdout.write(value);
+        } catch { }
+    ' "$pluginManifestPath" "$fieldName" 2>/dev/null
+}
+
+# Return true unless this hook's plugin ships a .mcp.json that does not
+# configure the named server. The shared hook is copied into every plugin, so
+# a plugin with an empty .mcp.json (for example aks-skills) must not report MCP
+# calls owned by a co-installed plugin. A plugin with no .mcp.json at all keeps
+# the pre-existing behavior and reports the event.
+owns_mcp_server() {
+    local serverName="$1"
+    local mcpConfigPath
+    mcpConfigPath="$(dirname "$SKILLS_DIR")/.mcp.json"
+    [ -f "$mcpConfigPath" ] || return 0
+    node -e '
+        try {
+            const config = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+            process.exit(
+                config.mcpServers
+                && Object.prototype.hasOwnProperty.call(config.mcpServers, process.argv[2])
+                    ? 0
+                    : 1
+            );
+        } catch {
+            process.exit(1);
+        }
+    ' "$mcpConfigPath" "$serverName" 2>/dev/null
 }
 
 # === JSON Parsing Functions (using sed - portable across platforms) ===
@@ -224,6 +340,8 @@ write_raw_input_to_file "$rawInput"
 # Support Copilot CLI (camelCase), Claude Code (snake_case), and VS Code (snake_case) formats
 toolName=$(extract_json_field "$rawInput" "toolName")
 sessionId=$(extract_json_field "$rawInput" "sessionId")
+hookEventName=$(extract_json_field "$rawInput" "hook_event_name")
+mcpServerName=$(extract_json_field "$rawInput" "mcp_server_name")
 
 # Fall back to Claude Code / VS Code snake_case field names
 if [ -z "$toolName" ]; then
@@ -234,10 +352,15 @@ if [ -z "$sessionId" ]; then
 fi
 
 timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+isSessionStart=false
+if [ "$hookEventName" = "SessionStart" ] || [ "$hookEventName" = "sessionStart" ]; then
+    isSessionStart=true
+fi
 
 # Detect client name based on input format
 # Copilot CLI (>=0.0.421): COPILOT_CLI env var is "1" — primary signal, checked first
 # Copilot CLI (<0.0.421):  has "toolArgs" field without "hook_event_name" — backward compat fallback
+# Cursor: has hook_event_name AND a "cursor_version" field
 # VS Code: has hook_event_name AND tool_use_id contains "__vscode" or transcript_path contains "Code"
 # Claude Code: has hook_event_name, tool_use_id does NOT contain "__vscode"
 if [ "$COPILOT_CLI" = "1" ]; then
@@ -245,10 +368,13 @@ if [ "$COPILOT_CLI" = "1" ]; then
 elif echo "$rawInput" | grep -q '"hook_event_name"'; then
     toolUseId=$(extract_json_field "$rawInput" "tool_use_id")
     transcriptPath=$(extract_json_field "$rawInput" "transcript_path")
+    cursorVersion=$(extract_json_field "$rawInput" "cursor_version")
     # Normalize backslashes to forward slashes for consistent matching
     transcriptPathNorm=$(echo "$transcriptPath" | tr '\\' '/')
+    if [ -n "$cursorVersion" ]; then
+        clientName="cursor"
     # Match path separators around "Code" or "Code - Insiders" to avoid matching "Claude Code"
-    if [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
+    elif [ "$AZURE_SKILLS_HOOK_CLIENT_FAMILY" = "copilot-vscode" ] || [[ "$toolUseId" == *"__vscode"* ]] || [[ "$transcriptPathNorm" == */Code/* ]] || [[ "$transcriptPathNorm" == */Code\ -\ Insiders/* ]]; then
         # Detect VS Code variant from transcript_path
         # Insiders: ...AppData/Roaming/Code - Insiders/User/...
         # Stable:   ...AppData/Roaming/Code/User/...
@@ -268,22 +394,25 @@ else
     clientName="unknown"
 fi
 
-# Skip if no tool name found in any format
-if [ -z "$toolName" ]; then
+# Skip if no tool name found in any format and this is not a lifecycle event.
+if [ -z "$toolName" ] && [ "$isSessionStart" = false ]; then
     return_success
 fi
 
 # === STEP 2: Determine what to track for azmcp ===
 
-# Check if a path matches any known azure-skills folder structure
-# Returns 0 (true) if matched, 1 (false) otherwise
+# Check if a path matches any known plugin skills folder structure.
+ # Each plugin has its own block below — when onboarding another plugin, add a new
+ # block by swapping both the catalog/plugin segments (e.g. "azure" and
+ # "azure-skills") for the new plugin. Returns 0 (true) if matched, 1 (false) otherwise.
 is_azure_skills_path() {
     local p="$1"
-    [[ "$p" == *".copilot/installed-plugins/azure-skills/azure/skills/"* ]] && return 0
-    [[ "$p" == *".claude/plugins/cache/azure-skills/azure/"*"/skills/"* ]] && return 0
-    [[ "$p" == *".claude/plugins/cache/claude-plugins-official/azure/"*"/skills/"* ]] && return 0
-    [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/azure-skills/skills/"* ]] && return 0
+
+    if . "$PLUGIN_PATH_ALLOW_PATTERN"; then return 0; fi
+
+    # --- shared across all plugins ---
     [[ "$p" == *".agents/skills/"* ]] && return 0
+
     # Local plugin development: match paths under AZURE_SKILLS_PLUGIN_ROOT/skills/
     # (e.g. when loading a local plugin via `--plugin-dir`)
     if [ -n "$AZURE_SKILLS_PLUGIN_ROOT" ]; then
@@ -301,16 +430,31 @@ skillVersion=""
 azureToolName=""
 filePath=""
 
+# Report every session_start invocation, including resumed sessions.
+if [ "$isSessionStart" = true ]; then
+    eventType="session_start"
+    shouldTrack=true
+fi
+
 # Check for skill invocation via 'skill'/'Skill' tool
 if [ "$toolName" = "skill" ] || [ "$toolName" = "Skill" ]; then
-    skillName=$(extract_toolargs_field "$rawInput" "skill")
-    # Claude Code prefixes skill names with "azure:" (e.g., "azure:azure-prepare")
-    # Strip it to get the actual skill name for the allowlist
-    skillName="${skillName#azure:}"
-    if [ -n "$skillName" ]; then
+    requestedSkillName=$(extract_toolargs_field "$rawInput" "skill")
+    pluginName=$(get_plugin_field "$clientName" "name")
+    skillName="$requestedSkillName"
+    # Native plugin invocations use "<plugin-name>:<skill-name>". Strip only
+    # this hook copy's own namespace so another plugin cannot claim the call.
+    if [[ "$requestedSkillName" == *:* ]]; then
+        if [ -n "$pluginName" ] && [[ "$requestedSkillName" == "$pluginName:"* ]]; then
+            skillName="${requestedSkillName#*:}"
+        else
+            skillName=""
+        fi
+    fi
+    skillMdPath="$SKILLS_DIR/$skillName/SKILL.md"
+    if [ -n "$skillName" ] && [ -f "$skillMdPath" ] && is_owned_skill_path "$skillMdPath"; then
         eventType="skill_invocation"
         shouldTrack=true
-        skillVersion=$(get_skill_version "$SKILLS_DIR/$skillName/SKILL.md")
+        skillVersion=$(get_skill_version "$skillMdPath")
     fi
 fi
 
@@ -323,7 +467,7 @@ if [ "$toolName" = "view" ] || [ "$toolName" = "Read" ] || [ "$toolName" = "read
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
         # Check for SKILL.md pattern — only match azure-skills paths
-        if is_azure_skills_path "$pathLower" && [[ "$pathLower" == *"/skill.md" ]]; then
+        if is_azure_skills_path "$pathLower" && is_owned_skill_path "$pathToCheck" && [[ "$pathLower" == *"/skill.md" ]]; then
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
             if [[ "$pathNormalized" =~ /skills/([^/]+)/SKILL\.md$ ]]; then
                 skillName="${BASH_REMATCH[1]}"
@@ -338,9 +482,15 @@ fi
 # Check for Azure MCP tool invocation
 # Copilot CLI:  "azure-*" prefix (e.g., azure-documentation)
 # Claude Code:  "mcp__plugin_azure_azure__*" prefix (e.g., mcp__plugin_azure_azure__documentation)
+# Cursor:       afterMCPExecution with mcp_server_name "azure"; remove Cursor's
+#               optional display prefix (e.g., MCP:get_azure_bestpractices)
 # VS Code:      "mcp_azure_mcp_*" prefix (e.g., mcp_azure_mcp_documentation)
-if [ -n "$toolName" ]; then
-    if [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]]; then
+if [ -n "$toolName" ] && owns_mcp_server "azure"; then
+    if [ "$clientName" = "cursor" ] && [ "$hookEventName" = "afterMCPExecution" ] && [ "$mcpServerName" = "azure" ]; then
+        azureToolName="${toolName#MCP:}"
+        eventType="tool_invocation"
+        shouldTrack=true
+    elif [[ "$toolName" == azure-* ]] || [[ "$toolName" == mcp__plugin_azure_azure__* ]] || [[ "$toolName" == mcp_azure_mcp_* ]]; then
         azureToolName="$toolName"
         eventType="tool_invocation"
         shouldTrack=true
@@ -356,7 +506,7 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
         pathLower=$(echo "$pathToCheck" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
 
         # Check if path matches azure skills folder structure
-        if is_azure_skills_path "$pathLower"; then
+        if is_azure_skills_path "$pathLower" && is_owned_skill_path "$pathToCheck"; then
             # Extract relative path after 'skills/'
             pathNormalized=$(echo "$pathToCheck" | tr '\\' '/' | sed 's|//*|/|g')
 
@@ -379,16 +529,30 @@ if [ -z "$filePath" ] && [ -z "$skillName" ]; then
     fi
 fi
 
-# === STEP 3: Publish event via azmcp ===
+# === STEP 3: Publish event ===
 
 if [ "$shouldTrack" = true ]; then
+    # The plugin-telemetry command requires a session ID for session_start events.
+    if [ "$eventType" = "session_start" ] && [ -z "$sessionId" ]; then
+        return_success
+    fi
+
+    pluginName=$(get_plugin_field "$clientName" "name")
+    pluginVersion=$(get_plugin_field "$clientName" "version")
+
+    # Session telemetry must identify the plugin.
+    if [ "$eventType" = "session_start" ] && { [ -z "$pluginName" ] || [ -z "$pluginVersion" ]; }; then
+        return_success
+    fi
+
     # Build MCP command arguments (using array for proper quoting)
     mcpArgs=(
         "server" "plugin-telemetry"
-        "--timestamp" "$timestamp"
-        "--client-name" "$clientName"
     )
 
+    [ -n "$pluginName" ] && mcpArgs+=("--plugin-name" "$pluginName")
+    [ -n "$pluginVersion" ] && mcpArgs+=("--plugin-version" "$pluginVersion")
+    mcpArgs+=("--client-name" "$clientName" "--timestamp" "$timestamp")
     [ -n "$eventType" ] && mcpArgs+=("--event-type" "$eventType")
     [ -n "$sessionId" ] && mcpArgs+=("--session-id" "$sessionId")
     [ -n "$skillName" ] && mcpArgs+=("--skill-name" "$skillName")
@@ -397,14 +561,38 @@ if [ "$shouldTrack" = true ]; then
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
     [ -n "$filePath" ] && mcpArgs+=("--file-reference" "$(echo "$filePath" | tr '/' '\\')")
 
-    # Publish telemetry via npx
-    npx -y @azure/mcp@latest "${mcpArgs[@]}" >/dev/null 2>&1 || true
+    if [ "${AZURE_SKILLS_USE_STANDALONE_TELEMETRY:-}" = "true" ]; then
+        publisher="Standalone ghcfa-telem (version $TELEMETRY_REPORTER_VERSION)"
+        write_telemetry_debug_log "Publisher: $publisher | Args: ${mcpArgs[*]:2}"
+        installerOutput="$(
+            bash "$SCRIPT_DIR/install-telemetry.sh" \
+                --version "$TELEMETRY_REPORTER_VERSION" 2>&1
+        )"
+        installerStatus=$?
 
-    # If AZURE_SKILLS_TELEMETRY_LOG_DIR env var is set, append the args to the
-    # telemetry.log file in that directory (for debugging)
-    write_telemetry_debug_log "MCP Args: ${mcpArgs[*]}"
+        if [ "$installerStatus" -eq 0 ] && [ -n "$installerOutput" ]; then
+            write_telemetry_debug_log "Publisher: $publisher | Executable: $installerOutput"
+            "$installerOutput" "${mcpArgs[@]:2}" >/dev/null 2>&1
+            reporterStatus=$?
+            if [ "$reporterStatus" -ne 0 ]; then
+                write_telemetry_debug_log "Publisher: $publisher | Execution failed with status $reporterStatus."
+            fi
+        elif [ "$installerStatus" -eq 0 ]; then
+            write_telemetry_debug_log "Publisher: $publisher | Installation failed: installer returned no executable path."
+        else
+            write_telemetry_debug_log "Publisher: $publisher | Installation failed with status $installerStatus: $installerOutput"
+        fi
+    else
+        # Preserve the existing publisher unless the standalone path is explicitly enabled.
+        publisher="Azure MCP (npx -y @azure/mcp@latest)"
+        write_telemetry_debug_log "Publisher: $publisher | Args: ${mcpArgs[*]}"
+        npx -y @azure/mcp@latest "${mcpArgs[@]}" >/dev/null 2>&1
+        publisherStatus=$?
+        if [ "$publisherStatus" -ne 0 ]; then
+            write_telemetry_debug_log "Publisher: $publisher | Execution failed with status $publisherStatus."
+        fi
+    fi
 fi
 
 # Output success to stdout (required by hooks)
 return_success
-

@@ -1,0 +1,93 @@
+{
+  "synthetic": true,
+  "projectEndpoint": "https://foundry-insights.example.invalid/api/projects/eval-project",
+  "agentName": "insights-eval-agent",
+  "pages": [
+    {
+      "data": [
+        {
+          "id": "insight_synthetic_04",
+          "agent_name": "insights-eval-agent",
+          "agent_version": "7",
+          "title": "Validate tool arguments",
+          "category": "quality",
+          "severity": "high",
+          "status": "active",
+          "description": "Synthetic calls omitted a required tool argument.",
+          "details": {
+            "highlighted_traces": [{"trace_id": "trace_synthetic_arguments", "summary": "A required argument was omitted."}],
+            "recommended_actions": {
+              "proposed_fix": {
+                "kind": "prose",
+                "text": "Validate required arguments before calling the tool."
+              }
+            }
+          }
+        },
+        {
+          "id": "insight_synthetic_03",
+          "agent_name": "insights-eval-agent",
+          "agent_version": "6",
+          "title": "Avoid repeated retrieval",
+          "category": "performance",
+          "severity": "medium",
+          "status": "resolved",
+          "description": "Synthetic retrieval work was repeated within a turn.",
+          "details": {
+            "linked_traces": [{"trace_id": "trace_synthetic_retrieval", "timestamp": "2026-01-01T10:00:00Z"}],
+            "recommended_actions": {
+              "proposed_fix": {
+                "kind": "prose",
+                "text": "Review whether repeated retrieval can reuse prior results."
+              }
+            }
+          }
+        }
+      ],
+      "has_more": true,
+      "last_id": "insight_synthetic_03"
+    },
+    {
+      "data": [
+        {
+          "id": "insight_synthetic_02",
+          "agent_name": "insights-eval-agent",
+          "agent_version": "5",
+          "title": "Review response formatting",
+          "category": "quality",
+          "severity": "low",
+          "status": "ignored",
+          "description": "Synthetic responses used inconsistent formatting."
+        }
+      ],
+      "has_more": true,
+      "last_id": "insight_synthetic_02"
+    },
+    {
+      "data": [
+        {
+          "id": "insight_synthetic_01",
+          "agent_name": "insights-eval-agent",
+          "agent_version": "4",
+          "title": "Handle tool timeouts",
+          "category": "quality",
+          "severity": "high",
+          "status": "active",
+          "description": "A synthetic tool timeout had no user-facing explanation.",
+          "details": {
+            "highlighted_traces": [{"trace_id": "trace_synthetic_timeout", "summary": "A tool timed out."}],
+            "linked_traces": [{"trace_id": "trace_synthetic_timeout_followup", "timestamp": "2026-01-01T09:00:00Z"}],
+            "recommended_actions": {
+              "proposed_fix": {
+                "kind": "prose",
+                "text": "Return an actionable explanation when a tool times out."
+              }
+            }
+          }
+        }
+      ],
+      "has_more": false,
+      "last_id": "insight_synthetic_01"
+    }
+  ]
+}
