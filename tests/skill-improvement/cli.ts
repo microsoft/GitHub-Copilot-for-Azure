@@ -219,7 +219,10 @@ async function main(): Promise<void> {
     await cleanupManagedResources(spec, repoRoot);
   }
   console.log(`Skill improvement report: ${path.join(outputDirectory, "report.md")}`);
-  if (args.command === "execute" && !report.finalAccepted) {
+  const baselineOnly = !spec.improvementAgent.enabled || spec.limits.maxIterations === 0;
+  if (args.command === "execute" && baselineOnly) {
+    console.log("Baseline-only evaluation completed; no candidate iterations were configured.");
+  } else if (args.command === "execute" && !report.finalAccepted) {
     console.log("No candidate satisfied the configured acceptance rules.");
   }
 }
