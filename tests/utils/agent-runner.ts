@@ -84,6 +84,13 @@ export type AgentMetadata = {
    * Loaded skills after applying the filters in the configuration and environment variable.
    */
   skillsLoaded: SkillRef[];
+
+  /**
+   * Optional. The raw data emitted by the agent for the test run trajectory.
+   * For reporting compatibility, all agents must translate the raw data into Copilot SDK SessionEvents.
+   * They can save the raw data here for further processing.
+   */
+  rawData?: any[];
 }
 
 export type AgentRunConfig = {
@@ -838,7 +845,8 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
       tokenUsage: agentMetadata.tokenUsage,
       toolCounts: agentMetadata.toolCounts,
       skillFiles: agentMetadata.skillFiles,
-      skillsLoaded: agentMetadata.skillsLoaded
+      skillsLoaded: agentMetadata.skillsLoaded,
+      rawData: agentMetadata.rawData
     };
     fs.writeFileSync(jsonPath, redactSecrets(JSON.stringify(jsonData, null, 2)), "utf-8");
 

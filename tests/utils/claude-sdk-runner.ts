@@ -218,6 +218,11 @@ function appendSessionEvents(
   eventCountBeforePrompt: number,
   parentId: string | null,
 ): string | null {
+  if (!metadata.rawData) {
+    metadata.rawData = [message];
+  } else {
+    metadata.rawData.push(message);
+  }
   let lastEventId = parentId;
   const timestamp = getMessageTimestamp(message);
 
