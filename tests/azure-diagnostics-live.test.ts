@@ -55,6 +55,7 @@ describe("Azure Diagnostics live AKS evaluations", () => {
     const evaluation = parse(read(
       "evals/azure-skills/azure-diagnostics/live/eval.yaml",
     )) as {
+      defaults?: { executor?: string };
       stimuli?: Array<{ tags?: { liveScenario?: string; cost?: string } }>;
     };
 
@@ -67,6 +68,7 @@ describe("Azure Diagnostics live AKS evaluations", () => {
       "missing-service-endpoints",
       "dns-network-policy",
     ]);
+    expect(evaluation.defaults?.executor).toBe("copilot-sdk-agent-runner");
     expect(evaluation.stimuli?.every(
       stimulus => stimulus.tags?.cost === "azure",
     )).toBe(true);
