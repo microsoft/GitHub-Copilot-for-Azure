@@ -8,6 +8,7 @@ import {
   renderReport,
   renderReportSummary,
   writeReport,
+  type AggregatedTrial,
   type SkillImprovementReport,
 } from "../report.ts";
 import type {
@@ -94,6 +95,27 @@ function spec(): SkillImprovementRunSpec {
   };
 }
 
+function decideHeldOut(
+  reference: AggregatedTrial[],
+  candidate: AggregatedTrial[],
+) {
+  const runSpec = spec();
+  runSpec.heldOutAcceptance = {
+    enabled: true,
+    minimumQualityImprovementPoints: 0,
+    maximumEvalRegressionPoints: 0,
+    maximumModelRegressionPoints: 0,
+  };
+  return decideAcceptance(
+    runSpec,
+    reference,
+    candidate,
+    1000,
+    1000,
+    runSpec.heldOutAcceptance
+  );
+}
+
 describe("skill improvement reporting", () => {
   test("uses judge majority and accepts a quality improvement", () => {
     const reference = aggregateJudgments([
@@ -139,22 +161,7 @@ describe("skill improvement reporting", () => {
       judged("one", "model-a", "judge-a", true, 1, 100),
       judged("two", "model-a", "judge-a", true, 1, 100),
     ]);
-    const runSpec = spec();
-    runSpec.heldOutAcceptance = {
-      enabled: true,
-      minimumQualityImprovementPoints: 0,
-      maximumEvalRegressionPoints: 0,
-      maximumModelRegressionPoints: 0,
-    };
-
-    const decision = decideAcceptance(
-      runSpec,
-      reference,
-      candidate,
-      1000,
-      1000,
-      runSpec.heldOutAcceptance
-    );
+    const decision = decideHeldOut(reference, candidate);
 
     expect(decision.accepted).toBe(true);
     expect(decision.comparison.qualityImprovementPoints).toBe(0);
@@ -183,22 +190,7 @@ describe("skill improvement reporting", () => {
       judged("one", "model-a", "judge-a", false, 0, 100),
       judged("two", "model-a", "judge-a", true, 1, 100),
     ]);
-    const runSpec = spec();
-    runSpec.heldOutAcceptance = {
-      enabled: true,
-      minimumQualityImprovementPoints: 0,
-      maximumEvalRegressionPoints: 0,
-      maximumModelRegressionPoints: 0,
-    };
-
-    const decision = decideAcceptance(
-      runSpec,
-      reference,
-      candidate,
-      1000,
-      1000,
-      runSpec.heldOutAcceptance
-    );
+    const decision = decideHeldOut(reference, candidate);
 
     expect(decision.accepted).toBe(false);
     expect(decision.comparison.qualityImprovementPoints).toBe(-50);
@@ -214,22 +206,7 @@ describe("skill improvement reporting", () => {
       judged("one", "model-a", "judge-a", false, 0, 100, skillWithMcp, true, "one.eval.yaml"),
       judged("two", "model-a", "judge-a", true, 1, 100, skillWithMcp, true, "two.eval.yaml"),
     ]);
-    const runSpec = spec();
-    runSpec.heldOutAcceptance = {
-      enabled: true,
-      minimumQualityImprovementPoints: 0,
-      maximumEvalRegressionPoints: 0,
-      maximumModelRegressionPoints: 0,
-    };
-
-    const decision = decideAcceptance(
-      runSpec,
-      reference,
-      candidate,
-      1000,
-      1000,
-      runSpec.heldOutAcceptance
-    );
+    const decision = decideHeldOut(reference, candidate);
 
     expect(decision.accepted).toBe(false);
     expect(decision.comparison.qualityImprovementPoints).toBe(0);
@@ -245,22 +222,7 @@ describe("skill improvement reporting", () => {
       judged("one", "model-a", "judge-a", false, 0, 100),
       judged("two", "model-b", "judge-a", true, 1, 100),
     ]);
-    const runSpec = spec();
-    runSpec.heldOutAcceptance = {
-      enabled: true,
-      minimumQualityImprovementPoints: 0,
-      maximumEvalRegressionPoints: 0,
-      maximumModelRegressionPoints: 0,
-    };
-
-    const decision = decideAcceptance(
-      runSpec,
-      reference,
-      candidate,
-      1000,
-      1000,
-      runSpec.heldOutAcceptance
-    );
+    const decision = decideHeldOut(reference, candidate);
 
     expect(decision.accepted).toBe(false);
     expect(decision.comparison.qualityImprovementPoints).toBe(0);

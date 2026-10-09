@@ -128,11 +128,6 @@ directory. Vally first saves answers with `--skip-grade`, then re-grades those
 trajectories with each judge. The improvement agent receives development
 failures and prior rejection reasons, never held-out evidence.
 
-When `heldOutAcceptance.enabled` is true, the final baseline and candidate are
-compared with independent held-out quality, per-evaluation, and per-model
-thresholds. Use zero thresholds to require no regression when the held-out
-baseline is already saturated.
-
 The workflow job allows 420 minutes. This leaves 40 minutes of setup and
 cleanup headroom beyond the current 360-minute engine limit plus the managed
 Kusto cluster's 20-minute startup timeout; the engine deadline remains the

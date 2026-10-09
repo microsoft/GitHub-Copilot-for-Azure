@@ -82,7 +82,7 @@ export type AcceptanceDecision = {
   gates: AcceptanceGate[];
 };
 
-export type AcceptanceThresholds = {
+type AcceptanceThresholds = {
   minimumQualityImprovementPoints: number;
   maximumEvalRegressionPoints: number;
   maximumModelRegressionPoints: number;
