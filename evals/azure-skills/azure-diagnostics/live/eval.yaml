@@ -1,0 +1,116 @@
+name: azure-diagnostics-live-aks-eval
+description: |
+  Diagnoses controlled failures on an isolated, ephemeral AKS cluster.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "15m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Live AKS CoreDNS scheduling failure"
+    prompt: |
+      Use the azure-diagnostics skill. Read live-context.txt. Applications in
+      this isolated test cluster cannot resolve Kubernetes service names.
+      Diagnose the incident using read-only Azure and Kubernetes commands. Do
+      not modify the cluster. Identify the evidence-backed cause, recommend the
+      narrowest safe remediation, and explain how an operator should verify
+      recovery.
+    rubric:
+      - The response identifies that CoreDNS pods are Pending because every node has the diagnostics-live-coredns=true:NoSchedule taint without a matching toleration.
+      - The response distinguishes Ready nodes from CoreDNS schedulability and connects the lack of ready CoreDNS pods to cluster DNS failure.
+      - The remediation removes or corrects the test taint at its source rather than changing application DNS settings or broadly tolerating the taint on workloads.
+      - Recovery verification checks CoreDNS readiness, kube-dns endpoints, and service-name resolution from a workload.
+    agent_environment:
+      files:
+        - src: fixture/live-context.txt
+          dest: live-context.txt
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: response-quality
+      liveScenario: coredns-scheduling
+      requiredSkills:
+        - azure-diagnostics
+    graders: &live-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\b(?:kubectl\\s+(?:apply|create|delete|patch|replace|scale|set|taint|label|annotate|edit|drain|cordon|uncordon)|az\\s+\\S+(?:\\s+\\S+)?\\s+(?:create|update|delete|set))\\b"
+              description: "live diagnosis must remain read-only"
+
+  - name: "Live AKS Service has no endpoints"
+    prompt: |
+      Use the azure-diagnostics skill. Read live-context.txt. Requests to
+      inventory.diagnostics-endpoints.svc.cluster.local time out, while other
+      Kubernetes service names resolve normally. Diagnose the incident using
+      read-only Azure and Kubernetes commands. Do not modify the cluster.
+      Identify the cause, recommend a focused remediation, and explain how an
+      operator should verify recovery.
+    rubric:
+      - The response identifies that the inventory Service has no endpoints because its app=inventory-v2 selector does not match the Ready pod labeled app=inventory.
+      - The response distinguishes a Service selector or endpoint problem from a CoreDNS outage because other service names resolve and CoreDNS is healthy.
+      - The remediation aligns the intended Service selector and workload labels without weakening unrelated networking or restarting CoreDNS.
+      - Recovery verification checks populated EndpointSlices or endpoints and a successful request through the Service name.
+    agent_environment:
+      files:
+        - src: fixture/live-context.txt
+          dest: live-context.txt
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: response-quality
+      liveScenario: missing-service-endpoints
+      requiredSkills:
+        - azure-diagnostics
+    graders: *live-graders
+
+  - name: "Live AKS NetworkPolicy blocks DNS"
+    prompt: |
+      Use the azure-diagnostics skill. Read live-context.txt. Pod dns-client in
+      namespace diagnostics-network cannot resolve Kubernetes service names,
+      but CoreDNS is healthy and other namespaces are unaffected. Diagnose the
+      incident using read-only Azure and Kubernetes commands. Do not modify the
+      cluster. Identify the cause, recommend the narrowest safe remediation,
+      and explain how an operator should verify recovery.
+    rubric:
+      - The response identifies that NetworkPolicy deny-dns-egress selects the dns-client pod and allows TCP 443 but no UDP or TCP port 53 egress.
+      - The response distinguishes a namespace-scoped egress-policy problem from CoreDNS scheduling, Service configuration, or a cluster-wide DNS outage.
+      - The remediation adds narrowly scoped DNS egress to the cluster DNS service on UDP and TCP port 53 while retaining the intended egress restrictions.
+      - Recovery verification tests DNS from the selected pod and confirms the policy still blocks unintended egress.
+    agent_environment:
+      files:
+        - src: fixture/live-context.txt
+          dest: live-context.txt
+    tags:
+      type: integration
+      tier: full
+      cost: azure
+      area: response-quality
+      liveScenario: dns-network-policy
+      requiredSkills:
+        - azure-diagnostics
+    graders: *live-graders

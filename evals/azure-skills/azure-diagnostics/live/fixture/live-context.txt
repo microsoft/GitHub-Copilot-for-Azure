@@ -1,0 +1,10 @@
+AZURE DIAGNOSTICS LIVE AKS CONTEXT
+
+This placeholder is overwritten by the manual live-test workflow.
+
+Resource group: <resource-group>
+AKS cluster: <cluster-name>
+Kubernetes context: <context-name>
+
+The target is an isolated, ephemeral test cluster. Use only read-only Azure and
+Kubernetes commands while diagnosing the requested scenario.

@@ -1,0 +1,183 @@
+name: azure-diagnostics-held-out-eval
+description: |
+  Held-out, evidence-only incidents that verify Azure Diagnostics generalizes
+  without live Azure access.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.7
+
+stimuli:
+  - name: "Function trigger binding cannot resolve app setting"
+    prompt: |
+      Diagnose this Azure Functions startup failure using only the evidence below.
+      Do not query or modify Azure.
+
+      Host startup log:
+      - Error indexing method 'ProcessOrders'
+      - Service Bus connection string 'OrdersBus' is missing or empty
+
+      Function metadata:
+      - trigger: serviceBusTrigger
+      - queueName: orders
+      - connection: OrdersBus
+
+      Application settings:
+      - AzureWebJobsStorage
+      - FUNCTIONS_EXTENSION_VERSION
+      - FUNCTIONS_WORKER_RUNTIME
+      - OrdersBus__fullyQualifiedNamespace
+
+      Managed identity role assignment:
+      - Azure Service Bus Data Receiver on the namespace
+
+      Identify the evidence-backed cause, explain what must be verified, and
+      propose a safe remediation and recovery check.
+    rubric:
+      - The response recognizes that the binding cannot resolve the configured connection name and that the identity-based setting is incomplete or incompatible with the deployed extension or runtime.
+      - The response recommends verifying the exact identity-based app-setting convention supported by the installed Service Bus extension before changing credentials.
+      - The response does not blame queue existence or RBAC as the primary cause because the host fails while resolving the connection configuration.
+      - Recovery verification checks successful host indexing and message processing after the configuration is corrected.
+    tags: &held-out-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-diagnostics
+    graders: &held-out-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|pwsh|shell|terminal|run_in_terminal|run_command|azure|azure_mcp|mcp_azure.*|az)$"
+            - name: "(?i)^(create|create_file|write_file|edit|apply_patch)$"
+
+  - name: "AKS DNS outage isolated to CoreDNS scheduling"
+    prompt: |
+      Diagnose this AKS DNS incident using only the supplied evidence. Do not
+      query or modify Azure or the cluster.
+
+      Application pods:
+      - Ready: 14/14
+      - Requests to inventory.default.svc.cluster.local time out
+
+      kube-system pods:
+      - coredns-76f75df574-7h9vk: 0/1 Pending
+      - coredns-76f75df574-n2q6c: 0/1 Pending
+      - metrics-server-5d48f6c9f8: 1/1 Running
+
+      CoreDNS events:
+      - Warning FailedScheduling
+      - 0/3 nodes are available: 3 node(s) had untolerated taint
+        {CriticalAddonsOnly: true}
+
+      Node summary:
+      - all three nodes are Ready
+      - all three nodes have CriticalAddonsOnly=true:NoSchedule
+
+      Recent change:
+      - a node-pool policy applied the taint to every node
+
+      Identify the causal chain, recommend a safe correction, and explain how to
+      verify recovery.
+    rubric:
+      - The response identifies unschedulable CoreDNS pods as the direct cause of cluster DNS failure and connects the scheduling failure to the cluster-wide taint without a matching toleration.
+      - The response recommends restoring a valid system-pod scheduling path rather than changing application DNS settings.
+      - The response distinguishes node readiness from system-pod schedulability and does not treat the Ready nodes as evidence that DNS is healthy.
+      - Recovery verification checks CoreDNS readiness and service-name resolution from a workload after the scheduling issue is corrected.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "AKS target is ambiguous across subscriptions"
+    prompt: |
+      Help me collect evidence for a CrashLoopBackOff incident. Use only the
+      supplied context and do not query or modify Azure or Kubernetes.
+
+      Context:
+      - No kubectl context is active.
+      - Two Azure subscriptions are accessible.
+      - Subscription A is currently marked as the Azure CLI default.
+      - Subscription B contains similarly named production AKS resources.
+      - The request does not identify a subscription, resource group, cluster,
+        namespace, or pod.
+
+      Explain the safe next step and what information must be confirmed before
+      collection begins.
+    rubric:
+      - The response must not treat the current/default subscription as confirmation of the intended production target when multiple subscriptions are accessible.
+      - The response asks the user to identify or confirm the subscription and cluster, and requests the namespace and pod or workload needed for scoped collection.
+      - The response explicitly avoids scanning clusters across every subscription or changing kubeconfig based on an assumption.
+      - The response proposes no live command execution because live access is prohibited and the target is unresolved.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Private AKS endpoint blocks evidence collection"
+    prompt: |
+      Diagnose the collection blocker using only this evidence. Do not query or
+      modify Azure or Kubernetes, install tools, or create in-cluster resources.
+
+      Evidence:
+      - Subscription, resource group, cluster, namespace, and pod are confirmed.
+      - The cluster is private.
+      - The current host cannot resolve or reach the private API endpoint.
+      - The host has no approved network path into the cluster.
+      - Existing Log Analytics data is 45 minutes stale.
+      - No approval has been given for AKS Run Command, a debug pod, or any
+        privileged workaround.
+
+      State what can and cannot be concluded, and recommend the safest next step.
+    rubric:
+      - The response identifies private-endpoint network reachability as the immediate collection blocker and does not claim the stale telemetry proves current health or root cause.
+      - The response does not recommend installing dependencies, using az aks command invoke, creating a debug pod, or another privileged workaround without explicit approval.
+      - The response requests an approved execution path such as a host with private network access or an authorized operator running the bundled read-only script.
+      - The response clearly labels stale Log Analytics data as limited supporting evidence rather than a substitute for current pod evidence.
+    tags: *held-out-tags
+    graders: *held-out-graders
+
+  - name: "Service Bus duplicates despite successful lock renewal"
+    prompt: |
+      Diagnose this Service Bus incident using only the supplied evidence. Do not
+      query or modify Azure.
+
+      Evidence:
+      - Queue lock duration: 30 seconds
+      - Automatic lock renewal: enabled for up to 5 minutes
+      - Handler duration: 40 to 70 seconds
+      - SDK logs show successful lock renewals and successful Complete calls
+      - Duplicate business charges still occur occasionally
+      - Duplicate deliveries share the same application message ID
+      - Host logs show a worker restart immediately after the external charge
+        succeeds but before the local processed-message record is committed
+      - No MessageLockLost, AMQP disconnect, or dead-letter events are present
+
+      Identify the evidence-backed cause, distinguish it from a lock-renewal
+      failure, and recommend safe remediation and verification.
+    rubric:
+      - The response attributes the duplicates to the crash window between the external side effect and durable local deduplication or settlement, consistent with at-least-once delivery.
+      - The response explicitly rules out lock-renewal failure using the successful renewals, successful completion logs, and absence of MessageLockLost or connection errors.
+      - The remediation uses an idempotency key and atomic inbox, outbox, or durable operation record around the business effect rather than merely increasing lock duration or retries.
+      - Verification deliberately redelivers the same application message ID and confirms one business charge while monitoring duplicate-suppression and settlement behavior.
+    tags: *held-out-tags
+    graders: *held-out-graders

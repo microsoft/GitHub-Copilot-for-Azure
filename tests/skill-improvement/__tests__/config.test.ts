@@ -158,6 +158,74 @@ describe("skill improvement configuration", () => {
     }
   });
 
+  test("copies eval-relative fixture files when materializing stimuli", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-fixture-"));
+    const sourceDirectory = path.join(root, "source");
+    const destinationDirectory = path.join(root, "destination");
+    const source = path.join(sourceDirectory, "fixture.eval.yaml");
+    const destination = path.join(destinationDirectory, "fixture.eval.yaml");
+    fs.mkdirSync(path.join(sourceDirectory, "fixture"), { recursive: true });
+    fs.writeFileSync(
+      path.join(sourceDirectory, "fixture", "evidence.txt"),
+      "diagnostic evidence",
+      "utf8"
+    );
+    fs.writeFileSync(
+      source,
+      [
+        "stimuli:",
+        "  - prompt: Diagnose the supplied evidence.",
+        "    agent_environment:",
+        "      files:",
+        "        - src: fixture/evidence.txt",
+        "          dest: evidence.txt",
+        "",
+      ].join("\n"),
+      "utf8"
+    );
+
+    try {
+      materializeEvaluationFile(source, destination);
+      expect(fs.readFileSync(
+        path.join(destinationDirectory, "fixture", "evidence.txt"),
+        "utf8"
+      )).toBe("diagnostic evidence");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects fixture paths outside the eval directory", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-fixture-"));
+    const sourceDirectory = path.join(root, "source");
+    const source = path.join(sourceDirectory, "fixture.eval.yaml");
+    const destination = path.join(root, "destination", "fixture.eval.yaml");
+    fs.mkdirSync(sourceDirectory, { recursive: true });
+    fs.writeFileSync(path.join(root, "outside.txt"), "outside", "utf8");
+    fs.writeFileSync(
+      source,
+      [
+        "stimuli:",
+        "  - prompt: Diagnose the supplied evidence.",
+        "    environment:",
+        "      files:",
+        "        - src: ../outside.txt",
+        "          dest: evidence.txt",
+        "",
+      ].join("\n"),
+      "utf8"
+    );
+
+    try {
+      expect(() => materializeEvaluationFile(source, destination)).toThrow(
+        "Evaluation fixture source must stay within its eval directory"
+      );
+      expect(fs.existsSync(destination)).toBe(false);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   test("rejects evaluation stimuli with missing environment variables", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "skill-improvement-env-"));
     const source = path.join(root, "source.eval.yaml");

@@ -1,0 +1,22 @@
+AKS DNS EVIDENCE
+
+Symptom:
+  Application pods cannot resolve inventory.default.svc.cluster.local.
+
+kube-system:
+  coredns-76f75df574-7h9vk  0/1  Pending
+  coredns-76f75df574-n2q6c  0/1  Pending
+  metrics-server-5d48f6c9f8 1/1 Running
+
+CoreDNS scheduling events:
+  Warning FailedScheduling
+  0/3 nodes are available: 3 node(s) had untolerated taint
+  {CriticalAddonsOnly: true}.
+
+Nodes:
+  aks-system-100001 Ready CriticalAddonsOnly=true:NoSchedule
+  aks-system-100002 Ready CriticalAddonsOnly=true:NoSchedule
+  aks-user-200001   Ready CriticalAddonsOnly=true:NoSchedule
+
+Recent change:
+  A policy rollout applied the CriticalAddonsOnly taint to every node pool.
