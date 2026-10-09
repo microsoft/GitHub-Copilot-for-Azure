@@ -90,7 +90,7 @@ export type AgentMetadata = {
    * For reporting compatibility, all agents must translate the raw data into Copilot SDK SessionEvents.
    * They can save the raw data here for further processing.
    */
-  rawData?: any[];
+  rawData?: object[];
 }
 
 export type AgentRunConfig = {
