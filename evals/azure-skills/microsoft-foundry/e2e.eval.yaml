@@ -30,6 +30,7 @@ stimuli:
     prompt: |
       Create a Python hosted agent for B2B customer onboarding and deploy it to a new Foundry project. Use the Responses protocol. After it is done, run in locally to make sure it can run successfully; then deploy it to foundry and ensure it can respond to users correctly.
 
+      The runtime uses a private Python package index. Before running the agent locally, back up `uv.lock` and run `uv lock` to refresh it. Restore the backed-up `uv.lock` before deployment.
       Foundry model: gpt-5.4-nano
       Region: eastus
     graders:
@@ -65,6 +66,7 @@ stimuli:
     prompt: |
       This project is our existing Python customer-support agent built using OpenAI Agents SDK and self-hosted on our internal platform. Re-host it on Microsoft Foundry with the minimum code changes necessary, preserving its existing architecture and behavior. Run it locally to make sure it works, create a new Foundry project with Foundry models and deploy the agent there, then invoke the deployed agent to make sure it works after deployment.
 
+      The runtime uses a private Python package index. Before running the agent locally, back up `uv.lock` and run `uv lock` to refresh it. Restore the backed-up `uv.lock` before deployment.
       Foundry model: gpt-5.4-nano
       Region: eastus
     graders:
