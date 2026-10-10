@@ -29,4 +29,4 @@ Replace `azurerm_linux_virtual_machine` with `azurerm_linux_virtual_machine_scal
 - Provider version pinned to `~> 4.0` — bump deliberately, not implicitly.
 - `admin_public_key` is `sensitive = true`; don't print it.
 - `zone` is `""` by default (regional); to pin, pass `"1"`, `"2"`, or `"3"`.
-- Pre-check quota with `compute_vm_check-quota` before `terraform apply`.
+- Pre-check quota with `az vm list-usage --location <region> --subscription "$AZ_SUB" -o table` before `terraform apply`.
