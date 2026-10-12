@@ -1,9 +1,9 @@
 {
   "description": "Token limits for markdown files in skill directories. See scripts/README.md for usage.",
   "defaults": {
-    "SKILL.md": 500,
-    "references/**/*.md": 1000,
-    "*.md": 2000
+    "SKILL.md": 5000,
+    "references/**/*.md": 5000,
+    "*.md": 5000
   },
   "overrides": {}
 }
