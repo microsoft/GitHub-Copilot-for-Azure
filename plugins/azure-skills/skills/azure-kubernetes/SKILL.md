@@ -19,7 +19,7 @@ description: "Plan, create, and configure production-ready Azure Kubernetes Serv
 | Best for | AKS cluster planning and Day-0 decisions |
 | MCP Tools | `mcp_azure_mcp_aks` |
 | CLI | `az aks create`, `az aks show`, `kubectl get`, `kubectl describe` |
-| Related skills | azure-kubernetes-app-deploy (deploy an app to an existing cluster), azure-diagnostics (baseline AKS troubleshooting), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic), optional `aks-skills` operations add-on (focused incident, exact-signature, packet-capture, and GPU Day-2 workflows) |
+| Related skills | azure-kubernetes-app-deploy (deploy an app to an existing cluster), azure-diagnostics (baseline AKS troubleshooting), azure-validate (readiness checks), azure-kubernetes-automatic-readiness (migrate existing cluster to AKS Automatic), optional `aks-skills` operations add-on (focused incident, advanced cost-efficiency, exact-signature, packet-capture, and GPU Day-2 workflows) |
 
 ## When to Use This Skill
 Activate this skill when user wants to:
@@ -114,7 +114,10 @@ If the user is unsure, use safe defaults.
 
 ### 7. Node Pools & Compute
 - **Dedicated system node pool**: At least 2 nodes, tainted for system workloads only (`CriticalAddonsOnly`)
-- Enable **Node Auto Provisioning (NAP)** on all pools for cost savings and responsive scaling
+- For a new cluster, enable **Node Auto Provisioning (NAP)** on all pools for cost savings and responsive scaling.
+  For an existing Standard cluster, load [optional AKS operations](./references/optional-aks-operations.md) and invoke
+  `aks-cost-optimization` when available for NAP readiness. Do not recommend enablement without its eligibility,
+  workload-fit, alternatives, cost, and migration assessment.
 - Use **latest generation SKUs (v5/v6)** for host-level optimizations
 - **Avoid B-series VMs** — burstable SKUs cause performance/reliability issues
 - Use SKUs with **at least 4 vCPUs** for production workloads
