@@ -4,6 +4,30 @@ Hooks manifests are the `hooks.json` files that tells the agent what hooks to ex
 
 These files are used by clients when running agent sessions. We have to maintain separate plugin manifest for different clients before they work in different ways.
 
+## Shared and plugin-owned hooks
+
+Repository-level files under `hooks/` are shared by every plugin. Files under
+`plugins/<plugin-name>/hooks/` belong only to that plugin. During the build,
+the two source trees are assembled into `output/<plugin-name>/hooks/`.
+
+Every plugin must define its own Bash and PowerShell installation-path
+patterns under `hooks/scripts/pluginPathAllowPattern.sh` and
+`hooks/scripts/pluginPathAllowPattern.ps1`. Other plugin-specific scripts can
+be added below the same local `hooks/` directory, but their output paths must
+not collide with shared files.
+
+A plugin can optionally add `copilot-hooks.json`, `claude-hooks.json`, or
+`cursor-hooks.json`. These files are manifest fragments, not replacements:
+
+- Include only event registrations owned by the plugin.
+- A new event is added to the compiled manifest.
+- Registrations for an existing event are appended after the shared
+  registrations.
+- Top-level metadata can only repeat an existing shared value exactly.
+
+The build validates all fragments and emits the compiled manifests at the
+existing client paths.
+
 ## Copilot CLI
 
 Copilot CLI uses the `copilot-hooks.json` hooks manifest, referenced explicitly via the `hooks` property in the Copilot plugin manifest (`.plugin/plugin.json`). Although it shares the manifest with VS Code, it only uses the `bash` and `powershell` properties defined in it. At runtime, Copilot CLI replaces the `PLUGIN_ROOT` variable to construct the path that can resolve the scripts. On macOS and Linux, it executes the `bash` script. On Windows, it executes the PowerShell script referenced by the `powershell` property.

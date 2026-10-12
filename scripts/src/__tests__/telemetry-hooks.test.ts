@@ -87,6 +87,13 @@ const INVALID_TELEMETRY_ZIP_PATH = join(TEST_DIR, "invalid-telemetry.zip");
 const CHECKSUM_MANIFEST_NAME = "telemetry-reporter-checksums.txt";
 const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
+const PLUGIN_HOOKS_SOURCE_DIR = join(
+  REPO_ROOT,
+  "plugins",
+  "azure-skills",
+  "hooks",
+  "scripts",
+);
 const PLUGIN_ROOT = join(
   TEST_DIR,
   ".cursor",
@@ -665,11 +672,16 @@ function expectIsoTimestamp(args: string[]): void {
   expect(args[index + 1]).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/);
 }
 
+function copyTestHookScripts(destination: string): void {
+  cpSync(SOURCE_HOOKS_DIR, destination, { recursive: true });
+  cpSync(PLUGIN_HOOKS_SOURCE_DIR, destination, { recursive: true });
+}
+
 beforeAll(() => {
   mkdirSync(BIN_DIR, { recursive: true });
   mkdirSync(SCRATCH_DIR);
-  cpSync(SOURCE_HOOKS_DIR, HOOKS_DIR, { recursive: true });
-  cpSync(SOURCE_HOOKS_DIR, STUB_HOOKS_DIR, { recursive: true });
+  copyTestHookScripts(HOOKS_DIR);
+  cpSync(HOOKS_DIR, STUB_HOOKS_DIR, { recursive: true });
   writeFileSync(
     join(STUB_HOOKS_DIR, "install-telemetry.sh"),
     "#!/usr/bin/env bash\nprintf '%s\\n' \"$TELEMETRY_TEST_REPORTER_PATH\"\n",
@@ -1371,8 +1383,7 @@ describe.each(shells)("Telemetry publisher debug logs ($name)", shell => {
     expect(args).toEqual([]);
     expect(log).toContain(`Publisher: ${STANDALONE_PUBLISHER} | Executable:`);
     expect(log).toContain(
-      `Publisher: ${STANDALONE_PUBLISHER} | Execution failed ${
-        shell.name === "Bash" ? "with status 127." : "to start."
+      `Publisher: ${STANDALONE_PUBLISHER} | Execution failed ${shell.name === "Bash" ? "with status 127." : "to start."
       }`,
     );
   }, 30_000);
