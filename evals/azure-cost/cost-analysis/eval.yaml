@@ -230,6 +230,35 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|kubectl\\s+top|az\\s+monitor|az\\s+consumption"
 
+  - name: "AKS proactive anomaly uses historical baseline"
+    prompt: "Find unexplained AKS cost anomalies from the last two months and explain the likely causes."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: aks-proactive-anomaly
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: output-matches
+        config:
+          pattern: "(?i)historical|baseline|complete billing|comparable|weekday"
+      - type: output-matches
+        config:
+          pattern: "(?i)anomal|expected|actual|delta|change"
+      - type: output-matches
+        config:
+          pattern: "(?i)verified|likely|confidence|unexplained|missing evidence"
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   - name: "Cost investigation uses comparable evidence"
     prompt: "Explain how you would investigate a one-day Azure cost spike without running tools. Include the baseline, drill-down order, financial dimensions, change correlation, and confidence criteria."
     config:

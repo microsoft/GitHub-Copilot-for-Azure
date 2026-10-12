@@ -43,6 +43,11 @@ Identify the first proven limiting dimension:
 Confirm with time- and workload-aligned evidence that the bottleneck prevented
 pod placement or node removal and caused capacity to be added or retained.
 Otherwise report it as a likely contributor, not a proven cost cause.
+Do not call scale-out a false positive or added nodes unnecessary until a
+supported counterfactual shows the workloads could run with fewer nodes after
+the proposed correction.
+Low CPU and memory rule out only CPU or memory saturation; do not rule out VM
+shape because the SKU can determine local disk capacity and performance.
 
 ## Compare Remedies
 
@@ -51,7 +56,9 @@ Evaluate the lowest-risk correction first:
 1. Correct workload requests, image footprint, logs, caches, writable layers,
    `emptyDir`, or an obsolete placement restriction.
 2. Adjust a supported node limit or capability, such as pod capacity, OS disk,
-   kubelet storage placement, or VM shape.
+   kubelet storage placement, or VM shape. Verify OS, kubelet, image, and
+   temporary filesystem roles independently; an Ephemeral OS disk is not
+   automatically a separate kubelet or container-data disk.
 3. Reconfigure or replace a pool while preserving required isolation,
    availability, zones, reservations, and autoscaling behavior.
 4. Change workload architecture only when simpler corrections cannot satisfy
@@ -66,4 +73,5 @@ is not an optimization when total cluster cost or reliability worsens.
 Return the limiting dimension, causal evidence, affected pools and workloads,
 scaling consequence, attributable cost, remedy candidates, and confidence.
 Keep unverified causation or cost unknown rather than zero. Do not execute
-changes without approval.
+changes without approval. Require explicit approval before pool creation or
+reconfiguration, cordon, drain, or scaling.

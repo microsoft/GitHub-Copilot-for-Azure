@@ -69,4 +69,4 @@ Do not recommend a VM solely for its CPU:memory ratio. For candidate SKUs, verif
 
 ## Proposed Changes
 
-Present the limiting constraint, causal evidence, cost consequence, proposed manifest/pool changes, CRG impact, staged validation, rollback, and confidence. After approval, test one workload/pool at a time, verify scheduling and SLOs, then scale down through the configured autoscaler/NAP path rather than deleting nodes directly.
+Present the limiting constraint, causal evidence, cost consequence, proposed manifest/pool changes, CRG impact, staged validation, rollback, and confidence. Require explicit approval before placement or pool changes, cordon, drain, or scaling; after approval, test one workload/pool at a time, verify scheduling and SLOs, then scale down through the configured autoscaler/NAP path rather than deleting nodes directly.
