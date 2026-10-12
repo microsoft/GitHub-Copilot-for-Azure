@@ -1,5 +1,5 @@
 {
-  "description": "Token limits for markdown files in skill directories. See scripts/README.md for usage.",
+  "description": "Recommended token budget for markdown files in skill directories.",
   "defaults": {
     "SKILL.md": 5000,
     "references/**/*.md": 5000,
