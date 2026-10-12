@@ -5,7 +5,7 @@ Use Azure Advisor recommendations to understand optimization opportunities, iden
 This plugin includes:
 
 - `azure-advisor` for recommendation discovery, summaries, affected resources, metadata, service retirements, and lifecycle updates.
-- `azure-advisor-actionability` for one-recommendation remediation and command placeholder resolution.
+- `azure-advisor-actionability` for one-recommendation remediation, followed by resource-specific command placeholder resolution. When Advisor returns no usable remediation, it falls back to relevant public Microsoft Learn documentation. Responses identify whether guidance comes from Advisor or Microsoft Learn and cite documentation used for the fallback.
 
 ## Security
 
