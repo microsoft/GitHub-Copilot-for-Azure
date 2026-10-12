@@ -29,8 +29,14 @@ describe("loadConfig", () => {
 
   it("returns defaults when no config file exists", () => {
     const config = loadConfig(TEST_DIR);
-    expect(config.defaults).toBeDefined();
-    expect(config.defaults["*.md"]).toBeDefined();
+    expect(config).toEqual({
+      defaults: {
+        "SKILL.md": 5000,
+        "references/**/*.md": 5000,
+        "*.md": 5000
+      },
+      overrides: {}
+    });
   });
 
   it("loads valid configuration file", () => {
@@ -56,15 +62,20 @@ describe("loadConfig", () => {
     writeFileSync(join(TEST_DIR, ".token-limits.json"), "not valid json");
 
     const config = loadConfig(TEST_DIR);
-    expect(config.defaults).toBeDefined();
-    expect(config.defaults["*.md"]).toBeDefined();
+    expect(config.defaults["SKILL.md"]).toBe(5000);
+    expect(config.defaults["references/**/*.md"]).toBe(5000);
+    expect(config.defaults["*.md"]).toBe(5000);
+    expect(config.overrides).toEqual({});
   });
 
   it("returns defaults for config missing defaults field", () => {
     writeFileSync(join(TEST_DIR, ".token-limits.json"), JSON.stringify({ overrides: {} }));
 
     const config = loadConfig(TEST_DIR);
-    expect(config.defaults).toBeDefined();
+    expect(config.defaults["SKILL.md"]).toBe(5000);
+    expect(config.defaults["references/**/*.md"]).toBe(5000);
+    expect(config.defaults["*.md"]).toBe(5000);
+    expect(config.overrides).toEqual({});
   });
 });
 
