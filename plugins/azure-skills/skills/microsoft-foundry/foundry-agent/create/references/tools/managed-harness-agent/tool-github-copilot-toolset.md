@@ -12,7 +12,7 @@ Configure built-ins:
 ```yaml
 tools:
   - type: github_copilot_toolset_preview
-    default_config:
+    defaultConfig:
       enabled: false
     configs:
       - name: filesystem_read
@@ -35,6 +35,6 @@ Supported names:
 - `web`
 - `subagents`
 
-`default_config.enabled` sets the default; `configs` overrides individual tools. Duplicate/unknown names, unknown fields, and non-boolean `enabled` values fail before deployment.
+`defaultConfig.enabled` sets the default; `configs` overrides individual tools. Duplicate/unknown names, unknown fields, and non-boolean `enabled` values fail before deployment.
 
 The built-in `web` tool is distinct from Foundry `web_search`. Prefer one search path unless the user explicitly needs both.
