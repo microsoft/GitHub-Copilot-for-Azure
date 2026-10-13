@@ -36,7 +36,7 @@
     "eslint-plugin-import-x": "^4.17.1",
     "gray-matter": "^4.0.3",
     "html-entities": "^2.6.0",
-    "simple-git": "^3.36.0",
+    "simple-git": "^4.0.2",
     "ts-node": "^10.9.2",
     "typescript": "6.0.2",
     "typescript-eslint": "^8.70.0",
