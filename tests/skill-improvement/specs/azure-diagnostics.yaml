@@ -12,6 +12,7 @@ evaluations:
   development:
     - eval.yaml
     - fixture-evidence.eval.yaml
+    - functions-troubleshooting.eval.yaml
     - response-quality.eval.yaml
     - script-invocation.eval.yaml
   heldOut:
@@ -50,8 +51,8 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 350
-  maxJudgeCalls: 350
+  maxAnswerGenerations: 512
+  maxJudgeCalls: 512
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
