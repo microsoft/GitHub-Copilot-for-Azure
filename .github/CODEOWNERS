@@ -8,8 +8,8 @@
 /.github/workflows/ @microsoft/github-copilot-for-azure-writers
 
 # Plugin skills owners (multi-plugin)
-/plugins/foundry-iq-skills/ @hustcalm @valangar @microsoft/github-copilot-for-azure-writers
-/plugins/foundry-iq-skills/skills/foundry-iq/ @hustcalm @valangar @microsoft/github-copilot-for-azure-writers
+/plugins/foundry-iq-skills/ @hustcalm @valangar @kirk-marple @chbradsh @davidm00 @microsoft/github-copilot-for-azure-writers
+/plugins/foundry-iq-skills/skills/foundry-iq/ @hustcalm @valangar @kirk-marple @chbradsh @davidm00 @microsoft/github-copilot-for-azure-writers
 /plugins/azure-skills/skills/ @microsoft/github-copilot-for-azure-writers
 /plugins/azure-skills/skills/airunway-aks-setup/ @microsoft/github-copilot-for-azure-writers
 /plugins/azure-skills/skills/appinsights-instrumentation/ @microsoft/github-copilot-for-azure-writers
@@ -51,7 +51,7 @@
 /plugins/aks-skills/ @nikhilkaul1234 @brrusino @microsoft/github-copilot-for-azure-writers
 
 # Plugin skills evals owners (multi-plugin)
-/evals/foundry-iq-skills/foundry-iq/ @hustcalm @valangar @microsoft/github-copilot-for-azure-writers
+/evals/foundry-iq-skills/foundry-iq/ @hustcalm @valangar @kirk-marple @chbradsh @davidm00 @microsoft/github-copilot-for-azure-writers
 /evals/azure-skills/airunway-aks-setup/ @microsoft/github-copilot-for-azure-writers
 /evals/azure-skills/appinsights-instrumentation/ @microsoft/github-copilot-for-azure-writers
 /evals/azure-skills/azure-ai/ @microsoft/github-copilot-for-azure-writers
