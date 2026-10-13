@@ -13,7 +13,8 @@ SharePoint, SQL) as well as multi-source KB creation/reconfiguration, inform the
 the Azure AI Search public documentation pointer (https://learn.microsoft.com/azure/search/), and release workflow
 control back to the calling agent. The calling agent must take active charge—discovering prerequisites, planning,
 scripting REST/SDK API calls, or configuring Azure resources using its general tools to get the task done,
-just like executing without this skill.
+just like executing without this skill. The original request is not write approval: show the concrete plan
+and get explicit user approval before any REST/SDK or Azure mutation.
 Existing multi-source KB connection uses [Connect](../agents/connect.md), without KB mutation.
 Read-only operations retain their owners/helper constraints, not new source/retrieval support.
 Unclear scope: [intent-routing](../references/intent-routing.md), clarify before discovery.
