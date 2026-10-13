@@ -346,7 +346,7 @@ stimuli:
       Identify the root cause, propose a safe remediation, and describe how to
       verify recovery.
     rubric:
-      - The response identifies the incorrect deployment-package layout as the cause: the Python v2 entry point is nested under src instead of being at the deployed application root, so a successful artifact transfer does not imply function discovery.
+      - The response identifies the incorrect deployment-package layout as the cause because the Python v2 entry point is nested under src instead of being at the deployed application root, so a successful artifact transfer does not imply function discovery.
       - The remediation corrects the archive working directory or package contents so function_app.py and required files are at the expected root, while preserving the currently deployed artifact for rollback.
       - The response does not attribute the incident primarily to trigger configuration, RBAC, scaling, or Application Insights because the host reports no discovered functions.
       - Verification inspects the corrected package layout, confirms the host discovers and indexes the expected functions, and performs a representative invocation or trigger test.
