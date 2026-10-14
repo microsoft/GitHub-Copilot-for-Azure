@@ -66,6 +66,81 @@ See [Acceptance and refinement configuration](specs/README.md) for definitions,
 point calculations, tuning guidance for new and mature skills, and instructions
 for changing a run specification.
 
+### Incremental acceptance versus completion
+
+An **ACCEPTED** candidate is a safe improvement, not proof that all tests pass.
+Use two stages for near-ceiling skills such as Kusto:
+
+1. **Improve:** retain useful progress without requiring every failure to be
+   fixed in one edit. The Kusto spec requires 0.5 quality points, zero net
+   per-eval/per-model regression, 100% Skill invocation, and at most 15% Skill
+   Markdown token growth. With 182 matched outcomes, one net additional pass
+   is about 0.55 points; the old two-point threshold required four. Refinement
+   permits score progress of 0.5 points but no aggregate pass-rate regression.
+2. **Verify completion:** freeze the chosen commit and rerun both Skill-enabled
+   arms across the intended answer models, repeated trials, and held-out
+   scenarios. Require every individual trajectory to pass, not merely 100%
+   majority-aggregated outcomes. Record models, judge configuration, missing
+   results, disagreements, and remaining failures before claiming completion.
+
+Zero regression limits apply to group pass rates, not individual outcomes or
+individual arms: a newly passing prompt can offset another failing prompt.
+Inspect changed outcomes and each arm separately. The runner currently has no
+absolute 100% pass-rate gate; completion verification is a separate review.
+An already-perfect baseline cannot satisfy a positive improvement threshold;
+verify it directly rather than demanding another improvement.
+
+The Kusto improvement spec deliberately leaves held-out evaluation disabled.
+Its listed held-out suite therefore provides no evidence in this stage.
+When enabling `requireHeldOutImprovement`, account for the baseline and
+candidate held-out calls and remember that it requires relative improvement,
+not simply perfect results. Do not expose held-out failures to the improvement
+agent or tune acceptance after seeing them.
+
+Before changing thresholds, record baseline counts and desired additional
+passes; choose the smallest meaningful step, keep regression and safety checks
+strict, and calibrate score progress against repeated-run noise. Looser gates
+do not repair invalid KQL or missing test fixtures. Review an impossible live
+test's environment separately; never teach the Skill to invent missing tables
+to satisfy a rubric.
+
+### Token growth and cost evidence
+
+Skill token growth compares the candidate's estimated Markdown tokens
+(including references) with the original baseline, not the previous iteration.
+The engine estimates one token per four characters, rounded up after summing
+all Markdown characters. A 15%
+limit is a cumulative size allowance, not a cost budget; shrinking is allowed.
+Reported answer tokens are trajectory usage, not Skill size or dollars.
+
+The current Kusto plan allows 182 baseline generations plus up to four
+182-generation candidate batches: **910 generations and 910 judge calls**.
+Enabling held-out comparison adds 40 of each for one repetition and one model.
+More answer models, repetitions, or judges increase these totals; validate
+before dispatch. Four iterations is a maximum, not a guarantee: no actionable
+failures, time limits, or errors can stop the run earlier.
+
+`report.json` records actual generation/judge counts and duration, but not
+total billed AI credits. `iteration-<n>-agent-usage.json` records the improvement
+agent's CLI usage. Optional `improvementAgent.maxAiCredits` applies separately
+to each improvement-agent invocation, not evaluations, judges, or the whole
+workflow. Do not infer credits from token or call counts; record account usage
+with its source and attribution limitations, or mark credits **not measured**.
+ADX resource cost is separate: the cluster stays running across iterations and
+cleanup requests a stop once after the engine exits.
+
+### Run history
+
+Append actual evidence after each run; never replace observed failures with a
+planned target. Link the artifact/report and identify the evaluated commit.
+For improvement runs, record candidate acceptance reasons, each arm/model's
+individual and majority pass counts, regressions, invocation, baseline and
+candidate Skill tokens, growth, actual calls, duration, and credit source.
+
+| Run / commit | Correctness and acceptance | Skill tokens / growth | Usage / AI credits |
+| --- | --- | --- | --- |
+| [37889993216](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/37889993216) / `9e876272` | Baseline only; no candidate acceptance. Skill only: 86/91 majority, 420/455 individual. Skill + MCP: 86/91 majority, 421/455 individual. One answer model (`gpt-5.6-sol`), one judge (`claude-opus-4.8`), five repetitions; not 100% or cross-model evidence. | Engine baseline: 495; no candidate, growth N/A. | 1820 generations, 1820 judge calls, 242.9 engine minutes; credits not measured. |
+
 Each run writes:
 
 - `report-summary.md`: decision-first Actions/job summary with separate baseline
