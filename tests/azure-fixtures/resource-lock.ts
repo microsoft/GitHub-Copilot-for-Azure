@@ -1,20 +1,60 @@
 import { DefaultAzureCredential } from "@azure/identity";
-import { BlobServiceClient, type BlockBlobClient } from "@azure/storage-blob";
-import { spawn, type ChildProcess } from "node:child_process";
+import { BlobServiceClient } from "@azure/storage-blob";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 const LEASE_DURATION_SECONDS = 60;
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-type LeaseMessage = {
+export interface IBlobLeaseClient {
+  acquireLease(duration: number): Promise<unknown>;
+};
+
+export interface IBlockBlobClient {
+  readonly name: string;
+  upload(content: string, length: number, options?: {
+    conditions?: { ifNoneMatch?: string; leaseId?: string };
+  }): Promise<unknown>;
+  downloadToBuffer(): Promise<Buffer>;
+  getBlobLeaseClient(leaseId: string): IBlobLeaseClient;
+};
+
+export interface ILeaseRenewer {
+  assertHealthy(): void;
+  renew(): Promise<void>;
+  release(): Promise<void>;
+  stop(): void;
+};
+
+export interface ILeaseRenewerChildProcess {
+  readonly connected: boolean;
+  on(event: "message", listener: (message: LeaseMessage) => void): unknown;
+  on(event: "exit", listener: (code: number | null, signal: NodeJS.Signals | null) => void): unknown;
+  send(message: unknown, callback?: (error: Error | null) => void): boolean;
+};
+
+export interface IResourceLockDependencies {
+  createBlobClient(accountName: string, containerName: string, blobName: string): IBlockBlobClient;
+  createLeaseRenewer(accountName: string, containerName: string, blobName: string, leaseId: string): ILeaseRenewer;
+  now(): number;
+  sleep(ms: number): Promise<void>;
+  jitter(delayMs: number): number;
+  randomUUID(): string;
+  initialRetryDelayMs: number;
+  maximumRetryDelayMs: number;
+  leaseDurationSeconds: number;
+};
+
+export type LeaseMessage = {
   type: "renewed" | "released" | "failed";
   requestId?: number;
   message?: string;
 };
 
-class LeaseRenewer {
+export class ChildProcessLeaseRenewer implements ILeaseRenewer {
   private failure: Error | undefined;
   private exited = false;
   private requestId = 0;
@@ -23,7 +63,7 @@ class LeaseRenewer {
     reject: (error: Error) => void;
   }>();
 
-  constructor(private readonly child: ChildProcess) {
+  constructor(private readonly child: ILeaseRenewerChildProcess) {
     child.on("message", (message: LeaseMessage) => {
       if (message.type === "failed") {
         this.failure = new Error(`Resource lock lease renewal failed: ${message.message ?? "unknown error"}`);
@@ -43,15 +83,13 @@ class LeaseRenewer {
     });
     child.on("exit", (code, signal) => {
       this.exited = true;
-      if (!this.failure && code !== 0) {
+      if (!this.failure) {
         this.failure = new Error(`Resource lock lease renewer exited unexpectedly (${signal ?? code})`);
       }
-      if (this.failure) {
-        for (const pending of this.pending.values()) {
-          pending.reject(this.failure);
-        }
-        this.pending.clear();
+      for (const pending of this.pending.values()) {
+        pending.reject(this.failure);
       }
+      this.pending.clear();
     });
   }
 
@@ -110,28 +148,44 @@ function startLeaseRenewer(
   containerName: string,
   blobName: string,
   leaseId: string,
-): LeaseRenewer {
-  const scriptPath = resolve(dirname(fileURLToPath(import.meta.url)), "renew-fixture-lease.ts");
+): ChildProcessLeaseRenewer {
+  const scriptPath = resolve(__dirname, "renew-fixture-lease.ts");
   const child = spawn(NPX_COMMAND, ["-y", "tsx", scriptPath, accountName, containerName, blobName, leaseId], {
     stdio: ["ignore", "inherit", "inherit", "ipc"],
     shell: process.platform === "win32",
   });
-  return new LeaseRenewer(child);
+  return new ChildProcessLeaseRenewer(child);
 }
 
 export class ResourceLock {
-  private readonly blobClient: BlockBlobClient;
+  private readonly blobClient: IBlockBlobClient;
+  private readonly dependencies: IResourceLockDependencies;
 
   constructor(
     private readonly accountName: string,
     private readonly containerName: string,
     private readonly blobName: string,
+    dependencies: Partial<IResourceLockDependencies> = {},
   ) {
-    const serviceClient = new BlobServiceClient(
-      `https://${accountName}.blob.core.windows.net`,
-      new DefaultAzureCredential(),
-    );
-    this.blobClient = serviceClient.getContainerClient(containerName).getBlockBlobClient(blobName);
+    this.dependencies = {
+      createBlobClient: (account, container, blob) => {
+        const serviceClient = new BlobServiceClient(
+          `https://${account}.blob.core.windows.net`,
+          new DefaultAzureCredential(),
+        );
+        return serviceClient.getContainerClient(container).getBlockBlobClient(blob);
+      },
+      createLeaseRenewer: startLeaseRenewer,
+      now: Date.now,
+      sleep: (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
+      jitter: (delayMs) => Math.floor(Math.random() * delayMs),
+      randomUUID,
+      initialRetryDelayMs: 500,
+      maximumRetryDelayMs: 10_000,
+      leaseDurationSeconds: LEASE_DURATION_SECONDS,
+      ...dependencies,
+    };
+    this.blobClient = this.dependencies.createBlobClient(accountName, containerName, blobName);
   }
 
   async initialize(initialValue: unknown): Promise<void> {
@@ -148,25 +202,28 @@ export class ResourceLock {
   }
 
   async acquire(deadline: number): Promise<ResourceLockLease> {
-    let delayMs = 500;
-    while (Date.now() < deadline) {
+    let delayMs = this.dependencies.initialRetryDelayMs;
+    while (this.dependencies.now() < deadline) {
       try {
-        const leaseId = randomUUID();
-        await this.blobClient.getBlobLeaseClient(leaseId).acquireLease(LEASE_DURATION_SECONDS);
+        const leaseId = this.dependencies.randomUUID();
+        await this.blobClient.getBlobLeaseClient(leaseId).acquireLease(this.dependencies.leaseDurationSeconds);
         return new ResourceLockLease(
           this.blobClient,
           leaseId,
-          startLeaseRenewer(this.accountName, this.containerName, this.blobName, leaseId),
+          this.dependencies.createLeaseRenewer(this.accountName, this.containerName, this.blobName, leaseId),
         );
       } catch (error) {
         if (!isLeaseContention(error)) {
           throw error;
         }
-        const waitMs = Math.min(delayMs + Math.floor(Math.random() * delayMs), deadline - Date.now());
+        const waitMs = Math.min(
+          delayMs + this.dependencies.jitter(delayMs),
+          deadline - this.dependencies.now(),
+        );
         if (waitMs > 0) {
-          await new Promise((resolvePromise) => setTimeout(resolvePromise, waitMs));
+          await this.dependencies.sleep(waitMs);
         }
-        delayMs = Math.min(delayMs * 2, 10_000);
+        delayMs = Math.min(delayMs * 2, this.dependencies.maximumRetryDelayMs);
       }
     }
     throw new Error(`Timed out acquiring resource lock for ${this.blobClient.name}`);
@@ -174,13 +231,14 @@ export class ResourceLock {
 }
 
 export class ResourceLockLease {
-  private released = false;
+  private releasePromise: Promise<void> | undefined;
+  private operation = Promise.resolve();
 
   constructor(
-    private readonly blobClient: BlockBlobClient,
+    private readonly blobClient: IBlockBlobClient,
     private readonly leaseId: string,
-    private readonly renewer: LeaseRenewer,
-  ) {}
+    private readonly renewer: ILeaseRenewer,
+  ) { }
 
   assertHealthy(): void {
     this.renewer.assertHealthy();
@@ -200,18 +258,25 @@ export class ResourceLockLease {
   }
 
   renew(): Promise<void> {
-    return this.renewer.renew();
+    return this.serialize(() => this.renewer.renew());
   }
 
-  async release(): Promise<void> {
-    if (this.released) {
-      return;
+  release(): Promise<void> {
+    if (!this.releasePromise) {
+      this.releasePromise = this.serialize(async () => {
+        try {
+          await this.renewer.release();
+        } finally {
+          this.renewer.stop();
+        }
+      });
     }
-    try {
-      await this.renewer.release();
-      this.released = true;
-    } finally {
-      this.renewer.stop();
-    }
+    return this.releasePromise;
+  }
+
+  private serialize<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operation.then(operation);
+    this.operation = result.then(() => undefined, () => undefined);
+    return result;
   }
 }

@@ -168,30 +168,38 @@ export const FIXTURE_VERSION_TAG = "FixtureVersion";
 
 const AZ_COMMAND = process.platform === "win32" ? "az.cmd" : "az";
 
-let deadline = Number.POSITIVE_INFINITY;
+export type RunBudget = {
+  /** Caps the total wall clock time the script may spend in child processes. */
+  set(totalMs: number): void;
+  /**
+   * Milliseconds left in the run budget, or undefined when no budget was set.
+   * @throws An error if the budget is already exhausted.
+   */
+  remainingMs(step: string): number | undefined;
+};
 
-/**
- * Caps the total wall clock time the script may spend in child processes.
- */
-export function setBudget(totalMs: number) {
-  deadline = Date.now() + totalMs;
+/** Creates a budget measured with the supplied clock. */
+export function createBudget(now: () => number = Date.now): RunBudget {
+  let deadline = Number.POSITIVE_INFINITY;
+  return {
+    set(totalMs) {
+      deadline = now() + totalMs;
+    },
+    remainingMs(step) {
+      if (deadline === Number.POSITIVE_INFINITY) {
+        return undefined;
+      }
+      const remaining = deadline - now();
+      if (remaining <= 0) {
+        throw new Error(`Time budget was exhausted before ${step}`);
+      }
+      return remaining;
+    },
+  };
 }
 
-/**
- * Milliseconds left in the run budget, or undefined when no budget was set.
- * @throws An error if the budget is already exhausted.
- */
-export function remainingMs(step: string): number | undefined {
-  if (deadline === Number.POSITIVE_INFINITY) {
-    return undefined;
-  }
-
-  const remaining = deadline - Date.now();
-  if (remaining <= 0) {
-    throw new Error(`Time budget was exhausted before ${step}`);
-  }
-  return remaining;
-}
+/** The process-wide budget used by the production command runners. */
+export const runBudget = createBudget();
 
 /**
  * Helper function to run a single AZ CLI command.
@@ -206,7 +214,7 @@ export function runAz(args: string[], options: { subjectToBudget?: boolean } = {
     // az traps SIGTERM and can hang, so kill it outright.
     return execFileSync(AZ_COMMAND, args, {
       encoding: "utf8",
-      timeout: options.subjectToBudget === false ? undefined : remainingMs(step),
+      timeout: options.subjectToBudget === false ? undefined : runBudget.remainingMs(step),
       killSignal: "SIGKILL",
       shell: process.platform === "win32"
     }).trim();
