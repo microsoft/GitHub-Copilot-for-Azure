@@ -1,0 +1,157 @@
+name: azure-diagnostics-routing-ownership-eval
+description: |
+  Distinguishes production incident diagnosis from adjacent Azure skill
+  ownership.
+
+tags:
+  type: integration
+  skill: azure-diagnostics
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 1
+
+stimuli:
+  - name: "App Service production startup incident routes to diagnostics"
+    prompt: |
+      My production Azure App Service returns 503 after a deployment and the
+      container startup logs show repeated health-check failures. Diagnose the
+      root cause without redeploying.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+
+  - name: "Functions binding startup incident routes to diagnostics"
+    prompt: |
+      An existing Azure Function stopped processing Service Bus messages after
+      an app-setting change. The host reports an error indexing the trigger
+      binding. Help me diagnose the incident.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-diagnostics
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-diagnostics"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-diagnostics
+
+  - name: "New Application Insights instrumentation belongs to instrumentation"
+    prompt: |
+      Add OpenTelemetry-based Application Insights instrumentation to my Python
+      web app and configure traces, metrics, and logs before its first deployment.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - appinsights-instrumentation
+      earlyTerminate: '[{"type":"skill-call","skill":"appinsights-instrumentation"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - appinsights-instrumentation
+          disallowed:
+            - azure-diagnostics
+
+  - name: "Reliability design review belongs to reliability"
+    prompt: |
+      Review the architecture of my new multi-region Azure workload and recommend
+      availability-zone, failover, backup, and resilience improvements before launch.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-reliability
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-reliability"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-reliability
+          disallowed:
+            - azure-diagnostics
+
+  - name: "AKS workload deployment belongs to Kubernetes"
+    prompt: |
+      Create Kubernetes manifests and deploy a new API workload to my AKS cluster
+      with a Deployment, Service, ingress, and autoscaling.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-kubernetes
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+          disallowed:
+            - azure-diagnostics
+
+  - name: "VM creation belongs to compute"
+    prompt: |
+      Provision a new Linux virtual machine with managed disks, a network
+      interface, and SSH access in an existing Azure virtual network.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-compute
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-compute"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-compute
+          disallowed:
+            - azure-diagnostics
+
+  - name: "Service Bus SDK configuration belongs to messaging"
+    prompt: |
+      Show me how to configure a new Service Bus processor in the .NET SDK,
+      including retry options, prefetch count, concurrency, and settlement.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-messaging
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-messaging"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-messaging
+          disallowed:
+            - azure-diagnostics
