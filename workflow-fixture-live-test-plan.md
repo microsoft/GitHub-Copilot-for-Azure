@@ -250,9 +250,20 @@ Compare resource-group IDs, deployment counts, and coordination records from bot
 
 Start two harness processes with the same manifest identity and coordination settings:
 
+Use either runner from the `tests` directory.
+
+Bash:
+
 ```bash
 cd tests
 ./azure-fixtures/live/run-concurrent-workflow-fixture-live.sh --concurrency 2
+```
+
+PowerShell:
+
+```powershell
+Set-Location tests
+.\azure-fixtures\live\run-concurrent-workflow-fixture-live.ps1 -Concurrency 2
 ```
 
 The exported `RUN_LIVE_AZURE_FIXTURE_TESTS`, `AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT`, and `AZURE_FIXTURE_COORDINATION_CONTAINER` values from the single-run setup must still be present.
@@ -270,6 +281,12 @@ After the two-process test is stable, repeat with five concurrent processes:
 
 ```bash
 ./azure-fixtures/live/run-concurrent-workflow-fixture-live.sh --concurrency 5
+```
+
+Or with PowerShell:
+
+```powershell
+.\azure-fixtures\live\run-concurrent-workflow-fixture-live.ps1 -Concurrency 5
 ```
 
 The runner stores each process's output and exit code in a timestamped temporary directory, prints every log, exits `1` if any process fails, and prints the log directory for later inspection. All successful outputs should contain the same `fixtureInstanceId` and resource-group mapping.

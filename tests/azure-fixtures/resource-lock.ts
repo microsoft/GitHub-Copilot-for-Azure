@@ -5,7 +5,6 @@ import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 const LEASE_DURATION_SECONDS = 60;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -150,9 +149,8 @@ function startLeaseRenewer(
   leaseId: string,
 ): ChildProcessLeaseRenewer {
   const scriptPath = resolve(__dirname, "renew-fixture-lease.ts");
-  const child = spawn(NPX_COMMAND, ["-y", "tsx", scriptPath, accountName, containerName, blobName, leaseId], {
+  const child = spawn(process.execPath, ["--import", "tsx", scriptPath, accountName, containerName, blobName, leaseId], {
     stdio: ["ignore", "inherit", "inherit", "ipc"],
-    shell: process.platform === "win32",
   });
   return new ChildProcessLeaseRenewer(child);
 }
@@ -195,7 +193,7 @@ export class ResourceLock {
         conditions: { ifNoneMatch: "*" },
       });
     } catch (error) {
-      if (!["BlobAlreadyExists", "ConditionNotMet"].includes(storageErrorCode(error) ?? "")) {
+      if (!["BlobAlreadyExists", "ConditionNotMet", "LeaseIdMissing"].includes(storageErrorCode(error) ?? "")) {
         throw error;
       }
     }

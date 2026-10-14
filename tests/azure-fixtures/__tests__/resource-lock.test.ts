@@ -110,7 +110,7 @@ function createLock(
 }
 
 describe("ResourceLock", () => {
-  it.each(["BlobAlreadyExists", "ConditionNotMet"])(
+  it.each(["BlobAlreadyExists", "ConditionNotMet", "LeaseIdMissing"])(
     "initializes once and tolerates %s",
     async (code) => {
       const blob = new FakeBlob();

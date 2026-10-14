@@ -39,6 +39,7 @@
     "html-entities": "^2.6.0",
     "simple-git": "^4.0.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "6.0.2",
     "typescript-eslint": "^8.70.0",
     "vitest": "^5.0.0",

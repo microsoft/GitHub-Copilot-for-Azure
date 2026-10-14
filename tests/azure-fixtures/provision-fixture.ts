@@ -70,8 +70,16 @@ const WORKFLOW_FIXTURE_ID_TAG = "WorkflowFixtureId";
 const FIXTURE_INSTANCE_ID_TAG = "FixtureInstanceId";
 const FIXTURE_COMPONENT_TAG = "FixtureComponent";
 const DELETE_AFTER_TAG = "DeleteAfter";
+
+/**
+ * Retention period for ready fixtures before they are considered stale.
+ */
 const READY_RETENTION_MS = 48 * 60 * 60 * 1000; // 48 hours
-const LEASE_ACQUISITION_BUDGET_MS = 30 * 1000; // 30 seconds
+
+/**
+ * Maximum time allowed to try acquiring the lease for a fixture.
+ */
+const LEASE_ACQUISITION_BUDGET_MS = 10 * 60 * 1000; // 10 minutes
 const STORAGE_ACCOUNT_ENV = "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT";
 const STORAGE_CONTAINER_ENV = "AZURE_FIXTURE_COORDINATION_CONTAINER";
 

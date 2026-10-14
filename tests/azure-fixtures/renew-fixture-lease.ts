@@ -48,7 +48,7 @@ function enqueue(command: "renew" | "release", requestId?: number): void {
     send({ type: command === "renew" ? "renewed" : "released", requestId, at: Date.now() });
     if (command === "release") {
       stopped = true;
-      process.exitCode = 0;
+      clearInterval(interval);
     }
   }).catch(fail);
 }
@@ -68,7 +68,7 @@ process.on("message", (message: { type?: string; requestId?: number }) => {
   } else if (message.type === "stop") {
     stopped = true;
     clearInterval(interval);
-    process.exitCode = 0;
+    process.disconnect?.();
   }
 });
 
