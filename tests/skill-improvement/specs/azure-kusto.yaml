@@ -34,21 +34,15 @@ models:
 experiment:
   repetitions: 1
   conditions:
-    - name: Agent only
-      skill: disabled
-      mcp: disabled
     - name: Skill only
       skill: enabled
       mcp: disabled
-    - name: MCP only
-      skill: disabled
-      mcp: enabled
     - name: Skill + MCP
       skill: enabled
       mcp: enabled
 
 improvementAgent:
-  enabled: false
+  enabled: true
   model: claude-sonnet-5
 
 acceptance:
@@ -78,9 +72,9 @@ resources:
     startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 0
-  maxAnswerGenerations: 364
-  maxJudgeCalls: 364
+  maxIterations: 4
+  maxAnswerGenerations: 910
+  maxJudgeCalls: 910
   maxDurationMinutes: 360
   maxConcurrentVallyProcesses: 5
   generationWorkersPerVallyProcess: 1

@@ -12,7 +12,7 @@ import {
   validateRunSpec,
   type SkillImprovementRunSpec,
 } from "../config.ts";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 function spec(): SkillImprovementRunSpec {
   return {
@@ -136,9 +136,10 @@ describe("skill improvement configuration", () => {
     });
 
     expect(runSpec.target.baselineRef).toBe("main");
-    expect(runSpec.experiment.conditions.some(
-      condition => condition.skill === "enabled"
-    )).toBe(true);
+    expect(runSpec.experiment.conditions).toEqual([
+      { name: "Skill only", skill: "enabled", mcp: "disabled" },
+      { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
+    ]);
     expect(runSpec.output.issue).toBe("never");
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
     expect(runSpec.heldOutAcceptance).toEqual({
@@ -148,8 +149,8 @@ describe("skill improvement configuration", () => {
       maximumModelRegressionPoints: 0,
     });
     expect(runSpec.experiment.repetitions).toBe(1);
-    expect(runSpec.improvementAgent.enabled).toBe(false);
-    expect(runSpec.limits.maxIterations).toBe(0);
+    expect(runSpec.improvementAgent.enabled).toBe(true);
+    expect(runSpec.limits.maxIterations).toBe(4);
     expect(runSpec.evaluations.heldOut).toEqual([
       "held-out-troubleshoot-remediate.eval.yaml",
     ]);
@@ -166,8 +167,19 @@ describe("skill improvement configuration", () => {
     expect(runSpec.resources?.kusto?.resourceGroup).toBe(
       "resource-group-from-environment"
     );
-    expect(runSpec.limits.maxAnswerGenerations).toBe(364);
-    expect(runSpec.limits.maxJudgeCalls).toBe(364);
+    expect(runSpec.limits.maxAnswerGenerations).toBe(910);
+    expect(runSpec.limits.maxJudgeCalls).toBe(910);
+    const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
+    vi.stubEnv("AZURE_EVALS_SUBSCRIPTION_ID", "subscription-from-environment");
+    vi.stubEnv("AZURE_EVALS_RESOURCE_GROUP", "resource-group-from-environment");
+    try {
+      const plan = createRunPlan(repoRoot, runSpec);
+      expect(plan.maximumAnswerGenerations).toBe(910);
+      expect(plan.maximumJudgeCalls).toBe(910);
+      expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   test("reports missing run-spec environment variables", () => {
