@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmodSync,
   cpSync,
@@ -83,6 +84,7 @@ const TELEMETRY_ARCHIVE_DIR = join(TEST_DIR, "telemetry-archive");
 const TELEMETRY_ZIP_PATH = join(TEST_DIR, "ghcfa-telem-local.zip");
 const DOWNLOAD_CAPTURE_FILE = join(TEST_DIR, "download-url.txt");
 const INVALID_TELEMETRY_ZIP_PATH = join(TEST_DIR, "invalid-telemetry.zip");
+const CHECKSUM_MANIFEST_NAME = "telemetry-reporter-checksums.txt";
 const HOOKS_SOURCE_DIR = join(REPO_ROOT, "hooks");
 const SOURCE_HOOKS_DIR = join(REPO_ROOT, "hooks", "scripts");
 const PLUGIN_ROOT = join(
@@ -102,6 +104,16 @@ const DISPATCHER_PATH = join(STUB_HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
 const TELEMETRY_REPORTER_VERSION = "0.1.11-gce94fceee1";
+const TELEMETRY_REPORTER_DIGESTS = {
+  "linux-arm64": "70558a336b05d3f20cae969ddedb42d7f84fbed61549138448da42e010725d19",
+  "linux-musl-arm64": "6ec4649fbc181ba45cc729ac378d8fd97f62aa6464b61ebc483237422379572b",
+  "linux-musl-x64": "39dbadfe8e724c8fc60fd1544da6626b14187de7317bd14777ae0723781d7af6",
+  "linux-x64": "a09650f3f0306ea55a610fa893f5c582d0b9163952bc59686f24fa91e5e967e9",
+  "osx-arm64": "ff8751007bdaecefc6e25c069888fe04dd9357c02180ab88c02dc045b53e6ded",
+  "osx-x64": "200c38feacc02c789122584bfb25a3dd5ee62e8d972c21bb6378c320a4f25ce6",
+  "win-arm64": "b6a8055143759b603432d48ad9a07f0c744a48ccbaa752f59f7d9a3684479c5d",
+  "win-x64": "98a47c722294797d6801b8463d4165c0be514fb1a6004fdd4aee2680b17845ac",
+} as const;
 const STANDALONE_PUBLISHER = `Standalone ghcfa-telem (version ${TELEMETRY_REPORTER_VERSION})`;
 const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
 const PUBLISHER_STDERR = "test-only-private-publisher-stderr";
@@ -353,9 +365,17 @@ function runInstaller(
   zipPath: string,
   version = TELEMETRY_REPORTER_VERSION,
   mockDownload = false,
+  checksumManifest?: string,
 ): ReturnType<typeof spawnSync> {
   const extension = shell.name === "Bash" ? "sh" : "ps1";
-  const scriptPath = join(HOOKS_DIR, `install-telemetry.${extension}`);
+  const sourceScriptPath = join(HOOKS_DIR, `install-telemetry.${extension}`);
+  let scriptPath = sourceScriptPath;
+  if (checksumManifest !== undefined) {
+    const fixtureDirectory = mkdtempSync(join(TEST_DIR, "installer-hooks-"));
+    scriptPath = join(fixtureDirectory, `install-telemetry.${extension}`);
+    cpSync(sourceScriptPath, scriptPath);
+    writeFileSync(join(fixtureDirectory, CHECKSUM_MANIFEST_NAME), checksumManifest);
+  }
   const versionArgs = [
     shell.name === "Bash" ? "--version" : "-Version",
     version,
@@ -418,6 +438,16 @@ function runInstaller(
       ...TEMP_ENV,
     },
   });
+}
+
+function createTestChecksumManifest(hash: string): string {
+  return [
+    "# version runtime-identifier sha256",
+    ...Object.keys(TELEMETRY_REPORTER_DIGESTS).map(
+      rid => `${TELEMETRY_REPORTER_VERSION} ${rid} ${hash}`,
+    ),
+    "",
+  ].join("\n");
 }
 
 // Executes only installer detection/cache/URL logic, with fixture paths and native OS mocks.
@@ -835,6 +865,24 @@ describe.each(shells)("Telemetry reporter installer ($name)", shell => {
     expect(String(second.stdout).trim()).toBe(installedPath);
   }, 30_000);
 
+  it("does not enforce release digests for an explicit local ZIP", () => {
+    const cacheDirectory = join(INSTALL_CACHE_DIR, `local-override-${shell.name}`);
+    rmSync(cacheDirectory, { recursive: true, force: true });
+
+    const result = runInstaller(
+      shell,
+      cacheDirectory,
+      TELEMETRY_ZIP_PATH,
+      TELEMETRY_REPORTER_VERSION,
+      false,
+      "malformed checksum manifest\n",
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.status, String(result.stderr)).toBe(0);
+    expect(installedPathExists(shell, String(result.stdout).trim())).toBe(true);
+  });
+
   it("rejects an invalid local ZIP", () => {
     const cacheDirectory = join(INSTALL_CACHE_DIR, `invalid-installer-${shell.name}`);
     rmSync(cacheDirectory, { recursive: true, force: true });
@@ -880,12 +928,40 @@ describe("Telemetry reporter release download", () => {
     );
   });
 
+  it("pins every published runtime asset digest", () => {
+    const manifest = readFileSync(join(SOURCE_HOOKS_DIR, CHECKSUM_MANIFEST_NAME), "utf8");
+    const manifestEntries = manifest
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line !== "" && !line.startsWith("#"))
+      .map(line => {
+        const [version, rid, digest, ...extra] = line.split(/\s+/);
+        expect(extra).toEqual([]);
+        expect(version).toBe(TELEMETRY_REPORTER_VERSION);
+        expect(digest).toMatch(/^[0-9a-f]{64}$/);
+        return [rid, digest] as const;
+      });
+    expect(manifestEntries).toHaveLength(Object.keys(TELEMETRY_REPORTER_DIGESTS).length);
+    expect(new Set(manifestEntries.map(([rid]) => rid)).size).toBe(manifestEntries.length);
+    const entries = Object.fromEntries(manifestEntries);
+
+    expect(entries).toEqual(TELEMETRY_REPORTER_DIGESTS);
+  });
+
   it.each(shells)("downloads the prefixed release tag and RID-specific asset ($name)", shell => {
     const cacheDirectory = join(INSTALL_CACHE_DIR, `download-installer-${shell.name}`);
     rmSync(cacheDirectory, { recursive: true, force: true });
     rmSync(DOWNLOAD_CAPTURE_FILE, { force: true });
 
-    const result = runInstaller(shell, cacheDirectory, "", TELEMETRY_REPORTER_VERSION, true);
+    const archiveHash = createHash("sha256").update(readFileSync(TELEMETRY_ZIP_PATH)).digest("hex");
+    const result = runInstaller(
+      shell,
+      cacheDirectory,
+      "",
+      TELEMETRY_REPORTER_VERSION,
+      true,
+      createTestChecksumManifest(archiveHash),
+    );
     expect(result.error).toBeUndefined();
     expect(result.status, String(result.stderr)).toBe(0);
     const installedPath = String(result.stdout).trim();
@@ -902,6 +978,71 @@ describe("Telemetry reporter release download", () => {
       `https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-${TELEMETRY_REPORTER_VERSION}/ghcfa-telem-${TELEMETRY_REPORTER_VERSION}-${rid}.zip`,
     );
   }, 30_000);
+
+  it.each(shells)("rejects a downloaded asset whose digest does not match ($name)", shell => {
+    const cacheDirectory = join(INSTALL_CACHE_DIR, `digest-mismatch-${shell.name}`);
+    rmSync(cacheDirectory, { recursive: true, force: true });
+
+    const result = runInstaller(
+      shell,
+      cacheDirectory,
+      "",
+      TELEMETRY_REPORTER_VERSION,
+      true,
+      createTestChecksumManifest("0".repeat(64)),
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(String(result.stdout).trim()).toBe("");
+    expect(String(result.stderr)).toContain("SHA-256 validation failed for telemetry reporter asset");
+  });
+
+  const invalidChecksumCases = [
+    {
+      caseName: "missing",
+      manifest: "# no matching checksum\n",
+      diagnostic: "has no entry for version",
+    },
+    {
+      caseName: "duplicate",
+      manifest: `${createTestChecksumManifest("0".repeat(64))}${createTestChecksumManifest("1".repeat(64))}`,
+      diagnostic: "has multiple entries for version",
+    },
+    {
+      caseName: "malformed",
+      manifest: "not-a-valid-checksum-entry\n",
+      diagnostic: "has a malformed entry on line 1",
+    },
+  ];
+  it.each(
+    shells.flatMap(shell =>
+      invalidChecksumCases.map(checksumCase => ({ shell, checksumCase })),
+    ),
+  )("rejects a $checksumCase.caseName checksum manifest entry ($shell.name)", ({
+    shell,
+    checksumCase,
+  }) => {
+    const cacheDirectory = join(
+      INSTALL_CACHE_DIR,
+      `checksum-${checksumCase.caseName}-${shell.name}`,
+    );
+    rmSync(cacheDirectory, { recursive: true, force: true });
+
+    const result = runInstaller(
+      shell,
+      cacheDirectory,
+      "",
+      TELEMETRY_REPORTER_VERSION,
+      true,
+      checksumCase.manifest,
+    );
+
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(1);
+    expect(String(result.stdout).trim()).toBe("");
+    expect(String(result.stderr)).toContain(checksumCase.diagnostic);
+  });
 });
 
 describe.each(shells)("Telemetry reporter installer detection ($name)", shell => {

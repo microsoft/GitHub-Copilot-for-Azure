@@ -51,8 +51,17 @@ reporter version and `<rid>` is the detected runtime identifier:
 https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-<version>/ghcfa-telem-<version>-<rid>.zip
 ```
 
+The installers verify downloaded release assets before extraction. The
+[`telemetry-reporter-checksums.txt`](../hooks/scripts/telemetry-reporter-checksums.txt)
+manifest pins one SHA-256 digest for each supported version and RID. A missing,
+duplicate, malformed, or mismatched digest fails installation, and the hook
+continues without publishing telemetry. Updating the pinned reporter version
+also requires adding the release asset digests for all eight RIDs.
+
 To test a local build, set `AZURE_SKILLS_TELEMETRY_ZIP_PATH` to a local
 runtime ZIP produced by `telemetry-reporter/eng/scripts/Build-Native.ps1`.
+This explicit development override bypasses the release digest manifest because
+locally built ZIPs do not match the published release assets.
 
 The installer detects the native operating system and architecture, including
 Apple Silicon when Bash runs under Rosetta. It installs each version and RID
