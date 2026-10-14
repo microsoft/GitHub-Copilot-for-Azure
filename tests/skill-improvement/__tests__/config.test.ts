@@ -141,6 +141,14 @@ describe("skill improvement configuration", () => {
       { name: "Skill + MCP", skill: "enabled", mcp: "enabled" },
     ]);
     expect(runSpec.output.issue).toBe("never");
+    expect(runSpec.acceptance).toEqual({
+      minimumQualityImprovementPoints: 0.5,
+      maximumEvalRegressionPoints: 0,
+      maximumModelRegressionPoints: 0,
+      minimumSkillInvocationRate: 1,
+      requireHeldOutImprovement: false,
+    });
+    expect(runSpec.refinement.minimumScoreImprovementPoints).toBe(0.5);
     expect(runSpec.refinement.maximumQualityRegressionPoints).toBe(0);
     expect(runSpec.heldOutAcceptance).toEqual({
       enabled: false,

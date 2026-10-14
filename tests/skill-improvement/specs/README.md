@@ -12,6 +12,12 @@ Refinement compares a candidate with the version used to start its iteration.
 This lets several safe, incremental changes accumulate without publishing a
 candidate before it meets the final requirements.
 
+For the Kusto two-stage policy, observed run history, token-growth accounting,
+and AI-credit limitations, see
+[Incremental acceptance versus completion](../README.md#incremental-acceptance-versus-completion).
+The current Kusto thresholds accept safe incremental progress; they do not
+certify 100% correctness.
+
 ## What a point means
 
 Quality and score changes use **percentage points**, not percentages.
