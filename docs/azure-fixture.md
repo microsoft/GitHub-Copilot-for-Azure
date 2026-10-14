@@ -21,7 +21,11 @@ To meaningfully evaluate their scenarios, we need to prepare Azure resources for
 
 ## Types of fixtures
 
-There are two types of fixtures:
+### Stimuli fixture
+
+Stimuli fixtures are fixtures defined for a stimuli. These fixtures are provisioned before the stimuli runs and cleaned up after the stimuli completes, if applicable.
+
+There are two types of stimuli fixtures:
 
 - `readOnly` fixture
 
@@ -33,20 +37,38 @@ For this type of fixture, the agent task reads and modifies resource data.
 
 In theory, `readOnly` fixture can be persisted for reuse since it isn't modified to save cost and reduce the chance of getting transient failures due to environmental issues. However, there is no guarantee that the agent won't write data to it. Check the persisted fixture in case there are unexpected evaluation results. 
 
+### Workflow fixture
+
+Workflow fixtures are fixtures defined for a workflow. These fixtures are provisioned at an early stage of the workflow run. They are persisted so subsequent tasks in the workflow and concurrent workflow runs can reuse them. They are tagged for deletion by an external clean up workflow.
+
 ## Evaluation setup
 
-### Files
+The setup has two shared scripts as entry points:
+
+- A provision-fixture script that handles fixture provisioning. The script exports helper functions for provisioning stimuli fixture and workspace fixture.
+- A cleanup script that can delete fixtures defined by a manifest. This is reserved for devs to clean up the stale fixtures manually. The vally executor uses the same underlying logic to clean up non-persistent fixtures after each test.
+
+### Stimuli fixture
 
 A test case (Vally stimulus) defines its Azure fixtures with the following files:
 
-- A `manifest.json` file, called the "manifest" below.
+- A `manifest.json` file, called the "manifest" below. The stimuli fixture's manifest file is usually placed in the `fixture/` directory next to the stimuli's yaml definition.
 - Zero or more `.bicep` templates. Each template is written at resource group scope.
 - An `azureFixture` tag in the stimulus containing the path to the manifest, relative to the stimulus file.
 
-The setup uses two shared scripts:
+The dynamically generated resource context of stimuli fixtures are automatically injected to the first user prompt of the stimuli.
 
-- A provision-fixture script that handles fixture provisioning. The test running will use this script to handle fixture discovery and provisioning.
-- A cleanup script that can delete fixtures defined by a manifest. This is reserved for devs to clean up the stale fixtures manually. The vally executor uses the same underlying logic to clean up non-persistent fixtures after each test.
+### Workflow fixture
+
+A workflow defines its Azure fixtures with the following files:
+
+- A `manifest.json` file, called the "manifest" below. Stimuli fixture and workflow fixture share the same manifest schema. The workflow fixture's manifest file is usually placed in the `fixture/` directory next to the workflow's yaml definition.
+- Zero or more `.bicep` templates. Each template is written at resource group scope.
+- An early step in the workflow that programmatically imports the provision-fixture script and calls the helper function with its manifest.
+
+The dynamically generated resource context of workflow fixture must be explicitly exported from the step that provisions it (e.g. running vally eval suites with the fixture data), if later steps needs to the resource context (e.g. inject to test prompts).
+
+Workflow fixture provisioning implemented fixture sharing so that concurrent runs that depend on the same fixture reuse an complete instance of the fixture. See the [Fixture Sharing](#fixture-sharing) section for more details.
 
 ### Manifest
 
@@ -188,7 +210,15 @@ The provisioning script will exit with a non-zero exit code if it encounters any
 
 Our custom Vally executor runs the provisioning script before running the test. If the script exits with a non-zero exit code, the executor aborts the test run and reports the error.
 
+## Fixture Sharing
+
+Workflow fixture supports fixture sharing by coordinating isolated runs using an Azure Storage Blob. Before a workflow run starts provisioning the fixture, it must acquire the lease of a blob associated with the fixture to "optimistically" obtain the exclusive ownership of the fixture creation. If a run sees an active lease on the blob, it can assume that another run is provisioning the fixture so it can wait until the fixture is ready. The run that holds the lease must keep renewing it in the background. If the run that holds the lease crashes, the lease it held will expire so other workflow runs can make progress.
+
+The locking mechanism is optimistic and doesn't guarantee exclusive ownership of the fixture creation. In certain scenarios, concurrent runs can still create more than one instances of the fixture. The locking mechanism aims at guaranteeing that each workflow run will use a complete instance of the fixture while reusing existing fixtures as much as possible.
+
 ## Operation notes
+
+### Stimuli fixture
 
 The following operations use this process:
 
@@ -214,6 +244,26 @@ Future runs of the provision script will provision the updated version of the fi
 
 - Use the cleanup script with the manifest to delete all resource groups with matching `fixtureId` and values.
 - Remove the test case and all the files for its fixtures.
+
+### Workflow fixture
+
+1. Add a fixture to an existing workflow
+
+- Create the manifest and Bicep templates
+- Add to an early step to run the provision script with the manifest
+- Funnel the output to the downstream steps, if need
+
+2. Update fixture to an existing workflow
+
+- Update the manifest and Bicep templates
+- Bump the version of the manifest
+
+Future runs of the provision script will provision the updated version of the fixture. Stale fixtures will be deleted by a automated clean up workflow.
+
+3. Remove a workflow
+
+- Use the cleanup script with the manifest to delete all resource groups with matching `fixtureId` and values.
+- Remove the workflow and all the fixture manifests that are no longer used.
 
 ## References
 
