@@ -135,7 +135,7 @@ tags:
 defaults:
   runs: 1
   timeout: "10m"
-  executor: integration-test-agent-runner
+  executor: copilot-sdk-agent-runner
 
 stimuli:
   - name: "Invoke ${skill}"

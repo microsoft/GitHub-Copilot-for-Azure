@@ -173,6 +173,10 @@ extends:
                         -LiteralPath '$(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/Publish-Release.ps1' `
                         -Destination $targetPath `
                         -ErrorAction Stop
+                      Copy-Item `
+                        -LiteralPath '$(Build.SourcesDirectory)/telemetry-reporter/eng/scripts/NativePackaging.psm1' `
+                        -Destination $targetPath `
+                        -ErrorAction Stop
 
                 - task: 1ES.PublishPipelineArtifact@1
                   displayName: Publish release tools
@@ -214,6 +218,12 @@ extends:
                   - input: pipelineArtifact
                     artifactName: telemetry-reporter_linux-arm64
                     targetPath: $(Pipeline.Workspace)/telemetry-reporter_linux-arm64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_linux-musl-x64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_linux-musl-x64
+                  - input: pipelineArtifact
+                    artifactName: telemetry-reporter_linux-musl-arm64
+                    targetPath: $(Pipeline.Workspace)/telemetry-reporter_linux-musl-arm64
                   - input: pipelineArtifact
                     artifactName: release_tools
                     targetPath: $(Pipeline.Workspace)/release_tools

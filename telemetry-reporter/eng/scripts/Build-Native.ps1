@@ -8,26 +8,22 @@ param(
     [ValidateSet('Debug', 'Release')]
     [string] $Configuration = 'Release',
 
-    [ValidateSet('win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'osx-x64', 'osx-arm64')]
+    [ValidateSet('win-x64', 'win-arm64', 'linux-x64', 'linux-arm64', 'linux-musl-x64', 'linux-musl-arm64', 'osx-x64', 'osx-arm64')]
     [string] $RuntimeIdentifier,
 
     [string] $OutputRoot,
 
     [string] $RestoreConfigFile,
 
+    [string] $MuslBuildImage,
+
     [switch] $NoClean
 )
 
 Set-StrictMode -Version Latest
 
-$supportedRuntimeIdentifiers = @(
-    'win-x64',
-    'win-arm64',
-    'linux-x64',
-    'linux-arm64',
-    'osx-x64',
-    'osx-arm64'
-)
+Import-Module (Join-Path $PSScriptRoot 'NativePackaging.psm1') -Force -ErrorAction Stop
+$supportedRuntimeIdentifiers = @(Get-NativeRuntimeIdentifierList)
 $currentRuntimeIdentifier = [System.Runtime.InteropServices.RuntimeInformation]::RuntimeIdentifier
 if ([string]::IsNullOrWhiteSpace($RuntimeIdentifier)) {
     $RuntimeIdentifier = $currentRuntimeIdentifier
@@ -37,31 +33,13 @@ if ($supportedRuntimeIdentifiers -notcontains $RuntimeIdentifier) {
     throw "Runtime identifier '$RuntimeIdentifier' is not supported."
 }
 
-$hostParts = $currentRuntimeIdentifier.Split('-')
-$targetParts = $RuntimeIdentifier.Split('-')
-if ($hostParts.Count -ne 2 -or $targetParts.Count -ne 2) {
-    throw "Unable to compare host RID '$currentRuntimeIdentifier' with target RID '$RuntimeIdentifier'."
-}
-
-$hostOperatingSystem = $hostParts[0]
-$hostArchitecture = $hostParts[1]
-$targetOperatingSystem = $targetParts[0]
-$targetArchitecture = $targetParts[1]
-if ($hostOperatingSystem -ne $targetOperatingSystem) {
-    throw "Native AOT cross-operating-system builds are not supported. Host RID: '$currentRuntimeIdentifier'; target RID: '$RuntimeIdentifier'."
-}
-
-$allowedTargetsByHost = @{
-    'win-x64' = @('win-x64', 'win-arm64')
-    'win-arm64' = @('win-arm64')
-    'linux-x64' = @('linux-x64')
-    'linux-arm64' = @('linux-arm64')
-    'osx-x64' = @('osx-x64', 'osx-arm64')
-    'osx-arm64' = @('osx-arm64')
-}
-if (-not $allowedTargetsByHost.ContainsKey($currentRuntimeIdentifier) -or
-    $allowedTargetsByHost[$currentRuntimeIdentifier] -notcontains $RuntimeIdentifier) {
-    throw "Host RID '$currentRuntimeIdentifier' does not build target RID '$RuntimeIdentifier' in the supported Azure MCP platform topology."
+$topology = Get-NativeBuildTopology -HostRuntimeIdentifier $currentRuntimeIdentifier -TargetRuntimeIdentifier $RuntimeIdentifier
+$hostArchitecture = $topology.HostArchitecture
+$targetArchitecture = $topology.TargetArchitecture
+$targetOperatingSystem = $topology.TargetOperatingSystem
+$useMuslContainer = $topology.UseMuslContainer
+if (-not $useMuslContainer -and -not [string]::IsNullOrWhiteSpace($MuslBuildImage)) {
+    throw 'MuslBuildImage is only valid for linux-musl targets.'
 }
 
 $repoRoot = [System.IO.Path]::GetFullPath(
@@ -99,6 +77,138 @@ else {
     'ghcfa-telem'
 }
 $nativeExecutable = Join-Path $publishDirectory $executableName
+$buildProjectPath = $projectPath
+$buildPublishDirectory = $publishDirectory
+$buildRestoreConfigFile = $restoreConfigFilePath
+$muslContainerArguments = @()
+$muslPlatform = if ($targetArchitecture -eq 'x64') { 'linux/amd64' } else { 'linux/arm64' }
+$muslRuntimeImage = 'mcr.microsoft.com/dotnet/runtime-deps:10.0-alpine3.23'
+
+function Invoke-BuildDotNet {
+    param([string[]] $Arguments)
+
+    if ($useMuslContainer) {
+        $credentialName = 'NuGetPackageSourceCredentials_azure-sdk-for-net'
+        $previousCredentials = [Environment]::GetEnvironmentVariable($credentialName)
+        $credentialArguments = @()
+        try {
+            if (-not [string]::IsNullOrWhiteSpace($previousCredentials) -or
+                -not [string]::IsNullOrWhiteSpace($env:VSS_NUGET_ACCESSTOKEN)) {
+                $configPath = if ($null -ne $restoreConfigFilePath) { $restoreConfigFilePath } else { Join-Path $repoRoot 'nuget.config' }
+                $config = [xml](Get-Content -LiteralPath $configPath -Raw -ErrorAction Stop)
+                $source = $config.SelectSingleNode('/configuration/packageSources/add[@key="azure-sdk-for-net"]')
+                if ($null -ne $source) {
+                    if ($source.GetAttribute('value') -ne 'https://pkgs.dev.azure.com/azure-sdk/public/_packaging/azure-sdk-for-net/nuget/v3/index.json') {
+                        throw 'Refusing to forward Azure SDK credentials to an unexpected NuGet feed.'
+                    }
+                    if ([string]::IsNullOrWhiteSpace($previousCredentials)) {
+                        [Environment]::SetEnvironmentVariable(
+                            $credentialName,
+                            "Username=AzureDevOps;Password=$env:VSS_NUGET_ACCESSTOKEN;ValidAuthenticationTypes=Basic"
+                        )
+                    }
+                    $credentialArguments = @('--env', $credentialName)
+                }
+            }
+            & docker @muslContainerArguments @credentialArguments --entrypoint dotnet $MuslBuildImage @Arguments
+            if ($LASTEXITCODE -ne 0) {
+                throw "dotnet $($Arguments[0]) failed with exit code $LASTEXITCODE."
+            }
+        }
+        finally {
+            $restoredCredentials = if ($null -eq $previousCredentials) { [NullString]::Value } else { $previousCredentials }
+            [Environment]::SetEnvironmentVariable($credentialName, $restoredCredentials)
+        }
+    }
+    else {
+        & dotnet @Arguments
+    }
+    if ($LASTEXITCODE -ne 0) {
+        throw "dotnet $($Arguments[0]) failed with exit code $LASTEXITCODE."
+    }
+}
+
+function Initialize-MuslContainer {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        throw 'Docker was not found on PATH. Musl Native AOT builds require a matching-architecture Linux Docker engine.'
+    }
+    $daemon = & docker info --format '{{.OSType}}/{{.Architecture}}'
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to connect to the Docker engine; exit code $LASTEXITCODE."
+    }
+    $expectedDaemon = if ($targetArchitecture -eq 'x64') { '^linux/(x86_64|amd64)$' } else { '^linux/(aarch64|arm64)$' }
+    if ($daemon -notmatch $expectedDaemon) {
+        throw "Docker engine '$daemon' cannot natively build '$RuntimeIdentifier'. Cross-architecture emulation is not supported."
+    }
+
+    $checkoutRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot '..'))
+    if (-not (Test-Path -LiteralPath (Join-Path $checkoutRoot '.git') -PathType Container)) {
+        throw 'Musl container builds require a full clone with .git inside the checkout for NBGV. Use a full clone rather than a linked worktree.'
+    }
+    $sdkVersion = (Get-Content -LiteralPath (Join-Path $repoRoot 'global.json') -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop).sdk.version
+    if ([string]::IsNullOrWhiteSpace($MuslBuildImage)) {
+        $script:MuslBuildImage = "ghcfa-telem-musl-build:$sdkVersion-$targetArchitecture"
+        $contextPath = Join-Path $repoRoot 'eng' 'native-musl'
+        & docker build --platform $muslPlatform --build-arg "DOTNET_SDK_VERSION=$sdkVersion" --tag $script:MuslBuildImage $contextPath
+        if ($LASTEXITCODE -ne 0) {
+            throw "Building the Alpine Native AOT toolchain image failed with exit code $LASTEXITCODE."
+        }
+    }
+
+    $containerSdkVersion = & docker run --rm --platform $muslPlatform --entrypoint dotnet $MuslBuildImage --version
+    if ($LASTEXITCODE -ne 0 -or $containerSdkVersion -ne $sdkVersion) {
+        throw "Musl build image must provide .NET SDK '$sdkVersion'; found '$containerSdkVersion' (exit code $LASTEXITCODE)."
+    }
+    $containerInfo = & docker run --rm --platform $muslPlatform --entrypoint dotnet $MuslBuildImage --info
+    if ($LASTEXITCODE -ne 0 -or
+        ($containerInfo -join "`n") -notmatch "(?m)^\s*RID:\s*$([regex]::Escape($RuntimeIdentifier))\s*$") {
+        throw "Musl build image does not provide target RID '$RuntimeIdentifier'; dotnet --info exited with $LASTEXITCODE."
+    }
+
+    $probe = @'
+set -eu
+command -v clang
+command -v ld
+command -v objcopy
+command -v readelf
+test -f /etc/alpine-release
+printf '#include <stdlib.h>\n#include <zlib.h>\nint main(void) { void *p = malloc(1); free(p); return zlibVersion() == 0; }\n' > /tmp/musl-probe.c
+clang -g /tmp/musl-probe.c -lz -o /tmp/musl-probe
+/tmp/musl-probe
+objcopy --only-keep-debug /tmp/musl-probe /tmp/musl-probe.dbg
+test -s /tmp/musl-probe.dbg
+readelf -l /tmp/musl-probe > /tmp/musl-probe.headers
+grep -F 'ld-musl-' /tmp/musl-probe.headers
+'@
+    & docker run --rm --platform $muslPlatform --entrypoint sh $MuslBuildImage -c $probe
+    if ($LASTEXITCODE -ne 0) {
+        throw "Alpine compiler/linker, musl libc, zlib, or debug-symbol prerequisite validation failed with exit code $LASTEXITCODE."
+    }
+
+    $userId = & id -u
+    if ($LASTEXITCODE -ne 0) { throw "Unable to read the build user ID; exit code $LASTEXITCODE." }
+    $groupId = & id -g
+    if ($LASTEXITCODE -ne 0) { throw "Unable to read the build group ID; exit code $LASTEXITCODE." }
+    $script:muslContainerArguments = @(
+        'run', '--rm', '--platform', $muslPlatform,
+        '--user', "${userId}:${groupId}",
+        '--mount', "type=bind,source=$checkoutRoot,target=/repo",
+        '--mount', "type=bind,source=$outputRootPath,target=/artifacts",
+        '--workdir', '/repo/telemetry-reporter',
+        '--env', 'HOME=/tmp',
+        '--env', "DOTNET_CLI_HOME=/artifacts/staging/$RuntimeIdentifier/dotnet",
+        '--env', "NUGET_PACKAGES=/artifacts/staging/$RuntimeIdentifier/nuget",
+        '--env', 'AZURE_MCP_COLLECT_TELEMETRY=false'
+    )
+    $script:buildProjectPath = '/repo/telemetry-reporter/src/ghcfa-telem/ghcfa-telem.csproj'
+    $script:buildPublishDirectory = "/artifacts/publish/$RuntimeIdentifier"
+    if ($null -ne $restoreConfigFilePath) {
+        $script:muslContainerArguments += @(
+            '--mount', "type=bind,source=$restoreConfigFilePath,target=/restore/nuget.config,readonly"
+        )
+        $script:buildRestoreConfigFile = '/restore/nuget.config'
+    }
+}
 
 function Remove-DirectoryIfPresent {
     param(
@@ -210,7 +320,15 @@ function Invoke-NativeCommand {
 
     $stderrPath = Join-Path $stagingDirectory "$([guid]::NewGuid().ToString('N')).stderr.txt"
     try {
-        $stdout = & $nativeExecutable @Arguments 2> $stderrPath
+        $stdout = if ($useMuslContainer) {
+            & docker run --rm --platform $muslPlatform `
+                --mount "type=bind,source=$publishDirectory,target=/publish,readonly" `
+                --env 'AZURE_MCP_COLLECT_TELEMETRY=false' `
+                --entrypoint /publish/ghcfa-telem $muslRuntimeImage @Arguments 2> $stderrPath
+        }
+        else {
+            & $nativeExecutable @Arguments 2> $stderrPath
+        }
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne $ExpectedExitCode) {
             $stderr = if (Test-Path -LiteralPath $stderrPath) {
@@ -271,6 +389,10 @@ function Copy-PublishFiles {
 }
 
 function Assert-PlatformPrerequisites {
+    if ($useMuslContainer) {
+        Initialize-MuslContainer
+        return
+    }
     if ($IsLinux) {
         if (-not (Get-Command clang -ErrorAction SilentlyContinue)) {
             throw 'clang was not found on PATH. Install the Native AOT compiler prerequisites and try again.'
@@ -300,7 +422,7 @@ function Assert-PlatformPrerequisites {
     }
 }
 
-if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+if (-not $useMuslContainer -and -not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
     throw 'The .NET SDK was not found on PATH. Install the .NET 10 SDK and try again.'
 }
 
@@ -334,25 +456,6 @@ if ($IsWindows) {
 Write-Host "Host runtime identifier:   $currentRuntimeIdentifier"
 Write-Host "Target runtime identifier: $RuntimeIdentifier"
 
-if (-not $NoClean) {
-    $cleanArguments = @(
-        'clean',
-        $projectPath,
-        '--configuration', $Configuration,
-        '--runtime', $RuntimeIdentifier,
-        '-p:BuildNative=true'
-    )
-    if ($null -ne $restoreConfigFilePath) {
-        $cleanArguments += "-p:RestoreConfigFile=$restoreConfigFilePath"
-    }
-
-    & dotnet @cleanArguments
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "dotnet clean failed with exit code $LASTEXITCODE."
-    }
-}
-
 Remove-DirectoryIfPresent -Path $publishDirectory
 Remove-DirectoryIfPresent -Path $stagingDirectory
 New-Item -ItemType Directory -Path $publishDirectory -Force -ErrorAction Stop | Out-Null
@@ -360,17 +463,34 @@ New-Item -ItemType Directory -Path $packageDirectory -Force -ErrorAction Stop | 
 New-Item -ItemType Directory -Path $runtimeStagingDirectory -Force -ErrorAction Stop | Out-Null
 New-Item -ItemType Directory -Path $symbolsStagingDirectory -Force -ErrorAction Stop | Out-Null
 
+if (-not $NoClean) {
+    $cleanArguments = @(
+        'clean',
+        $buildProjectPath,
+        '--configuration', $Configuration,
+        '--runtime', $RuntimeIdentifier,
+        "-p:RuntimeIdentifiers=$RuntimeIdentifier",
+        '-p:BuildNative=true'
+    )
+    if ($null -ne $buildRestoreConfigFile) {
+        $cleanArguments += "-p:RestoreConfigFile=$buildRestoreConfigFile"
+    }
+
+    Invoke-BuildDotNet -Arguments $cleanArguments
+}
+
 $publishArguments = @(
     'publish',
-    $projectPath,
+    $buildProjectPath,
     '--configuration', $Configuration,
     '--runtime', $RuntimeIdentifier,
+    "-p:RuntimeIdentifiers=$RuntimeIdentifier",
     '--self-contained', 'true',
-    '--output', $publishDirectory,
+    '--output', $buildPublishDirectory,
     '-p:BuildNative=true'
 )
-if ($null -ne $restoreConfigFilePath) {
-    $publishArguments += "-p:RestoreConfigFile=$restoreConfigFilePath"
+if ($null -ne $buildRestoreConfigFile) {
+    $publishArguments += "-p:RestoreConfigFile=$buildRestoreConfigFile"
 }
 
 if ($IsWindows) {
@@ -386,7 +506,7 @@ if ($IsWindows) {
     & $env:ComSpec /d /c $nativeBuildCommand
 }
 else {
-    & dotnet @publishArguments
+    Invoke-BuildDotNet -Arguments $publishArguments
 }
 
 if ($LASTEXITCODE -ne 0) {
@@ -397,7 +517,7 @@ if (-not (Test-Path -LiteralPath $nativeExecutable)) {
     throw "Native publish did not produce '$nativeExecutable'."
 }
 
-$smokeTestsRan = $RuntimeIdentifier -eq $currentRuntimeIdentifier
+$smokeTestsRan = $useMuslContainer -or $RuntimeIdentifier -eq $currentRuntimeIdentifier
 if ($smokeTestsRan) {
     $previousTelemetrySetting = $env:AZURE_MCP_COLLECT_TELEMETRY
     $env:AZURE_MCP_COLLECT_TELEMETRY = 'false'
@@ -432,13 +552,12 @@ else {
     Write-Warning "Skipping smoke tests because target RID '$RuntimeIdentifier' cannot run on host RID '$currentRuntimeIdentifier'."
 }
 
-$versionOutput = & dotnet msbuild $projectPath `
-    -nologo `
-    -t:GetBuildVersion `
-    -getProperty:NuGetPackageVersion
-if ($LASTEXITCODE -ne 0) {
-    throw "Unable to read the NBGV package version; dotnet msbuild exited with $LASTEXITCODE."
-}
+$versionOutput = Invoke-BuildDotNet -Arguments @(
+    'msbuild', $buildProjectPath,
+    '-nologo',
+    '-t:GetBuildVersion',
+    '-getProperty:NuGetPackageVersion'
+)
 
 $version = ($versionOutput | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
     Select-Object -Last 1).Trim()
@@ -509,6 +628,9 @@ foreach ($archive in @($runtimeArchive, $symbolsArchive)) {
     "$($hash.Hash.ToLowerInvariant())  $([System.IO.Path]::GetFileName($archive))" |
         Set-Content -LiteralPath "$archive.sha256" -Encoding ascii -ErrorAction Stop
 }
+
+$null = Get-ValidatedNativePackage -ArchivePath $runtimeArchive -RuntimeIdentifier $RuntimeIdentifier
+$null = Get-ValidatedNativePackage -ArchivePath $symbolsArchive -RuntimeIdentifier $RuntimeIdentifier -Symbols
 
 Remove-DirectoryIfPresent -Path $stagingDirectory
 

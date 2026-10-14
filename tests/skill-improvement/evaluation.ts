@@ -209,7 +209,7 @@ async function generateAnswers(
     "--eval-spec",
     evalSpecFile,
     "--executor-plugin",
-    path.join(testsDirectory, "vally", "vally-executor.ts"),
+    path.join(testsDirectory, "vally", "copilot-sdk-executor.ts"),
     "--grader-plugin",
     path.join(testsDirectory, "vally", "vally-graders.ts"),
     "--output-dir",

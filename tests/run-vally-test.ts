@@ -339,7 +339,9 @@ async function main(): Promise<void> {
     forwardedArgs.splice(0, 0, "--workers", "2");
   }
   forwardedArgs.splice(0, 0, "--output-dir", "./results");
-  forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "vally-executor.ts"));
+  // Vally supports adding multiple plugins.
+  // Add new executor plugins and grader plugins on top of what has been included.
+  forwardedArgs.splice(0, 0, "--executor-plugin", path.join(__dirname, "vally", "copilot-sdk-executor.ts"));
   forwardedArgs.splice(0, 0, "--grader-plugin", path.join(__dirname, "vally", "vally-graders.ts"));
   if (options.skill) {
     const evalSpecDir = path.join(__dirname, `../evals/${pluginDirname}/${options.skill}/`);

@@ -34,7 +34,7 @@ defaults:
   # real Azure deployment. All other stimuli terminate early via the
   # `earlyTerminate` tag, so the higher timeout is just a safety net.
   timeout: "35m"
-  executor: integration-test-agent-runner
+  executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
 
 scoring:

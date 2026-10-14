@@ -3,13 +3,13 @@ import { fileURLToPath } from "url";
 import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
 import { normalizeTestName } from "./utils.ts";
-import { useAgentRunner, createMarkdownReport } from "../utils/agent-runner.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
 import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
 import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
 import { dirname } from "node:path";
+import { useAgentRunner, createMarkdownReport } from "../utils/copilot-sdk-runner.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,8 +19,8 @@ const __dirname = path.dirname(__filename);
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
-export class IntegrationTestAgentRunner implements Executor {
-  name = "integration-test-agent-runner";
+export class CopilotSdkAgentRunner implements Executor {
+  name = "copilot-sdk-agent-runner";
   supportsMultiTurn = true;
   supportsPreparedWorkspace = true;
 
@@ -79,7 +79,6 @@ export class IntegrationTestAgentRunner implements Executor {
       model: model,
       prompt: prompt,
       shouldEarlyTerminate: shouldEarlyTerminate,
-      nonInteractive: true,
       followUp: followUps,
       systemPrompt: systemPrompt,
       timeout: timeout,
@@ -327,7 +326,7 @@ function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEven
 }
 
 export function registerExecutors(registry: ExecutorRegistry): void {
-  registry.register(new IntegrationTestAgentRunner());
+  registry.register(new CopilotSdkAgentRunner());
 }
 
 function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): string {

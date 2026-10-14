@@ -44,7 +44,7 @@ const __dirname = path.dirname(__filename);
 const TOOL_USAGE_PREFIX = "tool-usage-";
 const TOOL_USAGE_SUFFIX = ".json";
 
-/** A single tool call as written by agent-runner.ts computeToolUsage. */
+/** A single tool call as written by copilot-sdk-runner.ts computeToolUsage. */
 export interface ToolCallRecord {
   order: number;
   toolName: string;
@@ -54,7 +54,7 @@ export interface ToolCallRecord {
   outputBytes?: number | null;
 }
 
-/** A per-run tool-usage file as written by agent-runner.ts writeMarkdownReport. */
+/** A per-run tool-usage file as written by copilot-sdk-runner.ts writeMarkdownReport. */
 export interface ToolUsageFile {
   testName: string;
   reportFile?: string;
@@ -256,8 +256,8 @@ function assertValidTableName(name: string): void {
   if (!/^[A-Za-z][A-Za-z0-9]{2,62}$/.test(name)) {
     throw new Error(
       `Invalid TOOL_USAGE_TABLE_NAME '${name}'. Azure Table names must be ` +
-        "alphanumeric only (no hyphens, underscores, or dots), must start with a " +
-        "letter, and be 3-63 characters long (e.g. 'integrationtoolusage').",
+      "alphanumeric only (no hyphens, underscores, or dots), must start with a " +
+      "letter, and be 3-63 characters long (e.g. 'integrationtoolusage').",
     );
   }
 }
@@ -347,7 +347,7 @@ async function main(): Promise<void> {
 
   console.log(
     `Uploading tool usage to ${tableEndpoint} table='${tableName}' ` +
-      `(skill='${skill}', branch='${branch}', run='${runId}', rows=${rows.length}).`,
+    `(skill='${skill}', branch='${branch}', run='${runId}', rows=${rows.length}).`,
   );
 
   // Ensure the table exists (idempotent; ignores "already exists").
@@ -370,7 +370,7 @@ async function main(): Promise<void> {
     } catch (err) {
       console.error(
         `submitTransaction failed for table='${tableName}' ` +
-          `partitionKey='${batch[0]?.partitionKey}' size=${batch.length}: ${formatAzureError(err)}`,
+        `partitionKey='${batch[0]?.partitionKey}' size=${batch.length}: ${formatAzureError(err)}`,
       );
       throw err;
     }
@@ -379,7 +379,7 @@ async function main(): Promise<void> {
 
   console.log(
     `Uploaded ${uploaded} tool call row(s) in ${batches.length} batch(es) ` +
-      `for skill='${skill}', branch='${branch}', run='${runId}'.`,
+    `for skill='${skill}', branch='${branch}', run='${runId}'.`,
   );
 }
 
@@ -391,7 +391,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
     if (isPermissionError(err)) {
       console.warn(
         "WARNING: Skipping tool usage upload - the workflow identity lacks " +
-          "'Storage Table Data Contributor' on the storage account. Grant the role to enable uploads.",
+        "'Storage Table Data Contributor' on the storage account. Grant the role to enable uploads.",
       );
       return;
     }

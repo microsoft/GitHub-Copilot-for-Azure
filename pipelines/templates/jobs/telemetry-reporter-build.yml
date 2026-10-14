@@ -17,6 +17,8 @@ jobs:
     strategy:
       maxParallel: ${{ parameters.MaxParallel }}
       matrix: $[ ${{ parameters.Matrix }} ]
+    variables:
+      MuslBuildImage: ''
     pool:
       name: $(Pool)
       ${{ if eq(parameters.OSName, 'macOS') }}:
@@ -59,6 +61,7 @@ jobs:
       - ${{ if eq(parameters.OSName, 'linux') }}:
           - task: PowerShell@2
             displayName: Install Native AOT prerequisites
+            condition: and(succeeded(), not(startsWith(variables['BuildRuntimeIdentifier'], 'linux-musl-')))
             inputs:
               pwsh: true
               targetType: inline
@@ -87,6 +90,25 @@ jobs:
                   exit 1
                 }
 
+          - task: 1ES.BuildContainerImage@1
+            displayName: Build Alpine Native AOT toolchain
+            condition: and(succeeded(), startsWith(variables['BuildRuntimeIdentifier'], 'linux-musl-'))
+            inputs:
+              path: $(Build.SourcesDirectory)/telemetry-reporter/eng/native-musl
+              image: ghcfa-telem-musl-build:$(Build.BuildId)-$(BuildRuntimeIdentifier)
+              buildArguments: --build-arg DOTNET_SDK_VERSION=$(DotNetSdkVersion)
+              enableNetwork: true
+              useBuildKit: true
+
+          - task: PowerShell@2
+            displayName: Select Alpine Native AOT toolchain
+            condition: and(succeeded(), startsWith(variables['BuildRuntimeIdentifier'], 'linux-musl-'))
+            inputs:
+              pwsh: true
+              targetType: inline
+              script: |
+                Write-Host '##vso[task.setvariable variable=MuslBuildImage]ghcfa-telem-musl-build:$(Build.BuildId)-$(BuildRuntimeIdentifier)'
+
       - task: PowerShell@2
         displayName: Build and package $(BuildRuntimeIdentifier)
         inputs:
@@ -97,6 +119,7 @@ jobs:
             -RuntimeIdentifier '$(BuildRuntimeIdentifier)'
             -OutputRoot '$(Build.ArtifactStagingDirectory)/native'
             -RestoreConfigFile '$(Build.SourcesDirectory)/telemetry-reporter/nuget.config'
+            -MuslBuildImage '$(MuslBuildImage)'
         env:
           # Build-Native smoke-tests host-compatible binaries; CI executions must not emit product telemetry.
           AZURE_MCP_COLLECT_TELEMETRY: "false"

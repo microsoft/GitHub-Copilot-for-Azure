@@ -89,7 +89,7 @@ npx @microsoft/vally-cli grade --eval-spec ../evals/<plugin-dirname>/<skill-name
 ../../../tests/vally/vally-graders.ts --verbose < results/<test-run-name>/results.jsonl
 ```
 
-Note that the grader plugin's path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-skills/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/vally-executor.ts`.
+Note that the grader plugin's path is relative to the parent directory of the eval spec to run. For example, if the eval spec to run is `<repo-root>/evals/azure-skills/azure-ai/eval.yaml`, resolving this relative path ends at `<repo-root>/tests/vally/copilot-sdk-executor.ts`.
 
 ### Collect test results
 
