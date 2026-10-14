@@ -7,9 +7,6 @@ clusters.
 
 ## Security
 
-> [!WARNING]
-> The `aks-skills` plugin uses `npx` to download and run the Azure MCP Server, inheriting the local environment's `.npmrc` configuration. Install this plugin only on trusted devices. A compromised `.npmrc` configuration could cause `npx` to download and execute malicious code, potentially resulting in remote code execution.
-
 - The troubleshooting and capture skills read cluster and Azure state with your
   existing `az` and `kubectl` credentials. They do not change resources or
   start a packet capture without your explicit approval.
