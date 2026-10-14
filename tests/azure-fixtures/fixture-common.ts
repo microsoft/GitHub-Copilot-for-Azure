@@ -32,7 +32,7 @@ export type BicepConfig = {
    * The template is deployed at resource group scope into a resource group
    * the script creates beforehand.
    */
-  path: string;
+  path?: string;
 
   /**
    * Azure region to provision the resource group and its child resources.
@@ -45,7 +45,7 @@ export type BicepConfig = {
   resourceGroupNameBase: string;
 
   /**
-   * The parameter values for the Bicep template.
+   * The parameter values for the Bicep template. Parameters are invalid when path is omitted.
    * The location parameter is always computed and provided.
    */
   parameters?: BicepParameterConfig[];

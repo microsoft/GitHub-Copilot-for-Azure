@@ -40,7 +40,7 @@ In theory, `readOnly` fixture can be persisted for reuse since it isn't modified
 A test case (Vally stimulus) defines its Azure fixtures with the following files:
 
 - A `manifest.json` file, called the "manifest" below.
-- One or more `.bicep` templates. Each template is written at resource group scope.
+- Zero or more `.bicep` templates. Each template is written at resource group scope.
 - An `azureFixture` tag in the stimulus containing the path to the manifest, relative to the stimulus file.
 
 The setup uses two shared scripts:
@@ -66,7 +66,7 @@ A manifest has a type indicating whether the fixture is `readOnly` or `readWrite
 
 A manifest has a description. It is human-readable text that explains in natural language what the manifest contains.
 
-A manifest has an array of Bicep configs. Each Bicep config maps to one Bicep template that must be provisioned as part of the fixture. See the dedicated Bicep config section for more information.
+A manifest has an array of Bicep configs. Each config creates one resource group and can optionally map to a Bicep template that is provisioned into it. See the dedicated Bicep config section for more information.
 
 A manifest has an optional `postProvisionScript` script. The `postProvisionScript` script must be a self-contained TypeScript script that runs through `tsx`. When we run this script, we pass the provisioned resource group names to it as command-line arguments. One purpose of the `postProvisionScript` script is to support data-plane operations that cannot be expressed in Bicep. Another purpose is to perform operation to persistent fixture.
 
@@ -74,17 +74,17 @@ A manifest has an optional `postTestScript` script. The `postTestScript` script 
 
 ### Bicep config
 
-A fresh provisioning task for each Bicep config creates a resource group and Azure resources in it.
+A fresh provisioning task for each Bicep config creates a resource group. When the config declares a Bicep template, it also deploys the template's Azure resources into that group.
 
 A Bicep config has a required `fixtureId`. It uniquely identifies the resource group and all its child resources. Provisioned fixtures have a tag containing the `fixtureId` so they can be programmatically searched.
 
-A Bicep config has a required `path`. It is the path to the Bicep template that defines all the resources to be provisioned in the resource group, relative to the location of the manifest.
+A Bicep config has an optional `path`. It is the path to the Bicep template that defines resources to provision in the resource group, relative to the location of the manifest. When omitted, provisioning creates and tags only the resource group.
 
 A Bicep config has a required `location`. It determines the Azure location, such as `eastus`, in which to create the resource group and provision its child resources.
 
 A Bicep config has a required `resourceGroupNameBase`. This text provides the recognizable portion of the resource group name. The complete resource group name is computed for each run.
 
-A Bicep config has an optional `parameters` array. This array provides parameter values to pass to the Bicep template during provisioning. The author can define parameters with explicit values, which are passed as is, or define substitution parameters (for example, known keys without values), which resolve to values at provisioning time. The provision-fixture script supports a predefined set of substitution parameters.
+A Bicep config with a `path` has an optional `parameters` array. This array provides parameter values to pass to the Bicep template during provisioning. The author can define parameters with explicit values, which are passed as is, or define substitution parameters (for example, known keys without values), which resolve to values at provisioning time. The provision-fixture script supports a predefined set of substitution parameters. Parameters are invalid when `path` is omitted.
 
 ### Provision-fixture script
 

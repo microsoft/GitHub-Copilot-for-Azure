@@ -336,6 +336,13 @@ function provision(
     "none",
   ]);
 
+  if (!bicepConfig.path) {
+    if (bicepConfig.parameters?.length) {
+      throw new Error(`Bicep parameters require a template path for ${bicepConfig.resourceGroupNameBase}`);
+    }
+    return;
+  }
+
   const parameters = new Map<string, JsonValue>();
   for (const parameterConfig of bicepConfig.parameters ?? []) {
     parameters.set(parameterConfig.key, resolveBicepParameter(context, parameterConfig));
