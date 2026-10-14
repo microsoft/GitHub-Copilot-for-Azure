@@ -40,14 +40,12 @@ The build copies the shared hooks into every plugin package. Each installed plug
 
 The `plugin-telemetry` command requires a session ID, so the hook does not report a session-start event when the host omits it. Telemetry opt-out and fail-open behavior are the same as for the existing tool, skill, and reference-file events.
 
-## Standalone telemetry reporter rollout
+## Standalone telemetry reporter
 
-The hooks continue to publish through `npx -y @azure/mcp@latest` by default.
-Set `AZURE_SKILLS_USE_STANDALONE_TELEMETRY=true` to opt into the standalone
-Native AOT reporter. The shared tracking scripts pin the reporter version and
-install the matching asset from the `ghcfa-telem-<version>` release tag.
-Here, `<version>` is the pinned reporter version and `<rid>` is the detected
-runtime identifier:
+The hooks publish through the standalone Native AOT reporter. The shared
+tracking scripts pin the reporter version and install the matching asset from
+the `ghcfa-telem-<version>` release tag. Here, `<version>` is the pinned
+reporter version and `<rid>` is the detected runtime identifier:
 
 ```text
 https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-telem-<version>/ghcfa-telem-<version>-<rid>.zip
@@ -55,8 +53,6 @@ https://github.com/microsoft/GitHub-Copilot-for-Azure/releases/download/ghcfa-te
 
 To test a local build, set `AZURE_SKILLS_TELEMETRY_ZIP_PATH` to a local
 runtime ZIP produced by `telemetry-reporter/eng/scripts/Build-Native.ps1`.
-The ZIP override does not enable the standalone path by itself; the rollout
-variable must also be set to `true`.
 
 The installer detects the native operating system and architecture, including
 Apple Silicon when Bash runs under Rosetta. It installs each version and RID
@@ -71,10 +67,8 @@ Linux on x64 and ARM64. The installers select `linux-musl-x64` or
 rather than the glibc `linux-x64` or `linux-arm64` assets. Both Linux variants use
 the same Unix cache root, with separate per-version/RID directories.
 
-When standalone mode is enabled, installation or reporter failures remain
-fail-open for the host hook and do not fall back to `npx`. This makes rollout
-testing deterministic while preserving the existing publisher for everyone
-who has not enabled the new path.
+Installation or reporter failures remain fail-open for the host hook. The hook
+does not fall back to another publisher.
 
 ## Telemetry debug logs
 
@@ -84,14 +78,12 @@ directory and save raw hook inputs under `raw-input/`. Debugging remains opt-in;
 these files contain existing event arguments and raw inputs, so treat them as
 potentially sensitive.
 
-Each attempted event identifies its selected publisher before installation or
-execution. Azure MCP entries name the npx command; standalone entries name
-`ghcfa-telem` and the pinned version. A successful installation or cache lookup
-also logs the resolved executable path. For example, omitting timestamps and
-abbreviating event arguments:
+Each attempted event identifies `ghcfa-telem` and the pinned version before
+installation or execution. A successful installation or cache lookup also logs
+the resolved executable path. For example, omitting timestamps and abbreviating
+event arguments:
 
 ```text
-Publisher: Azure MCP (npx -y @azure/mcp@latest) | Args: server plugin-telemetry ...
 Publisher: Standalone ghcfa-telem (version <version>) | Args: --plugin-name ...
 Publisher: Standalone ghcfa-telem (version <version>) | Executable: <installed-path>
 ```
@@ -104,7 +96,6 @@ installation from execution:
 Publisher: Standalone ghcfa-telem (version <version>) | Installation failed with status 1: <installer-diagnostic>
 Publisher: Standalone ghcfa-telem (version <version>) | Installation failed: installer returned no executable path.
 Publisher: Standalone ghcfa-telem (version <version>) | Execution failed with status 1.
-Publisher: Azure MCP (npx -y @azure/mcp@latest) | Execution failed with status 1.
 ```
 
 A successful installer exit without an executable path is reported as a
@@ -115,8 +106,8 @@ the shell exit status, such as `126` when an executable cannot run or `127` for
 a missing executable. Publisher output is suppressed rather than added to the
 log. Installer diagnostics are retained.
 Logging does not change publisher selection, telemetry opt-out, or fail-open
-behavior: the hook still returns `{"continue":true}`, and standalone failures
-never trigger an npx fallback.
+behavior: the hook still returns `{"continue":true}`, and reporter failures do
+not trigger a fallback.
 
 ## Misc
 
