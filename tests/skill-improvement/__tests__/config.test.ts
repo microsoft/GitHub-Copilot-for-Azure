@@ -175,15 +175,16 @@ describe("skill improvement configuration", () => {
     expect(runSpec.resources?.kusto?.resourceGroup).toBe(
       "resource-group-from-environment"
     );
-    expect(runSpec.limits.maxAnswerGenerations).toBe(910);
-    expect(runSpec.limits.maxJudgeCalls).toBe(910);
+    expect(runSpec.models.answers).toEqual(["gpt-5.6-sol", "claude-sonnet-5"]);
+    expect(runSpec.limits.maxAnswerGenerations).toBe(1820);
+    expect(runSpec.limits.maxJudgeCalls).toBe(1820);
     const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
     vi.stubEnv("AZURE_EVALS_SUBSCRIPTION_ID", "subscription-from-environment");
     vi.stubEnv("AZURE_EVALS_RESOURCE_GROUP", "resource-group-from-environment");
     try {
       const plan = createRunPlan(repoRoot, runSpec);
-      expect(plan.maximumAnswerGenerations).toBe(910);
-      expect(plan.maximumJudgeCalls).toBe(910);
+      expect(plan.maximumAnswerGenerations).toBe(1820);
+      expect(plan.maximumJudgeCalls).toBe(1820);
       expect(() => enforceRunLimits(runSpec, plan)).not.toThrow();
     } finally {
       vi.unstubAllEnvs();
