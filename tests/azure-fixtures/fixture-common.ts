@@ -68,9 +68,45 @@ export type PostTestScriptConfig = {
 };
 
 /**
- * Manifest for provisioning the Azure fixture for integration test.
+ * Manifest for provisioning the Azure fixture for a workflow.
+ * A workflow fixture is prepared before anything in that workflow starts using it.
  */
-export type FixtureManifest = {
+export type WorkflowFixtureManifest = {
+  /**
+   * Stable identifier used to coordinate provisioning across workflow runs.
+   */
+  id: string;
+
+  version: number;
+  schemaVersion: number;
+
+  /**
+   * A human facing description of the Azure fixtures.
+   * This description will not be used by the provisioning script.
+   */
+  description: string;
+
+  /**
+   * Bicep templates to provision.
+   * The templates will be provisioned to each resource group computed
+   * from resourceGroupNameBases in the given order.
+   */
+  bicepConfigs: BicepConfig[];
+
+  /**
+   * Additional post-provision script to run after provisioning the fixtures but before using them in the workflow.
+   * Post-provision scripts are given the computed resource group names.
+   * --resource-groups <rg-1> <rg-2> ... <rg-n>
+   *
+   * The post-provision script will be executed via tsx and must be written in Typescript.
+   */
+  postProvisionScript?: PostProvisionScriptConfig;
+};
+
+/**
+ * Manifest for provisioning the Azure fixture for a stimuli.
+ */
+export type StimuliFixtureManifest = {
   type: "readOnly" | "readWrite";
   version: number;
   schemaVersion: number;
@@ -117,6 +153,14 @@ export type ProvisionScriptOutput = {
    * Names of the resource groups to use for test.
    */
   resourceGroups: string[];
+
+  /**
+   * Workflow fixture identity and the exact resource groups selected for use.
+   */
+  fixtureId?: string;
+  fixtureVersion?: number;
+  fixtureInstanceId?: string;
+  resourceGroupIdsByComponent?: Record<string, string>;
 };
 
 export const FIXTURE_ID_TAG = "FixtureId";
@@ -210,6 +254,6 @@ export function deleteResourceGroup(resourceGroupName: string) {
 /**
  * Reads a fixture manifest from disk.
  */
-export function readManifest(manifestPath: string): FixtureManifest {
-  return JSON.parse(readFileSync(manifestPath, "utf8")) as FixtureManifest;
+export function readManifest(manifestPath: string): StimuliFixtureManifest {
+  return JSON.parse(readFileSync(manifestPath, "utf8")) as StimuliFixtureManifest;
 }

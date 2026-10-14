@@ -6,8 +6,8 @@ import { normalizeTestName } from "./utils.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
-import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
-import { provisionManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
+import { deleteResourceGroup, type StimuliFixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+import { provisionStimuliManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
 import { dirname } from "node:path";
 import { useAgentRunner, createMarkdownReport } from "../utils/copilot-sdk-runner.ts";
 
@@ -98,7 +98,7 @@ export class CopilotSdkAgentRunner implements Executor {
     let postTestScriptConfig: PostTestScriptConfig | undefined;
     let persistFixture: boolean = false;
     let provisionOutput: ProvisionManifestOutput | undefined;
-    let manifest: FixtureManifest | undefined;
+    let manifest: StimuliFixtureManifest | undefined;
     let absoluteManifestPath: string | undefined;
     const relativeManifestPath = getAzureFixtureManifestPath(tags);
     try {
@@ -116,7 +116,7 @@ export class CopilotSdkAgentRunner implements Executor {
         }
         manifest = readManifest(absoluteManifestPath);
 
-        provisionOutput = provisionManifest(absoluteManifestPath, manifest);
+        provisionOutput = provisionStimuliManifest(absoluteManifestPath, manifest);
         const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput.output);
         const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
         runConfig.prompt += `\n${azureScopePrompt}`;
