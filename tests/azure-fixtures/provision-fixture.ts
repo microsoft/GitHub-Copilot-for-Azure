@@ -698,7 +698,7 @@ export async function provisionWorkflowManifestWithDependencies(
       dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
       const record = parseCoordinationRecord(await lease.read(), manifest);
-      if (record.state === "Ready") {
+      if (record.state === "Ready" && !(record.expiresAt && Date.parse(record.expiresAt) <= dependencies.now())) {
         verifyAndSelectRecordedFixture(context, manifest, record, dependencies.runAz);
         lease.assertHealthy();
         const expiresAt = refreshExpiration(
