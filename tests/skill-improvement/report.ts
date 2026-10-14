@@ -24,6 +24,7 @@ export type AggregatedTrial = {
   output: string;
   targetSkillInvoked: boolean;
   totalTokens: number;
+  answerBilledCredits?: number;
 };
 
 export type EvaluationSummary = {
@@ -186,7 +187,10 @@ export function aggregateJudgments(trials: JudgedTrial[]): AggregatedTrial[] {
       })),
       output: first.output,
       targetSkillInvoked: first.targetSkillInvoked,
-      totalTokens: first.totalTokens,
+      totalTokens: group.reduce((total, trial) => total + trial.totalTokens, 0) / group.length,
+      answerBilledCredits: group.every(trial => trial.answerBilledCredits !== undefined)
+        ? group.reduce((total, trial) => total + trial.answerBilledCredits!, 0) / group.length
+        : undefined,
     };
   });
 }
@@ -208,6 +212,60 @@ export function summarizeTrials(trials: AggregatedTrial[]): EvaluationSummary {
     averageTokens: trials.length === 0 ? 0 : round(totalTokens / trials.length),
     judgeDisagreements: trials.filter(trial => trial.judgeDisagreement).length,
   };
+}
+
+function renderAnswerBilling(report: SkillImprovementReport): string[] {
+  const lines = [
+    "## Correctness, tokens, and AI-credit consumption",
+    "",
+    "Provider-reported `copilot_usage.totalNanoAiu` converted to credits (1e9 nano-AIU per credit). Means include repetitions, not sums of duplicated judge records. Missing or partial request billing is not zero. Judge and improvement-agent costs are excluded; this is not an invoice or a workflow-total cost.",
+    "",
+    "Pass counts use majority-aggregated outcomes; graded verdicts expose failures hidden by majority voting (with multiple judges these are not unique trajectories). Token means include input/output/cache usage across model calls, not just the final answer or Skill Markdown size. Credit increases are diagnostic, not acceptance gates. Lower cost does not compensate for failed correctness.",
+    "",
+    "| Batch | Arm | Answer model | Passed outcomes | Passing graded verdicts | Mean trajectory tokens | Credit coverage | Mean credits / answer | Credit change vs baseline |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+  ];
+  const batches = [
+    { name: "Baseline", trials: report.baselineTrials },
+    ...report.iterations.filter(iteration => iteration.trials).map(iteration => ({
+      name: `Iteration ${iteration.iteration}`,
+      trials: iteration.trials!,
+    })),
+    ...(report.heldOut ? [
+      { name: "Held-out baseline", trials: report.heldOut.baselineTrials },
+      { name: "Held-out candidate", trials: report.heldOut.candidateTrials },
+    ] : []),
+  ];
+  for (const batch of batches) {
+    for (const condition of report.spec.experiment.conditions) {
+      for (const model of report.spec.models.answers) {
+        const select = (trials: AggregatedTrial[]) => trials.filter(trial =>
+          trial.condition.name === condition.name && trial.answerModel === model
+        );
+        const trials = select(batch.trials);
+        if (trials.length === 0) {
+          continue;
+        }
+        const measured = trials.filter(trial => trial.answerBilledCredits !== undefined);
+        const mean = (rows: AggregatedTrial[]) =>
+          rows.reduce((total, trial) => total + trial.answerBilledCredits!, 0) / rows.length;
+        const baseline = select(batch.name.startsWith("Held-out")
+          ? report.heldOut!.baselineTrials : report.baselineTrials);
+        const complete = measured.length === trials.length;
+        const matched = baseline.length === trials.length
+          && baseline.every(trial => trial.answerBilledCredits !== undefined
+            && trials.some(candidate => trialKey(candidate) === trialKey(trial)));
+        const difference = complete && matched
+          && batch.name !== "Baseline" && batch.name !== "Held-out baseline"
+          ? `${(mean(trials) - mean(baseline)).toFixed(6)} credits`
+          : "N/A";
+        const summary = summarizeTrials(trials);
+        const judgments = trials.flatMap(trial => trial.judgments);
+        lines.push(`| ${batch.name} | ${condition.name} | ${model} | ${summary.passed}/${summary.total} (${percent(summary.passRate)}) | ${judgments.filter(judgment => judgment.passed).length}/${judgments.length} | ${summary.averageTokens.toFixed(0)} | ${measured.length}/${trials.length} | ${complete ? mean(trials).toFixed(6) : "not measured (incomplete)"} | ${difference} |`);
+      }
+    }
+  }
+  return lines;
 }
 
 function compareGroup(
@@ -913,6 +971,8 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     "## Configured baseline arms",
     "",
     ...renderBaselineArms(report),
+    "",
+    ...renderAnswerBilling(report),
     "",
   ];
   if (baselineOnly) {

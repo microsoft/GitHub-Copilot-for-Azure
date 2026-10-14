@@ -28,6 +28,7 @@ evaluations:
 models:
   answers:
     - gpt-5.6-sol
+    - claude-sonnet-5
   judges:
     - claude-opus-4.8
 
@@ -68,8 +69,8 @@ resources:
 
 limits:
   maxIterations: 4
-  maxAnswerGenerations: 910
-  maxJudgeCalls: 910
+  maxAnswerGenerations: 1820
+  maxJudgeCalls: 1820
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15

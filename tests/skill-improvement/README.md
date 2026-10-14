@@ -113,15 +113,33 @@ all Markdown characters. A 15%
 limit is a cumulative size allowance, not a cost budget; shrinking is allowed.
 Reported answer tokens are trajectory usage, not Skill size or dollars.
 
-The current Kusto plan allows 182 baseline generations plus up to four
-182-generation candidate batches: **910 generations and 910 judge calls**.
-Enabling held-out comparison adds 40 of each for one repetition and one model.
+The current Kusto plan compares `gpt-5.6-sol` and `claude-sonnet-5`: 364 baseline
+generations plus up to four 364-generation candidate batches:
+**1820 generations and 1820 judge calls**.
+Enabling held-out comparison adds 80 of each for one repetition and two models.
 More answer models, repetitions, or judges increase these totals; validate
 before dispatch. Four iterations is a maximum, not a guarantee: no actionable
 failures, time limits, or errors can stop the run earlier.
 
 `report.json` records actual generation/judge counts and duration, but not
-total billed AI credits. `iteration-<n>-agent-usage.json` records the improvement
+total billed AI credits. Answer trajectories now record provider-reported
+`copilot_usage.totalNanoAiu` in `metadata.answerBilling`. The report compares
+correctness, mean trajectory tokens, and mean answer-generation credits by arm
+and model against the baseline, averaging
+repetitions without summing the duplicated answer usage in judge records.
+Every request must have billing data for an answer to count as measured;
+incomplete coverage is explicit, not zero. Deltas require complete matched
+outcomes. This is provider-reported consumption, not a billing invoice.
+Passing graded-verdict counts expose majority-hidden failures; when several
+judges are configured, these counts include multiple verdicts per trajectory.
+Credits are diagnostic, not an acceptance gate or permission to trade away
+correctness. The same comparison is included for held-out batches when run.
+Judge costs and improvement-agent costs are excluded from these means.
+Historical artifacts without billing remain unavailable. This addresses the
+answer-comparison portion of [microsoft/mcp-pr#718](https://github.com/microsoft/mcp-pr/issues/718),
+not full workflow-credit accounting.
+
+`iteration-<n>-agent-usage.json` records the improvement
 agent's CLI usage. Optional `improvementAgent.maxAiCredits` applies separately
 to each improvement-agent invocation, not evaluations, judges, or the whole
 workflow. Do not infer credits from token or call counts; record account usage
