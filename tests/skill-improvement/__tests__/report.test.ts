@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import {
   aggregateJudgments,
+  buildFailurePacket,
   decideAcceptance,
   decideRefinement,
   renderReport,
@@ -94,6 +95,22 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement reporting", () => {
+  test("includes previous validation failures in the next failure packet", () => {
+    const packet = buildFailurePacket(
+      spec(),
+      aggregateJudgments([
+        judged("one", "model-a", "judge-a", true, 1, 100),
+      ]),
+      undefined,
+      undefined,
+      ["Frontmatter validation failed.", "Reference validation failed."]
+    );
+
+    expect(packet).toContain("## Previous candidate validation failures");
+    expect(packet).toContain("- Frontmatter validation failed.");
+    expect(packet).toContain("- Reference validation failed.");
+  });
+
   test("uses judge majority and accepts a quality improvement", () => {
     const reference = aggregateJudgments([
       judged("one", "model-a", "judge-a", false, 0.5, 100),
@@ -277,6 +294,7 @@ describe("skill improvement reporting", () => {
       baselineSkillTokens: 100,
       baselineTrials: [],
       iterations: [],
+      terminationReason: "no-actionable-failures",
       finalAccepted: true,
       finalPatchPath: "final-candidate.patch",
       usage: { answerGenerations: 0, judgeCalls: 0, durationMinutes: 1 },
@@ -287,6 +305,8 @@ describe("skill improvement reporting", () => {
       writeReport(output, report);
       expect(fs.readFileSync(path.join(output, "report-summary.md"), "utf8"))
         .toContain("# Final outcome: ACCEPTED");
+      expect(fs.readFileSync(path.join(output, "report-summary.md"), "utf8"))
+        .toContain("no-actionable-failures");
       expect(fs.existsSync(path.join(output, "issue-summary.md"))).toBe(false);
       expect(JSON.parse(
         fs.readFileSync(path.join(output, "workflow-outputs.json"), "utf8")
