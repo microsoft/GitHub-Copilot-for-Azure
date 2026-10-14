@@ -476,15 +476,18 @@ function mutations(fake: FakeAzureEnvironment): string[][] {
 }
 
 describe("expiration tags", () => {
-  it("emits exactly one unquoted DeleteAfter tag when creating workflow groups", async () => {
+  it("emits exactly one platform-quoted DeleteAfter tag when creating workflow groups", async () => {
     const fake = environment();
     await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("tags"));
 
     const creates = azCommands(fake).filter((args) => args.slice(0, 2).join(" ") === "group create");
+    const expectedTag = process.platform === "win32"
+      ? '"DeleteAfter=01/01/2026 00:01:00"'
+      : "DeleteAfter=01/01/2026 00:01:00";
     expect(creates).toHaveLength(2);
     for (const args of creates) {
       const tags = args.slice(args.indexOf("--tags") + 1, args.indexOf("-o", args.indexOf("--tags")));
-      expect(tags.filter((tag) => tag.includes("DeleteAfter="))).toEqual(["DeleteAfter=01/01/2026 00:01:00"]);
+      expect(tags.filter((tag) => tag.includes("DeleteAfter="))).toEqual([expectedTag]);
     }
   });
 
