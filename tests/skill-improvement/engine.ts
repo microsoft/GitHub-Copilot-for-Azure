@@ -398,6 +398,37 @@ function writeFailurePacket(
   return failurePacketPath;
 }
 
+export function decideHeldOutAcceptance(
+  spec: SkillImprovementRunSpec,
+  baselineTrials: AggregatedTrial[],
+  candidateTrials: AggregatedTrial[],
+  baselineSkillTokens: number,
+  candidateSkillTokens: number,
+): AcceptanceDecision {
+  if (!spec.heldOutAcceptance?.enabled) {
+    throw new Error("heldOutAcceptance must be enabled.");
+  }
+  const heldOutSpec: SkillImprovementRunSpec = {
+    ...spec,
+    acceptance: {
+      ...spec.acceptance,
+      minimumQualityImprovementPoints:
+        spec.heldOutAcceptance.minimumQualityImprovementPoints,
+      maximumEvalRegressionPoints:
+        spec.heldOutAcceptance.maximumEvalRegressionPoints,
+      maximumModelRegressionPoints:
+        spec.heldOutAcceptance.maximumModelRegressionPoints,
+    },
+  };
+  return decideAcceptance(
+    heldOutSpec,
+    baselineTrials,
+    candidateTrials,
+    baselineSkillTokens,
+    candidateSkillTokens
+  );
+}
+
 export async function executeSkillImprovement(
   spec: SkillImprovementRunSpec,
   options: ExecuteOptions,
@@ -587,18 +618,6 @@ export async function executeSkillImprovement(
       && spec.heldOutAcceptance?.enabled
       && plan.heldOutPromptCount > 0
     ) {
-      const heldOutSpec: SkillImprovementRunSpec = {
-        ...spec,
-        acceptance: {
-          ...spec.acceptance,
-          minimumQualityImprovementPoints:
-            spec.heldOutAcceptance.minimumQualityImprovementPoints,
-          maximumEvalRegressionPoints:
-            spec.heldOutAcceptance.maximumEvalRegressionPoints,
-          maximumModelRegressionPoints:
-            spec.heldOutAcceptance.maximumModelRegressionPoints,
-        },
-      };
       const finalWorktree = path.join(worktreeRoot, "final-candidate");
       try {
         await createWorktree(options.repoRoot, finalWorktree, bestCandidateCommit!);
@@ -629,8 +648,8 @@ export async function executeSkillImprovement(
         addUsage(usage, baselineHeldOut);
         addUsage(usage, candidateHeldOut);
         enforceActualUsage(spec, usage);
-        const heldOutDecision = decideAcceptance(
-          heldOutSpec,
+        const heldOutDecision = decideHeldOutAcceptance(
+          spec,
           aggregateJudgments(baselineHeldOut.trials),
           aggregateJudgments(candidateHeldOut.trials),
           baselineSkillTokens,

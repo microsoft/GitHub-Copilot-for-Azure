@@ -618,6 +618,17 @@ describe("skill improvement configuration", () => {
     );
   });
 
+  test.each([null, false, []])(
+    "rejects a non-object held-out acceptance value",
+    value => {
+      const invalid = spec();
+      invalid.heldOutAcceptance = value as unknown as SkillImprovementRunSpec["heldOutAcceptance"];
+      expect(() => validateRunSpec(invalid)).toThrow(
+        "heldOutAcceptance must be an object"
+      );
+    }
+  );
+
   test.each([
     ["minimumScoreImprovementPoints", -1],
     ["maximumQualityRegressionPoints", -1],

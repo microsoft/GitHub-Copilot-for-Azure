@@ -388,11 +388,20 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
       + "configure heldOutAcceptance instead."
     );
   }
-  if (
-    spec.heldOutAcceptance !== undefined
-    && typeof spec.heldOutAcceptance.enabled !== "boolean"
-  ) {
-    throw new Error("heldOutAcceptance.enabled must be a boolean.");
+  const heldOutAcceptance: unknown = spec.heldOutAcceptance;
+  if (heldOutAcceptance !== undefined) {
+    if (
+      heldOutAcceptance === null
+      || typeof heldOutAcceptance !== "object"
+      || Array.isArray(heldOutAcceptance)
+    ) {
+      throw new Error("heldOutAcceptance must be an object.");
+    }
+    if (
+      typeof (heldOutAcceptance as Record<string, unknown>).enabled !== "boolean"
+    ) {
+      throw new Error("heldOutAcceptance.enabled must be a boolean.");
+    }
   }
   if (spec.heldOutAcceptance) {
     requireNonNegativeNumber(
