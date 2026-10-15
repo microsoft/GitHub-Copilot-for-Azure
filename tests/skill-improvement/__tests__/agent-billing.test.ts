@@ -32,8 +32,6 @@ describe("improvement-agent consumption collection", () => {
       let captured: ComponentBilling | undefined;
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         expect(args).toContain("--usage-output-file");
-        expect(fs.existsSync(usageFile)).toBe(false);
-        expect(fs.existsSync(eventFile)).toBe(false);
         if (outcome !== "missing-usage") {
           fs.writeFileSync(usageFile, JSON.stringify({
             totalNanoAiu: 2_500_000_000, aiCreditsStatus: "complete",
@@ -58,6 +56,12 @@ describe("improvement-agent consumption collection", () => {
           await expect(pending).rejects.toBe(error);
         } else {
           await pending;
+        }
+        if (outcome === "missing-usage") {
+          expect(fs.existsSync(usageFile)).toBe(false);
+        }
+        if (outcome === "timeout") {
+          expect(fs.existsSync(eventFile)).toBe(false);
         }
         const complete = outcome === "success" || outcome === "failed-finalized";
         expect(captured).toMatchObject({
