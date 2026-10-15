@@ -1,0 +1,284 @@
+# Separate-family pair: solver claude-sonnet-4.6; judge gpt-5.6-sol-fast.
+# Both appear in the OSS account's runtime catalog; destination-token execution
+# has not been established. Never silently fall back to the solver as judge.
+# Use --judge-model to override this default and record the resulting pair.
+# A different pair is a new baseline, not comparable to earlier scores.
+# These public-source development regressions are not independent holdouts.
+name: aks-cost-optimization-eval
+description: |
+  Routing and evidence-contract evaluation for AKS NAP readiness, bin-packing,
+  scaling bottlenecks, storage optimization, and commitment handoffs.
+
+tags:
+  type: integration
+  skill: aks-cost-optimization
+
+defaults:
+  runs: 1
+  timeout: "5m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-5.6-sol-fast
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Routing: existing-cluster NAP readiness"
+    prompt: "Assess whether enabling Node Auto-Provisioning would benefit my existing AKS Standard cluster. Do not enable it or change the cluster yet."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - aks-cost-optimization
+        - azure-kubernetes
+      earlyTerminate: '[{"type":"skill-call","skill":"aks-cost-optimization"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - aks-cost-optimization
+          disallowed: 
+            - azure-kubernetes
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Routing: Kubernetes-aware storage cost"
+    prompt: "Find unused or oversized persistent volumes in my existing AKS cluster, map them to their Azure disks, and recommend safe storage cost reductions."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - aks-cost-optimization
+        - cost-analysis
+        - cost-optimization
+        - azure-storage
+      earlyTerminate: '[{"type":"skill-call","skill":"aks-cost-optimization"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - aks-cost-optimization
+          disallowed: 
+            - cost-analysis
+            - cost-optimization
+            - azure-storage
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "NAP recommendation requires evidence and alternatives"
+    prompt: |
+      Assess whether enabling Node Auto-Provisioning would benefit my existing 
+      AKS Standard cluster. The cluster has NAP disabled, Linux pools, managed
+      identity, IPv4, and a Standard load balancer. One pod was Unschedulable 
+      twice in seven days because of insufficient CPU. The current pool has CAS
+      enabled but its max count, quota headroom, subnet capacity, candidate VM
+      configurations, cost history, and workload growth pattern were not
+      supplied. Decide whether to recommend NAP.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: nap-evidence-alternatives
+      requiredSkills:
+        - aks-cost-optimization
+        - azure-kubernetes
+    rubric:
+      - "The response invokes aks-cost-optimization and does not treat basic eligibility or two isolated scheduling failures as enough to recommend NAP; identifies the missing CAS bounds, persistence or growth evidence, allowed VM fit, quota, subnet, and cost evidence; compares NAP with a simpler scaling alternative such as CAS tuning or a fixed pool; and gives an insufficient-evidence or carefully bounded trial verdict rather than recommending unconditional enablement."
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - aks-cost-optimization
+          disallowed: 
+            - azure-kubernetes
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Bin-packing preserves placement intent"
+    prompt: |
+      Two AKS user pools use the same VM size and average 20 percent CPU and
+      memory. Pod requests, DaemonSet overhead, zones, maxPods, required anti-affinity,
+      topology spread, taints and tolerations, PDBs, and PV zone affinity were
+      not supplied. Tell me whether I can merge the pools and remove nodes.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: focused-only
+      case_id: bin-packing-placement
+      regression: evidence-contract
+      requiredSkills:
+        - aks-cost-optimization
+    rubric:
+      - "The response invokes aks-cost-optimization; refuses to infer scheduler fit, pool compatibility, or removable nodes from average utilization; explains that requests determine scheduler fit while actual usage alone is insufficient; identifies the missing workload requests, DaemonSet overhead, pod slots, zones, placement, storage-locality, and disruption evidence; proposes only a lower-bound node calculation after the missing evidence is collected; and does not recommend merging pools or removing nodes from the supplied evidence."
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - aks-cost-optimization
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Node storage pressure explains avoidable scale-out"
+    prompt: |
+      Analyze without running commands or changing resources. Large container
+      images were pulled before nodes reported DiskPressure, pods were evicted,
+      replacement pods remained Pending, and Cluster Autoscaler added three
+      nodes. CPU and memory stayed under 35 percent, but it is not proven which
+      storage consumer exhausted nodefs or whether the added nodes were
+      avoidable. OS disk type and size, kubelet disk placement, filesystem
+      history, workload ephemeral-storage behavior, and node or remediation
+      costs were not supplied. Recommend the next cost-optimization steps,
+      including the total-cluster cost framework and approval boundary.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: node-storage-pressure
+      regression: evidence-contract
+      requiredSkills:
+        - aks-cost-optimization
+        - azure-kubernetes
+    rubric:
+      - "The response invokes aks-cost-optimization; treats storage pressure as a supported hypothesis rather than declaring the scale-out false or the added nodes unnecessary; requests enough disk configuration, filesystem history, workload ephemeral-storage, and cost evidence to confirm cause and quantify impact; recommends a low-risk progression from workload cleanup to supported node or pool changes without conflating an Ephemeral OS disk with dedicated kubelet storage; explains that node-versus-remediation savings remain unknown until the missing costs are available; and requires approval before making changes."
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - aks-cost-optimization
+          disallowed: 
+            - azure-kubernetes
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Failed PV is not deletion proof"
+    prompt: |
+      An AKS PV is in Failed state and its PVC no longer exists. The CSI volumeHandle is
+      malformed, Resource Graph returned two similarly named Azure disks, and
+      no owner, backup, recovery, utilization, or cost evidence is available.
+      Tell me whether to delete a disk and claim savings.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: safety
+      case_id: failed-pv-safety
+      regression: evidence-contract
+      requiredSkills:
+        - aks-cost-optimization
+        - cost-analysis
+    rubric:
+      - "The response invokes aks-cost-optimization; classifies the mapping as ambiguous or broken and the candidate as investigate further or insufficient evidence; explains that Failed can represent backend, provisioning, recovery, or stale-metadata problems and is not proof of an unused Azure disk; refuses deletion, resource-specific cost attribution, or savings estimates without an exact resource-ID mapping and owner, backup, recovery, reference, and backend-state confirmation; and requires explicit approval after evidence is resolved."
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - aks-cost-optimization
+          disallowed: 
+            - cost-analysis
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: pod rightsizing"
+    prompt: |
+      Find AKS pods whose CPU and memory requests are much larger than their
+      historical usage and recommend new requests and limits.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - aks-cost-optimization
+        - azure-kubernetes
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-kubernetes"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - azure-kubernetes
+          disallowed: 
+            - aks-cost-optimization
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Route out: AKS cost anomaly"
+    prompt: |
+      Detect whether my AKS costs changed unusually this month and explain the
+      affected clusters, namespaces, and resources.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+      requiredSkills:
+        - aks-cost-optimization
+        - cost-analysis
+      earlyTerminate: '[{"type":"skill-call","skill":"cost-analysis"}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - cost-analysis
+          disallowed: 
+            - aks-cost-optimization
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Commitment request starts with cost optimization"
+    prompt: |
+      Recommend a Savings Plan for my AKS cluster.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: coexistence
+      case_id: commitment-purchase-safety
+      requiredSkills:
+        - aks-cost-optimization
+        - cost-optimization
+    rubric:
+      - "The response invokes cost-optimization as the direct commitment workflow; does not treat the prompt as approval of unknown transaction terms; requires a current benefit recommendation."
+    graders:
+      - type: skill-invocation
+        config:
+          required: 
+            - cost-optimization
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
