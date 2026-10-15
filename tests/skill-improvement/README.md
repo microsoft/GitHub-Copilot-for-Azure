@@ -155,6 +155,29 @@ completed run. Missing historical ledgers remain unavailable.
 Generation disables Vally trial retries; unreturned failed trajectories and
 unreported model retries remain coverage gaps rather than zero consumption.
 
+### Reading iteration artifacts
+
+The run output separates the evidence supplied to the improvement agent, its
+process logs and billing export, the captured Skill edits, and the later
+candidate evaluation:
+
+| Artifact | What it contains and how to read it |
+| --- | --- |
+| `iteration-n-failure-packet.md` | Input assembled from the current development evaluation's graded failures, judge disagreements, and applicable prior rejection or validation evidence. Iteration 1 starts from baseline results. It is a focused evidence packet, not every trajectory or the complete suite. Answer excerpts and evidence do not include the full tool-call trajectory. The engine copies it into the Skill worktree as `.skill-improvement-failure-packet.md` for the CLI, then removes that temporary copy. |
+| `iteration-n-agent.jsonl` | Copilot CLI stdout, redirected to a JSONL event stream while it works on the candidate. Each line is an event object. Common types include `user.message`, `assistant.message`, `tool.execution_start`, `tool.execution_complete`, and terminal `result`. `*_delta` events are streaming text fragments, not separate actions. Prefer the candidate patch/snapshot to inspect edits, and tool results to understand completed actions. A terminal `result` with `exitCode: 0` means the CLI process succeeded; it does not mean the candidate passed evaluation or was accepted. |
+| `iteration-n-agent.stderr.log` | CLI stderr, captured separately from stdout for diagnostics. It may be empty; that alone does not prove the process succeeded. Check the terminal result and the report's validation/evaluation decisions. |
+| `iteration-n-agent-usage.json` | Separate explicit `--usage-output-file` export with authoritative aggregate billing for that improvement-agent invocation. It measures that CLI session only—not answer generation, judging, or Azure infrastructure costs. |
+| `iteration-n/candidate.patch` | Captured by the engine after the CLI exits, from the Skill worktree's changes. This is the most useful artifact for reviewing exactly what the agent edited. |
+| `iteration-n/candidate-skill/` | Snapshot of the candidate Skill copied by the engine after the process, alongside the relative patch. It is not the agent's live workspace. |
+| `iteration-n/generation/` and `iteration-n/judgments/` | Candidate answer trajectories and their subsequent grading outputs. These are produced after the agent process and candidate validation; they are separate from its stdout, stderr, and usage export. Baseline artifacts are under `baseline/`. |
+
+The usual lifecycle is: generate and grade baseline answers → assemble the
+failure packet → run the CLI to edit the Skill and capture its output/logs →
+capture and validate the candidate patch and Skill snapshot → generate and
+grade candidate answers → make the refinement and acceptance decisions.
+The CLI's exit status describes only its process; candidate acceptance comes
+from the later validation and evaluation gates.
+
 Each run writes:
 
 - `report-summary.md`: decision-first Actions/job summary with separate baseline
