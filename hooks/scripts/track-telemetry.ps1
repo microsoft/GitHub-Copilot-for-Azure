@@ -145,7 +145,7 @@
 
 $ErrorActionPreference = "SilentlyContinue"
 
-$telemetryReporterVersion = "0.1.11-gce94fceee1"
+$telemetryReporterVersion = "0.1.15-g21270d7829"
 
 # Dumps raw input to a file in the AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input/
 # directory for debugging if the env var is set.
