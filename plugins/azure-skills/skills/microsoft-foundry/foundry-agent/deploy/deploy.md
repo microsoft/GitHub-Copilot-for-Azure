@@ -2,6 +2,7 @@
 
 Provision Azure resources when needed, deploy the agent, and smoke-test it.
 For **hosted agents** (custom container or code), use `azd deploy`.
+For **Voice Agents** (`kind: voice` or `kind: prompt-voice`, including Prompt Voice and two-agent Hosted Voice), use `azd deploy` and smoke-test over the `voice` WebSocket endpoint.
 For **Managed Harness Agents** (`kind: prompt` plus the GitHub Copilot harness), use `azd deploy`.
 For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 
@@ -11,15 +12,18 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 |----------|-------|
 | Hosted (recommended) | `azd provision` when needed, code deploy via `azd deploy` (`codeConfiguration` present), then verify and invoke |
 | Hosted (container) | `azd provision` when needed, container deploy via `azd deploy` (remote builds require a Dockerfile and ACR; local builds also require Docker; no `codeConfiguration:` in the `azure.yaml` service block) |
+| Voice (Prompt Voice) | `azd provision` when needed, declarative `azd deploy`, then verify over the `voice` WebSocket endpoint (`azd ai agent invoke` is not supported) |
+| Voice (Hosted Voice) | `azd provision` when needed, `azd deploy` for both the `kind: hosted` target and `kind: voice` wrapper, report both versions separately, and smoke-test the wrapper over the `voice` WebSocket endpoint |
 | Managed Harness Agent | `azd provision` when needed, then declarative `azd deploy`; no code/container packaging |
 | Prompt MCP | `agent_definition_schema_get`, `agent_update`, `agent_get`, `agent_delete` |
 | Versioning | Each successful `azd deploy` creates an immutable agent version |
 | Endpoint-only patch | `azd ai agent endpoint update` (no new version) |
-| Local dev | [create-hosted](../create/create-hosted.md), [local-run](../create/references/local-run.md) |
+| Local dev | [create-hosted](../create/create-hosted.md), [create-voice](../create/create-voice.md), [local-run](../create/references/local-run.md) |
 
 ## Route by Agent Type
 
-- Shipping Python / .NET code -> **Hosted** (azd workflow below).
+- `kind: voice` or `kind: prompt-voice` (single-agent Prompt Voice or two-agent Hosted Voice wrapper + `kind: hosted` target) -> **Voice** (azd Voice workflow below).
+- Shipping Python / .NET code (`kind: hosted`) -> **Hosted** (azd workflow below).
 - Explicit `kind: prompt` plus `harness.type: github_copilot_preview` -> **Managed Harness Agent** (azd workflow below).
 - Ordinary Prompt Agent model / instructions / tools -> **Prompt** (MCP workflow below).
 
@@ -334,6 +338,61 @@ Show Agent name, version, project, model, harness, tools, optional Toolbox, depl
 | Published definition lacks harness | Fix `harness.type`, verify the extension version, and redeploy |
 | Tool shape rejected | Read the matching Managed Harness Agent tool reference and preserve REST field names |
 | Connection missing | Use a user-supplied/existing configured connection, or create it only on explicit request |
+
+## Workflow -- Voice Agent (azd)
+
+Voice Agents (`kind: voice` or CLI alias `kind: prompt-voice`) are deployed through `azd`. Read [create-voice](../create/create-voice.md) and [voice-agent-yaml.md](../create/references/voice-agent-yaml.md) before creating or editing a Voice Agent definition.
+
+### Step 1: Resolve and validate
+
+Inspect `azure.yaml` and classify the Voice subtype before deploying:
+
+1. **Prompt Voice** (`1` Foundry agent):
+   - Uses `kind: voice` (or `kind: prompt-voice`) with `modelType: managed` or `modelType: self_deployed` plus `model: <name>`.
+   - If `modelType: managed` (e.g., `gpt-realtime` or `gpt-realtime-1.5`), no entry is required under `services.ai-project.models`.
+   - If `modelType: self_deployed`, confirm the referenced deployment is declared under `services.ai-project.models` (or exists in the target Foundry project).
+2. **Hosted Voice** (`2` Foundry agents — `kind: hosted` target + `kind: voice` wrapper):
+   - Confirm the target (`kind: hosted`) and wrapper (`kind: voice`) have **distinct service keys** and **distinct `config.name` values**.
+   - Confirm the target declares `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]` and `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`.
+   - Confirm the wrapper declares `uses: [ai-project, <target-service>]` and `conversationEngine: { type: hosted_agent, name: <target-agent-name> }`, and omits `modelType`, `model`, and `instructions`.
+3. **Reject invalid combinations**:
+   - Stop if a Voice service declares **both** `modelType`/`model` and `conversationEngine`, or **neither**.
+   - Stop and replace any obsolete `modelType: hosted_agent` or `targetAgent` fields with `conversationEngine`.
+
+Check current environment state:
+
+```bash
+azd env get-values
+azd ai project show --output json
+azd ai agent show --output json
+```
+
+### Step 2: Provision when required
+
+Respect the project-selection gate: if no Foundry project endpoint is configured and the user has not asked to create one, stop and ask. Run `azd provision --no-prompt` when creating a new project or provisioning model deployments / ACR infrastructure.
+
+### Step 3: Deploy
+
+- **Prompt Voice**:
+  ```bash
+  azd deploy <voice-service-name> --no-prompt
+  ```
+- **Hosted Voice**:
+  Deploy the `kind: hosted` target before or together with the `kind: voice` wrapper:
+  ```bash
+  azd deploy <target-service-name> --no-prompt
+  azd deploy <wrapper-service-name> --no-prompt
+  ```
+  (Or run `azd deploy --no-prompt` to deploy all services in dependency order.)
+
+### Step 4: Verify and Smoke-Test over the Voice WebSocket
+
+1. Run `azd ai agent show --output json` and verify `"status": "active"` (or `"deployed"`).
+   - For **Hosted Voice**, verify and report the active version of **both** the `kind: hosted` target and the `kind: voice` wrapper separately.
+2. **Do not** run `azd ai agent invoke` for a `kind: voice` / `kind: prompt-voice` service (`azd ai agent invoke` does not support the `voice` protocol).
+3. **Skip** mandatory generic `azd ai agent eval generate` (Step 6) for Voice Agents in Phase 1.
+4. Run a live Voice WebSocket smoke test against `wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1` using [../create/scripts/smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) (Bash) or [../create/scripts/smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1) (PowerShell) as documented in [../create/references/voice-agent-smoke-test.md](../create/references/voice-agent-smoke-test.md) and [../invoke/invoke.md](../invoke/invoke.md).
+5. Deployment is complete only when the Voice service version(s) are active **and** the Voice WebSocket smoke test succeeds.
 
 ## Workflow -- Prompt agent (MCP)
 

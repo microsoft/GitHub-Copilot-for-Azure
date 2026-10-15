@@ -140,6 +140,21 @@ services:
 
 A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. In this workflow, existing Toolboxes are attached through their versioned MCP endpoint and existing Skills are referenced by name and version; connection, Toolbox, and Skill resources are managed separately with their `azd ai` commands.
 
+### Voice Agent service blocks (`kind: voice` / `kind: prompt-voice`)
+
+Initialize a new declarative Prompt Voice Agent with:
+
+```bash
+azd ai agent init --kind prompt-voice --agent-name <agent-name> \
+  --model gpt-realtime --voice en-US-Ava:DragonHDLatestNeural
+```
+
+- `--kind prompt-voice` rejects `--src`, `--protocol`, `--deploy-mode`, `--runtime`, `--entry-point`, `--dep-resolution`, `--acr-connection`, `--image`, and `--model-deployment`.
+- Canonical `azure.yaml` kind is `kind: voice` (`kind: prompt-voice` is accepted as an alias).
+- **Prompt Voice** (`1` Foundry agent) sets `modelType: managed` (service-hosted `gpt-realtime` / `gpt-realtime-1.5`, no entry under `services.ai-project.models`) or `modelType: self_deployed` (references a deployment under `services.ai-project.models`; Foundry infers native speech-to-speech vs cascaded STT -> LLM -> TTS from `model`).
+- **Hosted Voice** (`2` Foundry agents) pairs a `kind: hosted` target (`protocols: [{ protocol: invocations_ws, version: 1.0.0 }]`, `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`) with a `kind: voice` wrapper (`uses: [ai-project, <target>]`, `conversationEngine: { type: hosted_agent, name: <target> }`, and no `modelType`, `model`, or `instructions`). Never use obsolete `modelType: hosted_agent` or `targetAgent`.
+- `azd deploy` supports Voice services, but `azd ai agent invoke` does **not** support `kind: voice` / `kind: prompt-voice` (including Hosted Voice wrappers). Verify Voice Agents over the `voice` WebSocket endpoint (`wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1`); see [create-voice.md](../../create/create-voice.md).
+
 ## State (azd env vars)
 
 | Variable | Read by | Where to set |

@@ -1,6 +1,12 @@
 # Invocations WebSocket (`invocations_ws`) Protocol
 
-Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSocket** endpoint instead of an HTTP request/response surface. Use this for real-time, bidirectional workloads — voice agents, live transcripts, custom streaming protocols, and signaling for out-of-band media transports.
+Build, deploy, and connect to **custom Hosted real-time/audio agents** (`kind: hosted`) that expose a **duplex WebSocket** endpoint instead of an HTTP request/response surface. Use this for custom bidirectional workloads — developer-defined audio/media streams, live transcripts, custom streaming protocols, and signaling for out-of-band media transports.
+
+> ⚠️ **Managed Foundry Voice Agent (`kind: voice` / `kind: prompt-voice`) vs `invocations_ws`**:
+> Distinguish the three real-time paths before using this skill:
+> 1. **Managed Foundry Voice Agent (Prompt Voice or Hosted Voice)** -> Uses `kind: voice` (or `kind: prompt-voice`) and exposes the managed `voice` protocol endpoint (`wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1`) where Foundry handles VAD, STT, TTS, greeting, avatar, and telephony. **Do not use this skill as the primary workflow** — route to [../create/create-voice.md](../create/create-voice.md).
+> 2. **Hosted Voice target (`kind: hosted` + `invocations_ws` `1.0.0` + Voice Live Bridge `1.0`)** -> Uses `invocations_ws` as the transport beneath Voice Live Bridge `1.0` (`metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`, exchanging `session.Initialize` / `session.Initialized`, `conversation.Message`, `response.Create`, `response.TextDelta`, `response.Done`) paired with a `kind: voice` wrapper. Route to [../create/create-voice.md](../create/create-voice.md) and [../create/references/voice-agent-hosted-bridge.md](../create/references/voice-agent-hosted-bridge.md).
+> 3. **Custom Hosted real-time/audio agent (`kind: hosted` + raw `invocations_ws`)** -> **Covered by this skill.** Your container owns the entire WebSocket wire format directly without a `kind: voice` wrapper. Always refer to this architecture as a **custom Hosted real-time/audio agent**, not an unqualified "Voice Agent".
 
 > ℹ️ **Generally available.** `invocations_ws` is GA — **no preview feature flag is required**. Every upgrade must carry the required `api-version=v1` query parameter. For current region availability see [Foundry Hosted Agents — region availability](https://learn.microsoft.com/azure/foundry/agents/concepts/hosted-agents#region-availability).
 >
@@ -22,12 +28,13 @@ Build, deploy, and connect to Foundry hosted agents that expose a **duplex WebSo
 
 ## When to Use This Skill
 
-- Build or operate a hosted real-time voice agent (audio in / audio out, control frames)
+- Build or operate a **custom Hosted real-time/audio agent** (`kind: hosted`) where your container processes raw audio/control frames directly over `invocations_ws` without the managed Foundry `kind: voice` pipeline
+- Inspect the `invocations_ws` transport layer underlying a Hosted Voice Bridge `1.0` target container
 - Bridge an out-of-band media transport (WebRTC, SFU, telephony) to a Foundry-hosted bot via WebSocket signaling
 - Stream events bidirectionally that don't fit `responses` (OpenAI-compatible) or `invocations` (single bytes-in/bytes-out HTTP)
 - Connect a browser or native client to an already-deployed `invocations_ws` agent
 
-> ℹ️ For HTTP-based invocation (single request/response, OpenAI `responses` API, or custom HTTP `invocations`), use the [`invoke`](../invoke/invoke.md) skill instead.
+> ℹ️ For managed Foundry Voice Agents (`kind: voice` / `kind: prompt-voice`), use [`create-voice`](../create/create-voice.md) instead. For HTTP-based invocation (single request/response, OpenAI `responses` API, or custom HTTP `invocations`), use the [`invoke`](../invoke/invoke.md) skill instead.
 
 ## Protocol Comparison
 

@@ -8,7 +8,7 @@ harness:
   type: github_copilot_preview
 ```
 
-Use this workflow only when the user explicitly says Managed Harness Agent, GitHub Copilot harness agent, or Prompt Agent with GitHub Copilot harness. Ordinary Prompt Agents use [create-prompt.md](create-prompt.md); Hosted Agents use [create-hosted.md](create-hosted.md).
+Use this workflow only when the user explicitly says Managed Harness Agent, GitHub Copilot harness agent, or Prompt Agent with GitHub Copilot harness. Ordinary Prompt Agents use [create-prompt.md](create-prompt.md); Voice Agents (`kind: voice` / `kind: prompt-voice`) use [create-voice.md](create-voice.md); Hosted Agents use [create-hosted.md](create-hosted.md).
 
 ## Boundaries
 

@@ -1,8 +1,8 @@
 # Create Prompt Agent
 
-Create and manage ordinary prompt agents in Azure Foundry Agent Service using MCP tools or Python SDK. For hosted agents, see [create-hosted.md](create-hosted.md). For a Prompt Agent explicitly using the Foundry-managed GitHub Copilot harness, use [create-managed-harness.md](create-managed-harness.md).
+Create and manage ordinary prompt agents in Azure Foundry Agent Service using MCP tools or Python SDK. For hosted agents, see [create-hosted.md](create-hosted.md). For Voice Agents (`kind: voice` / `kind: prompt-voice`), use [create-voice.md](create-voice.md). For a Prompt Agent explicitly using the Foundry-managed GitHub Copilot harness, use [create-managed-harness.md](create-managed-harness.md).
 
-> **Scope:** Do not use this workflow for `harness.type: github_copilot_preview`, "Managed Harness Agent", or "GitHub Copilot harness agent" requests. Those use azd and `azure.yaml`.
+> **Scope:** Do not use this workflow for Voice Agents (`kind: voice` / `kind: prompt-voice`, including declarative Prompt Voice Agents) or for `harness.type: github_copilot_preview`, "Managed Harness Agent", or "GitHub Copilot harness agent" requests. Those use azd and `azure.yaml`.
 
 ## Quick Reference
 

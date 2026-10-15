@@ -4,7 +4,7 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 
 > **Creating a new agent end-to-end from scratch?** Use [quick-start-hosted.md](quick-start-hosted.md) instead -- an opinionated happy-path with safe defaults. Stay here for anything not covered by the quickstart.
 
-> **Scope:** `azd ai` is the preferred *code-first* path -- use it when the intent is agent code on disk, in a repo, with infrastructure-as-code and a local inner-loop. If the intent is only to create a remote agent resource (no code on disk), other approaches may apply -- for ordinary prompt agents see [create-prompt.md](create-prompt.md). A Managed Harness Agent also uses azd but is `kind: prompt`; use [create-managed-harness.md](create-managed-harness.md).
+> **Scope:** `azd ai` is the preferred *code-first* path -- use it when the intent is agent code on disk, in a repo, with infrastructure-as-code and a local inner-loop. If the intent is only to create a remote agent resource (no code on disk), other approaches may apply -- for ordinary prompt agents see [create-prompt.md](create-prompt.md). For Voice Agents (`kind: voice` / `kind: prompt-voice`, whether Prompt Voice or two-agent Hosted Voice), start with [create-voice.md](create-voice.md). A Managed Harness Agent also uses azd but is `kind: prompt`; use [create-managed-harness.md](create-managed-harness.md). For a **custom Hosted real-time/audio agent** over raw `invocations_ws` (not a managed Foundry Voice Agent), use [../invocations-ws/invocations-ws.md](../invocations-ws/invocations-ws.md).
 
 ## Quick Reference
 
@@ -27,12 +27,12 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 
 For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prompt Agent with `harness.type: github_copilot_preview`, use [create-managed-harness.md](create-managed-harness.md). For deploy, use [deploy.md](../deploy/deploy.md).
 
-## Hosted vs Prompt
+## Hosted vs Prompt vs Voice
 
-| | Hosted | Prompt | Managed Harness Agent |
-|--|--------|--------|-----|
-| Definition | Custom Python / .NET code | Model + instructions | Prompt agent with GitHub Copilot harness |
-| Workflow | This skill | [create-prompt.md](create-prompt.md) | [create-managed-harness.md](create-managed-harness.md) |
+| | Hosted | Prompt | Managed Harness Agent | Voice |
+|--|--------|--------|-----|-------|
+| Definition | Custom Python / .NET code | Model + instructions | Prompt agent with GitHub Copilot harness | Prompt Voice (`modelType: managed` / `self_deployed`) or Hosted Voice (`kind: hosted` target + `kind: voice` wrapper) |
+| Workflow | This skill | [create-prompt.md](create-prompt.md) | [create-managed-harness.md](create-managed-harness.md) | [create-voice.md](create-voice.md) |
 | Tools | Prefer Toolbox + connections | Direct tool configs | Prefer direct tools; Toolbox only when explicit |
 | Local debugging | `azd ai agent run --no-client` | Limited | No local harness runtime |
 | Output | Immutable version via `azd deploy` | `agent_update` via MCP / SDK | Immutable version via `azd deploy` |
