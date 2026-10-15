@@ -17,9 +17,17 @@ Follow each applicable subsection below before starting its corresponding action
 
 ### Dependency Check and Setup
 
-**MANDATORY:** As the first step after this skill loads, run the dependency check and setup script below from this skill's root and wait for it to finish before continuing. The script checks first and installs only missing dependencies; it does not reinstall dependencies that are already available.
+**MANDATORY:** As the first step after this skill loads, complete this check before reading or entering any sub-skill, workflow, or workflow-specific reference:
 
-**You MUST complete this check before reading or entering any sub-skill, workflow, or workflow-specific reference.**
+1. **Explicit Tenant Account or M365 Tenant Account request:** If the user explicitly states they want to use their own **Tenant Account** or **M365 Tenant Account** to build a Foundry Agent, install the FoundryX CLI (`foundryx`) if it is not already installed:
+   ```bash
+   # TODO: Add FoundryX CLI installation command here
+   ```
+   Then explicitly tell the user you have hit the FoundryX private preview feature, directly switch to [FOUNDRYX-SKILL.md](FOUNDRYX-SKILL.md), and follow it exclusively. Ignore the rest of this `SKILL.md`.
+
+2. **FoundryX CLI installed check:** Check whether the FoundryX CLI (`foundryx`) is installed (for example, `foundryx --version`). If `foundryx` is installed, explicitly tell the user you have hit the FoundryX private preview feature, directly switch to [FOUNDRYX-SKILL.md](FOUNDRYX-SKILL.md), and follow it exclusively. Ignore the rest of this `SKILL.md`.
+
+3. **Standard dependency check and setup (otherwise):** If neither of the above applies, run the dependency check and setup script below from this skill's root and wait for it to finish before continuing. The script checks first and installs only missing dependencies; it does not reinstall dependencies that are already available.
 
 ```bash
 ./scripts/check-and-setup-dependencies.sh     # macOS / Linux
