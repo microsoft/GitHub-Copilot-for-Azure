@@ -241,7 +241,7 @@ async function generateAnswers(
       "--runs",
       String(spec.experiment.repetitions),
       "--workers",
-      "1",
+      String(spec.limits.generationWorkersPerVallyProcess ?? 1),
       "--max-retries",
       "0",
       "--skip-grade",
@@ -406,7 +406,7 @@ export async function runEvaluationBatch(
   const generated: GeneratedAnswers[] = new Array(tasks.length);
   await runWithConcurrency(
     tasks,
-    spec.limits.maxConcurrentJobs,
+    spec.limits.maxConcurrentVallyProcesses,
     async (task, index) => {
       generated[index] = await generateAnswers(
         worktree,
@@ -426,7 +426,7 @@ export async function runEvaluationBatch(
   const judged: JudgedTrial[][] = new Array(gradingTasks.length);
   await runWithConcurrency(
     gradingTasks,
-    spec.limits.maxConcurrentJobs,
+    spec.limits.maxConcurrentVallyProcesses,
     async ({ item, judgeModel }, index) => {
       judged[index] = await gradeAnswers(
         evalRepoRoot,

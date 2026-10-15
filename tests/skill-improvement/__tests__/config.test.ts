@@ -64,7 +64,7 @@ function spec(): SkillImprovementRunSpec {
       maxAnswerGenerations: 100,
       maxJudgeCalls: 200,
       maxDurationMinutes: 60,
-      maxConcurrentJobs: 2,
+      maxConcurrentVallyProcesses: 2,
       maxSkillTokenIncreasePercent: 15,
     },
     output: {
@@ -75,6 +75,35 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement configuration", () => {
+  test("accepts explicit generation workers or the default of one", () => {
+    const runSpec = spec();
+    expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBeUndefined();
+    runSpec.limits.generationWorkersPerVallyProcess = 3;
+    expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBe(3);
+  });
+
+  test.each([0, -1, 1.5, NaN, Infinity, "2", null])(
+    "rejects invalid concurrency values %s", value => {
+      for (const field of ["maxConcurrentVallyProcesses", "generationWorkersPerVallyProcess"]) {
+        const runSpec = spec();
+        Object.assign(runSpec.limits, { [field]: value });
+        expect(() => validateRunSpec(runSpec)).toThrow(`limits.${field}`);
+      }
+    }
+  );
+
+  test("requires the renamed process limit and rejects the old spelling", () => {
+    const runSpec = spec();
+    Reflect.deleteProperty(runSpec.limits, "maxConcurrentVallyProcesses");
+    expect(() => validateRunSpec(runSpec)).toThrow("limits.maxConcurrentVallyProcesses");
+    Object.assign(runSpec.limits, { maxConcurrentJobs: 2 });
+    expect(() => validateRunSpec(runSpec)).toThrow(
+      "limits.maxConcurrentJobs has been renamed to limits.maxConcurrentVallyProcesses."
+    );
+    runSpec.limits.maxConcurrentVallyProcesses = 2;
+    expect(() => validateRunSpec(runSpec)).toThrow("has been renamed");
+  });
+
   test("configures a valid Azure Kusto improvement run", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)

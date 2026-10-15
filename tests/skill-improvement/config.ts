@@ -71,7 +71,8 @@ export type SkillImprovementRunSpec = {
     maxAnswerGenerations: number;
     maxJudgeCalls: number;
     maxDurationMinutes: number;
-    maxConcurrentJobs: number;
+    maxConcurrentVallyProcesses: number;
+    generationWorkersPerVallyProcess?: number;
     maxSkillTokenIncreasePercent: number;
   };
   output: {
@@ -458,7 +459,17 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
   requirePositiveInteger(spec.limits?.maxAnswerGenerations, "limits.maxAnswerGenerations");
   requirePositiveInteger(spec.limits?.maxJudgeCalls, "limits.maxJudgeCalls");
   requirePositiveInteger(spec.limits?.maxDurationMinutes, "limits.maxDurationMinutes");
-  requirePositiveInteger(spec.limits?.maxConcurrentJobs, "limits.maxConcurrentJobs");
+  if (spec.limits && "maxConcurrentJobs" in spec.limits) {
+    throw new Error("limits.maxConcurrentJobs has been renamed to limits.maxConcurrentVallyProcesses.");
+  }
+  requirePositiveInteger(
+    spec.limits?.maxConcurrentVallyProcesses, "limits.maxConcurrentVallyProcesses"
+  );
+  if (spec.limits.generationWorkersPerVallyProcess !== undefined) {
+    requirePositiveInteger(
+      spec.limits.generationWorkersPerVallyProcess, "limits.generationWorkersPerVallyProcess"
+    );
+  }
   requireNonNegativeNumber(
     spec.limits?.maxSkillTokenIncreasePercent,
     "limits.maxSkillTokenIncreasePercent"

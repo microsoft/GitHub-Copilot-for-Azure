@@ -9,17 +9,21 @@ import {
 } from "../evaluation.ts";
 import { collectAnswerBilling, type BatchBilling } from "../billing.ts";
 import type { SkillImprovementRunSpec } from "../config.ts";
-import { runProcess } from "../process.ts";
+import { runProcess, runWithConcurrency } from "../process.ts";
 import { aggregateJudgments } from "../report.ts";
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("../process.ts", async importOriginal => ({
-  ...await importOriginal<typeof import("../process.ts")>(),
-  runProcess: vi.fn(),
-}));
+vi.mock("../process.ts", async importOriginal => {
+  const original = await importOriginal<typeof import("../process.ts")>();
+  return {
+    ...original,
+    runProcess: vi.fn(),
+    runWithConcurrency: vi.fn(original.runWithConcurrency),
+  };
+});
 
 describe("answer billing propagation", () => {
-  test.each<{ nanoAiu?: number; failure?: string; truncated?: boolean }>([
+  test.each<{ nanoAiu?: number; failure?: string; truncated?: boolean; workers?: number }>([
     { nanoAiu: 1_250_000_000, failure: undefined },
     { nanoAiu: 0, failure: undefined },
     { nanoAiu: undefined, failure: undefined },
@@ -27,8 +31,9 @@ describe("answer billing propagation", () => {
     { nanoAiu: 1_250_000_000, failure: "grade" },
     { nanoAiu: 1_250_000_000, failure: "eval", truncated: true },
     { nanoAiu: 1_250_000_000, truncated: true },
+    { nanoAiu: 1_250_000_000, workers: 3 },
   ])(
-    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure, truncated }) => {
+    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure, truncated, workers }) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "answer-billing-"));
       const evalRoot = path.join(root, "tests", "skill-improvement", "evals", "example");
       fs.mkdirSync(evalRoot, { recursive: true });
@@ -62,7 +67,8 @@ describe("answer billing propagation", () => {
           maxAnswerGenerations: 1,
           maxJudgeCalls: 2,
           maxDurationMinutes: 1,
-          maxConcurrentJobs: 1,
+          maxConcurrentVallyProcesses: 2,
+          generationWorkersPerVallyProcess: workers,
           maxSkillTokenIncreasePercent: 15,
         },
         output: { issue: "never", draftPullRequest: "never" },
@@ -77,6 +83,7 @@ describe("answer billing propagation", () => {
           throw new Error("Expected output file.");
         }
         if (args.includes("eval")) {
+          expect(args[args.indexOf("--workers") + 1]).toBe(String(workers ?? 1));
           const runDirectory = path.join(path.dirname(options.stdoutFile), "run");
           fs.mkdirSync(runDirectory);
           fs.writeFileSync(path.join(runDirectory, "eval-results.md"), "# Results\n");
@@ -86,6 +93,7 @@ describe("answer billing propagation", () => {
             trajectory: { output: "answer", metadata: { answerBilling } },
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
+          expect(args).not.toContain("--workers");
           if (!options.stdinFile) {
             throw new Error("Expected saved answers as grading input.");
           }
@@ -122,6 +130,7 @@ describe("answer billing propagation", () => {
           return;
         }
         const batch = await pending;
+        expect(vi.mocked(runWithConcurrency).mock.calls.map(call => call[1])).toEqual([2, 2]);
         const credits = nanoAiu === undefined ? undefined : nanoAiu / 1_000_000_000;
         expect(batch.answerGenerations).toBe(1);
         expect(batch.judgeCalls).toBe(2);
@@ -137,6 +146,7 @@ describe("answer billing propagation", () => {
         });
       } finally {
         vi.mocked(runProcess).mockReset();
+        vi.mocked(runWithConcurrency).mockClear();
         fs.rmSync(root, { recursive: true, force: true });
       }
     }
