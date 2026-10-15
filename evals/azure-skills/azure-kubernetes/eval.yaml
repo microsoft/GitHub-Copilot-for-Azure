@@ -625,3 +625,49 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Add-on: Day-0 planning gets no aks-skills offer"
+    prompt: "Without running commands or creating resources, plan a new production AKS cluster for a multi-tenant SaaS API, including SKU, networking, node provisioning, and upgrade strategy."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response gives Day-0 AKS planning guidance and does not offer, recommend, or ask to install the optional aks-skills plugin or any of its skills (aks-troubleshooting, aks-known-issues, aks-network-capture, aks-gpu-inference). If it recommends Node Auto Provisioning on AKS Standard, it does not describe NAP as enabled per node pool and does not combine it with an unsupported configuration such as Windows node pools, kubenet, Calico network policy, or service-principal identity."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Output: NAP eligibility on AKS Standard"
+    prompt: "Without running commands or changing resources: I want Node Auto Provisioning on a new AKS Standard cluster that uses kubenet, Calico network policy, and a Windows node pool. Is that OK, and what should I change?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: output
+    rubric:
+      - "The response says NAP does not support Windows node pools, kubenet, or Calico network policy, and recommends a supported setup such as Azure CNI Overlay (optionally with Cilium) or Node Subnet with Linux node pools, or AKS Automatic. It treats NAP as a cluster-level setting rather than per node pool. Mentioning other documented limits (no cluster stop, outbound type fixed, Standard Load Balancer for custom VNets, managed identity required) is acceptable."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

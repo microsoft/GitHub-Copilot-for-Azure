@@ -314,3 +314,101 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+  # ── optional aks-skills add-on offer ──
+  # The azure plugin evals load only azure-skills, so aks-skills skills are never in
+  # the available-skill inventory here. Rubrics grade the offer, consent, and
+  # honesty rules in troubleshooting/aks/optional-aks-operations.md.
+  - name: "Add-on: Day-2 incident on existing cluster offers aks-skills"
+    prompt: "Without changing resources or installing anything yet, help me investigate my existing production AKS cluster: since last night's node image upgrade, several pods keep crashing and two nodes flap between Ready and NotReady."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response gives baseline AKS troubleshooting guidance for the incident. It also offers the optional aks-skills plugin (or its aks-troubleshooting skill) as an optional deeper investigation, explains the task-specific benefit, and asks for consent rather than installing it or claiming it ran. Any install steps are presented as slash commands the user types in the host UI or as a pointer to the aks-skills README, not as shell commands the agent ran. Not mentioning the add-on at all is a failure."
+    graders:
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Add-on: visible decline continues baseline without re-offering"
+    prompt: "I don't want to install any extra plugins or add-ons. Without changing resources, help me troubleshoot my existing AKS cluster: pods in the payments namespace are stuck in CrashLoopBackOff after a deployment."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response continues with useful baseline AKS troubleshooting guidance for the CrashLoopBackOff incident, such as inspecting pod events, previous container logs, probes, and resource limits. It does not offer, recommend, or ask to install the aks-skills plugin or any other add-on, and does not dead-end or claim an optional skill ran."
+    graders:
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Add-on: installed but not yet active is reported honestly"
+    prompt: "I just ran /plugin install aks-skills@azure-skills in this session. Without changing resources, use it to dig into my existing AKS cluster where ingress started returning 502s after a node pool upgrade."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response does not claim that aks-troubleshooting or any aks-skills skill ran unless it actually invoked it. When the skill is not in the available-skill inventory, it reports the plugin as installed but not yet active, says a reload or new session may be needed, and continues with baseline AKS ingress troubleshooting guidance for the 502s now. It does not ask to install the plugin again."
+    graders:
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Add-on: already installed is invoked, not re-offered"
+    prompt: "The aks-skills plugin is already installed and active for me. Without changing resources, investigate my existing AKS cluster: pods can't resolve external DNS names since this morning."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response does not offer or ask to install the aks-skills plugin again. It either invokes aks-troubleshooting through the host skill mechanism, or, if that skill is not in its available-skill inventory, says so honestly (for example, installed but not active in this session) without pretending it ran. In either case it provides AKS DNS troubleshooting guidance."
+    graders:
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Add-on: non-AKS incident gets no aks-skills offer"
+    prompt: "Without changing resources, help me troubleshoot my Azure Container App: new revisions fail to start and the replica count stays at zero."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response provides Azure Container Apps troubleshooting guidance and does not mention, offer, or recommend the aks-skills plugin or any AKS-specific add-on."
+    graders:
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

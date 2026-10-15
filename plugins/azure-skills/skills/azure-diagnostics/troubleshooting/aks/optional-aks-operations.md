@@ -2,7 +2,10 @@
 
 Baseline AKS intake, Azure-side health checks, Kubernetes evidence, and safe
 remediation guidance remain in this guide. Offer the sibling `aks-skills`
-plugin only when one focused workflow materially fits the current incident.
+plugin only when one focused workflow materially fits the current incident on
+an existing AKS cluster. Never offer it during Day-0 planning or setup, or to
+customers who are not on AKS. If an offer or a decline is already visible in
+this conversation, do not repeat it.
 
 ## Select the focused skill
 
@@ -21,7 +24,8 @@ plugin only when one focused workflow materially fits the current incident.
 2. If the selected skill is present, invoke it through the host-native skill
    mechanism.
 3. If it is missing and useful, explain the focused benefit and ask before
-   using the host-supported plugin manager. Do not silently install the plugin,
+   using the host-supported plugin manager, as described in
+   [Install steps](#install-steps). Do not silently install the plugin,
    add it as a dependency, or bypass host policy. After installation, confirm
    the selected skill appears in the host's available-skill inventory before
    invoking it. If the host activates newly installed components only in a new
@@ -33,3 +37,18 @@ plugin only when one focused workflow materially fits the current incident.
 
 Installing the plugin does not approve resource changes or packet capture.
 Follow the selected workflow's separate execution and mutation approvals.
+
+## Install steps
+
+Per-host steps live in the published
+[`aks-skills` README](https://github.com/microsoft/azure-skills/blob/main/.github/plugins/aks-skills/README.md#install).
+Share the steps for the customer's host from there. In Copilot CLI and Claude
+Code, the customer types these slash commands in the host's chat UI; they are
+not shell commands:
+
+1. `/plugin marketplace add microsoft/azure-skills`
+2. `/plugin install aks-skills@azure-skills`
+
+Claude Code then needs `/reload-plugins` or a new session, which only the
+customer can run. For Codex and other hosts, follow the README; if it has no
+steps for the host, say so rather than guessing.
