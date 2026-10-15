@@ -21,7 +21,10 @@ const __dirname = path.dirname(__filename);
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
 type BilledTrajectory = Trajectory & {
-  metadata: Trajectory["metadata"] & { answerBilling: AnswerBilling };
+  metadata: Trajectory["metadata"] & {
+    answerBilling: AnswerBilling;
+    completionStatus: AgentMetadata["completionStatus"];
+  };
 };
 
 export class CopilotSdkAgentRunner implements Executor {
@@ -146,7 +149,9 @@ export class CopilotSdkAgentRunner implements Executor {
 
       await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
       await agentRunner.cleanup();
-      const answerBilling = collectAnswerBilling(agentMetadata.events);
+      const answerBilling = collectAnswerBilling(
+        agentMetadata.events, agentMetadata.completionStatus === "completed"
+      );
 
       if (postTestScriptConfig) {
         runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!));
@@ -169,6 +174,7 @@ export class CopilotSdkAgentRunner implements Executor {
           skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
           sessionID: sessionId ?? "unknown",
           answerBilling,
+          completionStatus: agentMetadata.completionStatus,
         },
         metrics: {
           ...metrics,

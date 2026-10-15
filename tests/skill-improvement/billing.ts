@@ -66,6 +66,7 @@ export function collectAnswerBilling(
     type: string;
     data: unknown;
   }[],
+  completed = true,
 ): AnswerBilling {
   const requests = events.filter(event => event.type === "assistant.usage");
   let nanoAiu = 0;
@@ -94,7 +95,7 @@ export function collectAnswerBilling(
     source: "copilot_usage.totalNanoAiu",
     requests: requests.length,
     billedRequests,
-    billedAiCredits: requests.length > 0 && billedRequests === requests.length
+    billedAiCredits: completed && requests.length > 0 && billedRequests === requests.length
       ? nanoAiu / 1_000_000_000
       : null,
   };

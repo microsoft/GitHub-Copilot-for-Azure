@@ -90,6 +90,10 @@ aggregate again or infer credits from tokens or model-call counts.
 Each request must have billing data for an answer to be measured. Missing or
 partial billing, including historical artifacts without these fields, is
 **not measured**, not zero. A provider-reported zero is a valid measurement.
+Aborted or timed-out SDK trajectories remain unmeasured even if earlier requests
+have billing, because the interrupted request may be missing from the event stream.
+On failed generation, valid JSONL records are recovered for billing and malformed
+records are warned about and left unmeasured; successful generation remains strict.
 
 The summary and detailed reports keep correctness/token comparisons separate
 from a focused credit table: **Batch, Model, Arm, Tests, Repetitions, Billing
@@ -129,8 +133,10 @@ authoritative session `totalNanoAiu` aggregate. Divide this once by
 An invocation is measured only with `aiCreditsStatus: "complete"` and a
 terminal JSONL `result` containing an exit code. This supports finalized
 failed invocations as well as successes; timeouts, missing exports, and
-partial/unknown provider status remain unavailable. Stale output files are
-removed before launching. Each invocation belongs only to its iteration,
+partial/unknown provider status remain unavailable. Unreadable, truncated, or
+invalid billing exports are reported as unavailable without changing the original
+agent process outcome. Stale output files are removed before launching.
+Each invocation belongs only to its iteration,
 including iterations discarded before candidate evaluation. Baseline and
 held-out agent consumption is **N/A**, not measured zero. Internal model
 retries are included only to the extent the provider's complete aggregate

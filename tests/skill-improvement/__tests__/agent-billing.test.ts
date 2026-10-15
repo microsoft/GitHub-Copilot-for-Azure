@@ -13,8 +13,13 @@ vi.mock("../process.ts", async importOriginal => ({
 }));
 
 describe("improvement-agent consumption collection", () => {
-  test.each(["success", "failed-finalized", "timeout", "missing-usage"] as const)(
-    "records one invocation and preserves process failures: %s", async outcome => {
+  test.each(
+    (["success", "failed-finalized", "timeout", "missing-usage"] as const).flatMap(outcome =>
+      (["complete", "truncated-usage", "truncated-events", "invalid-usage", "unreadable-usage"] as const)
+        .map(format => ({ outcome, format }))
+    )
+  )(
+    "records one invocation and preserves process failures: %s", async ({ outcome, format }) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "agent-billing-"));
       const spec = loadRunSpec(path.resolve("skill-improvement", "specs", "azure-kusto.yaml"), {
         AZURE_EVALS_SUBSCRIPTION_ID: "subscription",
@@ -33,14 +38,19 @@ describe("improvement-agent consumption collection", () => {
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         expect(args).toContain("--usage-output-file");
         if (outcome !== "missing-usage") {
-          fs.writeFileSync(usageFile, JSON.stringify({
-            totalNanoAiu: 2_500_000_000, aiCreditsStatus: "complete",
-          }), { flag: "wx" });
+          if (format === "unreadable-usage") {
+            fs.mkdirSync(usageFile);
+          } else {
+            fs.writeFileSync(usageFile, format === "truncated-usage" ? '{"totalNanoAiu":' : JSON.stringify({
+              totalNanoAiu: format === "invalid-usage" ? -1 : 2_500_000_000,
+              aiCreditsStatus: "complete",
+            }), { flag: "wx" });
+          }
         }
         if (outcome !== "timeout") {
           fs.writeFileSync(options.stdoutFile!, JSON.stringify({
             type: "result", exitCode: outcome === "failed-finalized" ? 1 : 0,
-          }) + "\n", { flag: "wx" });
+          }) + "\n" + (format === "truncated-events" ? '{"type":' : ""), { flag: "wx" });
         }
         if (outcome === "failed-finalized" || outcome === "timeout") {
           throw error;
@@ -63,11 +73,14 @@ describe("improvement-agent consumption collection", () => {
         if (outcome === "timeout") {
           expect(fs.existsSync(eventFile)).toBe(false);
         }
-        const complete = outcome === "success" || outcome === "failed-finalized";
+        const complete = format === "complete" && (outcome === "success" || outcome === "failed-finalized");
         expect(captured).toMatchObject({
           expected: 1, observed: 1, measured: complete ? 1 : 0,
           measuredAiCredits: complete ? 2.5 : 0,
         });
+        if (!complete) {
+          expect(captured?.reason).toBeTruthy();
+        }
         expect(fs.existsSync(path.join(skillRoot, ".skill-improvement-failure-packet.md"))).toBe(false);
       } finally {
         vi.mocked(runProcess).mockReset();

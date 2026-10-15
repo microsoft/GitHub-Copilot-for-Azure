@@ -19,18 +19,21 @@ vi.mock("../process.ts", async importOriginal => ({
 }));
 
 describe("answer billing propagation", () => {
-  test.each([
+  test.each<{ nanoAiu?: number; failure?: string; truncated?: boolean }>([
     { nanoAiu: 1_250_000_000, failure: undefined },
     { nanoAiu: 0, failure: undefined },
     { nanoAiu: undefined, failure: undefined },
     { nanoAiu: 1_250_000_000, failure: "eval" },
     { nanoAiu: 1_250_000_000, failure: "grade" },
+    { nanoAiu: 1_250_000_000, failure: "eval", truncated: true },
+    { nanoAiu: 1_250_000_000, truncated: true },
   ])(
-    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure }) => {
+    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure, truncated }) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "answer-billing-"));
       const evalRoot = path.join(root, "tests", "skill-improvement", "evals", "example");
       fs.mkdirSync(evalRoot, { recursive: true });
-      fs.writeFileSync(path.join(evalRoot, "quality.yaml"), "stimuli:\n  - name: one\n");
+      fs.writeFileSync(path.join(evalRoot, "quality.yaml"),
+        "stimuli:\n  - name: one\n" + (truncated ? "  - name: two\n" : ""));
       const spec: SkillImprovementRunSpec = {
         name: "example",
         target: { plugin: "example", skill: "example", baselineRef: "main" },
@@ -68,6 +71,7 @@ describe("answer billing propagation", () => {
         type: "assistant.usage",
         data: nanoAiu === undefined ? {} : { copilotUsage: { totalNanoAiu: nanoAiu } },
       }]);
+      const processError = new Error(`${failure} failed`);
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         if (!options.stdoutFile) {
           throw new Error("Expected output file.");
@@ -80,7 +84,7 @@ describe("answer billing propagation", () => {
             type: "trial-result",
             itemId: "suite::one",
             trajectory: { output: "answer", metadata: { answerBilling } },
-          }) + "\n");
+          }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           if (!options.stdinFile) {
             throw new Error("Expected saved answers as grading input.");
@@ -92,7 +96,7 @@ describe("answer billing propagation", () => {
           }) + "\n");
         }
         if (failure && args.includes(failure)) {
-          throw new Error(`${failure} failed`);
+          throw processError;
         }
         return { exitCode: 0, stdout: "", stderr: "" };
       });
@@ -104,11 +108,17 @@ describe("answer billing propagation", () => {
           undefined, billing => { captured = billing; }
         );
         if (failure) {
-          await expect(pending).rejects.toThrow(`${failure} failed`);
+          await expect(pending).rejects.toBe(processError);
           expect(captured).toMatchObject({
             finalized: false,
-            answers: { expected: 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
+            answers: { expected: truncated ? 2 : 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
           });
+          return;
+        }
+        if (truncated) {
+          await expect(pending).rejects.toBeInstanceOf(SyntaxError);
+          expect(captured?.finalized).toBe(false);
+          expect(vi.mocked(runProcess)).toHaveBeenCalledTimes(1);
           return;
         }
         const batch = await pending;
