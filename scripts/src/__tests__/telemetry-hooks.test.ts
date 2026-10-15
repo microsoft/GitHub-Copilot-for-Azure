@@ -110,16 +110,16 @@ const SPACED_HOOKS_DIR = join(SPACED_PLUGIN_ROOT, "hooks", "scripts");
 const DISPATCHER_PATH = join(STUB_HOOKS_DIR, "track-telemetry.js");
 const FIXTURES_DIR = join(dirname(fileURLToPath(import.meta.url)), "fixtures");
 const SESSION_ID = "73e52424-a95d-4e21-b70c-2dffe48fdd86";
-const TELEMETRY_REPORTER_VERSION = "0.1.11-gce94fceee1";
+const TELEMETRY_REPORTER_VERSION = "0.1.15-g21270d7829";
 const TELEMETRY_REPORTER_DIGESTS = {
-  "linux-arm64": "70558a336b05d3f20cae969ddedb42d7f84fbed61549138448da42e010725d19",
-  "linux-musl-arm64": "6ec4649fbc181ba45cc729ac378d8fd97f62aa6464b61ebc483237422379572b",
-  "linux-musl-x64": "39dbadfe8e724c8fc60fd1544da6626b14187de7317bd14777ae0723781d7af6",
-  "linux-x64": "a09650f3f0306ea55a610fa893f5c582d0b9163952bc59686f24fa91e5e967e9",
-  "osx-arm64": "ff8751007bdaecefc6e25c069888fe04dd9357c02180ab88c02dc045b53e6ded",
-  "osx-x64": "200c38feacc02c789122584bfb25a3dd5ee62e8d972c21bb6378c320a4f25ce6",
-  "win-arm64": "b6a8055143759b603432d48ad9a07f0c744a48ccbaa752f59f7d9a3684479c5d",
-  "win-x64": "98a47c722294797d6801b8463d4165c0be514fb1a6004fdd4aee2680b17845ac",
+  "linux-arm64": "1e7c3a1ddcf723c10a415e313fb07206d6dfc0b55d2137f7b524f6ae760b14c2",
+  "linux-musl-arm64": "31bfdd45e8f65387e0d6fa720fc7cf0643fb22cd4e197482d5c4a44ee5ec1128",
+  "linux-musl-x64": "12e0c5dcfb57f6bac3468b208d61e772c1cbf9b7b2a3cff79559d6f6bafa25e9",
+  "linux-x64": "4542ce8a86f82d5b1fe27e0819a8fbdceb1d2fbabd7b1405afbde20be2c8cc4e",
+  "osx-arm64": "c8d4fca7c472e0216128e209b3ede1e0826c410524ad5ae198bf6468bbddf92b",
+  "osx-x64": "63884f34cf67455d3a387bdc17684cf54ee9d7432ffee62c860a58643a8d146c",
+  "win-arm64": "4aadca2a60d17058c32fb1b766340e9a063333d2184ec05623ff9789ce086413",
+  "win-x64": "1b5d1f4e88359cf314596dc5ba129056763a5f17060ce6c32b3fb4ebd1fe8321",
 } as const;
 const STANDALONE_PUBLISHER = `Standalone ghcfa-telem (version ${TELEMETRY_REPORTER_VERSION})`;
 const PUBLISHER_STDOUT = "test-only-private-publisher-stdout";
