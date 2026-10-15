@@ -323,8 +323,8 @@ Use two stages for near-ceiling skills such as Kusto:
 1. **Improve:** retain useful progress without requiring every failure to be
    fixed in one edit. The Kusto spec requires 0.5 quality points, zero net
    per-eval/per-model regression, 100% Skill invocation, and at most 15% Skill
-   Markdown token growth. With 182 matched outcomes, one net additional pass
-   is about 0.55 points; the old two-point threshold required four. Refinement
+   Markdown token growth. With 364 matched outcomes, one net additional pass
+   is about 0.275 points; the 0.5-point threshold requires two. Refinement
    permits score progress of 0.5 points but no aggregate pass-rate regression.
 2. **Verify completion:** freeze the chosen commit and rerun both Skill-enabled
    arms across the intended answer models, repeated trials, and held-out
@@ -370,23 +370,11 @@ More answer models, repetitions, or judges increase these totals; validate
 before dispatch. Four iterations is a maximum, not a guarantee: no actionable
 failures, time limits, or errors can stop the run earlier.
 
-`report.json` records actual generation/judge counts and duration, but not
-total billed AI credits. Answer trajectories now record provider-reported
-`copilot_usage.totalNanoAiu` in `metadata.answerBilling`. The report compares
-correctness, mean trajectory tokens, and mean answer-generation credits by arm
-and model against the baseline, averaging
-repetitions without summing the duplicated answer usage in judge records.
-Every request must have billing data for an answer to count as measured;
-incomplete coverage is explicit, not zero. Deltas require complete matched
-outcomes. This is provider-reported consumption, not a billing invoice.
-Passing graded-verdict counts expose majority-hidden failures; when several
-judges are configured, these counts include multiple verdicts per trajectory.
-Credits are diagnostic, not an acceptance gate or permission to trade away
-correctness. The same comparison is included for held-out batches when run.
-Judge costs and improvement-agent costs are excluded from these means.
-Historical artifacts without billing remain unavailable. This addresses the
-answer-comparison portion of [microsoft/mcp-pr#718](https://github.com/microsoft/mcp-pr/issues/718),
-not full workflow-credit accounting.
+Reusable AI-credit collection and report enhancements are maintained separately
+from this Kusto experiment. Credit measurements below are historical evidence
+from run `38649557149` at the pre-split commit `81ac404a`; they do not imply that
+the Kusto-only branch implements billing collection. They cover answer
+consumption, not judges, improvement agents, invoice charges, or workflow totals.
 
 `iteration-<n>-agent-usage.json` records the improvement
 agent's CLI usage. Optional `improvementAgent.maxAiCredits` applies separately
@@ -407,6 +395,45 @@ candidate Skill tokens, growth, actual calls, duration, and credit source.
 | Run / commit | Correctness and acceptance | Skill tokens / growth | Usage / AI credits |
 | --- | --- | --- | --- |
 | [37889993216](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/37889993216) / `9e876272` | Baseline only; no candidate acceptance. Skill only: 86/91 majority, 420/455 individual. Skill + MCP: 86/91 majority, 421/455 individual. One answer model (`gpt-5.6-sol`), one judge (`claude-opus-4.8`), five repetitions; not 100% or cross-model evidence. | Engine baseline: 495; no candidate, growth N/A. | 1820 generations, 1820 judge calls, 242.9 engine minutes; credits not measured. |
+| [38649557149](https://github.com/microsoft/GitHub-Copilot-for-Azure/actions/runs/38649557149) / `81ac404a` | Completed, NOT ACCEPTED; all four candidates rejected and not retained. Baseline 323/364; iteration 3 highest aggregate 346/364; iteration 4 341/364. One repetition, one judge; no held-out evidence or 100% result. | Baseline 483; iterations 1/3: 604 (+25.05%); iteration 2: 551 (+14.08%); iteration 4: 547 (+13.25%). | 1820 generations, 1820 judge calls, 255.4 engine minutes. Answer billing survived generation and grading; 1818/1820 outcomes measured, two unavailable in iteration 1. Judge/agent credits and invoice charges excluded. |
+
+#### Run 38649557149 findings
+
+All cells below use 91 prompts per arm/model. There was one repetition and one
+judge (`claude-opus-4.8`), so majority and individual verdict counts coincide;
+these are not repeated-run reliability estimates. I3 is the highest aggregate
+candidate, not an accepted or retained version. I4 is the last candidate.
+
+| Model / arm | Baseline passes | I3 passes | I4 passes | I4 invocation | Mean trajectory tokens: baseline / I4 | Mean consumed answer credits: baseline / I4 (delta) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| gpt-5.6-sol / Skill only | 84/91 | 90/91 | 88/91 | 91/91 | 36630 / 35759 | 8.429970 / 8.445990 (+0.016020) |
+| gpt-5.6-sol / Skill + MCP | 87/91 | 89/91 | 89/91 | 91/91 | 133910 / 160045 | 12.452424 / 20.868074 (+8.415650) |
+| claude-sonnet-5 / Skill only | 78/91 | 87/91 | 84/91 | 88/91 | 65795 / 67650 | 4.201792 / 4.345117 (+0.143325) |
+| claude-sonnet-5 / Skill + MCP | 74/91 | 80/91 | 80/91 | 71/91 | 201022 / 208961 | 7.296442 / 7.662496 (+0.366054) |
+
+Iteration 1 failed per-eval regression (discovery -5 points), size, and
+invocation gates. Iteration 2 failed telemetry regression (-3.57 points) and
+invocation. Iteration 3 failed dashboard regression (-2.50 points), size, and
+invocation. Iteration 4 passed the improvement, regression, and size gates but
+failed invocation (341/364, 93.7%, versus 100% required). None passed refinement,
+so no cumulative refinement chain or final candidate patch was produced.
+
+GPT's best observed arm reached 90/91, not 100%. Sonnet's MCP-enabled arm had
+lower correctness and invocation than its Skill-only arm; this single run
+does not establish a causal or universal model-family effect. Recurring schema
+and stored-function failures include absent/unretrieved schemas, speculative
+field mappings, and missing concrete remediation/rollback guidance. Separate
+fixture availability from Skill behavior before tuning further; do not lower
+correctness criteria to reward invented metadata.
+
+Raw baseline generation and judgment artifacts both retain `answerBilling` on
+364/364 trajectories. Iteration 1 retains it on all 364 but two have incomplete
+request billing, correctly suppressing the corresponding GPT mean/delta.
+Later candidate reports have complete coverage. Larger token usage did not map
+uniformly to credits: GPT + MCP became substantially more expensive despite
+only 13.25% Skill Markdown growth in I4. Consumption is not invoice charges.
+Engine cleanup requested cluster stop; workflow fallback observed `Stopping`,
+not a verified final `Stopped` state.
 
 Each run writes:
 
