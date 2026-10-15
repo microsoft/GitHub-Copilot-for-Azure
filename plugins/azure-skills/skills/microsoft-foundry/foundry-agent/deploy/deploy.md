@@ -373,14 +373,16 @@ Respect the project-selection gate: if no Foundry project endpoint is configured
   ```
   (Or run `azd deploy --no-prompt` to deploy all services in dependency order.)
 
-### Step 4: Verify and Smoke-Test over the Voice WebSocket
+### Step 4: Two-Stage Voice Verification
 
 1. Run `azd ai agent show --output json` and verify `"status": "active"` (or `"deployed"`).
    - For **Hosted Voice**, verify and report the active version of **both** the `kind: hosted` target and the `kind: voice` wrapper separately.
 2. **Do not** run `azd ai agent invoke` for a Voice Agent; it does not support the `voice` protocol.
 3. Do not use generic `azd ai agent eval generate` as a Voice smoke test. Transcript evaluation has separate limits documented in [observe](../observe/observe.md).
-4. Run a live Voice WebSocket smoke test against `wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1` using [../create/scripts/smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) (Bash) or [../create/scripts/smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1) (PowerShell) as documented in [../create/references/voice-agent-smoke-test.md](../create/references/voice-agent-smoke-test.md) and [../invoke/invoke.md](../invoke/invoke.md).
-5. Deployment is complete only when the Voice service version(s) are active **and** the Voice WebSocket smoke test succeeds.
+4. **Automated technical gate:** run the managed Voice WebSocket smoke test using [../create/scripts/smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) or [../create/scripts/smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1). Deployment is technically verified only when the service version(s) are active and this test succeeds.
+5. **Manual experience acceptance:** provide the Voice Agent Playground URL returned by `azd ai agent show --output json` and recommend that the user test the complete microphone/audio-to-audio experience in the Foundry portal. Technical verification can pass while this manual UX validation remains pending.
+
+Follow the authoritative validation boundary in [Voice smoke testing](../create/references/voice-agent-smoke-test.md); do not attribute portal-only experience properties to the automated smoke test.
 
 ## Workflow -- Prompt agent (MCP)
 

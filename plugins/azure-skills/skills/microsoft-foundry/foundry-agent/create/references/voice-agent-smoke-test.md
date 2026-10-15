@@ -7,6 +7,28 @@ How to verify a deployed Microsoft Foundry Voice Agent — either a **Prompt Voi
 
 ---
 
+## Two-Stage Verification Boundary
+
+### 1. Automated Smoke Test — Technical Deployment Gate
+
+The bundled text-driven managed Voice WebSocket client validates:
+
+- Entra authentication and WebSocket endpoint/session establishment.
+- The requested user turn, not only an optional greeting.
+- Prompt Voice reasoning, or the Hosted Voice wrapper-to-target Bridge path where applicable.
+- A completed response with non-empty transcript and synthesized audio payload.
+- An optional deterministic transcript marker.
+
+It does **not** validate microphone capture, real spoken-input STT quality, VAD/turn-taking behavior, barge-in/interruption, playback or voice quality, browser/device behavior, or perceived latency.
+
+### 2. Foundry Portal — Manual Audio-to-Audio Experience Acceptance
+
+After the automated gate passes, use the Voice Agent Playground URL from `azd ai agent show --output json` and recommend a manual session in the Foundry portal. The user should test microphone input, STT, VAD and turn-taking, interruption, audio playback and voice quality, browser/device behavior, and perceived latency.
+
+Report automated verification and manual acceptance separately. Never claim the portal-only properties were validated by the smoke helper or that the manual step was completed unless the user actually performed it.
+
+---
+
 ## Managed `voice` WebSocket Endpoint Contract
 
 - **URL format**:

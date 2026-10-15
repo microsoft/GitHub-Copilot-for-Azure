@@ -152,11 +152,14 @@ After init, enter the generated project directory before setting subscription, r
 - **Prompt Voice** has no local container. Continue to deploy.
 - **Hosted Voice** must validate the target's Bridge handler locally before deployment. Follow [local run](references/local-run.md) and [Hosted Voice Bridge `1.0`](references/voice-agent-hosted-bridge.md). Target-only validation does not replace an end-to-end wrapper smoke test.
 
-## Step 6: Deploy and Invoke
+## Step 6: Deploy and Verify
 
 Follow [deploy](../deploy/deploy.md), then [invoke](../invoke/invoke.md).
 
-Voice services do not support `azd ai agent invoke`. Verify the deployed Prompt Voice service or Hosted Voice wrapper over the managed `voice` WebSocket with [Voice smoke testing](references/voice-agent-smoke-test.md).
+Voice services do not support `azd ai agent invoke`. Use the two-stage process in [Voice smoke testing](references/voice-agent-smoke-test.md):
+
+1. Run the automated managed Voice WebSocket smoke test as the technical deployment gate.
+2. From `azd ai agent show --output json`, provide the Voice Agent Playground URL and recommend that the user complete manual audio-to-audio experience validation in the Foundry portal.
 
 Run the helper from the `microsoft-foundry` skill root:
 
@@ -175,6 +178,8 @@ Run the helper from the `microsoft-foundry` skill root:
   -Text "Hello, briefly introduce yourself." `
   -Timeout 180
 ```
+
+The final handoff must distinguish the results: report whether automated technical verification passed, provide the Playground URL, and explain that microphone, STT quality, VAD/turn-taking, interruption, playback/voice quality, browser/device behavior, and perceived latency remain a manual portal acceptance step. Do not claim that manual validation was completed automatically.
 
 ## Error Handling
 

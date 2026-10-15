@@ -8,7 +8,7 @@ Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harnes
 |------------|----------|-------------|------------------|
 | Prompt | — | Foundry MCP `agent_invoke` | `conversationId`; no hosted session or file operations |
 | Managed Harness Agent | Responses | `azd ai agent invoke` | Managed response history; no Hosted session/file operations |
-| Voice (Prompt Voice or Hosted Voice wrapper) | `voice` (`wss://.../protocols/voice?api-version=v1`) | Foundry Voice WebSocket client ([smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) / [smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1)) or Foundry Voice playground; **never** `azd ai agent invoke` | Real-time Voice session (`store: false` by default); no Hosted session/file commands on `kind: voice` |
+| Voice (Prompt Voice or Hosted Voice wrapper) | `voice` (`wss://.../protocols/voice?api-version=v1`) | Smoke helper for minimal programmatic verification; Foundry Voice playground for interactive audio-to-audio testing; **never** `azd ai agent invoke` | Real-time Voice session (`store: false` by default); no Hosted session/file commands on `kind: voice` |
 | Hosted Voice target (diagnostic only) | `invocations_ws` + Bridge `1.0` | Bridge-compatible WebSocket client; see [voice-agent-hosted-bridge.md](../create/references/voice-agent-hosted-bridge.md) | Target container session (`agent_session_id`); does not validate the Voice wrapper |
 | Hosted | `responses` | `azd ai agent invoke` | azd sessions, files, conversations, and monitor commands |
 | Hosted | `invocations` | `azd ai agent invoke --protocol invocations` | azd sessions, files, conversations, and monitor commands |
@@ -19,7 +19,7 @@ Classify `azure.yaml` services in order: Voice is a **Voice Agent** (`conversati
 
 ## Voice Agent Workflow (Prompt Voice and Hosted Voice Wrapper)
 
-> **Critical**: `azd ai agent invoke` does **not** support Voice Agents, including Hosted Voice wrappers. Always connect to the managed `voice` WebSocket endpoint (`wss://<project-host>/api/projects/<project>/agents/<voice-agent-name>/endpoint/protocols/voice?api-version=v1`) or use the Foundry portal Voice playground.
+> **Critical**: `azd ai agent invoke` does **not** support Voice Agents, including Hosted Voice wrappers. Use the bundled smoke helper for minimal programmatic/single-turn verification. For "talk to," interactive testing, microphone/audio-to-audio, voice quality, VAD, interruption, or full-experience requests, provide the Voice Agent Playground URL from `azd ai agent show --output json`.
 
 ### Step 1: Verify Deployed Version(s)
 
@@ -32,7 +32,14 @@ azd ai agent show --output json
 - For **Prompt Voice**, confirm the `kind: voice` agent version is active.
 - For **Hosted Voice**, confirm **both** the `kind: hosted` target and the `kind: voice` wrapper versions are active, and target the **`kind: voice` wrapper's** name for end-to-end Voice invocation.
 
-### Step 2: Invoke Over the Managed `voice` WebSocket
+### Step 2: Choose the Invocation Experience
+
+- **Minimal programmatic or single-turn verification:** run the bundled smoke helper over the managed `voice` WebSocket.
+- **Interactive or full audio-to-audio testing:** direct the user to the Foundry Voice Agent playground URL returned by `azd ai agent show --output json`. This is the path for microphone capture, STT quality, VAD/turn-taking, barge-in/interruption, playback/voice quality, browser/device behavior, and perceived latency.
+
+The smoke helper is a text-driven technical verification client, not a complete interactive microphone client. See [voice-agent-smoke-test.md](../create/references/voice-agent-smoke-test.md) for the validation boundary.
+
+#### Automated Smoke Test
 
 Run the paired smoke-test helper from the `microsoft-foundry` skill root (`plugins/azure-skills/skills/microsoft-foundry`) using `DefaultAzureCredential` (`https://ai.azure.com/.default`). Note that PowerShell uses PascalCase parameters (`-Endpoint`, `-AgentName`, `-Text`, `-Timeout`, `-OutputAudio`, `-DryRun`).
 

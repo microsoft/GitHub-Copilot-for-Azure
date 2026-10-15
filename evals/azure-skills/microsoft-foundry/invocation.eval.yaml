@@ -1004,6 +1004,7 @@ stimuli:
       - "Defaults the generic greenfield request to Prompt Voice with modelType: managed and model.id: gpt-realtime instead of requiring the user to choose a subtype."
       - "States the canonical kind: voice, en-US-AvaNeural, and store: false defaults."
       - "Explains that explicit Hosted Voice, custom-code, BYOM/self-deployed, or existing deployment intent overrides the default and may require clarification."
+      - "Describes automated managed Voice WebSocket smoke verification followed by a Foundry Voice Agent playground URL and manual audio-to-audio experience validation."
     tags:
       type: integration
       tier: full
@@ -1039,7 +1040,10 @@ stimuli:
             not require the user to select among Voice subtypes before
             proceeding. It may mention alternatives, but only as overrides for
             explicit Hosted Voice/custom-code, BYOM/self-deployed, existing
-            deployment, or comparison intent.
+            deployment, or comparison intent. It must also distinguish the
+            automated technical smoke gate from the subsequent manual Foundry
+            Voice Agent playground check for the complete audio-to-audio
+            experience, without claiming the manual step was automated.
       - type: shell-command-invoked
         config:
           disallowed:
@@ -1060,7 +1064,7 @@ stimuli:
       - "Requires the dependency/environment preflight, Common Project Context Resolution, new-versus-existing project choice, and inline AZURE_DEV_USER_AGENT=microsoft_foundry_skill before azd use."
       - "Explains the model-first options (managed real-time model via modelType: managed, project model deployment via modelType: self_deployed, and Hosted Voice via conversationEngine.type: hosted_agent)."
       - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id, then normalizes the generated service to kind: voice; the authored azure.yaml uses kind: voice, modelType: managed, model.id: gpt-realtime, store: false, and en-US-AvaNeural directly under the service block."
-      - "States that azd ai agent invoke does not support Voice Agents and verifies the deployed agent over the voice WebSocket endpoint or smoke-test-voice script."
+      - "States that azd ai agent invoke does not support Voice Agents, runs or describes the automated managed Voice WebSocket smoke gate, and provides the Foundry Voice Agent playground as the recommended manual audio-to-audio follow-up."
     tags:
       type: integration
       tier: full
@@ -1128,8 +1132,12 @@ stimuli:
                It explains that init may generate kind: prompt-voice and
                immediately normalizes that field to kind: voice.
             4. States that azd ai agent invoke does not support Voice Agents and
-               verifies the deployed agent over the voice WebSocket endpoint
-               (or smoke-test-voice.sh / smoke-test-voice.ps1).
+               uses the voice WebSocket smoke helper as the automated technical
+               gate, then provides or explains how to obtain the Foundry Voice
+               Agent playground URL for manual microphone/audio-to-audio
+               acceptance. It must not claim the text-driven helper validates
+               STT quality, VAD, interruption, playback quality, browser/device
+               behavior, or perceived latency.
             Fail if it uses Foundry MCP agent_update to create the Voice Agent,
             nests agent fields under a deprecated config: block, uses an
             unverified models list instead of services.ai-project.deployments,
@@ -1293,6 +1301,49 @@ stimuli:
           disallowed:
             - command: "(?i)\\bazd\\b|\\baz\\b"
               description: "Planning-only compatibility test must not run commands"
+
+  - name: "Interactive Voice testing routes to Foundry playground"
+    prompt: |
+      I want to talk to my deployed Microsoft Foundry Voice Agent using my
+      microphone and test the full voice experience, including interruptions.
+      How should I invoke it?
+    rubric:
+      - "Directs the user to the Foundry Voice Agent playground and obtains/provides its URL from azd ai agent show."
+      - "Explains that the playground is the path for microphone/audio-to-audio, STT, VAD/turn-taking, barge-in/interruption, playback/voice quality, browser/device behavior, and perceived latency."
+      - "Does not claim the bundled text-driven smoke helper provides microphone interaction or complete UX validation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: invocation
+    constraints:
+      max_turns: 6
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)playground|ai\\.azure\\.com"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response routes this explicitly interactive,
+            microphone-based request to the Foundry Voice Agent playground,
+            says to obtain or use the playground URL from azd ai agent show,
+            and identifies the portal as the path for audio-to-audio experience
+            properties such as STT, VAD/turn-taking, interruption, playback or
+            voice quality, device/browser behavior, and perceived latency.
+            Fail if it presents smoke-test-voice.sh or smoke-test-voice.ps1 as
+            a microphone client or as complete interactive UX validation.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)smoke-test-voice\\.(sh|ps1)"
+              description: "Interactive microphone requests should route to the Voice Agent playground"
 
   - name: "Generic Azure text to speech does not route to Foundry"
     prompt: "How do I convert text to speech with an Azure neural voice?"
