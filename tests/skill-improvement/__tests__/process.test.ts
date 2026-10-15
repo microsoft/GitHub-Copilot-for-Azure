@@ -5,8 +5,40 @@ import {
   commandName,
   resolveProcessLaunch,
   runProcess,
+  runWithConcurrency,
 } from "../process.ts";
 import { describe, expect, test } from "vitest";
+
+describe("runWithConcurrency", () => {
+  test("drains active billing collectors and stops dispatch after a failure", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const started: number[] = [];
+    const failure = new Error("generation failed");
+    let secondFinished = false;
+    let settled = false;
+    const pending = runWithConcurrency([0, 1, 2, 3], 2, async item => {
+      started.push(item);
+      if (item === 0) {
+        throw failure;
+      }
+      await gate;
+      secondFinished = true;
+    });
+    const result = pending.then(
+      () => { settled = true; },
+      error => { settled = true; return error; }
+    );
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    expect(started).toEqual([0, 1]);
+    release();
+    expect(await result).toBe(failure);
+    expect(secondFinished).toBe(true);
+    expect(started).toEqual([0, 1]);
+  });
+});
 
 describe("runProcess", () => {
   test.each(["npm", "npx"])(

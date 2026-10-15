@@ -11,6 +11,7 @@ import {
 } from "./config.ts";
 import { runEvaluationBatch, type EvaluationBatch } from "./evaluation.ts";
 import { commandName, runProcess } from "./process.ts";
+import { collectAgentBilling, emptyBilling, type BatchBilling, type ComponentBilling } from "./billing.ts";
 import {
   aggregateJudgments,
   buildFailurePacket,
@@ -208,7 +209,7 @@ async function runCandidateValidation(
   return errors;
 }
 
-async function runImprovementAgent(
+export async function runImprovementAgent(
   worktree: string,
   outputDirectory: string,
   spec: SkillImprovementRunSpec,
@@ -216,6 +217,7 @@ async function runImprovementAgent(
   previousCandidatePatchPath: string | undefined,
   iteration: number,
   deadline: number,
+  onBilling: (billing: ComponentBilling) => void = () => {},
 ): Promise<void> {
   const skillDirectory = path.join(
     worktree,
@@ -248,6 +250,10 @@ async function runImprovementAgent(
   if (previousCandidatePatchPath) {
     fs.copyFileSync(previousCandidatePatchPath, localPreviousCandidatePatchPath);
   }
+  const usageFile = path.join(outputDirectory, `iteration-${iteration}-agent-usage.json`);
+  const eventFile = path.join(outputDirectory, `iteration-${iteration}-agent.jsonl`);
+  fs.rmSync(usageFile, { force: true });
+  fs.rmSync(eventFile, { force: true });
   const args = [
     "-p",
     prompt,
@@ -264,7 +270,7 @@ async function runImprovementAgent(
     "--output-format",
     "json",
     "--usage-output-file",
-    path.join(outputDirectory, `iteration-${iteration}-agent-usage.json`),
+    usageFile,
     "-C",
     skillDirectory,
   ];
@@ -274,13 +280,26 @@ async function runImprovementAgent(
   try {
     await runProcess("copilot", args, {
       cwd: skillDirectory,
-      stdoutFile: path.join(outputDirectory, `iteration-${iteration}-agent.jsonl`),
+      stdoutFile: eventFile,
       stderrFile: path.join(outputDirectory, `iteration-${iteration}-agent.stderr.log`),
       timeoutMs: Math.max(deadline - Date.now(), 1),
     });
   } finally {
     fs.rmSync(localFailurePacketPath, { force: true });
     fs.rmSync(localPreviousCandidatePatchPath, { force: true });
+    const events: Array<{ type?: string; exitCode?: number }> = fs.existsSync(eventFile)
+      ? fs.readFileSync(eventFile, "utf8").split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line))
+      : [];
+    const results = events.filter(event => event.type === "result");
+    const finalized = results.length === 1 && Number.isInteger(results[0].exitCode);
+    const billing = collectAgentBilling(
+      fs.existsSync(usageFile) ? JSON.parse(fs.readFileSync(usageFile, "utf8")) : undefined,
+      finalized
+    );
+    onBilling(billing);
+    if (billing.reason) {
+      console.warn(`Iteration ${iteration} agent AI credits unavailable: ${billing.reason}`);
+    }
   }
 }
 
@@ -451,6 +470,20 @@ export async function executeSkillImprovement(
   const baselineWorktree = path.join(worktreeRoot, "baseline");
   const usage: Usage = { answerGenerations: 0, judgeCalls: 0 };
   const iterations: IterationReport[] = [];
+  const billing: BatchBilling[] = [];
+  const recordBilling = (name: string) => (evaluation: BatchBilling) => {
+    const existing = billing.find(batch => batch.batch === name);
+    if (existing) {
+      existing.answers = { ...evaluation.answers };
+      existing.judges = { ...evaluation.judges };
+      existing.finalized = evaluation.finalized;
+    } else {
+      billing.push({
+        ...evaluation, batch: name,
+        answers: { ...evaluation.answers }, judges: { ...evaluation.judges },
+      });
+    }
+  };
   let baselineSkillTokens = 0;
   let baselineTrials: AggregatedTrial[] = [];
   let baselineComparableTrials: AggregatedTrial[];
@@ -481,7 +514,9 @@ export async function executeSkillImprovement(
       "baseline",
       "development",
       spec.experiment.conditions,
-      deadline
+      deadline,
+      undefined,
+      recordBilling("Baseline")
     );
     addUsage(usage, baselineBatch);
     enforceActualUsage(spec, usage);
@@ -530,6 +565,14 @@ export async function executeSkillImprovement(
             failurePacket
           );
           console.log(`Running improvement agent for iteration ${iteration}...`);
+          const iterationBilling: BatchBilling = {
+            batch: `Iteration ${iteration}`,
+            finalized: false,
+            answers: emptyBilling("answer trajectories", 0, "not applicable"),
+            judges: emptyBilling("graded trajectories", 0, "not applicable"),
+            agents: emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
+          };
+          billing.push(iterationBilling);
           await runImprovementAgent(
             worktree,
             outputDirectory,
@@ -537,8 +580,10 @@ export async function executeSkillImprovement(
             failurePacketPath,
             previousRejectedPatchPath,
             iteration,
-            deadline
+            deadline,
+            agentBilling => { iterationBilling.agents = agentBilling; }
           );
+          iterationBilling.finalized = true;
           iterationReport.changedFiles = changedFiles(worktree);
           iterationReport.validationErrors.push(
             ...validateChangedPaths(iterationReport.changedFiles, spec)
@@ -594,7 +639,8 @@ export async function executeSkillImprovement(
             "development",
             candidateConditions,
             deadline,
-            iteration
+            iteration,
+            recordBilling(`Iteration ${iteration}`)
           );
           addUsage(usage, candidateBatch);
           enforceActualUsage(spec, usage);
@@ -656,7 +702,9 @@ export async function executeSkillImprovement(
           "held-out-baseline",
           "heldOut",
           conditions,
-          deadline
+          deadline,
+          undefined,
+          recordBilling("Held-out baseline")
         );
         const candidateHeldOut = await runEvaluationBatch(
           finalWorktree,
@@ -666,7 +714,9 @@ export async function executeSkillImprovement(
           "held-out-candidate",
           "heldOut",
           conditions,
-          deadline
+          deadline,
+          undefined,
+          recordBilling("Held-out candidate")
         );
         addUsage(usage, baselineHeldOut);
         addUsage(usage, candidateHeldOut);
@@ -722,6 +772,7 @@ export async function executeSkillImprovement(
       bestCandidateCommit,
       finalAccepted,
       finalPatchPath,
+      billing,
       usage: {
         ...usage,
         durationMinutes: (Date.now() - startedAt) / 60_000,
@@ -745,6 +796,7 @@ export async function executeSkillImprovement(
       terminationReason,
       bestCandidateCommit,
       finalAccepted: false,
+      billing,
       usage: {
         ...usage,
         durationMinutes: (Date.now() - startedAt) / 60_000,

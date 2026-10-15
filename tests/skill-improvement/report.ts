@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { RunPlan, SkillImprovementRunSpec } from "./config.ts";
 import type { JudgedTrial } from "./evaluation.ts";
+import { emptyBilling, isBillingComplete, type BatchBilling, type ComponentBilling } from "./billing.ts";
 
 export type AggregatedTrial = {
   condition: JudgedTrial["condition"];
@@ -104,6 +105,7 @@ export type IterationReport = {
 };
 
 export type SkillImprovementReport = {
+  billing?: BatchBilling[];
   runId: string;
   generatedAt: string;
   status: "completed" | "failed";
@@ -276,6 +278,58 @@ function renderAnswerBilling(report: SkillImprovementReport): string[] {
     }
   }
   return [...lines, "", ...billingLines];
+}
+
+function renderComponentBilling(report: SkillImprovementReport): string[] {
+  const lines = [
+    "## Batch AI-credit accounting",
+    "",
+    "Answer coverage is fully billed answer trajectories; judge coverage is graded trajectories, not underlying model requests; agent coverage is finalized CLI invocations with provider `aiCreditsStatus: complete`. Agent session aggregates include their model requests and are counted once, never again by model or arm. N/A means no invocation, not measured zero.",
+    "",
+    "Current Vally judges do not expose provider billing, including reminders/retries. Unavailable components prevent a full total. A measured subtotal includes only fully measured trajectories/invocations, excludes partial billing and unfinalized agent invocations, and is not workflow cost or an invoice. Generation uses zero Vally retries; model retries are included only when the provider reports their usage. Missing terminal/usage data after failures or timeouts stays unavailable. Azure infrastructure costs are excluded.",
+    "",
+    "| Batch | Answer AIC | Judge AIC | Improvement-agent AIC | Total measured AIC | Coverage |",
+    "| --- | ---: | ---: | ---: | --- | --- |",
+  ];
+  if (!report.billing?.length) {
+    lines.push("| Run total | unavailable | unavailable | unavailable | unavailable (no component ledger) | historical report: component accounting not recorded |");
+    return lines;
+  }
+  const totals: BatchBilling = {
+    batch: "Run total", finalized: report.status === "completed",
+    answers: emptyBilling("answer trajectories", 0, "mixed"),
+    judges: emptyBilling("graded trajectories", 0, "mixed"),
+    agents: emptyBilling("agent invocations", 0, "mixed"),
+  };
+  for (const batch of report.billing) {
+    totals.finalized &&= batch.finalized;
+    for (const component of ["answers", "judges", "agents"] as const) {
+      totals[component].expected += batch[component].expected;
+      totals[component].observed += batch[component].observed;
+      totals[component].measured += batch[component].measured;
+      totals[component].measuredAiCredits += batch[component].measuredAiCredits;
+    }
+  }
+  const credits = (component: ComponentBilling) => component.expected === 0
+    ? "N/A"
+    : isBillingComplete(component)
+      ? component.measuredAiCredits.toFixed(6)
+      : "unavailable";
+  for (const batch of [...report.billing, totals]) {
+    const components = [batch.answers, batch.judges, batch.agents];
+    const sum = components.reduce((total, component) => total + component.measuredAiCredits, 0);
+    const complete = batch.finalized && components.every(isBillingComplete);
+    const measured = components.some(component => component.measured > 0);
+    const total = complete ? sum.toFixed(6)
+      : measured ? `${sum.toFixed(6)} (measured subtotal)` : "unavailable";
+    const coverage = (["answers", "judges", "agents"] as const).map(name => {
+      const component = batch[name];
+      return `${name} ${component.measured}/${component.expected} ${component.unit}`
+        + (component.reason ? ` (${component.reason})` : "");
+    }).join("; ") + (batch.finalized ? "" : "; incomplete attempt accounting");
+    lines.push(`| ${batch.batch} | ${credits(batch.answers)} | ${credits(batch.judges)} | ${credits(batch.agents)} | ${total} | ${coverage} |`);
+  }
+  return lines;
 }
 
 function compareGroup(
@@ -983,6 +1037,8 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     ...renderBaselineArms(report),
     "",
     ...renderAnswerBilling(report),
+    "",
+    ...renderComponentBilling(report),
     "",
   ];
   if (baselineOnly) {
