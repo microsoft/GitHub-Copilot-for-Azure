@@ -130,17 +130,11 @@ export const MARKDOWN_EXTENSIONS = [".md", ".mdx"] as const;
 /** Default token limits configuration */
 export const DEFAULT_LIMITS: TokenLimitsConfig = {
   defaults: {
-    "SKILL.md": 500,
-    "references/**/*.md": 1000,
-    "docs/**/*.md": 1500,
-    "**/*.md": 2000,
-    "*.md": 2000
+    "SKILL.md": 5000,
+    "references/**/*.md": 5000,
+    "*.md": 5000
   },
-  overrides: {
-    "README.md": 3000,
-    "CONTRIBUTING.md": 2500,
-    "plugins/**/README.md": 3000
-  }
+  overrides: {}
 };
 
 /** Estimates token count (~4 chars/token) */

@@ -93,10 +93,6 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim();
 
 const PER_TURN_TIMEOUT = 1800000; // 30 minutes
 
-interface KeywordOptions {
-  caseSensitive?: boolean;
-}
-
 /** Tracks resources that need cleanup after each test */
 interface RunnerCleanup {
   session?: CopilotSession;
@@ -1033,94 +1029,6 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
       console.error("Failed to write markdown report:", error);
     }
   }
-}
-
-/**
- * Check if all tool calls for a given tool were successful
- */
-export function areToolCallsSuccess(agentMetadata: AgentMetadata, toolName?: string): boolean {
-  let executionStartEvents = agentMetadata.events
-    .filter(event => event.type === "tool.execution_start");
-
-  if (toolName) {
-    executionStartEvents = executionStartEvents
-      .filter(event => event.data.toolName === toolName);
-  }
-
-  const executionCompleteEvents = agentMetadata.events
-    .filter(event => event.type === "tool.execution_complete");
-
-  return executionStartEvents.length > 0 && executionStartEvents.every(startEvent => {
-    const toolCallId = startEvent.data.toolCallId;
-    return executionCompleteEvents.some(
-      completeEvent => completeEvent.data.toolCallId === toolCallId && completeEvent.data.success
-    );
-  });
-}
-
-/**
- * Check if assistant messages contain a keyword
- */
-export function doesAssistantMessageIncludeKeyword(
-  agentMetadata: AgentMetadata,
-  keyword: string,
-  options: KeywordOptions = {}
-): boolean {
-  // Merge all messages
-  // message_delta events are skipped since the assistant.message events contain combined content of their corresponding assistant.message_delta events.
-  const allMessages: Record<string, string> = {};
-
-  agentMetadata.events.forEach(event => {
-    if (event.type === "assistant.message" && event.data.messageId && event.data.content) {
-      allMessages[event.data.messageId] = event.data.content;
-    }
-  });
-
-  return Object.values(allMessages).some(message => {
-    if (options.caseSensitive) {
-      return message.includes(keyword);
-    }
-    return message.toLowerCase().includes(keyword.toLowerCase());
-  });
-}
-
-// Track skip reason for reporting
-let integrationSkipReason: string | undefined;
-
-/**
- * Check if integration tests should be skipped
- * 
- * Integration tests are skipped when:
- * - SKIP_INTEGRATION_TESTS=true is set
- * - @github/copilot-sdk is not installed
- */
-export function shouldSkipIntegrationTests(): boolean {
-  // Skip if explicitly requested
-  if (process.env.SKIP_INTEGRATION_TESTS === "true") {
-    integrationSkipReason = "SKIP_INTEGRATION_TESTS=true";
-    return true;
-  }
-
-  // Check if SDK package exists
-  try {
-    const sdkPath = path.join(__dirname, "..", "node_modules", "@github", "copilot-sdk", "package.json");
-    if (!fs.existsSync(sdkPath)) {
-      integrationSkipReason = "@github/copilot-sdk not installed";
-      return true;
-    }
-  } catch {
-    integrationSkipReason = "@github/copilot-sdk not installed";
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Get the reason why integration tests are being skipped
- */
-export function getIntegrationSkipReason(): string | undefined {
-  return integrationSkipReason;
 }
 
 const DEFAULT_REPORT_DIR = path.join(__dirname, "..", "reports");

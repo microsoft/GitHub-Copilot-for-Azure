@@ -36,14 +36,14 @@ function commit(message: string): void {
   runGit("commit", "--quiet", "-m", message);
 }
 
-function getVersionedCommits(): Array<{
+function getVersionedCommits(plugin = "test-plugin"): Array<{
   subject: string;
   majorMinor: string;
   relativeHeight: number;
 }> {
   const script = `
     const { getVersionedCommits } = require(${JSON.stringify(gulpfile)});
-    process.stdout.write(JSON.stringify(getVersionedCommits("test-plugin")));
+    process.stdout.write(JSON.stringify(getVersionedCommits(${JSON.stringify(plugin)})));
   `;
   const result = spawnSync(
     process.execPath,
@@ -144,6 +144,47 @@ describe("plugin version history", () => {
         majorMinor: "2.0",
         relativeHeight: 0,
       },
+    ]);
+  });
+
+  it("applies shared hooks to every plugin and local hooks only to their owner", () => {
+    tempDir = mkdtempSync(path.join(tmpdir(), "plugin-versioning-"));
+    runGit("init", "--quiet", "--initial-branch=main");
+    runGit("config", "user.name", "Version Test");
+    runGit("config", "user.email", "version-test@example.com");
+
+    writeFileSync(path.join(tempDir, "README.md"), "test repository\n");
+    commit("initial commit");
+
+    for (const plugin of ["alpha", "beta"]) {
+      const pluginDir = path.join(tempDir, "plugins", plugin);
+      mkdirSync(pluginDir, { recursive: true });
+      writeFileSync(
+        path.join(pluginDir, "version.json"),
+        JSON.stringify({ version: "1.0", pathFilters: [".", ":/hooks"] }),
+      );
+      writeFileSync(path.join(pluginDir, "plugin.txt"), `${plugin}\n`);
+    }
+    commit("add plugin baselines");
+
+    const sharedHooksDir = path.join(tempDir, "hooks");
+    mkdirSync(sharedHooksDir);
+    writeFileSync(path.join(sharedHooksDir, "shared.sh"), "shared\n");
+    commit("change shared hook");
+
+    const alphaHooksDir = path.join(tempDir, "plugins", "alpha", "hooks");
+    mkdirSync(alphaHooksDir);
+    writeFileSync(path.join(alphaHooksDir, "alpha.sh"), "alpha\n");
+    commit("change alpha hook");
+
+    expect(getVersionedCommits("alpha").map(({ subject }) => subject)).toEqual([
+      "add plugin baselines",
+      "change shared hook",
+      "change alpha hook",
+    ]);
+    expect(getVersionedCommits("beta").map(({ subject }) => subject)).toEqual([
+      "add plugin baselines",
+      "change shared hook",
     ]);
   });
 });

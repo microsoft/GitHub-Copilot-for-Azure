@@ -76,7 +76,7 @@ describe("suggest command integration", () => {
     // Create file under limit with suggestions
     writeFileSync(join(TEST_DIR, ".github", "skills", "good.md"), "In order to be brief");
     // Create file over limit
-    writeFileSync(join(TEST_DIR, ".github", "skills", "SKILL.md"), "a".repeat(2500)); // >500 limit
+    writeFileSync(join(TEST_DIR, ".github", "skills", "SKILL.md"), "a".repeat(20004)); // >5000 limit
 
     suggest(TEST_DIR, []);
 

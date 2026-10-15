@@ -117,7 +117,6 @@ $powerShellExecutable = (Get-Process -Id $PID).Path
 $previousLocalAppData = $env:LOCALAPPDATA
 $previousXdgCacheHome = $env:XDG_CACHE_HOME
 $previousZipPath = $env:AZURE_SKILLS_TELEMETRY_ZIP_PATH
-$previousStandaloneSetting = $env:AZURE_SKILLS_USE_STANDALONE_TELEMETRY
 $previousTelemetrySetting = $env:AZURE_MCP_COLLECT_TELEMETRY
 $previousTelemetryLogDirectory = $env:AZURE_SKILLS_TELEMETRY_LOG_DIR
 $previousCopilotCliSetting = $env:COPILOT_CLI
@@ -156,7 +155,6 @@ try {
     $env:LOCALAPPDATA = $cacheRoot
     $env:XDG_CACHE_HOME = $cacheRoot
     $env:AZURE_SKILLS_TELEMETRY_ZIP_PATH = $resolvedZipPath
-    $env:AZURE_SKILLS_USE_STANDALONE_TELEMETRY = 'true'
     $env:AZURE_MCP_COLLECT_TELEMETRY = 'true'
     $env:AZURE_SKILLS_TELEMETRY_LOG_DIR = $telemetryLogDirectory
     $env:COPILOT_CLI = '1'
@@ -214,7 +212,6 @@ finally {
     $env:LOCALAPPDATA = $previousLocalAppData
     $env:XDG_CACHE_HOME = $previousXdgCacheHome
     $env:AZURE_SKILLS_TELEMETRY_ZIP_PATH = $previousZipPath
-    $env:AZURE_SKILLS_USE_STANDALONE_TELEMETRY = $previousStandaloneSetting
     $env:AZURE_MCP_COLLECT_TELEMETRY = $previousTelemetrySetting
     $env:AZURE_SKILLS_TELEMETRY_LOG_DIR = $previousTelemetryLogDirectory
     $env:COPILOT_CLI = $previousCopilotCliSetting

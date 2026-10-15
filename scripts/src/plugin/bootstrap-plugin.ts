@@ -35,18 +35,7 @@ function addPluginToSkillsConfig(repoRoot: string, pluginName: string): void {
   fs.writeFileSync(skillsConfigPath, `${JSON.stringify(skillsConfig, null, 4)}\n`);
 }
 
-function appendBlockIfMissing(filePath: string, marker: string, block: string): void {
-  const content = fs.readFileSync(filePath, "utf8");
-  if (content.includes(marker)) {
-    console.warn(`Telemetry allowlist block already exists, skipping: ${marker}`);
-    return;
-  }
-
-  const separator = content.endsWith("\n") ? "\n" : "\n\n";
-  fs.appendFileSync(filePath, `${separator}${block}`);
-}
-
-function addPluginToTelemetryAllowlist(repoRoot: string, pluginName: string): void {
+function createPluginHooks(pluginRoot: string, pluginName: string): void {
   const marker = `# --- ${pluginName} plugin ---`;
   const bashBlock = `${marker}
 [[ "$p" == *".copilot/installed-plugins/"*"/${pluginName}/skills/"* ]] && return 0
@@ -55,7 +44,7 @@ function addPluginToTelemetryAllowlist(repoRoot: string, pluginName: string): vo
 [[ "$p" == *"agent-plugins/github.com/microsoft/azure-skills/.github/plugins/${pluginName}/skills/"* ]] && return 0
 `;
   const powershellBlock = `${marker}
-$pluginPathPatterns += @(
+$pluginPathPatterns = @(
     '\\.copilot/installed-plugins/[^/]+/${pluginName}/skills/',
     '\\.claude/plugins/cache/azure-skills/${pluginName}/[0-9.]+/skills/',
     '\\.cursor/plugins/cache/[^/]+/${pluginName}/[^/]+/skills/',
@@ -63,17 +52,10 @@ $pluginPathPatterns += @(
 )
 `;
 
-  const hooksScriptsRoot = path.join(repoRoot, "hooks", "scripts");
-  appendBlockIfMissing(
-    path.join(hooksScriptsRoot, "pluginPathAllowPattern.sh"),
-    marker,
-    bashBlock,
-  );
-  appendBlockIfMissing(
-    path.join(hooksScriptsRoot, "pluginPathAllowPattern.ps1"),
-    marker,
-    powershellBlock,
-  );
+  const hooksScriptsRoot = path.join(pluginRoot, "hooks", "scripts");
+  fs.mkdirSync(hooksScriptsRoot, { recursive: true });
+  fs.writeFileSync(path.join(hooksScriptsRoot, "pluginPathAllowPattern.sh"), bashBlock);
+  fs.writeFileSync(path.join(hooksScriptsRoot, "pluginPathAllowPattern.ps1"), powershellBlock);
 }
 
 async function getPluginName(): Promise<string> {
@@ -160,16 +142,11 @@ async function main(): Promise<void> {
   // Readme
   const readme = `# <Your Plugin>
 
-## Security
-
-> [!WARNING]
-> The \`your-plugin\` plugin uses \`npx\` to download and run the Azure MCP Server, inheriting the local environment's \`.npmrc\` configuration. Install this plugin only on trusted devices. A compromised \`.npmrc\` configuration could cause \`npx\` to download and execute malicious code, potentially resulting in remote code execution.
-
 ## Telemetry
 
-The \`track-telemetry\` hook script uses \`npx\` to download and run Azure MCP to
-collect telemetry for usage of skills and MCP tools from this plugin. To opt
-out of telemetry collection, set
+The \`track-telemetry\` hook installs a pinned native \`ghcfa-telem\` release asset
+when needed, verifies its platform-specific SHA-256 digest before extraction,
+and caches the executable for reuse. To opt out of telemetry collection, set
 \`AZURE_MCP_COLLECT_TELEMETRY=false\` in the environment of the process running
 the agent.
 `;
@@ -183,10 +160,10 @@ the agent.
   };
   fs.writeFileSync(path.join(pluginRoot, "version.json"), JSON.stringify(versionManifest, null, 2));
 
-  // Hooks will be copied at build time
+  // Plugin-local hooks are assembled with shared hooks at build time
+  createPluginHooks(pluginRoot, pluginName);
 
   addPluginToSkillsConfig(repoRoot, pluginName);
-  addPluginToTelemetryAllowlist(repoRoot, pluginName);
 
   console.log(`Bootstrapped ${pluginName} at plugins/${pluginName}`);
 }

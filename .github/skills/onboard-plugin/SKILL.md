@@ -4,7 +4,7 @@ description: "Scaffold a new plugin and prepare it for distribution. WHEN: 'crea
 license: MIT
 metadata:
   author: Microsoft
-  version: "1.1.0"
+  version: "1.1.1"
 ---
 
 # Workflow
@@ -46,7 +46,16 @@ This command creates a `plugins/{plugin-name}` directory and files in it. Refer 
 
 This command adds an entry for the new plugin in `tests/skills.json`. Nightly scheduled integration tests use this file to discover the plugins and skills to test.
 
-This command adds a new set of path patterns in the pluginPathAllowPattern scripts. The shared telemetry hook script uses these patterns to prevent the script from attempting to send telemetry for skills outside this repo.
+This command creates plugin-local `hooks/scripts/pluginPathAllowPattern.sh`
+and `hooks/scripts/pluginPathAllowPattern.ps1` files. The shared telemetry
+scripts use these patterns to avoid sending telemetry for skills outside the
+plugin. The build automatically combines shared hooks with this local hook
+tree.
+
+Optional client-specific `copilot-hooks.json`, `claude-hooks.json`, and
+`cursor-hooks.json` files under the plugin's `hooks/` directory are fragments.
+List only plugin-owned event registrations; the build appends handlers to
+shared events or adds new events.
 
 ## Scaffold the skills
 
@@ -98,7 +107,9 @@ Notify the skill author about these next steps to finish onboarding the new plug
 - Write the human facing content the new plugin. This includes
   - description of the plugin in `plugin.json` files.
   - keywords of the plugin in `plugin.json` files
-  - the plugin `README.md`
+  - the plugin `README.md`. Preserve the scaffolded telemetry disclosure. Add
+    an `npx` and `.npmrc` security warning only if the plugin's `.mcp.json`
+    actually invokes `npx`; the shared telemetry hook does not use it.
 - Replace the placeholder codeowners in CODEOWNERS file. Codeowners will be responsible for keeping the plugin up-to-date to make sure it brings value to the users.
 - IMPORTANT: Keep scaffolded files as is except for the ones mentioned above. When unsure, read [Onboarding](../../../docs/Onboarding.md) to learn more about the plugin structure.
 - Once all the above are completed, submit a PR with the changes to microsoft/github-copilot-for-azure repo.

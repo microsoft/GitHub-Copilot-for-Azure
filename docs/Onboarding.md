@@ -62,9 +62,17 @@ Each plugin has all its files stored under `plugins/<your-plugin-name>/`, which 
 
 `.claude-plugin/` contains the plugin manifest for Claude Code. `.cursor-plugin/` contains the plugin manifest for Cursor. `.plugin/` contains the plugin manifest for Copilot CLI and VS Code. We have to maintain separate plugin manifests because clients use them in different ways. See [plugin-manifest.md](./plugin-manifest.md) for more information. Every new plugin should provide at least these manifests to make sure it works for these clients.
 
-`hooks/` contains the hooks manifest. Since clients also use hook manifests in different ways, we have to maintain separate hook manifests for different clients. See [hooks.md](./hooks.md) for more information. Our existing hooks for tracking telemetry are reusable. If you do not want our hook to collect telemetry for your skill, or if you want to do something differently, you can implement your own. If you do so, please read [hooks.md](./hooks.md) to help make your hook work for the clients.
+`hooks/` contains plugin-owned hook manifests and scripts. Since clients also use hook manifests in different ways, we have to maintain separate hook manifests for different clients. See [hooks.md](./hooks.md) for more information. Our existing hooks for tracking telemetry are reusable. They install the pinned native `ghcfa-telem` reporter, verify downloaded release assets before extraction, and cache the executable for reuse. If you do not want our hook to collect telemetry for your skill, or if you want to do something differently, you can implement your own. If you do so, please read [hooks.md](./hooks.md) to help make your hook work for the clients. The build automatically combines
+these files with the shared telemetry hooks under the repository-level
+`hooks/` directory. Every plugin provides
+`hooks/scripts/pluginPathAllowPattern.sh` and
+`hooks/scripts/pluginPathAllowPattern.ps1` for its own installation paths.
+Optional `copilot-hooks.json`, `claude-hooks.json`, and `cursor-hooks.json`
+files are fragments: list only plugin-owned event registrations, and the build
+will append them to shared events or add new events. See
+[hooks.md](./hooks.md) for the client-specific formats and merge behavior.
 
-`skills/` contains the skill files. The `.mcp.json` file contains the MCP server configuration you want to add to the agent. Skills and MCP configuration are the bread and butter added to the agent context to help the agent solve problems. `LICENSE` is the software license for your plugin. `README.md` is user-facing documentation for users of the plugin. `version.json` sets the base major and minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
+`skills/` contains the skill files. The `.mcp.json` file contains the MCP server configuration you want to add to the agent. Skills and MCP configuration are the bread and butter added to the agent context to help the agent solve problems. `LICENSE` is the software license for your plugin. `README.md` is user-facing documentation for users of the plugin. Preserve the scaffolded telemetry disclosure when completing the README. Add an `npx` and `.npmrc` security warning only when the plugin's actual MCP configuration invokes `npx`; the shared telemetry hook does not use it. `version.json` sets the base major and minor version numbers so the automated versioning script can generate version numbers for your plugin. See [VERSIONING.md](./VERSIONING.md) to learn how it works.
 
 Unless there is an urgent need to extend an existing plugin, new skills should be contributed as new plugins so they can work independently from existing ones.
 

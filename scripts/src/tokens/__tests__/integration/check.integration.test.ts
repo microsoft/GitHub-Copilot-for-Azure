@@ -43,8 +43,8 @@ describe("check command integration", () => {
   });
 
   it("detects files exceeding limits", () => {
-    // Create file that exceeds 500 token SKILL.md limit
-    writeFileSync(join(TEST_DIR, ".github", "skills", "SKILL.md"), "a".repeat(2500)); // 625 tokens > 500 limit
+    // Create file that exceeds 5000 token SKILL.md limit
+    writeFileSync(join(TEST_DIR, ".github", "skills", "SKILL.md"), "a".repeat(20004)); // 5001 tokens > 5000 limit
 
     check(TEST_DIR, []);
 

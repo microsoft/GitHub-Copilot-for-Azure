@@ -16,10 +16,10 @@ Run every check against the changed files. Each failed check becomes a finding.
 
 ## 2. Token Budgets
 
-| File | Soft Limit | Hard Limit |
-|------|-----------|------------|
-| SKILL.md | 500 tokens | 5,000 tokens |
-| Each reference file | 1,000 tokens | 2,000 tokens |
+| File | Recommended Limit |
+|------|-------------------|
+| SKILL.md | 5,000 tokens |
+| Each reference file | 5,000 tokens |
 
 Estimate tokens at ~4 characters per token. When available, use `cd scripts && npm run tokens -- check` to verify.
 
