@@ -112,15 +112,6 @@ promptText: |
 
 > ⚠️ **Output contract:** Do not add `Return JSON: {"score": ...}` or any extra output-format block to custom evaluator `promptText`. The evaluator runtime appends and enforces the final JSON contract (`result` and `reason`). If a user-supplied rubric asks for `score`/`reasoning`, normalize that wording to `result`/`reason` or omit the output schema entirely before calling `evaluator_catalog_create`.
 
-## Voice Agent Observability, Evaluation, and Privacy Boundaries
-
-When evaluating or monitoring a **Voice Agent**, whether Prompt Voice or Hosted Voice:
-
-1. **Conversation-scoped traces and TTFA**: Voice Agent telemetry is organized around multi-turn real-time voice conversations rather than single HTTP Responses `response_id` calls. Foundry dashboards may also expose voice-specific latency indicators such as **time to first audio (TTFA)** alongside turn latency.
-2. **Transcript evaluation limits**: Text/transcript evaluators (`relevance`, `task_adherence`, `intent_resolution`, and custom rubric judges) evaluate **text-observable behavior only**. State clearly that transcript evaluations do **not** measure pronunciation, prosody, voice naturalness, background noise suppression, echo cancellation, audio dropouts, or barge-in/interruption timing.
-3. **Optimization boundary**: `prompt_optimize` can improve text-level behavior, but it does not optimize the complete audio/session configuration. Route configuration changes through [create-voice](../create/create-voice.md).
-4. **Privacy and storage**: Follow the `store: false` rule in [common Voice invariants](../create/references/voice-agent-common.md). Do not harvest caller audio/transcripts without an explicit privacy decision and retention controls.
-
 ## Related Skills
 
 | User Intent | Skill |
