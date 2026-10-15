@@ -24,6 +24,13 @@ describe("answer billing", () => {
     ])).toMatchObject({ requests: 2, billedRequests: 1, billedAiCredits: null });
   });
 
+  test("does not count earlier billed requests as complete for an interrupted trajectory", () => {
+    expect(collectAnswerBilling([
+      { type: "assistant.usage", data: { copilotUsage: { totalNanoAiu: 1_250_000_000 } } },
+      { type: "assistant.turn_start", data: {} },
+    ], false)).toMatchObject({ requests: 1, billedRequests: 1, billedAiCredits: null });
+  });
+
   test.each([-1, NaN, Infinity, 0.5, Number.MAX_SAFE_INTEGER + 1])(
     "rejects invalid provider billing %s", value => {
       expect(() => collectAnswerBilling([

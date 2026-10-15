@@ -50,6 +50,9 @@ export type AgentMetadata = {
    */
   tokenUsage?: TokenUsage;
 
+  /** Whether the answer run reached normal completion or was interrupted. */
+  completionStatus?: "completed" | "aborted";
+
   /**
    * Number of turns that started during the run.
    */

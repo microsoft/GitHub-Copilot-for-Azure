@@ -287,15 +287,25 @@ export async function runImprovementAgent(
   } finally {
     fs.rmSync(localFailurePacketPath, { force: true });
     fs.rmSync(localPreviousCandidatePatchPath, { force: true });
-    const events: Array<{ type?: string; exitCode?: number }> = fs.existsSync(eventFile)
-      ? fs.readFileSync(eventFile, "utf8").split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line))
-      : [];
-    const results = events.filter(event => event.type === "result");
-    const finalized = results.length === 1 && Number.isInteger(results[0].exitCode);
-    const billing = collectAgentBilling(
-      fs.existsSync(usageFile) ? JSON.parse(fs.readFileSync(usageFile, "utf8")) : undefined,
-      finalized
-    );
+    let billing: ComponentBilling;
+    try {
+      const events: unknown[] = fs.existsSync(eventFile)
+        ? fs.readFileSync(eventFile, "utf8").split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line))
+        : [];
+      const results = events.filter((event): event is { type: "result"; exitCode?: unknown } =>
+        !!event && typeof event === "object" && "type" in event && event.type === "result"
+      );
+      const finalized = results.length === 1 && Number.isInteger(results[0].exitCode);
+      billing = collectAgentBilling(
+        fs.existsSync(usageFile) ? JSON.parse(fs.readFileSync(usageFile, "utf8")) : undefined,
+        finalized
+      );
+    } catch (error) {
+      billing = collectAgentBilling(undefined, false);
+      billing.reason = `Unable to read or validate CLI billing exports: ${
+        error instanceof Error ? error.message : String(error)
+      }`;
+    }
     onBilling(billing);
     if (billing.reason) {
       console.warn(`Iteration ${iteration} agent AI credits unavailable: ${billing.reason}`);

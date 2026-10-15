@@ -127,11 +127,24 @@ function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function readJsonl(filePath: string): VallyRecord[] {
-  return fs.readFileSync(filePath, "utf8")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map(line => JSON.parse(line) as VallyRecord);
+function readJsonl(filePath: string, recover = false): VallyRecord[] {
+  const records: VallyRecord[] = [];
+  for (const [index, line] of fs.readFileSync(filePath, "utf8").split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
+    try {
+      const record: unknown = JSON.parse(line);
+      if (!record || typeof record !== "object" || Array.isArray(record)) {
+        throw new Error("Expected a JSON object.");
+      }
+      records.push(record);
+    } catch (error) {
+      if (!recover) throw error;
+      console.warn(`Unavailable answer record at ${filePath}:${index + 1}: ${
+        error instanceof Error ? error.message : String(error)
+      }`);
+    }
+  }
+  return records;
 }
 
 export function findVallyRunDirectory(root: string): string {
@@ -241,12 +254,21 @@ async function generateAnswers(
       stderrFile,
       timeoutMs: Math.max(deadline - Date.now(), 1),
     });
-  } finally {
-    recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile) : []);
+  } catch (error) {
+    try {
+      recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile, true) : []);
+    } catch (billingError) {
+      console.warn(`Failed to collect answer billing from ${answerFile}: ${
+        billingError instanceof Error ? billingError.message : String(billingError)
+      }`);
+    }
+    throw error;
   }
 
+  const records = readJsonl(answerFile);
+  recordBilling(records);
   const runDirectory = findVallyRunDirectory(taskDirectory);
-  const count = readJsonl(answerFile)
+  const count = records
     .filter(record => record.type === "trial-result" || record.trajectory)
     .length;
   if (count === 0) {
