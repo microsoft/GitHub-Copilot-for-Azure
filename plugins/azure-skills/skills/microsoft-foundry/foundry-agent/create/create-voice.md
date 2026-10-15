@@ -16,7 +16,7 @@ When the user has not already specified the Voice architecture or model path:
   4. **Custom Hosted real-time/audio agent (not a managed Voice Agent)** (raw `invocations_ws` container endpoint with custom frames -> route to [../invocations-ws/invocations-ws.md](../invocations-ws/invocations-ws.md))
 - **Planning / explanation / comparison requests**: Present the model-first options, trade-offs, and `azure.yaml` structure **without** creating files or running `azd`.
 - **Ambiguous subtype**: If the user has not chosen between Prompt Voice and Hosted Voice, stop and ask rather than guessing.
-- **Non-interactive Prompt Voice defaults**: When the user explicitly requests a Prompt Voice Agent in a non-interactive context without specifying a model or voice, default to `modelType: managed`, `model: { id: gpt-realtime }`, output voice `en-US-Ava:DragonHDLatestNeural` (or `en-US-AvaNeural`), and `store: false`, and state those defaults clearly.
+- **Non-interactive Prompt Voice defaults**: When the user explicitly requests a Prompt Voice Agent in a non-interactive context without specifying a model or voice, default to `modelType: managed`, `model: { id: gpt-realtime }`, output voice `en-US-AvaNeural`, and `store: false`, and state those defaults clearly.
 - **Self-deployed model requirement**: If the user selects `modelType: self_deployed` without naming a model or deployment, inspect existing project model deployments first or ask before writing `services.ai-project.deployments` and `model.id`.
 
 ---
@@ -60,10 +60,10 @@ Initialize a declarative Prompt Voice project with `azd ai agent init`:
 
 ```bash
 azd ai agent init --kind prompt-voice --agent-name <agent-name> \
-  --model gpt-realtime --voice en-US-Ava:DragonHDLatestNeural
+  --model gpt-realtime --voice en-US-AvaNeural
 ```
 
-- **Supported flags on `--kind prompt-voice`**: `--agent-name`, `--model` (defaults to `gpt-realtime`), `--voice` (e.g., `en-US-Ava:DragonHDLatestNeural`, `en-US-AvaNeural`, or `alloy`), `--project-id`, `--environment`, `--force`, `--no-prompt`.
+- **Supported flags on `--kind prompt-voice`**: `--agent-name`, `--model` (defaults to `gpt-realtime`), `--voice` (default `en-US-AvaNeural`; alternatives include `en-US-Ava:DragonHDLatestNeural` or `alloy`), `--project-id`, `--environment`, `--force`, `--no-prompt`.
 - **Rejected flags on `--kind prompt-voice`**: Do **not** pass `--src` (or a positional source directory), `--protocol`, `--deploy-mode`, `--runtime`, `--entry-point`, `--dep-resolution`, `--model-deployment`, `--description`, `--rai-policy`, `--acr-connection`, `--registry-connection`, `--harness`, `--instructions`, or `--image`.
 - **Authoring instructions and settings**: Do not pass `--instructions` to `azd ai agent init --kind prompt-voice`. Edit the generated `azure.yaml` service block directly to configure `instructions`, `greeting`, `store: false`, `audio`, `tools`, `handoff`, `structuredInputs`, and `telephony` per [references/voice-agent-yaml.md](references/voice-agent-yaml.md).
 - **No model deployment needed**: `modelType: managed` uses Foundry's service-hosted real-time model and does not require a deployment entry under `services.ai-project.deployments`.

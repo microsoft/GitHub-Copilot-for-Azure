@@ -146,7 +146,7 @@ Initialize a new declarative Prompt Voice Agent with:
 
 ```bash
 azd ai agent init --kind prompt-voice --agent-name <agent-name> \
-  --model gpt-realtime --voice en-US-Ava:DragonHDLatestNeural
+  --model gpt-realtime --voice en-US-AvaNeural
 ```
 
 - `--kind prompt-voice` rejects `--src`, `--protocol`, `--deploy-mode`, `--runtime`, `--entry-point`, `--dep-resolution`, `--model-deployment`, `--description`, `--rai-policy`, `--acr-connection`, `--registry-connection`, `--harness`, `--instructions`, and `--image`.

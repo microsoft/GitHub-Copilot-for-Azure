@@ -6,34 +6,37 @@
 #     --endpoint <project-endpoint> \
 #     --agent-name <voice-agent-name> \
 #     [--text <prompt-text>] \
+#     [--expected-marker <substring>] \
 #     [--timeout <seconds>] \
 #     [--output-audio <file-path>] \
 #     [--dry-run] \
 #     [--help]
 #
 # Options:
-#   --endpoint <url>        Foundry project endpoint (https://<host>/api/projects/<project>)
-#   --agent-name <name>     Deployed Voice Agent name (kind: voice wrapper or Prompt Voice agent)
-#   --text <prompt>         Prompt text to send after session initialization (default: "In one short sentence, introduce yourself.")
-#   --timeout <seconds>     Positive integer timeout in seconds (default: 180)
-#   --output-audio <path>   Optional file path to write decoded PCM audio bytes
-#   --dry-run               Print resolved WebSocket URL and execution plan without connecting
-#   -h, --help              Show this help text and exit 0
+#   --endpoint <url>          Foundry project endpoint (https://<host>/api/projects/<project>)
+#   --agent-name <name>       Deployed Voice Agent name (kind: voice wrapper or Prompt Voice agent)
+#   --text <prompt>           Prompt text to send after session initialization (default: "In one short sentence, introduce yourself.")
+#   --expected-marker <text>  Optional substring that must appear in the requested turn's transcript
+#   --timeout <seconds>       Positive integer timeout in seconds (default: 180)
+#   --output-audio <path>     Optional file path to write decoded PCM audio bytes
+#   --dry-run                 Print resolved WebSocket URL and execution plan without connecting
+#   -h, --help                Show this help text and exit 0
 #
 # Exit Codes:
 #   0  Smoke test passed (or --help / --dry-run succeeded)
-#   1  Smoke test failed (missing Python/websockets, auth failure, WebSocket error, empty transcript/audio, or timeout)
+#   1  Smoke test failed (missing Python/websockets, auth failure, WebSocket error, empty transcript/audio, missing expected marker, or timeout)
 #   2  Usage or argument validation error
 
 set -euo pipefail
 
 usage() {
-  sed -n '2,26s/^# \{0,1\}//p' "$0"
+  sed -n '2,28s/^# \{0,1\}//p' "$0"
 }
 
 ENDPOINT=""
 AGENT_NAME=""
 PROMPT_TEXT="In one short sentence, introduce yourself."
+EXPECTED_MARKER=""
 TIMEOUT="180"
 OUTPUT_AUDIO=""
 DRY_RUN="false"
@@ -69,6 +72,15 @@ while [ "$#" -gt 0 ]; do
         exit 2
       fi
       PROMPT_TEXT="$2"
+      shift 2
+      ;;
+    --expected-marker)
+      if [ "$#" -lt 2 ] || [ -z "${2:-}" ]; then
+        echo "ERROR: --expected-marker requires a non-empty value." >&2
+        usage >&2
+        exit 2
+      fi
+      EXPECTED_MARKER="$2"
       shift 2
       ;;
     --timeout)
@@ -148,6 +160,11 @@ if [ "$DRY_RUN" = "true" ]; then
   echo "  WebSocket URL    : ${WS_URL}&agent_session_id=<uuid>"
   echo "  Headers          : Foundry-Features: VoiceAgents=V1Preview"
   echo "  Prompt Text      : $PROMPT_TEXT"
+  if [ -n "$EXPECTED_MARKER" ]; then
+    echo "  Expected Marker  : $EXPECTED_MARKER"
+  else
+    echo "  Expected Marker  : (none)"
+  fi
   echo "  Timeout (s)      : $TIMEOUT"
   if [ -n "$OUTPUT_AUDIO" ]; then
     echo "  Output Audio     : $OUTPUT_AUDIO"
@@ -168,16 +185,30 @@ else
   exit 1
 fi
 
-"$PYTHON_BIN" - "$WS_URL" "$AGENT_NAME" "$PROMPT_TEXT" "$TIMEOUT" "$OUTPUT_AUDIO" <<'PY'
+SMOKE_WS_URL="$WS_URL" \
+SMOKE_AGENT_NAME="$AGENT_NAME" \
+SMOKE_PROMPT_TEXT="$PROMPT_TEXT" \
+SMOKE_TIMEOUT="$TIMEOUT" \
+SMOKE_OUTPUT_AUDIO="$OUTPUT_AUDIO" \
+SMOKE_EXPECTED_MARKER="$EXPECTED_MARKER" \
+"$PYTHON_BIN" - <<'PY'
 import asyncio
 import base64
 import json
+import os
+import shutil
 import subprocess
 import sys
+import time
 import uuid
 
-ws_url_base, agent_name, prompt_text, timeout_raw, output_audio = sys.argv[1:6]
-timeout_sec = int(timeout_raw)
+ws_url_base = os.environ["SMOKE_WS_URL"]
+agent_name = os.environ["SMOKE_AGENT_NAME"]
+prompt_text = os.environ["SMOKE_PROMPT_TEXT"]
+timeout_sec = int(os.environ["SMOKE_TIMEOUT"])
+output_audio = os.environ.get("SMOKE_OUTPUT_AUDIO", "")
+expected_marker = os.environ.get("SMOKE_EXPECTED_MARKER", "")
+GREETING_GRACE_SECONDS = 1.0
 
 try:
     import websockets
@@ -190,10 +221,11 @@ except ImportError as exc:
 
 
 def acquire_token() -> str:
+    az_bin = shutil.which("az.cmd" if os.name == "nt" else "az") or "az"
     try:
         token = subprocess.check_output(
             [
-                "az",
+                az_bin,
                 "account",
                 "get-access-token",
                 "--resource",
@@ -259,8 +291,10 @@ async def run_smoke_test() -> int:
     final_transcript = ""
     audio_bytes = 0
     decoded_audio = bytearray()
-    sent_turn = False
+    session_updated = False
     greeting_in_progress = False
+    grace_deadline = None
+    sent_turn = False
     completed_status = None
 
     try:
@@ -283,25 +317,51 @@ async def run_smoke_test() -> int:
 
         async with ws_ctx as ws:
             while True:
+                if not sent_turn:
+                    if session_updated and not greeting_in_progress and grace_deadline is not None:
+                        remaining_grace = grace_deadline - time.monotonic()
+                        if remaining_grace <= 0:
+                            await send_user_turn(ws, prompt_text)
+                            sent_turn = True
+                            continue
+                        recv_timeout = min(float(timeout_sec), remaining_grace)
+                    else:
+                        recv_timeout = float(timeout_sec)
+
+                    try:
+                        raw_msg = await asyncio.wait_for(ws.recv(), timeout=recv_timeout)
+                    except (TimeoutError, asyncio.TimeoutError):
+                        if session_updated and not greeting_in_progress:
+                            await send_user_turn(ws, prompt_text)
+                            sent_turn = True
+                            continue
+                        raise
+
+                    event = json.loads(raw_msg)
+                    ev_type = event.get("type", "")
+                    events.append(ev_type)
+
+                    if ev_type == "error":
+                        print(f"ERROR: Voice session returned error event: {json.dumps(event)}", file=sys.stderr)
+                        return 1
+                    if ev_type == "session.updated":
+                        session_updated = True
+                        if not greeting_in_progress:
+                            grace_deadline = time.monotonic() + GREETING_GRACE_SECONDS
+                    elif ev_type == "response.created" or ev_type.startswith("response.output_"):
+                        greeting_in_progress = True
+                        grace_deadline = None
+                    elif ev_type == "response.done" and greeting_in_progress:
+                        greeting_in_progress = False
+                        grace_deadline = None
+                        await send_user_turn(ws, prompt_text)
+                        sent_turn = True
+                    continue
+
                 raw_msg = await asyncio.wait_for(ws.recv(), timeout=timeout_sec)
                 event = json.loads(raw_msg)
                 ev_type = event.get("type", "")
                 events.append(ev_type)
-
-                if not sent_turn:
-                    if ev_type == "response.created":
-                        greeting_in_progress = True
-                    elif ev_type == "session.updated" and not greeting_in_progress:
-                        await send_user_turn(ws, prompt_text)
-                        sent_turn = True
-                    elif ev_type == "response.done" and greeting_in_progress:
-                        greeting_in_progress = False
-                        await send_user_turn(ws, prompt_text)
-                        sent_turn = True
-                    elif ev_type == "error":
-                        print(f"ERROR: Voice session returned error event: {json.dumps(event)}", file=sys.stderr)
-                        return 1
-                    continue
 
                 if ev_type == "response.output_audio_transcript.delta":
                     transcript.append(event.get("delta", ""))
@@ -318,7 +378,7 @@ async def run_smoke_test() -> int:
                 elif ev_type == "response.done":
                     completed_status = event.get("response", {}).get("status")
                     break
-    except TimeoutError:
+    except (TimeoutError, asyncio.TimeoutError):
         print(f"ERROR: Timed out after {timeout_sec}s waiting for Voice Agent '{agent_name}'.", file=sys.stderr)
         return 1
     except Exception as exc:
@@ -332,14 +392,24 @@ async def run_smoke_test() -> int:
     text = (final_transcript or "".join(transcript)).strip()
     result = {
         "agent": agent_name,
+        "prompt_text": prompt_text,
         "status": completed_status,
         "transcript": text,
         "audio_base64_characters": audio_bytes,
         "event_types": events,
     }
+    if expected_marker:
+        result["expected_marker"] = expected_marker
 
     if completed_status != "completed" or not text or audio_bytes <= 0:
         print(f"ERROR: Incomplete Voice Agent response: {json.dumps(result)}", file=sys.stderr)
+        return 1
+
+    if expected_marker and expected_marker not in text:
+        print(
+            f"ERROR: Voice Agent transcript did not contain expected marker {expected_marker!r}: {json.dumps(result)}",
+            file=sys.stderr,
+        )
         return 1
 
     print(json.dumps(result, indent=2))

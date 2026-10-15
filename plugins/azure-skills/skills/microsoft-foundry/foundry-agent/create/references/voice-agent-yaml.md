@@ -48,7 +48,7 @@ services:
     model:
       id: gpt-realtime
     instructions: You are a helpful voice assistant. Respond naturally and concisely.
-    voice: en-US-Ava:DragonHDLatestNeural
+    voice: en-US-AvaNeural
     store: false
 infra:
   provider: microsoft.foundry
@@ -192,7 +192,7 @@ infra:
 | `modelType` | `managed` (default) or `self_deployed` | Omit on Hosted Voice wrappers (`conversationEngine` is used instead). |
 | `model` | `{ id: <model-or-deployment-name> }` | Required for Prompt Voice (`managed` or `self_deployed`); forbidden on Hosted Voice wrappers. |
 | `conversationEngine` | `{ type: hosted_agent, name: <target-service>, version: deployed }` | Required for Hosted Voice wrappers (`version` defaults to `deployed`). |
-| `voice` | String shorthand (e.g., `en-US-Ava:DragonHDLatestNeural`, `en-US-AvaNeural`, or `alloy`) | Top-level voice shorthand on Prompt Voice; `azd` maps OpenAI voices to `type: openai` and Azure locales to `type: azure-standard`. |
+| `voice` | String shorthand (default `en-US-AvaNeural`; alternatives include `en-US-Ava:DragonHDLatestNeural` or `alloy`) | Top-level voice shorthand on Prompt Voice; `azd` maps OpenAI voices to `type: openai` and Azure locales to `type: azure-standard`. |
 | `audio.input` | `format: { type: audio/pcm \| audio/pcmu \| audio/pcma, rate: 24000 }`, `transcription: { model: azure-speech, language }`, `turnDetection: { type: server_vad \| semantic_vad \| azure_semantic_vad, threshold, prefixPaddingMs, silenceDurationMs, speechDurationMs, interruptResponse, autoTruncate, createResponse, removeFillerWords, eagerness, languages }`, `noiseReduction: { type: near_field \| far_field \| azure_deep_noise_suppression }`, `echoCancellation` | Omitted fields inherit `azd` defaults (`audio/pcm` at `24000` Hz, `server_vad`, `azure-speech`). Note `threshold` must be `> 0` and `<= 1`. |
 | `audio.output` | `format: { type: audio/pcm \| audio/pcmu \| audio/pcma, rate: 24000 }`, `voice: { type: azure-standard \| azure_standard \| openai, name, style, pitch, rate, locale, volume }`, `speed` (`0.25`–`1.5`) | Full output audio and voice configuration object. |
 | `greeting` | `{ type: template, text: "Hello! How can I help you today?" }` or `llm_generated` | Spoken automatically when a Voice session starts. |
@@ -200,4 +200,3 @@ infra:
 | `store` | `false` (default) or `true` | Server-side transcript and per-turn audio logging toggle. |
 | `telephony` | `{ bindings: [{ provider: acs \| twilio, identifier: <id>, connection: <connection-name>, transferTargets: [...] }] }` | Phone-number bindings (`acs` uses `28:orgid:<guid>` or `4:+<E.164>`; `twilio` uses `+<E.164>`). |
 | `structuredInputs`, `tools`, `toolChoice`, `maxOutputTokens`, `include`, `avatar`, `handoff` | Prompt Voice optional objects/arrays (`maxOutputTokens`: integer `1..2147483647` or `"inf"`) | Supported on Prompt Voice; `structuredInputs`, `tools`, `toolChoice`, `maxOutputTokens`, `include`, and `handoff` are forbidden on Hosted Voice wrappers. |
-

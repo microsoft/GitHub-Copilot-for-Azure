@@ -154,7 +154,7 @@ stimuli:
   # Foundry Voice Agents
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "Prompt Voice agent creation skill invocation"
-    prompt: "Help me create a Prompt Voice agent in Microsoft Foundry using gpt-realtime and the en-US-Ava:DragonHDLatestNeural voice."
+    prompt: "Help me create a Prompt Voice agent in Microsoft Foundry using gpt-realtime and the en-US-AvaNeural voice."
     tags:
       type: integration
       tier: smoke
@@ -191,4 +191,3 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
-

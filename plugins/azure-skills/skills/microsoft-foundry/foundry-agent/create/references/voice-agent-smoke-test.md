@@ -39,7 +39,7 @@ Run the paired helper scripts from the `microsoft-foundry` skill root (`plugins/
 - Bash: [../scripts/smoke-test-voice.sh](../scripts/smoke-test-voice.sh)
 - PowerShell: [../scripts/smoke-test-voice.ps1](../scripts/smoke-test-voice.ps1)
 
-Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`, `-Text`, `-Timeout`, `-OutputAudio`, `-DryRun`, `-Help`), whereas Bash uses kebab-case flags (`--endpoint`, `--agent-name`, `--text`, `--timeout`, `--output-audio`, `--dry-run`, `--help`).
+Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`, `-Text`, `-ExpectedMarker`, `-Timeout`, `-OutputAudio`, `-DryRun`, `-Help`), whereas Bash uses kebab-case flags (`--endpoint`, `--agent-name`, `--text`, `--expected-marker`, `--timeout`, `--output-audio`, `--dry-run`, `--help`).
 
 ### 1. Preview / Dry Run (no network connection)
 
@@ -59,7 +59,7 @@ Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`,
   -DryRun
 ```
 
-### 2. Live Smoke Test (connect, wait for `session.updated`, send typed turn, verify completed transcript + base64 audio)
+### 2. Live Smoke Test (connect, drain optional greeting, send typed turn, verify completed transcript + base64 audio)
 
 **Bash**
 ```bash
@@ -79,25 +79,30 @@ Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`,
   -Timeout 180
 ```
 
+When testing a Hosted Voice Agent running the official `voice-live-bridge-basic-python` target (or any agent with a deterministic response), pass `--expected-marker` / `-ExpectedMarker` (for example, `--text "/help" --expected-marker "Commands:"`) to assert that the returned transcript matches the requested turn rather than a greeting.
+
 ### Exit Codes
 
 | Exit Code | Meaning |
 |---|---|
-| `0` | Smoke test passed (`response.done` with `response.status == "completed"`, non-empty `response.output_audio_transcript.delta`/`done`, and non-empty base64 `response.output_audio.delta`) or `--dry-run` / `--help` succeeded |
-| `1` | Smoke test failed (authentication error, WebSocket `error` frame, non-`completed` status, empty transcript, zero audio deltas, timeout, or missing `websockets` package) |
+| `0` | Smoke test passed (`response.done` for the requested turn with `response.status == "completed"`, non-empty `response.output_audio_transcript.delta`/`done`, non-empty base64 `response.output_audio.delta`, and optional `--expected-marker` / `-ExpectedMarker` matched) or `--dry-run` / `--help` succeeded |
+| `1` | Smoke test failed (authentication error, WebSocket `error` frame, non-`completed` status, empty transcript, missing expected marker, zero audio deltas, timeout, or missing `websockets` package) |
 | `2` | Usage or argument validation error (missing `--endpoint`/`-Endpoint`, missing `--agent-name`/`-AgentName`, invalid `--timeout`/`-Timeout`, or unknown option) |
 
 ---
 
 ## Verified Wire Event Sequence
 
-1. **Connect & Authenticate**: Connects to `.../agents/<agent>/endpoint/protocols/voice?api-version=v1&agent_session_id=<id>` with `Foundry-Features: VoiceAgents=V1Preview` and an Entra token for `https://ai.azure.com`.
-2. **Wait for `session.updated`**: Waits for the server's `session.updated` event (and any initial greeting `response.done` if a greeting response runs before the user turn) before sending user input.
+1. **Connect & Authenticate**: Connects to `.../agents/<agent>/endpoint/protocols/voice?api-version=v1&agent_session_id=<id>` with `Foundry-Features: VoiceAgents=V1Preview` and an Entra token for `https://ai.azure.com` (resolved via `shutil.which("az.cmd" if os.name == "nt" else "az") or "az"` with `DefaultAzureCredential` fallback).
+2. **Wait for `session.updated` and Optional Greeting**:
+   - Waits for `session.updated`, then applies a short `1.0s` greeting-detection grace interval.
+   - If a greeting response (`response.created` / `response.output_*`) starts before or during the grace window, drains the entire greeting through its `response.done` without recording greeting transcript/audio as the requested turn.
+   - If no greeting begins during the grace window (such as on a no-greeting Prompt Voice agent), proceeds immediately after the grace timeout.
 3. **Send Typed Turn**:
    - Sends `{"type": "conversation.item.create", "item": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "<prompt>"}]}}`
    - Sends `{"type": "response.create"}`
-4. **Consume & Verify Output**:
-   - Collects transcript text from `response.output_audio_transcript.delta` (`delta`) and `response.output_audio_transcript.done` (`transcript`).
+4. **Consume & Verify Requested Turn Output**:
+   - Collects transcript text from the requested turn's `response.output_audio_transcript.delta` (`delta`) and `response.output_audio_transcript.done` (`transcript`).
    - Counts base64 audio payload characters from `response.output_audio.delta` (`delta`).
-   - Fails immediately on any `error` event or if `response.done` reports `response.status != "completed"`.
-   - Requires both a non-empty transcript and `audio_base64_characters > 0` before exiting `0`.
+   - Fails immediately on any `error` event, if `response.done` reports `response.status != "completed"`, if transcript/audio is empty, or if `--expected-marker` / `-ExpectedMarker` is absent from the transcript.
+   - Emits JSON containing `agent`, `prompt_text`, `status`, `transcript`, `audio_base64_characters`, `event_types`, and optional `expected_marker`.
