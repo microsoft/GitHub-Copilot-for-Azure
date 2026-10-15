@@ -974,6 +974,393 @@ stimuli:
               description: "Planning-only routing test must not create or deploy resources"
 
   # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Voice Agents
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Prompt Voice agent creation skill invocation"
+    prompt: "Help me initialize a Prompt Voice agent in Microsoft Foundry using azd ai agent init --kind prompt-voice."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+
+  - name: "Generic Voice creation defaults to managed Prompt Voice"
+    prompt: |
+      Without running commands, explain how you would handle this request:
+      "Create a Microsoft Foundry Voice Agent for me."
+    rubric:
+      - "Defaults the generic greenfield request to Prompt Voice with modelType: managed and model.id: gpt-realtime instead of requiring the user to choose a subtype."
+      - "States the canonical kind: voice, en-US-AvaNeural, and store: false defaults."
+      - "Explains that explicit Hosted Voice, custom-code, BYOM/self-deployed, or existing deployment intent overrides the default and may require clarification."
+      - "Describes automated managed Voice WebSocket smoke verification followed by a Foundry Voice Agent playground URL and manual audio-to-audio experience validation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 6
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)modelType:\\s*managed|managed.*gpt-realtime"
+      - type: output-matches
+        config:
+          pattern: "(?i)gpt-realtime"
+      - type: output-matches
+        config:
+          pattern: "(?i)en-US-AvaNeural"
+      - type: output-matches
+        config:
+          pattern: "(?i)store:\\s*false|store.*false"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response chooses managed Prompt Voice as the
+            default for this generic greenfield request, states gpt-realtime,
+            canonical kind: voice, en-US-AvaNeural, and store: false, and does
+            not require the user to select among Voice subtypes before
+            proceeding. It may mention alternatives, but only as overrides for
+            explicit Hosted Voice/custom-code, BYOM/self-deployed, existing
+            deployment, or comparison intent. It must also distinguish the
+            automated technical smoke gate from the subsequent manual Foundry
+            Voice Agent playground check for the complete audio-to-audio
+            experience, without claiming the manual step was automated.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\b|\\baz\\b"
+              description: "Planning-only default-selection test must not run commands"
+
+  - name: "Voice agent model-first routing and Prompt Voice workflow"
+    prompt: |
+      Without executing any create, provision, or deploy commands, explain the
+      preflight, project-context, and model-first choices for creating a
+      Microsoft Foundry Voice Agent. Show the non-interactive azd initialization
+      command for a Prompt Voice agent named support-voice using managed
+      gpt-realtime and en-US-AvaNeural in an existing project with ARM ID
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.CognitiveServices/accounts/account/projects/project.
+      Include the azure.yaml definition and explain how to smoke-test it after
+      deployment.
+    rubric:
+      - "Requires the dependency/environment preflight, Common Project Context Resolution, new-versus-existing project choice, and inline AZURE_DEV_USER_AGENT=microsoft_foundry_skill before azd use."
+      - "Explains the model-first options (managed real-time model via modelType: managed, project model deployment via modelType: self_deployed, and Hosted Voice via conversationEngine.type: hosted_agent)."
+      - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id, then normalizes the generated service to kind: voice; the authored azure.yaml uses kind: voice, modelType: managed, model.id: gpt-realtime, store: false, and en-US-AvaNeural directly under the service block."
+      - "States that azd ai agent invoke does not support Voice Agents, runs or describes the automated managed Voice WebSocket smoke gate, and provides the Foundry Voice Agent playground as the recommended manual audio-to-audio follow-up."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)azd\\s+ai\\s+agent\\s+init.*--kind\\s+prompt-voice"
+      - type: output-matches
+        config:
+          pattern: "(?i)--no-prompt"
+      - type: output-matches
+        config:
+          pattern: "(?i)--project-id"
+      - type: output-matches
+        config:
+          pattern: "(?i)AZURE_DEV_USER_AGENT\\s*=\\s*[\"']?microsoft_foundry_skill"
+      - type: output-matches
+        config:
+          pattern: "(?i)modelType:\\s*managed"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\s*kind:\\s*voice\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?i)id:\\s*gpt-realtime"
+      - type: output-matches
+        config:
+          pattern: "(?i)store:\\s*false"
+      - type: output-matches
+        config:
+          pattern: "(?i)protocols/voice\\?api-version=v1|smoke-test-voice\\.(sh|ps1)"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response:
+            1. Starts with or clearly requires the repository preflight and
+               Common Project Context Resolution, resolves new versus existing
+               Foundry project before file generation, uses the supplied ARM ID
+               with --project-id, asks only for unresolved decisions, and states
+               that every azd command runs with inline
+               AZURE_DEV_USER_AGENT=microsoft_foundry_skill.
+            2. Explains the model-first options before or alongside the YAML
+               (managed real-time model via modelType: managed, project model
+               deployment via modelType: self_deployed in services.ai-project.deployments
+               where Foundry infers native speech-to-speech vs cascaded
+               STT->LLM->TTS from model.id, and Hosted Voice via
+               conversationEngine.type: hosted_agent).
+            3. Shows azd ai agent init --no-prompt --kind prompt-voice with
+               --project-id and an azure.yaml
+               service block with properties directly under the service block
+               (not nested under config:), including canonical kind: voice,
+               modelType: managed, model: { id: gpt-realtime }, store: false, and
+               en-US-AvaNeural without requiring a deployment entry under
+               services.ai-project.deployments for the managed model.
+               It explains that init may generate kind: prompt-voice and
+               immediately normalizes that field to kind: voice.
+            4. States that azd ai agent invoke does not support Voice Agents and
+               uses the voice WebSocket smoke helper as the automated technical
+               gate, then provides or explains how to obtain the Foundry Voice
+               Agent playground URL for manual microphone/audio-to-audio
+               acceptance. It must not claim the text-driven helper validates
+               STT quality, VAD, interruption, playback quality, browser/device
+               behavior, or perceived latency.
+            Fail if it uses Foundry MCP agent_update to create the Voice Agent,
+            nests agent fields under a deprecated config: block, uses an
+            unverified models list instead of services.ai-project.deployments,
+            uses azd ai agent invoke to test the Voice Agent, or uses obsolete
+            modelType: hosted_agent or targetAgent fields. Also fail if the
+            authored azure.yaml keeps kind: prompt-voice instead of canonical
+            kind: voice.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\s+ai\\s+agent\\s+(init|invoke)\\b|\\bazd\\s+(up|provision|deploy)\\b"
+              description: "Planning-only Voice Agent test must not run azd init, provision, deploy, or invoke"
+
+  - name: "Hosted Voice two-agent Bridge workflow and invocation boundaries"
+    prompt: |
+      Without running any commands, show the two-agent azure.yaml architecture
+      and Voice Live Bridge 1.0 event sequence for a Hosted Voice Agent in
+      Microsoft Foundry (pairing a Python target named travel-target with a
+      Voice wrapper named travel-voice), explain how to diagnose protocol_mismatch
+      errors vs Prompt Voice troubleshooting, and distinguish Hosted Voice from
+      a custom Hosted real-time/audio agent using raw invocations_ws.
+    rubric:
+      - "Defines two distinct services in azure.yaml with properties directly under each service block: a kind: hosted target (travel-target) with invocations_ws 1.0.0 and Bridge 1.0 metadata, and a kind: voice wrapper (travel-voice) with conversationEngine: { type: hosted_agent, name: travel-target } and store: false."
+      - "Describes the Bridge 1.0 event flow over /invocations_ws (session.start -> session.ready, user.message -> response.created -> response.output_text.delta / response.output_text.done -> response.done) and explains protocol_mismatch vs Prompt Voice troubleshooting."
+      - "Distinguishes a managed Foundry Voice Agent (kind: voice over the voice protocol endpoint) from a custom Hosted real-time/audio agent over raw invocations_ws."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)invocations_ws"
+      - type: output-matches
+        config:
+          pattern: "(?i)voiceLiveCompatible"
+      - type: output-matches
+        config:
+          pattern: "(?i)bridgeProtocolVersion"
+      - type: output-matches
+        config:
+          pattern: "(?i)conversationEngine"
+      - type: output-matches
+        config:
+          pattern: "(?i)hosted_agent"
+      - type: output-matches
+        config:
+          pattern: "session\\.start"
+      - type: output-matches
+        config:
+          pattern: "session\\.ready"
+      - type: output-matches
+        config:
+          pattern: "user\\.message"
+      - type: output-matches
+        config:
+          pattern: "response\\.created"
+      - type: output-matches
+        config:
+          pattern: "response\\.output_text\\.(delta|done)"
+      - type: output-matches
+        config:
+          pattern: "response\\.done"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response:
+            1. Defines two distinct services/agent names in azure.yaml (directly
+               under each service block, not nested under config:): a
+               kind: hosted target (travel-target) with invocations_ws 1.0.0 and
+               metadata voiceLiveCompatible: "true" and bridgeProtocolVersion: "1.0",
+               and a kind: voice wrapper (travel-voice) with
+               conversationEngine: { type: hosted_agent, name: travel-target }
+               and store: false, omitting modelType/model/instructions on the wrapper.
+            2. Describes the Bridge 1.0 event flow on /invocations_ws
+               (session.start with protocol_version: "1.0" -> session.ready,
+               user.message -> response.created -> response.output_text.delta /
+               response.output_text.done -> response.done) and explains that
+               session.rejected (protocol_mismatch) occurs when protocol_version
+               mismatches or the target lacks Bridge 1.0 metadata / invocations_ws
+               1.0.0 / session.ready handshake, while noting that Prompt Voice
+               has no Hosted sessions/monitor logs.
+            3. Distinguishes a managed Foundry Voice Agent (using kind: voice and
+               the voice protocol endpoint) from a custom Hosted real-time/audio
+               agent over raw invocations_ws with developer-defined frames.
+            Fail if it uses invented PascalCase Bridge event names instead of
+            the lowercase dotted Bridge 1.0 events, nests agent properties under
+            config:, uses obsolete modelType: hosted_agent or targetAgent, gives
+            both services the same name, or claims azd ai agent invoke works on
+            the Voice wrapper.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\s+ai\\s+agent\\s+(init|invoke)\\b|\\bazd\\s+(up|provision|deploy)\\b"
+              description: "Planning-only Hosted Voice test must not run azd commands"
+
+  - name: "Generic Azure Speech transcription does not route to Foundry"
+    prompt: "Use the Azure AI Speech SDK to transcribe microphone audio to text in my Python application."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-ai]
+          disallowed: [microsoft-foundry]
+
+  - name: "Existing prompt-voice manifest is normalized as Voice"
+    prompt: |
+      Without running commands, review this existing azure.yaml service and
+      explain how you would continue maintaining it:
+
+      services:
+        support-voice:
+          host: azure.ai.agent
+          kind: prompt-voice
+          modelType: managed
+          model:
+            id: gpt-realtime
+    rubric:
+      - "Classifies the existing service as a Voice Agent for compatibility rather than as an ordinary Prompt Agent."
+      - "Recommends normalizing the existing YAML to canonical kind: voice when editing it."
+      - "Does not recommend authoring new YAML with kind: prompt-voice or converting the service to another agent type."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response treats the supplied kind: prompt-voice
+            service as an existing Voice Agent compatibility input, recommends
+            changing it to canonical kind: voice during maintenance, and does
+            not present kind: prompt-voice as an authored YAML option or create
+            a replacement agent.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\b|\\baz\\b"
+              description: "Planning-only compatibility test must not run commands"
+
+  - name: "Interactive Voice testing routes to Foundry playground"
+    prompt: |
+      I want to talk to my deployed Microsoft Foundry Voice Agent using my
+      microphone and test the full voice experience, including interruptions.
+      How should I invoke it?
+    rubric:
+      - "Directs the user to the Foundry Voice Agent playground and obtains/provides its URL from azd ai agent show."
+      - "Explains that the playground is the path for microphone/audio-to-audio, STT, VAD/turn-taking, barge-in/interruption, playback/voice quality, browser/device behavior, and perceived latency."
+      - "Does not claim the bundled text-driven smoke helper provides microphone interaction or complete UX validation."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: invocation
+    constraints:
+      max_turns: 6
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)playground|ai\\.azure\\.com"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response routes this explicitly interactive,
+            microphone-based request to the Foundry Voice Agent playground,
+            says to obtain or use the playground URL from azd ai agent show,
+            and identifies the portal as the path for audio-to-audio experience
+            properties such as STT, VAD/turn-taking, interruption, playback or
+            voice quality, device/browser behavior, and perceived latency.
+            Fail if it presents smoke-test-voice.sh or smoke-test-voice.ps1 as
+            a microphone client or as complete interactive UX validation.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)smoke-test-voice\\.(sh|ps1)"
+              description: "Interactive microphone requests should route to the Voice Agent playground"
+
+  - name: "Generic Azure text to speech does not route to Foundry"
+    prompt: "How do I convert text to speech with an Azure neural voice?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-ai]
+          disallowed: [microsoft-foundry]
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Prompt Agents
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "Prompt agent creation skill invocation"
