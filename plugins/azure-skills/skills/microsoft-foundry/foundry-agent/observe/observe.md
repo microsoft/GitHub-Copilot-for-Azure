@@ -118,8 +118,8 @@ When evaluating or monitoring a **Voice Agent** (`kind: voice` / `kind: prompt-v
 
 1. **Conversation-scoped traces and TTFA**: Voice Agent telemetry is organized around multi-turn real-time voice conversations rather than single HTTP Responses `response_id` calls. Foundry dashboards may also expose voice-specific latency indicators such as **time to first audio (TTFA)** alongside turn latency.
 2. **Transcript evaluation limits**: Text/transcript evaluators (`relevance`, `task_adherence`, `intent_resolution`, and custom rubric judges) evaluate **text-observable behavior only**. State clearly that transcript evaluations do **not** measure pronunciation, prosody, voice naturalness, background noise suppression, echo cancellation, audio dropouts, or barge-in/interruption timing.
-3. **Optimization boundary**: `prompt_optimize` can refine a Prompt Voice Agent's `instructions` or a Hosted Voice target's system prompt for text-level response quality, but prompt optimization alone is **not** a complete Voice optimization loop (which also depends on `audio`, `turnDetection`, `greeting`, and model selection in `azure.yaml`).
-4. **Privacy and storage (`store: false` default)**: Voice Agents default to `store: false`. Do not enable `store: true` or harvest caller audio/transcripts into evaluation datasets without an explicit user privacy decision and confirmed retention controls.
+3. **Optimization boundary**: `prompt_optimize` can improve text-level behavior, but it does not optimize the complete audio/session configuration. Route configuration changes through [create-voice](../create/create-voice.md).
+4. **Privacy and storage**: Follow the `store: false` rule in [common Voice invariants](../create/references/voice-agent-common.md). Do not harvest caller audio/transcripts without an explicit privacy decision and retention controls.
 
 ## Related Skills
 

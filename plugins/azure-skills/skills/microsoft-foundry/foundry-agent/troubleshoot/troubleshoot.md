@@ -33,13 +33,14 @@ Use the project endpoint and agent name from the project context (see [Common Pr
 
 Inspect `azure.yaml` (`host: azure.ai.agent`) and classify the service in order:
 1. **`kind: voice` or `kind: prompt-voice` (Voice Agent)**:
+   - Read [common Voice invariants](../create/references/voice-agent-common.md) and the selected subtype reference from [create-voice](../create/create-voice.md).
    - Triage in this exact order:
-     1. **Definition & deployment**: Check `azure.yaml` schema invariants (properties directly under the service block with no `config:` wrapper, mutually exclusive `modelType`/`model` vs `conversationEngine`, no obsolete `modelType: hosted_agent` or `targetAgent`, distinct target and wrapper names) and run `azd ai agent show --output json`.
+     1. **Definition & deployment**: Validate the selected subtype and run `azd ai agent show --output json`.
      2. **Voice WebSocket upgrade & auth**: Confirm the client connects to `wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1` with `Foundry-Features: VoiceAgents=V1Preview` and an Entra token for `https://ai.azure.com` (never use `azd ai agent invoke`).
-     3. **Audio & session settings**: Check `audio.input` (`format: { type: audio/pcm, rate: 24000 }`, `turnDetection: { type: server_vad }`), `audio.output.voice` / `voice` (default `en-US-AvaNeural`, or alternatives such as `en-US-Ava:DragonHDLatestNeural`), `greeting`, and `model.id` / `services.ai-project.deployments` (when `modelType: self_deployed`).
+     3. **Audio & session settings**: Compare audio, voice, greeting, model, and storage settings with the selected subtype reference.
      4. **Subtype-specific runtime triage**:
         - **Prompt Voice (`modelType: managed` or `self_deployed`)**: Has no Hosted container, no `azd ai agent sessions`, no `files`, and no `azd ai agent monitor` log stream. Skip Step 3 and proceed to Step 4 (Application Insights telemetry).
-        - **Hosted Voice (`conversationEngine.type: hosted_agent`)**: Separate **wrapper** failures (`conversationEngine.name` mismatch, wrapper endpoint/config errors) from **`kind: hosted` target** failures (`session.rejected` with `protocol_mismatch` when `protocol_version != "1.0"` or when `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]`, `metadata.voiceLiveCompatible: "true"`, `bridgeProtocolVersion: "1.0"`, or the `session.start` -> `session.ready` handshake is missing; container startup crashes; missing model deployment or RBAC). Proceed to Step 3 to inspect logs on the **`kind: hosted` target service**.
+        - **Hosted Voice (`conversationEngine.type: hosted_agent`)**: Separate wrapper configuration/endpoint failures from target Bridge, startup, model, and RBAC failures. Use [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), then inspect logs on the `kind: hosted` target service.
      5. **Observability**: Proceed to Step 4 and Step 5 for Application Insights conversation telemetry.
 2. **`kind: hosted` (Hosted Agent or Hosted Voice target)**: Run:
 
@@ -120,7 +121,7 @@ Present a summary to the user including:
 | No observability connection | Application Insights not configured for the project | Suggest configuring Application Insights for the Foundry project |
 | Kusto query failed | Invalid cluster/database or insufficient permissions | Verify Application Insights resource details and reader permissions |
 | No telemetry data | Agent not instrumented or too recent | Check if Application Insights SDK is configured; data may take a few minutes to appear |
-| `session.rejected` (`protocol_mismatch`) on Hosted Voice session start | Hosted target `session.start` did not match `protocol_version: "1.0"`, or target `azure.yaml` is missing `invocations_ws` `1.0.0`, `metadata.voiceLiveCompatible: "true"`, `bridgeProtocolVersion: "1.0"`, or does not reply with `session.ready` | Fix the `kind: hosted` target's `azure.yaml` metadata/protocols and Bridge `1.0` `session.start` -> `session.ready` handshake (see [voice-agent-hosted-bridge.md](../create/references/voice-agent-hosted-bridge.md)), redeploy the target, and retest |
+| `session.rejected` (`protocol_mismatch`) on Hosted Voice startup | Hosted target does not satisfy the selected Bridge contract | Follow [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), redeploy the target, and retest |
 | `azd ai agent invoke` fails on Voice Agent | `azd ai agent invoke` does not support `kind: voice` / `kind: prompt-voice` | Use the Voice WebSocket smoke-test script ([smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) / [smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1)) or Foundry Voice playground |
 
 ## Additional Resources

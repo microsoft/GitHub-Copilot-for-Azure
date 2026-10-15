@@ -999,13 +999,17 @@ stimuli:
   - name: "Voice agent model-first routing and Prompt Voice workflow"
     prompt: |
       Without executing any create, provision, or deploy commands, explain the
-      model-first choices for creating a Microsoft Foundry Voice Agent, then
-      show the azd initialization command and azure.yaml definition for a
-      Prompt Voice agent named support-voice using managed gpt-realtime and
-      en-US-AvaNeural, and explain how to smoke-test it after deployment.
+      preflight, project-context, and model-first choices for creating a
+      Microsoft Foundry Voice Agent. Show the non-interactive azd initialization
+      command for a Prompt Voice agent named support-voice using managed
+      gpt-realtime and en-US-AvaNeural in an existing project with ARM ID
+      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg/providers/Microsoft.CognitiveServices/accounts/account/projects/project.
+      Include the azure.yaml definition and explain how to smoke-test it after
+      deployment.
     rubric:
+      - "Requires the dependency/environment preflight, Common Project Context Resolution, new-versus-existing project choice, and inline AZURE_DEV_USER_AGENT=microsoft_foundry_skill before azd use."
       - "Explains the model-first options (managed real-time model via modelType: managed, project model deployment via modelType: self_deployed, and Hosted Voice via conversationEngine.type: hosted_agent)."
-      - "Shows azd ai agent init --kind prompt-voice and an azure.yaml service block with kind: voice (or prompt-voice), modelType: managed, model.id: gpt-realtime, store: false, and en-US-AvaNeural directly under the service block (not nested under config:)."
+      - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id and an azure.yaml service block with kind: voice (or prompt-voice), modelType: managed, model.id: gpt-realtime, store: false, and en-US-AvaNeural directly under the service block (not nested under config:)."
       - "States that azd ai agent invoke does not support Voice Agents and verifies the deployed agent over the voice WebSocket endpoint or smoke-test-voice script."
     tags:
       type: integration
@@ -1024,6 +1028,15 @@ stimuli:
           pattern: "(?i)azd\\s+ai\\s+agent\\s+init.*--kind\\s+prompt-voice"
       - type: output-matches
         config:
+          pattern: "(?i)--no-prompt"
+      - type: output-matches
+        config:
+          pattern: "(?i)--project-id"
+      - type: output-matches
+        config:
+          pattern: "(?i)AZURE_DEV_USER_AGENT\\s*=\\s*[\"']?microsoft_foundry_skill"
+      - type: output-matches
+        config:
           pattern: "(?i)modelType:\\s*managed"
       - type: output-matches
         config:
@@ -1040,19 +1053,26 @@ stimuli:
           threshold: 1
           prompt: |
             Pass only if the response:
-            1. Explains the model-first options before or alongside the YAML
+            1. Starts with or clearly requires the repository preflight and
+               Common Project Context Resolution, resolves new versus existing
+               Foundry project before file generation, uses the supplied ARM ID
+               with --project-id, asks only for unresolved decisions, and states
+               that every azd command runs with inline
+               AZURE_DEV_USER_AGENT=microsoft_foundry_skill.
+            2. Explains the model-first options before or alongside the YAML
                (managed real-time model via modelType: managed, project model
                deployment via modelType: self_deployed in services.ai-project.deployments
                where Foundry infers native speech-to-speech vs cascaded
                STT->LLM->TTS from model.id, and Hosted Voice via
                conversationEngine.type: hosted_agent).
-            2. Shows azd ai agent init --kind prompt-voice and an azure.yaml
+            3. Shows azd ai agent init --no-prompt --kind prompt-voice with
+               --project-id and an azure.yaml
                service block with properties directly under the service block
                (not nested under config:), including kind: voice (or prompt-voice),
                modelType: managed, model: { id: gpt-realtime }, store: false, and
                en-US-AvaNeural without requiring a deployment entry under
                services.ai-project.deployments for the managed model.
-            3. States that azd ai agent invoke does not support Voice Agents and
+            4. States that azd ai agent invoke does not support Voice Agents and
                verifies the deployed agent over the voice WebSocket endpoint
                (or smoke-test-voice.sh / smoke-test-voice.ps1).
             Fail if it uses Foundry MCP agent_update to create the Voice Agent,
@@ -1157,6 +1177,36 @@ stimuli:
           disallowed:
             - command: "(?i)\\bazd\\s+ai\\s+agent\\s+(init|invoke)\\b|\\bazd\\s+(up|provision|deploy)\\b"
               description: "Planning-only Hosted Voice test must not run azd commands"
+
+  - name: "Generic Azure Speech transcription does not route to Foundry"
+    prompt: "Use the Azure AI Speech SDK to transcribe microphone audio to text in my Python application."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-ai]
+          disallowed: [microsoft-foundry]
+
+  - name: "Generic Azure text to speech does not route to Foundry"
+    prompt: "How do I convert text to speech with an Azure neural voice?"
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [azure-ai]
+          disallowed: [microsoft-foundry]
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Prompt Agents

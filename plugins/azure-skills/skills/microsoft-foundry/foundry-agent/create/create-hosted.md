@@ -33,9 +33,9 @@ For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prom
 |--|--------|--------|-----|-------|
 | Definition | Custom Python / .NET code | Model + instructions | Prompt agent with GitHub Copilot harness | Prompt Voice (`modelType: managed` / `self_deployed`) or Hosted Voice (`kind: hosted` target + `kind: voice` wrapper) |
 | Workflow | This skill | [create-prompt.md](create-prompt.md) | [create-managed-harness.md](create-managed-harness.md) | [create-voice.md](create-voice.md) |
-| Tools | Prefer Toolbox + connections | Direct tool configs | Prefer direct tools; Toolbox only when explicit |
-| Local debugging | `azd ai agent run --no-client` | Limited | No local harness runtime |
-| Output | Immutable version via `azd deploy` | `agent_update` via MCP / SDK | Immutable version via `azd deploy` |
+| Tools | Prefer Toolbox + connections | Direct tool configs | Prefer direct tools; Toolbox only when explicit | Prompt Voice configures tools directly; Hosted Voice tools belong to the target, never the wrapper |
+| Local debugging | `azd ai agent run --no-client` | Limited | No local harness runtime | None for Prompt Voice; target-only Bridge validation for Hosted Voice |
+| Output | Immutable version via `azd deploy` | `agent_update` via MCP / SDK | Immutable version via `azd deploy` | Immutable Voice and target versions via `azd deploy` |
 
 ## azd Sample Selection Guidance
 

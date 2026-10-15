@@ -142,18 +142,14 @@ A Managed Harness Agent has no source/runtime/container fields and no local `azd
 
 ### Voice Agent service blocks (`kind: voice` / `kind: prompt-voice`)
 
-Initialize a new declarative Prompt Voice Agent with:
+Use `azd ai agent init --kind prompt-voice` for a new Prompt Voice service. Use a Hosted manifest or an existing `kind: hosted` target plus `kind: voice` wrapper for Hosted Voice.
 
 ```bash
-azd ai agent init --kind prompt-voice --agent-name <agent-name> \
+azd ai agent init --no-prompt --kind prompt-voice --agent-name <agent-name> \
   --model gpt-realtime --voice en-US-AvaNeural
 ```
 
-- `--kind prompt-voice` rejects `--src`, `--protocol`, `--deploy-mode`, `--runtime`, `--entry-point`, `--dep-resolution`, `--model-deployment`, `--description`, `--rai-policy`, `--acr-connection`, `--registry-connection`, `--harness`, `--instructions`, and `--image`.
-- All Voice service properties (`kind`, `name`, `modelType`, `model`, `conversationEngine`, `instructions`, `voice`, `audio`, `greeting`, `store`, `outputModalities`, `telephony`) sit **directly under `services.<service-name>`** (never under a `config:` block).
-- **Prompt Voice** (`1` Foundry agent) sets `modelType: managed` (service-hosted `model: { id: gpt-realtime }`, no entry under `services.ai-project.deployments`) or `modelType: self_deployed` (references `model: { id: <deployment-name> }` from `services.ai-project.deployments`; Foundry infers native speech-to-speech vs cascaded STT -> LLM -> TTS from `model.id`).
-- **Hosted Voice** (`2` Foundry agents) pairs a `kind: hosted` target (`protocols: [{ protocol: invocations_ws, version: 1.0.0 }]`, `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`) with a `kind: voice` wrapper (`uses: [ai-project, <target>]`, `conversationEngine: { type: hosted_agent, name: <target> }`, and no `modelType`, `model`, `instructions`, `tools`, or `protocols`). Never use obsolete `modelType: hosted_agent` or `targetAgent`.
-- `azd deploy` and `azd ai agent endpoint show` support Voice services, but `azd ai agent invoke` does **not** support `kind: voice` / `kind: prompt-voice` (including Hosted Voice wrappers). Verify Voice Agents over the `voice` WebSocket endpoint (`wss://<project-host>/api/projects/<project>/agents/<voice-agent>/endpoint/protocols/voice?api-version=v1`); see [create-voice.md](../../create/create-voice.md).
+Resolve the new-versus-existing project choice before init and pass `--project-id` for an existing project. For subtype rules, supported fields, and lifecycle boundaries, follow [create-voice](../../create/create-voice.md) and load only its selected subtype reference.
 
 ## State (azd env vars)
 

@@ -25,10 +25,10 @@ How to verify a deployed Microsoft Foundry Voice Agent (`kind: voice` / `kind: p
 
 ## Prerequisites
 
-Install `websockets` in your Python environment and ensure Azure CLI is authenticated (`az login`):
+Install `websockets` in your Python environment and ensure Azure credentials are already available. The helper tries Azure CLI first and optionally falls back to `DefaultAzureCredential` when `azure-identity` is installed.
 
 ```bash
-pip install websockets
+python -m pip install websockets
 ```
 
 ---
@@ -38,6 +38,8 @@ pip install websockets
 Run the paired helper scripts from the `microsoft-foundry` skill root (`plugins/azure-skills/skills/microsoft-foundry`):
 - Bash: [../scripts/smoke-test-voice.sh](../scripts/smoke-test-voice.sh)
 - PowerShell: [../scripts/smoke-test-voice.ps1](../scripts/smoke-test-voice.ps1)
+
+Both wrappers launch the shared [Python client](../scripts/smoke_test_voice.py), which owns authentication, protocol handling, response validation, and JSON output.
 
 Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`, `-Text`, `-ExpectedMarker`, `-Timeout`, `-OutputAudio`, `-DryRun`, `-Help`), whereas Bash uses kebab-case flags (`--endpoint`, `--agent-name`, `--text`, `--expected-marker`, `--timeout`, `--output-audio`, `--dry-run`, `--help`).
 
