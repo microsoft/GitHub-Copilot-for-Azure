@@ -56,7 +56,7 @@ These are protocols developers build **on top of** the raw WebSocket. The platfo
 
 | Pattern | Typical use | Notes |
 |---------|-------------|-------|
-| **Voice Live Bridge `1.0` JSON events** | Hosted Voice target paired with a `kind: voice` wrapper | Text JSON frames (`session.Initialize` -> `session.Initialized`, `conversation.Message`, `response.Create` -> `response.TextDelta` / `response.Done`, `conversation.Cancel`) with `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`; see [voice-agent-hosted-bridge.md](../../create/references/voice-agent-hosted-bridge.md) |
+| **Voice Live Bridge `1.0` JSON events** | Hosted Voice target paired with a `kind: voice` wrapper | Text JSON frames (`session.start` -> `session.ready`, `user.message` -> `response.created` -> `response.output_text.delta` / `response.output_text.done` -> `response.done`, `barge_in`, `session.end`) with `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`; see [voice-agent-hosted-bridge.md](../../create/references/voice-agent-hosted-bridge.md) |
 | **Raw binary media frames** | Custom Hosted real-time/audio agents (PCM, Opus) | Binary opcode; agree on sample rate, channels, bit depth out-of-band |
 | **Length-prefixed protobuf** | Real-time pipeline frameworks | Each WS frame is one serialized message; control + audio multiplexed |
 | **JSON control + binary media** | Mixed signaling | Text frames carry control (e.g. start/stop, RTVI events), binary frames carry media |

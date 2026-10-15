@@ -348,16 +348,16 @@ Voice Agents (`kind: voice` or CLI alias `kind: prompt-voice`) are deployed thro
 Inspect `azure.yaml` and classify the Voice subtype before deploying:
 
 1. **Prompt Voice** (`1` Foundry agent):
-   - Uses `kind: voice` (or `kind: prompt-voice`) with `modelType: managed` or `modelType: self_deployed` plus `model: <name>`.
-   - If `modelType: managed` (e.g., `gpt-realtime` or `gpt-realtime-1.5`), no entry is required under `services.ai-project.models`.
-   - If `modelType: self_deployed`, confirm the referenced deployment is declared under `services.ai-project.models` (or exists in the target Foundry project).
+   - Uses `kind: voice` or `kind: prompt-voice` directly under `services.<service-name>` with `modelType: managed` or `modelType: self_deployed` plus `model: { id: <name> }`.
+   - If `modelType: managed` (e.g., `model: { id: gpt-realtime }`), no entry is required under `services.ai-project.deployments`.
+   - If `modelType: self_deployed`, confirm the referenced deployment is declared under `services.ai-project.deployments` (or exists in the target Foundry project).
 2. **Hosted Voice** (`2` Foundry agents — `kind: hosted` target + `kind: voice` wrapper):
-   - Confirm the target (`kind: hosted`) and wrapper (`kind: voice`) have **distinct service keys** and **distinct `config.name` values**.
+   - Confirm the target (`kind: hosted`) and wrapper (`kind: voice`) have **distinct service keys** and **distinct `name` values** (directly under each service block, never nested under `config:`).
    - Confirm the target declares `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]` and `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`.
-   - Confirm the wrapper declares `uses: [ai-project, <target-service>]` and `conversationEngine: { type: hosted_agent, name: <target-agent-name> }`, and omits `modelType`, `model`, and `instructions`.
+   - Confirm the wrapper declares `uses: [ai-project, <target-service>]` and `conversationEngine: { type: hosted_agent, name: <target-service-name> }`, and omits `modelType`, `model`, `instructions`, `tools`, and `protocols`.
 3. **Reject invalid combinations**:
    - Stop if a Voice service declares **both** `modelType`/`model` and `conversationEngine`, or **neither**.
-   - Stop and replace any obsolete `modelType: hosted_agent` or `targetAgent` fields with `conversationEngine`.
+   - Stop and replace any obsolete `modelType: hosted_agent`, `targetAgent`, or `config:` nesting with top-level service fields and `conversationEngine`.
 
 Check current environment state:
 

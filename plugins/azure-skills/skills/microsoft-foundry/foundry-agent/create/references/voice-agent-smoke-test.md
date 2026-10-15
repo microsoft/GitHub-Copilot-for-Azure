@@ -3,7 +3,7 @@
 How to verify a deployed Microsoft Foundry Voice Agent (`kind: voice` / `kind: prompt-voice`) — either a **Prompt Voice Agent** or a **Hosted Voice wrapper** — over the managed Foundry `voice` WebSocket endpoint.
 
 > **Why not `azd ai agent invoke`?**
-> `azd ai agent invoke` supports Responses (`responses`) and standard Hosted HTTP invocations, **not** the `voice` WebSocket protocol. Always verify Voice Agents with the Foundry Voice WebSocket client or the Foundry portal Voice playground.
+> `azd ai agent invoke` rejects `kind: voice` and `kind: prompt-voice` services (`errVoiceInvocationUnsupported`). Always verify Voice Agents over the managed `voice` WebSocket endpoint or in the Microsoft Foundry portal (`https://ai.azure.com`). You can inspect the deployed endpoint URL with `azd ai agent endpoint show <voice-service>`.
 
 ---
 
@@ -11,26 +11,25 @@ How to verify a deployed Microsoft Foundry Voice Agent (`kind: voice` / `kind: p
 
 - **URL format**:
   ```text
-  wss://<project-host>/api/projects/<project>/agents/<voice-agent-name>/endpoint/protocols/voice?api-version=v1
+  wss://<project-host>/api/projects/<project>/agents/<voice-agent-name>/endpoint/protocols/voice?api-version=v1&agent_session_id=<session-id>
   ```
-  Derived from `AZURE_AI_PROJECT_ENDPOINT` (`https://<project-host>/api/projects/<project>`).
-- **Authentication**:
-  Bearer token via `DefaultAzureCredential` with scope `https://ai.azure.com/.default` (`Authorization: Bearer <token>`). Never hard-code tokens or API keys in scripts or commits.
+  Derived from `AZURE_AI_PROJECT_ENDPOINT` / `FOUNDRY_PROJECT_ENDPOINT` (`https://<project-host>/api/projects/<project>`).
+- **Headers**:
+  - `Authorization`: Entra access token for resource `https://ai.azure.com` (`az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv`), formatted dynamically as `"{} {}".format("Bearer", token)`. Never hard-code tokens or API keys in scripts or commits.
+  - `Foundry-Features: VoiceAgents=V1Preview`
 - **Target agent name**:
-  - For **Prompt Voice**: pass the `kind: voice` agent's `config.name`.
-  - For **Hosted Voice**: pass the **`kind: voice` wrapper's** `config.name` (not the `kind: hosted` target's name) to test the full end-to-end Voice pipeline.
+  - For **Prompt Voice**: pass the `kind: voice` / `kind: prompt-voice` agent's `name`.
+  - For **Hosted Voice**: pass the **`kind: voice` wrapper's** `name` (not the `kind: hosted` target's name) to test the full end-to-end Voice pipeline.
 
 ---
 
 ## Prerequisites
 
-Install the Azure AI Projects Voice SDK extra and Azure Identity in your Python environment:
+Install `websockets` in your Python environment and ensure Azure CLI is authenticated (`az login`):
 
 ```bash
-pip install "azure-ai-projects[voice]" azure-identity
+pip install websockets
 ```
-
-Ensure you are signed in (`az login`) and your identity has **Azure AI User** (or **Azure AI Developer**) on the Foundry project.
 
 ---
 
@@ -60,15 +59,15 @@ Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`,
   -DryRun
 ```
 
-### 2. Live Smoke Test (connect, receive greeting/session events, send text prompt, verify audio/text response)
+### 2. Live Smoke Test (connect, wait for `session.updated`, send typed turn, verify completed transcript + base64 audio)
 
 **Bash**
 ```bash
 ./foundry-agent/create/scripts/smoke-test-voice.sh \
   --endpoint "$AZURE_AI_PROJECT_ENDPOINT" \
   --agent-name "<voice-agent-name>" \
-  --text "Hello, can you hear me?" \
-  --timeout 30
+  --text "In one short sentence, introduce yourself." \
+  --timeout 180
 ```
 
 **PowerShell**
@@ -76,22 +75,29 @@ Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`,
 .\foundry-agent\create\scripts\smoke-test-voice.ps1 `
   -Endpoint $env:AZURE_AI_PROJECT_ENDPOINT `
   -AgentName "<voice-agent-name>" `
-  -Text "Hello, can you hear me?" `
-  -Timeout 30
+  -Text "In one short sentence, introduce yourself." `
+  -Timeout 180
 ```
 
 ### Exit Codes
 
 | Exit Code | Meaning |
 |---|---|
-| `0` | Smoke test passed (WebSocket connected, session initialized, and greeting or response events received) or `--dry-run` / `--help` succeeded |
-| `1` | Smoke test failed (authentication error, WebSocket handshake/session error, timeout, or missing Python packages) |
+| `0` | Smoke test passed (`response.done` with `response.status == "completed"`, non-empty `response.output_audio_transcript.delta`/`done`, and non-empty base64 `response.output_audio.delta`) or `--dry-run` / `--help` succeeded |
+| `1` | Smoke test failed (authentication error, WebSocket `error` frame, non-`completed` status, empty transcript, zero audio deltas, timeout, or missing `websockets` package) |
 | `2` | Usage or argument validation error (missing `--endpoint`/`-Endpoint`, missing `--agent-name`/`-AgentName`, invalid `--timeout`/`-Timeout`, or unknown option) |
 
 ---
 
-## What a Passing Smoke Test Verifies
+## Verified Wire Event Sequence
 
-1. **Authentication & WebSocket Upgrade**: Acquires an Entra token (`https://ai.azure.com/.default`) and establishes the `voice` protocol WebSocket session.
-2. **Session Readiness / Greeting**: Receives session initialization (`session.created` / `session.updated`) and any configured `greeting` output.
-3. **Turn Processing**: Sends a text turn (`conversation.item.create` + `response.create`) and verifies streamed assistant transcript deltas (`response.audio_transcript.delta` / `response.text.delta`) or audio chunks (`response.audio.delta`) through `response.done`, then closes the socket cleanly.
+1. **Connect & Authenticate**: Connects to `.../agents/<agent>/endpoint/protocols/voice?api-version=v1&agent_session_id=<id>` with `Foundry-Features: VoiceAgents=V1Preview` and an Entra token for `https://ai.azure.com`.
+2. **Wait for `session.updated`**: Waits for the server's `session.updated` event (and any initial greeting `response.done` if a greeting response runs before the user turn) before sending user input.
+3. **Send Typed Turn**:
+   - Sends `{"type": "conversation.item.create", "item": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "<prompt>"}]}}`
+   - Sends `{"type": "response.create"}`
+4. **Consume & Verify Output**:
+   - Collects transcript text from `response.output_audio_transcript.delta` (`delta`) and `response.output_audio_transcript.done` (`transcript`).
+   - Counts base64 audio payload characters from `response.output_audio.delta` (`delta`).
+   - Fails immediately on any `error` event or if `response.done` reports `response.status != "completed"`.
+   - Requires both a non-empty transcript and `audio_base64_characters > 0` before exiting `0`.

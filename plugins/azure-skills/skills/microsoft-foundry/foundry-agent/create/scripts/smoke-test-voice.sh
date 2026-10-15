@@ -14,15 +14,15 @@
 # Options:
 #   --endpoint <url>        Foundry project endpoint (https://<host>/api/projects/<project>)
 #   --agent-name <name>     Deployed Voice Agent name (kind: voice wrapper or Prompt Voice agent)
-#   --text <prompt>         Prompt text to send after session initialization (default: "Hello, briefly introduce yourself.")
-#   --timeout <seconds>     Positive integer timeout in seconds (default: 30)
-#   --output-audio <path>   Optional file path to write received PCM16 audio bytes
+#   --text <prompt>         Prompt text to send after session initialization (default: "In one short sentence, introduce yourself.")
+#   --timeout <seconds>     Positive integer timeout in seconds (default: 180)
+#   --output-audio <path>   Optional file path to write decoded PCM audio bytes
 #   --dry-run               Print resolved WebSocket URL and execution plan without connecting
 #   -h, --help              Show this help text and exit 0
 #
 # Exit Codes:
 #   0  Smoke test passed (or --help / --dry-run succeeded)
-#   1  Smoke test failed (missing Python/SDK, auth failure, WebSocket error, or timeout)
+#   1  Smoke test failed (missing Python/websockets, auth failure, WebSocket error, empty transcript/audio, or timeout)
 #   2  Usage or argument validation error
 
 set -euo pipefail
@@ -33,8 +33,8 @@ usage() {
 
 ENDPOINT=""
 AGENT_NAME=""
-PROMPT_TEXT="Hello, briefly introduce yourself."
-TIMEOUT="30"
+PROMPT_TEXT="In one short sentence, introduce yourself."
+TIMEOUT="180"
 OUTPUT_AUDIO=""
 DRY_RUN="false"
 
@@ -145,7 +145,8 @@ if [ "$DRY_RUN" = "true" ]; then
   echo "DRY-RUN: Voice Agent WebSocket Smoke Test"
   echo "  Project Endpoint : $ENDPOINT"
   echo "  Agent Name       : $AGENT_NAME"
-  echo "  WebSocket URL    : $WS_URL"
+  echo "  WebSocket URL    : ${WS_URL}&agent_session_id=<uuid>"
+  echo "  Headers          : Foundry-Features: VoiceAgents=V1Preview"
   echo "  Prompt Text      : $PROMPT_TEXT"
   echo "  Timeout (s)      : $TIMEOUT"
   if [ -n "$OUTPUT_AUDIO" ]; then
@@ -153,7 +154,7 @@ if [ "$DRY_RUN" = "true" ]; then
   else
     echo "  Output Audio     : (none)"
   fi
-  echo "  Auth Scope       : https://ai.azure.com/.default (DefaultAzureCredential)"
+  echo "  Auth Resource    : https://ai.azure.com (az account get-access-token)"
   exit 0
 fi
 
@@ -171,117 +172,177 @@ fi
 import asyncio
 import base64
 import json
+import subprocess
 import sys
+import uuid
 
-ws_url, agent_name, prompt_text, timeout_raw, output_audio = sys.argv[1:6]
+ws_url_base, agent_name, prompt_text, timeout_raw, output_audio = sys.argv[1:6]
 timeout_sec = int(timeout_raw)
-
-try:
-    from azure.identity import DefaultAzureCredential
-except ImportError as exc:
-    print(
-        f"ERROR: Missing required package ({exc}). Install with: pip install \"azure-ai-projects[voice]\" azure-identity",
-        file=sys.stderr,
-    )
-    sys.exit(1)
 
 try:
     import websockets
 except ImportError as exc:
     print(
-        f"ERROR: Missing WebSocket client dependency ({exc}). Install with: pip install \"azure-ai-projects[voice]\" azure-identity websockets",
+        f"ERROR: Missing WebSocket client dependency ({exc}). Install with: pip install websockets",
         file=sys.stderr,
     )
     sys.exit(1)
 
 
-async def run_smoke_test() -> int:
-    credential = DefaultAzureCredential()
+def acquire_token() -> str:
     try:
-        token = credential.get_token("https://ai.azure.com/.default").token
+        token = subprocess.check_output(
+            [
+                "az",
+                "account",
+                "get-access-token",
+                "--resource",
+                "https://ai.azure.com",
+                "--query",
+                "accessToken",
+                "-o",
+                "tsv",
+            ],
+            text=True,
+        ).strip()
+        if token:
+            return token
+    except Exception:
+        pass
+
+    try:
+        from azure.identity import DefaultAzureCredential
+
+        return DefaultAzureCredential().get_token("https://ai.azure.com/.default").token
     except Exception as exc:
-        print(f"ERROR: Failed to acquire Entra token for https://ai.azure.com/.default: {exc}", file=sys.stderr)
+        raise RuntimeError(
+            f"Failed to acquire Entra token for https://ai.azure.com via az CLI or DefaultAzureCredential: {exc}"
+        ) from exc
+
+
+async def send_user_turn(ws, text: str) -> None:
+    await ws.send(
+        json.dumps(
+            {
+                "type": "conversation.item.create",
+                "item": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": text}],
+                },
+            }
+        )
+    )
+    await ws.send(json.dumps({"type": "response.create"}))
+
+
+async def run_smoke_test() -> int:
+    try:
+        token = acquire_token()
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 
-    headers = {"Authorization": f"Bearer {token}"}
-    transcript_parts = []
-    audio_bytes = bytearray()
-    got_session_event = False
-    got_response_output = False
+    sep = "&" if "?" in ws_url_base else "?"
+    uri = (
+        ws_url_base
+        if "agent_session_id=" in ws_url_base
+        else f"{ws_url_base}{sep}agent_session_id={uuid.uuid4()}"
+    )
+    headers = {
+        "Authorization": "{} {}".format("Bearer", token),
+        "Foundry-Features": "VoiceAgents=V1Preview",
+    }
 
-    connect_kwargs = {"additional_headers": headers}
+    events = []
+    transcript = []
+    final_transcript = ""
+    audio_bytes = 0
+    decoded_audio = bytearray()
+    sent_turn = False
+    greeting_in_progress = False
+    completed_status = None
+
     try:
-        async with asyncio.timeout(timeout_sec):
-            try:
-                ws_ctx = websockets.connect(ws_url, **connect_kwargs)
-            except TypeError:
-                ws_ctx = websockets.connect(ws_url, extra_headers=headers)
+        try:
+            ws_ctx = websockets.connect(
+                uri,
+                additional_headers=headers,
+                open_timeout=60,
+                close_timeout=10,
+                max_size=16 * 1024 * 1024,
+            )
+        except TypeError:
+            ws_ctx = websockets.connect(
+                uri,
+                extra_headers=headers,
+                open_timeout=60,
+                close_timeout=10,
+                max_size=16 * 1024 * 1024,
+            )
 
-            async with ws_ctx as ws:
-                await ws.send(
-                    json.dumps(
-                        {
-                            "type": "conversation.item.create",
-                            "item": {
-                                "type": "message",
-                                "role": "user",
-                                "content": [{"type": "input_text", "text": prompt_text}],
-                            },
-                        }
-                    )
-                )
-                await ws.send(json.dumps({"type": "response.create"}))
+        async with ws_ctx as ws:
+            while True:
+                raw_msg = await asyncio.wait_for(ws.recv(), timeout=timeout_sec)
+                event = json.loads(raw_msg)
+                ev_type = event.get("type", "")
+                events.append(ev_type)
 
-                async for raw_msg in ws:
-                    if isinstance(raw_msg, bytes):
-                        audio_bytes.extend(raw_msg)
-                        got_response_output = True
-                        continue
-
-                    event = json.loads(raw_msg)
-                    ev_type = event.get("type", "")
-
-                    if ev_type in ("session.created", "session.updated", "session.Initialized"):
-                        got_session_event = True
-                    elif ev_type in (
-                        "response.audio_transcript.delta",
-                        "response.text.delta",
-                        "response.TextDelta",
-                    ):
-                        delta = event.get("delta") or event.get("text") or ""
-                        transcript_parts.append(delta)
-                        got_response_output = True
-                    elif ev_type == "response.audio.delta":
-                        b64_chunk = event.get("delta", "")
-                        if b64_chunk:
-                            audio_bytes.extend(base64.b64decode(b64_chunk))
-                            got_response_output = True
+                if not sent_turn:
+                    if ev_type == "response.created":
+                        greeting_in_progress = True
+                    elif ev_type == "session.updated" and not greeting_in_progress:
+                        await send_user_turn(ws, prompt_text)
+                        sent_turn = True
+                    elif ev_type == "response.done" and greeting_in_progress:
+                        greeting_in_progress = False
+                        await send_user_turn(ws, prompt_text)
+                        sent_turn = True
                     elif ev_type == "error":
                         print(f"ERROR: Voice session returned error event: {json.dumps(event)}", file=sys.stderr)
                         return 1
-                    elif ev_type in ("response.done", "response.Done"):
-                        break
+                    continue
+
+                if ev_type == "response.output_audio_transcript.delta":
+                    transcript.append(event.get("delta", ""))
+                elif ev_type == "response.output_audio_transcript.done":
+                    final_transcript = event.get("transcript", "")
+                elif ev_type == "response.output_audio.delta":
+                    b64_delta = event.get("delta", "")
+                    audio_bytes += len(b64_delta)
+                    if output_audio and b64_delta:
+                        decoded_audio.extend(base64.b64decode(b64_delta))
+                elif ev_type == "error":
+                    print(f"ERROR: Voice session returned error event: {json.dumps(event)}", file=sys.stderr)
+                    return 1
+                elif ev_type == "response.done":
+                    completed_status = event.get("response", {}).get("status")
+                    break
     except TimeoutError:
-        if not (got_session_event or got_response_output):
-            print(f"ERROR: Timed out after {timeout_sec}s waiting for Voice Agent '{agent_name}'.", file=sys.stderr)
-            return 1
+        print(f"ERROR: Timed out after {timeout_sec}s waiting for Voice Agent '{agent_name}'.", file=sys.stderr)
+        return 1
     except Exception as exc:
         print(f"ERROR: Voice WebSocket smoke test failed for '{agent_name}': {exc}", file=sys.stderr)
         return 1
 
-    if output_audio and audio_bytes:
+    if output_audio and decoded_audio:
         with open(output_audio, "wb") as fh:
-            fh.write(audio_bytes)
+            fh.write(decoded_audio)
 
-    if not (got_session_event or got_response_output):
-        print(f"ERROR: No session or response events received from Voice Agent '{agent_name}'.", file=sys.stderr)
+    text = (final_transcript or "".join(transcript)).strip()
+    result = {
+        "agent": agent_name,
+        "status": completed_status,
+        "transcript": text,
+        "audio_base64_characters": audio_bytes,
+        "event_types": events,
+    }
+
+    if completed_status != "completed" or not text or audio_bytes <= 0:
+        print(f"ERROR: Incomplete Voice Agent response: {json.dumps(result)}", file=sys.stderr)
         return 1
 
-    transcript = "".join(transcript_parts).strip()
-    print(
-        f"PASS: Voice Agent '{agent_name}' responded over voice WebSocket "
-        f"(audio_bytes={len(audio_bytes)}, transcript={json.dumps(transcript[:160])})."
-    )
+    print(json.dumps(result, indent=2))
     return 0
 
 

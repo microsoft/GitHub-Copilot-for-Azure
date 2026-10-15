@@ -4,17 +4,20 @@ Canonical `azure.yaml` service shapes, configuration fields, and validation rule
 
 ## Schema Invariants
 
-1. **Host and kind**:
-   - Every Voice Agent service sits under `services:` with `host: azure.ai.agent` and `config.kind: voice` (`kind: prompt-voice` is accepted as an alias by `azd ai agent`).
+1. **Direct service-level properties (no `config:` wrapper)**:
+   - Every Voice Agent service sits under `services.<service-key>` with `host: azure.ai.agent` and `kind: voice` (`kind: prompt-voice` is accepted for compatibility and written by `azd ai agent init --kind prompt-voice`).
+   - Agent fields (`kind`, `name`, `modelType`, `model`, `conversationEngine`, `instructions`, `voice`, `audio`, `greeting`, `store`, `outputModalities`, `telephony`, etc.) are placed **directly under the service block**, never nested under a `config:` block (`config:` is deprecated and rejected).
+   - Project model deployments live under `services.<project-service>.deployments:` (not `models:`).
 2. **Engine selection (mutually exclusive)**:
-   - **Prompt Voice** sets `modelType: managed` or `modelType: self_deployed` **and** `model: <model-or-deployment-name>`.
-   - **Hosted Voice wrapper** sets `conversationEngine: { type: hosted_agent, name: <hosted-target-name> }` and omits `modelType`, `model`, and `instructions`.
+   - **Prompt Voice** sets `modelType: managed` (default when omitted) or `modelType: self_deployed` **and** `model: { id: <model-or-deployment-name> }`.
+   - **Hosted Voice wrapper** sets `conversationEngine: { type: hosted_agent, name: <hosted-target-service-name> }` and **must omit** `model`, `modelType`, `targetAgent`, `inputSchema`, `outputSchema`, `codeConfiguration`, `sessionConfiguration`, `environmentVariables`, `policies`, `protocols`, `instructions`, `structuredInputs`, `tools`, `toolChoice`, `parallelToolCalls`, `maxOutputTokens`, `include`, `handoff`, and `toolbox`.
    - Setting **both** `modelType`/`model` and `conversationEngine` is invalid.
-   - Setting **neither** `modelType` nor `conversationEngine` is incomplete.
-3. **Deprecated fields (never use)**:
-   - Do **not** use `modelType: hosted_agent` or `targetAgent`. Always use `conversationEngine.type: hosted_agent` and `conversationEngine.name`.
+   - Setting **neither** `model` nor `conversationEngine` is incomplete.
+3. **Deprecated / unsupported fields (never use)**:
+   - Do **not** use `modelType: hosted_agent`, `targetAgent`, or a nested `config:` block. Always use `conversationEngine: { type: hosted_agent, name: <target-service-name> }`.
+   - Do **not** set `parallelToolCalls: true` on Prompt Voice agents (`parallelToolCalls` is currently rejected by `azd` runtime validation).
 4. **Native vs cascaded speech (Prompt Voice)**:
-   - There is no separate `cascade` YAML mode. Foundry infers native speech-to-speech vs cascaded speech (`STT -> LLM -> TTS`) from `config.model` (real-time speech models such as `gpt-realtime` / `gpt-realtime-1.5` vs text/chat models such as `gpt-4.1-mini`).
+   - There is no separate `cascade` YAML mode. Foundry infers native speech-to-speech vs cascaded speech (`STT -> LLM -> TTS`) from `model.id` (real-time speech models such as `gpt-realtime` vs text/chat deployments such as `gpt-4o-mini`).
 5. **Privacy default**:
    - Default `store: false` unless the user explicitly opts in to storing transcripts/audio and confirms retention settings.
 
@@ -22,207 +25,179 @@ Canonical `azure.yaml` service shapes, configuration fields, and validation rule
 
 ## 1. Prompt Voice — Managed Model (`modelType: managed`)
 
-Uses a service-hosted real-time model (`gpt-realtime` or `gpt-realtime-1.5`). No model deployment entry is required under `services.ai-project.models`.
+Uses a Voice Live-hosted real-time model (`gpt-realtime`). No model deployment entry is required under `services.ai-project.deployments`.
 
 ```yaml
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
 name: support-voice-app
 services:
   ai-project:
     host: azure.ai.project
+    deployments: []
 
   support-voice:
+    project: src/support-voice
     host: azure.ai.agent
     uses:
       - ai-project
-    config:
-      name: support-voice
-      kind: voice
-      description: Real-time customer support voice agent
-      modelType: managed
-      model: gpt-realtime
-      store: false
-      instructions: >-
-        You are a concise, helpful customer support voice assistant.
-        Keep spoken responses natural and under two sentences unless asked for detail.
-      greeting:
-        type: pregenerated
-        text: "Hello! How can I help you today?"
-      turnDetection:
-        type: semantic_vad
-        interruptResponse: true
-        autoTruncate: true
-        createResponse: true
-        eagerness: medium
-      audio:
-        input:
-          format: pcm16
-          sampleRate: 24000
-          noiseSuppression:
-            type: azure_deep_noise_suppression
-          echoCancellation:
-            type: server_echo_cancellation
-        output:
-          format: pcm16
-          sampleRate: 24000
-          voice:
-            name: en-US-Ava:DragonHDLatestNeural
-            type: azure-standard
-      inputModalities:
-        - audio
-        - text
-      outputModalities:
-        - audio
-        - text
+    kind: prompt-voice
+    name: support-voice
+    description: Declarative (managed) voice speech-to-speech agent
+    modelType: managed
+    model:
+      id: gpt-realtime
+    instructions: You are a helpful voice assistant. Respond naturally and concisely.
+    voice: en-US-Ava:DragonHDLatestNeural
+    store: false
+infra:
+  provider: microsoft.foundry
 ```
 
 ---
 
 ## 2. Prompt Voice — Project Model Deployment (`modelType: self_deployed`)
 
-Uses a model deployed in `services.ai-project.models`. Foundry automatically runs native speech-to-speech when `model` points to a real-time speech deployment, or cascaded speech (`STT -> LLM -> TTS`) when `model` points to a text/chat deployment.
+Uses a model deployment declared in `services.ai-project.deployments` (or already deployed in the target Foundry project). Foundry automatically runs native speech-to-speech when `model.id` points to a real-time speech deployment, or cascaded speech (`STT -> LLM -> TTS`) when `model.id` points to a text/chat deployment.
 
 ```yaml
-name: cascaded-voice-app
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: voice-cascaded-app
 services:
   ai-project:
     host: azure.ai.project
-    models:
-      - name: gpt-4.1-mini
+    deployments:
+      - name: gpt-4o-mini
         model:
-          name: gpt-4.1-mini
           format: OpenAI
-          version: "2025-04-14"
+          name: gpt-4o-mini
+          version: "2024-07-18"
         sku:
           name: GlobalStandard
           capacity: 50
 
   advisor-voice:
+    project: src/advisor-voice
     host: azure.ai.agent
     uses:
       - ai-project
-    config:
-      name: advisor-voice
-      kind: voice
-      modelType: self_deployed
-      model: gpt-4.1-mini
-      store: false
-      instructions: >-
-        You are a financial policy voice assistant. Answer clearly and concisely.
-      greeting:
-        type: llm_generated
-        prompt: "Greet the caller warmly and ask how you can help."
-      turnDetection:
-        type: semantic_vad
-        interruptResponse: true
-        createResponse: true
-      audio:
-        input:
-          format: pcm16
-          sampleRate: 24000
-          transcription:
-            model: azure-speech
-            language: en-US
-        output:
-          format: pcm16
-          sampleRate: 24000
-          voice:
-            name: en-US-Ava:DragonHDLatestNeural
-            type: azure-standard
+    description: Cascaded voice agent using a self-deployed text model
+    kind: prompt-voice
+    model:
+      id: gpt-4o-mini
+    modelType: self_deployed
+    name: advisor-voice
+    instructions: You are a helpful voice assistant. Respond naturally and concisely.
+    voice: en-US-AvaNeural
+    store: false
+infra:
+  provider: microsoft.foundry
 ```
 
 ---
 
 ## 3. Hosted Voice — Two-Agent Architecture (`kind: hosted` + `kind: voice`)
 
-Hosted Voice requires **two distinct services** with **different service keys** and **different `config.name` values**:
-1. **Target service (`kind: hosted`)**: Runs custom code/container over `invocations_ws` `1.0.0` with `metadata.voiceLiveCompatible: "true"` and `bridgeProtocolVersion: "1.0"`. Owns `deployments`, reasoning, instructions, and tools.
-2. **Wrapper service (`kind: voice`)**: Connects to the target via `conversationEngine: { type: hosted_agent, name: <target-name> }`. Owns audio I/O, greeting, turn detection, and the managed `voice` WebSocket endpoint.
+Hosted Voice requires **two distinct services** with **different service keys** and **different `name` values**:
+1. **Target service (`kind: hosted`)**: Runs custom code/container over `invocations_ws` `1.0.0` with `metadata.voiceLiveCompatible: "true"` and `metadata.bridgeProtocolVersion: "1.0"`. Owns model inference, conversation state, tools, and Bridge `1.0` callbacks.
+2. **Wrapper service (`kind: voice`)**: Connects to the target via `conversationEngine: { type: hosted_agent, name: <target-service-name> }`. Owns audio I/O, VAD, transcription, synthesis, greeting, and the managed `voice` WebSocket endpoint.
 
 ```yaml
-name: hosted-voice-app
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+requiredVersions:
+  azd: '>=1.32.0'
+  extensions:
+    azure.ai.agents: '>=1.0.0-beta.13'
+name: voice-live-bridge-basic-python
 services:
   ai-project:
     host: azure.ai.project
-    models:
-      - name: gpt-5.4-mini
-        model:
-          name: gpt-5.4-mini
-          format: OpenAI
-        sku:
-          name: GlobalStandard
-          capacity: 50
+    deployments: []
 
-  travel-agent-target:
-    project: ./src/travel-agent-target
+  voice-live-bridge-basic-python:
+    project: src/voice-live-bridge-basic-python
+    host: azure.ai.agent
     language: python
-    host: azure.ai.agent
     uses:
       - ai-project
-    config:
-      name: travel-agent-target
-      kind: hosted
-      deployments:
-        - gpt-5.4-mini
-      container:
-        resources:
-          cpu: "1"
-          memory: 2Gi
-      protocols:
-        - protocol: invocations_ws
-          version: 1.0.0
-      metadata:
-        voiceLiveCompatible: "true"
-        bridgeProtocolVersion: "1.0"
+    env:
+      AZURE_AI_MODEL_DEPLOYMENT_NAME: ${AZURE_AI_MODEL_DEPLOYMENT_NAME}
+      AZURE_OPENAI_MAX_OUTPUT_TOKENS: "512"
+    codeConfiguration:
+      entryPoint: main.py
+      runtime: python_3_13
+    container:
+      resources:
+        cpu: "1"
+        memory: 2Gi
+    description: A hosted text agent that implements Voice Live Bridge Protocol 1.0 with typed AgentServer callbacks and streams text from a Foundry model through the Responses API.
+    displayName: Voice Live Bridge — Basic Python
+    kind: hosted
+    metadata:
+      bridgeProtocolVersion: "1.0"
+      voiceLiveCompatible: "true"
+    name: voice-live-bridge-basic-python
+    protocols:
+      - protocol: invocations_ws
+        version: 1.0.0
 
-  travel-agent-voice:
+  voice-live-bridge-basic-python-voice:
     host: azure.ai.agent
     uses:
       - ai-project
-      - travel-agent-target
-    config:
-      name: travel-agent-voice
-      kind: voice
-      store: false
-      conversationEngine:
-        type: hosted_agent
-        name: travel-agent-target
-      greeting:
-        type: pregenerated
-        text: "Welcome to Contoso Travel! Where would you like to go?"
-      turnDetection:
-        type: semantic_vad
-        interruptResponse: true
-        autoTruncate: true
-        createResponse: true
-      audio:
-        input:
-          format: pcm16
-          sampleRate: 24000
-          noiseSuppression:
-            type: azure_deep_noise_suppression
-          echoCancellation:
-            type: server_echo_cancellation
-        output:
-          format: pcm16
-          sampleRate: 24000
-          voice:
-            name: en-US-Ava:DragonHDLatestNeural
-            type: azure-standard
-      outputModalities:
-        - audio
+      - voice-live-bridge-basic-python
+    audio:
+      input:
+        format:
+          rate: 24000
+          type: audio/pcm
+        transcription:
+          model: azure-speech
+        turnDetection:
+          prefixPaddingMs: 300
+          silenceDurationMs: 500
+          threshold: 0.5
+          type: server_vad
+      output:
+        format:
+          rate: 24000
+          type: audio/pcm
+        voice:
+          name: en-US-AvaNeural
+          type: azure-standard
+    conversationEngine:
+      name: voice-live-bridge-basic-python
+      type: hosted_agent
+    greeting:
+      text: Hello! How can I help you today?
+      type: template
+    kind: voice
+    name: voice-live-bridge-basic-python-voice
+    outputModalities:
+      - audio
+    store: false
+infra:
+  provider: microsoft.foundry
 ```
 
 ---
 
-## Optional Voice Configuration Fields
+## Voice Service Schema Fields (`azure.ai.agent.json`)
 
-| Section | Key Fields | Notes |
+| Field | Supported Shape / Values | Notes |
 |---|---|---|
-| `greeting` | `type: pregenerated` (`text`) or `type: llm_generated` (`prompt`) | Spoken automatically when a Voice session starts. |
-| `turnDetection` | `type: semantic_vad` or `server_vad`, `interruptResponse`, `autoTruncate`, `createResponse`, `eagerness` | Controls barge-in/interruption and turn boundaries. |
-| `audio.input` | `format: pcm16`, `sampleRate: 24000`, `noiseSuppression`, `echoCancellation`, `transcription` (`model`, `language`, `customSpeechModel`, `phraseList`) | Configures caller audio processing and speech recognition. |
-| `audio.output` | `format: pcm16`, `sampleRate: 24000`, `voice` (`name`, `type`, `temperature`, `rate`, `endpointId`), `lexiconUrl` | Configures TTS output voice and prosody. |
-| `avatar` | `character`, `style`, `customized`, `video` | Optional visual avatar stream configuration. |
-| `tools` / `handoffs` | Declarative tool definitions and agent handoff targets | Used on Prompt Voice agents (`modelType: managed` or `self_deployed`). In Hosted Voice, tools live in the `kind: hosted` target code. |
-| `structuredInputs` | Named key/value session inputs | Passed at session initialization for prompt templating. |
-| `bindings` | Telephony bindings (`acs` or `twilio`) | Connects the Voice Agent to Azure Communication Services or Twilio telephony channels. |
+| `kind` | `voice` or `prompt-voice` | `azd` maps `prompt-voice` to service kind `voice` at deployment time. |
+| `modelType` | `managed` (default) or `self_deployed` | Omit on Hosted Voice wrappers (`conversationEngine` is used instead). |
+| `model` | `{ id: <model-or-deployment-name> }` | Required for Prompt Voice (`managed` or `self_deployed`); forbidden on Hosted Voice wrappers. |
+| `conversationEngine` | `{ type: hosted_agent, name: <target-service>, version: deployed }` | Required for Hosted Voice wrappers (`version` defaults to `deployed`). |
+| `voice` | String shorthand (e.g., `en-US-Ava:DragonHDLatestNeural`, `en-US-AvaNeural`, or `alloy`) | Top-level voice shorthand on Prompt Voice; `azd` maps OpenAI voices to `type: openai` and Azure locales to `type: azure-standard`. |
+| `audio.input` | `format: { type: audio/pcm \| audio/pcmu \| audio/pcma, rate: 24000 }`, `transcription: { model: azure-speech, language }`, `turnDetection: { type: server_vad \| semantic_vad \| azure_semantic_vad, threshold, prefixPaddingMs, silenceDurationMs, speechDurationMs, interruptResponse, autoTruncate, createResponse, removeFillerWords, eagerness, languages }`, `noiseReduction: { type: near_field \| far_field \| azure_deep_noise_suppression }`, `echoCancellation` | Omitted fields inherit `azd` defaults (`audio/pcm` at `24000` Hz, `server_vad`, `azure-speech`). Note `threshold` must be `> 0` and `<= 1`. |
+| `audio.output` | `format: { type: audio/pcm \| audio/pcmu \| audio/pcma, rate: 24000 }`, `voice: { type: azure-standard \| azure_standard \| openai, name, style, pitch, rate, locale, volume }`, `speed` (`0.25`–`1.5`) | Full output audio and voice configuration object. |
+| `greeting` | `{ type: template, text: "Hello! How can I help you today?" }` or `llm_generated` | Spoken automatically when a Voice session starts. |
+| `outputModalities` | Array of strings (well-known values: `audio`, `text`, `animation`, `avatar`) | Defaults to `["audio"]`. |
+| `store` | `false` (default) or `true` | Server-side transcript and per-turn audio logging toggle. |
+| `telephony` | `{ bindings: [{ provider: acs \| twilio, identifier: <id>, connection: <connection-name>, transferTargets: [...] }] }` | Phone-number bindings (`acs` uses `28:orgid:<guid>` or `4:+<E.164>`; `twilio` uses `+<E.164>`). |
+| `structuredInputs`, `tools`, `toolChoice`, `maxOutputTokens`, `include`, `avatar`, `handoff` | Prompt Voice optional objects/arrays (`maxOutputTokens`: integer `1..2147483647` or `"inf"`) | Supported on Prompt Voice; `structuredInputs`, `tools`, `toolChoice`, `maxOutputTokens`, `include`, and `handoff` are forbidden on Hosted Voice wrappers. |
+

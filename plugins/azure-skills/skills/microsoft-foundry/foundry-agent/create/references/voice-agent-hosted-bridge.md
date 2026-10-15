@@ -1,131 +1,116 @@
 # Hosted Voice Bridge `1.0` Reference
 
-Architecture and WebSocket protocol contract for **Hosted Voice Agents**, which pair a custom `kind: hosted` target agent with a managed `kind: voice` wrapper agent.
+Architecture and WebSocket protocol contract for **Hosted Voice Agents**, which pair a custom `kind: hosted` target agent (`azure-ai-agentserver-invocations`) with a managed `kind: voice` wrapper agent.
 
 ## Two-Agent Ownership Model
 
 | Concern | `kind: hosted` Target Agent | `kind: voice` Wrapper Agent |
 |---|---|---|
-| **Role** | Reasoning, tools, orchestration, model calls | Audio pipeline (VAD, STT, TTS, noise/echo cancellation), greeting, managed `voice` WebSocket endpoint |
-| **Protocol** | `invocations_ws` (`version: 1.0.0`) + Voice Live Bridge `1.0` JSON events | Foundry `voice` protocol (`?api-version=v1`) |
-| **Required metadata / link** | `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }` | `uses: [ai-project, <target>]` and `conversationEngine: { type: hosted_agent, name: <target> }` |
-| **Model & instructions** | Configured in target (`deployments:` + container code) | **Omitted** on wrapper |
+| **Role** | Reasoning, tools, bounded conversation history, model calls (e.g., Foundry Responses API with `store=false`) | Audio pipeline (VAD, STT, TTS, barge-in interruption, proactive admission), greeting, managed `voice` WebSocket endpoint |
+| **Protocol & Route** | `invocations_ws` (`version: 1.0.0`) on `/invocations_ws` (port `8088` + `GET /readiness`) speaking Voice Live Bridge Protocol `1.0` | Foundry `voice` protocol (`?api-version=v1`) |
+| **Required metadata / link** | `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }` directly on the service block | `uses: [ai-project, <target-service>]` and `conversationEngine: { type: hosted_agent, name: <target-service> }` directly on the service block |
+| **Model & instructions** | Configured in target (`env: { AZURE_AI_MODEL_DEPLOYMENT_NAME: ... }` + container code) | **Forbidden** on wrapper (`model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration` must be omitted) |
 | **Agent name** | Distinct `<target-name>` | Distinct `<wrapper-name>` |
 
 ---
 
-## Voice Live Bridge `1.0` Event Flow
+## Voice Live Bridge Protocol `1.0` Event Flow
 
-The `kind: voice` wrapper connects to the `kind: hosted` target over `invocations_ws` (`ws://localhost:8088/invocations` in the container) and exchanges JSON text/control events conforming to `bridgeProtocolVersion: "1.0"`. The target container **never** processes raw audio frames when used through the Voice wrapper — the wrapper handles audio transcription and speech synthesis.
+Voice Live connects to the `kind: hosted` target over `/invocations_ws` (`ws://127.0.0.1:8088/invocations_ws` locally) and exchanges lowercase dotted JSON events conforming to `protocol_version: "1.0"`. The target container **never** processes raw audio frames — Voice Live handles audio input, speech recognition, turn detection, synthesis, playback interruption, and proactive-response admission.
 
+```text
+Voice Live (`kind: voice` wrapper)               Hosted Target (`kind: hosted` on `/invocations_ws`)
+            |                                                  |
+            |--- 1. session.start (protocol_version: "1.0") -->|
+            |<-- 2. session.ready (or session.rejected) -------|
+            |                                                  |
+            |--- 3. user.message (item_id, input_text) ------->|
+            |<-- 4. response.created (response_id) ------------|
+            |<-- 5. response.output_text.delta (optional) -----|
+            |<-- 6. response.output_text.done (text) ----------|
+            |<-- 7. response.done (response_id) ---------------|
+            |                                                  |
+            |--- (on caller interruption) barge_in ----------->|
+            |--- (at end of session) session.end ------------->|
 ```
-Voice Wrapper (`kind: voice`)                    Hosted Target (`kind: hosted`)
-            |                                                  |
-            |--- 1. session.Initialize ----------------------->|
-            |<-- 2. session.Initialized -----------------------|
-            |                                                  |
-            |--- 3. conversation.Message (user transcript) --->|
-            |--- 4. response.Create -------------------------->|
-            |<-- 5. response.TextDelta (streamed chunks) ------|
-            |<-- 6. response.Done -----------------------------|
-            |                                                  |
-            |--- (on barge-in) conversation.Cancel ----------->|
-```
 
-### Inbound Events (Wrapper -> Target)
+### Inbound Events (Voice Live -> Hosted Target)
 
-1. **`session.Initialize`**:
-   Sent once after WebSocket upgrade to initialize session state and pass optional structured inputs or metadata.
+1. **`session.start`**:
+   Sent once after WebSocket upgrade to initialize session state and declare `protocol_version: "1.0"`.
    ```json
    {
-     "type": "session.Initialize",
-     "sessionId": "sess_01",
-     " bridgeProtocolVersion": "1.0"
+     "type": "session.start",
+     "id": "m_smoke_start",
+     "ts": "2026-10-15T00:00:00Z",
+     "protocol_version": "1.0",
+     "reconnect": false,
+     "response_timeouts": {
+       "first_output_ms": 30000,
+       "idle_ms": 30000,
+       "max_duration_ms": 120000
+     }
    }
    ```
-   *(Target should inspect `"type": "session.Initialize"` and reply with `session.Initialized`.)*
+   *(Target validates `protocol_version == "1.0"` and replies with `session.ready`, or rejects with `session.rejected` such as `{"type": "session.rejected", "code": "protocol_mismatch", "retriable": false}`.)*
 
-2. **`conversation.Message`**:
-   Delivers a user turn (transcribed speech or text input) to the target's conversation history.
+2. **`user.message`**:
+   Delivers a finalized caller transcript turn (`item_id` and `content` array of `input_text` parts).
    ```json
    {
-     "type": "conversation.Message",
-     "role": "user",
-     "content": "What flights are available to Seattle tomorrow?"
-   }
-   ```
-
-3. **`response.Create`**:
-   Instructs the target to run its model/agent logic and stream back a response for the current conversation state.
-   ```json
-   {
-     "type": "response.Create",
-     "responseId": "resp_01"
+     "type": "user.message",
+     "id": "m_smoke_user",
+     "ts": "2026-10-15T00:00:01Z",
+     "item_id": "in_smoke_user",
+     "content": [
+       { "type": "input_text", "text": "What flights are available to Seattle tomorrow?" }
+     ]
    }
    ```
 
-4. **`conversation.Cancel`**:
-   Sent when the caller barges in / interrupts while a response is still streaming. The target should cancel in-flight generation for the active response.
-   ```json
-   {
-     "type": "conversation.Cancel",
-     "responseId": "resp_01"
-   }
-   ```
+3. **Additional Inbound Control Events (`azure.ai.agentserver.invocations.voice`)**:
+   - **`user.no_input`**: Caller silence timeout (`item_id`, `count`).
+   - **`user.speech_started`**: Notification that caller speech has started.
+   - **`barge_in`**: Caller interrupted playback (`response_id`, `heard_text`); target cancels active generation and reconciles assistant history to `heard_text`.
+   - **`response.accepted`** / **`response.dropped`**: Voice Live admission decision (`response_id`) for a proactive response requested by the target.
+   - **`response.cancelled`**: Confirms cancellation of a response (`response_id`, `heard_text`).
+   - **`response.timeout`**: Response timed out (`response_id`, `item_ids`); target cancels the timed-out operation.
+   - **`session.end`**: Ends the Bridge session (`id`, `ts`, `reason`).
 
-### Outbound Events (Target -> Wrapper)
+### Outbound Events (Hosted Target -> Voice Live)
 
-1. **`session.Initialized`**:
-   Acknowledges `session.Initialize`. Must be sent before turn processing begins.
-   ```json
-   {
-     "type": "session.Initialized",
-     "bridgeProtocolVersion": "1.0"
-   }
-   ```
+1. **`session.ready`** / **`session.rejected`**:
+   `session.ready` activates the session after `session.start`. `session.rejected` rejects startup (`code: "protocol_mismatch"` or `"startup_failed"`, `retriable`).
 
-2. **`response.TextDelta`**:
-   Streams speakable text tokens/chunks back to the Voice wrapper for low-latency TTS synthesis.
-   ```json
-   {
-     "type": "response.TextDelta",
-     "responseId": "resp_01",
-     "delta": "There are three direct flights to Seattle tomorrow morning."
-   }
-   ```
+2. **`response.created`**:
+   Opens a response (`response_id`, `in_reply_to: [<item_id>]`, or proactive admission fields `admission_timeout_ms`, `supersede_key`).
 
-3. **`response.Done`**:
-   Signals that the current response turn is complete.
-   ```json
-   {
-     "type": "response.Done",
-     "responseId": "resp_01"
-   }
-   ```
+3. **`response.output_text.delta`** & **`response.output_text.done`**:
+   Streams text chunks (`response_id`, `item_id`, `delta`, optional `voice`) and sends the completed item text (`response_id`, `item_id`, `text`, optional `voice`).
 
-4. **`error`** (when an unrecoverable turn error occurs):
-   ```json
-   {
-     "type": "error",
-     "code": "target_execution_error",
-     "message": "Failed to query flight inventory."
-   }
-   ```
+4. **`response.done`**:
+   Signals that the response (`response_id`) is complete after `response.output_text.done`.
+
+5. **Other Terminal / Control Outbound Events**:
+   - **`response.none`**: Declines to reply (`in_reply_to`, `reason` such as `"no_reply_needed"`, `"input_too_large"`, or `"capacity_exceeded"`).
+   - **`response.cancel`**: Target requests self-cancellation of an open response (`response_id`, `reason`).
+   - **`error`**: Emits an agent/session error (`code`, `message`, optional `response_id`).
+   - **`end_call`**: Instructs Voice Live to end the call (`reason`, `mode: "drain"` or `"immediate"`).
 
 ---
 
-## Diagnostic `/help` Sequence and Local Testing
+## Local Protocol Smoke Test (`/help` Sequence)
 
-Hosted Voice target templates support a deterministic `/help` diagnostic message over Bridge `1.0` so you can verify the target container before testing the full audio wrapper:
+The official `voice-live-bridge-basic-python` sample includes `scripts/smoke_test.py`, which sends `/help` over `ws://127.0.0.1:8088/invocations_ws` to validate the Bridge `1.0` wire flow without calling a model:
 
-1. Start the target container locally on port `8088` (`ws://localhost:8088/invocations`).
-2. Connect with a WebSocket client and send:
-   - `{"type": "session.Initialize", "sessionId": "local-test"}` -> verify `{"type": "session.Initialized", ...}`
-   - `{"type": "conversation.Message", "role": "user", "content": "/help"}`
-   - `{"type": "response.Create", "responseId": "help-1"}`
-3. Verify the target emits one or more `response.TextDelta` events followed by `response.Done`.
+1. Start the target server locally on port `8088` (`uv run --no-sync python main.py` or `azd ai agent run`), which exposes `GET /readiness` and `/invocations_ws`.
+2. Run the local protocol smoke client (`uv run --no-sync python scripts/smoke_test.py`), which sends:
+   - `session.start` (`protocol_version: "1.0"`) -> expects `session.ready`
+   - `user.message` (`item_id: "in_smoke_user"`, `content: [{"type": "input_text", "text": "/help"}]`)
+   - Expects exact frame sequence: `response.created` -> `response.output_text.done` -> `response.done`
+   - Sends `session.end` (`reason: "validation_complete"`)
 
-> **Important**: Testing the Hosted target directly over `invocations_ws` validates only the target's Bridge `1.0` handler. To validate the deployed Hosted Voice Agent end-to-end, you **must** also smoke-test the `kind: voice` wrapper over its `voice` protocol endpoint (see [voice-agent-smoke-test.md](voice-agent-smoke-test.md)).
+> **Important**: Testing the Hosted target directly over `/invocations_ws` validates only the target's Bridge `1.0` handler. To validate the deployed Hosted Voice Agent end-to-end, you **must** also smoke-test the `kind: voice` wrapper over its managed `voice` protocol endpoint (see [voice-agent-smoke-test.md](voice-agent-smoke-test.md)).
 
 ---
 
@@ -133,6 +118,7 @@ Hosted Voice target templates support a deterministic `/help` diagnostic message
 
 | Symptom / Error | Cause | Fix |
 |---|---|---|
-| `protocol_mismatch` during wrapper session start | Target `azure.yaml` is missing `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]`, missing `metadata.voiceLiveCompatible: "true"` / `bridgeProtocolVersion: "1.0"`, or target code does not reply with `session.Initialized`. | Verify both `azure.yaml` metadata/protocols and the target's `session.Initialize` -> `session.Initialized` handshake. |
-| Wrapper deploys, but connecting to `voice` endpoint fails immediately | `conversationEngine.name` in the `kind: voice` wrapper does not match the deployed `kind: hosted` target's `config.name`, or the target container is not running. | Match `conversationEngine.name` to the target's `config.name`, deploy the target first, and check target logs with `azd ai agent monitor`. |
-| Wrapper and target overwrite each other in Foundry | Both services share the same `config.name` in `azure.yaml`. | Give the `kind: hosted` target and `kind: voice` wrapper distinct `config.name` values and distinct service keys. |
+| `session.rejected` with `protocol_mismatch` | `session.start` did not declare `protocol_version: "1.0"`, or target `azure.yaml` is missing `protocols: [{ protocol: invocations_ws, version: 1.0.0 }]` / `metadata: { voiceLiveCompatible: "true", bridgeProtocolVersion: "1.0" }`. | Ensure `session.start` sends `protocol_version: "1.0"`, verify target `azure.yaml` metadata/protocols, and verify the target replies with `session.ready`. |
+| Wrapper deploys, but connecting to `voice` endpoint fails immediately | `conversationEngine.name` in the `kind: voice` wrapper does not match the `kind: hosted` target service name, or the target container is not running / missing model RBAC (**Cognitive Services OpenAI User**). | Match `conversationEngine.name` to the target service name, deploy the target first, verify RBAC on the parent AI Services account, and check target logs with `azd ai agent monitor`. |
+| Wrapper and target overwrite each other in Foundry | Both services share the same `name` in `azure.yaml`. | Give the `kind: hosted` target and `kind: voice` wrapper distinct service keys and distinct `name` values. |
+
