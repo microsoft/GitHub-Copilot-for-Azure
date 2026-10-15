@@ -51,7 +51,8 @@ limits:
   maxAnswerGenerations: 140
   maxJudgeCalls: 140
   maxDurationMinutes: 360
-  maxConcurrentJobs: 5
+  maxConcurrentVallyProcesses: 5
+  generationWorkersPerVallyProcess: 1
   maxSkillTokenIncreasePercent: 15
 
 output:

@@ -88,7 +88,7 @@ function spec(): SkillImprovementRunSpec {
       maxAnswerGenerations: 20,
       maxJudgeCalls: 40,
       maxDurationMinutes: 60,
-      maxConcurrentJobs: 2,
+      maxConcurrentVallyProcesses: 2,
       maxSkillTokenIncreasePercent: 15,
     },
     output: { issue: "never", draftPullRequest: "accepted-candidate-only" },
@@ -354,6 +354,10 @@ describe("skill improvement reporting", () => {
     expect(summary).not.toContain("NOT ACCEPTED");
     expect(detailed).toContain("Candidate evaluation: **not configured (baseline-only run)**");
     expect(detailed).not.toContain("Final acceptance: **not passed**");
+    expect(detailed).toContain("Maximum concurrent Vally processes: 2");
+    expect(detailed).toContain("Generation workers per Vally process: 1");
+    report.spec.limits.generationWorkersPerVallyProcess = 3;
+    expect(renderReport(report)).toContain("Generation workers per Vally process: 3");
     report.status = "failed";
     expect(renderReportSummary(report)).toContain("# Final outcome: RUN FAILED");
   });

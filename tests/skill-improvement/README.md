@@ -44,6 +44,27 @@ More arms cost more. Validate the plan before running paid evaluations. For
 - candidate generations = `P * A * R * S * I`
 - judge calls = `(baseline + candidate generations) * J`
 
+### Evaluation concurrency
+
+```yaml
+limits:
+  maxConcurrentVallyProcesses: 5
+  generationWorkersPerVallyProcess: 1
+```
+
+`maxConcurrentVallyProcesses` is a required positive integer limiting simultaneous
+Vally processes during both answer generation and grading. These are local
+processes within one runner (one Actions runner for workflow execution), not
+GitHub jobs. The old `maxConcurrentJobs` spelling is rejected; rename that field.
+
+`generationWorkersPerVallyProcess` is an optional positive integer, defaulting to `1`.
+It sets generation's `--workers` value only; it does not control a grader's
+internal concurrency. With enough queued generation tasks and scenarios, the
+maximum simultaneous answer sessions is the product of these two settings.
+For example, `5` processes with `2` workers each permit up to `10` generation
+sessions. Concurrency changes scheduling, not generation/judge budgets,
+acceptance/refinement thresholds, or the Skill-size gate.
+
 ## Decisions and evidence
 
 Pass/fail uses judge majority and response score uses the median judge score.
