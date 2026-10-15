@@ -187,9 +187,9 @@ export class FakeAzureEnvironment {
         name,
         location: config.location,
         tags: {
+          ManifestId: manifest.id,
           FixtureId: config.fixtureId,
           FixtureVersion: String(manifest.version),
-          WorkflowFixtureId: manifest.id,
           FixtureInstanceId: instanceId,
           FixtureComponent: config.resourceGroupNameBase,
           Completed: "True",

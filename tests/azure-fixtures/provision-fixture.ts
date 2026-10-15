@@ -66,7 +66,7 @@ function resolveBicepParameter(context: FixtureRunContext, parameterConfig: Bice
 const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 const DEFAULT_TIME_TO_LIVE_SEC = 3 * 60 * 60; // 3 hours
 const COMPLETED_TAG = "Completed";
-const WORKFLOW_FIXTURE_ID_TAG = "WorkflowFixtureId";
+const MANIFEST_ID_TAG = "ManifestId";
 const FIXTURE_INSTANCE_ID_TAG = "FixtureInstanceId";
 const FIXTURE_COMPONENT_TAG = "FixtureComponent";
 const DELETE_AFTER_TAG = "DeleteAfter";
@@ -171,7 +171,7 @@ function deleteAfterTag(date: Date): string {
   return shellQuote(`${DELETE_AFTER_TAG}=${formatDeleteAfter(date)}`);
 }
 
-type FixtureManifestBase = Pick<StimuliFixtureManifest, "version" | "bicepConfigs" | "postProvisionScript"> & {
+type FixtureManifestBase = Pick<StimuliFixtureManifest, "id" | "version" | "bicepConfigs" | "postProvisionScript"> & {
   persist?: boolean;
 };
 
@@ -323,6 +323,7 @@ function provision(
     ? "DoNotDelete=True"
     : overridesDeleteAfter ? undefined : deleteAfterTag(new Date(now() + DEFAULT_TIME_TO_LIVE_SEC * 1000));
   const tags = [
+    `${MANIFEST_ID_TAG}=${manifest.id}`,
     `${FIXTURE_ID_TAG}=${bicepConfig.fixtureId}`,
     `${FIXTURE_VERSION_TAG}=${manifest.version}`,
     ...(retentionTag ? [retentionTag] : []),
@@ -498,7 +499,7 @@ function verifyAndSelectRecordedFixture(
       throw new Error(`Ready workflow fixture ${manifest.id} references missing resource group ${name}; manual repair is required`);
     }
     const tags = JSON.parse(runCommand(["group", "show", "--name", name, "--query", "tags", "-o", "json"])) as Record<string, string>;
-    if (tags[WORKFLOW_FIXTURE_ID_TAG] !== manifest.id
+    if (tags[MANIFEST_ID_TAG] !== manifest.id
       || tags[FIXTURE_VERSION_TAG] !== String(manifest.version)
       || tags[FIXTURE_INSTANCE_ID_TAG] !== record.instanceId
       || tags[FIXTURE_COMPONENT_TAG] !== config.resourceGroupNameBase
@@ -554,7 +555,7 @@ function discoverWorkflowFixtures(
     ])) as { name: string; tags: Record<string, string> | null }[];
     for (const rawGroup of groups) {
       const group = { name: rawGroup.name, tags: rawGroup.tags ?? {} };
-      if (group.tags[WORKFLOW_FIXTURE_ID_TAG] !== manifest.id
+      if (group.tags[MANIFEST_ID_TAG] !== manifest.id
         || group.tags[FIXTURE_VERSION_TAG] !== String(manifest.version)) {
         continue;
       }
@@ -769,7 +770,6 @@ export async function provisionWorkflowManifestWithDependencies(
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
         provision(context, manifest, config, dirname(manifestPath), [
-          `${WORKFLOW_FIXTURE_ID_TAG}=${manifest.id}`,
           `${FIXTURE_INSTANCE_ID_TAG}=${context.runId}`,
           `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
           deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs)),

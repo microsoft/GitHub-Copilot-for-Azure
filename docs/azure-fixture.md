@@ -82,6 +82,8 @@ The "provision-fixture" script is responsible for these tasks. The vally executo
 
 A manifest has a `schemaVersion`. It must be bumped whenever the manifest schema receives a breaking change. It's not used by the workflow but reserved for human maintainers to track schema changes.
 
+A manifest has a required `id`. It is a stable identifier for the complete fixture described by the manifest, across all of its Bicep configs. Every resource group provisioned for either a stimuli fixture or a workflow fixture is tagged with `ManifestId=<id>`. Keep the value unchanged when updating the same fixture; use a different value for a distinct fixture.
+
 A manifest has a version. It must be bumped whenever the underlying fixture definition is updated and must be provisioned again. Provisioned fixtures have a tag containing this version number to support the detection of stale fixtures. The computed resource group names include the version number, so a script run with an updated manifest will provision new fixtures even if there are stale fixtures with a lower version.
 
 A manifest has a type indicating whether the fixture is `readOnly` or `readWrite`. This is currently used only to help readers quickly understand how the fixture will be used. The provision script does not use it right now.

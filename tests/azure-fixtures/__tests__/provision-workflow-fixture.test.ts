@@ -93,7 +93,7 @@ describe("provisionWorkflowManifest cold start", () => {
     expect(writes(fake).at(-1)).toMatchObject({ ownerWorkflowRunId: "42:3" });
     for (const name of parsed.resourceGroups) {
       expect(fake.groups.get(name)?.tags).toMatchObject({
-        WorkflowFixtureId: manifest.id,
+        ManifestId: manifest.id,
         FixtureInstanceId: result.context.runId,
         Completed: "True",
       });
@@ -400,10 +400,10 @@ describe("Azure CLI command contract", () => {
     ]);
     expect(commands.find((args) => args.slice(0, 2).join(" ") === "group create")).toEqual(expect.arrayContaining([
       "--tags",
+      "ManifestId=workflow-fixture",
       "FixtureId=storage-fixture",
       "FixtureVersion=7",
       "Completed=False",
-      "WorkflowFixtureId=workflow-fixture",
       "FixtureComponent=storage",
     ]));
     expect(commands.find((args) => args.slice(0, 3).join(" ") === "deployment group create")).toEqual(expect.arrayContaining([
@@ -704,7 +704,7 @@ describe("additional failure modes", () => {
     ["wrong instance", (tags: Record<string, string>) => { tags.FixtureInstanceId = "other"; }],
     ["wrong component", (tags: Record<string, string>) => { tags.FixtureComponent = "other"; }],
     ["wrong version", (tags: Record<string, string>) => { tags.FixtureVersion = "1"; }],
-    ["wrong workflow", (tags: Record<string, string>) => { tags.WorkflowFixtureId = "other"; }],
+    ["wrong manifest", (tags: Record<string, string>) => { tags.ManifestId = "other"; }],
   ])("rejects a Ready group with %s and asks for manual repair", async (_name, corrupt) => {
     const fake = environment();
     fake.seedCompleteInstance(manifest, "x");

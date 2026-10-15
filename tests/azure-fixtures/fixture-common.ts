@@ -107,7 +107,13 @@ export type WorkflowFixtureManifest = {
  * Manifest for provisioning the Azure fixture for a stimuli.
  */
 export type StimuliFixtureManifest = {
+  /**
+   * Stable identifier used for locating fixtures for a manifest.
+   */
+  id: string;
+
   type: "readOnly" | "readWrite";
+
   version: number;
   schemaVersion: number;
 
