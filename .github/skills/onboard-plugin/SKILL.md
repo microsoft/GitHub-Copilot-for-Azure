@@ -46,7 +46,16 @@ This command creates a `plugins/{plugin-name}` directory and files in it. Refer 
 
 This command adds an entry for the new plugin in `tests/skills.json`. Nightly scheduled integration tests use this file to discover the plugins and skills to test.
 
-This command adds a new set of path patterns in the pluginPathAllowPattern scripts. The shared telemetry hook script uses these patterns to prevent the script from attempting to send telemetry for skills outside this repo.
+This command creates plugin-local `hooks/scripts/pluginPathAllowPattern.sh`
+and `hooks/scripts/pluginPathAllowPattern.ps1` files. The shared telemetry
+scripts use these patterns to avoid sending telemetry for skills outside the
+plugin. The build automatically combines shared hooks with this local hook
+tree.
+
+Optional client-specific `copilot-hooks.json`, `claude-hooks.json`, and
+`cursor-hooks.json` files under the plugin's `hooks/` directory are fragments.
+List only plugin-owned event registrations; the build appends handlers to
+shared events or adds new events.
 
 ## Scaffold the skills
 

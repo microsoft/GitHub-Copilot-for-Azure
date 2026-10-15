@@ -20,7 +20,6 @@ describe("plugin and skill bootstrap", () => {
 
   it("bootstraps a plugin and skill in a new repository", () => {
     repoRoot = fs.mkdtempSync(path.join(os.tmpdir(), "plugin-bootstrap-"));
-    console.log("repoRoot", repoRoot);
     execFileSync("git", ["init", "--quiet", repoRoot]);
 
     const pluginScriptsRoot = path.join(repoRoot, "scripts", "src", "plugin");
@@ -42,9 +41,12 @@ describe("plugin and skill bootstrap", () => {
     fs.mkdirSync(path.join(repoRoot, "tests"));
     fs.writeFileSync(path.join(repoRoot, "tests", "skills.json"), JSON.stringify({ plugins: [] }));
 
-    fs.mkdirSync(path.join(repoRoot, "hooks", "scripts"), { recursive: true });
-    fs.writeFileSync(path.join(repoRoot, "hooks", "scripts", "pluginPathAllowPattern.sh"), "");
-    fs.writeFileSync(path.join(repoRoot, "hooks", "scripts", "pluginPathAllowPattern.ps1"), "");
+    const sharedHooksRoot = path.join(repoRoot, "hooks", "scripts");
+    fs.mkdirSync(sharedHooksRoot, { recursive: true });
+    fs.writeFileSync(
+      path.join(sharedHooksRoot, "track-telemetry.sh"),
+      "#!/usr/bin/env bash\n# shared hook sentinel\n",
+    );
 
     fs.mkdirSync(path.join(repoRoot, ".github"));
     fs.writeFileSync(
@@ -106,15 +108,19 @@ the agent.
     expect(unitTest).toContain("expect(true).toBe(true)");
 
     const bashAllowlist = fs.readFileSync(
-      path.join(repoRoot, "hooks", "scripts", "pluginPathAllowPattern.sh"),
+      path.join(pluginRoot, "hooks", "scripts", "pluginPathAllowPattern.sh"),
       "utf8",
     );
     const powershellAllowlist = fs.readFileSync(
-      path.join(repoRoot, "hooks", "scripts", "pluginPathAllowPattern.ps1"),
+      path.join(pluginRoot, "hooks", "scripts", "pluginPathAllowPattern.ps1"),
       "utf8",
     );
     expect(bashAllowlist).toContain("# --- test-plugin plugin ---");
     expect(powershellAllowlist).toContain("# --- test-plugin plugin ---");
+    expect(
+      fs.readFileSync(path.join(sharedHooksRoot, "track-telemetry.sh"), "utf8"),
+    ).toBe("#!/usr/bin/env bash\n# shared hook sentinel\n");
+    expect(fs.readdirSync(sharedHooksRoot)).toEqual(["track-telemetry.sh"]);
 
     const skillsConfig = JSON.parse(
       fs.readFileSync(path.join(repoRoot, "tests", "skills.json"), "utf8"),
