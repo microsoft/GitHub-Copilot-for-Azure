@@ -37,12 +37,12 @@ describe("improvement-agent consumption collection", () => {
         if (outcome !== "missing-usage") {
           fs.writeFileSync(usageFile, JSON.stringify({
             totalNanoAiu: 2_500_000_000, aiCreditsStatus: "complete",
-          }));
+          }), { flag: "wx" });
         }
         if (outcome !== "timeout") {
           fs.writeFileSync(options.stdoutFile!, JSON.stringify({
             type: "result", exitCode: outcome === "failed-finalized" ? 1 : 0,
-          }) + "\n");
+          }) + "\n", { flag: "wx" });
         }
         if (outcome === "failed-finalized" || outcome === "timeout") {
           throw error;
