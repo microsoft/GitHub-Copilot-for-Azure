@@ -58,33 +58,41 @@ Before authoring files or running azd:
 
 ## Step 2: Model-First Decision and Collected-Values Checkpoint
 
-Before generating `azure.yaml`, scaffolding code, or running init, determine the conversation engine and model strategy.
+Before generating `azure.yaml`, scaffolding code, or running init, determine the conversation engine and model strategy from the request and existing project context.
 
-When the subtype is unresolved, ask the user to choose:
+For a generic greenfield request to create a Voice Agent, proceed with **Prompt Voice using the managed real-time model** without requiring a subtype question. State these defaults before authoring:
 
-1. **Prompt Voice — managed real-time model (recommended)**: `modelType: managed`, default model `gpt-realtime`.
-2. **Prompt Voice — project model deployment**: `modelType: self_deployed`; Foundry infers native or cascaded speech from `model.id`.
-3. **Hosted Voice**: custom target code behind a managed Voice wrapper.
-4. **Custom Hosted real-time/audio agent**: raw `invocations_ws`; route to [invocations-ws](../invocations-ws/invocations-ws.md).
+- `modelType: managed`
+- `model.id: gpt-realtime`
+- canonical authored `kind: voice`
+- `voice: en-US-AvaNeural`
+- `store: false`
 
-For planning, explanation, or comparison requests, present the choices without creating files or running azd.
+Explicit user choices override these defaults. Ask only when an unresolved requirement materially changes the architecture:
+
+- custom code, an existing Hosted Agent, or explicit Hosted Voice intent;
+- BYOM, `self_deployed`, or an existing project model deployment;
+- an existing project or codebase whose services imply a subtype but do not identify the target clearly;
+- a planning, explanation, or comparison request that explicitly asks to evaluate the available approaches.
+
+For planning or comparison, explain Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
 
 Resolve values from the request, workspace, `azure.yaml`, and active azd environment before asking. Do not author files until this checkpoint is complete:
 
 | Value | Resolution rule |
 |---|---|
-| Voice subtype | Ask when Prompt Voice versus Hosted Voice is ambiguous |
+| Voice subtype | Default a generic greenfield request to managed Prompt Voice; ask only for the architecture-changing cases above |
 | Agent name | Reuse the selected service name; otherwise collect or derive a concise name |
 | Foundry project | Confirm new versus existing; never provision implicitly |
 | Existing project identity | Resolve both endpoint and ARM ID; pass the ARM ID to `--project-id` |
 | azd environment | Reuse the selected environment or collect the intended environment |
-| Model strategy | Managed model, existing deployment, or new project deployment |
+| Model strategy | Default generic creation to managed `gpt-realtime`; ask when BYOM, self-deployed, or an existing deployment is intended |
 | Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; inspect or ask for self-deployed/Hosted target models |
 | Instructions | Preserve existing instructions or collect the requested behavior |
 | Output voice | Default Prompt Voice to `en-US-AvaNeural` only when unspecified |
 | Storage | Default to `store: false`; enabling storage requires an explicit privacy and retention decision |
 
-Non-interactive Prompt Voice defaults are `modelType: managed`, `model.id: gpt-realtime`, `voice: en-US-AvaNeural`, and `store: false`. State applied defaults clearly.
+State every applied default clearly before authoring.
 
 ## Step 3: Load Only the Selected Authoring Reference
 

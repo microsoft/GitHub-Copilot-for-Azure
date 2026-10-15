@@ -996,6 +996,56 @@ stimuli:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
 
+  - name: "Generic Voice creation defaults to managed Prompt Voice"
+    prompt: |
+      Without running commands, explain how you would handle this request:
+      "Create a Microsoft Foundry Voice Agent for me."
+    rubric:
+      - "Defaults the generic greenfield request to Prompt Voice with modelType: managed and model.id: gpt-realtime instead of requiring the user to choose a subtype."
+      - "States the canonical kind: voice, en-US-AvaNeural, and store: false defaults."
+      - "Explains that explicit Hosted Voice, custom-code, BYOM/self-deployed, or existing deployment intent overrides the default and may require clarification."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 6
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: output-matches
+        config:
+          pattern: "(?i)modelType:\\s*managed|managed.*gpt-realtime"
+      - type: output-matches
+        config:
+          pattern: "(?i)gpt-realtime"
+      - type: output-matches
+        config:
+          pattern: "(?i)en-US-AvaNeural"
+      - type: output-matches
+        config:
+          pattern: "(?i)store:\\s*false|store.*false"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response chooses managed Prompt Voice as the
+            default for this generic greenfield request, states gpt-realtime,
+            canonical kind: voice, en-US-AvaNeural, and store: false, and does
+            not require the user to select among Voice subtypes before
+            proceeding. It may mention alternatives, but only as overrides for
+            explicit Hosted Voice/custom-code, BYOM/self-deployed, existing
+            deployment, or comparison intent.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\b|\\baz\\b"
+              description: "Planning-only default-selection test must not run commands"
+
   - name: "Voice agent model-first routing and Prompt Voice workflow"
     prompt: |
       Without executing any create, provision, or deploy commands, explain the

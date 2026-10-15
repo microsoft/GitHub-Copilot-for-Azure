@@ -4,7 +4,7 @@ Opinionated happy-path for first-time users creating their first Foundry hosted 
 
 ## When to Use This Skill
 
-Use this when the request is to create a new Foundry hosted agent end-to-end — scaffold, provision, deploy, and smoke-test. Common overrides (language, region, sample, topic, existing project, existing model) are fine. This skill supports only the `responses` and `invocations` protocols. For **Voice Agents**, stop and read [create-voice.md](create-voice.md). For **custom Hosted real-time/audio agents** over `invocations_ws`, stop and read [../invocations-ws/invocations-ws.md](../invocations-ws/invocations-ws.md). When working on existing agents, using container deploy, using the `activity` protocol, or handling anything else not covered here, stop and read [create-hosted.md](create-hosted.md).
+Use this when the request is to create a new Foundry hosted agent end-to-end — scaffold, provision, deploy, and smoke-test. Common overrides (language, region, sample, topic, existing project, existing model) are fine. This skill supports only the `responses` and `invocations` protocols. When working on existing agents, using container deploy, using the `activity` protocol, or handling anything else not covered here, stop and read [create-hosted.md](create-hosted.md).
 
 ## Quick Reference
 
