@@ -155,28 +155,30 @@ completed run. Missing historical ledgers remain unavailable.
 Generation disables Vally trial retries; unreturned failed trajectories and
 unreported model retries remain coverage gaps rather than zero consumption.
 
-### Reading iteration artifacts
+### Reading a run: baseline to iteration 1
 
-The run output separates the evidence supplied to the improvement agent, its
-process logs and billing export, the captured Skill edits, and the later
-candidate evaluation:
+The baseline is the starting Skill. A candidate is an edited version of that
+Skill. Our engine coordinates the steps; Vally generates and grades the
+evaluation answers.
 
-| Artifact | What it contains and how to read it |
-| --- | --- |
-| `iteration-n-failure-packet.md` | Input assembled from the current development evaluation's graded failures, judge disagreements, and applicable prior rejection or validation evidence. Iteration 1 starts from baseline results. It is a focused evidence packet, not every trajectory or the complete suite. Answer excerpts and evidence do not include the full tool-call trajectory. The engine copies it into the Skill worktree as `.skill-improvement-failure-packet.md` for the CLI, then removes that temporary copy. |
-| `iteration-n-agent.jsonl` | Copilot CLI stdout, redirected to a JSONL event stream while it works on the candidate. Each line is an event object. Common types include `user.message`, `assistant.message`, `tool.execution_start`, `tool.execution_complete`, and terminal `result`. `*_delta` events are streaming text fragments, not separate actions. Prefer the candidate patch/snapshot to inspect edits, and tool results to understand completed actions. A terminal `result` with `exitCode: 0` means the CLI process succeeded; it does not mean the candidate passed evaluation or was accepted. |
-| `iteration-n-agent.stderr.log` | CLI stderr, captured separately from stdout for diagnostics. It may be empty; that alone does not prove the process succeeded. Check the terminal result and the report's validation/evaluation decisions. |
-| `iteration-n-agent-usage.json` | Separate explicit `--usage-output-file` export with authoritative aggregate billing for that improvement-agent invocation. It measures that CLI session only—not answer generation, judging, or Azure infrastructure costs. |
-| `iteration-n/candidate.patch` | Captured by the engine after the CLI exits, from the Skill worktree's changes. This is the most useful artifact for reviewing exactly what the agent edited. |
-| `iteration-n/candidate-skill/` | Snapshot of the candidate Skill copied by the engine after the process, alongside the relative patch. It is not the agent's live workspace. |
-| `iteration-n/generation/` and `iteration-n/judgments/` | Candidate answer trajectories and their subsequent grading outputs. These are produced after the agent process and candidate validation; they are separate from its stdout, stderr, and usage export. Baseline artifacts are under `baseline/`. |
+| Step | What happens | Output / where to look |
+| --- | --- | --- |
+| 1. Generate baseline answers | Run eval prompts using the starting Skill and configured answer models. | `baseline/generation/` |
+| 2. Grade baseline answers | Check saved answers against eval criteria, including rubric-based judging. | `baseline/judgments/` |
+| 3. Prepare iteration 1 | The engine collects failed or judge-disputed test outcomes, judge explanations, and answer excerpts—not entire failed suites—and writes them into a packet for the improvement agent. | `iteration-1-failure-packet.md` |
+| 4. Improve the Skill | A Copilot CLI improvement agent reads the packet and edits the Skill. It does not run the evals. | `iteration-1-agent.jsonl`, `iteration-1-agent.stderr.log`, `iteration-1-agent-usage.json` |
+| 5. Save and validate candidate 1 | After the agent exits, the engine saves the edits and checks they are valid before evaluating them. | `iteration-1/candidate.patch` and `iteration-1/candidate-skill/` |
+| 6. Generate candidate answers | Run eval prompts again, now using candidate 1. | `iteration-1/generation/` |
+| 7. Grade and decide | Grade new answers. The engine decides whether to accept, retain for refinement, or reject the candidate. | `iteration-1/judgments/` and `report-summary.md` |
+| 8. Continue to iteration 2 | Prepare feedback and repeat steps 4–7. A rejected candidate does not automatically become the next starting version. | `iteration-2-failure-packet.md` and `iteration-2/...` |
 
-The usual lifecycle is: generate and grade baseline answers → assemble the
-failure packet → run the CLI to edit the Skill and capture its output/logs →
-capture and validate the candidate patch and Skill snapshot → generate and
-grade candidate answers → make the refinement and acceptance decisions.
-The CLI's exit status describes only its process; candidate acceptance comes
-from the later validation and evaluation gates.
+For later iterations, replace `iteration-1` with `iteration-n`.
+
+**You usually don't need to read the raw improvement-agent files.** Start with
+`report-summary.md` for results and `candidate.patch` for Skill changes. Open
+the improvement-agent files only to investigate its tool calls, execution
+problems, or token/AI-credit usage. They describe how the candidate was
+created—not whether it passed the evals.
 
 Each run writes:
 
