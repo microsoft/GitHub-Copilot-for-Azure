@@ -111,6 +111,25 @@ function decideHeldOut(
 }
 
 describe("skill improvement reporting", () => {
+  test("averages repeated answer billing without summing duplicated judge records", () => {
+    const trials = [
+      { ...judged("one", "model-a", "judge-a", true, 1, 100), answerBilledCredits: 2 },
+      { ...judged("one", "model-a", "judge-b", true, 1, 100), answerBilledCredits: 2 },
+      { ...judged("one", "model-a", "judge-a", true, 1, 100), answerBilledCredits: 4 },
+      { ...judged("one", "model-a", "judge-b", true, 1, 100), answerBilledCredits: 4 },
+    ];
+    expect(aggregateJudgments(trials)[0].answerBilledCredits).toBe(3);
+    expect(aggregateJudgments([
+      ...trials,
+      judged("one", "model-a", "judge-a", true, 1, 100),
+    ])[0].answerBilledCredits).toBeUndefined();
+    expect(aggregateJudgments([
+      judged("one", "model-a", "judge-a", true, 1, 100),
+      judged("one", "model-a", "judge-b", true, 1, 100),
+      judged("one", "model-a", "judge-a", true, 1, 200),
+      judged("one", "model-a", "judge-b", true, 1, 200),
+    ])[0].totalTokens).toBe(150);
+  });
   test("includes previous validation failures in the next failure packet", () => {
     const packet = buildFailurePacket(
       spec(),
@@ -296,7 +315,7 @@ describe("skill improvement reporting", () => {
           condition,
           condition.skill === "enabled"
         ),
-      ])
+      ]).map(trial => ({ ...trial, answerBilledCredits: 2 }))
     );
     const reference = baselineTrials.filter(
       trial => trial.condition.name === skillWithMcp.name
@@ -304,7 +323,7 @@ describe("skill improvement reporting", () => {
     const candidate = aggregateJudgments([
       judged("one", "model-a", "judge-a", false, 0.2, 130, skillWithMcp, false),
       judged("one", "model-a", "judge-b", false, 0.2, 130, skillWithMcp, false),
-    ]);
+    ]).map(trial => ({ ...trial, answerBilledCredits: 3 }));
     const decision = decideAcceptance(runSpec, reference, candidate, 1000, 1300);
     const refinementDecision = decideRefinement(
       runSpec,
@@ -363,8 +382,134 @@ describe("skill improvement reporting", () => {
     }
     expect(rendered).toContain("Pass → Fail");
     expect(rendered).toContain("iteration-1/candidate.patch");
+    expect(rendered).toContain("## Correctness and trajectory tokens");
+    expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 0/1 (0.0%) | 0/2 | 130 |");
+    expect(rendered).toContain("## Answer AI-credit consumption");
+    expect(rendered).toContain("| Batch | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total answer AIC |");
+    expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 1 | 1 | 1/1 | 3.000000 | 3.000000 |");
+    report.spec.experiment.repetitions = 2;
+    expect(renderReportSummary(report)).toContain("| 1 | 2 | 0/1 | not measured (incomplete) | not measured (incomplete) |");
+    report.iterations[0].trials = candidate.map(trial => ({
+      ...trial,
+      judgments: [...trial.judgments, ...trial.judgments],
+    }));
+    expect(renderReportSummary(report)).toContain("| 1 | 2 | 1/1 | 3.000000 | 6.000000 |");
+    report.spec.experiment.repetitions = 1;
+    report.iterations[0].trials = candidate.map(trial => ({
+      ...trial,
+      answerBilledCredits: undefined,
+    }));
+    expect(renderReportSummary(report)).toContain("not measured (incomplete)");
+    expect(renderReportSummary(report)).toContain("| 1 | 1 | 0/1 | not measured (incomplete) | not measured (incomplete) |");
     expect(rendered).not.toContain("Kusto calls");
     expect(rendered).not.toContain(`${path.parse(process.cwd()).root}runner`);
+  });
+
+  test.each([
+    { enabled: false, maxIterations: 1 },
+    { enabled: true, maxIterations: 0 },
+    { enabled: false, maxIterations: 0 },
+  ])("reports baseline-only runs as completed evaluations: %s", ({ enabled, maxIterations }) => {
+    const runSpec = spec();
+    runSpec.improvementAgent.enabled = enabled;
+    runSpec.limits.maxIterations = maxIterations;
+    const report: SkillImprovementReport = {
+      runId: "run",
+      generatedAt: "2026-10-09T00:00:00Z",
+      status: "completed",
+      spec: runSpec,
+      plan: {
+        developmentPromptCount: 1,
+        heldOutPromptCount: 0,
+        baselineAnswerGenerations: 4,
+        candidateAnswerGenerationsPerIteration: 0,
+        heldOutAnswerGenerations: 0,
+        maximumAnswerGenerations: 4,
+        maximumJudgeCalls: 8,
+      },
+      baselineCommit: "abc",
+      baselineSkillTokens: 100,
+      baselineTrials: [],
+      iterations: [],
+      finalAccepted: false,
+      usage: { answerGenerations: 4, judgeCalls: 8, durationMinutes: 1 },
+    };
+
+    const summary = renderReportSummary(report);
+    const detailed = renderReport(report);
+
+    expect(summary.startsWith("# Final outcome: BASELINE EVALUATION COMPLETED")).toBe(true);
+    expect(summary).toContain("Candidate evaluation: **not configured (baseline-only run)**");
+    expect(summary).toContain("acceptance and rejection do not apply");
+    expect(summary).not.toContain("## Candidate decisions");
+    expect(summary).not.toContain("## Rejection and validation reasons");
+    expect(summary).not.toContain("NOT ACCEPTED");
+    expect(detailed).toContain("Candidate evaluation: **not configured (baseline-only run)**");
+    expect(detailed).not.toContain("Final acceptance: **not passed**");
+    report.status = "failed";
+    expect(renderReportSummary(report)).toContain("# Final outcome: RUN FAILED");
+  });
+
+  test("totals unrounded repeated answer credits once across judges, models, and held-out batches", () => {
+    const runSpec = spec();
+    runSpec.experiment.repetitions = 2;
+    runSpec.models.answers = ["model-a", "model-b"];
+    const records = runSpec.models.answers.flatMap(model =>
+      ["one", "two"].flatMap(item =>
+        [0.1234564, 0.2345674].flatMap(credits =>
+          runSpec.models.judges.map(judge => ({
+            ...judged(item, model, judge, true, 1, 100),
+            answerBilledCredits: model === "model-a" ? credits : 0,
+          }))
+        )
+      )
+    );
+    const trials = aggregateJudgments(records);
+    const decision = decideAcceptance(runSpec, trials, trials, 100, 100);
+    const report: SkillImprovementReport = {
+      runId: "run",
+      generatedAt: "2026-10-14T00:00:00Z",
+      status: "completed",
+      spec: runSpec,
+      plan: {
+        developmentPromptCount: 2,
+        heldOutPromptCount: 2,
+        baselineAnswerGenerations: 8,
+        candidateAnswerGenerationsPerIteration: 8,
+        heldOutAnswerGenerations: 16,
+        maximumAnswerGenerations: 32,
+        maximumJudgeCalls: 64,
+      },
+      baselineCommit: "abc",
+      baselineSkillTokens: 100,
+      baselineTrials: trials,
+      iterations: [{ iteration: 1, changedFiles: [], validationErrors: [], trials }],
+      heldOut: { decision, baselineTrials: trials, candidateTrials: trials },
+      finalAccepted: false,
+      usage: { answerGenerations: 32, judgeCalls: 64, durationMinutes: 1 },
+    };
+    const rendered = renderReportSummary(report);
+    for (const batch of ["Baseline", "Iteration 1", "Held-out baseline", "Held-out candidate"]) {
+      expect(rendered).toContain(`| ${batch} | model-a | Skill + MCP | 2 | 2 | 2/2 | 0.179012 | 0.716048 |`);
+      expect(rendered).toContain(`| ${batch} | model-b | Skill + MCP | 2 | 2 | 2/2 | 0.000000 | 0.000000 |`);
+    }
+    expect(renderReport(report)).toContain("0.716048");
+
+    // An equal total verdict count is insufficient when one judge is overrepresented.
+    report.baselineTrials = trials.map(trial => ({
+      ...trial,
+      judgments: trial.judgments.map(judgment => ({ ...judgment, judgeModel: "judge-a" })),
+    }));
+    expect(renderReportSummary(report)).toContain(
+      "| Baseline | model-a | Skill + MCP | 2 | 2 | 0/2 | not measured (incomplete) | not measured (incomplete) |"
+    );
+
+    report.baselineTrials = aggregateJudgments(records.map((trial, index) =>
+      index === 0 ? { ...trial, answerBilledCredits: undefined } : trial
+    ));
+    expect(renderReportSummary(report)).toContain(
+      "| Baseline | model-a | Skill + MCP | 2 | 2 | 1/2 | not measured (incomplete) | not measured (incomplete) |"
+    );
   });
 
   test("writes the concise summary and relative workflow metadata paths", () => {

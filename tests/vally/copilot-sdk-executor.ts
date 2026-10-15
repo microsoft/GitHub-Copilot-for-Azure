@@ -1,4 +1,5 @@
 import { computeMetrics } from "@microsoft/vally";
+import { collectAnswerBilling, type AnswerBilling } from "../skill-improvement/billing.ts";
 import { fileURLToPath } from "url";
 import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
@@ -19,12 +20,16 @@ const __dirname = path.dirname(__filename);
  */
 const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
+type BilledTrajectory = Trajectory & {
+  metadata: Trajectory["metadata"] & { answerBilling: AnswerBilling };
+};
+
 export class CopilotSdkAgentRunner implements Executor {
   name = "copilot-sdk-agent-runner";
   supportsMultiTurn = true;
   supportsPreparedWorkspace = true;
 
-  async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<Trajectory> {
+  async execute(stimulus: Stimulus, options: ExecutorOptions): Promise<BilledTrajectory> {
     const startedAt = new Date();
     const tags = stimulus.tags;
     const skillName = getSkillName(tags);
@@ -141,6 +146,7 @@ export class CopilotSdkAgentRunner implements Executor {
 
       await createMarkdownReport(normalizedTestName, runConfig, agentMetadata);
       await agentRunner.cleanup();
+      const answerBilling = collectAnswerBilling(agentMetadata.events);
 
       if (postTestScriptConfig) {
         runPostTestScript(provisionOutput!.context, manifest!, dirname(absoluteManifestPath!));
@@ -162,6 +168,7 @@ export class CopilotSdkAgentRunner implements Executor {
           executor: this.name,
           skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
           sessionID: sessionId ?? "unknown",
+          answerBilling,
         },
         metrics: {
           ...metrics,

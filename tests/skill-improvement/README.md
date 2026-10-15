@@ -66,6 +66,53 @@ See [Acceptance and refinement configuration](specs/README.md) for definitions,
 point calculations, tuning guidance for new and mature skills, and instructions
 for changing a run specification.
 
+### Baseline-only evaluations
+
+When `improvementAgent.enabled` is false or `limits.maxIterations` is zero,
+the report labels a successful run **BASELINE EVALUATION COMPLETED**.
+Candidate acceptance and rejection do not apply; correctness results still
+describe the baseline arms, not proof that every individual trajectory passes.
+Failed baseline runs remain **RUN FAILED**.
+
+### Tokens and answer AI credits
+
+Skill token growth compares estimated candidate Markdown tokens, including
+references, against the original baseline, not the previous iteration.
+The engine sums Markdown characters and estimates one token per four
+characters, rounded up. This size gate is not a cost budget. Trajectory token
+usage is reported separately and includes input/output/cache usage across
+model calls, not just the final answer.
+
+Answer trajectories store provider-reported `copilot_usage.totalNanoAiu` in
+`metadata.answerBilling`. Sum the `assistant.usage` request values and divide
+by **1,000,000,000** to obtain answer AI credits; do not add the shutdown
+aggregate again or infer credits from tokens or model-call counts.
+Each request must have billing data for an answer to be measured. Missing or
+partial billing, including historical artifacts without these fields, is
+**not measured**, not zero. A provider-reported zero is a valid measurement.
+
+The summary and detailed reports keep correctness/token comparisons separate
+from a focused credit table: **Batch, Model, Arm, Tests, Repetitions, Billing
+coverage, Avg AIC / test, Total answer AIC**. Tests counts distinct prompts;
+repetitions counts configured answers per prompt. The average is per test per
+repetition. Total answer AIC includes all repetitions and is calculated from
+unrounded measurements. For example, two tests averaging 3 credits per
+repetition with two repetitions consume 12 answer credits.
+Answer usage is averaged across repeated judgment records, not summed across
+judges. Complete billing and balanced configured judge counts are required
+for both the average and total; incomplete coverage is shown explicitly.
+Held-out batches use the same reporting when configured.
+
+These are provider-reported answer-generation credits, not invoice charges
+or full workflow cost. Judge and improvement-agent costs are excluded.
+`iteration-<n>-agent-usage.json` records improvement-agent CLI usage;
+`improvementAgent.maxAiCredits` applies separately to each agent invocation,
+not evaluations, judges, or the whole workflow. Credits are diagnostic,
+not an acceptance gate or permission to trade away correctness.
+This addresses answer reporting in
+[microsoft/mcp-pr#718](https://github.com/microsoft/mcp-pr/issues/718),
+not full workflow-credit accounting.
+
 Each run writes:
 
 - `report-summary.md`: decision-first Actions/job summary with separate baseline
