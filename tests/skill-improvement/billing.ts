@@ -6,7 +6,7 @@ export type AnswerBilling = {
 };
 
 export type ComponentBilling = {
-  unit: "answer trajectories" | "graded trajectories" | "agent invocations";
+  unit: "answer trajectories" | "agent invocations";
   expected: number;
   observed: number;
   measured: number;
@@ -18,7 +18,6 @@ export type ComponentBilling = {
 export type BatchBilling = {
   batch: string;
   answers: ComponentBilling;
-  judges: ComponentBilling;
   agents: ComponentBilling;
   finalized: boolean;
 };

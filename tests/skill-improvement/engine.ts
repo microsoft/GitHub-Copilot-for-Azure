@@ -506,12 +506,11 @@ export async function executeSkillImprovement(
     const existing = billing.find(batch => batch.batch === name);
     if (existing) {
       existing.answers = { ...evaluation.answers };
-      existing.judges = { ...evaluation.judges };
       existing.finalized = evaluation.finalized;
     } else {
       billing.push({
         ...evaluation, batch: name,
-        answers: { ...evaluation.answers }, judges: { ...evaluation.judges },
+        answers: { ...evaluation.answers },
       });
     }
   };
@@ -600,7 +599,6 @@ export async function executeSkillImprovement(
             batch: `Iteration ${iteration}`,
             finalized: false,
             answers: emptyBilling("answer trajectories", 0, "not applicable"),
-            judges: emptyBilling("graded trajectories", 0, "not applicable"),
             agents: emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
           };
           billing.push(iterationBilling);
