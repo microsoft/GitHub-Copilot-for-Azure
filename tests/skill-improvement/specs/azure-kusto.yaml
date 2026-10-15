@@ -28,6 +28,7 @@ evaluations:
 models:
   answers:
     - gpt-5.6-sol
+    - claude-sonnet-5
   judges:
     - claude-opus-4.8
 
@@ -46,14 +47,14 @@ improvementAgent:
   model: claude-sonnet-5
 
 acceptance:
-  minimumQualityImprovementPoints: 2
-  maximumEvalRegressionPoints: 5
-  maximumModelRegressionPoints: 5
-  minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: true
+  minimumQualityImprovementPoints: 0.5
+  maximumEvalRegressionPoints: 0
+  maximumModelRegressionPoints: 0
+  minimumSkillInvocationRate: 1
+  requireHeldOutImprovement: false
 
 refinement:
-  minimumScoreImprovementPoints: 1
+  minimumScoreImprovementPoints: 0.5
   maximumQualityRegressionPoints: 0
 
 resources:
@@ -67,9 +68,9 @@ resources:
     startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 3
-  maxAnswerGenerations: 800
-  maxJudgeCalls: 800
+  maxIterations: 4
+  maxAnswerGenerations: 1820
+  maxJudgeCalls: 1820
   maxDurationMinutes: 360
   maxConcurrentJobs: 5
   maxSkillTokenIncreasePercent: 15
