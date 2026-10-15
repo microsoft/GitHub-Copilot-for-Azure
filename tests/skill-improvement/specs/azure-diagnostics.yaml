@@ -40,7 +40,6 @@ acceptance:
   maximumEvalRegressionPoints: 5
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: false
 
 refinement:
   minimumScoreImprovementPoints: 1

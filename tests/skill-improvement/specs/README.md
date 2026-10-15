@@ -46,7 +46,12 @@ acceptance:
   maximumEvalRegressionPoints: 15
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
-  requireHeldOutImprovement: false
+
+heldOutAcceptance:
+  enabled: true
+  minimumQualityImprovementPoints: 0
+  maximumEvalRegressionPoints: 0
+  maximumModelRegressionPoints: 0
 ```
 
 ### `minimumQualityImprovementPoints`
@@ -102,11 +107,28 @@ A high threshold verifies that measured improvements actually exercise the
 skill. Lower it when some prompts legitimately should not invoke the skill,
 not merely to compensate for unreliable results.
 
-### `requireHeldOutImprovement`
+## Held-out acceptance fields
 
-When `true`, the final candidate must also pass acceptance against eval files
-that were not shown to the improvement agent. Held-out evidence reduces the
-risk of overfitting but increases answer-generation and judge-call cost.
+`heldOutAcceptance` controls final validation against eval files that were not
+shown to the improvement agent:
+
+```yaml
+heldOutAcceptance:
+  enabled: true
+  minimumQualityImprovementPoints: 0
+  maximumEvalRegressionPoints: 0
+  maximumModelRegressionPoints: 0
+```
+
+When enabled, the workflow evaluates the original baseline and final candidate
+against the held-out set. The thresholds are independent from development
+acceptance. A minimum quality improvement of `0` with zero eval and model
+regression allows a saturated held-out baseline to pass only when the candidate
+does not regress.
+
+Do not disable held-out validation merely because the baseline is already at
+100%. Use zero-improvement, zero-regression thresholds to preserve the safety
+gate without requiring a mathematically impossible improvement.
 
 ## Refinement fields
 
