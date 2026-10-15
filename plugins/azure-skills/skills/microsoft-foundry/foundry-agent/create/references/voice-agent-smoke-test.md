@@ -1,9 +1,9 @@
 # Voice Agent WebSocket Smoke-Test Reference
 
-How to verify a deployed Microsoft Foundry Voice Agent (`kind: voice` / `kind: prompt-voice`) — either a **Prompt Voice Agent** or a **Hosted Voice wrapper** — over the managed Foundry `voice` WebSocket endpoint.
+How to verify a deployed Microsoft Foundry Voice Agent — either a **Prompt Voice Agent** or a **Hosted Voice wrapper** — over the managed Foundry `voice` WebSocket endpoint.
 
 > **Why not `azd ai agent invoke`?**
-> `azd ai agent invoke` rejects `kind: voice` and `kind: prompt-voice` services (`errVoiceInvocationUnsupported`). Always verify Voice Agents over the managed `voice` WebSocket endpoint or in the Microsoft Foundry portal (`https://ai.azure.com`). You can inspect the deployed endpoint URL with `azd ai agent endpoint show <voice-service>`.
+> `azd ai agent invoke` does not support Voice Agents. Always verify them over the managed `voice` WebSocket endpoint or in the Microsoft Foundry portal (`https://ai.azure.com`). You can inspect the deployed endpoint URL with `azd ai agent endpoint show <voice-service>`.
 
 ---
 
@@ -18,7 +18,7 @@ How to verify a deployed Microsoft Foundry Voice Agent (`kind: voice` / `kind: p
   - `Authorization`: Entra access token for resource `https://ai.azure.com` (`az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv`), formatted dynamically as `"{} {}".format("Bearer", token)`. Never hard-code tokens or API keys in scripts or commits.
   - `Foundry-Features: VoiceAgents=V1Preview`
 - **Target agent name**:
-  - For **Prompt Voice**: pass the `kind: voice` / `kind: prompt-voice` agent's `name`.
+  - For **Prompt Voice**: pass the Voice Agent's `name`.
   - For **Hosted Voice**: pass the **`kind: voice` wrapper's** `name` (not the `kind: hosted` target's name) to test the full end-to-end Voice pipeline.
 
 ---

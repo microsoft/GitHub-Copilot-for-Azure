@@ -1,6 +1,6 @@
 # Create a Microsoft Foundry Voice Agent
 
-Create, configure, or extend a Microsoft Foundry Voice Agent (`kind: voice` or CLI alias `kind: prompt-voice`):
+Create, configure, or extend a Microsoft Foundry Voice Agent:
 
 - **Prompt Voice**: one managed Voice Agent using `modelType: managed` or `self_deployed`.
 - **Hosted Voice**: a `kind: hosted` target paired with a managed `kind: voice` wrapper.
@@ -11,7 +11,7 @@ For a custom Hosted WebSocket agent with developer-defined frames and no managed
 
 | Decision | Prompt Voice | Hosted Voice |
 |---|---|---|
-| Foundry agents | One `kind: voice` / `prompt-voice` service | One `kind: hosted` target plus one `kind: voice` wrapper |
+| Foundry agents | One `kind: voice` service | One `kind: hosted` target plus one `kind: voice` wrapper |
 | Reasoning and tools | Voice service | Hosted target |
 | Audio, VAD, TTS, greeting | Voice service | Voice wrapper |
 | Local runtime | None | Target-only Bridge validation |
@@ -90,7 +90,7 @@ Non-interactive Prompt Voice defaults are `modelType: managed`, `model.id: gpt-r
 
 Always read [Voice Agent common invariants](references/voice-agent-common.md).
 
-- For **Prompt Voice**, read [Prompt Voice YAML](references/prompt-voice-yaml.md).
+- For **Prompt Voice**, read [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
 - For **Hosted Voice**, read [Hosted Voice YAML](references/hosted-voice-yaml.md) and [Hosted Voice Bridge `1.0`](references/voice-agent-hosted-bridge.md).
 
 Do not load the other subtype's YAML reference unless the user asks for a comparison or migration.
@@ -120,7 +120,9 @@ azd ai agent init --no-prompt \
   --voice "<voice-name>"
 ```
 
-`--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For self-deployed Prompt Voice, initialize the project, then edit the generated service to reference the verified deployment as documented in [Prompt Voice YAML](references/prompt-voice-yaml.md).
+`--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For self-deployed Prompt Voice, initialize the project, then edit the generated service to reference the verified deployment as documented in [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
+
+Immediately after init, normalize the generated service to canonical `kind: voice` if azd wrote `kind: prompt-voice`, alongside the other generated-YAML edits.
 
 For an existing Prompt Voice service, edit `azure.yaml` in place. Do not rerun init and create a suffixed duplicate.
 

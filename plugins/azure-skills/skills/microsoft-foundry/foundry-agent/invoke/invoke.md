@@ -1,6 +1,6 @@
 # Invoke Foundry Agent
 
-Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harness Agents with azd. Invoke Voice Agents (`kind: voice` / `kind: prompt-voice`) over the managed Foundry `voice` WebSocket endpoint (not `azd ai agent invoke`).
+Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harness Agents with azd. Invoke Voice Agents over the managed Foundry `voice` WebSocket endpoint (not `azd ai agent invoke`).
 
 ## Route by Agent Type
 
@@ -15,11 +15,11 @@ Invoke ordinary Prompt Agents with Foundry MCP. Invoke Hosted and Managed Harnes
 | Hosted | `activity` | Microsoft 365 channel, such as Teams | Activity conversation and channel state |
 | Hosted (custom real-time/audio) | `invocations_ws` | Custom WebSocket client; follow [invocations-ws](../invocations-ws/invocations-ws.md) | Agent-managed state keyed by `agent_session_id` |
 
-Classify `azure.yaml` services in order: `kind: voice` or `kind: prompt-voice` is a **Voice Agent** (`conversationEngine.type: hosted_agent` for Hosted Voice wrapper, `modelType: managed` or `self_deployed` for Prompt Voice); `kind: hosted` is **Hosted**; `kind: prompt` plus `harness.type: github_copilot_preview` is a **Managed Harness Agent**; other `kind: prompt` services are ordinary **Prompt Agents**. If still unknown, use `agent_get` only to classify.
+Classify `azure.yaml` services in order: Voice is a **Voice Agent** (`conversationEngine.type: hosted_agent` for Hosted Voice wrapper, `modelType: managed` or `self_deployed` for Prompt Voice); apply the top-level compatibility classification for legacy manifests. `kind: hosted` is **Hosted**; `kind: prompt` plus `harness.type: github_copilot_preview` is a **Managed Harness Agent**; other `kind: prompt` services are ordinary **Prompt Agents**. If still unknown, use `agent_get` only to classify.
 
 ## Voice Agent Workflow (Prompt Voice and Hosted Voice Wrapper)
 
-> **Critical**: `azd ai agent invoke` does **not** support Voice Agents (`kind: voice` or `kind: prompt-voice`), including Hosted Voice wrappers. Always connect to the managed `voice` WebSocket endpoint (`wss://<project-host>/api/projects/<project>/agents/<voice-agent-name>/endpoint/protocols/voice?api-version=v1`) or use the Foundry portal Voice playground.
+> **Critical**: `azd ai agent invoke` does **not** support Voice Agents, including Hosted Voice wrappers. Always connect to the managed `voice` WebSocket endpoint (`wss://<project-host>/api/projects/<project>/agents/<voice-agent-name>/endpoint/protocols/voice?api-version=v1`) or use the Foundry portal Voice playground.
 
 ### Step 1: Verify Deployed Version(s)
 

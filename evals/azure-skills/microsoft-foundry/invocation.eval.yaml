@@ -1009,7 +1009,7 @@ stimuli:
     rubric:
       - "Requires the dependency/environment preflight, Common Project Context Resolution, new-versus-existing project choice, and inline AZURE_DEV_USER_AGENT=microsoft_foundry_skill before azd use."
       - "Explains the model-first options (managed real-time model via modelType: managed, project model deployment via modelType: self_deployed, and Hosted Voice via conversationEngine.type: hosted_agent)."
-      - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id and an azure.yaml service block with kind: voice (or prompt-voice), modelType: managed, model.id: gpt-realtime, store: false, and en-US-AvaNeural directly under the service block (not nested under config:)."
+      - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id, then normalizes the generated service to kind: voice; the authored azure.yaml uses kind: voice, modelType: managed, model.id: gpt-realtime, store: false, and en-US-AvaNeural directly under the service block."
       - "States that azd ai agent invoke does not support Voice Agents and verifies the deployed agent over the voice WebSocket endpoint or smoke-test-voice script."
     tags:
       type: integration
@@ -1040,6 +1040,9 @@ stimuli:
           pattern: "(?i)modelType:\\s*managed"
       - type: output-matches
         config:
+          pattern: "(?im)^\\s*kind:\\s*voice\\s*$"
+      - type: output-matches
+        config:
           pattern: "(?i)id:\\s*gpt-realtime"
       - type: output-matches
         config:
@@ -1068,10 +1071,12 @@ stimuli:
             3. Shows azd ai agent init --no-prompt --kind prompt-voice with
                --project-id and an azure.yaml
                service block with properties directly under the service block
-               (not nested under config:), including kind: voice (or prompt-voice),
+               (not nested under config:), including canonical kind: voice,
                modelType: managed, model: { id: gpt-realtime }, store: false, and
                en-US-AvaNeural without requiring a deployment entry under
                services.ai-project.deployments for the managed model.
+               It explains that init may generate kind: prompt-voice and
+               immediately normalizes that field to kind: voice.
             4. States that azd ai agent invoke does not support Voice Agents and
                verifies the deployed agent over the voice WebSocket endpoint
                (or smoke-test-voice.sh / smoke-test-voice.ps1).
@@ -1079,7 +1084,9 @@ stimuli:
             nests agent fields under a deprecated config: block, uses an
             unverified models list instead of services.ai-project.deployments,
             uses azd ai agent invoke to test the Voice Agent, or uses obsolete
-            modelType: hosted_agent or targetAgent fields.
+            modelType: hosted_agent or targetAgent fields. Also fail if the
+            authored azure.yaml keeps kind: prompt-voice instead of canonical
+            kind: voice.
       - type: shell-command-invoked
         config:
           disallowed:
@@ -1192,6 +1199,50 @@ stimuli:
         config:
           required: [azure-ai]
           disallowed: [microsoft-foundry]
+
+  - name: "Existing prompt-voice manifest is normalized as Voice"
+    prompt: |
+      Without running commands, review this existing azure.yaml service and
+      explain how you would continue maintaining it:
+
+      services:
+        support-voice:
+          host: azure.ai.agent
+          kind: prompt-voice
+          modelType: managed
+          model:
+            id: gpt-realtime
+    rubric:
+      - "Classifies the existing service as a Voice Agent for compatibility rather than as an ordinary Prompt Agent."
+      - "Recommends normalizing the existing YAML to canonical kind: voice when editing it."
+      - "Does not recommend authoring new YAML with kind: prompt-voice or converting the service to another agent type."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response treats the supplied kind: prompt-voice
+            service as an existing Voice Agent compatibility input, recommends
+            changing it to canonical kind: voice during maintenance, and does
+            not present kind: prompt-voice as an authored YAML option or create
+            a replacement agent.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\b|\\baz\\b"
+              description: "Planning-only compatibility test must not run commands"
 
   - name: "Generic Azure text to speech does not route to Foundry"
     prompt: "How do I convert text to speech with an Azure neural voice?"

@@ -32,7 +32,7 @@ Use the project endpoint and agent name from the project context (see [Common Pr
 ### Step 2: Identify the Agent Type (`Hosted`, `Voice`, `Managed Harness Agent`, or `Prompt`)
 
 Inspect `azure.yaml` (`host: azure.ai.agent`) and classify the service in order:
-1. **`kind: voice` or `kind: prompt-voice` (Voice Agent)**:
+1. **Voice Agent** (apply the top-level compatibility classification for legacy manifests):
    - Read [common Voice invariants](../create/references/voice-agent-common.md) and the selected subtype reference from [create-voice](../create/create-voice.md).
    - Triage in this exact order:
      1. **Definition & deployment**: Validate the selected subtype and run `azd ai agent show --output json`.
@@ -122,7 +122,7 @@ Present a summary to the user including:
 | Kusto query failed | Invalid cluster/database or insufficient permissions | Verify Application Insights resource details and reader permissions |
 | No telemetry data | Agent not instrumented or too recent | Check if Application Insights SDK is configured; data may take a few minutes to appear |
 | `session.rejected` (`protocol_mismatch`) on Hosted Voice startup | Hosted target does not satisfy the selected Bridge contract | Follow [Hosted Voice Bridge troubleshooting](../create/references/voice-agent-hosted-bridge.md), redeploy the target, and retest |
-| `azd ai agent invoke` fails on Voice Agent | `azd ai agent invoke` does not support `kind: voice` / `kind: prompt-voice` | Use the Voice WebSocket smoke-test script ([smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) / [smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1)) or Foundry Voice playground |
+| `azd ai agent invoke` fails on Voice Agent | `azd ai agent invoke` does not support the Voice protocol | Use the Voice WebSocket smoke-test script ([smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) / [smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1)) or Foundry Voice playground |
 
 ## Additional Resources
 

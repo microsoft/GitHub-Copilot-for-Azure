@@ -140,7 +140,7 @@ services:
 
 A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. In this workflow, existing Toolboxes are attached through their versioned MCP endpoint and existing Skills are referenced by name and version; connection, Toolbox, and Skill resources are managed separately with their `azd ai` commands.
 
-### Voice Agent service blocks (`kind: voice` / `kind: prompt-voice`)
+### Voice Agent service blocks (`kind: voice`)
 
 Use `azd ai agent init --kind prompt-voice` for a new Prompt Voice service. Use a Hosted manifest or an existing `kind: hosted` target plus `kind: voice` wrapper for Hosted Voice.
 
@@ -149,7 +149,7 @@ azd ai agent init --no-prompt --kind prompt-voice --agent-name <agent-name> \
   --model gpt-realtime --voice en-US-AvaNeural
 ```
 
-Resolve the new-versus-existing project choice before init and pass `--project-id` for an existing project. For subtype rules, supported fields, and lifecycle boundaries, follow [create-voice](../../create/create-voice.md) and load only its selected subtype reference.
+Resolve the new-versus-existing project choice before init and pass `--project-id` for an existing project. Normalize the generated YAML as directed by [create-voice](../../create/create-voice.md), then load only its selected subtype reference.
 
 ## State (azd env vars)
 

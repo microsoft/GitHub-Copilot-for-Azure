@@ -114,7 +114,7 @@ promptText: |
 
 ## Voice Agent Observability, Evaluation, and Privacy Boundaries
 
-When evaluating or monitoring a **Voice Agent** (`kind: voice` / `kind: prompt-voice`, whether Prompt Voice or Hosted Voice):
+When evaluating or monitoring a **Voice Agent**, whether Prompt Voice or Hosted Voice:
 
 1. **Conversation-scoped traces and TTFA**: Voice Agent telemetry is organized around multi-turn real-time voice conversations rather than single HTTP Responses `response_id` calls. Foundry dashboards may also expose voice-specific latency indicators such as **time to first audio (TTFA)** alongside turn latency.
 2. **Transcript evaluation limits**: Text/transcript evaluators (`relevance`, `task_adherence`, `intent_resolution`, and custom rubric judges) evaluate **text-observable behavior only**. State clearly that transcript evaluations do **not** measure pronunciation, prosody, voice naturalness, background noise suppression, echo cancellation, audio dropouts, or barge-in/interruption timing.

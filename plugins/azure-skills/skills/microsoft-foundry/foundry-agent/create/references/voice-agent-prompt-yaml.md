@@ -11,7 +11,7 @@ services:
   support-voice:
     host: azure.ai.agent
     uses: [ai-project]
-    kind: prompt-voice
+    kind: voice
     name: support-voice
     modelType: managed
     model:
@@ -42,7 +42,7 @@ services:
   advisor-voice:
     host: azure.ai.agent
     uses: [ai-project]
-    kind: prompt-voice
+    kind: voice
     name: advisor-voice
     modelType: self_deployed
     model:

@@ -4,7 +4,8 @@ Rules shared by Prompt Voice and Hosted Voice services in `azure.yaml`.
 
 ## Classification
 
-- `kind: voice` and CLI alias `kind: prompt-voice` are managed Foundry Voice Agents.
+- Author and maintain Voice Agent services with canonical `kind: voice`.
+- Silently recognize existing `kind: prompt-voice` manifests as Voice Agents for compatibility, and normalize them to `kind: voice` when editing.
 - **Prompt Voice** declares `model` with `modelType: managed` or `self_deployed`.
 - **Hosted Voice** declares `conversationEngine.type: hosted_agent` and names a distinct `kind: hosted` target.
 - A standalone `kind: hosted` service using raw `invocations_ws` is not a managed Voice Agent.
@@ -29,5 +30,5 @@ Rules shared by Prompt Voice and Hosted Voice services in `azure.yaml`.
 
 Load only the selected subtype reference:
 
-- [Prompt Voice YAML](prompt-voice-yaml.md)
+- [Prompt Voice YAML](voice-agent-prompt-yaml.md)
 - [Hosted Voice YAML](hosted-voice-yaml.md)
