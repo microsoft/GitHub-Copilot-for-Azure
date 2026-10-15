@@ -108,7 +108,6 @@ describe("answer billing propagation", () => {
           expect(captured).toMatchObject({
             finalized: false,
             answers: { expected: 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
-            judges: { expected: 2, measured: 0 },
           });
           return;
         }
@@ -124,7 +123,6 @@ describe("answer billing propagation", () => {
             expected: 1, observed: 1, measured: credits === undefined ? 0 : 1,
             measuredAiCredits: credits ?? 0,
           },
-          judges: { expected: 2, observed: 2, measured: 0 },
           agents: { expected: 0 },
         });
       } finally {

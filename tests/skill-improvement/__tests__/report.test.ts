@@ -425,7 +425,6 @@ describe("skill improvement reporting", () => {
         ...emptyBilling("answer trajectories", 8, "copilot_usage.totalNanoAiu"),
         observed: 8, measured: 8, measuredAiCredits: 4,
       },
-      judges: emptyBilling("graded trajectories", 16, "vally", "Judge billing unavailable."),
       agents: withAgent ? {
         ...emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
         observed: 1, measured: 1, measuredAiCredits: 2,
@@ -435,40 +434,38 @@ describe("skill improvement reporting", () => {
       batchBilling("Baseline"), batchBilling("Iteration 1", true),
       batchBilling("Held-out baseline"), batchBilling("Held-out candidate"),
     ];
-    let accounting = renderReportSummary(report);
+    const accounting = renderReportSummary(report);
     expect(accounting).toContain(
-      "| Baseline | 4.000000 | unavailable | N/A | 4.000000 (measured subtotal) |"
+      "| Baseline | 4.000000 | N/A | 4.000000 |"
     );
     expect(accounting).toContain(
-      "| Iteration 1 | 4.000000 | unavailable | 2.000000 | 6.000000 (measured subtotal) |"
+      "| Iteration 1 | 4.000000 | 2.000000 | 6.000000 |"
     );
     expect(accounting).toContain(
-      "| Run total | 16.000000 | unavailable | 2.000000 | 18.000000 (measured subtotal) |"
+      "| Run total | 16.000000 | 2.000000 | 18.000000 |"
     );
-    expect(accounting).toContain("answers 32/32 answer trajectories; judges 0/64 graded trajectories; agents 1/1 agent invocations");
-    for (const batch of report.billing) {
-      batch.judges = { ...batch.judges, observed: 16, measured: 16, measuredAiCredits: 1 };
-      delete batch.judges.reason;
-    }
-    accounting = renderReportSummary(report);
-    expect(accounting).toContain("| Run total | 16.000000 | 4.000000 | 2.000000 | 22.000000 |");
+    expect(accounting).toContain("answers 32/32 answer trajectories; agents 1/1 agent invocations");
+    expect(accounting).toContain("| Batch | Answer AIC | Improvement-agent AIC | Total measured AIC | Coverage |");
+    expect(accounting).not.toContain("Judge AIC");
+    expect(accounting).not.toContain("graded trajectories");
+    expect(accounting).toContain("judge and Azure infrastructure costs are excluded");
     report.billing[1].agents.measured = 0;
     report.billing[1].agents.measuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain(
-      "| Run total | 16.000000 | 4.000000 | unavailable | 20.000000 (measured subtotal) |"
+      "| Run total | 16.000000 | unavailable | 16.000000 (measured subtotal) |"
     );
     report.billing[1].agents.measured = 1;
     report.billing[1].agents.measuredAiCredits = 0;
-    expect(renderReportSummary(report)).toContain("| Run total | 16.000000 | 4.000000 | 0.000000 | 20.000000 |");
+    expect(renderReportSummary(report)).toContain("| Run total | 16.000000 | 0.000000 | 16.000000 |");
     report.billing[1].finalized = false;
     expect(renderReportSummary(report)).toContain(
-      "| Run total | 16.000000 | 4.000000 | 0.000000 | 20.000000 (measured subtotal) |"
+      "| Run total | 16.000000 | 0.000000 | 16.000000 (measured subtotal) |"
     );
     expect(renderReportSummary(report)).toContain("incomplete attempt accounting");
     report.billing[1].finalized = true;
     report.status = "failed";
     expect(renderReportSummary(report)).toContain(
-      "| Run total | 16.000000 | 4.000000 | 0.000000 | 20.000000 (measured subtotal) |"
+      "| Run total | 16.000000 | 0.000000 | 16.000000 (measured subtotal) |"
     );
   });
 

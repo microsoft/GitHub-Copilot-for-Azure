@@ -117,11 +117,11 @@ not full workflow-credit accounting.
 
 `report.json` also persists a component billing ledger collected as work runs, including
 available measurements from failed generation attempts and completed agent
-invocations. The batch summary has **Batch, Answer AIC, Judge AIC,
-Improvement-agent AIC, Total measured AIC, Coverage**, with baseline,
+invocations. The batch summary has **Batch, Answer AIC, Improvement-agent AIC,
+Total measured AIC, Coverage**, with baseline,
 iteration, held-out, and run-total rows. It counts raw answer trajectories
 once, independently of grading duplication. Coverage explicitly counts
-answer trajectories, graded trajectories, and agent invocations.
+answer trajectories and agent invocations.
 
 The improvement CLI's final `--usage-output-file` JSON supplies the
 authoritative session `totalNanoAiu` aggregate. Divide this once by
@@ -136,26 +136,18 @@ held-out agent consumption is **N/A**, not measured zero. Internal model
 retries are included only to the extent the provider's complete aggregate
 accounts for them; the runner does not retry improvement invocations.
 
-**Judge billing is currently unavailable.** The installed Vally LLM client
-uses its own Copilot SDK sessions, but returns only token usage, not request
-`copilotUsage`. Its grader-plugin registry cannot observe those sessions;
-wrapping a grader result cannot recover discarded billing. No dependency
-patching, replacement grading semantics, or token-derived estimate is used.
-Upstream support must expose authoritative billing for every judge request,
-including reminders, retries, and failed attempts, and propagate completeness
-and consumption into grade artifacts. Graded-trajectory counts alone cannot
-prove judge-request billing coverage.
+**Judge AI credits are out of scope** pending Vally billing support.
+Totals cover answers and improvement agents only, not full-workflow consumption.
+Azure infrastructure charges and invoice costs are also excluded.
 
 A component total requires complete expected coverage. The combined amount
 is a **measured subtotal** whenever an applicable component is unavailable or
 attempt accounting is incomplete. It includes only fully measured units;
-known fragments from incomplete units are excluded. Full-run totals are
-shown only with complete components and finalized accounting on a completed
-run. With current Vally, runs involving judges cannot claim full accounting
-for all three components. Missing historical ledgers remain unavailable.
+known fragments from incomplete units are excluded. Run totals for the two
+in-scope components require complete coverage and finalized accounting on a
+completed run. Missing historical ledgers remain unavailable.
 Generation disables Vally trial retries; unreturned failed trajectories and
 unreported model retries remain coverage gaps rather than zero consumption.
-Azure infrastructure charges and invoice costs are not collected.
 
 Each run writes:
 

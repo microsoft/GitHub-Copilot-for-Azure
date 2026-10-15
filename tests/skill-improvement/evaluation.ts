@@ -359,11 +359,6 @@ export async function runEvaluationBatch(
     batch: phase,
     finalized: false,
     answers: emptyBilling("answer trajectories", expectedAnswers, "copilot_usage.totalNanoAiu"),
-    judges: emptyBilling(
-      "graded trajectories", expectedAnswers * spec.models.judges.length,
-      "vally_llm_client",
-      "Vally does not expose judge request billing, including reminders and retries."
-    ),
     agents: emptyBilling("agent invocations", 0, "not applicable"),
   };
   onBilling?.(billing);
@@ -421,8 +416,6 @@ export async function runEvaluationBatch(
         judgeModel,
         deadline
       );
-      billing.judges.observed += judged[index].length;
-      onBilling?.(billing);
     }
   );
 
