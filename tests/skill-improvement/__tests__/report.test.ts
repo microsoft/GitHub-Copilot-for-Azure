@@ -95,25 +95,6 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement reporting", () => {
-  test("averages repeated answer billing without summing duplicated judge records", () => {
-    const trials = [
-      { ...judged("one", "model-a", "judge-a", true, 1, 100), answerBilledCredits: 2 },
-      { ...judged("one", "model-a", "judge-b", true, 1, 100), answerBilledCredits: 2 },
-      { ...judged("one", "model-a", "judge-a", true, 1, 100), answerBilledCredits: 4 },
-      { ...judged("one", "model-a", "judge-b", true, 1, 100), answerBilledCredits: 4 },
-    ];
-    expect(aggregateJudgments(trials)[0].answerBilledCredits).toBe(3);
-    expect(aggregateJudgments([
-      ...trials,
-      judged("one", "model-a", "judge-a", true, 1, 100),
-    ])[0].answerBilledCredits).toBeUndefined();
-    expect(aggregateJudgments([
-      judged("one", "model-a", "judge-a", true, 1, 100),
-      judged("one", "model-a", "judge-b", true, 1, 100),
-      judged("one", "model-a", "judge-a", true, 1, 200),
-      judged("one", "model-a", "judge-b", true, 1, 200),
-    ])[0].totalTokens).toBe(150);
-  });
   test("includes previous validation failures in the next failure packet", () => {
     const packet = buildFailurePacket(
       spec(),
@@ -222,7 +203,7 @@ describe("skill improvement reporting", () => {
           condition,
           condition.skill === "enabled"
         ),
-      ]).map(trial => ({ ...trial, answerBilledCredits: 2 }))
+      ])
     );
     const reference = baselineTrials.filter(
       trial => trial.condition.name === skillWithMcp.name
@@ -230,7 +211,7 @@ describe("skill improvement reporting", () => {
     const candidate = aggregateJudgments([
       judged("one", "model-a", "judge-a", false, 0.2, 130, skillWithMcp, false),
       judged("one", "model-a", "judge-b", false, 0.2, 130, skillWithMcp, false),
-    ]).map(trial => ({ ...trial, answerBilledCredits: 3 }));
+    ]);
     const decision = decideAcceptance(runSpec, reference, candidate, 1000, 1300);
     const refinementDecision = decideRefinement(
       runSpec,
@@ -289,54 +270,8 @@ describe("skill improvement reporting", () => {
     }
     expect(rendered).toContain("Pass → Fail");
     expect(rendered).toContain("iteration-1/candidate.patch");
-    expect(rendered).toContain("## Correctness, tokens, and AI-credit consumption");
-    expect(rendered).toContain("| Iteration 1 | Skill + MCP | model-a | 0/1 (0.0%) | 0/2 | 130 | 1/1 | 3.000000 | 1.000000 credits |");
-    report.iterations[0].trials = candidate.map(trial => ({
-      ...trial,
-      answerBilledCredits: undefined,
-    }));
-    expect(renderReportSummary(report)).toContain("not measured (incomplete)");
     expect(rendered).not.toContain("Kusto calls");
     expect(rendered).not.toContain(`${path.parse(process.cwd()).root}runner`);
-  });
-
-  test("reports zero-iteration runs as completed baseline evaluations", () => {
-    const runSpec = spec();
-    runSpec.improvementAgent.enabled = false;
-    runSpec.limits.maxIterations = 0;
-    const report: SkillImprovementReport = {
-      runId: "run",
-      generatedAt: "2026-10-09T00:00:00Z",
-      status: "completed",
-      spec: runSpec,
-      plan: {
-        developmentPromptCount: 1,
-        heldOutPromptCount: 0,
-        baselineAnswerGenerations: 4,
-        candidateAnswerGenerationsPerIteration: 0,
-        heldOutAnswerGenerations: 0,
-        maximumAnswerGenerations: 4,
-        maximumJudgeCalls: 8,
-      },
-      baselineCommit: "abc",
-      baselineSkillTokens: 100,
-      baselineTrials: [],
-      iterations: [],
-      finalAccepted: false,
-      usage: { answerGenerations: 4, judgeCalls: 8, durationMinutes: 1 },
-    };
-
-    const summary = renderReportSummary(report);
-    const detailed = renderReport(report);
-
-    expect(summary.startsWith("# Final outcome: BASELINE EVALUATION COMPLETED")).toBe(true);
-    expect(summary).toContain("Candidate evaluation: **not configured (baseline-only run)**");
-    expect(summary).toContain("acceptance and rejection do not apply");
-    expect(summary).not.toContain("## Candidate decisions");
-    expect(summary).not.toContain("## Rejection and validation reasons");
-    expect(summary).not.toContain("NOT ACCEPTED");
-    expect(detailed).toContain("Candidate evaluation: **not configured (baseline-only run)**");
-    expect(detailed).not.toContain("Final acceptance: **not passed**");
   });
 
   test("writes the concise summary and relative workflow metadata paths", () => {

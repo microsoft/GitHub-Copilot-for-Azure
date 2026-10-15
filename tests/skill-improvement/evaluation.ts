@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import type { AnswerBilling } from "./billing.ts";
 import path from "node:path";
 import type {
   EvaluationSet,
@@ -39,9 +38,6 @@ export type VallyRecord = {
     details?: GradeDetail[];
   };
   trajectory?: {
-    metadata?: {
-      answerBilling?: AnswerBilling;
-    };
     output?: string;
     stimulus?: {
       name?: string;
@@ -99,7 +95,6 @@ export type JudgedTrial = {
   output: string;
   targetSkillInvoked: boolean;
   totalTokens: number;
-  answerBilledCredits?: number;
 };
 
 export type EvaluationBatch = {
@@ -322,8 +317,6 @@ async function gradeAnswers(
       targetSkillInvoked:
         (record.trajectory?.metrics?.skillActivationBreakdown?.[spec.target.skill] ?? 0) > 0,
       totalTokens: record.trajectory?.metrics?.tokenUsage?.totalTokens ?? 0,
-      answerBilledCredits:
-        record.trajectory?.metadata?.answerBilling?.billedAiCredits ?? undefined,
     }));
 }
 
