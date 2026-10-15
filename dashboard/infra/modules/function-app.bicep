@@ -142,6 +142,7 @@ resource functionApp 'Microsoft.Web/sites@2024-04-01' = {
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
         { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsightsConnectionString }
         { name: 'AZURE_CLIENT_ID', value: userAssignedIdentityClientId }
+        { name: 'AZURE_SUBSCRIPTION_ID', value: 'cda6aeab-6dec-4567-a4d8-3770583a13f0' }
         { name: 'STORAGE_ACCOUNT_NAME', value: storageAccountName }
         { name: 'TOKEN_USAGE_TABLE_NAME', value: tokenUsageTableName }
         { name: 'TOOL_USAGE_TABLE_NAME', value: toolUsageTableName }
