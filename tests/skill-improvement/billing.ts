@@ -5,6 +5,63 @@ export type AnswerBilling = {
   billedAiCredits: number | null;
 };
 
+export type ComponentBilling = {
+  unit: "answer trajectories" | "graded trajectories" | "agent invocations";
+  expected: number;
+  observed: number;
+  measured: number;
+  measuredAiCredits: number;
+  source: string;
+  reason?: string;
+};
+
+export type BatchBilling = {
+  batch: string;
+  answers: ComponentBilling;
+  judges: ComponentBilling;
+  agents: ComponentBilling;
+  finalized: boolean;
+};
+
+export function emptyBilling(
+  unit: ComponentBilling["unit"],
+  expected: number,
+  source: string,
+  reason?: string,
+): ComponentBilling {
+  return { unit, expected, observed: 0, measured: 0, measuredAiCredits: 0, source, reason };
+}
+
+export function isBillingComplete(billing: ComponentBilling): boolean {
+  return billing.observed === billing.expected && billing.measured === billing.expected;
+}
+
+export function collectAgentBilling(
+  usage: unknown,
+  finalized: boolean,
+): ComponentBilling {
+  const billing = emptyBilling(
+    "agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu",
+    "Missing final CLI usage or incomplete provider billing."
+  );
+  billing.observed = 1;
+  if (!usage || typeof usage !== "object") {
+    return billing;
+  }
+  if ("totalNanoAiu" in usage && usage.totalNanoAiu !== undefined) {
+    const value = usage.totalNanoAiu;
+    if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+      throw new Error("Invalid improvement-agent totalNanoAiu billing value.");
+    }
+    if (finalized && "aiCreditsStatus" in usage && usage.aiCreditsStatus === "complete") {
+      billing.measured = 1;
+      billing.measuredAiCredits = value / 1_000_000_000;
+      delete billing.reason;
+    }
+  }
+  return billing;
+}
+
 export function collectAnswerBilling(
   events: readonly {
     type: string;

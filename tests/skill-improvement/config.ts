@@ -583,7 +583,7 @@ export function resolveEvaluationPath(
   return realEvalPath;
 }
 
-function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
+export function countStimuli(repoRoot: string, spec: SkillImprovementRunSpec, files: string[]): number {
   return files.reduce((total, file) => {
     const evalPath = resolveEvaluationPath(repoRoot, spec, file);
     const document = readExpandedYaml<{ stimuli?: unknown[] }>(evalPath);

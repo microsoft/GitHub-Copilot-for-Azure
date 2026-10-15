@@ -17,6 +17,7 @@ import type {
   SkillImprovementRunSpec,
 } from "../config.ts";
 import type { JudgedTrial } from "../evaluation.ts";
+import { emptyBilling, type BatchBilling } from "../billing.ts";
 import { describe, expect, test } from "vitest";
 
 const skillWithMcp = {
@@ -509,6 +510,58 @@ describe("skill improvement reporting", () => {
     ));
     expect(renderReportSummary(report)).toContain(
       "| Baseline | model-a | Skill + MCP | 2 | 2 | 1/2 | not measured (incomplete) | not measured (incomplete) |"
+    );
+
+    const batchBilling = (batch: string, withAgent = false): BatchBilling => ({
+      batch, finalized: true,
+      answers: {
+        ...emptyBilling("answer trajectories", 8, "copilot_usage.totalNanoAiu"),
+        observed: 8, measured: 8, measuredAiCredits: 4,
+      },
+      judges: emptyBilling("graded trajectories", 16, "vally", "Judge billing unavailable."),
+      agents: withAgent ? {
+        ...emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
+        observed: 1, measured: 1, measuredAiCredits: 2,
+      } : emptyBilling("agent invocations", 0, "not applicable"),
+    });
+    report.billing = [
+      batchBilling("Baseline"), batchBilling("Iteration 1", true),
+      batchBilling("Held-out baseline"), batchBilling("Held-out candidate"),
+    ];
+    let accounting = renderReportSummary(report);
+    expect(accounting).toContain(
+      "| Baseline | 4.000000 | unavailable | N/A | 4.000000 (measured subtotal) |"
+    );
+    expect(accounting).toContain(
+      "| Iteration 1 | 4.000000 | unavailable | 2.000000 | 6.000000 (measured subtotal) |"
+    );
+    expect(accounting).toContain(
+      "| Run total | 16.000000 | unavailable | 2.000000 | 18.000000 (measured subtotal) |"
+    );
+    expect(accounting).toContain("answers 32/32 answer trajectories; judges 0/64 graded trajectories; agents 1/1 agent invocations");
+    for (const batch of report.billing) {
+      batch.judges = { ...batch.judges, observed: 16, measured: 16, measuredAiCredits: 1 };
+      delete batch.judges.reason;
+    }
+    accounting = renderReportSummary(report);
+    expect(accounting).toContain("| Run total | 16.000000 | 4.000000 | 2.000000 | 22.000000 |");
+    report.billing[1].agents.measured = 0;
+    report.billing[1].agents.measuredAiCredits = 0;
+    expect(renderReportSummary(report)).toContain(
+      "| Run total | 16.000000 | 4.000000 | unavailable | 20.000000 (measured subtotal) |"
+    );
+    report.billing[1].agents.measured = 1;
+    report.billing[1].agents.measuredAiCredits = 0;
+    expect(renderReportSummary(report)).toContain("| Run total | 16.000000 | 4.000000 | 0.000000 | 20.000000 |");
+    report.billing[1].finalized = false;
+    expect(renderReportSummary(report)).toContain(
+      "| Run total | 16.000000 | 4.000000 | 0.000000 | 20.000000 (measured subtotal) |"
+    );
+    expect(renderReportSummary(report)).toContain("incomplete attempt accounting");
+    report.billing[1].finalized = true;
+    report.status = "failed";
+    expect(renderReportSummary(report)).toContain(
+      "| Run total | 16.000000 | 4.000000 | 0.000000 | 20.000000 (measured subtotal) |"
     );
   });
 

@@ -7,7 +7,7 @@ import {
   requireCompleteGrading,
   runEvaluationBatch,
 } from "../evaluation.ts";
-import { collectAnswerBilling } from "../billing.ts";
+import { collectAnswerBilling, type BatchBilling } from "../billing.ts";
 import type { SkillImprovementRunSpec } from "../config.ts";
 import { runProcess } from "../process.ts";
 import { aggregateJudgments } from "../report.ts";
@@ -19,8 +19,14 @@ vi.mock("../process.ts", async importOriginal => ({
 }));
 
 describe("answer billing propagation", () => {
-  test.each([1_250_000_000, 0, undefined])(
-    "retains request billing %s through generation, each judge, and aggregation", async nanoAiu => {
+  test.each([
+    { nanoAiu: 1_250_000_000, failure: undefined },
+    { nanoAiu: 0, failure: undefined },
+    { nanoAiu: undefined, failure: undefined },
+    { nanoAiu: 1_250_000_000, failure: "eval" },
+    { nanoAiu: 1_250_000_000, failure: "grade" },
+  ])(
+    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure }) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "answer-billing-"));
       const evalRoot = path.join(root, "tests", "skill-improvement", "evals", "example");
       fs.mkdirSync(evalRoot, { recursive: true });
@@ -85,18 +91,42 @@ describe("answer billing propagation", () => {
             gradeResult: { passed: true, score: 1 },
           }) + "\n");
         }
+        if (failure && args.includes(failure)) {
+          throw new Error(`${failure} failed`);
+        }
         return { exitCode: 0, stdout: "", stderr: "" };
       });
       try {
-        const batch = await runEvaluationBatch(
+        let captured: BatchBilling | undefined;
+        const pending = runEvaluationBatch(
           root, root, path.join(root, "results"), spec, "baseline",
-          "development", spec.experiment.conditions, Date.now() + 60_000
+          "development", spec.experiment.conditions, Date.now() + 60_000,
+          undefined, billing => { captured = billing; }
         );
+        if (failure) {
+          await expect(pending).rejects.toThrow(`${failure} failed`);
+          expect(captured).toMatchObject({
+            finalized: false,
+            answers: { expected: 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
+            judges: { expected: 2, measured: 0 },
+          });
+          return;
+        }
+        const batch = await pending;
         const credits = nanoAiu === undefined ? undefined : nanoAiu / 1_000_000_000;
         expect(batch.answerGenerations).toBe(1);
         expect(batch.judgeCalls).toBe(2);
         expect(batch.trials.map(trial => trial.answerBilledCredits)).toEqual([credits, credits]);
         expect(aggregateJudgments(batch.trials)[0].answerBilledCredits).toBe(credits);
+        expect(batch.billing).toMatchObject({
+          finalized: true,
+          answers: {
+            expected: 1, observed: 1, measured: credits === undefined ? 0 : 1,
+            measuredAiCredits: credits ?? 0,
+          },
+          judges: { expected: 2, observed: 2, measured: 0 },
+          agents: { expected: 0 },
+        });
       } finally {
         vi.mocked(runProcess).mockReset();
         fs.rmSync(root, { recursive: true, force: true });
