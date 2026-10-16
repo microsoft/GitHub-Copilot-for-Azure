@@ -32,7 +32,7 @@ export type BicepConfig = {
    * The template is deployed at resource group scope into a resource group
    * the script creates beforehand.
    */
-  path: string;
+  path?: string;
 
   /**
    * Azure region to provision the resource group and its child resources.
@@ -45,7 +45,7 @@ export type BicepConfig = {
   resourceGroupNameBase: string;
 
   /**
-   * The parameter values for the Bicep template.
+   * The parameter values for the Bicep template. Parameters are invalid when path is omitted.
    * The location parameter is always computed and provided.
    */
   parameters?: BicepParameterConfig[];
@@ -68,10 +68,52 @@ export type PostTestScriptConfig = {
 };
 
 /**
- * Manifest for provisioning the Azure fixture for integration test.
+ * Manifest for provisioning the Azure fixture for a workflow.
+ * A workflow fixture is prepared before anything in that workflow starts using it.
  */
-export type FixtureManifest = {
+export type WorkflowFixtureManifest = {
+  /**
+   * Stable identifier used to coordinate provisioning across workflow runs.
+   */
+  id: string;
+
+  version: number;
+  schemaVersion: number;
+
+  /**
+   * A human facing description of the Azure fixtures.
+   * This description will not be used by the provisioning script.
+   */
+  description: string;
+
+  /**
+   * Bicep templates to provision.
+   * The templates will be provisioned to each resource group computed
+   * from resourceGroupNameBases in the given order.
+   */
+  bicepConfigs: BicepConfig[];
+
+  /**
+   * Additional post-provision script to run after provisioning the fixtures but before using them in the workflow.
+   * Post-provision scripts are given the computed resource group names.
+   * --resource-groups <rg-1> <rg-2> ... <rg-n>
+   *
+   * The post-provision script will be executed via tsx and must be written in Typescript.
+   */
+  postProvisionScript?: PostProvisionScriptConfig;
+};
+
+/**
+ * Manifest for provisioning the Azure fixture for a stimuli.
+ */
+export type StimuliFixtureManifest = {
+  /**
+   * Stable identifier used for locating fixtures for a manifest.
+   */
+  id: string;
+
   type: "readOnly" | "readWrite";
+
   version: number;
   schemaVersion: number;
 
@@ -117,6 +159,14 @@ export type ProvisionScriptOutput = {
    * Names of the resource groups to use for test.
    */
   resourceGroups: string[];
+
+  /**
+   * Workflow fixture identity and the exact resource groups selected for use.
+   */
+  fixtureId?: string;
+  fixtureVersion?: number;
+  fixtureInstanceId?: string;
+  resourceGroupIdsByComponent?: Record<string, string>;
 };
 
 export const FIXTURE_ID_TAG = "FixtureId";
@@ -124,30 +174,38 @@ export const FIXTURE_VERSION_TAG = "FixtureVersion";
 
 const AZ_COMMAND = process.platform === "win32" ? "az.cmd" : "az";
 
-let deadline = Number.POSITIVE_INFINITY;
+export type RunBudget = {
+  /** Caps the total wall clock time the script may spend in child processes. */
+  set(totalMs: number): void;
+  /**
+   * Milliseconds left in the run budget, or undefined when no budget was set.
+   * @throws An error if the budget is already exhausted.
+   */
+  remainingMs(step: string): number | undefined;
+};
 
-/**
- * Caps the total wall clock time the script may spend in child processes.
- */
-export function setBudget(totalMs: number) {
-  deadline = Date.now() + totalMs;
+/** Creates a budget measured with the supplied clock. */
+export function createBudget(now: () => number = Date.now): RunBudget {
+  let deadline = Number.POSITIVE_INFINITY;
+  return {
+    set(totalMs) {
+      deadline = now() + totalMs;
+    },
+    remainingMs(step) {
+      if (deadline === Number.POSITIVE_INFINITY) {
+        return undefined;
+      }
+      const remaining = deadline - now();
+      if (remaining <= 0) {
+        throw new Error(`Time budget was exhausted before ${step}`);
+      }
+      return remaining;
+    },
+  };
 }
 
-/**
- * Milliseconds left in the run budget, or undefined when no budget was set.
- * @throws An error if the budget is already exhausted.
- */
-export function remainingMs(step: string): number | undefined {
-  if (deadline === Number.POSITIVE_INFINITY) {
-    return undefined;
-  }
-
-  const remaining = deadline - Date.now();
-  if (remaining <= 0) {
-    throw new Error(`Time budget was exhausted before ${step}`);
-  }
-  return remaining;
-}
+/** The process-wide budget used by the production command runners. */
+export const runBudget = createBudget();
 
 /**
  * Helper function to run a single AZ CLI command.
@@ -162,7 +220,7 @@ export function runAz(args: string[], options: { subjectToBudget?: boolean } = {
     // az traps SIGTERM and can hang, so kill it outright.
     return execFileSync(AZ_COMMAND, args, {
       encoding: "utf8",
-      timeout: options.subjectToBudget === false ? undefined : remainingMs(step),
+      timeout: options.subjectToBudget === false ? undefined : runBudget.remainingMs(step),
       killSignal: "SIGKILL",
       shell: process.platform === "win32"
     }).trim();
@@ -210,6 +268,6 @@ export function deleteResourceGroup(resourceGroupName: string) {
 /**
  * Reads a fixture manifest from disk.
  */
-export function readManifest(manifestPath: string): FixtureManifest {
-  return JSON.parse(readFileSync(manifestPath, "utf8")) as FixtureManifest;
+export function readManifest(manifestPath: string): StimuliFixtureManifest {
+  return JSON.parse(readFileSync(manifestPath, "utf8")) as StimuliFixtureManifest;
 }
