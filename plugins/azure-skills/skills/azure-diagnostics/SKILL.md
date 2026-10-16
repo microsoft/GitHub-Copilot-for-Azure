@@ -1,6 +1,6 @@
 ---
 name: azure-diagnostics
-description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage, including evidence-only diagnosis with no live Azure access. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, container app 503 or target port mismatch, troubleshoot functions, function telemetry missing or stopped after a config/connection-string change, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, lock renewal during long-running processing, service bus dead letter."
+description: "Debug Azure production issues on Azure using AppLens, Azure Monitor, resource health, and safe triage, including evidence-only diagnosis with no live Azure access. WHEN: debug production issues, troubleshoot app service, app service high CPU, app service deployment failure, troubleshoot container apps, container app 503 or target port mismatch, troubleshoot functions, function telemetry missing or stopped after a config change, troubleshoot AKS, VM RDP, Linux SSH, VM black screen, can't connect to VM, reset VM password, NSG or firewall blocking, kubectl cannot connect, kube-system/CoreDNS failures, pod pending, crashloop, node not ready, upgrade failures, analyze logs, KQL, insights, image pull failures, cold start issues, health probe failures, resource health, root cause of errors, troubleshoot event hubs, troubleshoot service bus, messaging SDK error, AMQP connection failure, message lock lost, lock renewal, service bus dead letter, troubleshoot storage queue, poison queue, dequeue count exceeded."
 license: MIT
 metadata:
   author: Microsoft
@@ -29,6 +29,7 @@ Activate this skill when user wants to:
 - Troubleshoot AKS clusters, nodes, pods, ingress, or Kubernetes networking issues
 - Troubleshoot Azure VM connectivity issues (RDP/SSH failures, port 3389/22 timeouts, NSG or firewall blocking, credential resets)
 - Troubleshoot Azure Messaging SDK issues (Event Hubs, Service Bus connection failures, AMQP errors, message lock issues)
+- Troubleshoot Azure Storage Queues (poison messages, dequeue count exceeded, visibility timeout, duplicate processing) — distinct from Service Bus queues
 - Root-cause a symptom that looks like a healthy-runtime-but-wrong-destination problem (e.g., telemetry/messages stop flowing to the expected resource after a config change) — invoke this skill for the matrix even when MCP tools could answer the surface question alone
 
 ## Rules
@@ -66,6 +67,7 @@ Activate this skill when user wants to:
 | **AKS** | Cluster access, nodes, `kube-system`, scheduling, crash loops, ingress, DNS, upgrades | [AKS Troubleshooting](troubleshooting/aks/aks-troubleshooting.md) |
 | **Compute** | VM RDP/SSH connectivity, NSG/firewall blocks, credential resets, VM agent/tooling issues | [VM Connectivity Troubleshooting](troubleshooting/compute/vm-troubleshooting.md) |
 | **Messaging** | Event Hubs & Service Bus SDK errors, AMQP failures, message lock, connectivity | [Messaging Troubleshooting](troubleshooting/messaging/README.md) |
+| **Storage Queues** | Poison messages, dequeue count exceeded, visibility timeout, duplicate processing | [Queue Trigger diagnostics](references/functions/triggers.md#queue-trigger) |
 
 ---
 
@@ -156,5 +158,6 @@ az monitor activity-log list -g RG --max-events 20
 - [Azure Resource Graph Queries](references/azure-resource-graph.md)
 - [App Service Troubleshooting](references/app-service/README.md)
 - [Function Apps Troubleshooting](references/functions/README.md)
+- [Storage Queue Diagnostics](references/functions/triggers.md#queue-trigger)
 - [VM Connectivity Troubleshooting](troubleshooting/compute/vm-troubleshooting.md)
 - [Messaging Troubleshooting](troubleshooting/messaging/README.md)

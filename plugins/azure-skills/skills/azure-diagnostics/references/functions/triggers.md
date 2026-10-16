@@ -29,11 +29,14 @@ requests
 
 ## Queue Trigger
 
+> 💡 **Tip:** This section covers **Azure Storage Queues** (`az storage message ...`), not Service Bus queues. The symptoms below (poison messages, dequeue count, visibility timeout) also apply when a Storage Queue is consumed directly via SDK/CLI rather than through a Function trigger. For Service Bus queue issues, see [Messaging Troubleshooting](../../troubleshooting/messaging/README.md).
+
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Message never processed | Poison message after `maxDequeueCount` (default 5) retries | Message moved to `<queue>-poison`; inspect it to find the root cause |
-| Duplicate processing | Host stopped after side effects but before message deletion, or another consumer read the queue | The Functions host renews visibility during an invocation; `visibilityTimeout` controls retry delay after failure. Check host restarts and make side effects idempotent |
-| Function stops triggering | Storage authentication fails | Re-check `AzureWebJobsStorage` and `Host.Listener` traces for `StorageException` |
+| Duplicate processing | Consumer stopped after side effects but before message deletion, or another consumer read the queue | A dequeued message becomes invisible for `visibilityTimeout`/`visibility-timeout` and reappears if not deleted in time. Check consumer restarts and make side effects idempotent |
+| Function stops triggering / consumer gets `StorageException` or 403 | Storage authentication fails | Re-check the connection string/`AzureWebJobsStorage`, SAS expiry, and `Host.Listener` traces for `StorageException` |
+| Message not visible immediately after send | `visibilityTimeout` set on enqueue, or clock skew between producer/consumer | Confirm the intended initial visibility delay; a message isn't dequeueable until it becomes visible |
 
 ```bash
 # Peek poison messages
