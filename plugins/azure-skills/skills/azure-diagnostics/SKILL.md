@@ -97,23 +97,20 @@ az monitor app-insights query --apps APP-INSIGHTS -g RG \
 ### AppLens (MCP Tools)
 
 For AI-powered diagnostics, use:
-```
+```text
 mcp_azure_mcp_applens
   intent: "diagnose issues with <resource-name>"
   command: "diagnose"
   parameters:
     resourceId: "<resource-id>"
-
-Provides:
-- Automated issue detection
-- Root cause analysis
-- Remediation recommendations
 ```
+
+Provides: automated issue detection, root cause analysis, remediation recommendations.
 
 ### Azure Monitor (MCP Tools)
 
 For querying logs and metrics:
-```
+```text
 mcp_azure_mcp_monitor
   intent: "query logs for <resource-name>"
   command: "logs_query"
@@ -130,7 +127,7 @@ See [kql-queries.md](references/kql-queries.md) for common diagnostic queries.
 
 ### Using MCP
 
-```
+```text
 mcp_azure_mcp_resourcehealth
   intent: "check health status of <resource-name>"
   command: "get"
