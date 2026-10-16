@@ -635,8 +635,11 @@ export function provisionStimuliManifest(manifestPath: string, manifest: Stimuli
 
     const fixturesAlreadyProvisioned = manifest.persist && discoverPersistentFixtures(context, manifest);
     if (!fixturesAlreadyProvisioned) {
+      const retentionTags = manifest.persist
+        ? []
+        : [deleteAfterTag(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))];
       for (const bicepConfig of manifest.bicepConfigs) {
-        provision(context, manifest, bicepConfig, manifestDir);
+        provision(context, manifest, bicepConfig, manifestDir, retentionTags);
       }
       markFixturesCompleted(context);
     }
@@ -768,11 +771,12 @@ export async function provisionWorkflowManifestWithDependencies(
       await lease.write(preparingRecord);
       dependencies.log.log(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
 
+      const retentionTag = deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs));
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
         provision(context, manifest, config, dirname(manifestPath), [
           `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
-          deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs)),
+          retentionTag,
         ], dependencies.runAz, dependencies.now);
         await dependencies.immediate();
         lease.assertHealthy();

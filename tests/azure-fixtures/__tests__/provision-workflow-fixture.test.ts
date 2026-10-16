@@ -485,6 +485,12 @@ function mutations(fake: FakeAzureEnvironment): string[][] {
 describe("expiration tags", () => {
   it("emits exactly one platform-quoted DeleteAfter tag when creating workflow groups", async () => {
     const fake = environment();
+    fake.onOperation({
+      actor: "tags",
+      operation: "deployment group create",
+      invocation: 1,
+      run: () => fake.advance(2_000),
+    });
     await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("tags"));
 
     const creates = azCommands(fake).filter((args) => args.slice(0, 2).join(" ") === "group create");
@@ -502,14 +508,14 @@ describe("expiration tags", () => {
     const fake = environment();
     fake.seedCompleteInstance(manifest, "existing");
     const groups = [...fake.groups.values()];
-    groups[0].tags.DeleteAfter = "01/01/2026 00:00:30";
-    groups[1].tags.DeleteAfter = "01/01/2026 00:02:00";
+    groups[0].tags.DeleteAfter = "01/01/2026 00:02:00";
+    groups[1].tags.DeleteAfter = "01/01/2026 00:00:30";
     readyRecord(fake, "existing");
 
     await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("utc"));
 
-    expect(groups[0].tags.DeleteAfter).toBe("01/01/2026 00:01:00");
-    expect(groups[1].tags.DeleteAfter).toBe("01/01/2026 00:02:00");
+    expect(groups[0].tags.DeleteAfter).toBe("01/01/2026 00:02:00");
+    expect(groups[1].tags.DeleteAfter).toBe("01/01/2026 00:01:00");
     expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T00:02:00.000Z");
   });
 

@@ -1,5 +1,5 @@
 import { resolve } from "node:path";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { findFixtureResourceGroups, runAz, type StimuliFixtureManifest } from "../fixture-common.ts";
 import { provisionStimuliManifest } from "../provision-fixture.ts";
@@ -47,7 +47,29 @@ beforeEach(() => {
   vi.mocked(findFixtureResourceGroups).mockReturnValue([]);
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe("stimuli fixture instance tags", () => {
+  it("uses one DeleteAfter tag for all groups even as time advances", () => {
+    let now = Date.parse("2026-01-01T00:00:00Z");
+    vi.spyOn(Date, "now").mockImplementation(() => {
+      now += 1_000;
+      return now;
+    });
+
+    provisionStimuliManifest(manifestPath, manifest);
+
+    const creates = vi.mocked(runAz).mock.calls
+      .map(([args]) => args)
+      .filter((args) => args[0] === "group" && args[1] === "create");
+    const retentionTags = creates.map((args) => args.filter((arg) => arg.includes("DeleteAfter=")));
+    expect(retentionTags).toHaveLength(2);
+    expect(retentionTags[0]).toHaveLength(1);
+    expect(retentionTags[1]).toEqual(retentionTags[0]);
+  });
+
   it.each([false, true])("tags every new group with a per-run UUID (persist=%s)", (persist) => {
     const first = provisionStimuliManifest(manifestPath, { ...manifest, persist });
     const second = provisionStimuliManifest(manifestPath, { ...manifest, persist });
