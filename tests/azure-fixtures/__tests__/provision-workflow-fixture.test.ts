@@ -91,6 +91,13 @@ describe("provisionWorkflowManifest cold start", () => {
     expect(Object.keys(parsed.resourceGroupIdsByComponent ?? {})).toEqual(["storage", "search"]);
     expect(writes(fake).map((record) => record.state)).toEqual(["Preparing", "Ready"]);
     expect(writes(fake).at(-1)).toMatchObject({ ownerWorkflowRunId: "42:3" });
+    const creates = commands.filter((args) => args[0] === "group" && args[1] === "create");
+    expect(creates).toHaveLength(2);
+    for (const args of creates) {
+      expect(args.filter((arg) => arg.startsWith("FixtureInstanceId="))).toEqual([
+        `FixtureInstanceId=${result.context.runId}`,
+      ]);
+    }
     for (const name of parsed.resourceGroups) {
       expect(fake.groups.get(name)?.tags).toMatchObject({
         ManifestId: manifest.id,

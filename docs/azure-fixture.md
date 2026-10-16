@@ -84,6 +84,8 @@ A manifest has a `schemaVersion`. It must be bumped whenever the manifest schema
 
 A manifest has a required `id`. It is a stable identifier for the complete fixture described by the manifest, across all of its Bicep configs. Every resource group provisioned for either a stimuli fixture or a workflow fixture is tagged with `ManifestId=<id>`. Keep the value unchanged when updating the same fixture; use a different value for a distinct fixture.
 
+Every newly provisioned resource group also receives `FixtureInstanceId=<runId>`, using a random UUID generated for that provisioning run. All resource groups created in the same run share this value; fresh provisioning runs generate new values. Reusing an existing fixture preserves its original instance tag.
+
 A manifest has a version. It must be bumped whenever the underlying fixture definition is updated and must be provisioned again. Provisioned fixtures have a tag containing this version number to support the detection of stale fixtures. The computed resource group names include the version number, so a script run with an updated manifest will provision new fixtures even if there are stale fixtures with a lower version.
 
 A manifest has a type indicating whether the fixture is `readOnly` or `readWrite`. This is currently used only to help readers quickly understand how the fixture will be used. The provision script does not use it right now.
@@ -143,6 +145,7 @@ The script first creates the target resource group by using the Azure CLI. The c
 
 - `FixtureId={fixtureId of the Bicep config}`
 - `FixtureVersion={version of the manifest}`
+- `FixtureInstanceId={runId of the provisioning run}`
 - `DeleteAfter={3 hours after the current time}`, so the cleanup script can delete the resource group
 - `Completed=False`, indicating the provision hasn't finished yet
 

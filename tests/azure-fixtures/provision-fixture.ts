@@ -326,6 +326,7 @@ function provision(
     `${MANIFEST_ID_TAG}=${manifest.id}`,
     `${FIXTURE_ID_TAG}=${bicepConfig.fixtureId}`,
     `${FIXTURE_VERSION_TAG}=${manifest.version}`,
+    `${FIXTURE_INSTANCE_ID_TAG}=${context.runId}`,
     ...(retentionTag ? [retentionTag] : []),
     "Completed=False",
     ...additionalTags,
@@ -770,7 +771,6 @@ export async function provisionWorkflowManifestWithDependencies(
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
         provision(context, manifest, config, dirname(manifestPath), [
-          `${FIXTURE_INSTANCE_ID_TAG}=${context.runId}`,
           `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
           deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs)),
         ], dependencies.runAz, dependencies.now);
