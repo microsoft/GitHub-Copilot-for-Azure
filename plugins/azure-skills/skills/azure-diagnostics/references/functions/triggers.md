@@ -40,6 +40,12 @@ requests
 az storage message peek --queue-name "<queue>-poison" --account-name <account> --num-messages 32
 ```
 
+**After fixing the root cause, verify before bulk-replaying:**
+1. Re-enqueue one representative poison message (not the whole batch) and confirm it completes successfully.
+2. Confirm its `dequeueCount` stays at 1 (no further retries) and the function's App Insights `requests` entry shows `success == true`.
+3. Watch the `<queue>-poison` queue depth over the next few minutes/hours to confirm it stops growing for that failure signature.
+4. Review downstream state/logs for duplicate side effects from earlier retries before replaying the remaining poison messages in a bounded batch.
+
 ## Blob Trigger
 
 | Symptom | Cause | Fix |
