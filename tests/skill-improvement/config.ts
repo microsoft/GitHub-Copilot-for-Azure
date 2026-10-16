@@ -474,6 +474,12 @@ export function validateRunSpec(value: unknown): SkillImprovementRunSpec {
     spec.limits?.maxSkillTokenIncreasePercent,
     "limits.maxSkillTokenIncreasePercent"
   );
+  if (spec.improvementAgent.enabled && spec.limits.maxIterations === 0) {
+    throw new Error(
+      "improvementAgent.enabled cannot be true when limits.maxIterations is 0. "
+      + "Set limits.maxIterations to at least 1 or set improvementAgent.enabled to false."
+    );
+  }
   if (
     spec.heldOutAcceptance?.enabled
     && (!spec.improvementAgent.enabled || spec.limits.maxIterations === 0)

@@ -89,8 +89,11 @@ for changing a run specification.
 
 ### Baseline-only evaluations
 
-When `improvementAgent.enabled` is false or `limits.maxIterations` is zero,
-the report labels a successful run **BASELINE EVALUATION COMPLETED**.
+Set `improvementAgent.enabled: false` to run baseline-only. A run with
+`improvementAgent.enabled: true` must configure `limits.maxIterations` to at
+least `1`; zero iterations with an enabled improvement agent is rejected during
+run-spec validation, before resource preparation or evaluation.
+The report labels a successful baseline-only run **BASELINE EVALUATION COMPLETED**.
 Candidate acceptance and rejection do not apply; correctness results still
 describe the baseline arms, not proof that every individual trajectory passes.
 Failed baseline runs remain **RUN FAILED**.
