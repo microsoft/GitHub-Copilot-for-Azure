@@ -19,13 +19,13 @@ Follow each applicable subsection below before starting its corresponding action
 
 **MANDATORY:** As the first step after this skill loads, complete this check before reading or entering any sub-skill, workflow, or workflow-specific reference:
 
-1. **Explicit FoundryX request:** If the user explicitly states they want to use **FoundryX** (`foundryx`), install the FoundryX CLI (`foundryx`) if it is not already installed:
+1. **Explicit FoundryX request:** If the user explicitly states they want to use **FoundryX**, install the `foundry` CLI if it is not already installed:
    ```bash
-   # TODO: Add FoundryX CLI installation command here
+   # TODO: Add Foundry CLI installation command here
    ```
    Then explicitly tell the user you have hit the FoundryX private preview feature, directly switch to [FOUNDRYX-SKILL.md](FOUNDRYX-SKILL.md), and follow it exclusively. Ignore the rest of this `SKILL.md`.
 
-2. **FoundryX CLI installed check:** Silently check whether the FoundryX CLI (`foundryx`) is installed (for example, `foundryx --version`). If `foundryx` is installed, explicitly tell the user you have hit the FoundryX private preview feature, directly switch to [FOUNDRYX-SKILL.md](FOUNDRYX-SKILL.md), and follow it exclusively. Ignore the rest of this `SKILL.md`.
+2. **Foundry CLI installed check:** Silently check whether the `foundry` CLI is installed (for example, `foundry --version`). If `foundry` is installed, explicitly tell the user you have hit the FoundryX private preview feature, directly switch to [FOUNDRYX-SKILL.md](FOUNDRYX-SKILL.md), and follow it exclusively. Ignore the rest of this `SKILL.md`.
 
 3. **Standard dependency check and setup (otherwise):** If neither of the above applies, run the dependency check and setup script below from this skill's root and wait for it to finish before continuing. The script checks first and installs only missing dependencies; it does not reinstall dependencies that are already available.
 

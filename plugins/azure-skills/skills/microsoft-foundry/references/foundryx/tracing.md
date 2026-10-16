@@ -25,10 +25,10 @@ use Foundry identities already available in the investigation context. Select a
 project with effective developer membership, including when signed in as Admin.
 
 ```text
-foundryx auth status
-foundryx access project list
-foundryx agent trace query --help
-foundryx agent trace query --project <project-id> --query "AppRequests | where TimeGenerated > ago(24h) | summarize Runs=count()"
+foundry auth status
+foundry access project list
+foundry agent trace query --help
+foundry agent trace query --project <project-id> --query "AppRequests | where TimeGenerated > ago(24h) | summarize Runs=count()"
 ```
 
 Use FoundryX login and project selection; the service resolves monitoring and Azure
@@ -47,7 +47,7 @@ explicitly labeled `substring` projection when an excerpt is sufficient.
 For multiline KQL supplied by the user:
 
 ```powershell
-Get-Content -Raw ./trace.kql | foundryx agent trace query --project <project-id> --query -
+Get-Content -Raw ./trace.kql | foundry agent trace query --project <project-id> --query -
 ```
 
 Use inline KQL or stdin for investigations. Create reusable query files or exports
@@ -93,16 +93,16 @@ Reuse the FoundryX project and Agent UUIDs from deployment or the current
 conversation. When they are unknown, discover them with:
 
 ```text
-foundryx access project list
-foundryx agent list --project <foundryx-project-id>
+foundry access project list
+foundry agent list --project <foundryx-project-id>
 ```
 
 Use the selected entries' `id` values as CLI selectors. Resolve their Foundry
 identities with ordinary read-only `show` commands:
 
 ```text
-foundryx access project show <foundryx-project-id>
-foundryx agent show <foundryx-agent-id> --project <foundryx-project-id>
+foundry access project show <foundryx-project-id>
+foundry agent show <foundryx-agent-id> --project <foundryx-project-id>
 ```
 
 Read the `foundry` section rather than using the top-level FoundryX `id` or display
@@ -131,7 +131,7 @@ Use the FoundryX conversation UUID returned by an invocation, or one already kno
 from the user's investigation:
 
 ```text
-foundryx agent conversation show <foundryx-conversation-id>
+foundry agent conversation show <foundryx-conversation-id>
 ```
 
 Read `foundry.conversation_ids` and `foundry.response_ids` from the saved conversation.
@@ -139,7 +139,7 @@ When there is one retained Foundry conversation ID, `foundry.id` also contains i
 Select the relevant response from those returned IDs, then inspect it with:
 
 ```text
-foundryx agent response show <foundry-response-id> --conversation-id <foundryx-conversation-id>
+foundry agent response show <foundry-response-id> --conversation-id <foundryx-conversation-id>
 ```
 
 Response show returns `foundry.id` and `foundry.conversation_id` for that specific

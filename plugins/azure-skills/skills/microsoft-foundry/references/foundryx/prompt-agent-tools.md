@@ -1,6 +1,6 @@
 # Prompt Agent tools
 
-Configure `agent.tools` in `foundryx.yaml` only when requested for a Prompt Agent (`kind: prompt`), then run `foundryx agent deploy` (`tools: []` disables tools; omitting `tools` on update preserves deployed settings).
+Configure `agent.tools` in `foundryx.yaml` only when requested for a Prompt Agent (`kind: prompt`), then run `foundry agent deploy` (`tools: []` disables tools; omitting `tools` on update preserves deployed settings).
 
 For existing project resources, first use `connection list` and `connection show`
 per [Discover and reuse tools](tool-discovery.md). Use only the reported supported
@@ -17,7 +17,7 @@ tools:
 ```
 
 - **Runtime limits**: Code Interpreter supports text results only (no file upload/download or retained Python state across turns). Web Search uses Bing under separate data-handling terms; both tools may incur extra charges. Keep pilot inputs synthetic or public.
-- **Verification**: Read sources/warnings in default output, and use remote `foundryx agent invoke "<prompt>" --json` to verify actual `tool_calls` (`type` and `status`)—enabled does not mean executed, and answer prose is not proof of tool use. Surface unsupported model, region, or policy errors directly without falling back to a tool-free answer.
+- **Verification**: Read sources/warnings in default output, and use remote `foundry agent invoke "<prompt>" --json` to verify actual `tool_calls` (`type` and `status`)—enabled does not mean executed, and answer prose is not proof of tool use. Surface unsupported model, region, or policy errors directly without falling back to a tool-free answer.
 
 ## 2. Existing Azure AI Search index
 
@@ -52,9 +52,8 @@ tools:
       - list_issues
 ```
 
-- **Auth & URL**: Use `server_url` alone for unauthenticated endpoints, or `project_connection_id` for an existing same-project `RemoteTool` connection (`none` or `custom-keys`; Project `user`/`manager`/`owner` may attach existing connections, while `manager`/`owner` create them per [RemoteTool MCP connections](connection-create.md); native connection names are not FoundryX UUIDs). If both are supplied, `server_url` must match the connection target. `server_url` requires a public HTTPS DNS name on port 443 without query parameters, fragments, or embedded credentials. Never put headers or keys in YAML.
+- **Auth & URL**: Use `server_url` alone for unauthenticated endpoints, or `project_connection_id` for an existing same-project `RemoteTool` connection (`none` or `custom-keys`; Project `user`/`manager`/`owner` may attach existing connections and explicitly create/update them per [RemoteTool MCP connections](connection-create.md); native connection names are not FoundryX UUIDs). If both are supplied, `server_url` must match the connection target. `server_url` requires a public HTTPS DNS name on port 443 without query parameters, fragments, or embedded credentials. Never put headers or keys in YAML.
 - **Approval & least privilege**: Require distinct `server_label` values (`^[A-Za-z0-9_-]{1,64}$`) and explicit `require_approval: never` (approval/resume is unsupported; an unexpected approval is an error, not permission to approve). Because all consumers share the connection's key without per-call confirmation, prefer read-only keys and a narrow `allowed_tools` list (omitting it exposes all tools).
 - **Hosted-only MCP cases**: Do not add OAuth/OBO, Entra identity connections (`project-managed-identity`, `agentic-identity`), private MCP endpoints, or Toolboxes through Prompt `agent.tools`; use a Hosted Agent ([Hosted Agent Toolbox](hosted-agent-toolbox.md)).
 - **Verification**: Inspect `MCP calls:` (`<server_label>/<tool>: completed|failed`) in output or `tool_calls` in `--json`, not just tool discovery or answer prose. Key rotation is live; changed target URLs require reviewed redeployment. Do not retry ambiguous execution automatically.
-
 
