@@ -1,6 +1,6 @@
 # Managed Harness Agent Authoring
 
-A Microsoft Foundry Managed Harness Agent is a Prompt Agent configured with the Foundry-managed GitHub Copilot harness. This skill uses azd to author and deploy it:
+A Microsoft Foundry Managed Harness Agent is a Prompt Agent configured with the Foundry-managed Copilot harness. This skill uses azd to author and deploy it:
 
 ```yaml
 services:
@@ -11,10 +11,18 @@ services:
     model: gpt-5-mini
     instructions: Help the user.
     harness:
-      type: github_copilot_preview
+      type: microsoft_copilot_preview
 ```
 
 Use REST field names, normally `snake_case`, inside `tools[]`. azd strictly validates the harness and Copilot toolset; most other nested tool fields pass through to Foundry.
+
+## Compatibility
+
+- New authoring uses `microsoft_copilot_preview` and, when declared, `microsoft_copilot_toolset_preview`.
+- Existing `github_copilot_preview` and `github_copilot_toolset_preview` values remain accepted.
+- Preserve the exact harness and toolset discriminator values already present, including mixed existing definitions. Do not migrate them during read, edit, save, redeploy, or revision flows.
+- Author `defaultConfig` in `azure.yaml`; azd translates it to REST `default_config` only at the API boundary.
+- Both discriminator families use `Foundry-Features: MicrosoftCopilot=V1Preview`. Do not retry with the legacy `GitHubCopilot=V1Preview` header.
 
 ## Direct tools
 
@@ -92,8 +100,9 @@ Do not declare `host: azure.ai.skill` in this phase: that would make `azd deploy
 After deploy, read the published definition and verify:
 
 - `kind` remains `prompt`.
-- `harness.type` remains `github_copilot_preview`.
+- New definitions use `microsoft_copilot_preview`; existing definitions retain their authored Copilot harness discriminator.
 - Direct tools retain their authored fields.
+- Existing Copilot toolset discriminators remain unchanged.
 - The versioned Toolbox MCP endpoint remains in the direct `mcp` tool.
 - Skill references retain both `name` and `version`.
 
