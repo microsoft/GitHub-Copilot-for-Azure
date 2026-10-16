@@ -70,6 +70,29 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement configuration", () => {
+  test("requires at least one iteration when the improvement agent is enabled", () => {
+    const invalid = spec();
+    invalid.limits.maxIterations = 0;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "improvementAgent.enabled cannot be true when limits.maxIterations is 0. "
+      + "Set limits.maxIterations to at least 1 or set improvementAgent.enabled to false."
+    );
+  });
+
+  test("accepts enabled improvement with a candidate iteration", () => {
+    const valid = spec();
+    valid.limits.maxIterations = 1;
+    expect(validateRunSpec(valid).limits.maxIterations).toBe(1);
+  });
+
+  test("accepts baseline-only evaluation when the improvement agent is disabled", () => {
+    const valid = spec();
+    valid.improvementAgent.enabled = false;
+    valid.limits.maxIterations = 0;
+    valid.acceptance.requireHeldOutImprovement = false;
+    expect(validateRunSpec(valid).limits.maxIterations).toBe(0);
+  });
+
   test("accepts explicit generation workers or the default of one", () => {
     const runSpec = spec();
     expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBeUndefined();
@@ -601,6 +624,7 @@ describe("skill improvement configuration", () => {
 
   test("requires a candidate iteration for held-out improvement", () => {
     const invalid = spec();
+    invalid.improvementAgent.enabled = false;
     invalid.limits.maxIterations = 0;
     expect(() => validateRunSpec(invalid)).toThrow(
       "requireHeldOutImprovement requires at least one candidate iteration"
