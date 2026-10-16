@@ -6,6 +6,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const LEASE_DURATION_SECONDS = 60;
+const ACKNOWLEDGEMENT_TIMEOUT_MS = 30_000;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export interface IBlobLeaseClient {
@@ -33,6 +34,7 @@ export interface ILeaseRenewerChildProcess {
   on(event: "message", listener: (message: LeaseMessage) => void): unknown;
   on(event: "exit", listener: (code: number | null, signal: NodeJS.Signals | null) => void): unknown;
   send(message: unknown, callback?: (error: Error | null) => void): boolean;
+  kill(signal: NodeJS.Signals): boolean;
 };
 
 export interface IResourceLockDependencies {
@@ -56,25 +58,24 @@ export type LeaseMessage = {
 export class ChildProcessLeaseRenewer implements ILeaseRenewer {
   private failure: Error | undefined;
   private exited = false;
+  private terminationRequested = false;
   private requestId = 0;
   private readonly pending = new Map<number, {
     resolve: () => void;
     reject: (error: Error) => void;
+    timeout: ReturnType<typeof setTimeout>;
   }>();
 
   constructor(private readonly child: ILeaseRenewerChildProcess) {
     child.on("message", (message: LeaseMessage) => {
       if (message.type === "failed") {
-        this.failure = new Error(`Resource lock lease renewal failed: ${message.message ?? "unknown error"}`);
-        for (const pending of this.pending.values()) {
-          pending.reject(this.failure);
-        }
-        this.pending.clear();
+        this.fail(new Error(`Resource lock lease renewal failed: ${message.message ?? "unknown error"}`));
         return;
       }
       if (message.requestId !== undefined) {
         const pending = this.pending.get(message.requestId);
         if (pending) {
+          clearTimeout(pending.timeout);
           this.pending.delete(message.requestId);
           pending.resolve();
         }
@@ -82,13 +83,7 @@ export class ChildProcessLeaseRenewer implements ILeaseRenewer {
     });
     child.on("exit", (code, signal) => {
       this.exited = true;
-      if (!this.failure) {
-        this.failure = new Error(`Resource lock lease renewer exited unexpectedly (${signal ?? code})`);
-      }
-      for (const pending of this.pending.values()) {
-        pending.reject(this.failure);
-      }
-      this.pending.clear();
+      this.fail(new Error(`Resource lock lease renewer exited unexpectedly (${signal ?? code})`));
     });
   }
 
@@ -110,8 +105,28 @@ export class ChildProcessLeaseRenewer implements ILeaseRenewer {
   }
 
   stop(): void {
+    if (this.failure) {
+      this.terminate();
+      return;
+    }
     if (!this.exited && this.child.connected) {
       this.child.send({ type: "stop" });
+    }
+  }
+
+  private fail(error: Error): void {
+    this.failure ??= error;
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(this.failure);
+    }
+    this.pending.clear();
+  }
+
+  private terminate(): void {
+    if (!this.exited && !this.terminationRequested) {
+      this.terminationRequested = true;
+      this.child.kill("SIGKILL");
     }
   }
 
@@ -119,13 +134,20 @@ export class ChildProcessLeaseRenewer implements ILeaseRenewer {
     this.assertHealthy();
     const requestId = ++this.requestId;
     return new Promise((resolvePromise, reject) => {
-      this.pending.set(requestId, { resolve: resolvePromise, reject });
-      this.child.send({ type, requestId }, (error) => {
-        if (error) {
-          this.pending.delete(requestId);
-          reject(error);
-        }
-      });
+      const timeout = setTimeout(() => {
+        this.fail(new Error(`Resource lock lease ${type} acknowledgement timed out after ${ACKNOWLEDGEMENT_TIMEOUT_MS}ms`));
+        this.terminate();
+      }, ACKNOWLEDGEMENT_TIMEOUT_MS);
+      this.pending.set(requestId, { resolve: resolvePromise, reject, timeout });
+      try {
+        this.child.send({ type, requestId }, (error) => {
+          if (error) {
+            this.fail(error);
+          }
+        });
+      } catch (error) {
+        this.fail(error instanceof Error ? error : new Error(String(error)));
+      }
     });
   }
 }
@@ -163,6 +185,7 @@ export class ResourceLock {
     private readonly accountName: string,
     private readonly containerName: string,
     private readonly blobName: string,
+    private readonly acquisitionDeadline: number,
     dependencies: Partial<IResourceLockDependencies> = {},
   ) {
     this.dependencies = {
@@ -199,9 +222,9 @@ export class ResourceLock {
     }
   }
 
-  async acquire(deadline: number): Promise<ResourceLockLease> {
+  async acquire(): Promise<ResourceLockLease> {
     let delayMs = this.dependencies.initialRetryDelayMs;
-    while (this.dependencies.now() < deadline) {
+    while (this.dependencies.now() < this.acquisitionDeadline) {
       try {
         const leaseId = this.dependencies.randomUUID();
         await this.blobClient.getBlobLeaseClient(leaseId).acquireLease(this.dependencies.leaseDurationSeconds);
@@ -216,7 +239,7 @@ export class ResourceLock {
         }
         const waitMs = Math.min(
           delayMs + this.dependencies.jitter(delayMs),
-          deadline - this.dependencies.now(),
+          this.acquisitionDeadline - this.dependencies.now(),
         );
         if (waitMs > 0) {
           await this.dependencies.sleep(waitMs);

@@ -258,9 +258,9 @@ describe("deterministic contenders", () => {
   it("fails a follower whose acquisition budget expires without ARM mutations", async () => {
     const fake = environment();
     const holderDependencies = fake.createDependencies("holder");
-    const lock = holderDependencies.createResourceLock("storage", "fixtures", "blob");
+    const lock = holderDependencies.createResourceLock("storage", "fixtures", "blob", fake.nowMs + 1_000);
     await lock.initialize({ state: "Empty" });
-    const lease = await lock.acquire(fake.nowMs + 1_000);
+    const lease = await lock.acquire();
     const followerDependencies = fake.createDependencies("follower");
     followerDependencies.leaseAcquisitionBudgetMs = 0;
 
@@ -806,9 +806,9 @@ describe("injected time budget", () => {
 
   it("starts the provisioning budget only after the lease is acquired", async () => {
     const fake = environment();
-    const holder = fake.createDependencies("holder").createResourceLock("storage", "fixtures", "blob");
+    const holder = fake.createDependencies("holder").createResourceLock("storage", "fixtures", "blob", fake.nowMs + 1_000);
     await holder.initialize({ state: "Empty" });
-    const lease = await holder.acquire(fake.nowMs + 1_000);
+    const lease = await holder.acquire();
     const follower = provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("follower"));
     await Promise.resolve();
 

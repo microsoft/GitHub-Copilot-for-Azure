@@ -219,6 +219,10 @@ Our custom Vally executor runs the provisioning script before running the test. 
 
 Workflow fixture supports fixture sharing by coordinating isolated runs using an Azure Storage Blob. Before a workflow run starts provisioning the fixture, it must acquire the lease of a blob associated with the fixture to "optimistically" obtain the exclusive ownership of the fixture creation. If a run sees an active lease on the blob, it can assume that another run is provisioning the fixture so it can wait until the fixture is ready. The run that holds the lease must keep renewing it in the background. If the run that holds the lease crashes, the lease it held will expire so other workflow runs can make progress.
 
+Explicit renewal and release requests must receive an acknowledgement from the lease worker within 30 seconds. A timeout marks the renewer unhealthy, rejects all pending requests, and terminates the unresponsive worker so provisioning and cleanup cannot wait indefinitely.
+
+Each `ResourceLock` receives a fixed absolute acquisition deadline when constructed. All `acquire()` calls on that lock share the deadline, so releasing and retrying does not reset the acquisition budget.
+
 The locking mechanism is optimistic and doesn't guarantee exclusive ownership of the fixture creation. In certain scenarios, concurrent runs can still create more than one instances of the fixture. The locking mechanism aims at guaranteeing that each workflow run will use a complete instance of the fixture while reusing existing fixtures as much as possible.
 
 ## Operation notes

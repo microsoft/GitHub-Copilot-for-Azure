@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   ChildProcessLeaseRenewer,
@@ -87,11 +87,12 @@ class FakeBlob implements IBlockBlobClient {
 function createLock(
   blob: FakeBlob,
   renewer: FakeRenewer,
+  acquisitionDeadline = 100,
   overrides: Partial<IResourceLockDependencies> = {},
 ): { lock: ResourceLock; sleeps: number[]; setNow(value: number): void } {
   let now = 0;
   const sleeps: number[] = [];
-  const lock = new ResourceLock("account", "container", "blob", {
+  const lock = new ResourceLock("account", "container", "blob", acquisitionDeadline, {
     createBlobClient: () => blob,
     createLeaseRenewer: () => renewer,
     now: () => now,
@@ -138,9 +139,9 @@ describe("ResourceLock", () => {
     const blob = new FakeBlob();
     const renewer = new FakeRenewer();
     const factory = vi.fn(() => renewer);
-    const { lock } = createLock(blob, renewer, { createLeaseRenewer: factory });
+    const { lock } = createLock(blob, renewer, 100, { createLeaseRenewer: factory });
 
-    await expect(lock.acquire(100)).resolves.toBeInstanceOf(ResourceLockLease);
+    await expect(lock.acquire()).resolves.toBeInstanceOf(ResourceLockLease);
     expect(blob.acquiredLeaseIds).toEqual(["lease-id"]);
     expect(factory).toHaveBeenCalledOnce();
     expect(factory).toHaveBeenCalledWith("account", "container", "blob", "lease-id");
@@ -153,9 +154,9 @@ describe("ResourceLock", () => {
       storageError("LeaseIsBreakingAndCannotBeAcquired"),
       storageError("LeaseAlreadyPresent"),
     );
-    const { lock, sleeps } = createLock(blob, new FakeRenewer(), { jitter: (delay) => delay / 2 });
+    const { lock, sleeps } = createLock(blob, new FakeRenewer(), 200, { jitter: (delay) => delay / 2 });
 
-    await lock.acquire(200);
+    await lock.acquire();
 
     expect(sleeps).toEqual([15, 30, 60]);
   });
@@ -168,9 +169,9 @@ describe("ResourceLock", () => {
       storageError("LeaseAlreadyPresent"),
     );
     const factory = vi.fn(() => new FakeRenewer());
-    const { lock } = createLock(blob, new FakeRenewer(), { createLeaseRenewer: factory });
+    const { lock } = createLock(blob, new FakeRenewer(), 25, { createLeaseRenewer: factory });
 
-    await expect(lock.acquire(25)).rejects.toThrow("Timed out acquiring resource lock");
+    await expect(lock.acquire()).rejects.toThrow("Timed out acquiring resource lock");
     expect(factory).not.toHaveBeenCalled();
   });
 
@@ -179,8 +180,19 @@ describe("ResourceLock", () => {
     blob.acquireErrors.push(storageError("AuthorizationFailure"));
     const { lock, sleeps } = createLock(blob, new FakeRenewer());
 
-    await expect(lock.acquire(100)).rejects.toThrow("AuthorizationFailure");
+    await expect(lock.acquire()).rejects.toThrow("AuthorizationFailure");
     expect(sleeps).toEqual([]);
+  });
+
+  it("keeps the constructor deadline across acquisitions", async () => {
+    const blob = new FakeBlob();
+    const { lock, setNow } = createLock(blob, new FakeRenewer(), 100);
+    const lease = await lock.acquire();
+    await lease.release();
+    setNow(100);
+
+    await expect(lock.acquire()).rejects.toThrow("Timed out acquiring resource lock");
+    expect(blob.acquiredLeaseIds).toEqual(["lease-id"]);
   });
 });
 
@@ -303,6 +315,7 @@ describe("ResourceLockLease", () => {
 class FakeChild extends EventEmitter implements ILeaseRenewerChildProcess {
   connected = true;
   sent: unknown[] = [];
+  kill = vi.fn((_signal: NodeJS.Signals) => true);
 
   send(message: unknown, callback?: (error: Error | null) => void): boolean {
     this.sent.push(message);
@@ -321,6 +334,67 @@ class FakeChild extends EventEmitter implements ILeaseRenewerChildProcess {
 }
 
 describe("ChildProcessLeaseRenewer", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each(["renew", "release"] as const)("bounds an unacknowledged %s and rejects all requests", async (type) => {
+    vi.useFakeTimers();
+    const child = new FakeChild();
+    const renewer = new ChildProcessLeaseRenewer(child);
+    const first = expect(renewer[type]()).rejects.toThrow(`${type} acknowledgement timed out`);
+    const second = expect(renewer.renew()).rejects.toThrow(`${type} acknowledgement timed out`);
+
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(() => renewer.assertHealthy()).not.toThrow();
+    expect(child.kill).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    await Promise.all([first, second]);
+
+    expect(child.connected).toBe(true);
+    expect(child.kill).toHaveBeenCalledExactlyOnceWith("SIGKILL");
+    expect(() => renewer.assertHealthy()).toThrow(`${type} acknowledgement timed out`);
+    expect(() => renewer.renew()).toThrow(`${type} acknowledgement timed out`);
+    expect(() => renewer.release()).toThrow(`${type} acknowledgement timed out`);
+    child.message({ type: "renewed", requestId: 1 });
+    child.exit(null, "SIGKILL");
+    expect(() => renewer.assertHealthy()).toThrow(`${type} acknowledgement timed out`);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("unblocks release queued behind an unacknowledged renewal", async () => {
+    vi.useFakeTimers();
+    const child = new FakeChild();
+    const renewer = new ChildProcessLeaseRenewer(child);
+    const lease = new ResourceLockLease(new FakeBlob(), "lease-1", renewer);
+    const renewal = expect(lease.renew()).rejects.toThrow("renew acknowledgement timed out");
+    const release = expect(lease.release()).rejects.toThrow("renew acknowledgement timed out");
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    await Promise.all([renewal, release]);
+
+    expect(child.sent).toEqual([{ type: "renew", requestId: 1 }]);
+    expect(child.kill).toHaveBeenCalledExactlyOnceWith("SIGKILL");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("clears acknowledgement deadlines after successful requests", async () => {
+    vi.useFakeTimers();
+    const child = new FakeChild();
+    const renewer = new ChildProcessLeaseRenewer(child);
+    const renewal = renewer.renew();
+    child.message({ type: "renewed", requestId: 1 });
+    await renewal;
+    const release = renewer.release();
+    child.message({ type: "released", requestId: 2 });
+    await release;
+
+    expect(vi.getTimerCount()).toBe(0);
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(() => renewer.assertHealthy()).not.toThrow();
+    expect(child.kill).not.toHaveBeenCalled();
+  });
+
   it("resolves acknowledged requests and sends stop", async () => {
     const child = new FakeChild();
     const renewer = new ChildProcessLeaseRenewer(child);

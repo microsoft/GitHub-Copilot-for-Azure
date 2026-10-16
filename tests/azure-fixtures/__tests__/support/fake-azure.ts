@@ -142,7 +142,7 @@ export class FakeAzureEnvironment {
       randomSuffix: () => `${actor.replaceAll(/[^a-z0-9]/gi, "").slice(0, 6)}${uuidIndex}`,
       runAz: (args, options) => this.runAz(actor, args, options),
       runPostProvisionScript: (context) => this.runPostProvision(actor, context),
-      createResourceLock: () => ({
+      createResourceLock: (_account, _container, _blob, acquisitionDeadline) => ({
         initialize: async (initialValue) => {
           this.throwIfFailed(actor, "initialize");
           if (this.coordination === undefined) {
@@ -150,7 +150,7 @@ export class FakeAzureEnvironment {
             this.journal.push({ actor, operation: "initialize", value: clone(initialValue) });
           }
         },
-        acquire: (deadline) => this.acquire(actor, deadline),
+        acquire: () => this.acquire(actor, acquisitionDeadline),
       }),
       budget: this.budget,
       log: {

@@ -96,7 +96,7 @@ export type WorkflowResourceLockLease = Pick<
 
 export interface IResourceLock {
   initialize(initialValue: unknown): Promise<void>;
-  acquire(deadline: number): Promise<WorkflowResourceLockLease>;
+  acquire(): Promise<WorkflowResourceLockLease>;
 };
 
 export type WorkflowProvisioningDependencies = {
@@ -111,7 +111,7 @@ export type WorkflowProvisioningDependencies = {
     manifest: WorkflowFixtureManifest,
     manifestDir: string,
   ): string | undefined;
-  createResourceLock(account: string, container: string, blob: string): IResourceLock;
+  createResourceLock(account: string, container: string, blob: string, acquisitionDeadline: number): IResourceLock;
   log: Pick<Console, "log" | "warn" | "error">;
   /** Budget the injected command runners are measured against; defaults to the process-wide budget. */
   budget: RunBudget;
@@ -132,7 +132,7 @@ function defaultWorkflowDependencies(): WorkflowProvisioningDependencies {
     randomSuffix: () => randomBytes(3).toString("hex"),
     runAz,
     runPostProvisionScript: runPostProvisionScripts,
-    createResourceLock: (account, container, blob) => new ResourceLock(account, container, blob),
+    createResourceLock: (account, container, blob, acquisitionDeadline) => new ResourceLock(account, container, blob, acquisitionDeadline),
     log: console,
     budget: runBudget,
     environment: process.env,
@@ -690,12 +690,12 @@ export async function provisionWorkflowManifestWithDependencies(
     dependencies.budget.set(dependencies.leaseAcquisitionBudgetMs + dependencies.totalBudgetMs);
     let context = computeRunContext(manifest, dependencies);
     const blobName = coordinationBlobName(context, manifest);
-    const lock = dependencies.createResourceLock(accountName, containerName, blobName);
+    const lock = dependencies.createResourceLock(accountName, containerName, blobName, acquisitionDeadline);
     await lock.initialize({ state: "Empty" });
 
     while (true) {
       dependencies.budget.set(Math.max(1, acquisitionDeadline - dependencies.now()));
-      lease = await lock.acquire(acquisitionDeadline);
+      lease = await lock.acquire();
       dependencies.budget.set(dependencies.totalBudgetMs);
       dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
