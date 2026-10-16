@@ -36,7 +36,23 @@ tools:
 ```
 
 - `web_search` and `code_interpreter` (`container.type: auto` provisions a Foundry sandbox container) are connectionless.
-- For MCP tools, reference the same-project `RemoteTool` connection name from [RemoteTool MCP connections](connection-create.md); never embed MCP URLs, headers, tokens, or secrets in the file.
+- For MCP tools, supply the native `server_label` and server address as well as the
+  same-project `RemoteTool` connection name from
+  [RemoteTool MCP connections](connection-create.md). `name` does not replace
+  `server_label`, and a connection reference alone is not a complete native MCP
+  tool definition. Use the connection's reviewed target as `server_url`; the URL
+  is configuration, not a credential. Never embed headers, tokens or secrets.
+
+```yaml
+description: Microsoft Learn documentation tools
+tools:
+  - type: mcp
+    name: docs
+    server_label: docs
+    server_url: https://learn.microsoft.com/api/mcp
+    project_connection_id: existing-docs-connection
+    require_approval: never
+```
 
 ## Create a Toolbox (`foundry toolbox create`)
 
