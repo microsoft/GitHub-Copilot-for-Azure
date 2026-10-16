@@ -20,9 +20,12 @@ queries against the project's connected monitoring workspace.
 
 Resolve the accessible project with FoundryX authentication and project commands.
 Use the [show commands](#identity-resolution) to resolve FoundryX selectors into
-Foundry identities before writing KQL. For retained traces of a deleted Agent,
-use Foundry identities already available in the investigation context. Select a
-project with effective developer membership, including when signed in as Admin.
+Foundry identities before writing KQL. Select a project with effective developer
+membership, including when signed in as Admin.
+
+Only conversations created by the signed-in caller are visible. Deleted Agents
+and conversations are unavailable, even when their native IDs are known. See
+[Scope and schema](#scope-and-schema) for query constraints and visibility limits.
 
 ```text
 foundry auth status
@@ -161,8 +164,9 @@ investigating an older conversation, even if Agent show reports a newer version.
 These lookups read stored mappings and saved turn metadata. They preserve project
 access and conversation ownership checks and create no Agent invocations or
 telemetry queries. Missing Foundry IDs remain null or empty. If a saved ID is
-unavailable, use the Foundry Agent name and time window to find relevant trace rows,
-then carry their emitted response/conversation and operation IDs into the drill-down.
+unavailable, an Agent/time search can find other authorized operations, but cannot
+bypass missing ownership correlation for that turn. Carry available emitted
+response/conversation and operation IDs into the drill-down.
 
 Keep FoundryX UUIDs in CLI/API selectors, and use the returned Foundry or telemetry
 identifiers in KQL. In a shared workspace, include the returned component ID as a
@@ -171,10 +175,17 @@ zero matches.
 
 ## Scope and schema
 
-The workspace is the default query context. Other Agents or applications can share
-it, and cross-workspace reach follows backend Azure permissions. Filter Agent/version
-and `_ResourceId` to focus the investigation. Describe access in terms of project
-membership and effective Azure permissions; query filters select relevant data.
+Queries, including summaries and joins, cover only the caller's visible
+conversations. No ownership predicate is needed. Agent/version and component
+filters narrow that search; they do not grant access to additional conversations.
+
+Telemetry that cannot be reliably linked to a caller-owned conversation is
+unavailable. A zero-row result means no visible matches for the query, not proof
+that no telemetry was emitted.
+
+Query the workspace tables below using their normal columns and types.
+Cross-workspace queries are not supported. App Insights short names describe
+schema equivalents, not aliases accepted by this endpoint.
 
 | App Insights alias | Workspace name |
 |---|---|
