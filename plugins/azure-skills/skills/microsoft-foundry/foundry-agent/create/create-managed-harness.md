@@ -1,20 +1,21 @@
 # Create Managed Harness Agent
 
-Create or continue developing a Microsoft Foundry Managed Harness Agent with azd. A Managed Harness Agent is a Prompt Agent running on the Foundry-managed GitHub Copilot harness:
+Create or continue developing a Microsoft Foundry Managed Harness Agent with azd. A Managed Harness Agent is a Prompt Agent running on the Foundry-managed Copilot harness:
 
 ```yaml
 kind: prompt
 harness:
-  type: github_copilot_preview
+  type: microsoft_copilot_preview
 ```
 
-Use this workflow only when the user explicitly says Managed Harness Agent, GitHub Copilot harness agent, or Prompt Agent with GitHub Copilot harness. Ordinary Prompt Agents use [create-prompt.md](create-prompt.md); Hosted Agents use [create-hosted.md](create-hosted.md).
+Use this workflow only when the user explicitly says Managed Harness Agent, Copilot harness agent, or Prompt Agent with Copilot harness. Ordinary Prompt Agents use [create-prompt.md](create-prompt.md); Hosted Agents use [create-hosted.md](create-hosted.md).
 
 ## Boundaries
 
 - Use azd and `azure.yaml` as the source of truth.
 - Do not use Hosted samples, local runtime, sessions, files, or monitor commands.
 - Do not convert an existing Prompt, Hosted, or Managed Harness Agent to another type. Create a new Agent instead.
+- New authoring uses the Microsoft discriminator family. Existing Microsoft, legacy GitHub, or mixed discriminator families are preserved exactly as authored during ordinary edits and redeploys.
 - Prefer direct tools. Use a Toolbox only when the user explicitly requests one.
 - Consume a connection, Toolbox, or Skill supplied by the user or already referenced in the project. Create one only when explicitly requested.
 - Supported direct tools: Copilot built-ins, Code Interpreter, File Search, Web Search, MCP, Azure AI Search, OpenAPI, Agent-to-Agent, Work IQ, and Fabric IQ.
@@ -44,7 +45,7 @@ Follow their `[ACTION]` output. Never run `az login` or `azd auth login` for the
 
 Inspect `azure.yaml`:
 
-- One service with `kind: prompt` and `harness.type: github_copilot_preview` -> continue development.
+- One service with `kind: prompt` and `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview` -> continue development.
 - Multiple Managed Harness Agent services -> ask the user to select one.
 - Existing non-Managed Harness Agent service -> do not convert it; add a new service only when the user wants a new Managed Harness Agent.
 - No azd project -> initialize a new Managed Harness Agent.
@@ -71,7 +72,7 @@ For a new Managed Harness Agent, run non-interactively:
 ```bash
 azd ai agent init --no-prompt \
   --kind prompt \
-  --harness github_copilot_preview \
+  --harness microsoft_copilot_preview \
   --agent-name "<agent-name>" \
   --model "<model-name>"
 ```
@@ -81,7 +82,7 @@ For an existing project/model deployment, use:
 ```bash
 azd ai agent init --no-prompt \
   --kind prompt \
-  --harness github_copilot_preview \
+  --harness microsoft_copilot_preview \
   --agent-name "<agent-name>" \
   --project-id "<project-arm-id>" \
   --model-deployment "<deployment-name>"
@@ -99,7 +100,9 @@ Confirm:
 
 - `host: azure.ai.agent`
 - `kind: prompt`
-- `harness.type: github_copilot_preview`
+- New definitions use `harness.type: microsoft_copilot_preview`.
+- Existing definitions retain their authored `microsoft_copilot_preview` or legacy `github_copilot_preview` value.
+- Existing Copilot toolset discriminators are preserved rather than normalized.
 - Model and instructions match the request.
 - No Hosted-only `codeConfiguration`, Docker, container, runtime, or protocol fields.
 
@@ -111,7 +114,7 @@ Read the matching Managed Harness Agent reference before editing:
 
 | Capability | Reference |
 |---|---|
-| Copilot built-ins | [GitHub Copilot Toolset](references/tools/managed-harness-agent/tool-github-copilot-toolset.md) |
+| Copilot built-ins | [Copilot Toolset](references/tools/managed-harness-agent/tool-github-copilot-toolset.md) |
 | Web Search | [Web Search](references/tools/managed-harness-agent/tool-web-search.md) |
 | Code Interpreter | [Code Interpreter](references/tools/managed-harness-agent/tool-code-interpreter.md) |
 | File Search | [File Search](references/tools/managed-harness-agent/tool-file-search.md) |

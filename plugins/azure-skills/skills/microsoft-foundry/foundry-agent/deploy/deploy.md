@@ -2,7 +2,7 @@
 
 Provision Azure resources when needed, deploy the agent, and smoke-test it.
 For **hosted agents** (custom container or code), use `azd deploy`.
-For **Managed Harness Agents** (`kind: prompt` plus the GitHub Copilot harness), use `azd deploy`.
+For **Managed Harness Agents** (`kind: prompt` plus the Copilot harness), use `azd deploy`.
 For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 
 ## Quick Reference
@@ -20,7 +20,7 @@ For **ordinary prompt agents**, use the Foundry MCP `agent_update` tool.
 ## Route by Agent Type
 
 - Shipping Python / .NET code -> **Hosted** (azd workflow below).
-- Explicit `kind: prompt` plus `harness.type: github_copilot_preview` -> **Managed Harness Agent** (azd workflow below).
+- Explicit `kind: prompt` plus `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview` -> **Managed Harness Agent** (azd workflow below).
 - Ordinary Prompt Agent model / instructions / tools -> **Prompt** (MCP workflow below).
 
 ## Deploy Mode Selection -- Hosted agents
@@ -269,7 +269,7 @@ Inside the azd project, select the service and verify:
 host: azure.ai.agent
 kind: prompt
 harness:
-  type: github_copilot_preview
+  type: microsoft_copilot_preview
 ```
 
 Reject Hosted-only code/container fields. Do not convert an ordinary Prompt or Hosted Agent in place.
@@ -307,12 +307,14 @@ azd ai agent show --output json
 Verify the version is active/deployed and the published definition retains:
 
 - `kind: prompt`
-- `harness.type: github_copilot_preview`
+- New definitions use `harness.type: microsoft_copilot_preview`.
+- Existing definitions retain their authored Microsoft or legacy GitHub harness/toolset discriminator family.
 - Requested direct tools
 - Versioned Toolbox MCP endpoint, when explicitly configured
 - Versioned Skill references, when explicitly configured
 
 A successful deploy that drops the harness is a failure.
+A redeploy that silently changes an existing Copilot harness or toolset discriminator family is also a failure.
 
 Run one remote smoke invocation:
 
