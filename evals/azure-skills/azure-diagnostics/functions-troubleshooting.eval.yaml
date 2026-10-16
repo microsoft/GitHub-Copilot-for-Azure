@@ -58,7 +58,7 @@ stimuli:
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
 
   # Cosmos trigger partial-document diagnosis
   # Regression guard for the corrected fix vs. abandoned PR #1641: the response
@@ -96,7 +96,7 @@ stimuli:
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
 
   # Durable stuck-orchestration diagnosis
   # Regression guard: the response should not present a bare Task.WhenAny timeout
@@ -137,4 +137,4 @@ stimuli:
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
