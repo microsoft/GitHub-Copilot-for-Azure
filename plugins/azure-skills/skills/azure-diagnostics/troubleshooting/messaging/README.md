@@ -2,6 +2,8 @@
 
 Diagnose and resolve issues with Azure Event Hubs and Service Bus SDKs.
 
+> 💡 **Tip:** Azure **Storage Queues** are a different service from Service Bus queues. For Storage Queue issues (poison messages, dequeue count, visibility timeout), see [Queue Trigger diagnostics](../../references/functions/triggers.md#queue-trigger).
+
 ## Routing
 
 | Symptom | Guide |
