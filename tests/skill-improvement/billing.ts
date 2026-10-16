@@ -6,12 +6,19 @@ export type AnswerBilling = {
 };
 
 export type ComponentBilling = {
+  /** Entity counted by expected, observed, and measured; not individual model requests. */
   unit: "answer trajectories" | "agent invocations";
+  /** Planned entity count for this batch; zero means this component is not applicable. */
   expected: number;
+  /** Answer records recovered or agent invocations accounted for, even without complete billing. */
   observed: number;
+  /** Observed entities with complete billing (and finalization for agent invocations). */
   measured: number;
+  /** Sum of AI credits for measured entities only; zero does not imply missing entities were free. */
   measuredAiCredits: number;
+  /** Billing field/provenance, or a marker such as "not applicable" or "mixed" for aggregates. */
   source: string;
+  /** Optional diagnostic explaining unavailable or incomplete billing, not a test-failure reason. */
   reason?: string;
 };
 
