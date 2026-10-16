@@ -22,7 +22,7 @@ models:
   answers:
     - gpt-5.6-sol
   judges:
-    - claude-opus-4.8
+    - claude-sonnet-5
 
 experiment:
   repetitions: 2
