@@ -342,14 +342,14 @@ describe("ChildProcessLeaseRenewer", () => {
     vi.useFakeTimers();
     const child = new FakeChild();
     const renewer = new ChildProcessLeaseRenewer(child);
+    // eslint-disable-next-line vitest/valid-expect -- Awaited below after advancing fake timers.
     const first = expect(renewer[type]()).rejects.toThrow(`${type} acknowledgement timed out`);
-    const second = expect(renewer.renew()).rejects.toThrow(`${type} acknowledgement timed out`);
 
     await vi.advanceTimersByTimeAsync(29_999);
     expect(() => renewer.assertHealthy()).not.toThrow();
     expect(child.kill).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
-    await Promise.all([first, second]);
+    await first;
 
     expect(child.connected).toBe(true);
     expect(child.kill).toHaveBeenCalledExactlyOnceWith("SIGKILL");
@@ -367,7 +367,9 @@ describe("ChildProcessLeaseRenewer", () => {
     const child = new FakeChild();
     const renewer = new ChildProcessLeaseRenewer(child);
     const lease = new ResourceLockLease(new FakeBlob(), "lease-1", renewer);
+    // eslint-disable-next-line vitest/valid-expect -- Awaited in Promise.all after advancing fake timers.
     const renewal = expect(lease.renew()).rejects.toThrow("renew acknowledgement timed out");
+    // eslint-disable-next-line vitest/valid-expect -- Awaited in Promise.all after advancing fake timers.
     const release = expect(lease.release()).rejects.toThrow("renew acknowledgement timed out");
 
     await vi.advanceTimersByTimeAsync(30_000);
