@@ -1,6 +1,7 @@
 name: Skill Improvement
 
 permissions:
+  actions: read
   contents: write
   issues: write
   pull-requests: write
@@ -30,13 +31,24 @@ on:
         required: false
         type: string
         default: "main"
+      judge-source-run-id:
+        description: "Optional source Skill Improvement run ID for judge-only repeatability analysis"
+        required: false
+        type: string
+        default: ""
+      judge-repetitions:
+        description: "Number of times to re-grade each fixed baseline trajectory set"
+        required: false
+        type: number
+        default: 3
 
 concurrency:
-  group: skill-improvement-${{ inputs.run-spec }}
+  group: skill-improvement-${{ inputs.judge-source-run-id || inputs.run-spec }}
   cancel-in-progress: false
 
 jobs:
   improve:
+    if: inputs.judge-source-run-id == ''
     name: Improve skill
     runs-on: ubuntu-latest
     timeout-minutes: 420
@@ -326,3 +338,218 @@ jobs:
       - name: Fail when the engine failed
         if: steps.run.outcome == 'failure'
         run: exit 1
+
+  judge-repeatability:
+    if: inputs.judge-source-run-id != ''
+    name: Judge repeatability
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: skill-improvement-evals
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN_ID: ${{ inputs.judge-source-run-id }}
+      JUDGE_REPETITIONS: ${{ inputs.judge-repetitions }}
+      OUTPUT_DIR: judge-repeatability-${{ github.run_id }}
+
+    steps:
+      - name: Checkout workflow source
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm ci
+
+      - name: Setup Copilot CLI
+        uses: mvkaran/setup-copilot-cli@d05a47209e6b3185c9c55702bef49f28e6eebef7 # v1
+        with:
+          token: ${{ github.token }}
+
+      - name: Download fixed source trajectories
+        shell: bash
+        run: |
+          mkdir -p source-run "$OUTPUT_DIR"
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "skill-improvement-$SOURCE_RUN_ID" \
+            --dir source-run
+
+          mapfile -d '' answer_files < <(
+            find source-run/baseline/generation -type f -name answers.jsonl -print0
+          )
+          if [[ "${#answer_files[@]}" -eq 0 ]]; then
+            echo "::error::No baseline answers.jsonl files found in source run $SOURCE_RUN_ID."
+            exit 1
+          fi
+          printf 'Found %s fixed trajectory sets.\n' "${#answer_files[@]}"
+
+      - name: Re-grade fixed trajectories
+        shell: bash
+        run: |
+          set -euo pipefail
+          plugin="$GITHUB_WORKSPACE/tests/vally/vally-graders.ts"
+
+          while IFS= read -r -d '' answers; do
+            eval_dir="$(dirname "$answers")"
+            eval_spec="$(find "$eval_dir" -maxdepth 1 -type f -name '*.yaml' -print -quit)"
+            if [[ -z "$eval_spec" ]]; then
+              echo "::error::No eval spec found beside $answers."
+              exit 1
+            fi
+
+            relative="${eval_dir#source-run/baseline/generation/}"
+            for repeat in $(seq 1 "$JUDGE_REPETITIONS"); do
+              output="$OUTPUT_DIR/repeat-$repeat/$relative"
+              mkdir -p "$output"
+              (
+                cd tests
+                "$GITHUB_WORKSPACE/tests/node_modules/.bin/vally" grade \
+                  --eval-spec "$GITHUB_WORKSPACE/$eval_spec" \
+                  --grader-plugin "$plugin" \
+                  --judge-model claude-sonnet-5 \
+                  --run-dir "$GITHUB_WORKSPACE/$eval_dir" \
+                  --output jsonl \
+                  --verbose \
+                  < "$GITHUB_WORKSPACE/$answers" \
+                  > "$GITHUB_WORKSPACE/$output/judgments.jsonl" \
+                  2> "$GITHUB_WORKSPACE/$output/stderr.log"
+              )
+            done
+          done < <(
+            find source-run/baseline/generation -type f -name answers.jsonl -print0
+          )
+
+      - name: Summarize judge repeatability
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const path = require("node:path");
+
+          const root = process.env.OUTPUT_DIR;
+          const sourceRunId = process.env.SOURCE_RUN_ID;
+          const resultFiles = [];
+
+          function visit(directory) {
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              const fullPath = path.join(directory, entry.name);
+              if (entry.isDirectory()) {
+                visit(fullPath);
+              } else if (entry.name === "judgments.jsonl") {
+                resultFiles.push(fullPath);
+              }
+            }
+          }
+
+          visit(root);
+          const rows = [];
+          const verdicts = [];
+          let unstable = false;
+
+          for (const file of resultFiles.sort()) {
+            const relative = path.relative(root, file).split(path.sep);
+            const repeat = relative[0].replace("repeat-", "");
+            const condition = relative[1];
+            const records = fs.readFileSync(file, "utf8")
+              .split(/\r?\n/)
+              .filter(Boolean)
+              .map(line => JSON.parse(line));
+            const overallScores = [];
+            const promptScores = [];
+            const verificationScores = [];
+            let passed = 0;
+
+            records.forEach((record, index) => {
+              const grade = record.gradeResult;
+              if (grade?.passed) {
+                passed += 1;
+              } else {
+                unstable = true;
+              }
+              overallScores.push(Number(grade?.score ?? 0));
+              const prompt = grade?.details?.find(detail => detail.name === "prompt");
+              if (prompt) {
+                promptScores.push(Number(prompt.score ?? 0));
+                const verification = prompt.metadata?.rubric_scores?.find(
+                  item => /verification/i.test(item.criterion ?? "")
+                );
+                if (verification) {
+                  const score = Number(verification.score ?? 0);
+                  verificationScores.push(score);
+                  if (score < 4) {
+                    unstable = true;
+                  }
+                }
+                verdicts.push({
+                  condition,
+                  repeat: Number(repeat),
+                  trajectory: index + 1,
+                  passed: grade?.passed === true,
+                  overallScore: Number(grade?.score ?? 0),
+                  promptScore: Number(prompt.score ?? 0),
+                  promptEvidence: prompt.evidence ?? "",
+                  rubricScores: prompt.metadata?.rubric_scores ?? [],
+                });
+              }
+            });
+
+            const average = values => values.length
+              ? values.reduce((sum, value) => sum + value, 0) / values.length
+              : 0;
+            const range = values => values.length
+              ? `${Math.min(...values).toFixed(2)}-${Math.max(...values).toFixed(2)}`
+              : "N/A";
+
+            rows.push({
+              condition,
+              repeat,
+              passed: `${passed}/${records.length}`,
+              averageOverall: average(overallScores).toFixed(3),
+              promptRange: range(promptScores),
+              verificationRange: range(verificationScores),
+            });
+          }
+
+          const lines = [
+            "# Judge repeatability",
+            "",
+            `Source Skill Improvement run: ${sourceRunId}`,
+            `Judge repetitions: ${process.env.JUDGE_REPETITIONS}`,
+            "",
+            "| Condition | Repeat | Passed | Average overall score | Prompt score range | Verification rubric range |",
+            "| --- | ---: | ---: | ---: | ---: | ---: |",
+            ...rows.map(row =>
+              `| ${row.condition} | ${row.repeat} | ${row.passed} | ${row.averageOverall} | ${row.promptRange} | ${row.verificationRange} |`
+            ),
+            "",
+            unstable
+              ? "**Result: UNSTABLE** — at least one verdict failed or verification scored below 4/5."
+              : "**Result: STABLE** — every verdict passed and every verification score was at least 4/5.",
+          ];
+          const summary = `${lines.join("\n")}\n`;
+          fs.writeFileSync(path.join(root, "summary.md"), summary);
+          fs.writeFileSync(
+            path.join(root, "prompt-verdicts.jsonl"),
+            `${verdicts.map(record => JSON.stringify(record)).join("\n")}\n`
+          );
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+
+          if (unstable) {
+            process.exitCode = 1;
+          }
+          NODE
+
+      - name: Upload judge-repeatability artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: judge-repeatability-${{ github.run_id }}
+          path: ${{ env.OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 30
