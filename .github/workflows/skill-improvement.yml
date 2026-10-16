@@ -41,6 +41,11 @@ on:
         required: false
         type: number
         default: 3
+      judge-models:
+        description: "Comma-separated judge models for repeatability and cross-judge agreement"
+        required: false
+        type: string
+        default: "claude-sonnet-5,claude-opus-4.8"
 
 concurrency:
   group: skill-improvement-${{ inputs.judge-source-run-id || inputs.run-spec }}
@@ -349,6 +354,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       SOURCE_RUN_ID: ${{ inputs.judge-source-run-id }}
       JUDGE_REPETITIONS: ${{ inputs.judge-repetitions }}
+      JUDGE_MODELS: ${{ inputs.judge-models }}
       OUTPUT_DIR: judge-repeatability-${{ github.run_id }}
 
     steps:
@@ -394,6 +400,7 @@ jobs:
         run: |
           set -euo pipefail
           plugin="$GITHUB_WORKSPACE/tests/vally/vally-graders.ts"
+          IFS=',' read -r -a judge_models <<< "$JUDGE_MODELS"
 
           while IFS= read -r -d '' answers; do
             eval_dir="$(dirname "$answers")"
@@ -404,22 +411,28 @@ jobs:
             fi
 
             relative="${eval_dir#source-run/baseline/generation/}"
-            for repeat in $(seq 1 "$JUDGE_REPETITIONS"); do
-              output="$OUTPUT_DIR/repeat-$repeat/$relative"
-              mkdir -p "$output"
-              (
-                cd tests
-                "$GITHUB_WORKSPACE/tests/node_modules/.bin/vally" grade \
-                  --eval-spec "$GITHUB_WORKSPACE/$eval_spec" \
-                  --grader-plugin "$plugin" \
-                  --judge-model claude-sonnet-5 \
-                  --run-dir "$GITHUB_WORKSPACE/$eval_dir" \
-                  --output jsonl \
-                  --verbose \
-                  < "$GITHUB_WORKSPACE/$answers" \
-                  > "$GITHUB_WORKSPACE/$output/judgments.jsonl" \
-                  2> "$GITHUB_WORKSPACE/$output/stderr.log"
-              )
+            for judge_model in "${judge_models[@]}"; do
+              judge_model="${judge_model//[[:space:]]/}"
+              if [[ -z "$judge_model" ]]; then
+                continue
+              fi
+              for repeat in $(seq 1 "$JUDGE_REPETITIONS"); do
+                output="$OUTPUT_DIR/$judge_model/repeat-$repeat/$relative"
+                mkdir -p "$output"
+                (
+                  cd tests
+                  "$GITHUB_WORKSPACE/tests/node_modules/.bin/vally" grade \
+                    --eval-spec "$GITHUB_WORKSPACE/$eval_spec" \
+                    --grader-plugin "$plugin" \
+                    --judge-model "$judge_model" \
+                    --run-dir "$GITHUB_WORKSPACE/$eval_dir" \
+                    --output jsonl \
+                    --verbose \
+                    < "$GITHUB_WORKSPACE/$answers" \
+                    > "$GITHUB_WORKSPACE/$output/judgments.jsonl" \
+                    2> "$GITHUB_WORKSPACE/$output/stderr.log"
+                )
+              done
             done
           done < <(
             find source-run/baseline/generation -type f -name answers.jsonl -print0
@@ -450,12 +463,12 @@ jobs:
           visit(root);
           const rows = [];
           const verdicts = [];
-          let unstable = false;
 
           for (const file of resultFiles.sort()) {
             const relative = path.relative(root, file).split(path.sep);
-            const repeat = relative[0].replace("repeat-", "");
-            const condition = relative[1];
+            const judgeModel = relative[0];
+            const repeat = relative[1].replace("repeat-", "");
+            const condition = relative[2];
             const records = fs.readFileSync(file, "utf8")
               .split(/\r?\n/)
               .filter(Boolean)
@@ -469,8 +482,6 @@ jobs:
               const grade = record.gradeResult;
               if (grade?.passed) {
                 passed += 1;
-              } else {
-                unstable = true;
               }
               overallScores.push(Number(grade?.score ?? 0));
               const prompt = grade?.details?.find(detail => detail.name === "prompt");
@@ -482,11 +493,9 @@ jobs:
                 if (verification) {
                   const score = Number(verification.score ?? 0);
                   verificationScores.push(score);
-                  if (score < 4) {
-                    unstable = true;
-                  }
                 }
                 verdicts.push({
+                  judgeModel,
                   condition,
                   repeat: Number(repeat),
                   trajectory: index + 1,
@@ -507,6 +516,7 @@ jobs:
               : "N/A";
 
             rows.push({
+              judgeModel,
               condition,
               repeat,
               passed: `${passed}/${records.length}`,
@@ -516,21 +526,63 @@ jobs:
             });
           }
 
+          let unstable = false;
+          const repeatabilityGroups = new Map();
+          const agreementGroups = new Map();
+          for (const verdict of verdicts) {
+            const repeatabilityKey =
+              `${verdict.judgeModel}|${verdict.condition}|${verdict.trajectory}`;
+            const agreementKey = `${verdict.condition}|${verdict.trajectory}`;
+            for (const [groups, key] of [
+              [repeatabilityGroups, repeatabilityKey],
+              [agreementGroups, agreementKey],
+            ]) {
+              const values = groups.get(key) ?? [];
+              values.push(verdict);
+              groups.set(key, values);
+            }
+            if (!verdict.passed) {
+              unstable = true;
+            }
+          }
+
+          function hasUnstableSpread(values) {
+            const passValues = new Set(values.map(value => value.passed));
+            const verificationScores = values.flatMap(value => {
+              const verification = value.rubricScores.find(
+                item => /verification/i.test(item.criterion ?? "")
+              );
+              return verification ? [Number(verification.score)] : [];
+            });
+            const verificationSpread = verificationScores.length
+              ? Math.max(...verificationScores) - Math.min(...verificationScores)
+              : 0;
+            return passValues.size > 1 || verificationSpread > 1;
+          }
+
+          if ([...repeatabilityGroups.values()].some(hasUnstableSpread)) {
+            unstable = true;
+          }
+          if ([...agreementGroups.values()].some(hasUnstableSpread)) {
+            unstable = true;
+          }
+
           const lines = [
             "# Judge repeatability",
             "",
             `Source Skill Improvement run: ${sourceRunId}`,
             `Judge repetitions: ${process.env.JUDGE_REPETITIONS}`,
+            `Judge models: ${process.env.JUDGE_MODELS}`,
             "",
-            "| Condition | Repeat | Passed | Average overall score | Prompt score range | Verification rubric range |",
-            "| --- | ---: | ---: | ---: | ---: | ---: |",
+            "| Judge | Condition | Repeat | Passed | Average overall score | Prompt score range | Verification rubric range |",
+            "| --- | --- | ---: | ---: | ---: | ---: | ---: |",
             ...rows.map(row =>
-              `| ${row.condition} | ${row.repeat} | ${row.passed} | ${row.averageOverall} | ${row.promptRange} | ${row.verificationRange} |`
+              `| ${row.judgeModel} | ${row.condition} | ${row.repeat} | ${row.passed} | ${row.averageOverall} | ${row.promptRange} | ${row.verificationRange} |`
             ),
             "",
             unstable
-              ? "**Result: UNSTABLE** — at least one verdict failed or verification scored below 4/5."
-              : "**Result: STABLE** — every verdict passed and every verification score was at least 4/5.",
+              ? "**Result: UNSTABLE** — a verdict failed/flipped or verification scores differed by more than one rubric point."
+              : "**Result: STABLE** — every verdict passed, pass/fail decisions were repeatable, and verification scores stayed within one rubric point within and across judges.",
           ];
           const summary = `${lines.join("\n")}\n`;
           fs.writeFileSync(path.join(root, "summary.md"), summary);
