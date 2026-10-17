@@ -1,0 +1,57 @@
+name: azure-diagnostics-functions-targeted-validation
+
+target:
+  plugin: azure-skills
+  skill: azure-diagnostics
+  baselineRef: main
+  editablePaths:
+    - plugins/azure-skills/skills/azure-diagnostics/**
+
+evaluations:
+  root: evals/azure-skills/azure-diagnostics
+  development:
+    - functions-troubleshooting.eval.yaml
+  heldOut: []
+
+models:
+  answers:
+    - gpt-5.6-sol
+  judges:
+    - claude-sonnet-5
+
+experiment:
+  repetitions: 2
+  conditions:
+    - name: Skill only
+      skill: enabled
+      mcp: disabled
+    - name: Skill + MCP
+      skill: enabled
+      mcp: enabled
+
+improvementAgent:
+  enabled: false
+  model: claude-sonnet-5
+
+acceptance:
+  minimumQualityImprovementPoints: 0
+  maximumEvalRegressionPoints: 0
+  maximumModelRegressionPoints: 0
+  minimumSkillInvocationRate: 0.8
+  requireHeldOutImprovement: false
+
+refinement:
+  minimumScoreImprovementPoints: 1
+  maximumQualityRegressionPoints: 0
+
+limits:
+  maxIterations: 0
+  maxAnswerGenerations: 12
+  maxJudgeCalls: 12
+  maxDurationMinutes: 90
+  maxConcurrentJobs: 2
+  maxSkillTokenIncreasePercent: 15
+
+output:
+  issue: never
+  draftPullRequest: never

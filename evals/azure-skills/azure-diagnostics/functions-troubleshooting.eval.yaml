@@ -82,9 +82,9 @@ stimuli:
         config:
           required:
             - azure-diagnostics
-      - type: output-matches
+      - type: output-not-matches
         config:
-          pattern: "(?is)StartFromBeginning.{0,100}(does not|doesn't|cannot|can't|won't).{0,60}(fix|resolve|repair).{0,60}(deserializ|schema|payload|document)|(deserializ|schema|payload|document).{0,100}(is not|isn't|aren't|cannot|can't).{0,60}(fix|resolve|repair).{0,60}StartFromBeginning"
+          pattern: "(?is)(StartFromBeginning|lease reset|restart(?:ing)? (?:the )?change feed).{0,120}(?:(?:will|can|should|does|is expected to)(?!n't|\\s+not)\\s+(?:fix|resolve|repair)|(?:fixes|resolves|repairs))\\b.{0,120}(deserializ|schema|payload|document|POCO)"
       - type: output-matches
         config:
           pattern: "(?i)(schema|bound type|POCO|deserializ).*(raw|JsonElement|JObject|string)|(raw|JsonElement|JObject).*(schema|bound type|POCO|deserializ)"
@@ -128,7 +128,7 @@ stimuli:
           pattern: "(?is)(TerminateAsync|TerminateInstanceAsync|external monitor|client-capable).{0,120}(child|sub-orchestration)|(?:child|sub-orchestration).{0,120}(TerminateAsync|TerminateInstanceAsync|external monitor|client-capable)"
       - type: output-not-matches
         config:
-          pattern: "(?is)((cancel(?:ing|lation)?|CancellationToken).{0,40}timer|timer.{0,20}cancel(?:s|ing|lation)?)(?!.{0,40}(does not|doesn't|cannot|can't|won't)).{0,60}(terminates?|cancels?|stops?).{0,40}(child|sub-orchestration|activity)"
+          pattern: "(?is)((cancel(?:ing|lation)?|CancellationToken)[^.!?\\n]{0,60}timer|timer[^.!?\\n]{0,40}cancel(?:s|ing|lation)?)(?!(?:[^.!?\\n]{0,160})\\b(?:does not|doesn't|cannot|can't|won't|not)\\b)[^.!?\\n]{0,160}\\b(?:terminates?|cancels?|stops?)\\b[^.!?\\n]{0,80}\\b(?:child|sub-orchestration|activity)\\b"
       - type: prompt
         config:
           scoring: scale_1_5
