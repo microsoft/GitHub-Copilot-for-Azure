@@ -145,7 +145,7 @@
 
 $ErrorActionPreference = "SilentlyContinue"
 
-$telemetryReporterVersion = "0.1.10-g8cc1aa1c56"
+$telemetryReporterVersion = "0.1.11-gce94fceee1"
 
 # Dumps raw input to a file in the AZURE_SKILLS_TELEMETRY_LOG_DIR/raw-input/
 # directory for debugging if the env var is set.
@@ -413,10 +413,8 @@ function Get-ToolInputPath {
 
 # === STEP 2: Determine what to track for azmcp ===
 
-# Path patterns per client, one block per plugin (used for SKILL.md and
-# file-reference matching). When onboarding another plugin, add a new block by
-# swapping both the catalog/plugin segments (e.g. "azure" and "azure-skills")
-# for the new plugin's name.
+# Plugin-local path patterns per client (used for SKILL.md and file-reference
+# matching). The build packages this script with the owning plugin's patterns.
 
 . $pluginPathAllowPattern
 
@@ -576,82 +574,63 @@ if ($shouldTrack) {
         Write-Success
     }
 
-    # Build MCP command arguments
-    $mcpArgs = @(
-        "server", "plugin-telemetry"
-    )
+    # Build reporter arguments
+    $reporterArguments = @()
 
-    if ($pluginName) { $mcpArgs += "--plugin-name"; $mcpArgs += $pluginName }
-    if ($pluginVersion) { $mcpArgs += "--plugin-version"; $mcpArgs += $pluginVersion }
-    $mcpArgs += "--client-name"; $mcpArgs += $clientName
-    $mcpArgs += "--timestamp"; $mcpArgs += $timestamp
-    if ($eventType) { $mcpArgs += "--event-type"; $mcpArgs += $eventType }
-    if ($sessionId) { $mcpArgs += "--session-id"; $mcpArgs += $sessionId }
-    if ($skillName) { $mcpArgs += "--skill-name"; $mcpArgs += $skillName }
-    if ($skillVersion) { $mcpArgs += "--skill-version"; $mcpArgs += $skillVersion }
-    if ($azureToolName) { $mcpArgs += "--tool-name"; $mcpArgs += $azureToolName }
+    if ($pluginName) { $reporterArguments += "--plugin-name"; $reporterArguments += $pluginName }
+    if ($pluginVersion) { $reporterArguments += "--plugin-version"; $reporterArguments += $pluginVersion }
+    $reporterArguments += "--client-name"; $reporterArguments += $clientName
+    $reporterArguments += "--timestamp"; $reporterArguments += $timestamp
+    if ($eventType) { $reporterArguments += "--event-type"; $reporterArguments += $eventType }
+    if ($sessionId) { $reporterArguments += "--session-id"; $reporterArguments += $sessionId }
+    if ($skillName) { $reporterArguments += "--skill-name"; $reporterArguments += $skillName }
+    if ($skillVersion) { $reporterArguments += "--skill-version"; $reporterArguments += $skillVersion }
+    if ($azureToolName) { $reporterArguments += "--tool-name"; $reporterArguments += $azureToolName }
     # Convert forward slashes to backslashes for azmcp allowlist compatibility
-    if ($filePath) { $mcpArgs += "--file-reference"; $mcpArgs += ($filePath -replace '/', '\') }
+    if ($filePath) { $reporterArguments += "--file-reference"; $reporterArguments += ($filePath -replace '/', '\') }
 
-    if ($env:AZURE_SKILLS_USE_STANDALONE_TELEMETRY -eq "true") {
-        $publisher = "Standalone ghcfa-telem (version $telemetryReporterVersion)"
-        $reporterArguments = $mcpArgs[2..($mcpArgs.Count - 1)]
-        Write-TelemetryDebugLog -Content "Publisher: $publisher | Args: $($reporterArguments -join ' ')"
-        $installerPath = Join-Path $scriptDir 'install-telemetry.ps1'
-        $powerShellExecutable = (Get-Process -Id $PID).Path
-        $installerArguments = @(
-            '-NoProfile',
-            '-NonInteractive'
-        )
-        if ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop') {
-            $installerArguments += '-ExecutionPolicy'
-            $installerArguments += 'Bypass'
-        }
-        $installerArguments += '-File'
-        $installerArguments += $installerPath
-        $installerArguments += '-Version'
-        $installerArguments += $telemetryReporterVersion
-
-        # Capture installer stderr without changing the hook's fail-open error preference.
-        $installerOutput = @(& {
-            $ErrorActionPreference = 'Continue'
-            & $powerShellExecutable @installerArguments 2>&1
-        })
-        $installerStatus = $LASTEXITCODE
-        if ($installerStatus -eq 0 -and $installerOutput.Count -gt 0 -and
-            -not [string]::IsNullOrWhiteSpace([string]$installerOutput[-1])) {
-            $reporterPath = [string]$installerOutput[-1]
-            Write-TelemetryDebugLog -Content "Publisher: $publisher | Executable: $reporterPath"
-            try {
-                & $reporterPath @reporterArguments 2>&1 | Out-Null
-                $reporterStatus = $LASTEXITCODE
-                if ($reporterStatus -ne 0) {
-                    Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed with status $reporterStatus."
-                }
-            } catch {
-                Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed to start."
-            }
-        }
-        elseif ($installerStatus -eq 0) {
-            Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed: installer returned no executable path."
-        }
-        else {
-            Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed with status ${installerStatus}: $($installerOutput -join ' ')"
-        }
+    $publisher = "Standalone ghcfa-telem (version $telemetryReporterVersion)"
+    Write-TelemetryDebugLog -Content "Publisher: $publisher | Args: $($reporterArguments -join ' ')"
+    $installerPath = Join-Path $scriptDir 'install-telemetry.ps1'
+    $powerShellExecutable = (Get-Process -Id $PID).Path
+    $installerArguments = @(
+        '-NoProfile',
+        '-NonInteractive'
+    )
+    if ($IsWindows -or $PSVersionTable.PSEdition -eq 'Desktop') {
+        $installerArguments += '-ExecutionPolicy'
+        $installerArguments += 'Bypass'
     }
-    else {
-        # Preserve the existing publisher unless the standalone path is explicitly enabled.
-        $publisher = "Azure MCP (npx -y @azure/mcp@latest)"
-        Write-TelemetryDebugLog -Content "Publisher: $publisher | Args: $($mcpArgs -join ' ')"
+    $installerArguments += '-File'
+    $installerArguments += $installerPath
+    $installerArguments += '-Version'
+    $installerArguments += $telemetryReporterVersion
+
+    # Capture installer stderr without changing the hook's fail-open error preference.
+    $installerOutput = @(& {
+        $ErrorActionPreference = 'Continue'
+        & $powerShellExecutable @installerArguments 2>&1
+    })
+    $installerStatus = $LASTEXITCODE
+    if ($installerStatus -eq 0 -and $installerOutput.Count -gt 0 -and
+        -not [string]::IsNullOrWhiteSpace([string]$installerOutput[-1])) {
+        $reporterPath = [string]$installerOutput[-1]
+        Write-TelemetryDebugLog -Content "Publisher: $publisher | Executable: $reporterPath"
         try {
-            & npx -y @azure/mcp@latest @mcpArgs 2>&1 | Out-Null
-            $publisherStatus = $LASTEXITCODE
-            if ($publisherStatus -ne 0) {
-                Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed with status $publisherStatus."
+            & $reporterPath @reporterArguments 2>&1 | Out-Null
+            $reporterStatus = $LASTEXITCODE
+            if ($reporterStatus -ne 0) {
+                Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed with status $reporterStatus."
             }
         } catch {
             Write-TelemetryDebugLog -Content "Publisher: $publisher | Execution failed to start."
         }
+    }
+    elseif ($installerStatus -eq 0) {
+        Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed: installer returned no executable path."
+    }
+    else {
+        Write-TelemetryDebugLog -Content "Publisher: $publisher | Installation failed with status ${installerStatus}: $($installerOutput -join ' ')"
     }
 }
 

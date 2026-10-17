@@ -1,3 +1,7 @@
+registries:
+  microsoft-package-feed:
+    type: npm-registry
+    url: https://packagefeedproxy.microsoft.io/npm/
 updates:
 - directory: /
   groups:
@@ -11,6 +15,8 @@ updates:
   - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 10
   package-ecosystem: npm
+  registries:
+  - microsoft-package-feed
   schedule:
     day: monday
     interval: weekly
@@ -26,6 +32,8 @@ updates:
   - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 5
   package-ecosystem: npm
+  registries:
+  - microsoft-package-feed
   schedule:
     day: monday
     interval: weekly
@@ -41,6 +49,8 @@ updates:
   - dependency-name: "@types/node" # @types/node versions mirror Node.js versions; pin manually
   open-pull-requests-limit: 5
   package-ecosystem: npm
+  registries:
+  - microsoft-package-feed
   schedule:
     day: monday
     interval: weekly

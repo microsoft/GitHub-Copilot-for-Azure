@@ -1,6 +1,5 @@
-# Separate-family pair: solver claude-sonnet-4.6; judge gpt-5.6-sol-fast.
-# Both appear in the OSS account's runtime catalog; destination-token execution
-# has not been established. Never silently fall back to the solver as judge.
+# Separate-family pair: solver claude-sonnet-5; judge gpt-6.1-sol.
+# Never silently fall back to the solver as judge.
 # Use --judge-model to override this default and record the resulting pair.
 # A different pair is a new baseline, not comparable to earlier scores.
 # These public-source development regressions are not independent holdouts.
@@ -18,7 +17,7 @@ defaults:
   timeout: "5m"
   executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
-  judge_model: gpt-5.6-sol-fast
+  judge_model: gpt-6.1-sol
 
 scoring:
   threshold: 0.8

@@ -4,11 +4,144 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import {
   changedFiles,
+  decideHeldOutAcceptance,
+  hasActionableFailureEvidence,
   unlinkDependencyLinks,
   writeCandidatePatch,
   writeFinalCandidatePatch,
 } from "../engine.ts";
+import {
+  aggregateJudgments,
+  type AggregatedTrial,
+} from "../report.ts";
+import type {
+  EvaluationCondition,
+  SkillImprovementRunSpec,
+} from "../config.ts";
+import type { JudgedTrial } from "../evaluation.ts";
 import { describe, expect, test } from "vitest";
+
+const skillOnly: EvaluationCondition = {
+  name: "Skill only",
+  skill: "enabled",
+  mcp: "disabled",
+};
+
+function spec(): SkillImprovementRunSpec {
+  return {
+    name: "example",
+    target: { plugin: "azure-skills", skill: "azure-kusto", baselineRef: "main" },
+    evaluations: {
+      root: "tests/skill-improvement/evals/azure-kusto",
+      development: ["quality.eval.yaml"],
+      heldOut: ["held-out.eval.yaml"],
+    },
+    models: { answers: ["model-a"], judges: ["judge-a"] },
+    experiment: { repetitions: 1, conditions: [skillOnly] },
+    improvementAgent: { enabled: true, model: "agent" },
+    acceptance: {
+      minimumQualityImprovementPoints: 20,
+      maximumEvalRegressionPoints: 5,
+      maximumModelRegressionPoints: 5,
+      minimumSkillInvocationRate: 0.8,
+    },
+    heldOutAcceptance: {
+      enabled: true,
+      minimumQualityImprovementPoints: 0,
+      maximumEvalRegressionPoints: 0,
+      maximumModelRegressionPoints: 0,
+    },
+    refinement: {
+      minimumScoreImprovementPoints: 1,
+      maximumQualityRegressionPoints: 0,
+    },
+    limits: {
+      maxIterations: 1,
+      maxAnswerGenerations: 20,
+      maxJudgeCalls: 20,
+      maxDurationMinutes: 60,
+      maxConcurrentJobs: 1,
+      maxSkillTokenIncreasePercent: 15,
+    },
+    output: { issue: "never", draftPullRequest: "accepted-candidate-only" },
+  };
+}
+
+function judged(phase: JudgedTrial["phase"], passed: boolean): JudgedTrial {
+  return {
+    phase,
+    condition: skillOnly,
+    answerModel: "model-a",
+    judgeModel: "judge-a",
+    evalFile: "held-out.eval.yaml",
+    itemId: "held-out-case",
+    stimulus: "held-out case",
+    area: "response-quality",
+    passed,
+    score: passed ? 1 : 0,
+    evidence: "judge evidence",
+    details: [],
+    output: "answer",
+    targetSkillInvoked: true,
+    totalTokens: 100,
+  };
+}
+
+describe("held-out acceptance engine mapping", () => {
+  test("accepts unchanged held-out results with a zero improvement requirement", () => {
+    const baseline = aggregateJudgments([judged("held-out-baseline", true)]);
+    const candidate = aggregateJudgments([judged("held-out-candidate", true)]);
+
+    const decision = decideHeldOutAcceptance(
+      spec(),
+      baseline,
+      candidate,
+      1000,
+      1000
+    );
+
+    expect(decision.accepted).toBe(true);
+    expect(decision.comparison.qualityImprovementPoints).toBe(0);
+  });
+
+  test("rejects a held-out regression through the engine mapping", () => {
+    const baseline = aggregateJudgments([judged("held-out-baseline", true)]);
+    const candidate = aggregateJudgments([judged("held-out-candidate", false)]);
+
+    const decision = decideHeldOutAcceptance(
+      spec(),
+      baseline,
+      candidate,
+      1000,
+      1000
+    );
+
+    expect(decision.accepted).toBe(false);
+    expect(decision.comparison.qualityImprovementPoints).toBe(-100);
+    expect(decision.reasons.join("\n")).toContain("0.00 required");
+  });
+});
+
+function trial(overrides: Partial<AggregatedTrial> = {}): AggregatedTrial {
+  return {
+    condition: { name: "Skill only", skill: "enabled", mcp: "disabled" },
+    answerModel: "model",
+    evalFile: "eval.yaml",
+    itemId: "item",
+    stimulus: "prompt",
+    area: "response-quality",
+    passed: true,
+    score: 1,
+    judgePasses: 1,
+    judgeCount: 1,
+    judgeDisagreement: false,
+    judgments: [],
+    output: "answer",
+    targetSkillInvoked: true,
+    totalTokens: 100,
+    ...overrides,
+  };
+}
 
 describe("worktree dependency cleanup", () => {
   test("unlinks dependency junctions without deleting their targets", () => {
@@ -155,4 +288,29 @@ describe("worktree dependency cleanup", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
+});
+
+describe("hill-climbing actionability", () => {
+  test("stops when no actionable failure evidence remains", () => {
+    expect(hasActionableFailureEvidence([trial()], undefined, 15)).toBe(false);
+  });
+
+  test.each([
+    ["failed trial", [trial({ passed: false })], undefined, {}],
+    ["judge disagreement", [trial({ judgeDisagreement: true })], undefined, {}],
+    ["low retained skill invocation", [trial({ targetSkillInvoked: false })], 0.8, {}],
+    ["low candidate skill invocation", [trial()], 0.8, { candidateSkillInvocationRate: 0 }],
+    ["token growth", [trial()], undefined, { skillMarkdownTokenIncreasePercent: 16 }],
+    ["validation failure", [trial()], undefined, { hasValidationFailure: true }],
+  ] as const)(
+    "continues for %s",
+    (_name, trials, minimumInvocationRate, gateEvidence) => {
+      expect(hasActionableFailureEvidence(
+        [...trials],
+        minimumInvocationRate,
+        15,
+        gateEvidence
+      )).toBe(true);
+    }
+  );
 });

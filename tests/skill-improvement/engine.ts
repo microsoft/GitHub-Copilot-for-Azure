@@ -16,6 +16,7 @@ import {
   buildFailurePacket,
   decideAcceptance,
   decideRefinement,
+  summarizeTrials,
   writeReport,
   type AcceptanceDecision,
   type AggregatedTrial,
@@ -385,6 +386,39 @@ function enforceActualUsage(spec: SkillImprovementRunSpec, usage: Usage): void {
   }
 }
 
+export function hasActionableFailureEvidence(
+  trials: AggregatedTrial[],
+  minimumSkillInvocationRate: number | undefined,
+  maximumSkillTokenIncreasePercent: number,
+  gateEvidence: {
+    candidateSkillInvocationRate?: number;
+    skillMarkdownTokenIncreasePercent?: number;
+    hasValidationFailure?: boolean;
+  } = {},
+): boolean {
+  if (
+    gateEvidence.hasValidationFailure
+    || trials.some(trial => !trial.passed || trial.judgeDisagreement)
+  ) {
+    return true;
+  }
+  if (minimumSkillInvocationRate !== undefined) {
+    const currentInvocationRate = summarizeTrials(trials).skillInvocationRate;
+    if (
+      currentInvocationRate < minimumSkillInvocationRate
+      || (
+        gateEvidence.candidateSkillInvocationRate !== undefined
+        && gateEvidence.candidateSkillInvocationRate < minimumSkillInvocationRate
+      )
+    ) {
+      return true;
+    }
+  }
+  return gateEvidence.skillMarkdownTokenIncreasePercent !== undefined
+    && gateEvidence.skillMarkdownTokenIncreasePercent
+      > maximumSkillTokenIncreasePercent;
+}
+
 function writeFailurePacket(
   outputDirectory: string,
   iteration: number,
@@ -396,6 +430,37 @@ function writeFailurePacket(
   );
   fs.writeFileSync(failurePacketPath, contents, "utf8");
   return failurePacketPath;
+}
+
+export function decideHeldOutAcceptance(
+  spec: SkillImprovementRunSpec,
+  baselineTrials: AggregatedTrial[],
+  candidateTrials: AggregatedTrial[],
+  baselineSkillTokens: number,
+  candidateSkillTokens: number,
+): AcceptanceDecision {
+  if (!spec.heldOutAcceptance?.enabled) {
+    throw new Error("heldOutAcceptance must be enabled.");
+  }
+  const heldOutSpec: SkillImprovementRunSpec = {
+    ...spec,
+    acceptance: {
+      ...spec.acceptance,
+      minimumQualityImprovementPoints:
+        spec.heldOutAcceptance.minimumQualityImprovementPoints,
+      maximumEvalRegressionPoints:
+        spec.heldOutAcceptance.maximumEvalRegressionPoints,
+      maximumModelRegressionPoints:
+        spec.heldOutAcceptance.maximumModelRegressionPoints,
+    },
+  };
+  return decideAcceptance(
+    heldOutSpec,
+    baselineTrials,
+    candidateTrials,
+    baselineSkillTokens,
+    candidateSkillTokens
+  );
 }
 
 export async function executeSkillImprovement(
@@ -426,8 +491,10 @@ export async function executeSkillImprovement(
   let previousDecision: AcceptanceDecision | undefined;
   let previousRefinementDecision: RefinementDecision | undefined;
   let previousRejectedPatchPath: string | undefined;
+  let previousValidationErrors: string[] = [];
   let finalPatchPath: string | undefined;
   let heldOut: SkillImprovementReport["heldOut"];
+  let terminationReason: SkillImprovementReport["terminationReason"];
   let report: SkillImprovementReport;
 
   try {
@@ -455,6 +522,21 @@ export async function executeSkillImprovement(
 
     if (spec.improvementAgent.enabled) {
       for (let iteration = 1; iteration <= spec.limits.maxIterations; iteration += 1) {
+        if (!hasActionableFailureEvidence(
+          refinementTrials,
+          spec.acceptance.minimumSkillInvocationRate,
+          spec.limits.maxSkillTokenIncreasePercent,
+          {
+            candidateSkillInvocationRate:
+              previousDecision?.comparison.candidate.skillInvocationRate,
+            skillMarkdownTokenIncreasePercent:
+              previousDecision?.skillMarkdownTokenIncreasePercent,
+            hasValidationFailure: previousValidationErrors.length > 0,
+          }
+        )) {
+          terminationReason = "no-actionable-failures";
+          break;
+        }
         const iterationDirectory = path.join(outputDirectory, `iteration-${iteration}`);
         fs.mkdirSync(iterationDirectory, { recursive: true });
         const worktree = path.join(worktreeRoot, `iteration-${iteration}`);
@@ -470,7 +552,8 @@ export async function executeSkillImprovement(
             spec,
             refinementTrials,
             previousDecision,
-            previousRefinementDecision
+            previousRefinementDecision,
+            previousValidationErrors
           );
           const failurePacketPath = writeFailurePacket(
             outputDirectory,
@@ -519,11 +602,13 @@ export async function executeSkillImprovement(
             );
           }
           if (iterationReport.validationErrors.length > 0) {
+            previousValidationErrors = [...iterationReport.validationErrors];
             previousDecision = undefined;
             previousRefinementDecision = undefined;
             previousRejectedPatchPath = candidatePatchPath;
             continue;
           }
+          previousValidationErrors = [];
 
           const candidateCommit = commitCandidate(worktree, iteration);
           iterationReport.candidateCommit = candidateCommit;
@@ -584,7 +669,7 @@ export async function executeSkillImprovement(
     let finalAccepted = Boolean(bestCandidateCommit);
     if (
       finalAccepted
-      && spec.acceptance.requireHeldOutImprovement
+      && spec.heldOutAcceptance?.enabled
       && plan.heldOutPromptCount > 0
     ) {
       const finalWorktree = path.join(worktreeRoot, "final-candidate");
@@ -617,7 +702,7 @@ export async function executeSkillImprovement(
         addUsage(usage, baselineHeldOut);
         addUsage(usage, candidateHeldOut);
         enforceActualUsage(spec, usage);
-        const heldOutDecision = decideAcceptance(
+        const heldOutDecision = decideHeldOutAcceptance(
           spec,
           aggregateJudgments(baselineHeldOut.trials),
           aggregateJudgments(candidateHeldOut.trials),
@@ -664,6 +749,7 @@ export async function executeSkillImprovement(
       baselineTrials,
       iterations,
       heldOut,
+      terminationReason,
       bestCandidateCommit,
       finalAccepted,
       finalPatchPath,
@@ -687,6 +773,7 @@ export async function executeSkillImprovement(
       baselineTrials,
       iterations,
       heldOut,
+      terminationReason,
       bestCandidateCommit,
       finalAccepted: false,
       usage: {
