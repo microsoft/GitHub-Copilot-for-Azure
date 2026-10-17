@@ -19,8 +19,9 @@ tags:
 defaults:
   runs: 5
   timeout: "10m"
-  executor: integration-test-agent-runner
+  executor: copilot-sdk-agent-runner
   model: claude-sonnet-4.6
+  judge_model: claude-sonnet-5
 
 scoring:
   threshold: 0.8
@@ -29,6 +30,11 @@ stimuli:
   # Queue poison-message diagnosis
   - name: "Queue trigger poison message diagnosis"
     prompt: "My Azure Function queue trigger keeps moving messages to the poison queue after 5 dequeue attempts. How do I diagnose why the messages are failing?"
+    rubric:
+      - The response explains that poison-queue movement occurs after repeated failed processing attempts governed by maxDequeueCount and treats it as a symptom of an underlying invocation, binding, payload, or application failure.
+      - Diagnosis examines Function invocation logs and exceptions, the original and poison messages, dequeue metadata, binding configuration, and payload compatibility before recommending configuration changes.
+      - Remediation fixes the underlying processing failure and uses bounded, idempotent replay after validation; it does not merely increase maxDequeueCount, delete poison messages, or replay them blindly.
+      - Verification processes a representative failed message successfully, confirms dequeue counts stop increasing, checks that the poison queue no longer grows for the corrected cause, and monitors for duplicate side effects.
     tags:
       type: integration
       tier: full
@@ -44,17 +50,26 @@ stimuli:
       - type: output-matches
         config:
           pattern: "(?i)maxDequeueCount|dequeue count|poison queue"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
       - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
 
   # Cosmos trigger partial-document diagnosis
   # Regression guard for the corrected fix vs. abandoned PR #1641: the response
   # must not claim StartFromBeginning/lease reset fixes partial document payloads.
   - name: "Cosmos DB trigger partial document deserialization"
     prompt: "My Cosmos DB trigger function is throwing deserialization errors because incoming documents are missing fields my POCO expects. Restarting the change feed from the beginning didn't help. How do I troubleshoot this?"
+    rubric:
+      - The response identifies a payload-schema or bound-type mismatch caused by documents that omit fields expected by the POCO and explains why StartFromBeginning or lease reset changes replay position rather than repairing document shape.
+      - Diagnosis inspects representative raw change-feed documents, deserialization exceptions, nullability and required-field assumptions, serializer settings, and the deployed binding or programming model.
+      - Remediation makes the input model tolerant where fields are legitimately optional or binds to a raw representation such as JsonElement, JObject, or string for validation and explicit mapping; it avoids destructive lease resets or historical replay as the primary fix.
+      - Verification exercises documents with present and missing optional fields, confirms successful trigger processing and checkpoint advancement, and checks that malformed documents are handled or isolated without repeated poison processing.
     tags:
       type: integration
       tier: full
@@ -67,23 +82,32 @@ stimuli:
         config:
           required:
             - azure-diagnostics
-      - type: output-matches
+      - type: output-not-matches
         config:
-          pattern: "(?is)StartFromBeginning.{0,100}(does not|doesn't|cannot|can't|won't).{0,60}(fix|resolve|repair).{0,60}(deserializ|schema|payload|document)|(deserializ|schema|payload|document).{0,100}(is not|isn't|aren't|cannot|can't).{0,60}(fix|resolve|repair).{0,60}StartFromBeginning"
+          pattern: "(?is)(StartFromBeginning|lease reset|restart(?:ing)? (?:the )?change feed).{0,120}(?:(?:will|can|should|does|is expected to)(?!n't|\\s+not)\\s+(?:fix|resolve|repair)|(?:fixes|resolves|repairs))\\b.{0,120}(deserializ|schema|payload|document|POCO)"
       - type: output-matches
         config:
           pattern: "(?i)(schema|bound type|POCO|deserializ).*(raw|JsonElement|JObject|string)|(raw|JsonElement|JObject).*(schema|bound type|POCO|deserializ)"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
       - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"
 
   # Durable stuck-orchestration diagnosis
   # Regression guard: the response should not present a bare Task.WhenAny timeout
   # pattern without cancelling the losing operation (the bug fixed vs. PR #1641).
   - name: "Durable Functions stuck orchestration diagnosis"
     prompt: "One of my Durable Functions orchestrations has been stuck in the Running status for hours and never completes. How do I diagnose whether this is a non-determinism issue or something else, and how should I add a safe timeout?"
+    rubric:
+      - The response diagnoses the existing stuck instance from orchestration history, runtime status, replay-safe logs, pending activities or sub-orchestrations, external events, and non-determinism errors before assuming that a timeout alone fixes the cause.
+      - A safe in-orchestrator timeout uses a durable timer and cancels the losing timer when the operation wins, preserving deterministic orchestration behavior and avoiding ordinary thread-blocking or non-durable timers.
+      - The response does not claim that cancelling the timer automatically terminates an already running activity or child orchestration; when termination is required, it uses an authorized client or external monitor and addresses compensation and idempotency.
+      - Verification covers both operation-wins and timeout-wins paths, confirms timer cleanup and expected orchestration state, validates that child work is handled deliberately, and confirms new instances no longer remain stuck for the original cause.
     tags:
       type: integration
       tier: full
@@ -104,9 +128,13 @@ stimuli:
           pattern: "(?is)(TerminateAsync|TerminateInstanceAsync|external monitor|client-capable).{0,120}(child|sub-orchestration)|(?:child|sub-orchestration).{0,120}(TerminateAsync|TerminateInstanceAsync|external monitor|client-capable)"
       - type: output-not-matches
         config:
-          pattern: "(?is)((cancel(?:ing|lation)?|CancellationToken).{0,40}timer|timer.{0,20}cancel(?:s|ing|lation)?)(?!.{0,40}(does not|doesn't|cannot|can't|won't)).{0,60}(terminates?|cancels?|stops?).{0,40}(child|sub-orchestration|activity)"
+          pattern: "(?is)((cancel(?:ing|lation)?|CancellationToken)[^.!?\\n]{0,60}timer|timer[^.!?\\n]{0,40}cancel(?:s|ing|lation)?)(?!(?:[^.!?\\n]{0,160})\\b(?:does not|doesn't|cannot|can't|won't|not)\\b)[^.!?\\n]{0,160}\\b(?:terminates?|cancels?|stops?)\\b[^.!?\\n]{0,80}\\b(?:child|sub-orchestration|activity)\\b"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.7
       - type: completed
       # Global: no_runtime_failure
       - type: output-not-matches
         config:
-          pattern: "(?i)fatal error|unhandled exception|stack trace"
+          pattern: "(?im)^(?:fatal error|unhandled exception)(?:\\s|:)"

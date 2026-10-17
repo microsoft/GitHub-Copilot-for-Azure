@@ -17,6 +17,7 @@ type GrayMatterWithYamlEngine = typeof matter & {
 
 type Stimuli = {
   name?: string;
+  rubric?: unknown;
   graders?: Array<{
     type?: string;
     config?: unknown;
@@ -137,6 +138,24 @@ export function validateEarlyTerminatePatterns(value: string | undefined): strin
         return `tags.earlyTerminate[${conditionIndex}].${patternName} must be a valid JavaScript regular expression`;
       }
     }
+  }
+
+  return undefined;
+}
+
+export function validateRubric(value: unknown): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (
+    !Array.isArray(value)
+    || value.length === 0
+    || value.some(
+      criterion => typeof criterion !== "string" || criterion.trim().length === 0
+    )
+  ) {
+    return "rubric must be a non-empty array of non-empty strings";
   }
 
   return undefined;
@@ -515,6 +534,17 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
         typedStimulus.name,
         typedStimulus.tags?.requiredSkills
       )) {
+        fileHasErrors = true;
+      }
+
+      const rubricError = validateRubric(typedStimulus.rubric);
+      if (rubricError) {
+        reportValidationError(
+          displayPath,
+          stimulusIndex,
+          typedStimulus.name,
+          rubricError,
+        );
         fileHasErrors = true;
       }
 
