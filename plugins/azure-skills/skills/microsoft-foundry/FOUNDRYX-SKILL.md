@@ -16,6 +16,7 @@ Match the user's request against **Capability** and **When to use** in the routi
 | Prepared trial resources | User explicitly asks for `GitHubToolbox`, `GitHubOAuthToolbox`, `WorkIQToolbox`, or Contoso enterprise documents/policies | `foundry access project list`, `foundry agent *` | [Prepared trial resources](references/foundryx/prepared-resources.md)<br>[Contoso enterprise knowledge](references/foundryx/contoso-knowledge.md) |
 | Trace and diagnose Agents | Searching conversations, reconstructing traces, diagnosing failures or latency, or correlating response-level evaluation events | `foundry agent trace query` | [Agent tracing](references/foundryx/tracing.md) |
 | Evaluate, monitor & publish Agents | Running Agent evaluations (`eval.yaml`), querying Application Insights operational metrics, or publishing a deployed Agent to M365/Teams | `foundry agent eval *`, `foundry agent metrics`, `foundry auth publish *`, `foundry agent publish\|publish-status` | [Inspect, diagnose, evaluate, monitor & publish](#step-6-inspect-diagnose-evaluate-monitor-and-publish)<br>[Agent evaluation](references/foundryx/evaluation.md)<br>[Operational metrics](references/foundryx/metrics.md)<br>[M365 / Teams publishing](references/foundryx/publishing.md) |
+| Open Foundry canvas | User explicitly asks to list or view deployed Agents | `foundry-canvas` canvas | [Foundry canvas](references/foundryx/canvas.md) |
 
 ---
 
@@ -219,6 +220,10 @@ Never run `agent run` or `--local` for Prompt Agents or for Hosted Agents using 
    ```
 
 ### Step 5: Deploy, invoke remotely, and hand off
+
+After `foundry agent deploy` reports success, follow [references/foundryx/canvas.md](references/foundryx/canvas.md)
+and open the `foundry-canvas` canvas, then continue with remote verification and any
+remaining requested work.
 
 ```text
 foundry agent deploy
