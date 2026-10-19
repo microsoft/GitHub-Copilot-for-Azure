@@ -49,4 +49,4 @@ services:
 
 The wrapper must omit target-owned fields such as `model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration`, environment settings, and session policies.
 
-Add explicit `audio` configuration only when the user requires non-default format, voice, transcription, VAD, noise reduction, or echo cancellation. Keep target and wrapper names distinct and deploy the target before or together with the wrapper.
+When the user requests wrapper customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing audio/voice, greeting/avatar, modalities, or storage. Keep target and wrapper names distinct and deploy the target before or together with the wrapper.

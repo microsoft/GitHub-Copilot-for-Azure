@@ -56,6 +56,6 @@ For an existing project deployment, omit a new `deployments` entry and use its e
 
 ## Optional Configuration
 
-Prompt Voice may configure `audio`, `greeting`, `outputModalities`, `tools`, `handoff`, `structuredInputs`, `telephony`, and output limits directly on the service. Do not set `parallelToolCalls: true`; current azd validation rejects it.
+When the user requests customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing `audio`, structured inputs, tools, greeting/avatar, handoff, response options, storage, or telephony.
 
 Common defaults are PCM at 24 kHz, Azure Speech transcription, server VAD, audio output, and `en-US-AvaNeural`. Override only when requested or required by an existing definition.
