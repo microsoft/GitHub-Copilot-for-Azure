@@ -19,7 +19,7 @@ Rules shared by Prompt Voice and Hosted Voice services in `azure.yaml`.
 3. Stop when both engines or neither engine are declared.
 4. Never use obsolete `modelType: hosted_agent` or `targetAgent`.
 5. Keep Hosted Voice target and wrapper service keys and `name` values distinct.
-6. Omit `store` for generic new services and preserve any existing explicit value. Author it only for explicit retention intent.
+6. Preserve existing optional settings and omit optional fields the user did not request.
 
 ## Lifecycle Boundaries
 

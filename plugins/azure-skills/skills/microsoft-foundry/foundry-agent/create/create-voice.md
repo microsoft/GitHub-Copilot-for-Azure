@@ -75,7 +75,7 @@ Explicit user choices override these defaults. Ask only when an unresolved requi
 
 For planning or comparison, explain Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
 
-Detect explicit advanced settings in the request or existing Voice service, including structured inputs, audio format, transcription, VAD/turn detection, noise/echo processing, output voice controls, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask an advanced-settings questionnaire when none are requested. Handle storage only when requested or already explicit; otherwise omit it.
+Detect requested Voice Agent settings or existing settings that must be preserved, including structured inputs, audio, transcription, turn detection, voice, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask about settings the user did not request.
 
 Resolve values from the request, workspace, `azure.yaml`, and active azd environment before asking. Do not author files until this checkpoint is complete:
 
@@ -99,11 +99,11 @@ Always read [Voice Agent common invariants](references/voice-agent-common.md).
 
 - For **Prompt Voice**, read [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
 - For **Hosted Voice**, read [Hosted Voice YAML](references/hosted-voice-yaml.md) and [Hosted Voice Bridge `1.0`](references/voice-agent-hosted-bridge.md).
-- Only when advanced customization is requested or existing settings must be preserved, read [Voice Agent advanced settings](references/voice-agent-settings.md).
+- When requested settings require YAML edits or existing settings must be preserved, read [Voice Agent YAML settings](references/voice-agent-settings.md).
 
 Do not load the other subtype's YAML reference unless the user asks for a comparison or migration.
 
-Before editing advanced settings, map every requested field to the Prompt Voice service, Hosted Voice wrapper, or Hosted target using the advanced-settings ownership table. Preserve all unrelated existing advanced fields and edit only the requested YAML paths.
+Before editing settings, map every requested field to the Prompt Voice service, Hosted Voice wrapper, or Hosted target using the settings ownership table. Preserve unrelated existing fields and edit only the requested YAML paths.
 
 ## Step 4: Initialize or Update
 

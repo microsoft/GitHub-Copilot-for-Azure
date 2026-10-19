@@ -1002,7 +1002,7 @@ stimuli:
       "Create a Microsoft Foundry Voice Agent for me."
     rubric:
       - "Defaults the generic greenfield request to Prompt Voice with modelType: managed and model.id: gpt-realtime instead of requiring the user to choose a subtype."
-      - "States canonical kind: voice, leaves voice unspecified for the azd default, and omits store because the user did not express retention intent."
+      - "States canonical kind: voice, leaves voice unspecified for the azd default, and does not add unrequested YAML settings."
       - "Explains that explicit Hosted Voice, custom-code, BYOM/self-deployed, or existing deployment intent overrides the default and may require clarification."
       - "Describes automated managed Voice WebSocket smoke verification followed by a Foundry Voice Agent playground URL and manual audio-to-audio experience validation."
     tags:
@@ -1031,8 +1031,8 @@ stimuli:
             Pass only if the response chooses managed Prompt Voice as the
             default for this generic greenfield request, states gpt-realtime,
             canonical kind: voice, leaves voice unspecified so azd applies its
-            default unless requested, omits store because retention was not
-            requested, and does
+            default unless requested, does not add unrequested YAML settings,
+            and does
             not require the user to select among Voice subtypes before
             proceeding. It may mention alternatives, but only as overrides for
             explicit Hosted Voice/custom-code, BYOM/self-deployed, existing
@@ -1059,7 +1059,7 @@ stimuli:
     rubric:
       - "Requires the dependency/environment preflight, Common Project Context Resolution, new-versus-existing project choice, and inline AZURE_DEV_USER_AGENT=microsoft_foundry_skill before azd use."
       - "Explains the model-first options (managed real-time model via modelType: managed, project model deployment via modelType: self_deployed, and Hosted Voice via conversationEngine.type: hosted_agent)."
-      - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id, then normalizes the generated service to kind: voice; the authored azure.yaml uses kind: voice, modelType: managed, model.id: gpt-realtime, and the explicitly requested en-US-AvaNeural voice without adding store."
+      - "Shows azd ai agent init --no-prompt --kind prompt-voice with --project-id, then normalizes the generated service to kind: voice; the authored azure.yaml uses kind: voice, modelType: managed, model.id: gpt-realtime, and the explicitly requested en-US-AvaNeural voice."
       - "States that azd ai agent invoke does not support Voice Agents, runs or describes the automated managed Voice WebSocket smoke gate, and provides the Foundry Voice Agent playground as the recommended manual audio-to-audio follow-up."
     tags:
       type: integration
@@ -1120,8 +1120,8 @@ stimuli:
                service block with properties directly under the service block
                (not nested under config:), including canonical kind: voice,
                modelType: managed, model: { id: gpt-realtime }, and the
-               explicitly requested en-US-AvaNeural voice without adding store
-               or requiring a deployment entry under
+               explicitly requested en-US-AvaNeural voice without requiring a
+               deployment entry under
                services.ai-project.deployments for the managed model.
                It explains that init may generate kind: prompt-voice and
                immediately normalizes that field to kind: voice.
@@ -1154,7 +1154,7 @@ stimuli:
       errors vs Prompt Voice troubleshooting, and distinguish Hosted Voice from
       a custom Hosted real-time/audio agent using raw invocations_ws.
     rubric:
-      - "Defines two distinct services in azure.yaml with properties directly under each service block: a kind: hosted target (travel-target) with invocations_ws 1.0.0 and Bridge 1.0 metadata, and a kind: voice wrapper (travel-voice) with conversationEngine: { type: hosted_agent, name: travel-target }, without adding store."
+      - "Defines two distinct services in azure.yaml with properties directly under each service block: a kind: hosted target (travel-target) with invocations_ws 1.0.0 and Bridge 1.0 metadata, and a kind: voice wrapper (travel-voice) with conversationEngine: { type: hosted_agent, name: travel-target }."
       - "Describes the Bridge 1.0 event flow over /invocations_ws (session.start -> session.ready, user.message -> response.created -> response.output_text.delta / response.output_text.done -> response.done) and explains protocol_mismatch vs Prompt Voice troubleshooting."
       - "Distinguishes a managed Foundry Voice Agent (kind: voice over the voice protocol endpoint) from a custom Hosted real-time/audio agent over raw invocations_ws."
     tags:
@@ -1214,7 +1214,7 @@ stimuli:
                metadata voiceLiveCompatible: "true" and bridgeProtocolVersion: "1.0",
                and a kind: voice wrapper (travel-voice) with
                conversationEngine: { type: hosted_agent, name: travel-target },
-               without adding store and omitting modelType/model/instructions on the wrapper.
+               omitting modelType/model/instructions on the wrapper.
             2. Describes the Bridge 1.0 event flow on /invocations_ws
                (session.start with protocol_version: "1.0" -> session.ready,
                user.message -> response.created -> response.output_text.delta /

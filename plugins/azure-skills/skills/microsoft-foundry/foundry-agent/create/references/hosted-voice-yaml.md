@@ -48,4 +48,4 @@ services:
 
 The wrapper must omit target-owned fields such as `model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration`, environment settings, and session policies.
 
-When the user requests wrapper customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing audio/voice, greeting/avatar, modalities, or storage. Preserve `store` when it already exists in an adopted sample; otherwise omit it unless the user explicitly addresses retention. Keep target and wrapper names distinct and deploy the target before or together with the wrapper.
+When requested wrapper settings require YAML edits, load [Voice Agent YAML settings](voice-agent-settings.md). Preserve unrelated existing wrapper fields, keep target and wrapper names distinct, and deploy the target before or together with the wrapper.

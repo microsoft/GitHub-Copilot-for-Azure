@@ -1,6 +1,6 @@
-# Voice Agent Advanced Settings
+# Voice Agent YAML Settings
 
-Load only for requested or preserved settings. Source beta.20 (introduced beta.13). Init exposes model/simple voice; edit `kind: voice` YAML for the rest.
+Load after init when requested settings require YAML edits or existing settings must be preserved. Source beta.20. Edit canonical `kind: voice` YAML and preserve unrelated fields.
 
 ## Ownership and Confidence
 
@@ -14,7 +14,7 @@ Load only for requested or preserved settings. Source beta.20 (introduced beta.1
 
 Hosted wrappers forbid model, instructions, `structuredInputs`, tools/`toolChoice`, `parallelToolCalls`, `maxOutputTokens`, `include`, `handoff`, and target fields. `parallelToolCalls` is rejected. Telephony is verified only for Prompt Voice.
 
-## Verified YAML Paths
+## Advanced Settings
 
 ```yaml
 structuredInputs:                 # Prompt Voice only
@@ -58,7 +58,7 @@ audio:
 
 Defaults: PCM 24 kHz, `server_vad`, `azure-speech`, `[audio]`, and azd's output voice. Omit overrides unless requested.
 
-## Other Supported Fields
+### Behavior and Response Settings
 
 ```yaml
 greeting: { type: template, text: "Hello {{persona}}" }
@@ -68,15 +68,26 @@ tools: [{ type: system, name: end_conversation }] # Prompt Voice only; service-o
 toolChoice: auto
 maxOutputTokens: inf              # or integer 1–2147483647
 include: [item.input_audio_transcription.phrases]
-telephony:                        # Prompt Voice only
+```
+
+Phrase inclusion requires `azure-speech` or `azure-fast-transcription`. Preserve verified shapes for `handoff` and other opaque maps.
+
+## Data Persistence
+
+`store` defaults to `false` when omitted. Set `true` to persist the transcript, event timeline, and raw audio; set `false` to explicitly disable persistence. Preserve an existing explicit value unless the user requests a change.
+
+## Telephony Bindings
+
+Prompt Voice supports provider bindings:
+
+```yaml
+telephony:
   bindings:
     - provider: twilio            # or acs
       identifier: "+14255550123"  # ACS: 28:orgid:<guid> or 4:+<E.164>
       connection: telephony-twilio
 ```
 
-Phrase inclusion requires `azure-speech` or `azure-fast-transcription`. Preserve verified shapes for `handoff` and other opaque maps.
-
-`store` is optional privacy/operations config, not audio customization. Omitted defaults to `false`. Preserve explicit values; write `false` for requested no retention, or `true` after confirming transcript/per-turn audio retention intent.
+Do not author telephony on a Hosted wrapper without newer source proof.
 
 After the smoke gate, validate voice, VAD, STT, telephony, avatar, interruption, playback, devices, and latency manually in the playground.
