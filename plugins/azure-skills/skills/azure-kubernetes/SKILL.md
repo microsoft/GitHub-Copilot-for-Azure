@@ -133,9 +133,10 @@ If the user is unsure, use safe defaults.
 ### 9. Cost Controls
 - Use **Spot node pools** for batch/interruptible workloads (up to 90% savings)
 - **Stop/Start** dev/test clusters: `az aks stop/start`
-- Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
-**Deep-dive scenarios** — load only the relevant reference file:
+#### Core AKS Cost Controls
+
+For a focused request, load only the relevant reference file.
 
 | Scenario | Trigger Keywords | Reference |
 |----------|-----------------|-----------|
@@ -145,6 +146,23 @@ If the user is unsure, use safe defaults.
 | Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
 
 > **Disambiguation:** If a prompt matches multiple rows (e.g., "cheaper nodes" could suggest both Spot and autoscaler), prefer the most specific match. If ambiguous, ask the user to clarify their intent before loading a reference file.
+
+#### Comprehensive AKS Cost Review
+
+When the user requests an overall AKS cost assessment rather than one specific
+cost control, this skill owns triage and coordinates one unified review:
+
+1. Confirm the target subscription, resource group, and AKS cluster. If `cost-analysis` is available, collect one billed-cost baseline for that scope and reuse it throughout the review.
+2. Evaluate the applicable rightsizing, VPA, Cluster Autoscaler, and Spot workflows.
+3. Invoke `aks-cost-optimization` when available for NAP readiness, node-pool bin packing, node-scaling bottlenecks, or Kubernetes-to-Azure storage optimization.
+
+Investigate applicable levers and return one ranked report. Rank by comparable
+estimated cost impact when available; keep unknown monetary impact unknown
+rather than zero. Do not present one narrow analysis as the complete review.
+Mark unavailable capabilities or evidence as gaps.
+
+| Rank | Lever | Evidence | Estimated cost impact and basis | Risk | Approval needed | Confidence |
+|---|---|---|---|---|---|---|
 
 ## Guardrails / Safety
 - Do not request or output secrets (tokens, keys).
