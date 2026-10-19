@@ -9,9 +9,8 @@
 #   - The dependency-caching trick creates a dummy main.rs, builds
 #     dependencies, then replaces it with real source — this avoids
 #     rebuilding all deps on every source change
-#   - The final image uses distroless/cc which includes libgcc/libstdc++
-#     needed by the default Rust allocator; if you use musl
-#     (--target x86_64-unknown-linux-musl) switch to distroless/static
+#   - The final image uses the Azure Linux distroless base. If your binary
+#     needs additional shared libraries, copy them from the build stage.
 #   - For workspace builds, copy the whole workspace in one shot and adjust
 #     the binary path in the final COPY
 # =============================================================================
@@ -19,15 +18,14 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-# Base: current stable Rust, Debian-slim. See references/base-images.md.
-FROM rust:<LATEST_STABLE_RUST>-slim AS build
+# Base: current stable Rust on Azure Linux. See references/base-images.md.
+FROM mcr.microsoft.com/azurelinux/base/rust:<LATEST_STABLE_RUST> AS build
 
 WORKDIR /app
 
 # Install build dependencies (if any native libs are needed, add them here)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends pkg-config libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+RUN tdnf install -y pkg-config openssl-devel \
+    && tdnf clean all
 
 # Layer caching: build dependencies separately from application code.
 # 1. Copy only the manifests and create a dummy main to compile deps.
@@ -51,7 +49,7 @@ RUN test -f /app/target/release/app || (echo "ERROR: Binary 'app' not found at /
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM gcr.io/distroless/cc-debian12
+FROM mcr.microsoft.com/azurelinux/distroless/base:3.0
 
 WORKDIR /app
 
