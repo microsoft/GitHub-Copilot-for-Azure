@@ -9,7 +9,8 @@ import {
   test,
   vi,
 } from "vitest";
-import { convertToTrajectoryEvents } from "../agent-runner.ts";
+import { convertToTrajectoryEvents, type AgentMetadata } from "../agent-runner.ts";
+import * as agentRunner from "../agent-runner.ts";
 import { useClaudeAgentRunner } from "../claude-sdk-runner.ts";
 
 const mocks = vi.hoisted(() => ({
@@ -36,7 +37,139 @@ describe("claude-sdk-runner", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     fs.rmSync(mocks.skillsDirectory, { recursive: true, force: true });
+  });
+
+  test.each([new Error("query failed"), "query failed"])("returns metadata when query throws %s", async (error) => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.query.mockImplementation(() => {
+      throw error;
+    });
+
+    const runner = useClaudeAgentRunner({ testName: "query-failure" });
+    const metadata = await runner.run({
+      prompt: "Start the run.",
+      followUp: ["Do not send this prompt."],
+    });
+
+    expect(metadata.testComments).toEqual(["Agent runner error: query failed"]);
+    expect(metadata.events).toEqual([]);
+    expect(metadata.rawData).toBeUndefined();
+    expect(metadata.turnCount).toBe(0);
+    expect(metadata.toolCounts).toEqual({});
+    expect(metadata.skillFiles).toEqual({});
+    expect(metadata.skillsLoaded).toEqual([{ name: "azure-ai" }]);
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(logError).toHaveBeenCalledWith("Agent runner error:", "query failed");
+    expect(fs.existsSync(mocks.query.mock.calls[0][0].options.cwd)).toBe(false);
+  });
+
+  test.each([false, true])("preserves collected data when a message stream fails (follow-up=%s)", async (isFollowUp) => {
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const completedMessages: SDKMessage[] = [{
+      type: "result",
+      subtype: "success",
+      uuid: "00000000-0000-4000-8000-000000000001",
+      session_id: "session-1",
+      is_error: false,
+      result: "Done",
+      duration_ms: 10,
+      duration_api_ms: 10,
+      num_turns: 1,
+      stop_reason: "end_turn",
+      total_cost_usd: 0,
+      usage: {
+        input_tokens: 3,
+        output_tokens: 7,
+        cache_read_input_tokens: 0,
+        cache_creation_input_tokens: 0,
+        cache_creation: {
+          ephemeral_1h_input_tokens: 0,
+          ephemeral_5m_input_tokens: 0,
+        },
+        fallback_credit: null,
+        inference_geo: "global",
+        iterations: [],
+        output_tokens_details: { thinking_tokens: 0 },
+        server_tool_use: { web_fetch_requests: 0, web_search_requests: 0 },
+        service_tier: "standard",
+        speed: "standard",
+      },
+      modelUsage: {},
+      permission_denials: [],
+    }];
+    const partialMessages = [
+      assistantToolMessage("message-1", "read-call", "Read", {
+        file_path: path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
+      }),
+      toolResultMessage("read-result", "read-call", "skill contents"),
+    ] as SDKMessage[];
+    const runner = useClaudeAgentRunner({ testName: "stream-failure" });
+    const config = {
+      model: "claude-sonnet-5",
+      prompt: "Start the run.",
+      followUp: isFollowUp ? ["Continue the run."] : [],
+    };
+    if (isFollowUp) {
+      mocks.query.mockReturnValueOnce(toAsyncIterable(completedMessages));
+    }
+    mocks.query.mockReturnValueOnce(toAsyncIterable(partialMessages));
+    const expected = await runner.run(config);
+
+    mocks.query.mockReset();
+    if (isFollowUp) {
+      mocks.query.mockReturnValueOnce(toAsyncIterable(completedMessages));
+    }
+    mocks.query.mockReturnValueOnce((async function* () {
+      yield* partialMessages;
+      throw new Error("stream failed");
+    })());
+
+    const metadata = await runner.run({
+      ...config,
+      followUp: [...config.followUp, "Do not send this prompt."],
+    });
+
+    expect(metadata).toEqual({
+      ...expected,
+      testComments: ["Agent runner error: stream failed"],
+    });
+    expect(metadata.rawData).toEqual(isFollowUp
+      ? [...completedMessages, ...partialMessages]
+      : partialMessages);
+    expect(metadata.toolCounts).toEqual({ read: 1 });
+    expect(metadata.turnCount).toBe(isFollowUp ? 1 : 0);
+    expect(mocks.query).toHaveBeenCalledTimes(isFollowUp ? 2 : 1);
+    expect(logError).toHaveBeenCalledWith("Agent runner error:", "stream failed");
+    expect(fs.existsSync(mocks.query.mock.calls.at(-1)![0].options.cwd)).toBe(false);
+  });
+
+  test("records unexpected errors before rethrowing without discarding collected data", async () => {
+    const error = new Error("statistics failed");
+    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(agentRunner, "computeToolAndSkillStats").mockImplementation(() => {
+      throw error;
+    });
+    const message = assistantToolMessage("message-1", "read-call", "Read", {
+      file_path: path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
+    }) as SDKMessage;
+    mocks.query.mockReturnValue(toAsyncIterable([message]));
+    let collectedMetadata: AgentMetadata | undefined;
+
+    const runner = useClaudeAgentRunner({ testName: "unexpected-failure" });
+    await expect(runner.run({
+      prompt: "Start the run.",
+      shouldEarlyTerminate: metadata => {
+        collectedMetadata = metadata;
+        return false;
+      },
+    })).rejects.toBe(error);
+
+    expect(collectedMetadata?.testComments).toEqual(["Agent runner error: statistics failed"]);
+    expect(collectedMetadata?.rawData).toEqual([message]);
+    expect(collectedMetadata?.events.length).toBeGreaterThan(0);
+    expect(logError).toHaveBeenCalledWith("Agent runner error:", "statistics failed");
   });
 
   test("translates skill, reference read, and MCP tool messages", async () => {

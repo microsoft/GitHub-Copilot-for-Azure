@@ -164,30 +164,37 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
 
       for (const prompt of [runConfig.prompt, ...(runConfig.followUp ?? [])]) {
         const eventCountBeforePrompt = metadata.events.length;
-        const response = query({
-          prompt,
-          options: {
-            ...baseOptions,
-            ...(sessionId ? { resume: sessionId } : {}),
-          },
-        });
+        try {
+          const response = query({
+            prompt,
+            options: {
+              ...baseOptions,
+              ...(sessionId ? { resume: sessionId } : {}),
+            },
+          });
 
-        for await (const message of response) {
-          sessionId = "session_id" in message ? message.session_id : sessionId;
+          for await (const message of response) {
+            sessionId = "session_id" in message ? message.session_id : sessionId;
 
-          lastEventId = appendSessionEvents(
-            metadata,
-            translationState,
-            message,
-            runConfig.model,
-            eventCountBeforePrompt,
-            lastEventId,
-          );
+            lastEventId = appendSessionEvents(
+              metadata,
+              translationState,
+              message,
+              runConfig.model,
+              eventCountBeforePrompt,
+              lastEventId,
+            );
 
-          if (runConfig.shouldEarlyTerminate?.(metadata)) {
-            abortController.abort();
-            break;
+            if (runConfig.shouldEarlyTerminate?.(metadata)) {
+              abortController.abort();
+              break;
+            }
           }
+        } catch (error) {
+          const errorDetails = error instanceof Error ? error.message : String(error);
+          metadata.testComments.push(`Agent runner error: ${errorDetails}`);
+          console.error("Agent runner error:", errorDetails);
+          break;
         }
       }
 
@@ -202,6 +209,9 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
 
       return metadata;
     } catch (error) {
+      const errorDetails = error instanceof Error ? error.message : String(error);
+      metadata.testComments.push(`Agent runner error: ${errorDetails}`);
+      console.error("Agent runner error:", errorDetails);
       if (timedOut) {
         throw new Error(`Claude agent run timed out after ${runConfig.timeout} ms.`, {
           cause: error,

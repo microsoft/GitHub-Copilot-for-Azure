@@ -838,8 +838,8 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
       }
     }
 
-    // Write structured agent-metadata.json for machine consumption
-    const jsonPath = path.join(dir, "agent-metadata.json");
+    // Match the final markdown filename, including any collision suffix.
+    const jsonPath = reportTargetPath.replace(/\.md$/, ".json");
     const jsonData = {
       prompt: config.prompt || "",
       events: agentMetadata.events,
@@ -855,7 +855,7 @@ function writeMarkdownReport(testName: string, config: AgentRunConfig, agentMeta
     // Write per-run tool-usage JSON (Phase 1: capture for review). Named to match
     // this run's markdown report so the tool sequence for a specific run can be
     // reconstructed even when the same stimulus runs multiple times in one
-    // directory (where agent-metadata.json is overwritten). Best-effort: never
+    // directory. Best-effort: never
     // fail a test because capture failed.
     try {
       const toolUsagePath = deriveToolUsageFileName(reportTargetPath);
