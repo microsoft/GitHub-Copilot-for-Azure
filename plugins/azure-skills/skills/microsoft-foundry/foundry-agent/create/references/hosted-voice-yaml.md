@@ -44,9 +44,8 @@ services:
       type: template
       text: Hello! How can I help?
     outputModalities: [audio]
-    store: false
 ```
 
 The wrapper must omit target-owned fields such as `model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration`, environment settings, and session policies.
 
-When the user requests wrapper customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing audio/voice, greeting/avatar, modalities, or storage. Keep target and wrapper names distinct and deploy the target before or together with the wrapper.
+When the user requests wrapper customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing audio/voice, greeting/avatar, modalities, or storage. Preserve `store` when it already exists in an adopted sample; otherwise omit it unless the user explicitly addresses retention. Keep target and wrapper names distinct and deploy the target before or together with the wrapper.

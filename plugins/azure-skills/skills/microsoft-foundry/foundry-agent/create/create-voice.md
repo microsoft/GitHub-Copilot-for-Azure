@@ -65,7 +65,6 @@ For a generic greenfield request to create a Voice Agent, proceed with **Prompt 
 - `modelType: managed`
 - `model.id: gpt-realtime`
 - canonical authored `kind: voice`
-- `store: false`
 
 Explicit user choices override these defaults. Ask only when an unresolved requirement materially changes the architecture:
 
@@ -76,7 +75,7 @@ Explicit user choices override these defaults. Ask only when an unresolved requi
 
 For planning or comparison, explain Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
 
-Detect explicit advanced settings in the request or existing Voice service, including structured inputs, audio format, transcription, VAD/turn detection, noise/echo processing, output voice controls, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask an advanced-settings questionnaire when none are requested.
+Detect explicit advanced settings in the request or existing Voice service, including structured inputs, audio format, transcription, VAD/turn detection, noise/echo processing, output voice controls, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask an advanced-settings questionnaire when none are requested. Handle storage only when requested or already explicit; otherwise omit it.
 
 Resolve values from the request, workspace, `azure.yaml`, and active azd environment before asking. Do not author files until this checkpoint is complete:
 
@@ -91,7 +90,6 @@ Resolve values from the request, workspace, `azure.yaml`, and active azd environ
 | Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; inspect or ask for self-deployed/Hosted target models |
 | Instructions | Preserve existing instructions or collect the requested behavior |
 | Output voice | Preserve an existing value or use the user's requested voice; otherwise omit it and use the azd default |
-| Storage | Default to `store: false`; enabling storage requires an explicit privacy and retention decision |
 
 State every applied default clearly before authoring.
 

@@ -17,7 +17,6 @@ services:
     model:
       id: gpt-realtime
     instructions: Respond naturally and concisely.
-    store: false
 ```
 
 ## Project Model Deployment
@@ -47,13 +46,12 @@ services:
     model:
       id: gpt-4o-mini
     instructions: Respond naturally and concisely.
-    store: false
 ```
 
 For an existing project deployment, omit a new `deployments` entry and use its exact deployment name.
 
 ## Optional Configuration
 
-When the user requests customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing `audio`, structured inputs, tools, greeting/avatar, handoff, response options, storage, or telephony.
+When the user requests customization, load [Voice Agent advanced settings](voice-agent-settings.md) before editing `audio`, structured inputs, tools, greeting/avatar, handoff, response options, storage, or telephony. Preserve an existing explicit `store`; otherwise omit it unless retention intent is explicit.
 
 Common defaults include PCM at 24 kHz, Azure Speech transcription, server VAD, and audio output. Omit `voice` unless requested or required by an existing definition so azd applies its default.

@@ -1,6 +1,6 @@
 # Voice Agent Advanced Settings
 
-Load only for requested customization or preserving existing settings. Source: beta.20; advanced settings landed in beta.13. `azd ai agent init` exposes only model and simple voice; use `kind: voice` YAML for the rest.
+Load only for requested or preserved settings. Source beta.20 (introduced beta.13). Init exposes model/simple voice; edit `kind: voice` YAML for the rest.
 
 ## Ownership and Confidence
 
@@ -10,9 +10,9 @@ Load only for requested customization or preserving existing settings. Source: b
 | Hosted wrapper | Audio/voice, avatar, greeting, modalities, store |
 | Hosted target | Model/instructions, tools and conversation logic |
 
-**Typed/validated:** audio formats, turn detection, transcription, noise-reduction type, output voice/speed, modalities, max tokens, and Prompt Voice telephony. **Mapped/pass-through:** `structuredInputs` contents, tools/tool choice, greeting, avatar, handoff, echo cancellation, and include values. Preserve source-tested shapes; do not invent opaque fields.
+**Typed/validated:** audio, turn detection, transcription, modalities, max tokens, and Prompt Voice telephony. **Pass-through:** structured-input contents, tools, greeting/avatar/handoff, echo cancellation, and include values. Preserve verified shapes.
 
-Hosted wrappers forbid model, instructions, `structuredInputs`, tools/`toolChoice`, `parallelToolCalls`, `maxOutputTokens`, `include`, `handoff`, and target-owned runtime fields. `parallelToolCalls` is rejected everywhere. Telephony is verified for Prompt Voice only; do not author it on a Hosted wrapper without newer source proof.
+Hosted wrappers forbid model, instructions, `structuredInputs`, tools/`toolChoice`, `parallelToolCalls`, `maxOutputTokens`, `include`, `handoff`, and target fields. `parallelToolCalls` is rejected. Telephony is verified only for Prompt Voice.
 
 ## Verified YAML Paths
 
@@ -56,7 +56,7 @@ audio:
     speed: 1.1                    # 0.25–1.5
 ```
 
-Defaults: PCM 24 kHz, `server_vad`, `azure-speech`, `outputModalities: [audio]`, and azd's default output voice. Omit explicit overrides unless requested.
+Defaults: PCM 24 kHz, `server_vad`, `azure-speech`, `[audio]`, and azd's output voice. Omit overrides unless requested.
 
 ## Other Supported Fields
 
@@ -68,7 +68,6 @@ tools: [{ type: system, name: end_conversation }] # Prompt Voice only; service-o
 toolChoice: auto
 maxOutputTokens: inf              # or integer 1–2147483647
 include: [item.input_audio_transcription.phrases]
-store: false
 telephony:                        # Prompt Voice only
   bindings:
     - provider: twilio            # or acs
@@ -76,6 +75,8 @@ telephony:                        # Prompt Voice only
       connection: telephony-twilio
 ```
 
-`item.input_audio_transcription.phrases` requires `azure-speech` or `azure-fast-transcription`. For `handoff` or other opaque maps, preserve a verified existing/service sample shape.
+Phrase inclusion requires `azure-speech` or `azure-fast-transcription`. Preserve verified shapes for `handoff` and other opaque maps.
 
-After deployment, the smoke test remains the technical gate. Validate voice, VAD, STT, telephony, avatar, interruption, playback, device behavior, and perceived latency manually in the Foundry Voice Agent playground.
+`store` is optional privacy/operations config, not audio customization. Omitted defaults to `false`. Preserve explicit values; write `false` for requested no retention, or `true` after confirming transcript/per-turn audio retention intent.
+
+After the smoke gate, validate voice, VAD, STT, telephony, avatar, interruption, playback, devices, and latency manually in the playground.
