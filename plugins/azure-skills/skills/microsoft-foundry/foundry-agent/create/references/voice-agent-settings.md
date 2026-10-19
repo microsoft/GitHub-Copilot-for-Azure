@@ -47,7 +47,7 @@ audio:
     format: { type: audio/pcm, rate: 24000 }
     voice:
       type: azure-standard           # or openai
-      name: en-US-AvaNeural
+      name: en-US-Ava:DragonHDLatestNeural
       style: cheerful
       pitch: "+0Hz"
       rate: "+0%"
@@ -56,7 +56,7 @@ audio:
     speed: 1.1                    # 0.25–1.5
 ```
 
-Defaults: PCM 24 kHz, `server_vad`, `azure-speech`, and `outputModalities: [audio]`. azd internally defaults to `en-US-Ava:DragonHDLatestNeural`; this skill explicitly authors `en-US-AvaNeural`.
+Defaults: PCM 24 kHz, `server_vad`, `azure-speech`, `outputModalities: [audio]`, and azd's default output voice. Omit explicit overrides unless requested.
 
 ## Other Supported Fields
 

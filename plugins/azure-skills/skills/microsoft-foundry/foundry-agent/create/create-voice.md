@@ -65,7 +65,6 @@ For a generic greenfield request to create a Voice Agent, proceed with **Prompt 
 - `modelType: managed`
 - `model.id: gpt-realtime`
 - canonical authored `kind: voice`
-- `voice: en-US-AvaNeural`
 - `store: false`
 
 Explicit user choices override these defaults. Ask only when an unresolved requirement materially changes the architecture:
@@ -91,7 +90,7 @@ Resolve values from the request, workspace, `azure.yaml`, and active azd environ
 | Model strategy | Default generic creation to managed `gpt-realtime`; ask when BYOM, self-deployed, or an existing deployment is intended |
 | Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; inspect or ask for self-deployed/Hosted target models |
 | Instructions | Preserve existing instructions or collect the requested behavior |
-| Output voice | Default Prompt Voice to `en-US-AvaNeural` only when unspecified |
+| Output voice | Preserve an existing value or use the user's requested voice; otherwise omit it and use the azd default |
 | Storage | Default to `store: false`; enabling storage requires an explicit privacy and retention decision |
 
 State every applied default clearly before authoring.
@@ -118,8 +117,7 @@ For a new project:
 azd ai agent init --no-prompt \
   --kind prompt-voice \
   --agent-name "<agent-name>" \
-  --model "<model-name>" \
-  --voice "<voice-name>"
+  --model "<model-name>"
 ```
 
 For an existing Foundry project:
@@ -129,11 +127,10 @@ azd ai agent init --no-prompt \
   --kind prompt-voice \
   --agent-name "<agent-name>" \
   --project-id "<project-arm-id>" \
-  --model "<model-name>" \
-  --voice "<voice-name>"
+  --model "<model-name>"
 ```
 
-`--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For self-deployed Prompt Voice, initialize the project, then edit the generated service to reference the verified deployment as documented in [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
+Add `--voice "<voice-name>"` only when the user explicitly requests a voice. Otherwise allow azd to apply its default. `--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For self-deployed Prompt Voice, initialize the project, then edit the generated service to reference the verified deployment as documented in [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
 
 Immediately after init, normalize the generated service to canonical `kind: voice` if azd wrote `kind: prompt-voice`, alongside the other generated-YAML edits.
 

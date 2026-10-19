@@ -1002,7 +1002,7 @@ stimuli:
       "Create a Microsoft Foundry Voice Agent for me."
     rubric:
       - "Defaults the generic greenfield request to Prompt Voice with modelType: managed and model.id: gpt-realtime instead of requiring the user to choose a subtype."
-      - "States the canonical kind: voice, en-US-AvaNeural, and store: false defaults."
+      - "States the canonical kind: voice and store: false defaults, and leaves voice unspecified so azd applies its default unless the user requests one."
       - "Explains that explicit Hosted Voice, custom-code, BYOM/self-deployed, or existing deployment intent overrides the default and may require clarification."
       - "Describes automated managed Voice WebSocket smoke verification followed by a Foundry Voice Agent playground URL and manual audio-to-audio experience validation."
     tags:
@@ -1025,9 +1025,6 @@ stimuli:
           pattern: "(?i)gpt-realtime"
       - type: output-matches
         config:
-          pattern: "(?i)en-US-AvaNeural"
-      - type: output-matches
-        config:
           pattern: "(?i)store:\\s*false|store.*false"
       - type: prompt
         config:
@@ -1036,7 +1033,8 @@ stimuli:
           prompt: |
             Pass only if the response chooses managed Prompt Voice as the
             default for this generic greenfield request, states gpt-realtime,
-            canonical kind: voice, en-US-AvaNeural, and store: false, and does
+            canonical kind: voice and store: false, leaves voice unspecified so
+            azd applies its default unless requested, and does
             not require the user to select among Voice subtypes before
             proceeding. It may mention alternatives, but only as overrides for
             explicit Hosted Voice/custom-code, BYOM/self-deployed, existing
