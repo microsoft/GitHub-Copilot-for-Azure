@@ -1,0 +1,492 @@
+name: azure-advisor-cost-optimization-eval
+description: "Validates Azure Advisor cost scope resolution, routing, findings, and read-only response behavior."
+
+tags:
+  type: integration
+  skill: azure-advisor-cost-optimization
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Clarify scope before opening request"
+    prompt: "What Azure resources am I paying for that are no longer being used?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: scope-clarification
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+      max_turns: 2
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+      - type: output-matches
+        config:
+          pattern: "(?i)all accessible subscriptions|one subscription|Advisor Service Groups|service groups"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary)"
+
+  - name: "Route all-subscription idle findings"
+    prompt: "Check all my accessible subscriptions for unused Azure resources and show the Advisor findings."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-not-matches
+        config:
+          pattern: "(?i)assum(ed|ing) the default subscription|default subscription only|fatal error|unhandled exception|stack trace"
+      - type: output-matches
+        config:
+          pattern: "(?i)Scope:\\s*(All accessible subscriptions|Subscription|All accessible Advisor Service Groups|Advisor Service Group)"
+
+  - name: "Use summary-first response for savings optimization"
+    prompt: "Where can I reduce unnecessary Azure spending in subscription 00000000-0000-0000-0000-000000000000?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: current-response
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+          disallowed:
+            - name: "(?i)advisor_recommendation_list"
+      - type: output-matches
+        config:
+          pattern: "(?i)Scope:\\s*Subscription|yearly|annual|accumulated waste|pricing basis|Expand"
+      - type: output-matches
+        config:
+          pattern: "(?i)Advisor found|Recommendation types|Savings"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)monthly savings|monthly equivalent|confirmed (unused|cost.?saving)"
+
+  - name: "Honor explicit subscription scope"
+    prompt: "Find active idle-resource Advisor recommendations only in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scope
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)00000000-0000-0000-0000-000000000000"
+      - type: output-matches
+        config:
+          pattern: "(?i)Scope:\\s*Subscription"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)service.?group aggregate|mixed.*service.?group|fatal error|unhandled exception|stack trace"
+
+  - name: "Reject mixed subscription and Service Group scope"
+    prompt: "Find idle-resource Advisor recommendations in subscription 00000000-0000-0000-0000-000000000000 and Service Group finance-prod."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scope-validation
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 2
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+      - type: output-matches
+        config:
+          pattern: "(?i)choose|either|mutually exclusive|subscription.*service.?group|service.?group.*subscription"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary)"
+
+  - name: "Clarify Advisor idle signal semantics"
+    prompt: "Show resources that have had little or no activity for the past several months across my accessible subscriptions."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: idle-signal-semantics
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)IdleResources|Advisor.*signal|not.*historical utilization|specific duration"
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+          disallowed:
+            - name: "(?i)advisor_recommendation_list"
+
+  - name: "Route generic service-group discovery"
+    prompt: "Show all Advisor service groups I can access and their cost findings."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: service-group-scope
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_(list|summary)"
+
+  - name: "Preserve unavailable pricing findings"
+    prompt: "Show all active Azure Advisor idle-resource findings, including findings where savings pricing is unavailable."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: findings
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)unavailable"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)no recommendations.*because.*pricing|zero.*because.*pricing"
+
+  - name: "Keep billing questions on cost management"
+    prompt: "Show my Azure bill and explain which services caused the increase this month."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: negative-routing
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          disallowed:
+            - azure-advisor-cost-optimization
+
+  - name: "Use active explicit selection for removal artifacts"
+    prompt: "How do I remove unused Azure resources in subscription 00000000-0000-0000-0000-000000000000?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: remediation-routing
+      requiredSkills:
+        - azure-advisor
+        - azure-advisor-cost-user-context
+        - azure-advisor-actionability
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor
+            - azure-advisor-cost-user-context
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_recommendation_summary"
+            - name: "(?i)advisor_remediation_get"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)selected automatically|implicitly selected|all returned resources"
+
+  - name: "Confirm postpone scope and return date"
+    prompt: "Postpone the Azure Advisor idle-resource recommendations for recommendation type 11111111-1111-1111-1111-111111111111 in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-action
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)resource|scope|return date|confirm|selected"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Filter dismiss candidates to idle cost resources"
+    prompt: "Dismiss the Advisor recommendations I cannot delete now in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-action
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 6
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+      - type: output-matches
+        config:
+          pattern: "(?i)Cost|IdleResources|resource|recommendation type|choose|select|confirm"
+      - type: output-matches
+        config:
+          pattern: "(?i)reason"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)dismiss all .*recommendations|postpone all .*recommendations"
+
+  - name: "Require confirmation for cost triage postpone"
+    prompt: "Postpone the top Azure Advisor idle-resource recommendations in subscription 00000000-0000-0000-0000-000000000000 until 2027-01-15."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-safety
+      requiredSkills:
+        - azure-advisor-cost-optimization
+        - azure-advisor
+    constraints:
+      max_turns: 3
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)confirm|confirmation|proposed|2027-01-15"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Use the real Advisor list command for idle findings"
+    prompt: "List active Azure Advisor idle-resource recommendations in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: command-routing
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_list"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)cost-findings|cost-list"
+
+  - name: "Use annual retail threshold semantics"
+    prompt: "Show idle-resource Advisor recommendations with at least 1000 in annual potential savings in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: savings-threshold
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)annual|retail|1000"
+
+  - name: "Report annual savings, cost, and pricing basis"
+    prompt: "Show the active idle-resource opportunities in subscription 00000000-0000-0000-0000-000000000000 with the yearly savings, estimated accumulated cost, currency, and pricing basis for each resource."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-reporting
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)yearly potential savings|annual.*savings|accumulated waste|cost.*estimate|currency|pricing basis|retail"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)monthly potential savings|monthly savings|confirmed (unused|cost.?saving)|unused for [0-9]+ days"
+
+  - name: "Keep savings totals separated by currency"
+    prompt: "Calculate the total annual savings for active idle-resource Advisor recommendations across my accessible subscriptions and show the totals separately by currency."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: currency-aggregation
+      requiredSkills:
+        - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)currency|USD|INR|separate|annual|yearly"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)combined.*currency|converted.*currency|single.*cross.?currency"
+
+  - name: "Report historical Advisor estimates"
+    prompt: "How much realized savings did the idle-resource recommendations produce from 2026-07-01 through 2026-09-30? Use Advisor estimates, not billing data."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: historical-reporting
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Advisor estimate|not.*billing|2026-07-01|2026-09-30"
+
+  - name: "Require dismissal reason and confirmation"
+    prompt: "Dismiss Azure Advisor idle-resource recommendation type 00000000-0000-0000-0000-000000000000 in subscription 00000000-0000-0000-0000-000000000000 because it is intentionally retained."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-safety
+      requiredSkills:
+        - azure-advisor-cost-optimization
+        - azure-advisor
+    constraints:
+      max_turns: 3
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)confirm|confirmation|proposed|intentionally retained"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_update"
+
+  - name: "Do not derive monthly savings"
+    prompt: "How much can I save if I delete this unused App Service plan?"
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: current-response
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: output-not-matches
+        config:
+          pattern: "(?i)monthly savings|monthly equivalent|per month|annual.{0,20}/12|divide.{0,20}12"
+
+  - name: "Require explicit target for singular follow-up"
+    prompt: "Show the unused App Service plans, then tell me how much I can save if I delete it."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: selection-safety
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)choose|select|which.*plan|which.*resource"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)deleting all|all [0-9]+ .*plans|selected automatically|highest.?saving"

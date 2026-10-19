@@ -104,10 +104,12 @@
             "dirname": "azure-advisor",
             "skills": [
                 "azure-advisor",
-                "azure-advisor-actionability"
+                "azure-advisor-actionability",
+                "azure-advisor-cost-optimization",
+                "azure-advisor-cost-user-context"
             ],
             "integrationTestSchedule": {
-                "0 12 * * 2-6": "azure-advisor,azure-advisor-actionability"
+                "0 12 * * 2-6": "azure-advisor,azure-advisor-actionability,azure-advisor-cost-optimization,azure-advisor-cost-user-context"
             }
         }
     ]
