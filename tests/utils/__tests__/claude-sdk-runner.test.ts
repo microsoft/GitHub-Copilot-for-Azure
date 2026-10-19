@@ -2,6 +2,7 @@ import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { convertToTrajectoryEvents } from "../agent-runner.ts";
 import { useClaudeAgentRunner } from "../claude-sdk-runner.ts";
 
 const mocks = vi.hoisted(() => ({
@@ -110,7 +111,7 @@ describe("claude-sdk-runner", () => {
     expect(skillEvent?.id).toBe("skill-content");
     expect(skillEvent?.data).toMatchObject({
       name: "azure-ai",
-      path: "/plugins/azure-skills/skills/azure-ai/SKILL.md",
+      path: path.join("/plugins/azure-skills/skills/azure-ai", "SKILL.md"),
       content: "# Azure AI Services",
       pluginName: "azure",
       source: "plugin",
@@ -161,8 +162,8 @@ describe("claude-sdk-runner", () => {
     });
     expect(metadata.skillFiles).toEqual({
       "azure-ai": [
-        path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
-        path.join(mocks.skillsDirectory, "azure-ai", "references", "search.md"),
+        path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md").replaceAll("\\", "/"),
+        path.join(mocks.skillsDirectory, "azure-ai", "references", "search.md").replaceAll("\\", "/"),
       ],
     });
     expect(metadata.tokenUsage).toEqual({
@@ -179,6 +180,23 @@ describe("claude-sdk-runner", () => {
     expect(metadata.events[0].timestamp).toBe("1970-01-01T00:00:00.000Z");
     expect(metadata.events.at(-1)?.type).toBe("assistant.turn_end");
     expect(metadata.events.at(-1)?.id).toBe("result-1");
+
+    const trajectoryEvents = convertToTrajectoryEvents(metadata);
+    expect(trajectoryEvents.filter(event => event.type === "skill_activation")).toEqual([
+      expect.objectContaining({
+        data: {
+          name: "azure-ai",
+          path: path.join("/plugins/azure-skills/skills/azure-ai", "SKILL.md"),
+        },
+      }),
+    ]);
+    expect(trajectoryEvents.find(event => event.type === "token_usage")?.data).toMatchObject({
+      model: "claude-sonnet-5",
+      inputTokens: 8,
+      outputTokens: 1019,
+      cacheReadTokens: 144136,
+      cacheWriteTokens: 118482,
+    });
   });
 });
 

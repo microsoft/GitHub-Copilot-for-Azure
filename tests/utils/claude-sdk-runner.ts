@@ -290,6 +290,24 @@ function appendSessionEvents(
   }
 
   appendTokenUsage(metadata.tokenUsage!, message);
+  const usageModels = Object.keys(message.modelUsage);
+  const usageEvent: Extract<SessionEvent, { type: "assistant.usage" }> = {
+    type: "assistant.usage",
+    id: `${message.uuid}:usage`,
+    parentId: lastEventId,
+    timestamp,
+    ephemeral: true,
+    data: {
+      model: usageModels.length === 1 ? usageModels[0] : (model ?? ""),
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+      cacheReadTokens: message.usage.cache_read_input_tokens,
+      cacheWriteTokens: message.usage.cache_creation_input_tokens,
+      duration: message.duration_api_ms,
+    },
+  };
+  metadata.events.push(usageEvent);
+  lastEventId = usageEvent.id;
 
   const isError = message.subtype !== "success" || message.is_error;
   let messageEventIndex = 0;

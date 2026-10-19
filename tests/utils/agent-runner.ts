@@ -959,6 +959,11 @@ export function getAzureScopePrompt(fixtureOutput: ProvisionScriptOutput): strin
 
 export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): TrajectoryEvent[] {
   const result: TrajectoryEvent[] = [];
+  const explicitlyInvokedSkills = new Set(
+    agentMetadata.events
+      .filter(e => e.type === "skill.invoked")
+      .map(e => e.data.name),
+  );
 
   // tool.execution_complete only carries `toolCallId`, not `toolName`. Build
   // a lookup so we can populate `tool_result.data.toolName` from the matching
@@ -1025,14 +1030,16 @@ export function convertToTrajectoryEvents(agentMetadata: AgentMetadata): Traject
         } else {
           skillName = "unknown";
         }
-        result.push({
-          type: "skill_activation",
-          timestamp,
-          data: {
-            name: skillName,
-            path: "todo: not supported"
-          },
-        });
+        if (!explicitlyInvokedSkills.has(skillName)) {
+          result.push({
+            type: "skill_activation",
+            timestamp,
+            data: {
+              name: skillName,
+              path: "todo: not supported"
+            },
+          });
+        }
       }
       result.push({
         type: "tool_call",
