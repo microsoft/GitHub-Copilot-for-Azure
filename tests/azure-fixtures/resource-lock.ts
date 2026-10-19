@@ -56,6 +56,7 @@ export type LeaseMessage = {
 };
 
 export class ChildProcessLeaseRenewer implements ILeaseRenewer {
+  private readonly child: ILeaseRenewerChildProcess;
   private failure: Error | undefined;
   private exited = false;
   private terminationRequested = false;
@@ -66,7 +67,8 @@ export class ChildProcessLeaseRenewer implements ILeaseRenewer {
     timeout: ReturnType<typeof setTimeout>;
   }>();
 
-  constructor(private readonly child: ILeaseRenewerChildProcess) {
+  constructor(child: ILeaseRenewerChildProcess) {
+    this.child = child;
     child.on("message", (message: LeaseMessage) => {
       if (message.type === "failed") {
         this.fail(new Error(`Resource lock lease renewal failed: ${message.message ?? "unknown error"}`));
@@ -178,16 +180,24 @@ function startLeaseRenewer(
 }
 
 export class ResourceLock {
+  private readonly accountName: string;
+  private readonly containerName: string;
+  private readonly blobName: string;
+  private readonly acquisitionDeadline: number;
   private readonly blobClient: IBlockBlobClient;
   private readonly dependencies: IResourceLockDependencies;
 
   constructor(
-    private readonly accountName: string,
-    private readonly containerName: string,
-    private readonly blobName: string,
-    private readonly acquisitionDeadline: number,
+    accountName: string,
+    containerName: string,
+    blobName: string,
+    acquisitionDeadline: number,
     dependencies: Partial<IResourceLockDependencies> = {},
   ) {
+    this.accountName = accountName;
+    this.containerName = containerName;
+    this.blobName = blobName;
+    this.acquisitionDeadline = acquisitionDeadline;
     this.dependencies = {
       createBlobClient: (account, container, blob) => {
         const serviceClient = new BlobServiceClient(
@@ -252,14 +262,21 @@ export class ResourceLock {
 }
 
 export class ResourceLockLease {
+  private readonly blobClient: IBlockBlobClient;
+  private readonly leaseId: string;
+  private readonly renewer: ILeaseRenewer;
   private releasePromise: Promise<void> | undefined;
   private operation = Promise.resolve();
 
   constructor(
-    private readonly blobClient: IBlockBlobClient,
-    private readonly leaseId: string,
-    private readonly renewer: ILeaseRenewer,
-  ) { }
+    blobClient: IBlockBlobClient,
+    leaseId: string,
+    renewer: ILeaseRenewer,
+  ) {
+    this.blobClient = blobClient;
+    this.leaseId = leaseId;
+    this.renewer = renewer;
+  }
 
   assertHealthy(): void {
     this.renewer.assertHealthy();

@@ -1,10 +1,10 @@
 {
   "id": "azure-resource-lookup-missing-tag",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "version": 1,
   "type": "readOnly",
   "description": "Three storage accounts in one resource group. Two are tagged foo=true and one has no tags.",
-  "persist": true,
+  "persistence": "permanent",
   "bicepConfigs": [
     {
       "fixtureId": "azure-resource-lookup-missing-tag",

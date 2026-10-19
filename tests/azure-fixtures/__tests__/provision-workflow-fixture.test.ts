@@ -1,15 +1,17 @@
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { ProvisionScriptOutput, WorkflowFixtureManifest } from "../fixture-common.ts";
+import type { ProvisionScriptOutput, FixtureManifest } from "../fixture-common.ts";
 import {
-  provisionWorkflowManifestWithDependencies,
+  provisionWithDependencies,
 } from "../provision-fixture.ts";
 import { FakeAzureEnvironment } from "./support/fake-azure.ts";
 
 const manifestPath = resolve("/fixtures/workflow/manifest.json");
-const manifest: WorkflowFixtureManifest = {
+const manifest: FixtureManifest = {
   id: "workflow-fixture",
+  type: "readOnly",
+  persistence: "temporary",
   version: 7,
   schemaVersion: 1,
   description: "Unit-test fixture",
@@ -62,10 +64,118 @@ afterEach(() => {
   }
 });
 
-describe("provisionWorkflowManifest cold start", () => {
+describe("fixture persistence policies", () => {
+  it.each([undefined, "never"] as const)("always provisions fresh ad hoc fixtures (persistence=%s)", async (persistence) => {
+    const fake = environment();
+    fake.seedCompleteInstance(manifest, "existing");
+    const adHocManifest = { ...manifest, persistence };
+    const dependencies = fake.createDependencies("adhoc");
+    dependencies.environment = {};
+
+    const first = await provisionWithDependencies(manifestPath, adHocManifest, dependencies);
+    const second = await provisionWithDependencies(manifestPath, adHocManifest, dependencies);
+
+    expect(first.context.runId).not.toBe(second.context.runId);
+    expect(fake.deploymentCount).toBe(4);
+    expect(azCommands(fake).some((args) => args[0] === "group" && args[1] === "list")).toBe(false);
+    expect(fake.coordination).toBeUndefined();
+    expect(fake.postProvisionRuns).toHaveLength(2);
+    for (const name of [...output(first).resourceGroups, ...output(second).resourceGroups]) {
+      expect(fake.groups.get(name)?.tags).toMatchObject({
+        DeleteAfter: "01/01/2026 03:00:00",
+        Completed: "True",
+      });
+      expect(fake.groups.get(name)?.tags).not.toHaveProperty("DoNotDelete");
+    }
+    expect(output(first)).toEqual({ resourceGroups: Object.values(first.context.resourceGroupNames) });
+  });
+
+  it("provisions permanent fixtures with DoNotDelete and reuses them without coordination", async () => {
+    const fake = environment();
+    const permanentManifest = { ...manifest, persistence: "permanent" } as const;
+    const dependencies = fake.createDependencies("permanent");
+    dependencies.environment = {};
+
+    const first = await provisionWithDependencies(manifestPath, permanentManifest, dependencies);
+    const second = await provisionWithDependencies(manifestPath, permanentManifest, dependencies);
+
+    expect(output(second)).toEqual(output(first));
+    expect(fake.deploymentCount).toBe(2);
+    expect(fake.coordination).toBeUndefined();
+    expect(fake.postProvisionRuns).toHaveLength(2);
+    for (const name of output(first).resourceGroups) {
+      expect(fake.groups.get(name)?.tags).toMatchObject({
+        DoNotDelete: "True",
+        Completed: "True",
+        FixtureInstanceId: first.context.runId,
+      });
+      expect(fake.groups.get(name)?.tags).not.toHaveProperty("DeleteAfter");
+    }
+  });
+
+  it.each(["incomplete", "partial", "duplicate"] as const)("rejects %s permanent fixtures instead of provisioning", async (state) => {
+    const fake = environment();
+    fake.seedCompleteInstance(manifest, "existing");
+    const firstGroup = [...fake.groups.values()][0];
+    if (state === "incomplete") {
+      firstGroup.tags.Completed = "False";
+    } else if (state === "partial") {
+      fake.groups.delete(firstGroup.name);
+    } else {
+      fake.seedCompleteInstance(manifest, "duplicate");
+    }
+
+    await expect(provisionWithDependencies(
+      manifestPath,
+      { ...manifest, persistence: "permanent" },
+      fake.createDependencies("reader"),
+    )).rejects.toThrow(state === "duplicate" ? /multiple provisioned/ : /partially provisioned/);
+
+    expect(fake.deploymentCount).toBe(0);
+    expect(fake.coordination).toBeUndefined();
+  });
+
+  it("ignores older permanent fixture versions", async () => {
+    const fake = environment();
+    fake.seedCompleteInstance({ ...manifest, version: manifest.version - 1 }, "old");
+
+    const result = await provisionWithDependencies(
+      manifestPath,
+      { ...manifest, persistence: "permanent" },
+      fake.createDependencies("new"),
+    );
+
+    expect(fake.deploymentCount).toBe(2);
+    expect(output(result).resourceGroups.every((name) => !name.endsWith("-old"))).toBe(true);
+  });
+
+  it("keeps temporary fixtures for 48 hours and extends their lifetime on reuse", async () => {
+    const fake = environment();
+    const dependencies = fake.createDependencies("temporary");
+    dependencies.readyRetentionMs = 48 * 60 * 60 * 1000;
+
+    const first = await provisionWithDependencies(manifestPath, manifest, dependencies);
+    for (const name of output(first).resourceGroups) {
+      expect(fake.groups.get(name)?.tags.DeleteAfter).toBe("01/03/2026 00:00:00");
+      expect(fake.groups.get(name)?.tags).not.toHaveProperty("DoNotDelete");
+    }
+
+    fake.advance(60 * 60 * 1000);
+    const second = await provisionWithDependencies(manifestPath, manifest, dependencies);
+
+    expect(output(second)).toEqual(output(first));
+    expect(fake.deploymentCount).toBe(2);
+    expect(fake.postProvisionRuns).toHaveLength(1);
+    for (const name of output(second).resourceGroups) {
+      expect(fake.groups.get(name)?.tags.DeleteAfter).toBe("01/03/2026 01:00:00");
+    }
+  });
+});
+
+describe("temporary fixture cold start", () => {
   it("provisions every component in order and publishes one complete Ready instance", async () => {
     const fake = environment();
-    const result = await provisionWorkflowManifestWithDependencies(
+    const result = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("winner", { GITHUB_RUN_ID: "42", GITHUB_RUN_ATTEMPT: "3" }),
@@ -109,7 +219,7 @@ describe("provisionWorkflowManifest cold start", () => {
 
   it("keeps component names, locations, parameters, and IDs associated", async () => {
     const fake = environment();
-    const result = await provisionWorkflowManifestWithDependencies(
+    const result = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("components"),
@@ -133,7 +243,7 @@ describe("provisionWorkflowManifest cold start", () => {
     [{ GITHUB_RUN_ID: "900", GITHUB_RUN_ATTEMPT: "4" }, /^900:4$/],
   ])("records the expected workflow owner for %j", async (variables, ownerPattern) => {
     const fake = environment();
-    await provisionWorkflowManifestWithDependencies(
+    await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("owner", variables),
@@ -145,14 +255,14 @@ describe("provisionWorkflowManifest cold start", () => {
 describe("reuse and discovery", () => {
   it("reuses a Ready fixture without deploying and refreshes an earlier expiration", async () => {
     const fake = environment();
-    const first = await provisionWorkflowManifestWithDependencies(
+    const first = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("first"),
     );
     const deployments = fake.deploymentCount;
 
-    const second = await provisionWorkflowManifestWithDependencies(
+    const second = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("second"),
@@ -181,7 +291,7 @@ describe("reuse and discovery", () => {
       ])),
     };
 
-    await provisionWorkflowManifestWithDependencies(
+    await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("reuse"),
@@ -195,7 +305,7 @@ describe("reuse and discovery", () => {
     const fake = environment();
     fake.seedCompleteInstance(manifest, "discovered");
 
-    const result = await provisionWorkflowManifestWithDependencies(
+    const result = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("discoverer"),
@@ -221,7 +331,7 @@ describe("reuse and discovery", () => {
       resourceGroups: {},
     };
 
-    const result = await provisionWorkflowManifestWithDependencies(
+    const result = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("duplicate"),
@@ -240,7 +350,7 @@ describe("deterministic contenders", () => {
       const fake = environment();
       const results = await Promise.all(
         Array.from({ length: actorCount }, (_, index) =>
-          provisionWorkflowManifestWithDependencies(
+          provisionWithDependencies(
             manifestPath,
             manifest,
             fake.createDependencies(`actor-${index}`),
@@ -264,7 +374,7 @@ describe("deterministic contenders", () => {
     const followerDependencies = fake.createDependencies("follower");
     followerDependencies.leaseAcquisitionBudgetMs = 0;
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       followerDependencies,
@@ -280,7 +390,7 @@ describe("failure boundaries", () => {
     const dependencies = fake.createDependencies("missing");
     dependencies.environment = {};
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       dependencies,
@@ -297,7 +407,7 @@ describe("failure boundaries", () => {
     const fake = environment();
     fake.fail({ operation, error: new Error(message) });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("failure"),
@@ -313,7 +423,7 @@ describe("failure boundaries", () => {
     const fake = environment();
     fake.coordination = record;
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("record"),
@@ -334,7 +444,7 @@ describe("failure boundaries", () => {
       },
     };
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("repair"),
@@ -351,7 +461,7 @@ describe("failure boundaries", () => {
     const fake = environment();
     fake.fail({ actor: "broken", operation, error: new Error(message) });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("broken"),
@@ -364,7 +474,7 @@ describe("failure boundaries", () => {
     fake.fail({ actor: "broken", operation: "post-provision", error: new Error("primary") });
     fake.fail({ actor: "broken", operation: "release", error: new Error("release") });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("broken"),
@@ -380,7 +490,7 @@ describe("failure boundaries", () => {
     }
     const abandoned = [...fake.groups.keys()];
 
-    const result = await provisionWorkflowManifestWithDependencies(
+    const result = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("replacement"),
@@ -395,7 +505,7 @@ describe("failure boundaries", () => {
 describe("Azure CLI command contract", () => {
   it("uses service-principal discovery and exact mutation arguments", async () => {
     const fake = environment();
-    await provisionWorkflowManifestWithDependencies(
+    await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("contract"),
@@ -426,7 +536,7 @@ describe("Azure CLI command contract", () => {
     const fake = environment();
     fake.account.user = { name: "user@example.com", type: "user" };
 
-    await provisionWorkflowManifestWithDependencies(
+    await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("user"),
@@ -444,7 +554,7 @@ describe("Azure CLI command contract", () => {
       group.tags.Completed = "False";
     }
 
-    await provisionWorkflowManifestWithDependencies(
+    await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("cleanup"),
@@ -491,7 +601,7 @@ describe("expiration tags", () => {
       invocation: 1,
       run: () => fake.advance(2_000),
     });
-    await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("tags"));
+    await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("tags"));
 
     const creates = azCommands(fake).filter((args) => args.slice(0, 2).join(" ") === "group create");
     const expectedTag = process.platform === "win32"
@@ -512,7 +622,7 @@ describe("expiration tags", () => {
     groups[1].tags.DeleteAfter = "01/01/2026 00:00:30";
     readyRecord(fake, "existing");
 
-    await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("utc"));
+    await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("utc"));
 
     expect(groups[0].tags.DeleteAfter).toBe("01/01/2026 00:02:00");
     expect(groups[1].tags.DeleteAfter).toBe("01/01/2026 00:01:00");
@@ -527,7 +637,7 @@ describe("expiration tags", () => {
     }
     readyRecord(fake, "existing");
 
-    await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("malformed"));
+    await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("malformed"));
 
     for (const group of fake.groups.values()) {
       expect(group.tags.DeleteAfter).toBe("01/01/2026 00:01:00");
@@ -540,7 +650,7 @@ describe("publication and lease handling", () => {
     const fake = environment();
     fake.fail({ actor: "release", operation: "release", error: new Error("release failed") });
 
-    const result = await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("release"));
+    const result = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("release"));
 
     expect(writes(fake).at(-1)?.state).toBe("Ready");
     expect(output(result).fixtureInstanceId).toBe(result.context.runId);
@@ -551,7 +661,7 @@ describe("publication and lease handling", () => {
     const fake = environment();
     fake.onOperation({ actor: "owner", operation: "group update --name", invocation: 1, run: () => fake.expireLease() });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("owner"),
@@ -566,7 +676,7 @@ describe("publication and lease handling", () => {
     const fake = environment();
     fake.onOperation({ actor: "owner", operation: "write", invocation: 2, run: () => fake.expireLease() });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("owner"),
@@ -580,7 +690,7 @@ describe("publication and lease handling", () => {
     const fake = environment();
     fake.onOperation({ actor: "owner", operation: "deployment group create", invocation: 1, run: () => fake.expireLease() });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("owner"),
@@ -588,7 +698,7 @@ describe("publication and lease handling", () => {
     const abandoned = [...fake.groups.keys()];
     expect(abandoned).toHaveLength(1);
 
-    const result = await provisionWorkflowManifestWithDependencies(
+    const result = await provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("replacement"),
@@ -612,7 +722,7 @@ describe("crash recovery and retry spacing", () => {
     preparingRecord(fake, "dead", 200);
     const start = fake.nowMs;
 
-    const result = await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("replacement"));
+    const result = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("replacement"));
 
     expect(fake.nowMs - start).toBeGreaterThanOrEqual(200);
     expect(fake.deploymentCount).toBe(2);
@@ -624,7 +734,7 @@ describe("crash recovery and retry spacing", () => {
     const fake = environment();
     preparingRecord(fake, "dead", 20_000);
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("late"),
@@ -640,7 +750,7 @@ describe("crash recovery and retry spacing", () => {
     fake.groups.delete(search.name);
     preparingRecord(fake, "old", 0);
 
-    const result = await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("recover"));
+    const result = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("recover"));
     const parsed = output(result);
 
     expect(fake.groups.has(storage.name)).toBe(true);
@@ -655,14 +765,14 @@ describe("crash recovery and retry spacing", () => {
   it("lets many waiting actors share one replacement attempt after a failed attempt", async () => {
     const fake = environment();
     fake.fail({ actor: "broken", operation: "deployment group create", error: new Error("deployment failed") });
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("broken"),
     )).rejects.toThrow("deployment failed");
 
     const results = await Promise.all(Array.from({ length: 20 }, (_, index) =>
-      provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies(`waiter-${index}`))));
+      provisionWithDependencies(manifestPath, manifest, fake.createDependencies(`waiter-${index}`))));
 
     expect(new Set(results.map((result) => output(result).fixtureInstanceId)).size).toBe(1);
     expect(writes(fake).filter((record) => record.state === "Preparing")).toHaveLength(2);
@@ -678,7 +788,7 @@ describe("crash recovery and retry spacing", () => {
     fake.seedCompleteInstance(manifest, "a");
 
     const results = await Promise.all(["x", "y", "z"].map((actor) =>
-      provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies(actor))));
+      provisionWithDependencies(manifestPath, manifest, fake.createDependencies(actor))));
 
     expect(results.map((result) => output(result).fixtureInstanceId)).toEqual(["a", "a", "a"]);
     expect(azCommands(fake).filter((args) => args[1] === "create" || args[1] === "delete")).toHaveLength(0);
@@ -691,7 +801,7 @@ describe("additional failure modes", () => {
     fake.seedCompleteInstance(manifest, "x");
     delete [...fake.groups.values()][0].tags.FixtureInstanceId;
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("tags"),
@@ -704,7 +814,7 @@ describe("additional failure modes", () => {
     fake.seedCompleteInstance(manifest, "x");
     fake.seedCompleteInstance(manifest, "x", "x-copy");
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("duplicates"),
@@ -724,7 +834,7 @@ describe("additional failure modes", () => {
     corrupt([...fake.groups.values()][0].tags);
     readyRecord(fake, "x");
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("inconsistent"),
@@ -736,14 +846,14 @@ describe("additional failure modes", () => {
   it("rejects a Ready record without an instance ID or a component", async () => {
     const fake = environment();
     fake.coordination = { state: "Ready", manifestId: manifest.id, manifestVersion: manifest.version, resourceGroups: {} };
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("no-instance"),
     )).rejects.toThrow("has no instance ID");
 
     fake.coordination = { state: "Ready", manifestId: manifest.id, manifestVersion: manifest.version, instanceId: "x", resourceGroups: {} };
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("no-component"),
@@ -757,7 +867,7 @@ describe("additional failure modes", () => {
     const fake = environment();
     fake.fail({ actor: "broken", operation, error: new Error(message), invocation });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("broken"),
@@ -770,7 +880,7 @@ describe("additional failure modes", () => {
     const fake = environment();
     fake.fail({ actor: "broken", operation: "deployment group create", error: new Error("deployment failed") });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("broken"),
@@ -788,7 +898,7 @@ describe("injected time budget", () => {
     const fake = environment();
     fake.onOperation({ actor: "slow", operation: "deployment group create", invocation: 1, run: () => fake.advance(5_000) });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("slow"),
@@ -802,7 +912,7 @@ describe("injected time budget", () => {
     const fake = environment();
     fake.onOperation({ actor: "slow", operation: "post-provision", run: () => fake.advance(5_000) });
 
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("slow"),
@@ -815,7 +925,7 @@ describe("injected time budget", () => {
     const holder = fake.createDependencies("holder").createResourceLock("storage", "fixtures", "blob", fake.nowMs + 1_000);
     await holder.initialize({ state: "Empty" });
     const lease = await holder.acquire();
-    const follower = provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("follower"));
+    const follower = provisionWithDependencies(manifestPath, manifest, fake.createDependencies("follower"));
     await Promise.resolve();
 
     fake.advance(8_000);
@@ -831,7 +941,7 @@ describe("injected time budget", () => {
     for (const group of fake.groups.values()) {
       group.tags.Completed = "False";
     }
-    await expect(provisionWorkflowManifestWithDependencies(
+    await expect(provisionWithDependencies(
       manifestPath,
       manifest,
       fake.createDependencies("late"),
@@ -847,7 +957,7 @@ describe("Azure CLI read command contract", () => {
     readyRecord(fake, "x");
     const storage = `storage-${manifest.version}-x`;
 
-    await provisionWorkflowManifestWithDependencies(manifestPath, manifest, fake.createDependencies("reader"));
+    await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("reader"));
 
     const commands = azCommands(fake);
     expect(commands).toContainEqual(["group", "exists", "--name", storage, "-o", "tsv"]);
@@ -856,7 +966,7 @@ describe("Azure CLI read command contract", () => {
 
     const discovering = environment();
     discovering.seedCompleteInstance(manifest, "y");
-    await provisionWorkflowManifestWithDependencies(manifestPath, manifest, discovering.createDependencies("discover"));
+    await provisionWithDependencies(manifestPath, manifest, discovering.createDependencies("discover"));
     expect(azCommands(discovering)).toContainEqual([
       "group", "list", "--tag", "FixtureId=storage-fixture", "--query", "[].{name:name,tags:tags}", "-o", "json",
     ]);

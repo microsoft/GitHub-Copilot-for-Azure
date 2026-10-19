@@ -11,14 +11,13 @@ import {
   type BicepParameterConfig,
   FIXTURE_ID_TAG,
   FIXTURE_VERSION_TAG,
-  type StimuliFixtureManifest,
+  type FixtureManifest,
   type JsonValue,
   type ProvisionScriptOutput,
   findFixtureResourceGroups,
   runAz,
   runBudget,
   type RunBudget,
-  type WorkflowFixtureManifest,
 } from "./fixture-common.ts";
 import { ResourceLock, type ResourceLockLease } from "./resource-lock.ts";
 
@@ -99,7 +98,7 @@ export interface IResourceLock {
   acquire(): Promise<WorkflowResourceLockLease>;
 };
 
-export type WorkflowProvisioningDependencies = {
+export type ProvisioningDependencies = {
   now(): number;
   sleep(ms: number): Promise<void>;
   immediate(): Promise<void>;
@@ -108,7 +107,7 @@ export type WorkflowProvisioningDependencies = {
   runAz(args: string[], options?: { subjectToBudget?: boolean }): string;
   runPostProvisionScript(
     context: FixtureRunContext,
-    manifest: WorkflowFixtureManifest,
+    manifest: FixtureManifest,
     manifestDir: string,
   ): string | undefined;
   createResourceLock(account: string, container: string, blob: string, acquisitionDeadline: number): IResourceLock;
@@ -123,7 +122,7 @@ export type WorkflowProvisioningDependencies = {
   readyRetentionMs: number;
 };
 
-function defaultWorkflowDependencies(): WorkflowProvisioningDependencies {
+function defaultProvisioningDependencies(): ProvisioningDependencies {
   return {
     now: Date.now,
     sleep: (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
@@ -171,11 +170,7 @@ function deleteAfterTag(date: Date): string {
   return shellQuote(`${DELETE_AFTER_TAG}=${formatDeleteAfter(date)}`);
 }
 
-type FixtureManifestBase = Pick<StimuliFixtureManifest, "id" | "version" | "bicepConfigs" | "postProvisionScript"> & {
-  persist?: boolean;
-};
-
-function computeResourceGroupName(manifest: FixtureManifestBase, bicepConfig: BicepConfig, suffix: string): string {
+function computeResourceGroupName(manifest: FixtureManifest, bicepConfig: BicepConfig, suffix: string): string {
   return `${bicepConfig.resourceGroupNameBase}-${manifest.version}-${suffix}`;
 }
 
@@ -188,7 +183,7 @@ type AzureAccount = {
 /**
  * Get the test principal ID using AZ CLI.
  */
-function getTestPrincipalId(account: AzureAccount, runCommand: WorkflowProvisioningDependencies["runAz"] = runAz): string {
+function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"] = runAz): string {
   // The signed-in identity is a user locally and a federated service principal in CI.
   // They need different commands to get the principal ID.
   if (account.user?.type === "servicePrincipal" && account.user.name) {
@@ -198,8 +193,8 @@ function getTestPrincipalId(account: AzureAccount, runCommand: WorkflowProvision
 }
 
 function computeRunContext(
-  manifest: FixtureManifestBase,
-  dependencies?: Pick<WorkflowProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID">,
+  manifest: FixtureManifest,
+  dependencies?: Pick<ProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID">,
 ): FixtureRunContext {
   const runCommand = dependencies?.runAz ?? runAz;
   const account = JSON.parse(runCommand(["account", "show", "-o", "json"])) as AzureAccount;
@@ -220,11 +215,15 @@ function computeRunContext(
   };
 }
 
-function discoverPersistentFixtures(context: FixtureRunContext, manifest: StimuliFixtureManifest): boolean {
+function discoverPersistentFixtures(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+  runCommand: ProvisioningDependencies["runAz"],
+): boolean {
   const discoveredResourceGroups = new Map<string, string>();
 
   for (const bicepConfig of manifest.bicepConfigs) {
-    const matchingGroups = findFixtureResourceGroups(bicepConfig.fixtureId)
+    const matchingGroups = findFixtureResourceGroups(bicepConfig.fixtureId, runCommand)
       .filter((group) => group.tags[FIXTURE_VERSION_TAG] === String(manifest.version));
     const incompleteGroups = matchingGroups.filter(
       (group) => group.tags[COMPLETED_TAG]?.toLowerCase() !== "true",
@@ -266,7 +265,7 @@ function discoverPersistentFixtures(context: FixtureRunContext, manifest: Stimul
   return true;
 }
 
-function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureManifestBase, manifestDir: string): string | undefined {
+function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): string | undefined {
   const resourceGroupNames = Object.values(context.resourceGroupNames);
 
   if (manifest.postProvisionScript) {
@@ -289,7 +288,7 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
   return;
 }
 
-export function runPostTestScript(context: FixtureRunContext, manifest: StimuliFixtureManifest, manifestDir: string): string | undefined {
+export function runPostTestScript(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): string | undefined {
   const resourceGroupNames = Object.values(context.resourceGroupNames);
 
   if (manifest.postTestScript) {
@@ -303,13 +302,13 @@ export function runPostTestScript(context: FixtureRunContext, manifest: StimuliF
   }
 }
 
-function provision(
+function provisionBicepConfig(
   context: FixtureRunContext,
-  manifest: FixtureManifestBase,
+  manifest: FixtureManifest,
   bicepConfig: BicepConfig,
   manifestDir: string,
   additionalTags: string[] = [],
-  runCommand: WorkflowProvisioningDependencies["runAz"] = runAz,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
   now: () => number = Date.now,
 ) {
   const resourceGroupName = context.resourceGroupNames[bicepConfig.resourceGroupNameBase];
@@ -319,7 +318,7 @@ function provision(
 
   // Callers may supply their own DeleteAfter; emitting two would make the winner undefined.
   const overridesDeleteAfter = additionalTags.some((tag) => tag.replace(/^"/, "").startsWith(`${DELETE_AFTER_TAG}=`));
-  const retentionTag = manifest.persist
+  const retentionTag = manifest.persistence === "permanent"
     ? "DoNotDelete=True"
     : overridesDeleteAfter ? undefined : deleteAfterTag(new Date(now() + DEFAULT_TIME_TO_LIVE_SEC * 1000));
   const tags = [
@@ -385,7 +384,7 @@ function provision(
 
 function markFixturesCompleted(
   context: FixtureRunContext,
-  runCommand: WorkflowProvisioningDependencies["runAz"] = runAz,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
 ) {
   for (const resourceGroupName of Object.values(context.resourceGroupNames)) {
     runCommand([
@@ -427,7 +426,7 @@ function requiredEnvironment(name: string, environment: NodeJS.ProcessEnv = proc
   return value;
 }
 
-function coordinationBlobName(context: FixtureRunContext, manifest: WorkflowFixtureManifest): string {
+function coordinationBlobName(context: FixtureRunContext, manifest: FixtureManifest): string {
   const identity = `${context.tenantId}/${context.subscriptionId}/${manifest.id}/${manifest.version}`;
   return `workflow-fixtures/${createHash("sha256").update(identity).digest("hex")}.json`;
 }
@@ -442,7 +441,7 @@ function errorText(error: unknown): string {
 
 function parseCoordinationRecord(
   value: unknown,
-  manifest: WorkflowFixtureManifest,
+  manifest: FixtureManifest,
 ): CoordinationRecord {
   if (!value || typeof value !== "object" || !("state" in value)) {
     throw new Error(`Workflow fixture coordination record is malformed for ${manifest.id}`);
@@ -481,9 +480,9 @@ function resourceGroupId(context: FixtureRunContext, name: string): string {
 
 function verifyAndSelectRecordedFixture(
   context: FixtureRunContext,
-  manifest: WorkflowFixtureManifest,
+  manifest: FixtureManifest,
   record: CoordinationRecord,
-  runCommand: WorkflowProvisioningDependencies["runAz"] = runAz,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
 ): boolean {
   if (!record.instanceId) {
     throw new Error(`Ready workflow fixture ${manifest.id} has no instance ID`);
@@ -514,7 +513,7 @@ function verifyAndSelectRecordedFixture(
 
 function refreshExpiration(
   context: FixtureRunContext,
-  runCommand: WorkflowProvisioningDependencies["runAz"] = runAz,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
   now: () => number = Date.now,
   retentionMs = READY_RETENTION_MS,
 ): string {
@@ -539,8 +538,8 @@ type DiscoveredInstance = {
 };
 
 function discoverWorkflowFixtures(
-  manifest: WorkflowFixtureManifest,
-  runCommand: WorkflowProvisioningDependencies["runAz"] = runAz,
+  manifest: FixtureManifest,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
 ): DiscoveredInstance[] {
   const groupsByInstance = new Map<string, Map<string, { name: string; completed: boolean }>>();
   for (const config of manifest.bicepConfigs) {
@@ -586,7 +585,7 @@ function discoverWorkflowFixtures(
 
 function selectDiscoveredFixture(
   context: FixtureRunContext,
-  manifest: WorkflowFixtureManifest,
+  manifest: FixtureManifest,
   instances: DiscoveredInstance[],
   preferredInstanceId?: string,
   logger: Pick<Console, "warn"> = console,
@@ -614,7 +613,7 @@ function recordResourceGroups(context: FixtureRunContext): Record<string, string
 
 function workflowOutput(
   context: FixtureRunContext,
-  manifest: WorkflowFixtureManifest,
+  manifest: FixtureManifest,
 ): ProvisionManifestOutput {
   const output: ProvisionScriptOutput = {
     resourceGroups: Object.values(context.resourceGroupNames),
@@ -626,25 +625,48 @@ function workflowOutput(
   return { context, output: JSON.stringify(output, null, 2) };
 }
 
-export function provisionStimuliManifest(manifestPath: string, manifest: StimuliFixtureManifest): ProvisionManifestOutput {
-  try {
-    runBudget.set(TOTAL_BUDGET_MS);
+/**
+ * Provisions or reuses a fixture according to its persistence policy.
+ * Omitted persistence defaults to an ad hoc fixture ("never").
+ */
+export function provision(
+  manifestPath: string,
+  manifest: FixtureManifest,
+): Promise<ProvisionManifestOutput> {
+  return provisionWithDependencies(manifestPath, manifest, defaultProvisioningDependencies());
+}
 
-    const context = computeRunContext(manifest);
+export async function provisionWithDependencies(
+  manifestPath: string,
+  manifest: FixtureManifest,
+  dependencies: ProvisioningDependencies,
+): Promise<ProvisionManifestOutput> {
+  if (manifest.persistence === "temporary") {
+    return provisionTemporaryFixture(manifestPath, manifest, dependencies);
+  }
+
+  try {
+    if (manifest.persistence !== undefined && manifest.persistence !== "never" && manifest.persistence !== "permanent") {
+      throw new Error(`Unsupported fixture persistence: ${String(manifest.persistence)}`);
+    }
+    dependencies.budget.set(dependencies.totalBudgetMs);
+
+    const context = computeRunContext(manifest, dependencies);
     const manifestDir = dirname(manifestPath);
 
-    const fixturesAlreadyProvisioned = manifest.persist && discoverPersistentFixtures(context, manifest);
+    const fixturesAlreadyProvisioned = manifest.persistence === "permanent"
+      && discoverPersistentFixtures(context, manifest, dependencies.runAz);
     if (!fixturesAlreadyProvisioned) {
-      const retentionTags = manifest.persist
+      const retentionTags = manifest.persistence === "permanent"
         ? []
-        : [deleteAfterTag(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))];
+        : [deleteAfterTag(new Date(dependencies.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))];
       for (const bicepConfig of manifest.bicepConfigs) {
-        provision(context, manifest, bicepConfig, manifestDir, retentionTags);
+        provisionBicepConfig(context, manifest, bicepConfig, manifestDir, retentionTags, dependencies.runAz, dependencies.now);
       }
-      markFixturesCompleted(context);
+      markFixturesCompleted(context, dependencies.runAz);
     }
 
-    runPostProvisionScripts(context, manifest, manifestDir);
+    dependencies.runPostProvisionScript(context, manifest, manifestDir);
 
     // Write output
     const output: ProvisionScriptOutput = {
@@ -655,22 +677,15 @@ export function provisionStimuliManifest(manifestPath: string, manifest: Stimuli
       output: JSON.stringify(output, null, 2)
     };
   } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
+    dependencies.log.error(error instanceof Error ? error.message : error);
     throw error;
   }
 }
 
-export function provisionWorkflowManifest(
+async function provisionTemporaryFixture(
   manifestPath: string,
-  manifest: WorkflowFixtureManifest,
-): Promise<ProvisionManifestOutput> {
-  return provisionWorkflowManifestWithDependencies(manifestPath, manifest, defaultWorkflowDependencies());
-}
-
-export async function provisionWorkflowManifestWithDependencies(
-  manifestPath: string,
-  manifest: WorkflowFixtureManifest,
-  dependencies: WorkflowProvisioningDependencies,
+  manifest: FixtureManifest,
+  dependencies: ProvisioningDependencies,
 ): Promise<ProvisionManifestOutput> {
   const accountName = requiredEnvironment(STORAGE_ACCOUNT_ENV, dependencies.environment);
   const containerName = requiredEnvironment(STORAGE_CONTAINER_ENV, dependencies.environment);
@@ -774,7 +789,7 @@ export async function provisionWorkflowManifestWithDependencies(
       const retentionTag = deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs));
       for (const config of manifest.bicepConfigs) {
         lease.assertHealthy();
-        provision(context, manifest, config, dirname(manifestPath), [
+        provisionBicepConfig(context, manifest, config, dirname(manifestPath), [
           `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
           retentionTag,
         ], dependencies.runAz, dependencies.now);

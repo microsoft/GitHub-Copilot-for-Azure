@@ -1,9 +1,9 @@
 import type {
   FixtureRunContext,
-  WorkflowProvisioningDependencies,
+  ProvisioningDependencies,
   WorkflowResourceLockLease,
 } from "../../provision-fixture.ts";
-import { createBudget, type WorkflowFixtureManifest } from "../../fixture-common.ts";
+import { createBudget, type FixtureManifest } from "../../fixture-common.ts";
 
 type Group = {
   name: string;
@@ -129,7 +129,7 @@ export class FakeAzureEnvironment {
     this.wakeWaiters();
   }
 
-  createDependencies(actor: string, environment: NodeJS.ProcessEnv = {}): WorkflowProvisioningDependencies {
+  createDependencies(actor: string, environment: NodeJS.ProcessEnv = {}): ProvisioningDependencies {
     let uuidIndex = 0;
     return {
       now: () => this.nowMs,
@@ -180,7 +180,7 @@ export class FakeAzureEnvironment {
     }
   }
 
-  seedCompleteInstance(manifest: WorkflowFixtureManifest, instanceId: string, suffix = instanceId): void {
+  seedCompleteInstance(manifest: FixtureManifest, instanceId: string, suffix = instanceId): void {
     for (const config of manifest.bicepConfigs) {
       const name = `${config.resourceGroupNameBase}-${manifest.version}-${suffix}`;
       this.groups.set(name, {

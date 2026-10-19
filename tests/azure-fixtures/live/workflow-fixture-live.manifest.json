@@ -1,7 +1,9 @@
 {
   "id": "workflow-fixture-local-live",
+  "type": "readOnly",
+  "persistence": "temporary",
   "version": 1,
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "description": "Live concurrency test that creates two resource groups without deploying IaC.",
   "bicepConfigs": [
     {

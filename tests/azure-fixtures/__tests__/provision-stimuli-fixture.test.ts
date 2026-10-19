@@ -1,8 +1,8 @@
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { findFixtureResourceGroups, runAz, type StimuliFixtureManifest } from "../fixture-common.ts";
-import { provisionStimuliManifest } from "../provision-fixture.ts";
+import { findFixtureResourceGroups, runAz, type FixtureManifest } from "../fixture-common.ts";
+import { provision } from "../provision-fixture.ts";
 
 vi.mock("../fixture-common.ts", async (importOriginal) => ({
   ...await importOriginal<typeof import("../fixture-common.ts")>(),
@@ -11,7 +11,7 @@ vi.mock("../fixture-common.ts", async (importOriginal) => ({
 }));
 
 const manifestPath = resolve("/fixtures/stimuli/manifest.json");
-const manifest: StimuliFixtureManifest = {
+const manifest: FixtureManifest = {
   id: "stimuli-fixture",
   type: "readOnly",
   version: 1,
@@ -52,14 +52,14 @@ afterEach(() => {
 });
 
 describe("stimuli fixture instance tags", () => {
-  it("uses one DeleteAfter tag for all groups even as time advances", () => {
+  it("uses one DeleteAfter tag for all groups even as time advances", async () => {
     let now = Date.parse("2026-01-01T00:00:00Z");
     vi.spyOn(Date, "now").mockImplementation(() => {
       now += 1_000;
       return now;
     });
 
-    provisionStimuliManifest(manifestPath, manifest);
+    await provision(manifestPath, manifest);
 
     const creates = vi.mocked(runAz).mock.calls
       .map(([args]) => args)
@@ -70,27 +70,32 @@ describe("stimuli fixture instance tags", () => {
     expect(retentionTags[1]).toEqual(retentionTags[0]);
   });
 
-  it.each([false, true])("tags every new group with a per-run UUID (persist=%s)", (persist) => {
-    const first = provisionStimuliManifest(manifestPath, { ...manifest, persist });
-    const second = provisionStimuliManifest(manifestPath, { ...manifest, persist });
+  it.each(["never", "permanent"] as const)("tags every new group with a per-run UUID (persistence=%s)", async (persistence) => {
+    const first = await provision(manifestPath, { ...manifest, persistence });
+    const second = await provision(manifestPath, { ...manifest, persistence });
     const creates = vi.mocked(runAz).mock.calls
       .map(([args]) => args)
       .filter((args) => args[0] === "group" && args[1] === "create");
 
-    expect(creates).toHaveLength(4);
+    expect(creates).toHaveLength(manifest.bicepConfigs.length * 2);
+    const midpoint = creates.length / 2;
+    const createsByRun = [
+      creates.slice(0, midpoint),
+      creates.slice(midpoint),
+    ];
     expect(first.context.runId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
     expect(second.context.runId).not.toBe(first.context.runId);
     for (const [index, result] of [first, second].entries()) {
-      for (const args of creates.slice(index * 2, index * 2 + 2)) {
+      for (const args of createsByRun[index]) {
         expect(args.filter((arg) => arg.startsWith("FixtureInstanceId="))).toEqual([
           `FixtureInstanceId=${result.context.runId}`,
         ]);
-        expect(args).toContain(persist ? "DoNotDelete=True" : "Completed=False");
+        expect(args).toContain(persistence === "permanent" ? "DoNotDelete=True" : "Completed=False");
       }
     }
   });
 
-  it("does not overwrite instance tags when reusing persistent groups", () => {
+  it("does not overwrite instance tags when reusing persistent groups", async () => {
     vi.mocked(findFixtureResourceGroups).mockImplementation((fixtureId) => [{
       name: `${fixtureId}-existing`,
       tags: {
@@ -100,7 +105,7 @@ describe("stimuli fixture instance tags", () => {
       },
     }]);
 
-    const result = provisionStimuliManifest(manifestPath, { ...manifest, persist: true });
+    const result = await provision(manifestPath, { ...manifest, persistence: "permanent" });
 
     expect(Object.values(result.context.resourceGroupNames)).toEqual([
       "storage-fixture-existing",

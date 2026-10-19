@@ -45,7 +45,7 @@ Workflow fixtures are fixtures defined for a workflow. These fixtures are provis
 
 The setup has two shared scripts as entry points:
 
-- A provision-fixture script that handles fixture provisioning. The script exports helper functions for provisioning stimuli fixture and workspace fixture.
+- A provision-fixture script that exports `await provision(manifestPath, manifest)` for both stimuli and workflow fixtures, using the shared `FixtureManifest` type.
 - A cleanup script that can delete fixtures defined by a manifest. This is reserved for devs to clean up the stale fixtures manually. The vally executor uses the same underlying logic to clean up non-persistent fixtures after each test.
 
 ### Stimuli fixture
@@ -90,6 +90,17 @@ A manifest has a version. It must be bumped whenever the underlying fixture defi
 
 A manifest has a type indicating whether the fixture is `readOnly` or `readWrite`. This is currently used only to help readers quickly understand how the fixture will be used. The provision script does not use it right now.
 
+A manifest has an optional `persistence` policy, independent of whether a stimulus or workflow uses it:
+
+| Policy | Discovery | Retention |
+|--------|-----------|-----------|
+| `never` (default) | Skips discovery; always provisions a fresh fixture | `DeleteAfter` in 3 hours |
+| `temporary` | Uses blob-lease coordination to select a complete instance or provision a new one | `DeleteAfter` refreshed to at least 48 hours |
+| `permanent` | Finds completed resource groups by fixture ID and version; rejects partial or duplicate fixtures | New groups have `DoNotDelete=True` |
+
+The Vally executor deletes only `never` fixtures after each test. Temporary fixtures are left for external cleanup; permanent fixtures are protected from it.
+Temporary fixtures run post-provision scripts only when creating a new instance, before marking it complete. The other policies retain stimuli behavior: post-provision scripts run on every invocation, including permanent fixture reuse.
+
 A manifest has a description. It is human-readable text that explains in natural language what the manifest contains.
 
 A manifest has an array of Bicep configs. Each config creates one resource group and can optionally map to a Bicep template that is provisioned into it. See the dedicated Bicep config section for more information.
@@ -133,7 +144,7 @@ The context is computed at the beginning of the script run.
 
 The script iterates through all the Bicep configs and provisions each one sequentially.
 
-##### Non-persistent
+##### Non-persistent (`persistence: "never"`)
 
 By default, fixtures are not persisted. Every new run provisions a fresh fixture. A random suffix is appended to the actual resource group names so that concurrent script runs don't run into name collision.
 
@@ -155,7 +166,7 @@ After all the Bicep templates are provisioned, the script uses Azure CLI to upda
 
 The Vally executor attempts to delete the provisioned fixtures after the test finishes.
 
-##### Persistent
+##### Permanent (`persistence: "permanent"`)
 
 Persistent fixtures are explicitly declared to be persistent in their manifests. When the provision-fixture script sees a persistent manifest. It expects none of its resources have been provisioned or all the resources to have been provisioned already.
 
@@ -173,7 +184,7 @@ If it finds all the provisioned fixture, it will present them to the test as if 
 
 #### Output
 
-The provision-fixture script returns the output to the caller from its helper function for provisioning a Bicep config.
+The async `provision(manifestPath, manifest)` function returns the run context and a JSON output string containing `resourceGroups`. Temporary fixtures also include `fixtureId`, `fixtureVersion`, `fixtureInstanceId`, and `resourceGroupIdsByComponent` for downstream workflow steps.
 
 #### PostProvision script
 
@@ -217,7 +228,7 @@ Our custom Vally executor runs the provisioning script before running the test. 
 
 ## Fixture Sharing
 
-Workflow fixture supports fixture sharing by coordinating isolated runs using an Azure Storage Blob. Before a workflow run starts provisioning the fixture, it must acquire the lease of a blob associated with the fixture to "optimistically" obtain the exclusive ownership of the fixture creation. If a run sees an active lease on the blob, it can assume that another run is provisioning the fixture so it can wait until the fixture is ready. The run that holds the lease must keep renewing it in the background. If the run that holds the lease crashes, the lease it held will expire so other workflow runs can make progress.
+Fixtures with `persistence: "temporary"` support fixture sharing by coordinating isolated runs using an Azure Storage Blob. Before a run starts provisioning the fixture, it must acquire the lease of a blob associated with the fixture to "optimistically" obtain the exclusive ownership of the fixture creation. If a run sees an active lease on the blob, it can assume that another run is provisioning the fixture so it can wait until the fixture is ready. The run that holds the lease must keep renewing it in the background. If the run that holds the lease crashes, the lease it held will expire so other runs can make progress.
 
 Explicit renewal and release requests must receive an acknowledgement from the lease worker within 30 seconds. A timeout marks the renewer unhealthy, rejects all pending requests, and terminates the unresponsive worker so provisioning and cleanup cannot wait indefinitely.
 

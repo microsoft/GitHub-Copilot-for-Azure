@@ -6,8 +6,8 @@ import { normalizeTestName } from "./utils.ts";
 import * as path from "node:path";
 import type { AgentMetadata, AgentRunConfig } from "../utils/agent-runner.ts";
 import type { Executor, ExecutorOptions, ExecutorRegistry, Stimulus, Trajectory, TrajectoryEvent } from "@microsoft/vally";
-import { deleteResourceGroup, type StimuliFixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
-import { provisionStimuliManifest, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
+import { deleteResourceGroup, type FixtureManifest, type PostTestScriptConfig, readManifest, type ProvisionScriptOutput } from "../azure-fixtures/fixture-common.ts";
+import { provision, type ProvisionManifestOutput, runPostTestScript } from "../azure-fixtures/provision-fixture.ts";
 import { dirname } from "node:path";
 import { useAgentRunner, createMarkdownReport } from "../utils/copilot-sdk-runner.ts";
 
@@ -98,7 +98,7 @@ export class CopilotSdkAgentRunner implements Executor {
     let postTestScriptConfig: PostTestScriptConfig | undefined;
     let persistFixture: boolean = false;
     let provisionOutput: ProvisionManifestOutput | undefined;
-    let manifest: StimuliFixtureManifest | undefined;
+    let manifest: FixtureManifest | undefined;
     let absoluteManifestPath: string | undefined;
     const relativeManifestPath = getAzureFixtureManifestPath(tags);
     try {
@@ -116,13 +116,13 @@ export class CopilotSdkAgentRunner implements Executor {
         }
         manifest = readManifest(absoluteManifestPath);
 
-        provisionOutput = provisionStimuliManifest(absoluteManifestPath, manifest);
+        provisionOutput = await provision(absoluteManifestPath, manifest);
         const parsedProvisionOutput: ProvisionScriptOutput = JSON.parse(provisionOutput.output);
         const azureScopePrompt = getAzureScopePrompt(parsedProvisionOutput);
         runConfig.prompt += `\n${azureScopePrompt}`;
         fixtureResourceGroups = parsedProvisionOutput.resourceGroups;
         postTestScriptConfig = manifest.postTestScript;
-        persistFixture = !!manifest.persist;
+        persistFixture = manifest.persistence === "temporary" || manifest.persistence === "permanent";
       }
 
       const agentMetadata: AgentMetadata = await agentRunner.run(runConfig);

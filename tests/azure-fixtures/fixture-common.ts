@@ -68,53 +68,27 @@ export type PostTestScriptConfig = {
 };
 
 /**
- * Manifest for provisioning the Azure fixture for a workflow.
- * A workflow fixture is prepared before anything in that workflow starts using it.
+ * Manifest for provisioning the Azure fixture.
  */
-export type WorkflowFixtureManifest = {
-  /**
-   * Stable identifier used to coordinate provisioning across workflow runs.
-   */
-  id: string;
-
-  version: number;
-  schemaVersion: number;
-
-  /**
-   * A human facing description of the Azure fixtures.
-   * This description will not be used by the provisioning script.
-   */
-  description: string;
-
-  /**
-   * Bicep templates to provision.
-   * The templates will be provisioned to each resource group computed
-   * from resourceGroupNameBases in the given order.
-   */
-  bicepConfigs: BicepConfig[];
-
-  /**
-   * Additional post-provision script to run after provisioning the fixtures but before using them in the workflow.
-   * Post-provision scripts are given the computed resource group names.
-   * --resource-groups <rg-1> <rg-2> ... <rg-n>
-   *
-   * The post-provision script will be executed via tsx and must be written in Typescript.
-   */
-  postProvisionScript?: PostProvisionScriptConfig;
-};
-
-/**
- * Manifest for provisioning the Azure fixture for a stimuli.
- */
-export type StimuliFixtureManifest = {
+export type FixtureManifest = {
   /**
    * Stable identifier used for locating fixtures for a manifest.
    */
   id: string;
 
+  /**
+   * Whether the fixture expects modification from the tasks depending on it.
+   */
   type: "readOnly" | "readWrite";
 
+  /**
+   * Version of the fixture.
+   */
   version: number;
+
+  /**
+   * Version of the manifest schema.
+   */
   schemaVersion: number;
 
   /**
@@ -131,9 +105,11 @@ export type StimuliFixtureManifest = {
   bicepConfigs: BicepConfig[];
 
   /**
-   * Whether this fixture needs to be persisted.
+   * Persistence policy: never (default) creates a new fixture with a 3-hour lifetime;
+   * temporary coordinates reuse with a blob lease and refreshes a 48-hour lifetime;
+   * permanent discovers existing fixtures or provisions them with DoNotDelete=True.
    */
-  persist?: boolean;
+  persistence?: "never" | "temporary" | "permanent";
 
   /**
    * Additional post-provision script to run after provisioning the fixtures but before running the test.
@@ -145,6 +121,8 @@ export type StimuliFixtureManifest = {
   postProvisionScript?: PostProvisionScriptConfig;
 
   /**
+   * Only executed when the fixture is referenced by a Vally stimuli.
+   *
    * Additional post-provision script to run after the test finishes.
    * Post-provision scripts are given the computed resource group names.
    * --resource-groups <rg-1> <rg-2> ... <rg-n>
@@ -238,9 +216,12 @@ export type FixtureResourceGroup = {
 };
 
 /** Finds every resource group previously provisioned for a fixture, whatever its name. */
-export function findFixtureResourceGroups(fixtureId: string): FixtureResourceGroup[] {
+export function findFixtureResourceGroups(
+  fixtureId: string,
+  runCommand: typeof runAz = runAz,
+): FixtureResourceGroup[] {
   const groups = JSON.parse(
-    runAz([
+    runCommand([
       "group",
       "list",
       "--tag",
@@ -268,6 +249,6 @@ export function deleteResourceGroup(resourceGroupName: string) {
 /**
  * Reads a fixture manifest from disk.
  */
-export function readManifest(manifestPath: string): StimuliFixtureManifest {
-  return JSON.parse(readFileSync(manifestPath, "utf8")) as StimuliFixtureManifest;
+export function readManifest(manifestPath: string): FixtureManifest {
+  return JSON.parse(readFileSync(manifestPath, "utf8")) as FixtureManifest;
 }
