@@ -74,8 +74,13 @@ record's stable `name` as `recommendationId`; never pass the ARM resource ID or 
 `recommendationTypeId` to the update command. A single returned resource still requires explicit
 selection.
 The resource list must be rendered in a visible assistant response before the selection question.
+This explicit selection requirement applies to postpone and dismiss flows, not ordinary
+read-only analysis. After an ordinary selected-type listing, render the returned resources and
+stop with a next step; do not ask the user to select a resource unless the request enters an
+actionability, remediation, state-changing, or handoff flow.
 
-For postponement, propose a concrete future return date 30 calendar days from the current date,
+For postponement, preserve a future return date supplied by the user; otherwise propose a
+concrete return date 30 calendar days from the current date,
 render the exact resources, scope, proposed return date, and continuing accumulated waste, then
 use `ask_user` with `Use this date (Recommended)` or `Choose another date`; do not ask an
 open-ended duration question. For dismissal, render the exact resources, scope, current-resource

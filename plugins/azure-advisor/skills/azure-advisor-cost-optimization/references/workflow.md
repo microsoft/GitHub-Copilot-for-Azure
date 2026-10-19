@@ -27,6 +27,13 @@ Current opportunity queries always use `category=Cost` and `sub-category=IdleRes
 Current summaries use `group-by=recommendation-type`; do not add `status` to the summary.
 Use `status=New` on a selected-type expansion list. Pass a requested product family, exact
 resource type, threshold, search, limit, or date filter only when the user supplied it.
+Normal opening cost summaries and every non-status summary grouping are semantically
+New-only: they include active recommendations whose Advisor lifecycle state is `New`.
+An explicit `--group-by status` summary is the exception and includes all Advisor lifecycle
+states, including `New`, `Completed`, `Dismissed`, and `Postponed`.
+`--product-family` cannot be combined with `--prioritized true`; Advisor rejects that
+combination. Explain the incompatibility before calling the tool and offer either the
+product-family-filtered non-prioritized summary or the unfiltered prioritized summary.
 
 For completed realized-savings reporting, call list directly with `status=Completed`,
 `category=Cost`, and `sub-category=IdleResources`, preserving the resolved scope and filters. Do
@@ -116,7 +123,8 @@ a visible response before asking. Use `ask_user` to choose `Selected resources o
 or `All resources in this recommendation type`. Never offer a cross-type “update all” option.
 
 The existing `advisor_recommendation_update` command updates one stable recommendation ID at a
-time. Propose and render a concrete return date for postponement, then use `ask_user` with
+time. For postponement, preserve a future return date supplied by the user; otherwise propose a
+concrete return date 30 calendar days from the current date. Render that date, then use `ask_user` with
 `Use this date (Recommended)` or `Choose another date`. For dismissal, render the selected scope
 and resources before using one free-text `ask_user` question when no reason was supplied. Show
 the complete scope and affected resources in a visible response, then use `ask_user` with
@@ -128,12 +136,15 @@ For opening requests such as unused, idle, or unnecessary resources:
 1. Call the grouped summary first; do not call list in the opening turn.
 2. Render the complete scope, estimate, currency totals, and recommendation-type summary as the
    normal response. Use headings, prose, bullets, or a compact table according to what best fits
-   the returned data; no table is mandatory.
+   the returned data; no table is mandatory. If no recommendation groups and no cost aggregate
+   are returned, report the empty result with monetary fields as `Unavailable` and stop; do not
+   offer expansion when there are no recommendation type IDs to expand.
 3. Render both the currency totals section and recommendation-type section, including when only
 one recommendation type is returned. Sort comparable recommendation types by yearly potential
 savings descending, with unavailable values last. The summary must be rendered as a visible
-assistant response before any follow-up tool call. After that visible response, MUST invoke
-`ask_user` exactly once to offer expansion. Use the
+assistant response before any follow-up tool call. When at least one recommendation type is
+returned, after that visible response MUST invoke `ask_user` exactly once to offer expansion.
+Use the
 recommendation-type display names returned by that summary as the choices, and include an
 `Expand all recommendation types` choice in every expansion prompt, including when only one
 type is returned. Do not invoke `ask_user` before the summary is rendered, call it a second
@@ -152,10 +163,16 @@ details".
 
 For the selected-type list, do not replay the opening discovery summary. Start with a focused
 `## Selected recommendation` heading containing the exact recommendation type and a one-sentence
-count. Add one compact scope/pricing line, then a resource table containing `Resource`,
-`Resource group`, `Yearly potential savings`, and `Accumulated waste`; include `Currency` and
-`Pricing basis` in that line or table caption. Use the MCP annualized value described above and
-never add a daily or monthly cost column. Do not show resource rows in the opening summary.
+count. Add one compact scope/pricing line identifying the resolved subscription(s) or Service
+Group(s), then a resource table containing `Resource`, `Resource group`, `Yearly potential
+savings`, and `Accumulated waste`; include `Currency` and `Pricing basis` in that line or table
+caption. If the list spans multiple subscriptions or scopes, include the applicable
+`Subscription` or `Service Group` on each resource row as well. Use the MCP annualized value
+described above and never add a daily or monthly cost column. For ordinary analysis, render the
+returned resources and stop with a focused next step such as inspecting another recommendation
+type; do not invoke an additional resource-selection prompt. Resource selection is required only
+for actionability or remediation artifacts, postpone, dismiss, or another state-changing or
+handoff flow.
 
 For artifact requests, the preceding opening-request sequence is not used. The sequence is:
 

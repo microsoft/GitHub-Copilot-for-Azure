@@ -1,9 +1,10 @@
 # Output and savings
 
 Start every response with a clear scope statement, normally a `## Scope` heading or a concise
-`Scope:` line. For broad scope, state queried, successful, failed, complete, partial, or
-truncated coverage. State the returned pricing basis and that figures are Advisor estimates, not
-invoices or actual spend.
+`Scope:` line. Identify the exact resolved subscription(s) or Service Group(s) in that statement;
+do not rely on a resource group or resource ID alone. For broad scope, state queried, successful,
+failed, complete, partial, or truncated coverage. State the returned pricing basis and that figures
+are Advisor estimates, not invoices or actual spend.
 
 For current opportunities and active resource lists, use only these monetary labels:
 `Yearly potential savings` and `Accumulated waste` for Advisor's cumulative
@@ -41,10 +42,10 @@ action and retain Advisor IDs internally.
 
 | Flow | Required visible fields |
 |---|---|
-| Current discovery | `Scope`, `Advisor found`, `Savings`, `Recommendation type`, `Affected resources`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
-| Selected-type list | `Scope`, exact `Recommendation type`, `Resource`, `Resource group`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
-| Completed lifecycle | lifecycle state, `Recommendation type`, `Completed resources`, `Realized savings`, resource identity, `Currency`, `Pricing basis`, completion date when returned |
-| Postponed or dismissed lifecycle | lifecycle state, `Recommendation type`, resource count, `Yearly potential savings`, `Accumulated waste`, resource identity, `Currency`, `Pricing basis` |
+| Current discovery | `Scope` with subscription(s) or Service Group(s), `Advisor found`, `Savings`, `Recommendation type`, `Affected resources`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
+| Selected-type list | `Scope` with subscription(s) or Service Group(s), exact `Recommendation type`, `Resource`, applicable `Subscription` or `Service Group` when multiple scopes are present, `Resource group`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
+| Completed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, `Completed resources`, `Realized savings`, resource identity, `Currency`, `Pricing basis`, completion date when returned |
+| Postponed or dismissed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, resource count, `Yearly potential savings`, `Accumulated waste`, resource identity, `Currency`, `Pricing basis` |
 | Artifact handoff | exact selected resources and identity; preserve annual/cumulative values when returned; never add a daily or monthly conversion |
 
 If a required field is not returned, write `Unavailable`; do not omit it, substitute zero, or
@@ -121,7 +122,8 @@ Make it visually scannable:
 - Sort opportunity and resource comparisons using the ordering rules above, preserving Advisor
   order for ties.
 - Use `—` for a measure that does not apply and `Unavailable` when Advisor did not return it.
-  Never use blank cells or zero as a substitute.
+  Preserve an explicit numeric zero returned by Advisor as `$0`; never use zero as a substitute
+  for a missing, invalid, or unavailable value.
 - Keep resource IDs out of comparison tables when they make the table too wide. Show the friendly
   resource name in the table and provide the full ID in a detail line below the selected row or
   during confirmation.
@@ -148,7 +150,8 @@ After the table, show details only for the selected row:
 > **Resource ID:** `/subscriptions/.../serverfarms/asp-cxoaiagent-test-wu3`
 > **Advisor resource type:** `Microsoft.Web/serverfarms`
 
-For lifecycle reporting, keep the same visual pattern but change the measure labels to match the
+For lifecycle reporting, keep the same visual pattern and repeat the resolved subscription(s) or
+Service Group(s) in the scope or table heading, but change the measure labels to match the
 state: `Realized savings` for Completed, or `Yearly potential savings` and `Accumulated waste` for
 Postponed and Dismissed. Do not force irrelevant columns into the table.
 
@@ -165,11 +168,18 @@ Describe aggregate counts as `<affected-resource count> affected resources acros
 type count> recommendation types`; never call the affected-resource count an active-recommendation
 count. Omit resource rows until expansion.
 
+Normal opening cost summaries and non-status groupings represent active `New` recommendations
+only. When the user explicitly requests `--group-by status`, the summary includes every Advisor
+lifecycle state, including `New`, `Completed`, `Dismissed`, and `Postponed`; keep those state
+counts separate rather than presenting them as current active opportunities. The Advisor command
+rejects `--product-family` together with `--prioritized true`; explain that limitation and do not
+call the rejected combination.
+
 The opening response for a current opportunity request must follow this order:
 
 ```text
 ## Scope
-<resolved scope> · <coverage> · <pricing basis> · Advisor estimates, not invoices
+<resolved subscription(s) or Service Group(s)> · <coverage> · <pricing basis> · Advisor estimates, not invoices
 
 ## Advisor found
 <affected-resource count> affected resources across <recommendation type count> recommendation types.
@@ -188,17 +198,24 @@ The opening response for a current opportunity request must follow this order:
 
 Do not place individual resource names, resource groups, regions, meters, daily rates, or
 resource-level rows in this opening response. Those belong to the selected-type expansion after
-the user answers the single `ask_user` prompt.
+the user answers the single `ask_user` prompt. After an ordinary selected-type expansion, render
+the returned resources and stop with a focused next step, such as inspecting another
+recommendation type; do not add a resource-selection prompt. Resource selection belongs only to
+actionability or remediation artifacts, postpone, dismiss, or other state-changing or handoff
+flows.
 
 If the Advisor summary returns no groups and no cost aggregate, report that no matching
-recommendation groups were returned and keep monetary fields `unavailable`. Do not convert an
+recommendation groups were returned and keep monetary fields `Unavailable`. Do not convert an
 empty result, a missing cost object, or a missing currency total into `$0`, and do not claim that
-no unused cost was identified. Report `$0` only when Advisor explicitly returns a numeric zero for
-that monetary field.
+no unused cost was identified. Report `$0` only when ARG/Advisor explicitly returns a numeric zero
+for that monetary field; otherwise report `Unavailable`.
 
 ## Resource detail
 
 Use the exact MCP-returned resource name, resource group, resource ID, and Advisor resource type.
+Keep the resolved subscription(s) or Service Group(s) visible in the scope line. When a selected
+recommendation list spans multiple subscriptions or scopes, include the applicable subscription
+or Service Group with each resource so rows cannot be misattributed.
 For one or more resources, choose labeled resource cards, bullets, prose, or the compact resource
 table defined above. Show the full resource ID and Advisor resource type when needed for
 selection, confirmation, artifact generation, or when the user requests identifiers. Do not omit
@@ -214,12 +231,13 @@ Never derive a monthly equivalent by dividing a yearly value by twelve. For curr
 and active resources, render only `Yearly potential savings` and `Accumulated waste`; do not render a
 monthly amount even if another period field is returned. For lifecycle output, use only the
 state-specific labels defined above. Any unsupported period or inferred amount is `Unavailable`.
-Missing monetary inputs remain `unavailable`, not zero. Sort summary and detail rows by returned
-yearly savings, preserving tool order for ties.
+Missing monetary inputs remain `Unavailable`, not zero. An explicit numeric zero remains `$0`.
+Sort summary and detail rows by returned yearly savings, preserving tool order for ties.
 
 For an active resource list, every row must include `Yearly potential savings` and `Accumulated waste`
 when those values are returned. If the source has a daily value, render the MCP annualized value;
-never replace it with the daily amount.
+never replace it with the daily amount. When multiple subscriptions or Service Groups are in
+scope, every row must also identify its applicable subscription or Service Group.
 
 ## Completed lifecycle reporting
 

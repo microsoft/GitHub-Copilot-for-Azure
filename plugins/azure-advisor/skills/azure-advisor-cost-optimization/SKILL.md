@@ -18,13 +18,17 @@ substitute billing, Cost Management, generic inventory, or runtime KQL.
 - **Current discovery:** call `advisor_recommendation_summary` with `category=Cost`,
   `sub-category=IdleResources`, and `group-by=recommendation-type`. After the tool returns,
   first emit a visible assistant summary with `Scope`, `Advisor found`, `Savings`, and
-  `Recommendation types`; only then ask exactly one expansion question. Never invoke
-  `ask_user` immediately after the summary tool call or before the summary text is visible.
+  `Recommendation types`; only then ask exactly one expansion question when at least one
+  recommendation type is returned. If the summary has no groups or cost aggregate, report the
+  empty result and stop without offering expansion. Never invoke `ask_user` immediately after
+  the summary tool call or before the summary text is visible.
   List resources only after type selection.
 - **Expansion and artifacts:** use `advisor_recommendation_list` with
-  `category=Cost`, `sub-category=IdleResources`, and `status=New`; require explicit type and
-  resource selection. Only explicitly selected resources may be handed to
-  `azure-advisor-actionability`.
+  `category=Cost`, `sub-category=IdleResources`, and `status=New`; require explicit type
+  selection for ordinary expansion. Render the returned resources and stop after a read-only
+  expansion. Require explicit resource selection only for actionability, remediation artifacts,
+  postpone, dismiss, or another state-changing or handoff flow. Only explicitly selected
+  resources may be handed to `azure-advisor-actionability`.
 - **Lifecycle:** use `advisor_recommendation_list` with `category=Cost`,
   `sub-category=IdleResources`, and the requested `Completed`, `Postponed`, or `Dismissed`
   status. Use `advisor_recommendation_update` only after explicit confirmation.

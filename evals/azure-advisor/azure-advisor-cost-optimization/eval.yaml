@@ -25,6 +25,7 @@ stimuli:
       requiredSkills:
         - azure-advisor-cost-user-context
         - azure-advisor-cost-optimization
+    constraints:
       max_turns: 2
     graders:
       - type: skill-invocation
@@ -59,7 +60,7 @@ stimuli:
           pattern: "(?i)assum(ed|ing) the default subscription|default subscription only|fatal error|unhandled exception|stack trace"
       - type: output-matches
         config:
-          pattern: "(?i)Scope:\\s*(All accessible subscriptions|Subscription|All accessible Advisor Service Groups|Advisor Service Group)"
+          pattern: "(?i)Scope:?\\s*(All accessible subscriptions|Subscription|All accessible Advisor Service Groups|Advisor Service Group)"
 
   - name: "Use summary-first response for savings optimization"
     prompt: "Where can I reduce unnecessary Azure spending in subscription 00000000-0000-0000-0000-000000000000?"
@@ -83,13 +84,83 @@ stimuli:
             - name: "(?i)advisor_recommendation_list"
       - type: output-matches
         config:
-          pattern: "(?i)Scope:\\s*Subscription|yearly|annual|accumulated waste|pricing basis|Expand"
+          pattern: "(?i)Scope:?\\s*Subscription|yearly|annual|accumulated waste|pricing basis|Expand"
       - type: output-matches
         config:
           pattern: "(?i)Advisor found|Recommendation types|Savings"
       - type: output-not-matches
         config:
           pattern: "(?i)monthly savings|monthly equivalent|confirmed (unused|cost.?saving)"
+
+  - name: "Keep non-status summaries New-only"
+    prompt: "Summarize active idle-resource Advisor recommendations by recommendation type in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-semantics
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)New-only|active.*New|current.*active"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Completed.*current|Dismissed.*current|Postponed.*current"
+
+  - name: "Include all lifecycle states for status grouping"
+    prompt: "Group my Azure Advisor idle-resource recommendations by status in subscription 00000000-0000-0000-0000-000000000000, including completed and dismissed findings."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: lifecycle-semantics
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_summary"
+      - type: output-matches
+        config:
+          pattern: "(?i)all.*lifecycle|New|Completed|Dismissed|Postponed|status"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)New-only.*only|active.*recommendations.*only"
+
+  - name: "Reject product-family prioritized combination"
+    prompt: "Show the highest-priority idle-resource Advisor recommendations for the Compute product family in subscription 00000000-0000-0000-0000-000000000000."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: filter-compatibility
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    constraints:
+      max_turns: 1
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)product.?family.*prioritized|prioritized.*product.?family|cannot.*combine|not.*combine|rejected"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary)"
 
   - name: "Honor explicit subscription scope"
     prompt: "Find active idle-resource Advisor recommendations only in subscription 00000000-0000-0000-0000-000000000000."
@@ -110,7 +181,7 @@ stimuli:
           pattern: "(?i)00000000-0000-0000-0000-000000000000"
       - type: output-matches
         config:
-          pattern: "(?i)Scope:\\s*Subscription"
+          pattern: "(?i)Scope:?\\s*Subscription"
       - type: output-not-matches
         config:
           pattern: "(?i)service.?group aggregate|mixed.*service.?group|fatal error|unhandled exception|stack trace"
@@ -206,6 +277,40 @@ stimuli:
         config:
           pattern: "(?i)no recommendations.*because.*pricing|zero.*because.*pricing"
 
+  - name: "Do not turn empty cost results into zero"
+    prompt: "For a subscription with no matching Azure Advisor idle-resource recommendations, report the cost summary."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: empty-results
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Unavailable|no matching|no .*recommendation groups"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)(Yearly potential savings|Accumulated waste)\\s*:\\s*\\$?0(?:\\.00)?"
+
+  - name: "Use accumulated waste label"
+    prompt: "Show active idle-resource Advisor opportunities with their yearly potential savings and accumulated cost."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: savings-labels
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: output-matches
+        config:
+          pattern: "(?i)Yearly potential savings|Accumulated waste"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)Accumulated cost|daily cost|monthly cost"
+
   - name: "Keep billing questions on cost management"
     prompt: "Show my Azure bill and explain which services caused the increase this month."
     tags:
@@ -229,8 +334,8 @@ stimuli:
       cost: llm
       area: remediation-routing
       requiredSkills:
-        - azure-advisor
         - azure-advisor-cost-user-context
+        - azure-advisor-cost-optimization
         - azure-advisor-actionability
     constraints:
       max_turns: 8
@@ -238,8 +343,8 @@ stimuli:
       - type: skill-invocation
         config:
           required:
-            - azure-advisor
             - azure-advisor-cost-user-context
+            - azure-advisor-cost-optimization
       - type: tool-calls
         config:
           required:
