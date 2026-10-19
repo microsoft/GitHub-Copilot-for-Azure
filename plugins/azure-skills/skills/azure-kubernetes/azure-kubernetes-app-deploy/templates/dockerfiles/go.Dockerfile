@@ -10,15 +10,14 @@
 # Notes:
 #   - CGO_ENABLED=0 produces a fully static binary that runs on distroless
 #   - The distroless runtime has no shell — use the exec form for ENTRYPOINT
-#   - To debug, swap the runtime to gcr.io/distroless/static-debian12:debug
-#     which includes busybox
+#   - To debug, temporarily use an Azure Linux base image with a shell
 # =============================================================================
 
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-# Base: current stable Go. See references/base-images.md.
-FROM golang:<LATEST_STABLE_GO>-alpine AS build
+# Base: current stable Go on Azure Linux. See references/base-images.md.
+FROM mcr.microsoft.com/oss/go/microsoft/golang:<LATEST_STABLE_GO>-azurelinux3.0 AS build
 
 WORKDIR /src
 
@@ -37,7 +36,7 @@ RUN CGO_ENABLED=0 GOOS=linux \
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM gcr.io/distroless/static-debian12
+FROM mcr.microsoft.com/azurelinux/distroless/base:3.0
 
 # Copy the compiled binary from the build stage
 COPY --from=build /bin/app /app
