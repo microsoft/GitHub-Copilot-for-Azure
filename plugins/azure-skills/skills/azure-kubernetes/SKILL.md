@@ -114,10 +114,12 @@ If the user is unsure, use safe defaults.
 
 ### 7. Node Pools & Compute
 - **Dedicated system node pool**: At least 2 nodes, tainted for system workloads only (`CriticalAddonsOnly`)
-- For a new cluster, enable **Node Auto Provisioning (NAP)** on all pools for cost savings and responsive scaling.
-  For an existing Standard cluster, load [optional AKS operations](./references/optional-aks-operations.md) and invoke
-  `aks-cost-optimization` when available for NAP readiness. Do not recommend enablement without its eligibility,
-  workload-fit, alternatives, cost, and migration assessment.
+- **Node Auto Provisioning (NAP)** is enabled per cluster and can reduce cost
+  when dynamic capacity fits workload demand; savings are not guaranteed.
+  Enable NAP for new clusters. For existing clusters, use
+  [optional AKS operations](./references/optional-aks-operations.md) to invoke
+  `aks-cost-optimization` when available for NAP readiness. Otherwise, continue with
+  [base NAP readiness](./references/azure-aks-nap-readiness.md).
 - Use **latest generation SKUs (v5/v6)** for host-level optimizations
 - **Avoid B-series VMs** — burstable SKUs cause performance/reliability issues
 - Use SKUs with **at least 4 vCPUs** for production workloads
@@ -134,7 +136,7 @@ If the user is unsure, use safe defaults.
 - Use **Spot node pools** for batch/interruptible workloads (up to 90% savings)
 - **Stop/Start** dev/test clusters: `az aks stop/start`
 
-#### Core AKS Cost Controls
+#### Focused AKS Cost Workflows
 
 For a focused request, load only the relevant reference file.
 
@@ -144,13 +146,14 @@ For a focused request, load only the relevant reference file.
 | VPA Setup | vertical pod autoscaler, VPA recommendations, VPA enable | [azure-aks-vpa.md](./references/azure-aks-vpa.md) |
 | Cluster Autoscaler | idle nodes, CAS off, enable autoscaler, scale-down profile, node utilization | [azure-aks-autoscaler.md](./references/azure-aks-autoscaler.md) |
 | Spot Node Pools | Spot VMs, Spot nodes, batch workloads, cheaper nodes | [azure-aks-spot.md](./references/azure-aks-spot.md) |
+| Advanced AKS Cost Efficiency | NAP readiness, node-pool bin packing, blocked scale-down, Kubernetes storage cost | [optional AKS operations](./references/optional-aks-operations.md) |
 
 > **Disambiguation:** If a prompt matches multiple rows (e.g., "cheaper nodes" could suggest both Spot and autoscaler), prefer the most specific match. If ambiguous, ask the user to clarify their intent before loading a reference file.
 
 #### Comprehensive AKS Cost Review
 
-When the user requests an overall AKS cost assessment rather than one specific
-cost control, this skill owns triage and coordinates one unified review:
+When the user requests an overall AKS cost assessment rather than one focused
+workflow, this skill owns triage and coordinates one unified review:
 
 1. Confirm the target subscription, resource group, and AKS cluster. If `cost-analysis` is available, collect one billed-cost baseline for that scope and reuse it throughout the review.
 2. Evaluate the applicable rightsizing, VPA, Cluster Autoscaler, and Spot workflows.

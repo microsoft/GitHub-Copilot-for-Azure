@@ -19,16 +19,20 @@ complete billing days and report each currency separately.
    [cost query workflow](cost-query/workflow.md). `query_aks_costs` accepts only
    `/subscriptions/{subscriptionId}` and supports daily or monthly granularity,
    not hourly cost attribution.
-2. Use billed cost for invoice reconciliation and amortized cost when
-   Reservation or Savings Plan allocation affects the operational comparison.
-   Preserve the returned metric, period, currency, and coverage.
+2. Use `query_aks_costs` for cluster or namespace allocation, keeping the same
+   returned cost column (`Cost` or `CostUSD`) and currency for the baseline and
+   anomaly. Preserve the column, period, currency, and coverage.
+   `query_aks_costs` cannot report Reservation or Savings Plan charges or
+   benefits separately by namespace; route that analysis to
+   `cost-optimization`.
 3. Query cluster allocation first, then the affected cluster and namespaces.
    Separate real namespaces from `#idle charges#`, `#service charges#`,
    `#system charges#`, and `#unallocated charges#`.
-4. When resource-level contributors such as VM scale sets, disks, networking,
-   or monitoring must be attributed, use the narrowest supported `query_costs`
-   call or the approved [fallback process](tools-and-safety.md). Do not assign a
-   shared workspace's full cost to one cluster.
+4. For resource-level contributors such as VM scale sets, disks, networking,
+   or monitoring, use the narrowest supported `query_costs` call or approved
+   [fallback process](tools-and-safety.md). Use the same metric, scope, filters,
+   and currency for both periods. Do not assign a shared workspace's full cost
+   to one cluster.
 
 Missing add-on data, inaccessible scopes, incomplete days, and absent rows are
 unavailable evidence, not zero cost.
@@ -37,7 +41,8 @@ unavailable evidence, not zero cost.
 
 Prefer native Cost Management anomaly insights when the available tool exposes
 them. Otherwise compare complete daily values with comparable preceding
-weekdays. Report expected cost, actual cost, absolute delta, and percentage
+weekdays. Derive expected and observed cost from the same operation, cost
+column or metric, scope, filters, and currency. Report absolute and percentage
 delta.
 
 Use the anomaly score returned by native Cost Management anomaly insights when
@@ -70,7 +75,7 @@ when supported, and report any material unexplained remainder.
 
 | Finding | Handoff |
 |---|---|
-| Pod rightsizing, VPA, Cluster Autoscaler, or Spot configuration | `azure-kubernetes` |
+| Pod rightsizing, VPA, Cluster Autoscaler, or Spot configuration | `azure-kubernetes` when available |
 | NAP readiness or node-pool fragmentation | `aks-cost-optimization` when available |
 | PVC/PV-to-Azure storage optimization | `aks-cost-optimization` when available |
 | Reservation or Savings Plan effect | `cost-optimization` |
@@ -83,6 +88,6 @@ modify workloads without the owning workflow's required confirmation.
 ## Output
 
 For each anomaly, report the period and timezone, baseline method and coverage,
-cost metric and currency, expected and actual cost, absolute and percentage
+cost column or metric and currency, expected and observed cost, absolute and percentage
 delta, affected cluster/namespaces/resources, verified and likely contributors,
 unexplained remainder, evidence gaps, confidence, and next handoff.

@@ -16,9 +16,12 @@
    prove that a new purchase is needed.
 4. When the target usage includes AKS, check the host skill inventory and
    invoke `aks-cost-optimization` for its commitment-demand handoff when
-   available. Reuse its exact compute mapping, continuous baseline, planned
-   changes, CRG impact, variability, and evidence gaps. Do not install the
-   optional plugin without user consent.
+   available. Reuse its time-aligned SKU or compatible compute group, region
+   and zone, Spot/on-demand capacity type, observed hours and node counts,
+   lookback coverage, exact resource mapping, planned changes, CRG impact,
+   variability, and evidence gaps. If representative compute history is missing, report stable demand as
+   unverified and do not validate an AKS commitment recommendation. Do not
+   install the optional plugin without user consent.
 
 ## Analyze Current Commitments
 
