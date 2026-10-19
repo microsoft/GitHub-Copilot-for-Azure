@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM mcr.microsoft.com/azurelinux/base/python:3.12
 
 ENV HOME=/home/agent \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -6,7 +6,9 @@ ENV HOME=/home/agent \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN python -m pip install --no-cache-dir -r requirements.txt \
+RUN tdnf install -y shadow-utils \
+    && tdnf clean all \
+    && python -m pip install --no-cache-dir -r requirements.txt \
     && useradd --create-home --uid 10001 agent
 COPY agent.py mcp_server.py ./
 
