@@ -263,7 +263,8 @@ A Microsoft Foundry Managed Harness Agent is a declarative Prompt Agent configur
 
 ### Step 1: Resolve and validate
 
-Inside the azd project, select the service and verify:
+Inside the azd project, select the service and verify that it is a Prompt Agent
+using either recognized Copilot harness discriminator. New authoring uses:
 
 ```yaml
 host: azure.ai.agent
@@ -272,7 +273,10 @@ harness:
   type: microsoft_copilot_preview
 ```
 
-Reject Hosted-only code/container fields. Do not convert an ordinary Prompt or Hosted Agent in place.
+Existing services may use legacy `github_copilot_preview`; preserve the
+authored harness and toolset discriminator family. Reject Hosted-only
+code/container fields. Do not convert an ordinary Prompt or Hosted Agent in
+place.
 
 Resolve the active environment:
 
