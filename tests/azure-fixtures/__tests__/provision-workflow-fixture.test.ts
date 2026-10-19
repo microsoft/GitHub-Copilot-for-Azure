@@ -149,16 +149,17 @@ describe("fixture persistence policies", () => {
     expect(output(result).resourceGroups.every((name) => !name.endsWith("-old"))).toBe(true);
   });
 
-  it("keeps temporary fixtures for 48 hours and extends their lifetime on reuse", async () => {
+  it("keeps temporary fixtures for 24 hours and extends their lifetime on reuse", async () => {
     const fake = environment();
     const dependencies = fake.createDependencies("temporary");
-    dependencies.readyRetentionMs = 48 * 60 * 60 * 1000;
+    dependencies.readyRetentionMs = 24 * 60 * 60 * 1000;
 
     const first = await provisionWithDependencies(manifestPath, manifest, dependencies);
     for (const name of output(first).resourceGroups) {
-      expect(fake.groups.get(name)?.tags.DeleteAfter).toBe("01/03/2026 00:00:00");
+      expect(fake.groups.get(name)?.tags.DeleteAfter).toBe("01/02/2026 00:00:00");
       expect(fake.groups.get(name)?.tags).not.toHaveProperty("DoNotDelete");
     }
+    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T23:00:00.000Z");
 
     fake.advance(60 * 60 * 1000);
     const second = await provisionWithDependencies(manifestPath, manifest, dependencies);
@@ -167,8 +168,9 @@ describe("fixture persistence policies", () => {
     expect(fake.deploymentCount).toBe(2);
     expect(fake.postProvisionRuns).toHaveLength(1);
     for (const name of output(second).resourceGroups) {
-      expect(fake.groups.get(name)?.tags.DeleteAfter).toBe("01/03/2026 01:00:00");
+      expect(fake.groups.get(name)?.tags.DeleteAfter).toBe("01/02/2026 01:00:00");
     }
+    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-02T00:00:00.000Z");
   });
 });
 
@@ -605,43 +607,140 @@ describe("expiration tags", () => {
 
     const creates = azCommands(fake).filter((args) => args.slice(0, 2).join(" ") === "group create");
     const expectedTag = process.platform === "win32"
-      ? '"DeleteAfter=01/01/2026 00:01:00"'
-      : "DeleteAfter=01/01/2026 00:01:00";
+      ? '"DeleteAfter=01/02/2026 00:00:00"'
+      : "DeleteAfter=01/02/2026 00:00:00";
     expect(creates).toHaveLength(2);
     for (const args of creates) {
       const tags = args.slice(args.indexOf("--tags") + 1, args.indexOf("-o", args.indexOf("--tags")));
       expect(tags.filter((tag) => tag.includes("DeleteAfter="))).toEqual([expectedTag]);
     }
+    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T23:00:02.000Z");
   });
 
-  it("compares expiration as UTC and records the latest group expiration", async () => {
+  it("compares expiration as UTC and records one hour before the earliest refreshed expiration", async () => {
     const fake = environment();
     fake.seedCompleteInstance(manifest, "existing");
     const groups = [...fake.groups.values()];
-    groups[0].tags.DeleteAfter = "01/01/2026 00:02:00";
-    groups[1].tags.DeleteAfter = "01/01/2026 00:00:30";
+    groups[0].tags.DeleteAfter = "01/03/2026 00:00:00";
+    groups[1].tags.DeleteAfter = "01/01/2026 02:00:00";
     readyRecord(fake, "existing");
 
     await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("utc"));
 
-    expect(groups[0].tags.DeleteAfter).toBe("01/01/2026 00:02:00");
-    expect(groups[1].tags.DeleteAfter).toBe("01/01/2026 00:01:00");
-    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T00:02:00.000Z");
+    expect(groups[0].tags.DeleteAfter).toBe("01/03/2026 00:00:00");
+    expect(groups[1].tags.DeleteAfter).toBe("01/02/2026 00:00:00");
+    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T23:00:00.000Z");
   });
 
-  it("extends groups whose DeleteAfter is malformed", async () => {
+  it("uses the earliest existing expiration when all groups outlive the refresh target", async () => {
+    const fake = environment();
+    fake.seedCompleteInstance(manifest, "existing");
+    const groups = [...fake.groups.values()];
+    groups[0].tags.DeleteAfter = "01/04/2026 00:00:00";
+    groups[1].tags.DeleteAfter = "01/03/2026 00:00:00";
+    readyRecord(fake, "existing");
+
+    await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("later"));
+
+    expect(groups.map((group) => group.tags.DeleteAfter)).toEqual([
+      "01/04/2026 00:00:00", "01/03/2026 00:00:00",
+    ]);
+    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-02T23:00:00.000Z");
+  });
+
+  it.each(["Ready", "Empty", "Preparing"] as const)(
+    "does not reuse or rediscover unsafe components from %s",
+    async (state) => {
+      for (const expiration of [
+        "12/31/2025 23:59:59",
+        "01/01/2026 00:59:59",
+        "01/01/2026 01:00:00",
+        "not-a-date",
+        "02/30/2026 00:00:00",
+        "02/29/2027 00:00:00",
+        "02/30/2028 00:00:00",
+        "02/29/2100 00:00:00",
+        "04/31/2026 00:00:00",
+        "00/15/2027 00:00:00",
+        "13/01/2026 00:00:00",
+        "01/00/2027 00:00:00",
+        "01/32/2026 00:00:00",
+        "01/02/2026 24:00:00",
+        "01/02/2026 00:60:00",
+        "01/02/2026 00:00:60",
+        undefined,
+      ]) {
+        const fake = environment();
+        fake.seedCompleteInstance(manifest, "old");
+        const oldGroups = [...fake.groups.values()];
+        if (expiration === undefined) {
+          delete oldGroups[0].tags.DeleteAfter;
+        } else {
+          oldGroups[0].tags.DeleteAfter = expiration;
+        }
+        if (state === "Ready") {
+          readyRecord(fake, "old");
+        } else if (state === "Preparing") {
+          preparingRecord(fake, "old", 0);
+        }
+
+        const result = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("replacement"));
+
+        expect(output(result).fixtureInstanceId).not.toBe("old");
+        expect(fake.deploymentCount).toBe(2);
+        expect(oldGroups[0].tags.DeleteAfter).toBe(expiration);
+        expect(oldGroups.every((group) => fake.groups.has(group.name))).toBe(true);
+        expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T23:00:00.000Z");
+      }
+    },
+  );
+
+  it.each([
+    ["02/28/2027 00:00:00", "2027-02-27T23:00:00.000Z"],
+    ["02/29/2028 00:00:00", "2028-02-28T23:00:00.000Z"],
+    ["02/29/2400 00:00:00", "2400-02-28T23:00:00.000Z"],
+    ["04/30/2026 00:00:00", "2026-04-29T23:00:00.000Z"],
+    ["12/31/2026 23:59:59", "2026-12-31T22:59:59.000Z"],
+  ])("preserves valid expiration %s", async (expiration, reuseDeadline) => {
     const fake = environment();
     fake.seedCompleteInstance(manifest, "existing");
     for (const group of fake.groups.values()) {
-      group.tags.DeleteAfter = "not-a-date";
+      group.tags.DeleteAfter = expiration;
     }
     readyRecord(fake, "existing");
 
-    await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("malformed"));
+    const result = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("valid-date"));
 
-    for (const group of fake.groups.values()) {
-      expect(group.tags.DeleteAfter).toBe("01/01/2026 00:01:00");
+    expect(output(result).fixtureInstanceId).toBe("existing");
+    expect(fake.deploymentCount).toBe(0);
+    expect([...fake.groups.values()].every((group) => group.tags.DeleteAfter === expiration)).toBe(true);
+    expect(writes(fake).at(-1)?.expiresAt).toBe(reuseDeadline);
+  });
+
+  it.each(["Ready", "Empty"] as const)("reuses a component just outside the margin from %s", async (state) => {
+    const fake = environment();
+    fake.seedCompleteInstance(manifest, "existing");
+    [...fake.groups.values()][0].tags.DeleteAfter = "01/01/2026 01:00:01";
+    if (state === "Ready") {
+      readyRecord(fake, "existing");
     }
+
+    const result = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("reuse"));
+
+    expect(output(result).fixtureInstanceId).toBe("existing");
+    expect(fake.deploymentCount).toBe(0);
+    expect(writes(fake).at(-1)?.expiresAt).toBe("2026-01-01T23:00:00.000Z");
+  });
+
+  it("does not rediscover an instance at its recorded reuse deadline", async () => {
+    const fake = environment();
+    const first = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("first"));
+    fake.advance(23 * 60 * 60 * 1000);
+
+    const second = await provisionWithDependencies(manifestPath, manifest, fake.createDependencies("second"));
+
+    expect(output(second).fixtureInstanceId).not.toBe(output(first).fixtureInstanceId);
+    expect(fake.deploymentCount).toBe(4);
   });
 });
 

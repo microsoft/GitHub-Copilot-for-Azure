@@ -106,7 +106,7 @@ export type FixtureManifest = {
 
   /**
    * Persistence policy: never (default) creates a new fixture with a 3-hour lifetime;
-   * temporary coordinates reuse with a blob lease and refreshes a 48-hour lifetime;
+   * temporary coordinates reuse with a blob lease and refreshes a 24-hour lifetime;
    * permanent discovers existing fixtures or provisions them with DoNotDelete=True.
    */
   persistence?: "never" | "temporary" | "permanent";
@@ -182,23 +182,20 @@ export function createBudget(now: () => number = Date.now): RunBudget {
   };
 }
 
-/** The process-wide budget used by the production command runners. */
-export const runBudget = createBudget();
-
 /**
  * Helper function to run a single AZ CLI command.
  * @param args arguments to pass to the AZ CLI command, excluding `az`.
- * @param options controls whether the command is constrained by the current run budget.
+ * @param options supplies the run budget and controls whether it constrains the command.
  * @returns A string capturing the stdout output.
  * @throws An error if the command exits with a non-zero exit code or the budget runs out.
  */
-export function runAz(args: string[], options: { subjectToBudget?: boolean } = {}): string {
+export function runAz(args: string[], options: { subjectToBudget?: boolean; budget?: RunBudget } = {}): string {
   const step = `az ${args.join(" ")}`;
   try {
     // az traps SIGTERM and can hang, so kill it outright.
     return execFileSync(AZ_COMMAND, args, {
       encoding: "utf8",
-      timeout: options.subjectToBudget === false ? undefined : runBudget.remainingMs(step),
+      timeout: options.subjectToBudget === false ? undefined : options.budget?.remainingMs(step),
       killSignal: "SIGKILL",
       shell: process.platform === "win32"
     }).trim();

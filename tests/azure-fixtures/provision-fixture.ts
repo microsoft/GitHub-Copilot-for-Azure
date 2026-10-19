@@ -14,9 +14,9 @@ import {
   type FixtureManifest,
   type JsonValue,
   type ProvisionScriptOutput,
+  createBudget,
   findFixtureResourceGroups,
   runAz,
-  runBudget,
   type RunBudget,
 } from "./fixture-common.ts";
 import { ResourceLock, type ResourceLockLease } from "./resource-lock.ts";
@@ -73,7 +73,8 @@ const DELETE_AFTER_TAG = "DeleteAfter";
 /**
  * Retention period for ready fixtures before they are considered stale.
  */
-const READY_RETENTION_MS = 48 * 60 * 60 * 1000; // 48 hours
+const READY_RETENTION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const REUSE_SAFETY_MARGIN_MS = 60 * 60 * 1000; // 1 hour
 
 /**
  * Maximum time allowed to try acquiring the lease for a fixture.
@@ -112,7 +113,7 @@ export type ProvisioningDependencies = {
   ): string | undefined;
   createResourceLock(account: string, container: string, blob: string, acquisitionDeadline: number): IResourceLock;
   log: Pick<Console, "log" | "warn" | "error">;
-  /** Budget the injected command runners are measured against; defaults to the process-wide budget. */
+  /** Isolated budget shared by this invocation's command runners. */
   budget: RunBudget;
   environment: NodeJS.ProcessEnv;
   processId: number;
@@ -123,17 +124,18 @@ export type ProvisioningDependencies = {
 };
 
 function defaultProvisioningDependencies(): ProvisioningDependencies {
+  const budget = createBudget();
   return {
     now: Date.now,
     sleep: (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
     immediate: () => new Promise<void>((resolvePromise) => setImmediate(resolvePromise)),
     randomUUID,
     randomSuffix: () => randomBytes(3).toString("hex"),
-    runAz,
-    runPostProvisionScript: runPostProvisionScripts,
+    runAz: (args, options) => runAz(args, { ...options, budget }),
+    runPostProvisionScript: (context, manifest, manifestDir) => runPostProvisionScripts(context, manifest, manifestDir, budget),
     createResourceLock: (account, container, blob, acquisitionDeadline) => new ResourceLock(account, container, blob, acquisitionDeadline),
     log: console,
-    budget: runBudget,
+    budget,
     environment: process.env,
     processId: process.pid,
     leaseAcquisitionBudgetMs: LEASE_ACQUISITION_BUDGET_MS,
@@ -151,14 +153,23 @@ function formatDeleteAfter(date: Date): string {
   return `${day} ${time}`;
 }
 
-/** Parses the cleanup script's UTC "MM/DD/YYYY HH:mm:ss" format; returns NaN when malformed. */
+/** Parses the cleanup script's UTC "MM/DD/YYYY HH:mm:ss" format; returns NaN when malformed or impossible (e.g. 2/30). */
 function parseDeleteAfter(value: string): number {
   const match = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(value.trim());
   if (!match) {
     return Number.NaN;
   }
   const [month, day, year, hour, minute, second] = match.slice(1).map(Number);
-  return Date.UTC(year, month - 1, day, hour, minute, second);
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (date.getUTCFullYear() !== year
+    || date.getUTCMonth() !== month - 1
+    || date.getUTCDate() !== day
+    || date.getUTCHours() !== hour
+    || date.getUTCMinutes() !== minute
+    || date.getUTCSeconds() !== second) {
+    return Number.NaN;
+  }
+  return date.getTime();
 }
 
 /** Values containing spaces need explicit quotes only when az runs through a shell (Windows). */
@@ -265,7 +276,12 @@ function discoverPersistentFixtures(
   return true;
 }
 
-function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): string | undefined {
+function runPostProvisionScripts(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+  manifestDir: string,
+  budget: RunBudget,
+): string | undefined {
   const resourceGroupNames = Object.values(context.resourceGroupNames);
 
   if (manifest.postProvisionScript) {
@@ -275,7 +291,7 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
       const stdout = execFileSync(
         NPX_COMMAND,
         ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-        { encoding: "utf8", timeout: runBudget.remainingMs(step), killSignal: "SIGKILL", shell: true }
+        { encoding: "utf8", timeout: budget.remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
       return stdout;
     } catch (error) {
@@ -415,6 +431,7 @@ type CoordinationRecord = {
   ownerWorkflowRunId?: string;
   resourceGroups: Record<string, string>;
   nextAttemptNotBefore?: string;
+  /** Reuse deadline, one hour before the earliest resource-group DeleteAfter. */
   expiresAt?: string;
 };
 
@@ -483,11 +500,13 @@ function verifyAndSelectRecordedFixture(
   manifest: FixtureManifest,
   record: CoordinationRecord,
   runCommand: ProvisioningDependencies["runAz"] = runAz,
+  now: number = Date.now(),
 ): boolean {
   if (!record.instanceId) {
     throw new Error(`Ready workflow fixture ${manifest.id} has no instance ID`);
   }
-  context.runId = record.instanceId;
+  const resourceGroupNames: Record<string, string> = {};
+  let reusable = true;
   for (const config of manifest.bicepConfigs) {
     const id = record.resourceGroups[config.resourceGroupNameBase];
     if (!id) {
@@ -506,8 +525,15 @@ function verifyAndSelectRecordedFixture(
       || tags[COMPLETED_TAG]?.toLowerCase() !== "true") {
       throw new Error(`Ready workflow fixture resource group ${name} has inconsistent ownership tags; manual repair is required`);
     }
-    context.resourceGroupNames[config.resourceGroupNameBase] = name;
+    const expiration = parseDeleteAfter(tags[DELETE_AFTER_TAG] ?? "");
+    reusable &&= Number.isFinite(expiration) && expiration - REUSE_SAFETY_MARGIN_MS > now;
+    resourceGroupNames[config.resourceGroupNameBase] = name;
   }
+  if (!reusable) {
+    return false;
+  }
+  context.runId = record.instanceId;
+  context.resourceGroupNames = resourceGroupNames;
   return true;
 }
 
@@ -517,31 +543,34 @@ function refreshExpiration(
   now: () => number = Date.now,
   retentionMs = READY_RETENTION_MS,
 ): string {
-  const expiresAt = new Date(now() + retentionMs);
-  let latest = expiresAt.getTime();
+  const expiresAt = new Date(Math.floor((now() + retentionMs) / 1000) * 1000);
+  let earliest = Number.POSITIVE_INFINITY;
   for (const name of Object.values(context.resourceGroupNames)) {
     const current = runCommand(["group", "show", "--name", name, "--query", `tags.${DELETE_AFTER_TAG}`, "-o", "tsv"]);
     const currentExpiration = parseDeleteAfter(current);
     if (!Number.isFinite(currentExpiration) || currentExpiration < expiresAt.getTime()) {
       runCommand(["group", "update", "--name", name, "--set", shellQuote(`tags.${DELETE_AFTER_TAG}=${formatDeleteAfter(expiresAt)}`), "-o", "none"]);
+      earliest = Math.min(earliest, expiresAt.getTime());
     } else {
-      latest = Math.max(latest, currentExpiration);
+      earliest = Math.min(earliest, currentExpiration);
     }
   }
-  return new Date(latest).toISOString();
+  return new Date(earliest - REUSE_SAFETY_MARGIN_MS).toISOString();
 }
 
 type DiscoveredInstance = {
   instanceId: string;
-  groups: Map<string, { name: string; completed: boolean }>;
+  groups: Map<string, { name: string; completed: boolean; expiresAt: number }>;
   complete: boolean;
+  reusable: boolean;
 };
 
 function discoverWorkflowFixtures(
   manifest: FixtureManifest,
   runCommand: ProvisioningDependencies["runAz"] = runAz,
+  now: number = Date.now(),
 ): DiscoveredInstance[] {
-  const groupsByInstance = new Map<string, Map<string, { name: string; completed: boolean }>>();
+  const groupsByInstance = new Map<string, DiscoveredInstance["groups"]>();
   for (const config of manifest.bicepConfigs) {
     const groups = JSON.parse(runCommand([
       "group",
@@ -564,7 +593,7 @@ function discoverWorkflowFixtures(
       if (!instanceId || !component || !manifest.bicepConfigs.some((item) => item.resourceGroupNameBase === component)) {
         throw new Error(`Workflow fixture resource group ${group.name} has malformed ownership tags`);
       }
-      const groups = groupsByInstance.get(instanceId) ?? new Map<string, { name: string; completed: boolean }>();
+      const groups: DiscoveredInstance["groups"] = groupsByInstance.get(instanceId) ?? new Map();
       const existing = groups.get(component);
       if (existing && existing.name !== group.name) {
         throw new Error(`Workflow fixture instance ${instanceId} has multiple groups for component ${component}`);
@@ -572,6 +601,7 @@ function discoverWorkflowFixtures(
       groups.set(component, {
         name: group.name,
         completed: group.tags[COMPLETED_TAG]?.toLowerCase() === "true",
+        expiresAt: parseDeleteAfter(group.tags[DELETE_AFTER_TAG] ?? ""),
       });
       groupsByInstance.set(instanceId, groups);
     }
@@ -580,6 +610,8 @@ function discoverWorkflowFixtures(
     instanceId,
     groups,
     complete: manifest.bicepConfigs.every((config) => groups.get(config.resourceGroupNameBase)?.completed === true),
+    reusable: [...groups.values()].every((group) =>
+      Number.isFinite(group.expiresAt) && group.expiresAt - REUSE_SAFETY_MARGIN_MS > now),
   })).sort((left, right) => left.instanceId.localeCompare(right.instanceId));
 }
 
@@ -590,7 +622,7 @@ function selectDiscoveredFixture(
   preferredInstanceId?: string,
   logger: Pick<Console, "warn"> = console,
 ): DiscoveredInstance | undefined {
-  const complete = instances.filter((instance) => instance.complete);
+  const complete = instances.filter((instance) => instance.complete && instance.reusable);
   const selected = complete.find((instance) => instance.instanceId === preferredInstanceId) ?? complete[0];
   if (!selected) {
     return undefined;
@@ -718,8 +750,9 @@ async function provisionTemporaryFixture(
       dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
 
       const record = parseCoordinationRecord(await lease.read(), manifest);
-      if (record.state === "Ready" && !(record.expiresAt && Date.parse(record.expiresAt) <= dependencies.now())) {
-        verifyAndSelectRecordedFixture(context, manifest, record, dependencies.runAz);
+      if (record.state === "Ready"
+        && !(record.expiresAt && Date.parse(record.expiresAt) <= dependencies.now())
+        && verifyAndSelectRecordedFixture(context, manifest, record, dependencies.runAz, dependencies.now())) {
         lease.assertHealthy();
         const expiresAt = refreshExpiration(
           context,
@@ -735,7 +768,7 @@ async function provisionTemporaryFixture(
 
       // It's possible that a complete instance of fixture had been created but that run failed to update the record.
       // Explicitly discover and fix the record if it's the case.
-      const instances = discoverWorkflowFixtures(manifest, dependencies.runAz);
+      const instances = discoverWorkflowFixtures(manifest, dependencies.runAz, dependencies.now());
       const selected = selectDiscoveredFixture(context, manifest, instances, record.instanceId, dependencies.log);
       if (selected) {
         // Groups are only tagged Completed after post-provision succeeds, so a complete instance needs neither again.

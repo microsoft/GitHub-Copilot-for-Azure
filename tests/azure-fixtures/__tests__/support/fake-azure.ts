@@ -3,7 +3,7 @@ import type {
   ProvisioningDependencies,
   WorkflowResourceLockLease,
 } from "../../provision-fixture.ts";
-import { createBudget, type FixtureManifest } from "../../fixture-common.ts";
+import { createBudget, type FixtureManifest, type RunBudget } from "../../fixture-common.ts";
 
 type Group = {
   name: string;
@@ -81,7 +81,6 @@ export class FakeAzureEnvironment {
   deploymentCount = 0;
   staleWriteRejections = 0;
   nowMs = Date.parse("2026-01-01T00:00:00Z");
-  readonly budget = createBudget(() => this.nowMs);
   account = {
     id: "subscription-1",
     tenantId: "tenant-1",
@@ -131,6 +130,7 @@ export class FakeAzureEnvironment {
 
   createDependencies(actor: string, environment: NodeJS.ProcessEnv = {}): ProvisioningDependencies {
     let uuidIndex = 0;
+    const budget = createBudget(() => this.nowMs);
     return {
       now: () => this.nowMs,
       sleep: async (ms) => {
@@ -140,8 +140,8 @@ export class FakeAzureEnvironment {
       immediate: async () => Promise.resolve(),
       randomUUID: () => `${actor}-uuid-${++uuidIndex}`,
       randomSuffix: () => `${actor.replaceAll(/[^a-z0-9]/gi, "").slice(0, 6)}${uuidIndex}`,
-      runAz: (args, options) => this.runAz(actor, args, options),
-      runPostProvisionScript: (context) => this.runPostProvision(actor, context),
+      runAz: (args, options) => this.runAz(actor, args, budget, options),
+      runPostProvisionScript: (context) => this.runPostProvision(actor, context, budget),
       createResourceLock: (_account, _container, _blob, acquisitionDeadline) => ({
         initialize: async (initialValue) => {
           this.throwIfFailed(actor, "initialize");
@@ -152,7 +152,7 @@ export class FakeAzureEnvironment {
         },
         acquire: () => this.acquire(actor, acquisitionDeadline),
       }),
-      budget: this.budget,
+      budget,
       log: {
         log: (...values) => this.recordLog(actor, "log", values),
         warn: (...values) => this.recordLog(actor, "warn", values),
@@ -167,7 +167,7 @@ export class FakeAzureEnvironment {
       leaseAcquisitionBudgetMs: 10_000,
       totalBudgetMs: 5_000,
       provisioningRetryDelayMs: 200,
-      readyRetentionMs: 60_000,
+      readyRetentionMs: 24 * 60 * 60 * 1000,
     };
   }
 
@@ -193,7 +193,7 @@ export class FakeAzureEnvironment {
           FixtureInstanceId: instanceId,
           FixtureComponent: config.resourceGroupNameBase,
           Completed: "True",
-          DeleteAfter: "01/01/2026 00:00:00",
+          DeleteAfter: "01/02/2026 00:00:00",
         },
       });
     }
@@ -276,11 +276,11 @@ export class FakeAzureEnvironment {
     };
   }
 
-  private runAz(actor: string, args: string[], options?: { subjectToBudget?: boolean }): string {
+  private runAz(actor: string, args: string[], budget: RunBudget, options?: { subjectToBudget?: boolean }): string {
     const operation = args.slice(0, 3).join(" ");
     this.throwIfFailed(actor, operation);
     if (options?.subjectToBudget !== false) {
-      this.budget.remainingMs(`az ${args.join(" ")}`);
+      budget.remainingMs(`az ${args.join(" ")}`);
     }
     this.journal.push({ actor, operation: "az", args: [...args], options });
 
@@ -338,9 +338,9 @@ export class FakeAzureEnvironment {
     throw new Error(`Unexpected az command: az ${args.join(" ")}`);
   }
 
-  private runPostProvision(actor: string, context: FixtureRunContext): string | undefined {
+  private runPostProvision(actor: string, context: FixtureRunContext, budget: RunBudget): string | undefined {
     this.throwIfFailed(actor, "post-provision");
-    this.budget.remainingMs("post-provision script");
+    budget.remainingMs("post-provision script");
     this.postProvisionRuns.push({ actor, groups: Object.values(context.resourceGroupNames) });
     this.journal.push({ actor, operation: "post-provision" });
     return undefined;

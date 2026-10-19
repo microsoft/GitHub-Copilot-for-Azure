@@ -95,11 +95,13 @@ A manifest has an optional `persistence` policy, independent of whether a stimul
 | Policy | Discovery | Retention |
 |--------|-----------|-----------|
 | `never` (default) | Skips discovery; always provisions a fresh fixture | `DeleteAfter` in 3 hours |
-| `temporary` | Uses blob-lease coordination to select a complete instance or provision a new one | `DeleteAfter` refreshed to at least 48 hours |
+| `temporary` | Uses blob-lease coordination to select a complete instance or provision a new one | `DeleteAfter` refreshed to at least 24 hours |
 | `permanent` | Finds completed resource groups by fixture ID and version; rejects partial or duplicate fixtures | New groups have `DoNotDelete=True` |
 
 The Vally executor deletes only `never` fixtures after each test. Temporary fixtures are left for external cleanup; permanent fixtures are protected from it.
 Temporary fixtures run post-provision scripts only when creating a new instance, before marking it complete. The other policies retain stimuli behavior: post-provision scripts run on every invocation, including permanent fixture reuse.
+
+After provisioning or reuse, each temporary resource group's `DeleteAfter` is extended to at least 24 hours from refresh, without shortening a later expiration. The coordination blob's `expiresAt` is a reuse deadline: the earliest component `DeleteAfter` minus one hour. Both recorded reuse and discovery exclude instances with any component at or inside that one-hour safety margin, or with a missing or malformed expiration. If no eligible instance remains, provisioning creates a replacement and leaves old instances for external cleanup. This margin reduces cleanup-boundary races but does not coordinate with cleanup already in progress.
 
 A manifest has a description. It is human-readable text that explains in natural language what the manifest contains.
 
@@ -219,6 +221,8 @@ The original user prompt in the stimulus must not provide conflicting informatio
 ### Time budget
 
 The provision script must finish within 10 minutes. If it does not, it is aborted with a non-zero exit code. The time budget for tests that require an Azure fixture must account for provisioning time.
+
+Each `provision()` invocation owns an isolated budget shared by its Azure CLI commands and post-provision script. Concurrent or later invocations cannot reset or exhaust another invocation's budget. Temporary fixtures have a separate lease-acquisition phase; their 10-minute provisioning budget starts after acquiring the lease. Cleanup commands and post-test scripts do not consume the provisioning budget.
 
 ### Error handling
 
