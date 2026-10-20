@@ -297,12 +297,12 @@ function renderComponentBilling(report: SkillImprovementReport): string[] {
   }
   const totals: BatchBilling = {
     batch: "Run total", finalized: report.status === "completed",
-    answers: emptyBilling("answer trajectories", 0, "mixed"),
-    agents: emptyBilling("agent invocations", 0, "mixed"),
+    evaluationAnswers: emptyBilling("answer trajectories", 0, "mixed"),
+    skillImprovement: emptyBilling("agent invocations", 0, "mixed"),
   };
   for (const batch of report.billing) {
     totals.finalized &&= batch.finalized;
-    for (const component of ["answers", "agents"] as const) {
+    for (const component of ["evaluationAnswers", "skillImprovement"] as const) {
       totals[component].expected += batch[component].expected;
       totals[component].observed += batch[component].observed;
       totals[component].measured += batch[component].measured;
@@ -315,19 +315,19 @@ function renderComponentBilling(report: SkillImprovementReport): string[] {
       ? component.measuredAiCredits.toFixed(6)
       : "unavailable";
   for (const batch of [...report.billing, totals]) {
-    const components = [batch.answers, batch.agents];
+    const components = [batch.evaluationAnswers, batch.skillImprovement];
     const sum = components.reduce((total, component) => total + component.measuredAiCredits, 0);
     const complete = batch.finalized && components.every(isBillingComplete);
     const measured = components.some(component => component.measured > 0);
     const total = complete ? sum.toFixed(6)
       : measured ? `${sum.toFixed(6)} (measured subtotal)` : "unavailable";
-    const coverage = (["answers", "agents"] as const).map(name => {
+    const coverage = (["evaluationAnswers", "skillImprovement"] as const).map(name => {
       const component = batch[name];
-      const label = name === "answers" ? "evaluation answers" : "skill-improvement";
+      const label = name === "evaluationAnswers" ? "evaluation answers" : "skill-improvement";
       return `${label} ${component.measured}/${component.expected} ${component.unit}`
         + (component.reason ? ` (${component.reason})` : "");
     }).join("; ") + (batch.finalized ? "" : "; incomplete attempt accounting");
-    lines.push(`| ${batch.batch} | ${credits(batch.answers)} | ${credits(batch.agents)} | ${total} | ${coverage} |`);
+    lines.push(`| ${batch.batch} | ${credits(batch.evaluationAnswers)} | ${credits(batch.skillImprovement)} | ${total} | ${coverage} |`);
   }
   return lines;
 }

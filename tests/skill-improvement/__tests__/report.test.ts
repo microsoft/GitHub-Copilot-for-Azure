@@ -518,11 +518,11 @@ describe("skill improvement reporting", () => {
 
     const batchBilling = (batch: string, withAgent = false): BatchBilling => ({
       batch, finalized: true,
-      answers: {
+      evaluationAnswers: {
         ...emptyBilling("answer trajectories", 8, "copilot_usage.totalNanoAiu"),
         observed: 8, measured: 8, measuredAiCredits: 4,
       },
-      agents: withAgent ? {
+      skillImprovement: withAgent ? {
         ...emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
         observed: 1, measured: 1, measuredAiCredits: 2,
       } : emptyBilling("agent invocations", 0, "not applicable"),
@@ -551,13 +551,13 @@ describe("skill improvement reporting", () => {
     expect(accounting).not.toContain("Judge AIC");
     expect(accounting).not.toContain("graded trajectories");
     expect(accounting).toContain("judge and Azure infrastructure costs are excluded");
-    report.billing[1].agents.measured = 0;
-    report.billing[1].agents.measuredAiCredits = 0;
+    report.billing[1].skillImprovement.measured = 0;
+    report.billing[1].skillImprovement.measuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain(
       "| Run total | 16.000000 | unavailable | 16.000000 (measured subtotal) |"
     );
-    report.billing[1].agents.measured = 1;
-    report.billing[1].agents.measuredAiCredits = 0;
+    report.billing[1].skillImprovement.measured = 1;
+    report.billing[1].skillImprovement.measuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain("| Run total | 16.000000 | 0.000000 | 16.000000 |");
     report.billing[1].finalized = false;
     expect(renderReportSummary(report)).toContain(
@@ -593,6 +593,12 @@ describe("skill improvement reporting", () => {
       iterations: [],
       terminationReason: "no-actionable-failures",
       finalAccepted: true,
+      billing: [{
+        batch: "Baseline",
+        finalized: true,
+        evaluationAnswers: emptyBilling("answer trajectories", 1, "copilot_usage.totalNanoAiu"),
+        skillImprovement: emptyBilling("agent invocations", 0, "not applicable"),
+      }],
       finalPatchPath: "final-candidate.patch",
       usage: { answerGenerations: 0, judgeCalls: 0, durationMinutes: 1 },
     };
@@ -608,6 +614,13 @@ describe("skill improvement reporting", () => {
       expect(JSON.parse(
         fs.readFileSync(path.join(output, "workflow-outputs.json"), "utf8")
       ).finalPatchPath).toBe("final-candidate.patch");
+      const savedReport = JSON.parse(
+        fs.readFileSync(path.join(output, "report.json"), "utf8")
+      );
+      expect(savedReport.billing[0]).toHaveProperty("evaluationAnswers");
+      expect(savedReport.billing[0]).toHaveProperty("skillImprovement");
+      expect(savedReport.billing[0]).not.toHaveProperty("answers");
+      expect(savedReport.billing[0]).not.toHaveProperty("agents");
       expect(renderReport(report)).toContain(
         "a draft pull request is created only when a candidate satisfies every configured acceptance rule"
       );

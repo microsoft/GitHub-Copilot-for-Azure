@@ -24,10 +24,10 @@ export type ComponentBilling = {
 
 export type BatchBilling = {
   batch: string;
-  /** Evaluation-answer AIC; the field name is retained for saved report compatibility. */
-  answers: ComponentBilling;
-  /** Skill-improvement AIC; the field name is retained for saved report compatibility. */
-  agents: ComponentBilling;
+  /** Evaluation-answer AIC. */
+  evaluationAnswers: ComponentBilling;
+  /** Skill-improvement AIC. */
+  skillImprovement: ComponentBilling;
   finalized: boolean;
 };
 

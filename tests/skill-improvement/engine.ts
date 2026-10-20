@@ -515,12 +515,12 @@ export async function executeSkillImprovement(
   const recordBilling = (name: string) => (evaluation: BatchBilling) => {
     const existing = billing.find(batch => batch.batch === name);
     if (existing) {
-      existing.answers = { ...evaluation.answers };
+      existing.evaluationAnswers = { ...evaluation.evaluationAnswers };
       existing.finalized = evaluation.finalized;
     } else {
       billing.push({
         ...evaluation, batch: name,
-        answers: { ...evaluation.answers },
+        evaluationAnswers: { ...evaluation.evaluationAnswers },
       });
     }
   };
@@ -608,8 +608,8 @@ export async function executeSkillImprovement(
           const iterationBilling: BatchBilling = {
             batch: `Iteration ${iteration}`,
             finalized: false,
-            answers: emptyBilling("answer trajectories", 0, "not applicable"),
-            agents: emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
+            evaluationAnswers: emptyBilling("answer trajectories", 0, "not applicable"),
+            skillImprovement: emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
           };
           billing.push(iterationBilling);
           await runImprovementAgent(
@@ -620,7 +620,7 @@ export async function executeSkillImprovement(
             previousRejectedPatchPath,
             iteration,
             deadline,
-            skillImprovementBilling => { iterationBilling.agents = skillImprovementBilling; }
+            skillImprovementBilling => { iterationBilling.skillImprovement = skillImprovementBilling; }
           );
           iterationBilling.finalized = true;
           iterationReport.changedFiles = changedFiles(worktree);

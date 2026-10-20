@@ -381,13 +381,13 @@ export async function runEvaluationBatch(
   const billing: BatchBilling = {
     batch: phase,
     finalized: false,
-    answers: emptyBilling("answer trajectories", expectedAnswers, "copilot_usage.totalNanoAiu"),
-    agents: emptyBilling("agent invocations", 0, "not applicable"),
+    evaluationAnswers: emptyBilling("answer trajectories", expectedAnswers, "copilot_usage.totalNanoAiu"),
+    skillImprovement: emptyBilling("agent invocations", 0, "not applicable"),
   };
   onBilling?.(billing);
   const recordBilling = (records: VallyRecord[]) => {
     const answers = records.filter(record => record.type === "trial-result" || record.trajectory);
-    billing.answers.observed += answers.length;
+    billing.evaluationAnswers.observed += answers.length;
     for (const answer of answers) {
       const usage = answer.trajectory?.metadata?.answerBilling;
       const value = usage?.billedAiCredits;
@@ -398,8 +398,8 @@ export async function runEvaluationBatch(
         if (!Number.isFinite(value) || value < 0) {
           throw new Error("Invalid answer trajectory billing value.");
         }
-        billing.answers.measured++;
-        billing.answers.measuredAiCredits += value;
+        billing.evaluationAnswers.measured++;
+        billing.evaluationAnswers.measuredAiCredits += value;
       }
     }
     onBilling?.(billing);

@@ -157,9 +157,9 @@ once, independently of grading duplication. Coverage explicitly counts
 answer trajectories and agent invocations.
 
 The code uses `EvaluationAnswerBilling`, `collectEvaluationAnswerBilling`, and
-`collectSkillImprovementBilling` to distinguish these activities. Existing artifact
-keys (`metadata.answerBilling`, ledger `answers`/`agents`, and `answerBilledCredits`)
-are retained so previously saved trajectories and reports remain readable.
+`collectSkillImprovementBilling` to distinguish these activities. In `report.json`,
+the billing ledger uses the explicit `evaluationAnswers` and `skillImprovement` keys.
+Individual trajectory metadata continues to use `metadata.answerBilling`.
 
 The improvement CLI's final `--usage-output-file` JSON supplies the
 authoritative session `totalNanoAiu` aggregate. Divide this once by

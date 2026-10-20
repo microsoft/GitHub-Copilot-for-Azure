@@ -119,7 +119,7 @@ describe("answer billing propagation", () => {
           await expect(pending).rejects.toBe(processError);
           expect(captured).toMatchObject({
             finalized: false,
-            answers: { expected: truncated ? 2 : 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
+            evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
           });
           return;
         }
@@ -138,11 +138,11 @@ describe("answer billing propagation", () => {
         expect(aggregateJudgments(batch.trials)[0].answerBilledCredits).toBe(credits);
         expect(batch.billing).toMatchObject({
           finalized: true,
-          answers: {
+          evaluationAnswers: {
             expected: 1, observed: 1, measured: credits === undefined ? 0 : 1,
             measuredAiCredits: credits ?? 0,
           },
-          agents: { expected: 0 },
+          skillImprovement: { expected: 0 },
         });
       } finally {
         vi.mocked(runProcess).mockReset();
