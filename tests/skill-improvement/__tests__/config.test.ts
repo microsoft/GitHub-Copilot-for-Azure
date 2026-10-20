@@ -94,7 +94,7 @@ describe("skill improvement configuration", () => {
     const valid = spec();
     valid.improvementAgent.enabled = false;
     valid.limits.maxIterations = 0;
-    valid.acceptance.requireHeldOutImprovement = false;
+    valid.heldOutAcceptance!.enabled = false;
     expect(validateRunSpec(valid).limits.maxIterations).toBe(0);
   });
 
