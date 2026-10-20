@@ -22,6 +22,8 @@
 # Base: current Java LTS on Azure Linux. See references/base-images.md.
 FROM mcr.microsoft.com/openjdk/jdk:<LATEST_STABLE_JAVA_JDK>-azurelinux AS build
 
+RUN tdnf install -y unzip && tdnf clean all
+
 WORKDIR /app
 
 # Layer caching: copy Maven wrapper and POM first so dependency resolution is
