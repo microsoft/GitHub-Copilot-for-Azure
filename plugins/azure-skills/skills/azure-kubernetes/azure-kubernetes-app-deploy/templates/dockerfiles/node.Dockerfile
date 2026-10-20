@@ -18,8 +18,8 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-# Base: current Node LTS, Alpine variant. See references/base-images.md.
-FROM node:<LATEST_STABLE_NODE>-alpine AS build
+# Base: current Node LTS on Azure Linux. See references/base-images.md.
+FROM mcr.microsoft.com/azurelinux/base/nodejs:<LATEST_STABLE_NODE> AS build
 
 WORKDIR /app
 
@@ -43,11 +43,7 @@ RUN npm prune --omit=dev
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM node:<LATEST_STABLE_NODE>-alpine
-
-# Security: install dumb-init so Node runs as PID > 1 and signals propagate
-# correctly — avoids zombie processes inside the container.
-RUN apk add --no-cache dumb-init
+FROM mcr.microsoft.com/azurelinux/distroless/nodejs:<LATEST_STABLE_NODE>
 
 WORKDIR /app
 
@@ -59,13 +55,13 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
 
 # AKS Deployment Safeguards DS004: never run as root.
-# The "node" user (uid 1000) is built into the node-alpine image.
-USER node
+# The Azure Linux distroless Node image provides the non-root app user at uid 1000.
+USER 1000
 
 EXPOSE 3000
 
 # HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle health
 # checks in AKS. See deployment.yaml for probe configuration.
 
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "dist/main.js"]
+ENTRYPOINT ["node"]
+CMD ["dist/main.js"]
