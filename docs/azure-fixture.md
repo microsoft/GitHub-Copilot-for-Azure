@@ -19,27 +19,15 @@ Some skills are designed to operate on existing Azure resources. For example,
 
 To meaningfully evaluate their scenarios, we need to prepare Azure resources for them and see how an Agent operates the resources with the skill.
 
-## Types of fixtures
+## Fixture persistence levels
 
-### Stimuli fixture
+All Azure fixtures use the same manifest schema and provisioning logic, whether provisioned for an individual stimulus or by a workflow. Their lifecycle is determined by the manifest's `persistence` policy, not by where they are used:
 
-Stimuli fixtures are fixtures defined for a stimuli. These fixtures are provisioned before the stimuli runs and cleaned up after the stimuli completes, if applicable.
+- `never` (default): Always provision a fresh fixture. The Vally executor deletes it after the test; a `DeleteAfter` tag also marks it for external cleanup after 3 hours.
+- `temporary`: Reuse a complete fixture instance across tests and concurrent workflow runs, or provision one if none is eligible. Its `DeleteAfter` tag is refreshed to at least 24 hours, and deletion is left to external cleanup.
+- `permanent`: Reuse a complete fixture matching the manifest ID and version, or provision one if none exists. Newly provisioned resource groups are tagged with `DoNotDelete=True` to protect them from external cleanup.
 
-There are two types of stimuli fixtures:
-
-- `readOnly` fixture
-
-For this type of fixture, the agent task reads resource data but does not modify it.
-
-- `readWrite` fixture
-
-For this type of fixture, the agent task reads and modifies resource data.
-
-In theory, `readOnly` fixture can be persisted for reuse since it isn't modified to save cost and reduce the chance of getting transient failures due to environmental issues. However, there is no guarantee that the agent won't write data to it. Check the persisted fixture in case there are unexpected evaluation results. 
-
-### Workflow fixture
-
-Workflow fixtures are fixtures defined for a workflow. These fixtures are provisioned at an early stage of the workflow run. They are persisted so subsequent tasks in the workflow and concurrent workflow runs can reuse them. They are tagged for deletion by an external clean up workflow.
+The manifest's `type` (`readOnly` or `readWrite`) describes whether the agent task is expected to modify resource data; it does not control persistence or enforce access restrictions. Reusing fixtures can reduce provisioning cost and transient environmental failures, but even a task marked `readOnly` may modify resources. Inspect reused fixtures when investigating unexpected evaluation results.
 
 ## Evaluation setup
 
