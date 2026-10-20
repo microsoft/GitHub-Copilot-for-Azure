@@ -15,7 +15,7 @@
 
 ## Signal Handling
 
-Node.js does not handle `SIGTERM` correctly when running as PID 1. The base template includes `dumb-init` as the entrypoint to forward signals properly; no application-level changes are needed unless the app registers explicit cleanup handlers.
+Node.js does not handle `SIGTERM` correctly when running as PID 1. The base template includes Azure Linux's static `tini` binary as the entrypoint to forward signals and reap orphaned processes; no application-level changes are needed unless the app registers explicit cleanup handlers.
 
 ### Fastify listen caveat
 
@@ -182,7 +182,7 @@ For TypeScript projects, ensure `tsconfig.json` has `"outDir": "dist"` and the D
 
 | Issue | Symptom | Fix |
 |-------|---------|-----|
-| No SIGTERM handling | Pod takes 30s to terminate (killed by `SIGKILL` after grace period) | Use `dumb-init` as entrypoint, or add explicit `process.on('SIGTERM', ...)` handler to close the server gracefully |
+| No SIGTERM handling | Pod takes 30s to terminate (killed by `SIGKILL` after grace period) | Use the base template's `tini-static` entrypoint, and add an explicit `process.on('SIGTERM', ...)` handler when the app needs graceful cleanup |
 | ECONNRESET on PostgreSQL | `Error: Connection terminated unexpectedly` | Configure pool `idleTimeoutMillis` and `connectionTimeoutMillis`; Azure PG Flexible Server closes idle connections after ~5 min |
 | Fastify localhost binding | Health probes fail with `connection refused` despite app running | Pass `host: '0.0.0.0'` to `fastify.listen()` — Fastify defaults to `127.0.0.1` |
 | node_modules bloat | Image > 500MB, slow pulls from ACR | Run `npm ci --omit=dev` in a separate stage; consider esbuild bundling for single-file output |

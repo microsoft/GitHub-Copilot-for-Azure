@@ -40,6 +40,11 @@ RUN test -d /app/dist || (echo "ERROR: Build output directory '/app/dist' not fo
 # Remove dev dependencies to slim down the production node_modules
 RUN npm prune --omit=dev
 
+# Install the static init binary in the build stage so it can be copied into
+# the distroless runtime without additional shared-library dependencies.
+RUN tdnf install -y tini-static \
+    && tdnf clean all
+
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
@@ -53,6 +58,7 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json ./
+COPY --from=build /usr/bin/tini-static /usr/bin/tini-static
 
 # AKS Deployment Safeguards DS004: never run as root.
 # The Azure Linux distroless Node image provides the non-root app user at uid 1000.
@@ -63,5 +69,5 @@ EXPOSE 3000
 # HEALTHCHECK is omitted — Kubernetes liveness/readiness probes handle health
 # checks in AKS. See deployment.yaml for probe configuration.
 
-ENTRYPOINT ["node"]
-CMD ["dist/main.js"]
+ENTRYPOINT ["/usr/bin/tini-static", "--"]
+CMD ["node", "dist/main.js"]

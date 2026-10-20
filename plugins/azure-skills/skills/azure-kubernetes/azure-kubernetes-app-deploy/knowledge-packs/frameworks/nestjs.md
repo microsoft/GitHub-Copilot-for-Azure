@@ -23,7 +23,7 @@ app.enableShutdownHooks();
 await app.listen(process.env.PORT || 3000);
 ```
 
-The base template uses `dumb-init` as the entrypoint to forward `SIGTERM` to the Node process when running as PID 1. Both are required: `dumb-init` routes the signal, `enableShutdownHooks()` handles it.
+The base template uses Azure Linux's static `tini` binary as the entrypoint to forward `SIGTERM` and reap orphaned processes when running as PID 1. Both are required: `tini-static` routes the signal, and `enableShutdownHooks()` handles it.
 
 ---
 
@@ -180,7 +180,7 @@ The **SWC compiler** is ~20x faster than the default TypeScript compiler for lar
 
 | Issue | Symptom | Fix |
 |-------|---------|-----|
-| SIGTERM not handled | Pod takes 30s to terminate (killed by `SIGKILL` after grace period) | Call `app.enableShutdownHooks()` in `main.ts` so NestJS lifecycle events (`OnModuleDestroy`, `BeforeApplicationShutdown`) fire on `SIGTERM`; also use `dumb-init` as the container entrypoint |
+| SIGTERM not handled | Pod takes 30s to terminate (killed by `SIGKILL` after grace period) | Call `app.enableShutdownHooks()` in `main.ts` so NestJS lifecycle events (`OnModuleDestroy`, `BeforeApplicationShutdown`) fire on `SIGTERM`; also use the base template's `tini-static` entrypoint |
 | TypeORM connection pool exhaustion | `Error: Connection pool exhausted` or `ETIMEDOUT` under load | Set `extra: { max: 10 }` in TypeORM config to limit pool size; Azure PG Flexible Server has a connection limit based on SKU — monitor with `pg_stat_activity` |
 | Circular dependency | `Error: Nest cannot create the ... instance` at startup | Use `forwardRef(() => Module)` in module imports; refactor shared logic into a dedicated module to break the cycle |
 | dist/ not included in image | `Error: Cannot find module '/app/dist/main.js'` at container start | Ensure `COPY --from=build /app/dist ./dist` is present in the Dockerfile runtime stage; verify `nest build` runs successfully in the build stage |
