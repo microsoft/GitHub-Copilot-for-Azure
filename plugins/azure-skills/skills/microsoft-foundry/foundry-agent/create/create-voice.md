@@ -66,10 +66,17 @@ For a generic greenfield request to create a Voice Agent, proceed with **Prompt 
 - `model.id: gpt-realtime`
 - canonical authored `kind: voice`
 
-Explicit user choices override these defaults. Ask only when an unresolved requirement materially changes the architecture:
+Resolve model strategy from deployment intent, not from the presence of a model name:
+
+- A model name alone, including a model name plus a project endpoint or name, uses managed Prompt Voice (`modelType: managed`) and does not create a project model deployment.
+- Explicit lifecycle wording selects self-deployed Prompt Voice: BYOM, self-deployed, project model deployment, existing deployment, deployment name, create/deploy/provision the model, create if missing/not found, ensure the deployment exists, or inspect/select its version, SKU, capacity, or quota. For example, "Use `gpt-realtime`; create it if it does not exist" is sufficient self-deployed intent.
+- Explicit user choice overrides inference. Ask one focused clarification only when signals conflict, such as requesting both managed/service-hosted behavior and creation or provisioning of a deployment.
+
+Before authoring, state the resolved interpretation. For managed intent, state that no project deployment will be created. For self-deployed provisioning intent, state that the workflow will verify the deployment, add it to `services.<ai-project-service>.deployments[]` if missing, provision it through azd, and use `modelType: self_deployed`.
+
+Ask only when another unresolved requirement materially changes the architecture:
 
 - custom code, an existing hosted text agent, or explicit Hosted Voice intent;
-- BYOM, `self_deployed`, or an existing project model deployment;
 - an existing project or codebase whose services imply a subtype but do not identify the target clearly;
 - a planning, explanation, or comparison request that explicitly asks to evaluate the available approaches.
 
@@ -79,7 +86,7 @@ Detect requested Voice Agent settings or existing settings that must be preserve
 
 When Twilio telephony is explicitly requested, follow the remote connection and binding flow in [Voice Agent YAML settings](references/voice-agent-settings.md). Ask only for a missing connection name, Account SID, Auth Token availability, or Twilio number; never ask for the token in chat.
 
-For explicit ACS or [Teams Phone extensibility (TPE)](https://learn.microsoft.com/en-us/azure/communication-services/concepts/interop/tpe/teams-phone-extensibility-overview) requests, follow the existing TPE/ACS connection or portal flow there; do not automate infrastructure, RBAC, webhooks, or Event Grid.
+For explicit ACS or Teams Phone extensibility (TPE) requests, follow the TPE/ACS section in [Voice Agent YAML settings](references/voice-agent-settings.md); do not automate infrastructure, RBAC, webhooks, or Event Grid.
 
 Resolve values from the request, workspace, `azure.yaml`, and active azd environment before asking. Do not author files until this checkpoint is complete:
 
@@ -90,8 +97,8 @@ Resolve values from the request, workspace, `azure.yaml`, and active azd environ
 | Foundry project | Confirm new versus existing; never provision implicitly |
 | Existing project identity | Resolve both endpoint and ARM ID; pass the ARM ID to `--project-id` |
 | azd environment | Reuse the selected environment or collect the intended environment |
-| Model strategy | Default generic creation to managed `gpt-realtime`; ask when BYOM, self-deployed, or an existing deployment is intended |
-| Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; inspect or ask for self-deployed/hosted target models |
+| Model strategy | Use managed for a model name alone; use self-deployed for explicit deployment lifecycle intent; clarify only conflicting signals |
+| Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; for self-deployed Prompt Voice, inspect the selected Foundry account for the exact deployment name before authoring |
 | Instructions | Preserve existing instructions or collect the requested behavior |
 | Output voice | Preserve an existing value or use the user's requested voice; otherwise omit it and use the azd default |
 
@@ -132,11 +139,18 @@ azd ai agent init --no-prompt \
   --model "<model-name>"
 ```
 
-Add `--voice "<voice-name>"` only when the user explicitly requests a voice. Otherwise allow azd to apply its default. `--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For self-deployed Prompt Voice, initialize the project, then edit the generated service to reference the verified deployment as documented in [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
+Add `--voice "<voice-name>"` only when the user explicitly requests a voice. Otherwise allow azd to apply its default. `--kind prompt-voice` does not accept Hosted/runtime flags or `--model-deployment`. For a new self-deployed Prompt Voice service, initialize once, then follow the Golden Path below and [Prompt Voice YAML](references/voice-agent-prompt-yaml.md).
 
 Immediately after init, normalize the generated service to canonical `kind: voice` if azd wrote `kind: prompt-voice`, alongside the other generated-YAML edits.
 
-For an existing Prompt Voice service, edit `azure.yaml` in place. Do not rerun init and create a suffixed duplicate.
+For `modelType: self_deployed`, follow this Golden Path:
+
+1. Inspect the selected Foundry account for the exact deployment name. If a compatible deployment exists, set `model.id` to that exact name and do not add a duplicate deployment entry.
+2. If it is missing and the user intends creation, read [Foundry Model Reference](references/foundry-model.md), resolve the exact model version, format, supported SKU/capacity, lifecycle, and quota, and state the planned billable/quota-consuming deployment. If creation was not explicit, obtain confirmation.
+3. Preserve existing project infrastructure and deployment entries, append the deployment under `services.<ai-project-service>.deployments[]`, and set `model.id` to the exact `deployments[].name`. Use this path for both realtime and cascaded/text-model BYOM; Foundry infers the pipeline from `model.id`.
+4. Run `azd provision --preview --no-prompt`, confirm the preview changes only the intended model infrastructure, then run `azd provision --no-prompt`. Deploy the Voice service only after provisioning succeeds.
+
+For an existing Prompt Voice service or an added model in an existing azd project, edit `azure.yaml` in place. Do not rerun init and create a suffixed duplicate. Do not use `az cognitiveservices account deployment create`; `azure.yaml` is the source of truth for azd-managed model infrastructure.
 
 ### Hosted Voice
 
@@ -192,6 +206,6 @@ The final handoff must distinguish the results: report whether automated technic
 | Project choice is unresolved | Stop and ask for a new or existing project before init or provision |
 | Existing endpoint has no ARM ID | Resolve it with the paired `resolve-project-id` script |
 | Init would duplicate an existing service | Edit the existing Voice service in place |
-| Prompt Voice model deployment is missing | Inspect project deployments or ask before authoring `model.id` |
+| Prompt Voice model deployment is missing | Do not author `model.id` alone. Reuse a compatible existing deployment, or confirm creation and follow the `deployments[]` preview/provision Golden Path |
 | Hosted target fails locally | Fix the hosted target's Bridge handler before deploying the Voice wrapper |
 | `azd ai agent invoke` rejects Voice | Use the managed `voice` WebSocket helper or Foundry Voice playground |

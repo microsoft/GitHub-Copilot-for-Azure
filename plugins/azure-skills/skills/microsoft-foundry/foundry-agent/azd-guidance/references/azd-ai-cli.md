@@ -142,7 +142,7 @@ A Managed Harness Agent has no source/runtime/container fields and no local `azd
 
 ### Voice Agent service blocks (`kind: voice`)
 
-Use `azd ai agent init --kind prompt-voice` for a new Prompt Voice service. Use a Hosted manifest or an existing `kind: hosted` target plus `kind: voice` wrapper for Hosted Voice.
+Use `azd ai agent init --kind prompt-voice` for a new Prompt Voice service. For Hosted Voice, initialize from an `azure.yaml` template that defines both the hosted target and Voice wrapper, or add a Voice wrapper to an existing compatible hosted target.
 
 ```bash
 azd ai agent init --no-prompt --kind prompt-voice --agent-name <agent-name> \

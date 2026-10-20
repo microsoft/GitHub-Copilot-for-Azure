@@ -81,7 +81,7 @@ telephony:
 
 Token: process environment only, never YAML/chat/summaries. Connection must preexist deploy. azd doesn't create accounts, buy/discover numbers, or prove routing; test a call.
 
-### TPE / ACS
+### Teams Phone extensibility (TPE) / ACS
 
 For an explicit [Teams Phone extensibility (TPE)](https://learn.microsoft.com/en-us/azure/communication-services/concepts/interop/tpe/teams-phone-extensibility-overview) or ACS request, reuse a supplied TPE/ACS connection only after checking category `AzureCommunicationServices`, ACS endpoint, and available `metadata.ResourceId`. The azd compatibility authoring value is `provider: acs`; bind a TPE resource account:
 

@@ -19,23 +19,50 @@ services:
     instructions: Respond naturally and concisely.
 ```
 
-## Project Model Deployment
+## Self-Deployed Project Model
 
-`modelType: self_deployed` references a verified deployment name. Foundry infers native speech-to-speech versus cascaded STT -> LLM -> TTS from `model.id`.
+`modelType: self_deployed` references an exact deployment name in the selected Foundry account. Foundry infers native speech-to-speech versus cascaded STT -> LLM -> TTS from `model.id`; apply the same flow to realtime and text-model BYOM.
+
+First inspect the resolved subscription, resource group, and Foundry account for the exact requested deployment name:
+
+```bash
+az cognitiveservices account deployment list --resource-group "<resource-group>" --name "<foundry-account>" --query "[?name=='<deployment-name>'].{name:name,model:properties.model.name,version:properties.model.version,format:properties.model.format,sku:sku.name,capacity:sku.capacity}" --output json
+```
+
+Verify that the returned model is compatible with the requested Voice architecture. If it exists, preserve `services.<ai-project-service>.deployments[]`, do not add a duplicate, and reference the exact name:
+
+```yaml
+services:
+  advisor-voice:
+    host: azure.ai.agent
+    uses: [ai-project]
+    kind: voice
+    name: advisor-voice
+    modelType: self_deployed
+    model:
+      id: <existing-deployment-name>
+    instructions: Respond naturally and concisely.
+```
+
+If the deployment is missing and the user intends creation:
+
+1. Read [Foundry Model Reference](foundry-model.md) and resolve the exact model version, format, supported SKU/capacity, lifecycle, and available quota. Never guess these values.
+2. State the billable/quota-consuming deployment plan and obtain confirmation unless creation was explicit.
+3. Preserve existing deployment entries and unrelated infrastructure, then append the resolved deployment to the existing `ai-project` service. Set `model.id` to the exact `deployments[].name`.
 
 ```yaml
 services:
   ai-project:
     host: azure.ai.project
     deployments:
-      - name: gpt-4o-mini
+      - name: <exact-deployment-name>
         model:
-          format: OpenAI
-          name: gpt-4o-mini
-          version: "2024-07-18"
+          format: <catalog-format>
+          name: <catalog-model-name>
+          version: "<catalog-model-version>"
         sku:
-          name: GlobalStandard
-          capacity: 50
+          name: <supported-sku>
+          capacity: <confirmed-capacity>
 
   advisor-voice:
     host: azure.ai.agent
@@ -44,11 +71,13 @@ services:
     name: advisor-voice
     modelType: self_deployed
     model:
-      id: gpt-4o-mini
+      id: <exact-deployment-name>
     instructions: Respond naturally and concisely.
 ```
 
-For an existing project deployment, omit a new `deployments` entry and use its exact deployment name.
+> **Illustrative only:** A verified realtime deployment used `gpt-realtime` version `2025-08-28`, `GlobalStandard`, capacity `1`. Re-query the catalog, lifecycle, regional support, and quota before authoring; these values are not universal defaults.
+
+For an existing azd project, edit `deployments[]` in place; do not rerun `azd ai agent init`. Do not use `az cognitiveservices account deployment create`, because it creates infrastructure outside the azd lifecycle. Run `azd provision --preview --no-prompt`, review that only intended model infrastructure changes, then run `azd provision --no-prompt` and deploy the Voice service.
 
 ## Optional Configuration
 
