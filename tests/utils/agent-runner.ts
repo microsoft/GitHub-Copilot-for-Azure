@@ -164,7 +164,7 @@ export type AgentRunConfig = {
   /**
    * Number of milliseconds as timeout for the entire run.
    */
-  timeout?: number;
+  timeout: number;
 
   /**
    * Whether to take a screenshot of the application after the agent work.

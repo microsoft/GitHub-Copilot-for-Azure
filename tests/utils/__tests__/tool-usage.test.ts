@@ -169,8 +169,8 @@ describe("report artifact filenames", () => {
 
   test.each([false, true])("matches metadata and tool JSON to the markdown filename (collision=%s)", async (collision) => {
     vi.spyOn(fs, "existsSync").mockReturnValue(true);
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    const writeFile = vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => { });
+    const writeFile = vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
     if (collision) {
       writeFile.mockImplementationOnce(() => {
         throw Object.assign(new Error("File exists"), { code: "EEXIST" });
@@ -186,7 +186,7 @@ describe("report artifact filenames", () => {
       rawData: [{ message: "Raw run data" }],
     };
 
-    await createMarkdownReport("report-filenames", { prompt: "Test prompt" }, metadata);
+    await createMarkdownReport("report-filenames", { prompt: "Test prompt", timeout: 30 * 1000 }, metadata);
 
     const writtenPaths = writeFile.mock.calls.map(([file]) => String(file));
     const markdownPaths = writtenPaths.filter(file => file.endsWith(".md"));

@@ -4,6 +4,7 @@ import * as path from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   query,
+  type Query,
   type Options as ClaudeAgentOptions,
   type SDKAssistantMessage,
   type SDKMessage,
@@ -49,6 +50,47 @@ type RunnerResource = {
   preserveWorkspace: boolean;
   workspace: string;
 };
+
+type ClaudeSdkRunnerSession = {
+  messages: Query;
+  finishInput: () => void;
+};
+
+/**
+ * Important: Claude SDK sometimes schedules background tasks.
+ * Unlike Copilot SDK which will keep polling the result before claiming the session has ended,
+ * Claude SDK will end the session without waiting for the background tasks to finish.
+ * The official documentation mentions that Claude Code will get notifications and resume but
+ * didn't mention the expected behavior of Claude SDK.
+ * Experimentation shows that when Claude SDK ends the session, it also kills the background tasks.
+ * To workaround this problem, we stall the session using an async iterator and explicitly
+ * terminates the session when we know there are no pending background tasks.
+ */
+function startSession(prompts: string[], options: ClaudeAgentOptions): ClaudeSdkRunnerSession {
+  let finishInput!: () => void;
+
+  const inputEnd = new Promise<void>((resolve) => {
+    finishInput = resolve;
+  });
+  async function* input(): AsyncGenerator<SDKUserMessage> {
+    for (const prompt of prompts) {
+      yield {
+        type: "user",
+        message: {
+          role: "user",
+          content: prompt
+        },
+        parent_tool_use_id: null
+      };
+    }
+    await inputEnd;
+  }
+
+  return {
+    messages: query({ prompt: input(), options }),
+    finishInput
+  }
+}
 
 /**
  * You can use CAPI as the LLM service for the Claude Agent SDK.
@@ -114,13 +156,6 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
     };
     let lastEventId: string | null = null;
     let sessionId: string | undefined;
-    let timedOut = false;
-    const timeout = runConfig.timeout === undefined
-      ? undefined
-      : setTimeout(() => {
-        timedOut = true;
-        abortController.abort();
-      }, runConfig.timeout);
 
     try {
       await runConfig.setup?.(workspace);
@@ -153,7 +188,6 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
           ...runConfig.env,
           AZURE_MCP_COLLECT_TELEMETRY: "false",
         },
-        maxTurns: runConfig.maxTurns,
         model: runConfig.model,
         plugins,
         skills: disabledSkills ? skillsLoaded.filter((ref) => {
@@ -162,40 +196,71 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
         systemPrompt: toClaudeSystemPrompt(runConfig),
       };
 
-      for (const prompt of [runConfig.prompt, ...(runConfig.followUp ?? [])]) {
-        const eventCountBeforePrompt = metadata.events.length;
-        try {
-          const response = query({
-            prompt,
-            options: {
-              ...baseOptions,
-              ...(sessionId ? { resume: sessionId } : {}),
-            },
-          });
+      const startTime = new Date().getTime();
+      const prompts = [runConfig.prompt, ...(runConfig.followUp ?? [])];
 
-          for await (const message of response) {
-            sessionId = "session_id" in message ? message.session_id : sessionId;
+      const pendingBackgroundTasks = new Set<string>();
+      const eventCountBefore = metadata.events.length;
 
-            lastEventId = appendSessionEvents(
-              metadata,
-              translationState,
-              message,
-              runConfig.model,
-              eventCountBeforePrompt,
-              lastEventId,
+      let session: ClaudeSdkRunnerSession | undefined;
+      let sessionTimeout: NodeJS.Timeout | undefined;
+      try {
+        session = startSession(prompts, baseOptions);
+        sessionTimeout = setTimeout(() => {
+          session?.finishInput();
+          const currentTime = new Date().getTime();
+          metadata.testComments.push(
+            `⚠️ Run aborted: run time (${currentTime - startTime} ms) exceeded timeout (${runConfig.timeout} ms).`
+          );
+        }, runConfig.timeout);
+
+        for await (const message of session.messages) {
+          sessionId = "session_id" in message ? message.session_id : sessionId;
+
+          lastEventId = appendSessionEvents(
+            metadata,
+            translationState,
+            message,
+            runConfig.model,
+            eventCountBefore,
+            lastEventId,
+          );
+
+          if (message.type === "system" && message.subtype === "init"
+            && runConfig.maxTurns !== undefined && metadata.turnCount > runConfig.maxTurns) {
+            metadata.testComments.push(
+              `⚠️ Run aborted: turn count (${metadata.turnCount}) exceeded maxTurns (${runConfig.maxTurns}).`
             );
+            session.finishInput();
+            abortController.abort();
+            break;
+          }
 
-            if (runConfig.shouldEarlyTerminate?.(metadata)) {
-              abortController.abort();
-              break;
+          if (message.type === "system" && message.subtype === "background_tasks_changed") {
+            pendingBackgroundTasks.clear();
+            for (const task of message.tasks) {
+              pendingBackgroundTasks.add(task.task_id);
             }
           }
-        } catch (error) {
-          const errorDetails = error instanceof Error ? error.message : String(error);
-          metadata.testComments.push(`Agent runner error: ${errorDetails}`);
-          console.error("Agent runner error:", errorDetails);
-          break;
+
+          if (message.type === "result" && pendingBackgroundTasks.size === 0) {
+            metadata.testComments.push("get result with 0 pending background task");
+            session.finishInput();
+          }
+
+          if (runConfig.shouldEarlyTerminate?.(metadata)) {
+            abortController.abort();
+            break;
+          }
         }
+        metadata.testComments.push("messages naturally exhausted");
+      } catch (error) {
+        const errorDetails = error instanceof Error ? error.message : String(error);
+        metadata.testComments.push(`Agent runner error: ${errorDetails}`);
+        console.error("Agent runner error:", errorDetails);
+      } finally {
+        clearTimeout(sessionTimeout);
+        session?.finishInput();
       }
 
       const { toolCounts, skillFiles } = computeToolAndSkillStats(
@@ -212,16 +277,8 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
       const errorDetails = error instanceof Error ? error.message : String(error);
       metadata.testComments.push(`Agent runner error: ${errorDetails}`);
       console.error("Agent runner error:", errorDetails);
-      if (timedOut) {
-        throw new Error(`Claude agent run timed out after ${runConfig.timeout} ms.`, {
-          cause: error,
-        });
-      }
       throw error;
     } finally {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
       resources.delete(resource);
       if (!resource.preserveWorkspace) {
         fs.rmSync(resource.workspace, { recursive: true, force: true });
@@ -249,6 +306,9 @@ function appendSessionEvents(
   const timestamp = getMessageTimestamp(message);
 
   if (message.type === "system" && message.subtype === "init") {
+    // Claude SDK's maxTurn option accounts for tool call turns instead of LLM turns.
+    // We count LLM turns ourselves and abort the run when it exceeds the configured maxTurns.
+    metadata.turnCount++;
     state.mcpServerNames = message.mcp_servers.map(server => server.name);
     metadata.tokenUsage!.model = message.model;
     const event: Extract<SessionEvent, { type: "session.start" }> = {
@@ -373,7 +433,6 @@ function appendSessionEvents(
     },
   };
   metadata.events.push(turnEndEvent);
-  metadata.turnCount++;
   return turnEndEvent.id;
 }
 

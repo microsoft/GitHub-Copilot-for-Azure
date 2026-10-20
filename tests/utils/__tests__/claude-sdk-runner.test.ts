@@ -41,8 +41,72 @@ describe("claude-sdk-runner", () => {
     fs.rmSync(mocks.skillsDirectory, { recursive: true, force: true });
   });
 
+  test("uses only the inner session timeout", async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+    mocks.query.mockReturnValue(toAsyncIterable([]));
+
+    const runner = useClaudeAgentRunner({ testName: "session-timeout" });
+    await runner.run({
+      prompt: "Start the run.",
+      timeout: 6 * 60 * 1000,
+    });
+
+    expect(setTimeoutSpy).toHaveBeenCalledExactlyOnceWith(expect.any(Function), 6 * 60 * 1000);
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(setTimeoutSpy.mock.results[0].value);
+  });
+
+  test.each([undefined, 0, 1, 2, 3])("enforces maxTurns=%s using system/init messages", async (maxTurns) => {
+    const messages = Array.from({ length: 3 }, (_, index) => [
+      {
+        type: "system",
+        subtype: "init",
+        session_id: "session-1",
+        uuid: `init-${index + 1}`,
+        claude_code_version: "2.1.287",
+        model: "claude-sonnet-5",
+        mcp_servers: [],
+      },
+      assistantToolMessage(`message-${index + 1}`, `read-${index + 1}`, "Read", {
+        file_path: path.join(mocks.skillsDirectory, "azure-ai", "SKILL.md"),
+      }),
+    ]).flat() as unknown as SDKMessage[];
+    const streamClosed = vi.fn();
+    mocks.query.mockReturnValue((async function* () {
+      try {
+        yield* messages;
+      } finally {
+        streamClosed();
+      }
+    })());
+
+    const runner = useClaudeAgentRunner({ testName: "max-turns" });
+    const metadata = await runner.run({
+      prompt: "Start the run.",
+      followUp: ["Continue the run."],
+      timeout: 30 * 1000,
+      maxTurns,
+    });
+
+    const exceeded = maxTurns !== undefined && maxTurns < 3;
+    const expectedTurns = exceeded ? maxTurns + 1 : 3;
+    expect(mocks.query).toHaveBeenCalledTimes(1);
+    expect(mocks.query.mock.calls[0][0].options).not.toHaveProperty("maxTurns");
+    expect(mocks.query.mock.calls[0][0].options.abortController.signal.aborted).toBe(exceeded);
+    expect(metadata.turnCount).toBe(expectedTurns);
+    expect(metadata.events.filter(event => event.type === "session.start")).toHaveLength(expectedTurns);
+    expect(metadata.rawData).toEqual(messages.slice(0, exceeded ? 2 * expectedTurns - 1 : messages.length));
+    expect(metadata.toolCounts).toEqual(expectedTurns === 1 && exceeded
+      ? {}
+      : { read: exceeded ? expectedTurns - 1 : expectedTurns });
+    expect(metadata.testComments).toEqual(exceeded
+      ? [`⚠️ Run aborted: turn count (${expectedTurns}) exceeded maxTurns (${maxTurns}).`]
+      : []);
+    expect(streamClosed).toHaveBeenCalledOnce();
+  });
+
   test.each([new Error("query failed"), "query failed"])("returns metadata when query throws %s", async (error) => {
-    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const logError = vi.spyOn(console, "error").mockImplementation(() => { });
     mocks.query.mockImplementation(() => {
       throw error;
     });
@@ -51,6 +115,7 @@ describe("claude-sdk-runner", () => {
     const metadata = await runner.run({
       prompt: "Start the run.",
       followUp: ["Do not send this prompt."],
+      timeout: 30 * 1000,
     });
 
     expect(metadata.testComments).toEqual(["Agent runner error: query failed"]);
@@ -66,7 +131,7 @@ describe("claude-sdk-runner", () => {
   });
 
   test.each([false, true])("preserves collected data when a message stream fails (follow-up=%s)", async (isFollowUp) => {
-    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const logError = vi.spyOn(console, "error").mockImplementation(() => { });
     const completedMessages: SDKMessage[] = [{
       type: "result",
       subtype: "success",
@@ -110,18 +175,19 @@ describe("claude-sdk-runner", () => {
       model: "claude-sonnet-5",
       prompt: "Start the run.",
       followUp: isFollowUp ? ["Continue the run."] : [],
+      timeout: 30 * 1000,
     };
-    if (isFollowUp) {
-      mocks.query.mockReturnValueOnce(toAsyncIterable(completedMessages));
-    }
-    mocks.query.mockReturnValueOnce(toAsyncIterable(partialMessages));
+    mocks.query.mockReturnValueOnce(toAsyncIterable([
+      ...(isFollowUp ? completedMessages : []),
+      ...partialMessages,
+    ]));
     const expected = await runner.run(config);
 
     mocks.query.mockReset();
-    if (isFollowUp) {
-      mocks.query.mockReturnValueOnce(toAsyncIterable(completedMessages));
-    }
     mocks.query.mockReturnValueOnce((async function* () {
+      if (isFollowUp) {
+        yield* completedMessages;
+      }
       yield* partialMessages;
       throw new Error("stream failed");
     })());
@@ -139,15 +205,15 @@ describe("claude-sdk-runner", () => {
       ? [...completedMessages, ...partialMessages]
       : partialMessages);
     expect(metadata.toolCounts).toEqual({ read: 1 });
-    expect(metadata.turnCount).toBe(isFollowUp ? 1 : 0);
-    expect(mocks.query).toHaveBeenCalledTimes(isFollowUp ? 2 : 1);
+    expect(metadata.turnCount).toBe(0);
+    expect(mocks.query).toHaveBeenCalledTimes(1);
     expect(logError).toHaveBeenCalledWith("Agent runner error:", "stream failed");
     expect(fs.existsSync(mocks.query.mock.calls.at(-1)![0].options.cwd)).toBe(false);
   });
 
   test("records unexpected errors before rethrowing without discarding collected data", async () => {
     const error = new Error("statistics failed");
-    const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const logError = vi.spyOn(console, "error").mockImplementation(() => { });
     vi.spyOn(agentRunner, "computeToolAndSkillStats").mockImplementation(() => {
       throw error;
     });
@@ -164,6 +230,7 @@ describe("claude-sdk-runner", () => {
         collectedMetadata = metadata;
         return false;
       },
+      timeout: 30 * 1000,
     })).rejects.toBe(error);
 
     expect(collectedMetadata?.testComments).toEqual(["Agent runner error: statistics failed"]);
@@ -250,6 +317,7 @@ describe("claude-sdk-runner", () => {
     const metadata = await runner.run({
       model: "claude-sonnet-5",
       prompt: "Load the skill, read a reference, and invoke Azure MCP.",
+      timeout: 30 * 1000,
     });
 
     const skillEvent = metadata.events.find(event => event.type === "skill.invoked");
@@ -376,6 +444,7 @@ describe("claude-sdk-runner", () => {
     expect(metadata.events[0].timestamp).toBe("1970-01-01T00:00:00.000Z");
     expect(metadata.events.at(-1)?.type).toBe("assistant.turn_end");
     expect(metadata.events.at(-1)?.id).toBe("result-1");
+    expect(metadata.turnCount).toBe(1);
   });
 
   test("reports assistant usage when the run is early terminated", async () => {
@@ -414,8 +483,8 @@ describe("claude-sdk-runner", () => {
     const metadata = await runner.run({
       model: "claude-sonnet-5",
       prompt: "Stop after the first response.",
-      shouldEarlyTerminate: currentMetadata =>
-        currentMetadata.events.some(event => event.type === "assistant.message"),
+      shouldEarlyTerminate: currentMetadata => currentMetadata.events.some(event => event.type === "assistant.message"),
+      timeout: 30 * 1000,
     });
 
     expect(metadata.tokenUsage).toMatchObject({
@@ -479,6 +548,7 @@ describe("claude-sdk-runner", () => {
     const metadata = await runner.run({
       model: "claude-sonnet-5",
       prompt: "Complete the task.",
+      timeout: 30 * 1000,
     });
 
     expect(metadata.tokenUsage).toMatchObject({
