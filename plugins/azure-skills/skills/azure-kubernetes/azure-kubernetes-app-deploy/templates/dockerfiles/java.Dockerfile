@@ -19,8 +19,10 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build
 # ---------------------------------------------------------------------------
-# Base: current Java LTS (Temurin). See references/base-images.md for the Microsoft OpenJDK alternative.
-FROM eclipse-temurin:<LATEST_STABLE_JAVA_JDK>-jdk-alpine AS build
+# Base: current Java LTS on Azure Linux. See references/base-images.md.
+FROM mcr.microsoft.com/openjdk/jdk:<LATEST_STABLE_JAVA_JDK>-azurelinux AS build
+
+RUN tdnf install -y unzip && tdnf clean all
 
 WORKDIR /app
 
@@ -45,12 +47,15 @@ RUN ./mvnw package spring-boot:repackage -DskipTests -B \
 # ---------------------------------------------------------------------------
 # Stage 2: Runtime
 # ---------------------------------------------------------------------------
-FROM eclipse-temurin:<LATEST_STABLE_JAVA_JRE>-jre-alpine
+FROM mcr.microsoft.com/openjdk/jdk:<LATEST_STABLE_JAVA_JRE>-azurelinux
 
 WORKDIR /app
 
 # AKS Deployment Safeguards DS004: create and switch to a non-root user
-RUN addgroup -S appuser && adduser -S appuser -G appuser
+RUN tdnf install -y shadow-utils \
+    && tdnf clean all \
+    && groupadd --system appuser \
+    && useradd --system --gid appuser --no-create-home --shell /sbin/nologin appuser
 
 # Copy only the built JAR from the build stage
 COPY --from=build --chown=appuser:appuser /app/app.jar ./app.jar
@@ -71,7 +76,7 @@ EXPOSE 8080
 # (container-aware by default in JDK 21).
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
 
-# No HEALTHCHECK: the JRE Alpine image does not include wget or curl.
+# No HEALTHCHECK: the Azure Linux image does not include wget or curl.
 # Kubernetes liveness/readiness probes (configured in deployment.yaml) handle
 # health checking in AKS.
 
