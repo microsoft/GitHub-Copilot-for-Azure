@@ -70,7 +70,7 @@ utility, not a production collector; telemetry may contain sensitive data.
 From `tests/`:
 
 ```bash
-npm test -- local-otlp-server/index.test.ts
-npm run lint -- local-otlp-server/index.ts local-otlp-server/index.test.ts
+npm test -- local-otlp-server/__tests__/index.test.ts
+npm run lint -- local-otlp-server/index.ts local-otlp-server/__tests__/index.test.ts
 npm run typecheck
 ```
