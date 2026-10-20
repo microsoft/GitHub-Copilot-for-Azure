@@ -22,6 +22,14 @@ or Failed PV alone does not prove it is unused; verify the Azure resource and
 all Kubernetes/Azure references, ownership, backup, recovery, and backend state
 before recommending cleanup.
 
+## Migration and Approval Gates
+
+Require explicit approval before migration/cutover; accepting downtime is not
+authorization. Before migration, take or verify a current recoverable backup;
+a previously tested restore alone is insufficient. Validate the new volume
+before cutover. Even after verification, require separate explicit approval
+before deleting any PVC, PV, snapshot, or Azure storage resource.
+
 ## Output
 
 Return applicable fields for each candidate: namespace/PVC/PV, exact Azure
@@ -31,8 +39,9 @@ migration/rollback, downtime, risk, and confidence. For mapped volumes, name
 both sides of the verified mapping. For orphan candidates, report provenance,
 attachment state, reference checks, owner, and recovery decision.
 
+For migrations, report whether a current recoverable backup is verified or
+still required, and state which migration or deletion actions still require approval.
+
 Recommend deletion only for verified unused mapped resources or verified orphan
 candidates, and rightsizing only with required evidence. Otherwise report
-insufficient telemetry without estimating savings. Even after verification,
-require separate explicit approval before deleting a PVC, PV, snapshot, or
-Azure storage resource.
+insufficient telemetry without estimating savings.
