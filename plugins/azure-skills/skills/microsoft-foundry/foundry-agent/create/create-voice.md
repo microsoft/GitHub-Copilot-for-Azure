@@ -3,7 +3,7 @@
 Create, configure, or extend a Microsoft Foundry Voice Agent:
 
 - **Prompt Voice**: one managed Voice Agent using `modelType: managed` or `self_deployed`.
-- **Hosted Voice**: a `kind: hosted` target paired with a managed `kind: voice` wrapper.
+- **Hosted Voice**: a voice-based agent using a hosted text agent as its conversation engine, with a managed **Voice wrapper** (`kind: voice`) and **hosted target** (`kind: hosted`).
 
 For a custom Hosted WebSocket agent with developer-defined frames and no managed Voice wrapper, use [invocations-ws](../invocations-ws/invocations-ws.md), not this workflow.
 
@@ -11,7 +11,7 @@ For a custom Hosted WebSocket agent with developer-defined frames and no managed
 
 | Decision | Prompt Voice | Hosted Voice |
 |---|---|---|
-| Foundry agents | One `kind: voice` service | One `kind: hosted` target plus one `kind: voice` wrapper |
+| Foundry agents | One `kind: voice` service | One hosted target plus one Voice wrapper |
 | Reasoning and tools | Voice service | Hosted target |
 | Audio, VAD, TTS, greeting | Voice service | Voice wrapper |
 | Local runtime | None | Target-only Bridge validation |
@@ -53,7 +53,7 @@ Before authoring files or running azd:
 3. Follow [Common Project Context Resolution](../../SKILL.md#agent-common-project-context-resolution):
    - Inspect `azure.yaml` and `azd env get-values` when an azd project exists.
    - Classify existing services before selecting a target. Do not convert an existing Prompt, Hosted, Managed Harness, or Voice Agent into another type.
-   - If multiple services exist, ask which Voice wrapper or Prompt Voice service to modify. Selecting a Hosted Voice wrapper also selects its `conversationEngine.name` target as a deployment dependency.
+   - If multiple services exist, ask which Voice wrapper or Prompt Voice service to modify. Selecting a Voice wrapper also selects its `conversationEngine.name` hosted target as a deployment dependency.
    - Resolve an existing project endpoint to its ARM ID with `scripts/resolve-project-id.sh` or `scripts/resolve-project-id.ps1`; never construct the ARM ID from the endpoint.
 
 ## Step 2: Model-First Decision and Collected-Values Checkpoint
@@ -68,7 +68,7 @@ For a generic greenfield request to create a Voice Agent, proceed with **Prompt 
 
 Explicit user choices override these defaults. Ask only when an unresolved requirement materially changes the architecture:
 
-- custom code, an existing Hosted Agent, or explicit Hosted Voice intent;
+- custom code, an existing hosted text agent, or explicit Hosted Voice intent;
 - BYOM, `self_deployed`, or an existing project model deployment;
 - an existing project or codebase whose services imply a subtype but do not identify the target clearly;
 - a planning, explanation, or comparison request that explicitly asks to evaluate the available approaches.
@@ -76,6 +76,10 @@ Explicit user choices override these defaults. Ask only when an unresolved requi
 For planning or comparison, explain Prompt Voice managed, Prompt Voice self-deployed, Hosted Voice, and custom raw `invocations_ws` without creating files or running azd.
 
 Detect requested Voice Agent settings or existing settings that must be preserved, including structured inputs, audio, transcription, turn detection, voice, greeting/avatar, tools, handoff, response options, storage, or telephony. Do not ask about settings the user did not request.
+
+When Twilio telephony is explicitly requested, follow the remote connection and binding flow in [Voice Agent YAML settings](references/voice-agent-settings.md). Ask only for a missing connection name, Account SID, Auth Token availability, or Twilio number; never ask for the token in chat.
+
+For explicit ACS or [Teams Phone extensibility (TPE)](https://learn.microsoft.com/en-us/azure/communication-services/concepts/interop/tpe/teams-phone-extensibility-overview) requests, follow the existing TPE/ACS connection or portal flow there; do not automate infrastructure, RBAC, webhooks, or Event Grid.
 
 Resolve values from the request, workspace, `azure.yaml`, and active azd environment before asking. Do not author files until this checkpoint is complete:
 
@@ -87,7 +91,7 @@ Resolve values from the request, workspace, `azure.yaml`, and active azd environ
 | Existing project identity | Resolve both endpoint and ARM ID; pass the ARM ID to `--project-id` |
 | azd environment | Reuse the selected environment or collect the intended environment |
 | Model strategy | Default generic creation to managed `gpt-realtime`; ask when BYOM, self-deployed, or an existing deployment is intended |
-| Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; inspect or ask for self-deployed/Hosted target models |
+| Model/deployment name | Default managed Prompt Voice to `gpt-realtime`; inspect or ask for self-deployed/hosted target models |
 | Instructions | Preserve existing instructions or collect the requested behavior |
 | Output voice | Preserve an existing value or use the user's requested voice; otherwise omit it and use the azd default |
 
@@ -103,7 +107,7 @@ Always read [Voice Agent common invariants](references/voice-agent-common.md).
 
 Do not load the other subtype's YAML reference unless the user asks for a comparison or migration.
 
-Before editing settings, map every requested field to the Prompt Voice service, Hosted Voice wrapper, or Hosted target using the settings ownership table. Preserve unrelated existing fields and edit only the requested YAML paths.
+Before editing settings, map every requested field to the Prompt Voice service, Voice wrapper, or hosted target using the settings ownership table. Preserve unrelated existing fields and edit only the requested YAML paths.
 
 ## Step 4: Initialize or Update
 
@@ -189,5 +193,5 @@ The final handoff must distinguish the results: report whether automated technic
 | Existing endpoint has no ARM ID | Resolve it with the paired `resolve-project-id` script |
 | Init would duplicate an existing service | Edit the existing Voice service in place |
 | Prompt Voice model deployment is missing | Inspect project deployments or ask before authoring `model.id` |
-| Hosted Voice target fails locally | Fix the Bridge handler before deploying the wrapper |
+| Hosted target fails locally | Fix the hosted target's Bridge handler before deploying the Voice wrapper |
 | `azd ai agent invoke` rejects Voice | Use the managed `voice` WebSocket helper or Foundry Voice playground |

@@ -1,10 +1,10 @@
-# Hosted Voice Bridge `1.0` Reference
+# Voice Live Bridge `1.0` for Hosted Voice
 
-Architecture and WebSocket protocol contract for **Hosted Voice Agents**, which pair a custom `kind: hosted` target agent (`azure-ai-agentserver-invocations`) with a managed `kind: voice` wrapper agent.
+A Hosted Voice configuration is a voice-based agent using a hosted text agent as its conversation engine. It pairs a managed **Voice wrapper** (`kind: voice`) with a **hosted target** (`kind: hosted`). The hosted target implements Voice Live Bridge Protocol `1.0` over `invocations_ws`.
 
 ## Two-Agent Ownership Model
 
-| Concern | `kind: hosted` Target Agent | `kind: voice` Wrapper Agent |
+| Concern | Hosted target (`kind: hosted`) | Managed Voice wrapper (`kind: voice`) |
 |---|---|---|
 | **Role** | Reasoning, tools, bounded conversation history, model calls (e.g., Foundry Responses API with `store=false`) | Audio pipeline (VAD, STT, TTS, barge-in interruption, proactive admission), greeting, managed `voice` WebSocket endpoint |
 | **Protocol & Route** | `invocations_ws` (`version: 1.0.0`) on `/invocations_ws` (port `8088` + `GET /readiness`) speaking Voice Live Bridge Protocol `1.0` | Foundry `voice` protocol (`?api-version=v1`) |
@@ -16,25 +16,23 @@ Architecture and WebSocket protocol contract for **Hosted Voice Agents**, which 
 
 ## Voice Live Bridge Protocol `1.0` Event Flow
 
-Voice Live connects to the `kind: hosted` target over `/invocations_ws` (`ws://127.0.0.1:8088/invocations_ws` locally) and exchanges lowercase dotted JSON events conforming to `protocol_version: "1.0"`. The target container **never** processes raw audio frames — Voice Live handles audio input, speech recognition, turn detection, synthesis, playback interruption, and proactive-response admission.
+The Voice wrapper's Voice Live layer connects to the hosted target over `/invocations_ws` (`ws://127.0.0.1:8088/invocations_ws` locally) and exchanges lowercase dotted JSON events conforming to `protocol_version: "1.0"`. The hosted target **never** processes raw audio frames—Voice Live handles audio input, speech recognition, turn detection, synthesis, playback interruption, and proactive-response admission.
 
 ```text
-Voice Live (`kind: voice` wrapper)               Hosted Target (`kind: hosted` on `/invocations_ws`)
+Voice wrapper / Voice Live layer                Hosted target (`/invocations_ws`)
             |                                                  |
             |--- 1. session.start (protocol_version: "1.0") -->|
             |<-- 2. session.ready (or session.rejected) -------|
-            |                                                  |
             |--- 3. user.message (item_id, input_text) ------->|
             |<-- 4. response.created (response_id) ------------|
             |<-- 5. response.output_text.delta (optional) -----|
             |<-- 6. response.output_text.done (text) ----------|
             |<-- 7. response.done (response_id) ---------------|
-            |                                                  |
-            |--- (on caller interruption) barge_in ----------->|
-            |--- (at end of session) session.end ------------->|
+            |--- (caller interruption) barge_in -------------->|
+            |--- (session end) session.end ------------------->|
 ```
 
-### Inbound Events (Voice Live -> Hosted Target)
+### Inbound Events (Voice wrapper / Voice Live -> Hosted target)
 
 1. **`session.start`**:
    Sent once after WebSocket upgrade to initialize session state and declare `protocol_version: "1.0"`.
@@ -77,7 +75,7 @@ Voice Live (`kind: voice` wrapper)               Hosted Target (`kind: hosted` o
    - **`response.timeout`**: Response timed out (`response_id`, `item_ids`); target cancels the timed-out operation.
    - **`session.end`**: Ends the Bridge session (`id`, `ts`, `reason`).
 
-### Outbound Events (Hosted Target -> Voice Live)
+### Outbound Events (Hosted target -> Voice wrapper / Voice Live)
 
 1. **`session.ready`** / **`session.rejected`**:
    `session.ready` activates the session after `session.start`. `session.rejected` rejects startup (`code: "protocol_mismatch"` or `"startup_failed"`, `retriable`).
@@ -110,7 +108,7 @@ The official `voice-live-bridge-basic-python` sample includes `scripts/smoke_tes
    - Expects exact frame sequence: `response.created` -> `response.output_text.done` -> `response.done`
    - Sends `session.end` (`reason: "validation_complete"`)
 
-> **Important**: Testing the Hosted target directly over `/invocations_ws` validates only the target's Bridge `1.0` handler. To validate the deployed Hosted Voice Agent end-to-end, you **must** also smoke-test the `kind: voice` wrapper over its managed `voice` protocol endpoint (see [voice-agent-smoke-test.md](voice-agent-smoke-test.md)).
+> **Important**: Testing the hosted target directly over `/invocations_ws` validates only its Voice Live Bridge `1.0` handler. End-to-end validation must also smoke-test the Voice wrapper over its managed `voice` endpoint (see [voice-agent-smoke-test.md](voice-agent-smoke-test.md)).
 
 ---
 

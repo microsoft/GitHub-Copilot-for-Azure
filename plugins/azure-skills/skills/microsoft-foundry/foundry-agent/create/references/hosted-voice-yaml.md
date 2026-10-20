@@ -1,13 +1,13 @@
 # Hosted Voice YAML
 
-Author a two-agent Hosted Voice definition after applying [common invariants](voice-agent-common.md) and the [Bridge `1.0` contract](voice-agent-hosted-bridge.md).
+Author a voice-based agent that uses a hosted text agent as its conversation engine. Apply [common invariants](voice-agent-common.md) and the [Voice Live Bridge `1.0` contract](voice-agent-hosted-bridge.md).
 
 ## Ownership
 
 | Service | Owns |
 |---|---|
-| `kind: hosted` target | Model calls, instructions, tools, bounded history, Bridge callbacks |
-| `kind: voice` wrapper | Audio, VAD, transcription, synthesis, greeting, managed Voice endpoint |
+| Hosted target (`kind: hosted`) | Model calls, instructions, tools, bounded history, Voice Live Bridge handler |
+| Managed Voice wrapper (`kind: voice`) | Audio, VAD, transcription, synthesis, greeting, managed Voice endpoint |
 
 ## Minimal Shape
 
