@@ -7,7 +7,7 @@ import {
   requireCompleteGrading,
   runEvaluationBatch,
 } from "../evaluation.ts";
-import { collectAnswerBilling, type BatchBilling } from "../billing.ts";
+import { collectEvaluationAnswerBilling, type BatchBilling } from "../billing.ts";
 import type { SkillImprovementRunSpec } from "../config.ts";
 import { runProcess, runWithConcurrency } from "../process.ts";
 import { aggregateJudgments } from "../report.ts";
@@ -73,7 +73,7 @@ describe("answer billing propagation", () => {
         },
         output: { issue: "never", draftPullRequest: "never" },
       };
-      const answerBilling = collectAnswerBilling([{
+      const evaluationAnswerBilling = collectEvaluationAnswerBilling([{
         type: "assistant.usage",
         data: nanoAiu === undefined ? {} : { copilotUsage: { totalNanoAiu: nanoAiu } },
       }]);
@@ -90,7 +90,7 @@ describe("answer billing propagation", () => {
           fs.writeFileSync(options.stdoutFile, JSON.stringify({
             type: "trial-result",
             itemId: "suite::one",
-            trajectory: { output: "answer", metadata: { answerBilling } },
+            trajectory: { output: "answer", metadata: { answerBilling: evaluationAnswerBilling } },
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           expect(args).not.toContain("--workers");

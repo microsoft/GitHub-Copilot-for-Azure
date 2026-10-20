@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import type { SessionEvent } from "@github/copilot-sdk";
 import { useAgentRunner } from "../copilot-sdk-runner.ts";
-import { collectAnswerBilling } from "../../skill-improvement/billing.ts";
+import { collectEvaluationAnswerBilling } from "../../skill-improvement/billing.ts";
 
 const scenario = vi.hoisted(() => ({
   mode: "completed",
@@ -63,7 +63,7 @@ describe("SDK answer billing completion", () => {
           : undefined,
       });
       expect(metadata.completionStatus).toBe(mode === "completed" ? "completed" : "aborted");
-      expect(collectAnswerBilling(metadata.events, metadata.completionStatus === "completed"))
+      expect(collectEvaluationAnswerBilling(metadata.events, metadata.completionStatus === "completed"))
         .toMatchObject({
           requests: 1, billedRequests: 1,
           billedAiCredits: mode === "completed" ? 1.25 : null,

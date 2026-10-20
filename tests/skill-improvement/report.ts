@@ -216,7 +216,7 @@ export function summarizeTrials(trials: AggregatedTrial[]): EvaluationSummary {
   };
 }
 
-function renderAnswerBilling(report: SkillImprovementReport): string[] {
+function renderEvaluationAnswerBilling(report: SkillImprovementReport): string[] {
   const lines = [
     "## Correctness and trajectory tokens",
     "",
@@ -226,13 +226,13 @@ function renderAnswerBilling(report: SkillImprovementReport): string[] {
     "| --- | --- | --- | ---: | ---: | ---: |",
   ];
   const billingLines = [
-    "## Answer AI-credit consumption",
+    "## Evaluation answer AI-credit consumption",
     "",
-    "Provider-reported `copilot_usage.totalNanoAiu` converted to credits (1e9 nano-AIU per credit). Missing or partial request billing is not zero. Judge and improvement-agent costs are excluded; this is not an invoice or a workflow-total cost. Credits are diagnostic, not acceptance gates; lower cost does not compensate for failed correctness.",
+    "Provider-reported `copilot_usage.totalNanoAiu` converted to credits (1e9 nano-AIU per credit). Missing or partial request billing is not zero. Vally's supported grading API does not expose judge AI-credit usage, so evaluation AIC covers answer generation only. Skill-improvement AIC is reported separately; this is not an invoice or a workflow-total cost. Credits are diagnostic, not acceptance gates; lower cost does not compensate for failed correctness.",
     "",
-    "Tests counts distinct prompts in each row; repetitions counts configured answers per prompt. Billing coverage counts prompts with complete request billing and the expected verdict count from every judge. Avg AIC / test is the mean per test per repetition; total answer AIC sums all repetitions without counting duplicated judge records. Incomplete coverage suppresses both values.",
+    "Tests counts distinct prompts in each row; repetitions counts configured answers per prompt. Billing coverage counts prompts with complete request billing and the expected verdict count from every judge. Avg AIC / test is the mean per test per repetition; total evaluation answer AIC sums all repetitions without counting duplicated judge records. Incomplete coverage suppresses both values.",
     "",
-    "| Batch | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total answer AIC |",
+    "| Batch | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total evaluation answer AIC |",
     "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
   ];
   const batches = [
@@ -284,11 +284,11 @@ function renderComponentBilling(report: SkillImprovementReport): string[] {
   const lines = [
     "## Batch AI-credit accounting",
     "",
-    "Answer coverage is fully billed answer trajectories; agent coverage is finalized CLI invocations with provider `aiCreditsStatus: complete`. Agent session aggregates include their model requests and are counted once, never again by model or arm. N/A means no invocation, not measured zero.",
+    "Evaluation answer AIC covers Vally evaluation sessions through the Copilot SDK. Skill-improvement AIC covers the separate Copilot CLI invocation that edits the Skill. Evaluation answer coverage is fully billed trajectories; skill-improvement coverage is finalized CLI invocations with provider `aiCreditsStatus: complete`. CLI session aggregates include their model requests and are counted once, never again by model or arm. N/A means no invocation, not measured zero.",
     "",
     "Totals cover answers and improvement agents only; judge and Azure infrastructure costs are excluded, so these are not full-workflow totals or invoice charges. A measured subtotal includes only fully measured trajectories/invocations when coverage or attempt accounting is incomplete. Generation uses zero Vally retries; model retries are included only when the provider reports their usage. Missing terminal/usage data after failures or timeouts stays unavailable.",
     "",
-    "| Batch | Answer AIC | Improvement-agent AIC | Total measured AIC | Coverage |",
+    "| Batch | Evaluation answer AIC | Skill-improvement AIC | Total measured AIC | Coverage |",
     "| --- | ---: | ---: | --- | --- |",
   ];
   if (!report.billing?.length) {
@@ -323,7 +323,8 @@ function renderComponentBilling(report: SkillImprovementReport): string[] {
       : measured ? `${sum.toFixed(6)} (measured subtotal)` : "unavailable";
     const coverage = (["answers", "agents"] as const).map(name => {
       const component = batch[name];
-      return `${name} ${component.measured}/${component.expected} ${component.unit}`
+      const label = name === "answers" ? "evaluation answers" : "skill-improvement";
+      return `${label} ${component.measured}/${component.expected} ${component.unit}`
         + (component.reason ? ` (${component.reason})` : "");
     }).join("; ") + (batch.finalized ? "" : "; incomplete attempt accounting");
     lines.push(`| ${batch.batch} | ${credits(batch.answers)} | ${credits(batch.agents)} | ${total} | ${coverage} |`);
@@ -1036,7 +1037,7 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     "",
     ...renderBaselineArms(report),
     "",
-    ...renderAnswerBilling(report),
+    ...renderEvaluationAnswerBilling(report),
     "",
     ...renderComponentBilling(report),
     "",

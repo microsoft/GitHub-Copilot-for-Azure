@@ -11,7 +11,7 @@ import {
 } from "./config.ts";
 import { runEvaluationBatch, type EvaluationBatch } from "./evaluation.ts";
 import { commandName, runProcess } from "./process.ts";
-import { collectAgentBilling, emptyBilling, type BatchBilling, type ComponentBilling } from "./billing.ts";
+import { collectSkillImprovementBilling, emptyBilling, type BatchBilling, type ComponentBilling } from "./billing.ts";
 import {
   aggregateJudgments,
   buildFailurePacket,
@@ -296,12 +296,12 @@ export async function runImprovementAgent(
         !!event && typeof event === "object" && "type" in event && event.type === "result"
       );
       const finalized = results.length === 1 && Number.isInteger(results[0].exitCode);
-      billing = collectAgentBilling(
+      billing = collectSkillImprovementBilling(
         fs.existsSync(usageFile) ? JSON.parse(fs.readFileSync(usageFile, "utf8")) : undefined,
         finalized
       );
     } catch (error) {
-      billing = collectAgentBilling(undefined, false);
+      billing = collectSkillImprovementBilling(undefined, false);
       billing.reason = `Unable to read or validate CLI billing exports: ${
         error instanceof Error ? error.message : String(error)
       }`;
@@ -620,7 +620,7 @@ export async function executeSkillImprovement(
             previousRejectedPatchPath,
             iteration,
             deadline,
-            agentBilling => { iterationBilling.agents = agentBilling; }
+            skillImprovementBilling => { iterationBilling.agents = skillImprovementBilling; }
           );
           iterationBilling.finalized = true;
           iterationReport.changedFiles = changedFiles(worktree);

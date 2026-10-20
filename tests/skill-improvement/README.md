@@ -98,7 +98,7 @@ Candidate acceptance and rejection do not apply; correctness results still
 describe the baseline arms, not proof that every individual trajectory passes.
 Failed baseline runs remain **RUN FAILED**.
 
-### Tokens and answer AI credits
+### Tokens and evaluation answer AI credits
 
 Skill token growth compares estimated candidate Markdown tokens, including
 references, against the original baseline, not the previous iteration.
@@ -107,7 +107,12 @@ characters, rounded up. This size gate is not a cost budget. Trajectory token
 usage is reported separately and includes input/output/cache usage across
 model calls, not just the final answer.
 
-Answer trajectories store provider-reported `copilot_usage.totalNanoAiu` in
+**Evaluation answer AIC** measures Vally evaluation sessions using the Copilot SDK
+to generate answers with the baseline or candidate Skill.
+**Skill-improvement AIC** measures the separate Copilot CLI invocation that reads
+evaluation feedback and edits the Skill. Neither includes judge consumption.
+
+Evaluation answer trajectories store provider-reported `copilot_usage.totalNanoAiu` in
 `metadata.answerBilling`. Sum the `assistant.usage` request values and divide
 by **1,000,000,000** to obtain answer AI credits; do not add the shutdown
 aggregate again or infer credits from tokens or model-call counts.
@@ -121,9 +126,9 @@ records are warned about and left unmeasured; successful generation remains stri
 
 The summary and detailed reports keep correctness/token comparisons separate
 from a focused credit table: **Batch, Model, Arm, Tests, Repetitions, Billing
-coverage, Avg AIC / test, Total answer AIC**. Tests counts distinct prompts;
+coverage, Avg AIC / test, Total evaluation answer AIC**. Tests counts distinct prompts;
 repetitions counts configured answers per prompt. The average is per test per
-repetition. Total answer AIC includes all repetitions and is calculated from
+repetition. Total evaluation answer AIC includes all repetitions and is calculated from
 unrounded measurements. For example, two tests averaging 3 credits per
 repetition with two repetitions consume 12 answer credits.
 Answer usage is averaged across repeated judgment records, not summed across
@@ -145,11 +150,16 @@ not full workflow-credit accounting.
 
 `report.json` also persists a component billing ledger collected as work runs, including
 available measurements from failed generation attempts and completed agent
-invocations. The batch summary has **Batch, Answer AIC, Improvement-agent AIC,
+invocations. The batch summary has **Batch, Evaluation answer AIC, Skill-improvement AIC,
 Total measured AIC, Coverage**, with baseline,
 iteration, held-out, and run-total rows. It counts raw answer trajectories
 once, independently of grading duplication. Coverage explicitly counts
 answer trajectories and agent invocations.
+
+The code uses `EvaluationAnswerBilling`, `collectEvaluationAnswerBilling`, and
+`collectSkillImprovementBilling` to distinguish these activities. Existing artifact
+keys (`metadata.answerBilling`, ledger `answers`/`agents`, and `answerBilledCredits`)
+are retained so previously saved trajectories and reports remain readable.
 
 The improvement CLI's final `--usage-output-file` JSON supplies the
 authoritative session `totalNanoAiu` aggregate. Divide this once by
@@ -166,7 +176,10 @@ held-out agent consumption is **N/A**, not measured zero. Internal model
 retries are included only to the extent the provider's complete aggregate
 accounts for them; the runner does not retry improvement invocations.
 
-**Judge AI credits are out of scope** pending Vally billing support.
+**Judge AI credits are out of scope** because Vally's supported grading API does
+not expose judge AI-credit usage. Evaluation AIC therefore covers answer
+generation only, not judging. Skill-improvement AIC is collected separately
+from the CLI export; no judge credits are inferred from tokens.
 Totals cover answers and improvement agents only, not full-workflow consumption.
 Azure infrastructure charges and invoice costs are also excluded.
 

@@ -385,8 +385,8 @@ describe("skill improvement reporting", () => {
     expect(rendered).toContain("iteration-1/candidate.patch");
     expect(rendered).toContain("## Correctness and trajectory tokens");
     expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 0/1 (0.0%) | 0/2 | 130 |");
-    expect(rendered).toContain("## Answer AI-credit consumption");
-    expect(rendered).toContain("| Batch | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total answer AIC |");
+    expect(rendered).toContain("## Evaluation answer AI-credit consumption");
+    expect(rendered).toContain("| Batch | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total evaluation answer AIC |");
     expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 1 | 1 | 1/1 | 3.000000 | 3.000000 |");
     report.spec.experiment.repetitions = 2;
     expect(renderReportSummary(report)).toContain("| 1 | 2 | 0/1 | not measured (incomplete) | not measured (incomplete) |");
@@ -541,8 +541,13 @@ describe("skill improvement reporting", () => {
     expect(accounting).toContain(
       "| Run total | 16.000000 | 2.000000 | 18.000000 |"
     );
-    expect(accounting).toContain("answers 32/32 answer trajectories; agents 1/1 agent invocations");
-    expect(accounting).toContain("| Batch | Answer AIC | Improvement-agent AIC | Total measured AIC | Coverage |");
+    expect(accounting).toContain("evaluation answers 32/32 answer trajectories; skill-improvement 1/1 agent invocations");
+    expect(accounting).toContain("| Batch | Evaluation answer AIC | Skill-improvement AIC | Total measured AIC | Coverage |");
+    expect(accounting).toContain("## Evaluation answer AI-credit consumption");
+    expect(accounting).toContain("| Total evaluation answer AIC |");
+    expect(accounting).toContain("Vally's supported grading API does not expose judge AI-credit usage");
+    expect(accounting).not.toContain("| Answer AIC |");
+    expect(accounting).not.toContain("| Improvement-agent AIC |");
     expect(accounting).not.toContain("Judge AIC");
     expect(accounting).not.toContain("graded trajectories");
     expect(accounting).toContain("judge and Azure infrastructure costs are excluded");

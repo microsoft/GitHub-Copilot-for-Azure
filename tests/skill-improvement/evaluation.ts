@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { emptyBilling, type AnswerBilling, type BatchBilling } from "./billing.ts";
+import { emptyBilling, type EvaluationAnswerBilling, type BatchBilling } from "./billing.ts";
 import path from "node:path";
 import type {
   EvaluationSet,
@@ -41,7 +41,8 @@ export type VallyRecord = {
   };
   trajectory?: {
     metadata?: {
-      answerBilling?: AnswerBilling;
+      /** Evaluation-answer billing; retain the serialized key for existing trajectories. */
+      answerBilling?: EvaluationAnswerBilling;
     };
     output?: string;
     stimulus?: {

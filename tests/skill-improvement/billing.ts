@@ -1,4 +1,4 @@
-export type AnswerBilling = {
+export type EvaluationAnswerBilling = {
   source: "copilot_usage.totalNanoAiu";
   requests: number;
   billedRequests: number;
@@ -12,7 +12,7 @@ export type ComponentBilling = {
   expected: number;
   /** Answer records recovered or agent invocations accounted for, even without complete billing. */
   observed: number;
-  /** Observed entities with complete billing (and finalization for agent invocations). */
+  /** Count of entities with complete billing (and finalization for skill-improvement invocations). */
   measured: number;
   /** Sum of AI credits for measured entities only; zero does not imply missing entities were free. */
   measuredAiCredits: number;
@@ -24,7 +24,9 @@ export type ComponentBilling = {
 
 export type BatchBilling = {
   batch: string;
+  /** Evaluation-answer AIC; the field name is retained for saved report compatibility. */
   answers: ComponentBilling;
+  /** Skill-improvement AIC; the field name is retained for saved report compatibility. */
   agents: ComponentBilling;
   finalized: boolean;
 };
@@ -42,7 +44,7 @@ export function isBillingComplete(billing: ComponentBilling): boolean {
   return billing.observed === billing.expected && billing.measured === billing.expected;
 }
 
-export function collectAgentBilling(
+export function collectSkillImprovementBilling(
   usage: unknown,
   finalized: boolean,
 ): ComponentBilling {
@@ -68,13 +70,13 @@ export function collectAgentBilling(
   return billing;
 }
 
-export function collectAnswerBilling(
+export function collectEvaluationAnswerBilling(
   events: readonly {
     type: string;
     data: unknown;
   }[],
   completed = true,
-): AnswerBilling {
+): EvaluationAnswerBilling {
   const requests = events.filter(event => event.type === "assistant.usage");
   let nanoAiu = 0;
   let billedRequests = 0;
