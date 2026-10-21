@@ -124,10 +124,11 @@ Read the matching Managed Harness Agent reference before editing:
 | Agent-to-Agent | [Agent-to-Agent](references/tools/managed-harness-agent/tool-a2a.md) |
 | Work IQ | [Work IQ](references/tools/managed-harness-agent/tool-work-iq.md) |
 | Fabric IQ | [Fabric IQ](references/tools/managed-harness-agent/tool-fabric-iq.md) |
+| Toolbox | [Toolbox](references/tools/managed-harness-agent/tool-toolbox.md) |
 
 For connection-backed tools, use only a connection supplied by the user or already present in the Managed Harness Agent configuration. If missing, leave a clear placeholder or stop and request the value. Create it only when explicitly requested.
 
-If the user explicitly requests a Toolbox, follow [Toolbox](../toolbox/toolbox.md) for creation/versioning, then attach the existing endpoint as described in [Managed Harness Agent Authoring](references/managed-harness-agent.md).
+If the user explicitly requests a Toolbox, follow the [Managed Harness Agent Toolbox](references/tools/managed-harness-agent/tool-toolbox.md) workflow. Create or reuse the Toolbox and its matching authenticated project connection separately, then attach the exact versioned endpoint as a direct MCP tool.
 
 For Foundry Skills, follow [Managed Harness Agent Skills](references/skills/managed-harness-agent-skill-attach.md). Manage the Skill separately with `azd ai skill`, then pin its existing version in the Agent's top-level `skills` list.
 

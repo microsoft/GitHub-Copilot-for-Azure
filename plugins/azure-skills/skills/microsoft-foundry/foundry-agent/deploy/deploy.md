@@ -314,7 +314,7 @@ Verify the version is active/deployed and the published definition retains:
 - New definitions use `harness.type: microsoft_copilot_preview`.
 - Existing definitions retain their authored Microsoft or legacy GitHub harness/toolset discriminator family.
 - Requested direct tools
-- Versioned Toolbox MCP endpoint, when explicitly configured
+- Exact versioned Toolbox MCP endpoint and matching short `project_connection_id`, when explicitly configured
 - Versioned Skill references, when explicitly configured
 
 A successful deploy that drops the harness is a failure.
@@ -340,6 +340,7 @@ Show Agent name, version, project, model, harness, tools, optional Toolbox, depl
 | Published definition lacks harness | Fix `harness.type`, verify the extension version, and redeploy |
 | Tool shape rejected | Read the matching Managed Harness Agent tool reference and preserve REST field names |
 | Connection missing | Use a user-supplied/existing configured connection, or create it only on explicit request |
+| Toolbox MCP returns `401` | Verify the MCP tool has a matching `UserEntraToken` project connection with audience `https://ai.azure.com` and target equal to the exact versioned Toolbox endpoint |
 
 ## Workflow -- Prompt agent (MCP)
 

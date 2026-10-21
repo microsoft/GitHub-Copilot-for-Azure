@@ -14,6 +14,7 @@ A Managed Harness Agent prefers tools declared directly in the Agent service's `
 | Agent-to-Agent | `a2a_preview` | Optional |
 | Work IQ | Connection-authenticated `mcp` | Existing Work IQ connection |
 | Fabric IQ | `fabric_iq_preview` | Existing Fabric IQ connection |
+| Toolbox | Authenticated `mcp` to an exact version endpoint | Matching Toolbox connection |
 
 Read the specific reference before editing:
 
@@ -27,6 +28,7 @@ Read the specific reference before editing:
 - [Agent-to-Agent](tool-a2a.md)
 - [Work IQ](tool-work-iq.md)
 - [Fabric IQ](tool-fabric-iq.md)
+- [Toolbox](tool-toolbox.md)
 
 Standard tool entries use Foundry REST field names, normally `snake_case`. Except for the Copilot toolset, azd validates little beyond a non-empty `type`; Foundry validates nested fields.
 
