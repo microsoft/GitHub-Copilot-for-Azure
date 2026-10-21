@@ -177,6 +177,7 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323 # v47.0.5
         with:
+          separator: "\n"
           files: |
             **/*.md
             **/*.mdx
@@ -186,15 +187,23 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         id: token-check
         working-directory: ./scripts
+        env:
+          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
-          LIMIT_OUTPUT=""
-          if LIMIT_OUTPUT=$(npm run tokens -- check --markdown 2>&1); then
-            echo "$LIMIT_OUTPUT" > ../limit-report.md
-            echo "exceeded=false" >> $GITHUB_OUTPUT
-          else
-            echo "$LIMIT_OUTPUT" > ../limit-report.md
-            echo "exceeded=true" >> $GITHUB_OUTPUT
+          : > ../limit-report.md
+          EXCEEDED=false
+          while IFS= read -r FILE; do
+            [[ "$FILE" =~ ^plugins/[^/]+/skills/.+\.md$ ]] || continue
+            if LIMIT_OUTPUT=$(npm run tokens -- check --markdown "$FILE" 2>&1); then
+              printf '%s\n\n' "$LIMIT_OUTPUT" >> ../limit-report.md
+            else
+              printf '%s\n\n' "$LIMIT_OUTPUT" >> ../limit-report.md
+              EXCEEDED=true
+            fi
             echo "$LIMIT_OUTPUT"
+          done <<< "$CHANGED_FILES"
+          echo "exceeded=$EXCEEDED" >> "$GITHUB_OUTPUT"
+          if [ "$EXCEEDED" = true ]; then
             exit 1
           fi
 
