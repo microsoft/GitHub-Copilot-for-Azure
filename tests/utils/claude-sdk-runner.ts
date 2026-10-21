@@ -244,7 +244,6 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
           }
 
           if (message.type === "result" && pendingBackgroundTasks.size === 0) {
-            metadata.testComments.push("get result with 0 pending background task");
             session.finishInput();
           }
 
@@ -253,7 +252,6 @@ export function useClaudeAgentRunner(_agentRunnerConfig: AgentRunnerConfig): IAg
             break;
           }
         }
-        metadata.testComments.push("messages naturally exhausted");
       } catch (error) {
         const errorDetails = error instanceof Error ? error.message : String(error);
         metadata.testComments.push(`Agent runner error: ${errorDetails}`);
