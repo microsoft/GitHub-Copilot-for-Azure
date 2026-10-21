@@ -4,13 +4,15 @@
 
 > ⚠️ **Code is NOT automatically migrated.** The new app is created with config only — you must deploy code separately.
 >
+> ⚠️ **Storage gate**: Require Step 4b authentication-policy preflight and effective access verification for **both runtime and deployment storage**. Attempt managed identity/RBAC for both; unresolved identity provisioning, roles, policy, or access block deployment. Runtime identity settings alone do not prove deployment-storage access. State this gate explicitly in plans.
+>
 > ✅ **Trigger safety when all disable-capable functions were approved and verified disabled**: Only HTTP triggers and any hyphenated functions following their recorded Step 4j path will be live after the runtime starts; per-function cutover for disable-capable functions happens in Step 6.
 >
 > ⚠️ **If disablement was declined**: Do not deploy until the required Step 4j warning and explicit deployment approval have been completed. Non-HTTP functions may begin processing or running schedules immediately after deployment.
 >
 > ⛔ **Built-in authentication gate**: If the source used Easy Auth, Step 4f.auth must be complete before deployment. If it is deferred or blocked, stop before placing application code on the target; otherwise previously protected endpoints could become publicly accessible.
 >
-> ✅ **Access-key decision**: Step 4l must record either target-generated keys or source-key preservation before deployment. Key values are applied only after functions synchronize.
+> ✅ **Access-key decision**: Step 4l records target-generated keys or preservation of source host/HTTP-function keys only. **System/master keys always remain target-generated.** Apply preserved values after synchronization and before HTTP validation.
 
 ### Confirm Deferred App Settings Are Ready
 
@@ -90,6 +92,8 @@ func azure functionapp publish <NEW_APP_NAME>
 Functions Core Tools performs a host health request after publishing. If the deployment pipeline and trigger synchronization complete but Option B ends with `403 Ip Forbidden`, the copied access restrictions blocked only that health request. Continue with the ARM verification below; do not modify access restrictions automatically.
 
 ### Option C: Deploy Existing Package (if user selects option 3)
+
+**Verify Linux compatibility before deployment**, including target runtime, RID, native libraries, file paths/case, and Windows-only APIs/packages. A zip retrieved from Windows is not automatically portable. Rebuild from source for Linux or block until a compatible artifact is supplied; record the verification in progress. Apply this artifact check to CI/CD and local builds too.
 
 Deploy the zip package downloaded in Step 3 (resolves to `<UPGRADE_DIR>/<PACKAGE_NAME>` per the [Artifact Output Policy](../../../../../global-rules.md#artifact-output-policy)):
 

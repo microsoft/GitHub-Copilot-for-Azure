@@ -1,0 +1,183 @@
+name: azure-upgrade-windows-flex-plan-eval
+description: |
+  Plan-only integration coverage for Windows Consumption to Flex Consumption.
+  Checks Windows workflow selection and complete migration planning without
+  provisioning resources or changing an existing app.
+
+tags:
+  type: integration
+  skill: azure-upgrade
+
+defaults:
+  runs: 1
+  timeout: "20m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: gpt-5.3-codex
+
+scoring:
+  threshold: 1.0
+
+stimuli:
+  - name: "Full Windows Consumption to Flex migration plan"
+    prompt: |
+      Give me a full, ordered plan to migrate my Azure Function App from
+      Windows Consumption (Y1/Dynamic) to Flex Consumption. Include every
+      necessary migration step, conditional work, user decision, safety gate,
+      validation, cutover, cleanup, and rollback consideration from the
+      applicable upgrade guidance, not just a high-level phase list.
+
+      This is a planning exercise using synthetic app details, not an execution
+      request. Read the relevant skill guidance, but do not query Azure, run
+      discovery commands, provision resources, modify files, or change either
+      app. Do not ask me follow-up questions now; list decisions and unknowns
+      in the plan instead. I confirm Windows Consumption as the source and
+      Flex Consumption as the intended target for this plan only.
+
+      The synthetic source is orders-win in resource group rg-orders, West
+      Europe, running .NET 8 isolated. It has HTTP, Service Bus, timer, and
+      polling Blob triggers; one non-HTTP function is named process-orders.
+      It uses managed identities and RBAC, built-in authentication, custom
+      domains, TLS certificates, access restrictions, Application Insights,
+      and key-authenticated HTTP clients. Some app-setting names contain ":".
+      Its source repository, CI/CD pipeline, and Terraform definitions are
+      available. Storage authentication policy, Windows-only code dependencies,
+      and target-specific dependency isolation have not yet been assessed.
+    rubric:
+      - |
+        The answer is a prospective plan, not a claim of completed assessment
+        or migration. It identifies Windows-to-Linux migration, a new parallel
+        FC1 app rather than in-place conversion. It follows all seven workflow
+        phases in order, with concrete substeps rather than phase names alone.
+      - |
+        Before execution, the plan confirms source identity and target plan,
+        checks CLI/tools and permissions, and assesses region, runtime/version,
+        deployment slots, certificates, dependencies, and Blob trigger
+        compatibility. It converts polling Blob triggers to Event Grid.
+        It includes a Windows dependency scan using source preferentially,
+        covering Windows APIs/packages, RID, paths/case, and certificate loading;
+        records findings or an explicitly accepted scan skip in an assessment
+        report.
+      - |
+        The plan inventories app-setting names without exposing secret values,
+        site configuration, CORS, custom domains, TLS/client certificates,
+        access restrictions, built-in authentication providers, both identity
+        types and RBAC, triggers/bindings, dependent services, monitoring, and
+        access-key names. It uses the source repository when available and
+        retrieves the deployed package only as a fallback.
+      - |
+        The plan proposes and announces a globally unique target name, normally
+        orders-win-flex, and includes a user decision among reuse-source, new,
+        or existing-different storage, creating storage only when selected.
+        It checks Shared Key policy before creation. If keys are prohibited,
+        creation/deployment remains blocked until verified identity-first
+        provisioning covers BOTH runtime and deployment storage, including
+        effective RBAC. Post-create identity conversion is not a bypass.
+      - |
+        The plan reviews setting names and asks whether to copy filtered source
+        settings or defer for target-specific dependencies. It maps ":" to "__"
+        with collision review, transfers secrets without displaying or writing
+        them to disk, filters Windows content-share, run-from-package, and
+        Flex-deprecated runtime/scale settings, and preserves target-owned
+        storage and Application Insights settings instead of copying source
+        values over them.
+      - |
+        The plan configures and verifies site settings (HTTP/TLS/HTTPS and
+        client certificates), system-assigned identity with corresponding
+        role assignments, user-assigned identities, built-in authentication
+        providers, CORS, custom domains, and access restrictions. It re-adds
+        used certificates with Linux-compatible loading, carries forward any
+        custom scale limit and configures scale/concurrency as needed, and
+        verifies monitoring while preserving existing AAD ingestion rather
+        than forcing an unrelated authentication conversion.
+      - |
+        Before deployment, the plan proves complete production isolation or
+        obtains the applicable non-HTTP trigger safety decision. It explicitly
+        handles process-orders because Linux cannot disable hyphenated function
+        names through app settings, proposing a supported alternative such as
+        isolation, renaming/repackaging, source-first cutover, or explicit
+        active-trigger risk acceptance. It warns and requires immediate
+        approval before deployment if active-trigger risk is accepted.
+      - |
+        The plan inventories keys and asks whether to use target-generated keys
+        or preserve source host and HTTP-function keys. It keeps system/master
+        keys target-generated. When preservation is selected, it copies and
+        verifies keys after function synchronization but before HTTP validation;
+        otherwise it updates key-dependent clients before routing them to target.
+      - |
+        The plan deploys code separately with a user choice of CI/CD update,
+        local publish, or an existing Linux-compatible package. It does not
+        assume a Windows-built package works on Linux or recommend MSDeploy,
+        FTP, or Kudu git deployment. Unresolved storage authentication, required
+        deferred application settings, or unverified built-in authentication
+        block deployment rather than becoming post-deployment follow-ups.
+      - |
+        Post-upgrade validation checks Flex SKU, deployment/function
+        synchronization, default hostname and representative HTTP endpoints,
+        every non-HTTP function, monitoring and performance, and scale/
+        concurrency. If access restrictions prevent a functional smoke test,
+        it records that test as deferred and uses an allowed client later,
+        rather than relaxing access rules or claiming functional success.
+      - |
+        Production cutover updates clients, pipelines, DNS/custom domains,
+        and trigger dependencies as applicable. Event-driven cutover validates
+        isolated target resources or uses a function-specific approved
+        transaction: disable and verify source before enabling target, with
+        rollback explicitly authorized if target validation fails. It mitigates
+        competing Service Bus consumers, duplicate timer runs, and Blob events;
+        it never enables a production-connected target while source-disable
+        approval is pending.
+      - |
+        The plan reconciles the available Terraform definitions with the new
+        app/plan, including Flex functionAppConfig and deployment storage;
+        imports migrated resources when appropriate, reviews terraform plan
+        before applying, and updates CI/CD instead of leaving ongoing manual
+        configuration that Terraform may overwrite.
+      - |
+        The source remains read-only during assessment/replication. Each
+        source-changing cutover, rollback, or cleanup action requires immediate,
+        action-specific approval. The plan retains source for rollback and
+        permits optional deletion only after validated production cutover,
+        no deferred readiness work, no source production processing, and
+        separate deletion confirmation. Validation-only success is not enough.
+        Rollback restores source processing and redirects clients, trigger
+        dependencies, and DNS as applicable without uncontrolled dual processing.
+      - |
+        The plan includes an assessment report and migration status artifact,
+        derives phase/substep tracking from the current guidance, records
+        decisions, skips, deferrals and outcome, and reports phase, substep,
+        description and state at transitions rather than percentages.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-upgrade
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "consumption-to-flex/windows/workflow\\.md"
+            - name: view
+              path: "consumption-to-flex/windows/automation\\.md"
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 0.8
+          prompt: |
+            Grade only the agent's user-facing migration plan, not facts merely
+            present in tool output. Every rubric item and its listed substeps
+            must be covered correctly for a pass. Accept equivalent wording
+            and conditional branches; do not require verbatim text, exact step
+            IDs, report section numbers, or executable command blocks. A bare
+            phase title or link to documentation is not step coverage. Any
+            omission or unsafe contradiction fails; identify missing items
+            in the evidence. No Azure operations or file changes are needed.
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"

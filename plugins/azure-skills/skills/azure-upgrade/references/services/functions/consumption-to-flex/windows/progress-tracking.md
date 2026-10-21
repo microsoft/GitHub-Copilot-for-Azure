@@ -2,6 +2,8 @@
 
 Maintain `<UPGRADE_DIR>/upgrade-status.md` and show the current status in chat at every transition. The workflow documents are the source of truth; do not maintain a second hard-coded step inventory here.
 
+**Plan-only answers:** explicitly commit to the assessment/status artifacts and the banner `Phase <current> of <total> · <step> · <description> · <state>` before/after each step. Describe future reporting without writing files. Merely mentioning a status file or "track progress" is insufficient.
+
 ## Build the Checklist
 
 1. Read the ordered `### Phase` headings in [workflow.md](workflow.md) to determine the phase names and total.

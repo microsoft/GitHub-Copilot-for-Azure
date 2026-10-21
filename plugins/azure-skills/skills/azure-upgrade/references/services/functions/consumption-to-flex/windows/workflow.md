@@ -5,243 +5,179 @@
 > **Platform**: Windows → Linux (Flex Consumption is Linux-based)
 > **Docs**: [Windows migration guide](https://learn.microsoft.com/en-us/azure/azure-functions/migration/migrate-plan-consumption-to-flex?pivots=platform-windows)
 
-> ⚠️ **This is a Windows-to-Linux migration**, not just a plan change. Flex Consumption is Linux-based. Apps with Windows-specific dependencies, in-process .NET, .NET Framework targeting, or Windows-RID deployment packages must be prepared before migration. See [Known Limitations and Migration Blockers](#known-limitations-and-migration-blockers).
+> **This changes OS, not just plan.** Prepare Windows dependencies, in-process .NET, .NET Framework targets, and Windows-RID packages before migration. See [blockers](#known-limitations-and-migration-blockers).
 
 ## Before You Begin
 
-Before running any discovery or Azure command, read the ordered `### Phase` headings in this workflow and the ordered workflow-unit table in [automation.md](automation.md). Present a concise user-facing summary in that order, combining implementation units under their corresponding phases. Do not maintain or infer a separate hard-coded step list.
+Before discovery or Azure commands, summarize the ordered `### Phase` headings and [automation workflow units](automation.md), grouped by phase; do not invent a separate step list. Explain source-app safety below, then confirm the source app and Flex target plan before continuing.
 
-State that the source app remains read-only during assessment and replication. Every source-changing cutover, rollback, or cleanup action requires a separate, immediate approval. After presenting the plan, confirm the source app and Flex Consumption target plan with the user before continuing.
+**For a full plan only:** Read relevant linked procedures across phases without executing commands or creating artifacts. State each phase's concrete work, user decisions, blocking conditions, and verification in the answer; links alone are insufficient. Include storage authentication gates, Linux package checks, system/master-key exclusions, scale/concurrency setup and validation, Terraform adoption/plan review, and the required progress banner.
 
 ## Why Upgrade?
 
-- **Faster cold starts** — always-ready instances mean functions respond more quickly
-- **Better scaling** — per-function scaling and concurrency controls
-- **Virtual network support** — connect to private networks and use private endpoints
-- **Active investment** — Flex Consumption is where new features land first
+Flex offers always-ready instances, per-function scaling/concurrency, virtual networks/private endpoints, and ongoing feature investment.
 
 ## What to Expect
 
-1. **Your code may need changes** — unlike the Linux Consumption → Flex migration, this is a Windows-to-Linux OS change. Apps with Windows-only NuGet packages, P/Invoke, COM interop, .NET Framework dependencies, Windows-RID deployment packages, or Windows-specific PowerShell modules require preparation.
-2. **Create a new Flex app alongside the existing one** — test thoroughly on the new app before cutting over. This 2-app approach lets you discover Linux compatibility issues safely before committing.
-3. The new app runs in the **same resource group** with access to the same dependencies.
-4. **Deployment model changes** — Windows Consumption stores code on Azure Files (SMB); Flex uses immutable blob packages via One Deploy. Existing MSDeploy, FTP, and Kudu git push pipelines will not work after migration.
-5. You **control the timing** — the original Windows app stays running until you are confident in the migrated app.
+- Prepare code for Linux; create and test a parallel Flex app in the **same resource group**, with access to existing dependencies.
+- Windows Azure Files/SMB content becomes immutable blob packages via **One Deploy**. Replace MSDeploy, FTP, and Kudu git deployment.
+- Keep the source running until the user approves cutover.
 
 ### Source-App Safety
 
-The source app is read-only throughout assessment and replication. Before any cutover, rollback, or cleanup command that changes the source app's settings, triggers, state, deployment, bindings, or existence, the skill must use `ask_user` to describe the exact action and obtain explicit approval. Approval is specific to that action and cannot be reused for later source changes.
+Keep the source **read-only during assessment and replication**. Immediately before any command changing its settings, triggers, state, deployment, bindings, or existence, use `ask_user` to describe the exact action and obtain explicit approval. Approval is action-specific, including cutover, rollback, and cleanup; never reuse it.
 
 ## Platform Notes
 
-- **Recommended plan**: Flex Consumption is the recommended serverless hosting plan for Azure Functions. Do not assume or state a Windows Consumption retirement date unless current Microsoft documentation publishes one.
-- **OS change**: Flex Consumption is **Linux-based**. Windows-compiled binaries, Windows-only NuGet packages, COM interop, P/Invoke to Windows APIs, and Windows PowerShell modules will not run without modification.
-- **Deployment model**: Windows Consumption uses Azure Files (SMB share via `WEBSITE_CONTENTAZUREFILECONNECTIONSTRING`/`WEBSITE_CONTENTSHARE`); Flex uses blob-based One Deploy (immutable zip packages in Azure Blob Storage).
-- **`az functionapp flex-migration` does not support Windows** — all migration steps use raw CLI commands (see [automation.md](automation.md)).
-- **Elastic Premium alternative**: Apps with hard Windows dependencies that cannot be removed can migrate to [Elastic Premium on Windows](https://learn.microsoft.com/en-us/azure/azure-functions/functions-premium-plan) instead of Flex Consumption. This is more expensive but changes the hosting plan without requiring an OS migration.
+- Flex is the recommended serverless plan. State a Windows Consumption retirement date only if current Microsoft documentation publishes one.
+- **`az functionapp flex-migration` does not support Windows**; use the raw CLI procedures in [automation.md](automation.md).
+- Unremovable Windows dependencies require an alternative such as [Elastic Premium on Windows](https://learn.microsoft.com/en-us/azure/azure-functions/functions-premium-plan): higher cost, no OS migration.
 
 ## Prerequisites
 
 - Azure CLI v2.77.0+
 - `resource-graph` extension: `az extension add --name resource-graph`
-- `jq` tool for JSON processing
-- Owner or Contributor role in the resource group
-- Permissions to create and manage function apps, storage accounts, App Insights resources, and managed identity role assignments
+- `jq`
+- Resource-group Owner/Contributor and permissions for function apps, storage, App Insights, and managed-identity role assignments
 
 ## Compatibility Requirements
 
 ### Supported Language Stacks
 
-| Stack ID | Language | Supported? |
-|----------|----------|------------|
-| `dotnet-isolated` (.NET 8+) | .NET isolated worker, .NET 8+ | ✅ Yes — if no Windows-only dependencies and not published with a Windows RID |
-| `dotnet-isolated` (.NET Framework) | .NET isolated worker targeting `net4x` | ❌ No — .NET Framework runtime not present on Linux; must retarget to .NET 8+ |
-| `dotnet` | .NET in-process model | ❌ No — not supported on Flex; must migrate to isolated worker model first |
-| `node` | JavaScript/TypeScript | ✅ Yes |
-| `java` | Java | ✅ Yes |
-| `python` | Python | ✅ Yes |
-| `powershell` | PowerShell | ⚠️ Review — Windows-only modules (WMI, registry, COM interop) will not work on Linux |
-| `go` | Go (Preview) | ✅ Yes — if the handler and native dependencies are built for Linux |
-| `custom` | Custom handlers | ⚠️ Review — handler binary must be Linux-compatible |
+| Stack | Requirement |
+|-------|-------------|
+| `dotnet-isolated` (.NET 8+) | No Windows-only dependencies or Windows RID |
+| `dotnet-isolated` (`net4x`) | Unsupported; retarget to .NET 8+ |
+| `dotnet` (in-process) | Unsupported; migrate to isolated worker |
+| `node`, `java`, `python` | Supported |
+| `powershell` | Replace Windows-only WMI/registry/COM modules |
+| `go` (Preview), `custom` | Linux-compatible handler and native dependencies |
 
 ### Known Limitations and Migration Blockers
 
 #### Flex Consumption Platform Limits (shared with Linux migration)
 
-| Feature | Status | Action Required |
-|---------|--------|-----------------|
-| Deployment slots | ❌ Not supported | Consolidate to production slot or rearchitect to separate apps |
-| TLS/SSL certificates | ⚠️ Site-scoped certificates in preview | Re-add used certificates after migration, verify the per-app limits, and update code to use Linux certificate file paths |
-| Blob trigger (polling) | ❌ EventGrid source only | Convert `LogsAndContainerScan` → `EventGrid`; create event subscription |
-| Disable setting for function names containing `-` | ❌ Not supported on Linux | Isolate the target dependency, rename/repackage the function, use a source-first deployment cutover, or explicitly accept active-trigger risk |
-| Azure Government | ❌ Not available | Cannot migrate yet |
-| MSDeploy / FTP / Kudu git deploy | ❌ Not supported | Switch to `az functionapp deploy` or `func azure functionapp publish` |
-| PowerShell managed dependencies | ❌ Not supported | Package all required modules in the app-root `Modules` folder before deployment; verify Linux compatibility. `requirements.psd1` alone doesn't install modules on Flex Consumption. See [PowerShell dependency management](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-powershell#dependency-management). |
+| Feature | Limit / action |
+|---------|----------------|
+| Deployment slots | Unsupported; consolidate or use separate apps |
+| TLS/SSL certificates | Site-scoped preview; re-add used certificates, verify per-app limits, use Linux file paths |
+| Polling Blob triggers | Convert `LogsAndContainerScan` → `EventGrid`; create event subscription |
+| Disable settings for function names containing `-` | Unsupported on Linux; isolate dependencies, rename/repackage, use source-first deployment cutover, or explicitly accept active-trigger risk |
+| Azure Government | Unavailable |
+| MSDeploy / FTP / Kudu git | Replace with `az functionapp deploy` or `func azure functionapp publish` |
+| PowerShell managed dependencies | Unsupported; package Linux-compatible modules in app-root `Modules`. `requirements.psd1` alone is insufficient; see [dependency management](https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference-powershell#dependency-management). |
 
 #### Windows-to-Linux Specific Blockers
 
 | Issue | How to Detect | Action Required |
 |-------|---------------|-----------------|
-| .NET in-process model | `FUNCTIONS_WORKER_RUNTIME=dotnet` app setting | Migrate to isolated worker model — requires code changes (different NuGet packages, `Program.cs` startup) |
-| .NET Framework targeting (`net4x`) | `.csproj` target framework | Retarget to .NET 8+ — may require replacing Framework-only APIs and NuGet packages |
-| Windows-only NuGet packages (GDI+, COM, P/Invoke) | Assembly/package scan (heuristic) | Replace with cross-platform alternatives, or migrate to Elastic Premium on Windows |
-| Windows RID deployment package | `runtimes/win-x64/` present without `linux-x64` in package | Republish without a RID (framework-dependent) or with `-r linux-x64` |
-| Path separator / case sensitivity | Code review | Replace `\` path construction with `Path.Combine()`; fix case-sensitive file references |
-| PowerShell Windows-only modules (WMI, registry, COM) | `requirements.psd1` module imports | Replace with cross-platform alternatives or remove |
-| Windows certificate store access | Code review | Migrate to file-based certificate loading |
-| Unsupported language runtime version | Site config | Upgrade to a [supported version](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) |
-| App region not supported by Flex | Region vs. Flex availability list | Wait for regional availability, or relocate the app |
-
-> 💡 **Elastic Premium escape hatch**: Apps with hard Windows dependencies that cannot be removed can migrate to [Elastic Premium on Windows](https://learn.microsoft.com/en-us/azure/azure-functions/functions-premium-plan) as an alternative. This changes the hosting plan without requiring an OS migration.
+| In-process .NET | `FUNCTIONS_WORKER_RUNTIME=dotnet` | Change packages/startup to isolated worker |
+| .NET Framework | `.csproj` targets `net4x` | Retarget .NET 8+; replace Framework-only APIs/packages |
+| Windows packages (GDI+, COM, P/Invoke) | Heuristic assembly/package scan | Replace or use Windows Premium |
+| Windows RID | `runtimes/win-x64/` without `linux-x64` | Republish framework-dependent or `-r linux-x64` |
+| Paths/case | Code review | Use `Path.Combine()`; fix filename case |
+| Windows PowerShell modules | `requirements.psd1`/imports | Replace or remove WMI/registry/COM dependencies |
+| Windows certificate store | Code review | Load certificates from files |
+| Runtime version | Site config | Use a [supported version](https://learn.microsoft.com/en-us/azure/azure-functions/supported-languages) |
+| Unsupported region | Flex availability list | Wait or relocate |
 
 ## New App Name
 
-The new Flex Consumption app needs a globally unique name. The skill defaults to **`<source>-flex`** — e.g. if your source app is `test-app`, the new app will be `test-app-flex`. This is short, self-documenting, and signals the SKU change.
+Honor an explicit name ("as/named `<name>`"); otherwise propose **`<source>-flex`**. Before Step 4b, announce name, resource group, and region so the user can override without a blocking prompt.
 
-Two modes are supported. State your preference in your initial migration request:
-
-| Mode | How to invoke | Resulting name |
-|------|---------------|----------------|
-| **Default suffix** *(default)* | Just say "migrate my function app" | `<source>-flex` |
-| **Custom name** | "migrate my function app **as `<name>`**" or "… **named `<name>`**" | The name you provide |
-
-> ⚠️ **Skill instruction**: Before executing Step 4b in [automation.md](automation.md), **announce the proposed name to the user**, e.g. *"I'll create the new Flex app as `test-app-flex` in resource group `test-app_group` (region `westus2`). Say so if you'd prefer a different name."* This gives the user a chance to course-correct without a blocking prompt.
-
-> 💡 Constraints (from the underlying [MS Learn create flow](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to?tabs=azure-cli%2Cazure-cli-publish&pivots=programming-language-csharp#create-a-flex-consumption-app)): globally unique in Azure (becomes `<APP_NAME>.azurewebsites.net`), 2–60 characters, alphanumerics + hyphens, must start with a letter, no consecutive hyphens. If the default `<source>-flex` would exceed 60 chars or collides with an existing app, fall back to a shortened suffix (e.g. `<source>-fc`) and announce that to the user.
+Names must be globally unique, 2–60 alphanumeric/hyphen characters, start with a letter, and have no consecutive hyphens. If too long or unavailable, shorten (e.g. `<source>-fc`) and announce the fallback. See [App Creation](automation/app-creation.md).
 
 ## Storage Account Options
 
-The new Flex Consumption app needs a storage account bound at creation time. The skill defaults to **reusing the source app's existing storage account** — the same default as `az functionapp flex-migration` on Linux. This is the lowest-friction option because there is no new storage resource to manage. Flex configures deployment storage on the target rather than reusing the source app's Windows content-share settings.
-
-Three modes are supported. State your preference in your initial migration request — the skill will detect it and set the binding accordingly. Think of these as CLI-style flags:
-
-| Mode | How to invoke | When to use |
-|------|---------------|-------------|
-| **Reuse source storage** *(default)* | Just say "migrate my function app" | Most migrations. No isolation needed between source and target. |
-| **Create new storage** | "migrate my function app **with a new storage account**" or "… **and create a new storage account**" | You want isolated storage for blast-radius, compliance, or test/prod separation. |
-| **Use a specific existing account** | "migrate my function app **using storage account `<name>`**" | You already have a target account provisioned (e.g. via IaC or central platform team). |
-
-> ⚠️ **Skill instruction**: Before executing Step 4a/4b in [automation.md](automation.md), **announce the storage choice to the user**, e.g. *"I'll reuse your existing storage account `foo` for the new Flex app. Say so if you'd prefer a new isolated account or a different existing one."* This gives the user a chance to course-correct without a blocking prompt.
+Bind storage at creation: **reuse source** (no new resource), **create new** (isolation), or **use a specified existing account**. Honor the request and follow the [App Creation storage decision](automation/app-creation.md#storage-account-binding-read-before-running-4a4b) before Steps 4a/4b. Configure target deployment storage; never copy Windows content-share settings.
 
 ## Upgrade Phases
 
-Initialize and maintain `<UPGRADE_DIR>/upgrade-status.md` using [Migration Progress](progress-tracking.md). Derive its workflow snapshot from the current scenario and automation headings, and show the current phase, substep, description, and state in chat at every transition; do not use a percentage.
+Maintain `<UPGRADE_DIR>/upgrade-status.md` per [Migration Progress](progress-tracking.md), deriving the snapshot from current workflow/automation headings. Before/after each step, display `Phase <current> of <total> · <step> · <description> · <state>`; no percentages. Plan-only answers must promise this transition reporting and the assessment/status artifacts, not create them.
 
 ### Phase 1: Assessment
 
-Run all checks from [assessment.md](assessment.md). Since `az functionapp flex-migration` does not support Windows, eligibility is determined manually — use Step 1 and Step 2 in [automation.md](automation.md) to identify candidate apps and run compatibility checks.
+Run all [assessment checks](assessment.md) and manual discovery/compatibility Steps 1–2 in [automation.md](automation.md).
 
-- **Source code dependency scan** ([Step 2g](automation/discovery-and-assessment.md#2g-source-code-windows-dependency-scan) / [dependency-scan.md](dependency-scan.md)) — recommended for every Windows → Flex migration. Prefer a local source directory or checked-out repository; use the deployed package only when source is unavailable. The scan checks for Win32/COM/WMI/registry/cert-store usage, Windows-only packages, Windows-RID targeting, and shell-outs to Windows tools. Skippable — when skipped, the user owns the risk. Findings populate §11 of the assessment report and advisorily affect §1 `Upgrade Readiness`.
+Recommend the [Step 2g dependency scan](automation/discovery-and-assessment.md#2g-source-code-windows-dependency-scan), using [dependency-scan.md](dependency-scan.md): prefer local/checked-out source; use the deployed package only if unavailable. Check Windows APIs/packages/RIDs, certificate stores, and Windows shell-outs. Record findings in report §11 and advisory readiness in §1; skipping transfers risk to the user.
 
 ### Phase 2: Pre-migration (Collect Everything)
 
-Collect all settings and configurations from the existing app before creating the new one. See **Step-by-step scripts** in [automation.md](automation.md):
+Before target creation, inventory per [automation.md](automation.md):
 
-1. Collect app settings
-2. Collect application configurations (CORS, custom domains, HTTP version, TLS, client certs, etc.)
-3. Inventory TLS/SSL certificates that must be re-added with the site-scoped certificate process
-4. Identify managed identities and RBAC role assignments
-5. Identify built-in authentication settings
-6. Review inbound access restrictions
-7. Get the code deployment package (if source code not in version control)
+1. App settings and site configuration (CORS, domains, HTTP, TLS, client certificates).
+2. Used TLS/SSL certificates requiring site-scoped re-addition.
+3. Managed identities, RBAC, built-in authentication, and inbound restrictions.
+4. Deployment package, only if source is unavailable in version control.
 
 ### Phase 3: Create Flex Consumption App
 
-Execute Steps 4a–4l from [automation.md](automation.md). Each sub-step handles a discrete part of the migration:
+Execute Steps 4a–4l in [automation.md](automation.md):
 
-- **4a** — *(optional)* Create a new storage account — only run if the user explicitly asked for new or different storage; see [Storage Account Options](#storage-account-options)
-- **4b** — Run the storage authentication preflight; use connection-string creation only when Shared Key access is permitted. Otherwise block for user-provisioned, verified identity-first creation — [App Creation](automation/app-creation.md#4b-create-the-flex-consumption-app)
-- **4b.opt** — Convert a permitted connection-string target to identity-based storage if the source was identity-based or the user requested it; not a workaround for prohibited Shared Key access
-- **4c** — Review app-setting names, then ask whether to copy filtered source settings or defer them until target-specific dependencies are configured
-- **4d** — Apply site configurations (HTTP/2, TLS, HTTPS-only, client certs, SCM basic auth)
-- **4e** — Migrate system-assigned managed identity and role assignments
-- **4f** — Migrate user-assigned managed identities
-- **4f.auth** — If the source uses built-in authentication, configure and validate each provider before code deployment or defer the migration
-- **4g** — Migrate CORS settings
-- **4h** — Migrate custom domains
-- **4i** — Migrate access restrictions
-- **4j** — Skip disablement when settings and every trigger dependency are proven isolated from production and no autonomous function can affect production; otherwise separate hyphenated non-HTTP function names, which Linux cannot disable through app settings, and obtain the applicable safety decisions — [decision guidance](automation/trigger-safety-and-monitoring.md#4j-choose-the-pre-deployment-state-of-non-http-functions)
-- **4k** — Verify the Application Insights configuration created with the target app; preserve AAD ingestion only when the source used it
-- **4l** — Inventory access-key names and choose target-generated keys or opt in to preserving source host and HTTP-function key values
-
-> 💡 Use Microsoft Entra ID + managed identities instead of connection strings when creating the new app.
+- **4a–4b** — Create storage only if selected; run authentication preflight and create the Flex app.
+- **4b.opt** — Convert explicitly approved, permitted key-based storage to identity; never bypass the identity-first gate below.
+- **4c** — Review setting names; ask to copy filtered settings or defer until target dependencies are configured.
+- **4d–4f** — Apply HTTP/2, TLS, HTTPS-only, client certificates, SCM basic auth; migrate system identity/RBAC and user-assigned identities.
+- **4f.auth** — Configure/validate every used authentication provider before deployment, or defer migration.
+- **4g–4i** — Migrate CORS, custom domains, and access restrictions.
+- **4j** — Choose [trigger safety](automation/trigger-safety-and-monitoring.md#4j-choose-the-pre-deployment-state-of-non-http-functions). Skip disablement only with proven isolation of settings/all trigger dependencies and no autonomous production effects. Classify literal names: `process-orders` **contains `-`** and cannot use Linux disable settings; use isolation, rename/repackage, source-first cutover, or approved active deployment.
+- **4k** — Verify target App Insights; preserve AAD ingestion only if source used it.
+- **4l** — Inventory key names; choose target-generated keys or opt in to preserving source host/HTTP-function keys.
 
 ### Identity-First Configuration (Functions)
 
-Enterprise subscriptions commonly enforce policies blocking local auth. Configure identity-based access:
+Prefer Microsoft Entra ID + managed identities over connection strings.
 
-- **Storage accounts**: [Step 4b](automation/app-creation.md#4b-create-the-flex-consumption-app) checks Shared Key access and policy before creation. Where keys are prohibited, managed identity and effective roles are required for both runtime and deployment storage; block until identity-first provisioning is verified. Runtime identity settings alone don't configure deployment identity. [4b.opt](automation/app-creation.md#4bopt-identity-based-storage) is a post-create conversion only where connection-string creation was permitted. Step 4c preserves target storage settings rather than copying source `AzureWebJobsStorage*` settings.
-- **Application Insights**: Preserve `Authorization=AAD` when the source already uses it; otherwise treat conversion as optional post-migration hardening
-- When using User Assigned Managed Identity, pass `managedIdentityClientId` explicitly
+- **Storage**: Always attempt managed identity + RBAC for **both runtime and deployment storage**, even if Shared Key is allowed. [4b](automation/app-creation.md#4b-create-the-flex-consumption-app) checks policy before creation and verifies each identity's effective roles/access before deployment. If identity-first provisioning is unverified, record a blocker and remediation/handoff; never silently use keys or present them as an equally good option. Where keys are prohibited, block key-based creation; [4b.opt](automation/app-creation.md#4bopt-identity-based-storage) cannot bypass this. Runtime identity alone is insufficient. Step 4c preserves target bindings, not source `AzureWebJobsStorage*`.
+- **App Insights**: Preserve existing `Authorization=AAD`; otherwise conversion is optional post-migration hardening.
+- For user-assigned identity, pass `managedIdentityClientId` explicitly.
 
 ### Phase 4: Verify and Configure the New App
 
-Steps 4a–4i migrate application configuration; Step 4f.auth handles built-in authentication; Steps 4j–4k establish trigger safety and verify monitoring; Step 4l records the access-key strategy. Verify the results and manually configure anything not covered by those steps (see [automation.md](automation.md)):
+Verify Step 4 results and finish missing configuration per [automation.md](automation.md):
 
-1. **Verify** the chosen app-setting mode, identities, and custom domains
-2. **Re-add** used TLS/SSL certificates with the site-scoped certificate process and update code that used the Windows certificate store
-3. **Configure** the source app's custom scale limit, if one was set
-4. **Verify** Application Insights monitoring
+1. Check selected setting mode, identities, and domains.
+2. Re-add used TLS/SSL certificates through the site-scoped process; replace Windows certificate-store access.
+3. Carry forward custom instance limits and review/configure HTTP per-instance and applicable trigger concurrency; explicitly record retained defaults.
+4. Verify Application Insights monitoring.
 
 ### Phase 5: Deploy Code
 
-> ⚠️ **Code is NOT automatically migrated.** The new app is created with config only — you must deploy code separately.
->
-> ⚠️ If Step 4b storage authentication preflight or identity-first provisioning remains blocked, do not deploy code. Required storage identities, role assignments, and access validation cannot be deferred.
->
-> ⚠️ If source app settings were deferred in Step 4c, deployment is blocked until the user confirms all required application-specific target settings are configured. The skill may inspect names, but never setting values.
->
-> ⚠️ If built-in authentication was deferred in Step 4f.auth, deployment is blocked. The source authentication boundary must be recreated and verified before application code is placed on the target.
+**Code requires separate deployment. Block deployment until:**
+- Step 4b storage authentication, required identities/RBAC, and effective access are verified.
+- The user confirms all required target-specific settings deferred in 4c are configured; inspect names, never values.
+- Every used built-in authentication provider deferred in 4f.auth is recreated and verified.
 
-**Use `ask_user` to present these options:**
+Use `ask_user` to choose **CI/CD update**, **local publish** (`func azure functionapp publish <NEW_APP_NAME>`), or **existing package**. Verify package/runtime/native dependencies are Linux-compatible; rebuild Windows-only artifacts before deploying. Execute [automation.md](automation.md) Step 5.
 
-> Your new Flex Consumption app `<NEW_APP_NAME>` has been created and configured. Now we need to deploy your function code. How would you like to proceed?
->
-> 1. **Update CI/CD pipeline** — I'll help you update your Azure Pipelines or GitHub Actions workflow to target the new app
-> 2. **Deploy from local project** — I'll run `func azure functionapp publish <NEW_APP_NAME>` from your project directory
-> 3. **Deploy existing package** — I'll deploy the package we downloaded earlier from the original app
+After function synchronization, run Step 5a: if preservation was selected, copy/verify source host and HTTP-function keys **before HTTP validation**. System/master keys stay target-generated.
 
-After user selects an option, execute the corresponding deployment method from [automation.md](automation.md) — Step 5.
+- With 4j disablement approved and no risky hyphenated function approved for active deployment, only HTTP endpoints are live; cut over functions in Phase 6.
+- With proven isolation, omit disable settings and validate only isolated dependencies.
+- If disablement was declined, warn that non-HTTP processing/schedules may start immediately and obtain explicit approval **immediately before deployment**.
 
-After deployment synchronizes all functions, execute Step 5a. When preservation was selected, copy and verify source host and HTTP-function keys before any HTTP validation. System and master keys remain target-generated.
-
-> ✅ If Step 4j disablement was approved and no risky hyphenated non-HTTP function was approved for active deployment, only HTTP endpoints will be live after deployment and per-function cutover happens in Phase 6.
->
-> ✅ If Step 4j was skipped because the target is fully isolated, deploy without per-function disable settings and validate only against those isolated dependencies.
->
-> ⚠️ If the user declined disablement, warn again and obtain explicit approval immediately before deployment because non-HTTP functions may begin processing or running schedules as soon as deployment completes.
-
-**After successful deployment, inform the user:**
-
-> Code deployed! Next steps to consider:
->
-> - The original app is still running — keep it as rollback for a few days
-> - If target-generated access keys were selected, update key-dependent clients and workflows before directing them to the new URL
-> - Enable HTTPS-only and managed identity on the new app for better security
-> - Source deletion is available only after all applicable production traffic and triggers are cut over and validated
+After deployment, remind the user to retain source for rollback, update key-dependent clients/workflows before directing them to target-generated keys, enable HTTPS-only/managed identity, and defer source deletion until validated production cutover.
 
 ### Phase 6: Post-Upgrade Validation
 
-1. **Smoke test** — Get the app's default hostname via `az functionapp show --query defaultHostName -o tsv`, then hit that URL and confirm it returns a non-error response (HTTP 2xx/4xx, not connection refused or 503). If an intentional access restriction returns `403 Ip Forbidden`, verify deployment and function synchronization through ARM and record functional smoke testing as deferred until it can run from an already allowed client; do not relax access rules automatically.
+1. **Smoke test** — Query `defaultHostName` with `az functionapp show --query defaultHostName -o tsv`; request it (HTTP 2xx/4xx, not refused/503). For intentional `403 Ip Forbidden`, verify deployment/function synchronization through ARM and defer functional testing to an allowed client; never relax restrictions automatically.
 2. Verify the app is running on Flex Consumption (`az functionapp show --query sku`)
 3. Test HTTP trigger endpoints (e.g. `curl https://<DEFAULT_HOST>/api/<FUNCTION_NAME>`)
-4. **Per-function validation and cutover for event-driven triggers** — either validate the target against isolated test resources without changing the source, or use a production cutover transaction. For production, obtain function-specific approval first, disable and verify the source, then enable the target; the same approval must explicitly authorize rollback if target validation fails. Never enable a production-connected target while source-disable approval is pending. See [Per-Function Cutover](automation/validation-and-cutover.md#per-function-cutover-event-driven-triggers) for the full procedure.
+4. **Per-function validation/cutover** — Test isolated target resources without source changes, or follow [production cutover](automation/validation-and-cutover.md#per-function-cutover-event-driven-triggers): obtain function-specific approval explicitly including rollback on failure, disable/verify source, then enable target. Never enable a production-connected target while source-disable approval is pending.
 5. Capture and compare performance benchmarks
 6. Set up monitoring dashboards
-7. Refine scale/concurrency settings
+7. Verify effective instance limits and HTTP/trigger concurrency; validate under representative load, compare errors/latency, then refine. Record unperformed load tests as deferred.
 8. Update IaC (Bicep/Terraform) to reflect new plan
 
 ### Phase 7: Cleanup (Optional)
 
-- Keep the original app for a few days/weeks as rollback
-- Consumption plan charges only for actual usage — low cost to keep idle
-- A validation-only success is not eligible for source deletion
-- The skill may offer deletion only when the recorded outcome is `production cutover complete`, no production-readiness work remains deferred, and the source no longer processes production workloads
-- Immediately before deletion, use `ask_user` as specified in [automation.md](automation.md) — Step 7
+- Retain source for days/weeks as rollback; idle Consumption costs little.
+- Offer deletion only for recorded `production cutover complete`, no deferred production-readiness work, and no source production processing. Validation-only success is insufficient.
+- Immediately before deletion, obtain `ask_user` confirmation per [automation.md](automation.md) Step 7.
 
 ## Trigger Migration Risks
 
-> ✅ **Recommended safety net**: When the user approves [Step 4j](automation/trigger-safety-and-monitoring.md#4j-choose-the-pre-deployment-state-of-non-http-functions), non-HTTP functions are disabled before deployment. Phase 6 then uses isolated target resources or a source-first, pre-approved production transaction so the target is never enabled while source-disable approval is pending. If the user declines Step 4j, record that dual processing or duplicate schedules may begin immediately after deployment. Apply the relevant mitigations below before enabling or deploying each function.
+Apply these mitigations **before deployment/enablement**, alongside [4j safety decisions](automation/trigger-safety-and-monitoring.md#4j-choose-the-pre-deployment-state-of-non-http-functions) and Phase 6 cutover. Record immediate dual-processing/duplicate-schedule risk if disablement is declined.
 
 | Trigger Type | Risk | Mitigation |
 |-------------|------|------------|
@@ -264,40 +200,38 @@ After deployment synchronizes all functions, execute Step 5a. When preservation 
 | Configuration | App settings | `functionAppConfig` section |
 | Storage | `WEBSITE_CONTENTSHARE` setting | `deployment.storage` in `functionAppConfig` |
 
-If the source app is managed through Bicep, ARM, or Terraform:
+For Bicep/ARM/Terraform-managed apps:
+1. Define a **new app and plan**, not an in-place conversion; model `functionAppConfig` and `deployment.storage` through equivalent provider fields.
+2. Reconcile migrated resources to avoid recreation/overwrites; import into Terraform where appropriate.
+3. Review `az deployment group what-if` or `terraform plan` before applying.
+4. Retarget CI/CD. Avoid ongoing manual configuration alongside IaC.
 
-1. Define the Flex app and plan as new resources; a Consumption app cannot be converted to Flex Consumption in place.
-2. Update the deployment definitions to use the new resource names and the Flex configuration above.
-3. Reconcile resources created during migration instead of allowing IaC to recreate or overwrite them. For Terraform, import the new resources when appropriate.
-4. Review the proposed changes with `az deployment group what-if` or `terraform plan` before applying them.
-5. Update CI/CD pipelines to deploy to the new Flex app.
-
-Do not mix ongoing manual configuration with resource-based deployments. If the app is not managed through IaC, skip this section.
+Skip if the app is not IaC-managed.
 
 ## Deprecated Settings (Do NOT Migrate)
 
-These app settings must be filtered out before applying to the new Flex app (Step 4c). The skill handles this automatically — Step 4c streams source settings through `jq`, deleting these keys in memory before PATCHing the new app's ARM endpoint.
+Step 4c filters these source settings in memory before PATCHing target ARM; never write secret values to disk.
 
-### Azure Files content settings (always present on Windows Consumption — never migrate)
+### Azure Files content settings
 
-Every Windows Consumption app has these because the platform requires them for the Azure Files SMB share. Flex uses blob-based deployment instead — these have no equivalent.
-
-These platform content settings are distinct from explicit Azure Files mount metadata returned by `az webapp config storage-account list`. Windows Consumption doesn't support explicit storage mounts, so catalog any returned metadata but don't migrate it.
+Remove Windows SMB content settings; Flex uses blobs. Separately catalog any explicit mount metadata from `az webapp config storage-account list`, but do not migrate it: Windows Consumption doesn't support explicit mounts.
 
 - `WEBSITE_CONTENTAZUREFILECONNECTIONSTRING`
 - `WEBSITE_CONTENTSHARE`
 - `WEBSITE_CONTENTOVERVNET`
 - `WEBSITE_SKIP_CONTENTSHARE_VALIDATION`
 
-### Deployment settings (Flex uses `deployment.storage` in `functionAppConfig`, not app settings)
+### Deployment settings
 
-Windows Consumption has three historical aliases for run-from-package — all must be removed:
+Remove all run-from-package aliases; Flex uses `functionAppConfig.deployment.storage`:
 
 - `WEBSITE_RUN_FROM_PACKAGE`
-- `WEBSITE_RUN_FROM_ZIP` (legacy alias — same semantics as `WEBSITE_RUN_FROM_PACKAGE`)
-- `WEBSITE_USE_ZIP` (original name — same semantics)
+- `WEBSITE_RUN_FROM_ZIP`
+- `WEBSITE_USE_ZIP`
 
-### Runtime / scale settings (configured via `functionAppConfig` in Flex, not app settings)
+### Runtime / scale settings
+
+Configure through `functionAppConfig`, not app settings:
 
 - `FUNCTIONS_EXTENSION_VERSION`
 - `FUNCTIONS_WORKER_RUNTIME`
@@ -310,8 +244,8 @@ Windows Consumption has three historical aliases for run-from-package — all mu
 ### Other unsupported settings
 
 - `WEBSITE_USE_PLACEHOLDER_DOTNETISOLATED`
-- `WEBSITE_LOAD_CERTIFICATES` (unused in Flex; use the site-scoped certificate process and make certificates accessible to app code)
-- `AzureWebJobsDashboard` (legacy v1 setting — not used by the v4 runtime)
+- `WEBSITE_LOAD_CERTIFICATES` (use site-scoped certificates accessible to code)
+- `AzureWebJobsDashboard` (legacy v1)
 - `WEBSITE_MOUNT_ENABLED`
 - `ENABLE_ORYX_BUILD`
 - `SCM_DO_BUILD_DURING_DEPLOYMENT`
@@ -319,13 +253,10 @@ Windows Consumption has three historical aliases for run-from-package — all mu
 - `WEBSITE_NODE_DEFAULT_VERSION`
 - `WEBSITE_VNET_ROUTE_ALL`
 
-### Application Insights (preserved from Step 4b and verified by Step 4k)
+### Application Insights
 
-- `APPLICATIONINSIGHTS_CONNECTION_STRING` — Step 4c preserves the target-specific value normally created by `az functionapp create`; Step 4k verifies it without displaying the value. `APPLICATIONINSIGHTS_AUTHENTICATION_STRING=Authorization=AAD` is preserved only when the source already used AAD ingestion.
+Discard source `APPLICATIONINSIGHTS_CONNECTION_STRING`; preserve the target value from 4b and verify without displaying it in 4k. Preserve `APPLICATIONINSIGHTS_AUTHENTICATION_STRING=Authorization=AAD` only if source used AAD ingestion.
 
-### Storage (replaced by Step 4b / 4b.opt)
+### Storage
 
-Every setting whose name starts with `AzureWebJobsStorage` is dropped by the 4c filter. Preserve the target binding verified by Step 4b or configured by [Step 4b.opt](automation/app-creation.md#4bopt-identity-based-storage):
-
-- `AzureWebJobsStorage` — discard the source connection string. Step 4b creates a fresh target connection string only when Shared Key authentication is permitted; identity-first targets must not receive one.
-- All `AzureWebJobsStorage__*` variants — discard source settings so they can't silently point the target runtime at the wrong account. Preserve verified target identity settings or re-derive them through 4b.opt where conversion is permitted.
+Drop every source `AzureWebJobsStorage*` setting, including connection strings and `__*` identity variants; preserve target bindings verified by 4b or [4b.opt](automation/app-creation.md#4bopt-identity-based-storage). Only permitted Shared Key creation may generate a fresh target connection string; never add one to identity-first targets.

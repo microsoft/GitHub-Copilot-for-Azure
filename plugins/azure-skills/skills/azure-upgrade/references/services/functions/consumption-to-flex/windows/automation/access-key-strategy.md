@@ -2,6 +2,8 @@
 
 ### 4l. Choose the Access Key Strategy
 
+**In every plan and decision, state the boundary explicitly:** preservation covers source host and HTTP-function keys only; **system keys and `_master` remain target-generated**, never copied. "Preserve keys" without this exclusion is incomplete.
+
 Inventory key **names only**. Never display or persist values:
 
 ```bash

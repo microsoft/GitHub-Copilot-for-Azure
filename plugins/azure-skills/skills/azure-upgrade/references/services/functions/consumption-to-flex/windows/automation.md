@@ -23,7 +23,9 @@
 
 ## Workflow Files
 
-Load only the file for the current workflow unit. Complete it before loading the next file unless that file explicitly directs otherwise.
+**Execution:** Load only the current workflow unit; complete it before loading the next unless directed otherwise.
+
+**Plan-only requests:** Read the relevant units across all phases before writing the plan; do not run their commands. Include the actual gates and verification, not just unit names. In particular, read App Creation, Trigger Safety and Monitoring, Access Key Strategy, Code Deployment, Validation and Cutover, and Migration Progress. Explicitly cover both storage identities/RBAC, Linux package compatibility, system/master-key exclusions, scale **and** concurrency configuration/validation, IaC import/plan review, and transition reporting. Classify names literally: `process-orders` contains `-` and cannot use target setting-based disablement.
 
 | Order | Workflow unit | Instructions |
 |-------|---------------|--------------|

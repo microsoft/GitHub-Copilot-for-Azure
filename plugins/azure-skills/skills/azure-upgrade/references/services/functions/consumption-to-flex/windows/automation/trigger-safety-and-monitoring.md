@@ -9,6 +9,8 @@
 > Reference: [Disable functions in Azure Functions](https://learn.microsoft.com/en-us/azure/azure-functions/disable-function).
 >
 > ⚠️ On Linux, a function whose name contains a hyphen (`-`) cannot be disabled through `AzureWebJobs.<FUNCTION_NAME>.Disabled`. Never claim that this setting protects a hyphenated function on the Flex target.
+>
+> Classify the actual name, not an assumed identifier: **`process-orders` contains a hyphen**. Record it in the hyphenated list and select one of the paths below; do not write a target disable flag or claim it is protected by one.
 
 Read each deployed function's trigger binding from the ARM function metadata:
 
@@ -152,6 +154,14 @@ If Step 2e identified certificates used by the source app, re-add only those cer
 
 #### Scale and Concurrency (if custom values needed)
 
+**Plans must cover both instance limits and per-instance concurrency**, not just maximum scale. Review HTTP concurrency and applicable non-HTTP trigger concurrency in `host.json`/binding settings against the workload and current Flex documentation. Configure supported target values when needed; otherwise record the retained defaults and rationale. Do not copy deprecated source concurrency app settings.
+
+Read the effective target scale/HTTP concurrency configuration:
+
+```bash
+az functionapp scale config show --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP>
+```
+
 Use the `WEBSITE_MAX_DYNAMIC_APPLICATION_SCALE_OUT` value collected in [Step 3a](configuration-inventory.md#3a-collect-application-configurations) as `<MAX_SCALE_SETTING>`. If the source setting was absent, keep the target default and skip this command. If it was set, confirm the value is within the Flex Consumption range of 1–1000 before applying it:
 
 ```bash
@@ -159,5 +169,7 @@ az functionapp scale config set --name <NEW_APP_NAME> --resource-group <RESOURCE
 ```
 
 > ⚠️ Reducing below 40 for HTTP apps can cause frequent request failures.
+
+Record instance limits and HTTP/trigger concurrency decisions in progress; [Step 6](validation-and-cutover.md#validate-scale-and-concurrency) must verify the effective values and workload behavior after deployment.
 
 ---

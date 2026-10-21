@@ -147,6 +147,16 @@ requests
 | render timechart
 ```
 
+### Validate Scale and Concurrency
+
+Read `az functionapp scale config show --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP>` and compare effective instance limits/HTTP concurrency with the recorded decisions. Verify applicable non-HTTP concurrency from deployed `host.json`/binding configuration. Maximum instance count alone is not concurrency validation.
+
+Under an agreed representative workload, check scaling, concurrent processing, latency, errors, and throttling against expectations. Use isolated dependencies or approved production cutover; never generate unapproved production events. If workload testing is unavailable, record it as deferred, not passed. Include these checks explicitly in plan-only answers.
+
+### Reconcile Infrastructure as Code and CI/CD
+
+For IaC-managed apps, model the new Flex app/plan and `functionAppConfig`, including `deployment.storage` authentication, using the provider's equivalent fields. Reconcile resources already created; import/adopt into Terraform state where appropriate rather than recreating or overwriting them. **Review `terraform plan` (or ARM/Bicep what-if) before any apply**, checking for source deletion, replacement, and configuration drift. Retarget CI/CD and avoid ongoing manual configuration outside IaC. Plan-only answers must name the adoption and review gates, not merely say "update Terraform."
+
 ### Check for Errors
 
 ```kql

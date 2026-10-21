@@ -58,6 +58,8 @@ Then bind `<STORAGE_NAME>` and `<STORAGE_RESOURCE_ID>` from the output for use i
 
 **Storage authentication preflight (before creating the app):**
 
+**Always attempt managed identity + RBAC for both host/runtime and deployment storage**, even when Shared Key is allowed. Recommend identity-first provisioning, not keys as an equivalent option. If this CLI flow cannot provision both identities, record a blocker and use the keyless handoff below. Verify each identity's effective roles and access before deployment; listing role assignments alone is not proof of access. Never silently fall back to connection strings.
+
 Read the selected account's configuration without retrieving storage keys:
 
 ```bash
@@ -85,7 +87,7 @@ I provisioned a keyless target at <TARGET_RESOURCE_ID>. Use that existing target
 
 After adoption, do not fall through to the basic creation flow below or rerun storage conversion.
 
-Continue with the basic creation flow only when Shared Key authentication is permitted for both storage connections.
+The basic flow below is an exception, not the recommended path: require explicit user approval of temporary key-based creation and its risks, permitted Shared Key for both connections, and no identity-only policy. Otherwise remain blocked on identity-first provisioning. Record the exception in progress Notes.
 
 Use `<RUNTIME>` and `<TARGET_RUNTIME_VERSION>` resolved and recorded in Step 2c. Do not derive the target version from `FUNCTIONS_WORKER_RUNTIME_VERSION` at creation time; that setting is not guaranteed to be present or authoritative, and Windows Consumption leaves `siteConfig.windowsFxVersion` empty.
 
@@ -107,7 +109,7 @@ az functionapp create --name <NEW_APP_NAME> --resource-group <RESOURCE_GROUP> --
 
 ### 4b.opt. Identity-Based Storage
 
-For an app created through the permitted connection-string flow, run this sub-step if the user requested identity-based storage or Step 3a reported identity-based source storage; otherwise skip it. This post-create conversion isn't a workaround for the blocked preflight above. When Shared Key authentication is prohibited, identity-based host and deployment storage are functional requirements that must be satisfied through identity-first provisioning before resuming.
+For an explicitly approved, permitted connection-string exception, attempt conversion of **both** storage connections before deployment. Record any failure as blocked; do not silently retain keys. This post-create conversion never bypasses a key prohibition: those targets require verified identity-first provisioning.
 
 This is a post-create hardening pass that mirrors the optional pattern documented in [Configure deployment settings (MS Learn)](https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-how-to?tabs=azure-cli%2Cazure-cli-publish&pivots=programming-language-csharp#configure-deployment-settings) but extended to also cover the runtime `AzureWebJobsStorage` binding (not just the deployment container).
 

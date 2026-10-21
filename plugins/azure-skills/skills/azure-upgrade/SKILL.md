@@ -38,6 +38,7 @@ metadata:
 9. Never delete or stop the original app without explicit user confirmation
 10. **Keep approval-gated workflows moving**: after each completed step, immediately perform the next read-only preflight. If the next action requires approval, invoke `ask_user` in the same turn — never stop after merely announcing the next step and wait for the user to re-engage.
 11. All automation scripts must be idempotent and resumable
+12. **Plan-only Windows → Flex requests**: use the supplied platform without Azure discovery. Read the [Windows workflow](references/services/functions/consumption-to-flex/windows/workflow.md) and [automation index](references/services/functions/consumption-to-flex/windows/automation.md), then relevant linked procedures. The user-facing plan must state prerequisites, decisions, blocking gates, validation, IaC reconciliation, and progress reporting explicitly; phase titles or links alone are insufficient. Describe future actions without executing them or claiming completion.
 
 ## Upgrade Scenarios
 
