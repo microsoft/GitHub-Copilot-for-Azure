@@ -9,32 +9,6 @@ metadata:
 
 # Azure Reliability Assessment & Configuration
 
-## Quick Reference
-
-| Property | Details |
-|---|---|
-| Best for | Reliability posture assessment, zone redundancy enablement, multi-region failover setup |
-| Primary capabilities | Reliability assessment table, Zone Redundancy Configuration, Multi-Region IaC Generation |
-| Supported services | Azure Functions, App Service (Container Apps planned for a future version) |
-| MCP tools | Azure Resource Graph queries, Azure CLI commands |
-
-## When to Use This Skill
-
-Activate this skill when user wants to:
-- "Assess my Function app's reliability"
-- "Assess my Web app's reliability"
-- "Check the reliability of my resource group" (App Service and Functions resources only)
-- "Is my app zone redundant?" (App Service and Functions resources only)
-- "Is my app service plan zone redundant?" 
-- "Make my app zone redundant" (App Service and Functions resources only)
-- "Make my app service plan zone redundant"
-- "Set up multi-region failover for my app" (App Service and Functions resources only)
-- "Check my reliability posture"
-- "Find single points of failure" (App Service and Functions resources only)
-- "Enable high availability for my app" (App Service and Functions resources only)
-- "Check disaster recovery readiness"
-- "Improve my app's resilience" (App Service and Functions resources only)
-
 > **Scope note:** This skill currently covers **Azure Functions and Azure App Service** only. If the user asks about Azure Container Apps reliability, acknowledge that support is planned but not yet available, and only proceed with the parts that apply to App Service and Functions resources in scope.
 
 ## Prerequisites
@@ -47,9 +21,9 @@ Activate this skill when user wants to:
 ## MCP Tools
 
 | Tool | Purpose |
-|------|---------|
-| `mcp_azure_mcp_extension_cli_generate` | Generate `az` CLI commands for resource queries and configuration |
-| `mcp_azure_mcp_subscription_list` | List available subscriptions |
+|---|---|
+| `mcp_azure_mcp_extension_cli_generate` | Generate resource-query and configuration commands |
+| `mcp_azure_mcp_subscription_list` | List subscriptions |
 | `mcp_azure_mcp_group_list` | List resource groups |
 
 Primary query method: Azure Resource Graph via `az graph query` (requires `az extension add --name resource-graph`).
@@ -73,22 +47,22 @@ Two-step assessment: **platform-level discovery first, then per-service deep div
 
 **Step 1 — Platform discovery (find what's there).** Use these to enumerate resources in scope and detect cross-cutting reliability gaps:
 
-| Platform check | Reference |
-|---|---|
-| Zone redundancy — discovery | [references/zone-redundancy-checks.md](references/zone-redundancy-checks.md) |
-| Storage redundancy (cross-service) | [references/storage-redundancy-checks.md](references/storage-redundancy-checks.md) |
-| Multi-region & global load balancers | [references/multi-region-checks.md](references/multi-region-checks.md) |
-| Front Door / Traffic Manager / App Insights probes | [references/health-probe-checks.md](references/health-probe-checks.md) |
+| Platform check |
+|---|
+| [Zone redundancy discovery](references/zone-redundancy-checks.md) |
+| [Cross-service storage redundancy](references/storage-redundancy-checks.md) |
+| [Multi-region & global load balancers](references/multi-region-checks.md) |
+| [Front Door / Traffic Manager / App Insights probes](references/health-probe-checks.md) |
 
 **Step 2 — Per-service deep dive.** For each compute resource discovered in Step 1, load the matching service reference. The service reference is the single source of truth for that service's plan/SKU rules, assessment queries, CLI commands, IaC patches (Bicep + Terraform + AVM), and reporting hints.
 
 This skill version ships **only the Azure Functions and App Service** per-service references. Other compute services are listed below explicitly so the dispatch logic is unambiguous: if a resource matches an unsupported row, do **not** attempt to load a reference, fabricate CLI commands, or generate IaC patches for it.
 
-| Service detected | Reference |
+| Service / reference | Detection |
 |---|---|
-| Azure Functions (`microsoft.web/serverfarms` with `kind contains 'functionapp'`) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
-| Azure App Service (non-Functions sites: `microsoft.web/sites` without `kind contains 'functionapp'`, `microsoft.web/serverfarms` without `kind contains 'functionapp'`) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
-| Azure Container Apps (`microsoft.app/containerapps`, `microsoft.app/managedenvironments`) | ⚪ Not yet shipped — planned for a future version |
+| [Azure Functions](references/services/functions/reliability.md) | `microsoft.web/serverfarms` with `kind contains 'functionapp'` |
+| [Azure App Service](references/services/app-service/reliability.md) | `microsoft.web/sites` or `microsoft.web/serverfarms` without `kind contains 'functionapp'` |
+| Azure Container Apps — ⚪ planned, not shipped | `microsoft.app/containerapps`, `microsoft.app/managedenvironments` |
 
 > **Handling unsupported services:** If a resource matches an unsupported row above, surface it in the discovery summary, mark it as `⚪ not assessed (planned)` in the Phase 3 table, and skip the per-service remediation steps for it. Do **not** attempt to fabricate CLI commands or IaC patches for those services.
 
@@ -173,13 +147,13 @@ Run fixes against live resources using `az` CLI commands. **Quick wins first, th
 
 The exact CLI commands per service live in the per-service references — pick the one(s) matching the resources discovered in Phase 2:
 
-| Fix | Reference |
-|---|---|
-| Enable zone redundancy / configure health probes (Functions) | [references/services/functions/reliability.md](references/services/functions/reliability.md) |
-| Enable zone redundancy / configure health probes (App Service) | [references/services/app-service/reliability.md](references/services/app-service/reliability.md) |
-| Upgrade storage replication (cross-service) | [references/configure-storage.md](references/configure-storage.md) |
-| Set up multi-region (cross-service) | [references/configure-multi-region.md](references/configure-multi-region.md) |
-| Platform overview / verification | [references/configure-zone-redundancy.md](references/configure-zone-redundancy.md), [references/configure-health-probes.md](references/configure-health-probes.md) |
+| Fix / reference |
+|---|
+| [Functions zone redundancy / health probes](references/services/functions/reliability.md) |
+| [App Service zone redundancy / health probes](references/services/app-service/reliability.md) |
+| [Cross-service storage replication](references/configure-storage.md) |
+| [Cross-service multi-region setup](references/configure-multi-region.md) |
+| Platform overview / verification: [zone redundancy](references/configure-zone-redundancy.md), [health probes](references/configure-health-probes.md) |
 
 **Execution order — always quick wins first:**
 
@@ -224,21 +198,21 @@ Update the user's Bicep or Terraform files so reliability settings are persisten
 
 **Step 2: Classify each fix by risk level**
 
-| Fix | Risk Level | What Happens |
-|-----|-----------|--------------|
-| Zone redundancy (App plan) | 🟢 Safe patch | In-place property update on next deploy |
-| Storage LRS → ZRS | 🟡 Pre-migration required | Live storage migration must complete before the IaC SKU change can deploy. **Never bundle with safe patches** — use the two-deploy flow in Steps 3–5. |
-| Health check path (Basic/Standard/Premium / Dedicated) | 🟢 Safe patch | In-place update, but causes app restart |
-| Health check path (FC1 / Consumption) | ⚪ Code-only — ask first | `healthCheckPath` is unsupported. Adding a health endpoint requires adding an HTTP-triggered `/api/health` function to **app code**. **Always ask the user for explicit consent before touching source code.** Do **not** patch IaC. |
+| Fix | Risk | Requirements |
+|---|---|---|
+| App plan zone redundancy | 🟢 Safe patch | In-place update on next deploy |
+| Storage LRS → ZRS | 🟡 Migrate first | Complete live migration before deploying the IaC SKU change. **Never bundle with safe patches**; follow Steps 3–5 (two deploys). |
+| Health check path (Basic/Standard/Premium / Dedicated) | 🟢 Safe patch | In-place update; restarts app |
+| Health check path (FC1 / Consumption) | ⚪ Code-only; ask first | `healthCheckPath` unsupported. Add HTTP-triggered `/api/health` to **app code only with explicit user consent**. **Do not patch IaC.** |
 
 **Step 3: Apply patches in two deploys (quick wins first)**
 
 The IaC patching framework (detection, AVM-module guidance, deploy-order rule, storage SKU patch) lives in:
 
-| IaC Type | Framework reference |
-|---|---|
-| Bicep | [references/iac-patching-bicep.md](references/iac-patching-bicep.md) |
-| Terraform | [references/iac-patching-terraform.md](references/iac-patching-terraform.md) |
+| IaC framework |
+|---|
+| [Bicep](references/iac-patching-bicep.md) |
+| [Terraform](references/iac-patching-terraform.md) |
 
 The actual **per-service compute patches** (Function App plan ZR, App Service Plan ZR, etc.) live in the per-service references — load the matching service file from Phase 2 for the exact Bicep / Terraform / AVM snippets. Only Azure Functions and App Service have per-service references in this skill version; Container Apps is out of scope.
 
@@ -304,27 +278,7 @@ After the migration completes, the skill patches the storage SKU in IaC and runs
 
 ### Step 2 (both paths): Re-Assess
 
-After changes are applied (CLI) or deployed (IaC), automatically re-run the assessment and show the **same feature-pivoted table** as Phase 3, with each feature row's status updated to reflect the new state. Briefly call out what changed since the previous run.
-
-```
-🔄 Reliability Re-Assessment — rg-eventhubs-python-jan13 (eastus)
-───────────────────────────────────────────────────────────────────────────────────────
-Reliability Feature              Status      Resources
-───────────────────────────────────────────────────────────────────────────────────────
-Zone redundancy — compute        🟢 ON       • plan-ii5trxva2ark4 (FC1)              — now ON
-                                             • plan-web-ii5trxva2ark4 (P1v3)         — now ON
-
-Zone-redundant storage           🟢 ZRS      • stii5trxva2ark4                       — GRS → ZRS
-
-Health probes                    🟡 PARTIAL  • func-api-ii5trxva2ark4                — still off (FC1, code change declined)
-                                             • app-web-ii5trxva2ark4                 — now ON
-
-Multi-region failover            🔴 OFF      • Single region (eastus) only
-───────────────────────────────────────────────────────────────────────────────────────
-
-What changed: Function App and App Service plan zone redundancy, storage replication and health probes on App Service.
-(Multi-region offered next — see Step 3.)
-```
+After CLI changes or a successful IaC deploy, re-run the Phase 3 assessment. Update feature statuses, storage SKUs, and resource notes from verified results; retain unresolved gaps and declined changes. Briefly summarize what changed.
 
 ### Step 3 (both paths): Multi-region follow-up — ASK and WAIT
 
@@ -355,19 +309,19 @@ Do you want me to set up multi-region failover now? (yes / no / later)
 
 | Priority | Criteria | Action |
 |---|---|---|
-| Critical | No zone redundancy AND production workload | Fix immediately |
+| Critical | Production without zone redundancy | Fix immediately |
 | High | LRS storage on zone-redundant compute | Fix within days |
-| Medium | No multi-region (single region but zone-redundant) | Plan for next sprint |
-| Low | Missing health probes or monitoring gaps | Track and fix |
+| Medium | Zone-redundant but single-region | Plan next sprint |
+| Low | Missing health probes or monitoring | Track and fix |
 
 ## Error Handling
 
 | Error | Message | Remediation |
 |---|---|---|
-| Authentication required | "Please login" | Run `az login` and retry |
+| Authentication required | "Please login" | `az login`; retry |
 | Access denied | "Forbidden" | Confirm Reader/Contributor role assignment |
-| Plan doesn't support ZR | "Upgrade required" | Inform user of plan upgrade path + cost delta |
-| Region doesn't support AZ | "Region limitation" | Suggest supported regions |
+| Plan lacks ZR | "Upgrade required" | Explain upgrade path and cost delta |
+| Region lacks AZ | "Region limitation" | Suggest supported regions |
 
 ## Best Practices
 
@@ -376,12 +330,12 @@ Do you want me to set up multi-region failover now? (yes / no / later)
 
 ## Skill Boundaries
 
-| Action | This skill does | Hand off to |
+| Action | Scope | Handoff |
 |---|---|---|
 | Assess reliability posture | ✅ Yes | — |
 | Recommend improvements | ✅ Yes | — |
-| Enable zone redundancy (CLI commands) | ✅ Yes | — |
+| Enable zone redundancy (CLI) | ✅ Yes | — |
 | Patch Bicep/Terraform for reliability | ✅ Yes | — |
-| Generate multi-region IaC | ✅ Yes (additions for the secondary region + Front Door) | `azure-prepare` for full new-app IaC scaffolding |
-| Deploy IaC for reliability changes | ✅ Yes (runs `azd up` / `terraform apply` / `az deployment` itself, after user confirmation) | `azure-deploy` for general/non-reliability deploys |
-| Validate pre-deployment | Reliability checks only | `azure-validate` for full validation |
+| Generate multi-region IaC | ✅ Secondary region + Front Door | `azure-prepare`: full new-app IaC |
+| Deploy reliability IaC | ✅ Runs `azd up` / `terraform apply` / `az deployment` after confirmation | `azure-deploy`: other deployments |
+| Validate pre-deployment | Reliability checks only | `azure-validate`: full validation |
