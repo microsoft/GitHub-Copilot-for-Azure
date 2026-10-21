@@ -194,6 +194,8 @@ jobs:
           else
             echo "$LIMIT_OUTPUT" > ../limit-report.md
             echo "exceeded=true" >> $GITHUB_OUTPUT
+            echo "$LIMIT_OUTPUT"
+            exit 1
           fi
 
       - name: Run token comparison
