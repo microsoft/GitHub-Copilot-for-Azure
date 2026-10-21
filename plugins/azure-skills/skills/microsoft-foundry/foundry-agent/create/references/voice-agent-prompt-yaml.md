@@ -19,9 +19,11 @@ services:
     instructions: Respond naturally and concisely.
 ```
 
-## Self-Deployed Project Model
+## Self-Deployed Model Deployment
 
-`modelType: self_deployed` references an exact deployment name in the selected Foundry account. Foundry infers native speech-to-speech versus cascaded STT -> LLM -> TTS from `model.id`; apply the same flow to realtime and text-model BYOM.
+For an azd-managed project, `services.<ai-project-service>.deployments[]` is the source of truth and `azd provision` creates or updates the model infrastructure. Prompt Voice references the exact deployment name through `modelType: self_deployed` and `model.id`.
+
+Foundry infers native speech-to-speech versus cascaded STT -> LLM -> TTS from `model.id`; apply the same flow to realtime and text-model BYOM.
 
 First inspect the resolved subscription, resource group, and Foundry account for the exact requested deployment name:
 

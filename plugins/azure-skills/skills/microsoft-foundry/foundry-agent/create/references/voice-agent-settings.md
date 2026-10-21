@@ -8,8 +8,6 @@ For requested/preserved YAML settings. Use `kind: voice`; preserve unrelated fie
 | Hosted wrapper | Audio, voice, behavior, store only |
 | Hosted target | Model, instructions, tools, logic |
 
-Validated: audio/detection/transcription, modalities, tokens, telephony. Inputs/tools/behavior/echo/include are pass-through. Parallel calls are rejected.
-
 ## Advanced Settings
 
 ```yaml
@@ -32,7 +30,20 @@ audio:
     speed: 1.1
 ```
 
-`defaultValue` maps to wire `default_value`. Formats: `audio/pcm|pcmu|pcma`, positive rate; speed 0.25-1.5. Defaults: PCM/24000, `server_vad`, `azure-speech`, `[audio]`, azd voice.
+`defaultValue` maps to wire `default_value`. Defaults: PCM/24000, `server_vad`, `azure-speech`, `[audio]`, azd voice.
+
+### Known Authoring Values and Constraints
+
+| Setting | Values / constraints |
+|---|---|
+| `audio.*.format` | `type`: `audio/pcm`, `audio/pcmu`, `audio/pcma`; `rate`: positive integer. G.711 `pcmu`/`pcma` may omit `rate`. |
+| `audio.input.turnDetection` | Known `type` values: `server_vad`, `semantic_vad`, `azure_semantic_vad` (schema is open, not an enum). `threshold`: >0 and <=1. `prefixPaddingMs`, `silenceDurationMs`, `speechDurationMs`: nonnegative integers. `createResponse`, `removeFillerWords`, `interruptResponse`, `autoTruncate`: booleans. `languages`: string array. Known service `eagerness`: `auto`, `low`, `medium`, `high` (schema is open). |
+| `audio.input.noiseReduction` | Nonblank `type`; known values: `near_field`, `far_field`, `azure_deep_noise_suppression` (schema is open). |
+| `audio.input.transcription` | `model`, `language`, `prompt`: strings. Known phrase-compatible models: `azure-speech`, `azure-fast-transcription`; `include: [item.input_audio_transcription.phrases]` requires one. Do not author `phraseList`; azd doesn't support it. |
+| `audio.output.voice` | Nested shape requires nonblank `type` and `name`; source-known types: `azure-standard` / `azure_standard`, `openai`. Keep the canonical nested example above. |
+| `audio.output.speed` | 0.25-1.5. |
+| Responses | `outputModalities` must be nonempty; known values: `audio`, `text`, `animation`, `avatar`. `maxOutputTokens`: integer 1-2147483647 or `inf`. `parallelToolCalls` is unsupported and rejected. |
+| Telephony | Providers: `twilio`, `acs`; each binding requires provider, identifier, connection. Twilio identifier: `+<E.164>`; ACS: `28:orgid:<guid>` or `4:+<E.164>`. |
 
 ### Behavior and Responses
 
@@ -46,7 +57,7 @@ maxOutputTokens: inf # or integer 1-2147483647
 include: [item.input_audio_transcription.phrases]
 ```
 
-Phrase inclusion needs `azure-speech`/`azure-fast-transcription`; preserve opaque maps.
+Preserve opaque maps.
 
 ## Data Persistence
 
