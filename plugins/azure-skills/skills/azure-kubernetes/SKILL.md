@@ -114,10 +114,7 @@ If the user is unsure, use safe defaults.
 
 ### 7. Node Pools & Compute
 - **Dedicated system node pool**: At least 2 nodes, tainted for system workloads only (`CriticalAddonsOnly`)
-- Use **Node Auto Provisioning (NAP)** (enabled per cluster) for cost savings and responsive scaling. AKS Automatic includes NAP and is the recommended path for most production workloads. On Standard, confirm eligibility first:
-  - Unsupported: Windows node pools, IPv6, service-principal identity (use managed identity), kubenet, Calico network policy, Azure CNI Pod Subnet with dynamic IP. Supported: Azure CNI Overlay or Node Subnet (Cilium dataplane OK).
-  - After enabling: the cluster can't be stopped and the outbound type can't change. A custom VNet requires a Standard Load Balancer.
-  - Docs: https://learn.microsoft.com/azure/aks/node-auto-provisioning, https://learn.microsoft.com/azure/aks/node-auto-provisioning-networking
+- Enable **Node Auto Provisioning (NAP)** on all pools for cost savings and responsive scaling
 - Use **latest generation SKUs (v5/v6)** for host-level optimizations
 - **Avoid B-series VMs** — burstable SKUs cause performance/reliability issues
 - Use SKUs with **at least 4 vCPUs** for production workloads
@@ -132,7 +129,7 @@ If the user is unsure, use safe defaults.
 
 ### 9. Cost Controls
 - Use **Spot node pools** for batch/interruptible workloads (up to 90% savings)
-- **Stop/Start** dev/test clusters: `az aks stop/start` (not available on NAP-enabled clusters)
+- **Stop/Start** dev/test clusters: `az aks stop/start`
 - Consider **Reserved Instances** or **Savings Plans** for steady-state workloads
 
 **Deep-dive scenarios** — load only the relevant reference file:
