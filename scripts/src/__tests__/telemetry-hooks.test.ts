@@ -1323,7 +1323,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
   it("reports a SKILL.md read as a skill invocation", () => {
     const payload = fixture("cursor-skill-read.json") as CursorPayload & Record<string, unknown>;
-    payload.tool_input.file_path = pathForShell(shell, join(skillRoot, "SKILL.md"));
+    payload.tool_input.file_path = join(skillRoot, "SKILL.md");
 
     const args = runHook(shell, payload);
 
@@ -1338,10 +1338,7 @@ describe.each(shells)("Cursor telemetry hook ($name)", shell => {
 
   it("reports a bundled file read as a reference read", () => {
     const payload = fixture("cursor-reference-read.json") as CursorPayload & Record<string, unknown>;
-    payload.tool_input.file_path = pathForShell(
-      shell,
-      join(skillRoot, "cost-query", "guardrails.md"),
-    );
+    payload.tool_input.file_path = join(skillRoot, "cost-query", "guardrails.md");
 
     const args = runHook(shell, payload);
 
