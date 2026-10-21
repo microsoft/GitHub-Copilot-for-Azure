@@ -34,7 +34,7 @@ function parseFixtureManifest(
     parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as unknown;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`Failed to parse ${manifestSource(repoRoot, manifestPath)}: ${message}`);
+    throw new Error(`Failed to parse ${manifestSource(repoRoot, manifestPath)}: ${message}`, { cause: error });
   }
 
   if (
