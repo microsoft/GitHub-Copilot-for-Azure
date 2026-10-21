@@ -1,0 +1,182 @@
+name: azure-ai-speech-sdk-eval
+description: |
+  Offline Speech SDK diagnostics routing and behavior. Synthetic evidence only;
+  no Azure resources, customer audio, or credentials are required.
+
+tags:
+  type: integration
+  skill: azure-ai
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: copilot-sdk-agent-runner
+  model: claude-sonnet-5
+  judge_model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Route Speech SDK log collection"
+    prompt: "My Azure Speech SDK app intermittently stops recognizing. How do I collect useful client logs and session IDs for support?"
+    tags:
+      type: trigger
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Route Speech result IDs and features"
+    prompt: "Can you analyze my Speech SDK client log to find the result ID, session ID and whether pronunciation assessment or language identification was configured?"
+    tags:
+      type: trigger
+      tier: full
+      cost: llm
+      area: routing
+      requiredSkills:
+        - azure-ai
+      earlyTerminate: '[{"type":"skill-call","skill":"azure-ai"},{"type":"tool-call-count","count":5}]'
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+
+  - name: "Analyze native Speech logs without cross-session attribution"
+    prompt: |
+      Analyze this synthetic Azure Speech SDK capture offline. You may save it
+      to a temporary local file. Do not contact Azure or install anything.
+      Explain the observed configuration, IDs, failure and important limits.
+      [7]: 100ms SPX_DBG_TRACE_VERBOSE: usp_reco_engine_adapter.cpp:1242 speech.config {"context":{"system":{"version":"1.51.2","name":"SpeechSDK"}}}
+      [7]: 101ms SPX_DBG_TRACE_VERBOSE: audio_stream_session.cpp:100 [0x1234]CSpxAudioStreamSession::FireSessionStartedEvent: Firing SessionStarted event: SessionId: 11111111111111111111111111111111
+      [7]: 102ms SPX_DBG_TRACE_VERBOSE: named_properties.h:483 ISpxPropertyBagImpl::SetStringValue: this=0x2200; name='SPEECH-RecoLanguage'; value='de-DE'
+      [8]: 103ms SPX_DBG_TRACE_VERBOSE: audio_stream_session.cpp:100 [0x2345]CSpxAudioStreamSession::FireSessionStartedEvent: Firing SessionStarted event: SessionId: 22222222222222222222222222222222
+      [8]: 104ms SPX_DBG_TRACE_VERBOSE: usp_reco_engine_adapter.cpp:1329 speech.context='{"languageId":{"mode":"DetectContinuous","languages":["en-US","de-DE"]},"phraseDetection":{"enrichment":{"pronunciationAssessment":{}}},"phraseOutput":{"format":"Detailed","detailed":{"options":["WordTimings"]}}}'
+      [7]: 105ms SPX_TRACE_INFO: AZ_LOG_INFO: uws_client.c:1250 Received WebSocket upgrade response with status code 401
+      [8]: 106ms SPX_TRACE_VERBOSE: recognition_result.cpp:100 CSpxRecognitionResult::InitFinalResult: resultId=33333333333333333333333333333333 reason=3, text='SYNTHETIC_TRANSCRIPT_DO_NOT_REPEAT'
+    rubric:
+      - Runs the bundled analyze-speech-sdk-log script locally rather than only guessing from raw log prose.
+      - Reports both session IDs and the separate recognition result ID without mapping the result, property object, context or 401 to a session based solely on thread/time.
+      - Describes language identification, pronunciation assessment and detailed WordTimings as generated-context observations, not proof the server received or applied them or that the user explicitly enabled timestamps.
+      - Identifies the literal 401 upgrade response without declaring a wrong key as confirmed root cause, and proposes checking endpoint and auth method.
+      - Does not repeat SYNTHETIC_TRANSCRIPT_DO_NOT_REPEAT, claim UTC from relative ms, contact Azure or install software.
+    tags:
+      type: integration
+      tier: full
+      cost: llm+execute
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: shell-command-invoked
+        config:
+          required:
+            - command: >-
+                (?i)(?:^|[;&|\r\n])\s*(?:&\s*)?node(?:\.exe)?\s+(?:"[^"\r\n]*analyze-speech-sdk-log\.mjs"|'[^'\r\n]*analyze-speech-sdk-log\.mjs'|[^\s"';&|\r\n]*analyze-speech-sdk-log\.mjs)\s+--file\b
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "SYNTHETIC_TRANSCRIPT_DO_NOT_REPEAT"
+
+  - name: "Collect SDK logs without credentials or mandatory MCP"
+    prompt: |
+      I have an Azure Speech SDK 1.51.2 C++ application on Windows with an
+      intermittent recognition failure, but no log yet. Azure MCP is disabled.
+      Give me practical collection steps and a support evidence checklist.
+      Do not change files, install software or contact Azure.
+    rubric:
+      - Recommends the documented native diagnostic FileLogger API with a writable restricted local path and collection around SDK object creation and the short reproduction.
+      - Explains process-wide interleaving and coordinates existing logging rather than blindly stopping another object's logger or overwriting existing logs.
+      - Requests app UTC/timezone, SDK/runtime, session/result IDs, cancellation reason/error details and input/endpoint type without asking for keys or tokens.
+      - Distinguishes client diagnostic logging from service content/audio logging, cautions about sensitive log content and does not require Azure MCP to collect local logs.
+    tags: &quality-tags
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      requiredSkills:
+        - azure-ai
+    graders: &quality-graders
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Unknown Speech log format stays unknown"
+    prompt: |
+      Diagnose this Azure Speech JavaScript SDK excerpt offline:
+      2026-01-01T12:00:00Z SpeechServiceRecognizer: connection changed
+      It has no session/result IDs or cancellation detail. Does the absence of
+      errors prove it is healthy, and does it prove diarization is disabled?
+      Do not contact Azure, modify files or install anything.
+    rubric:
+      - Does not claim the native C++ analyzer certifies JavaScript coverage and identifies insufficient evidence rather than a healthy or disabled verdict.
+      - Does not invent IDs, a server cause or a diarization setting from the excerpt.
+      - Suggests matching JavaScript SDK logging/app-event collection with SDK version, session/result IDs and cancellation details, without demanding MCP.
+    tags: *quality-tags
+    graders: *quality-graders
+
+  - name: "Older Python SDK uses the documented legacy logging property"
+    prompt: |
+      My Python app uses Azure Speech SDK 1.38 for text-to-speech and I need
+      client logs for support. How do I enable logging? Do not change files,
+      install software or contact Azure.
+    rubric:
+      - States that the static FileLogger APIs need SDK 1.43.0 or later and gives the documented legacy Speech_LogFilename property on the speech configuration for 1.38 (upgrading is at most an option, not a requirement).
+      - Notes that a SpeechSynthesizer created from the configuration does not enable logging by itself, so a TTS-only app needs the documented approach of creating a recognizer from a configuration that carries the property.
+      - Does not ask for keys or tokens, does not claim logging stops when an SDK object is released, and treats the log as sensitive.
+    tags: *quality-tags
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-ai
+      - type: tool-calls
+        config:
+          required:
+            - name: view
+              path: "speech[\\\\/]logging-apis\\.md"
+      - type: output-matches
+        config:
+          pattern: "Speech_LogFilename"
+      - type: prompt
+        config:
+          scoring: scale_1_5
+          threshold: 0.8
+      - type: completed
+
+  - name: "Speech MCP success is not the customer's SDK reproduction"
+    prompt: |
+      My realtime Speech SDK app uses a subscription key in a private network.
+      A colleague's Azure MCP transcription succeeded from a laptop with Entra
+      authentication; the tool did not report whether it used Fast or Realtime.
+      Does that rule out my client problem? Explain the next safe investigation
+      steps. Do not execute tests, upload audio, query Azure or change resources.
+    rubric:
+      - Says the successful test does not rule out the original issue because host/network, identity/auth, endpoint, route, features and SDK may differ.
+      - Explicitly leaves Fast versus Realtime and any fallback unknown; does not invent a tool flag or claim same-path success.
+      - Proposes offline SDK evidence and capability/schema discovery for an exact-resource read if needed, without performing forbidden operations or interpreting missing logs/health events as no failure.
+      - Requires agreement about content, destination/endpoint, execution host, identity, possible costs and local writes before a new Speech test; never requests keys or proposes disabling TLS/network controls.
+    tags: *quality-tags
+    graders: *quality-graders
