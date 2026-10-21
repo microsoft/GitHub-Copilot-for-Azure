@@ -31,7 +31,7 @@ const PROPERTIES = new Map([
   ["AudioConfig_NumberOfChannelsForCapture", numeric],
   ["AudioConfig_SampleRateForCapture", numeric],
   ["AudioConfig_BitsPerSampleForCapture", numeric],
-  ["AudioConfig_AudioSource", choice("Microphone", "Stream", "File")],
+  ["AudioConfig_AudioSource", choice("Microphones", "Stream", "File")],
   ["AZAC-SDK-PROGRAMMING-LANGUAGE", choice("C++", "C#", "Java", "Python", "Objective-C", "Swift", "Go")],
   ["SpeechServiceResponse_RequestWordLevelTimestamps", choice("true", "false", "1", "0")],
   ["SpeechServiceResponse_DiarizeIntermediateResults", choice("true", "false", "1", "0")],
@@ -181,7 +181,8 @@ export async function analyze(file, maxObservations = 1000) {
       }
     }
     if (source === "named_properties.h" || source === "property_bag_impl.cpp") {
-      match = message.match(new RegExp(`^ISpx(?:NamedProperties|PropertyBagImpl)::(GetStringValue|SetStringValue): this=(${POINTER}); name='([^']+)'; value='([^']*)'$`));
+      // The SDK does not escape apostrophes in logged values, so take everything up to the final delimiter.
+      match = message.match(new RegExp(`^ISpx(?:NamedProperties|PropertyBagImpl)::(GetStringValue|SetStringValue): this=(${POINTER}); name='([^']+)'; value='([\\s\\S]*)'$`));
       if (match) {
         const [, method, address, name, raw] = match;
         const fields = { access: method === "SetStringValue" ? "write" : "read", object: pointer(address), name };
@@ -235,17 +236,18 @@ export async function analyze(file, maxObservations = 1000) {
       }
     }
     if (source === "recognition_result.cpp") {
-      match = message.match(new RegExp(`^CSpxRecognitionResult::Init(Intermediate|Final)Result: resultId=(${ID})(?:\\s|$)`));
+      // These traces log __FUNCTION__: MSVC includes the class prefix, GCC/Clang do not.
+      match = message.match(new RegExp(`^(?:CSpxRecognitionResult::)?Init(Intermediate|Final)Result: resultId=(${ID})(?:\\s|$)`));
       if (match) {
         const fields = { stage: match[1].toLowerCase(), resultId: match[2] };
-        const reason = message.match(new RegExp(`^CSpxRecognitionResult::InitFinalResult: resultId=${ID} reason=(\\d{1,6}),`));
+        const reason = message.match(new RegExp(`^(?:CSpxRecognitionResult::)?InitFinalResult: resultId=${ID} reason=(\\d{1,6}),`));
         if (reason) fields.reasonCode = Number(reason[1]);
         add("recognition_result", fields);
         return;
       }
     }
     if (source === "synthesizer.cpp") {
-      match = message.match(new RegExp(`^CSpxSynthesizer::ExecuteSynthesis: synthesis (started|done), request id: (${ID});`));
+      match = message.match(new RegExp(`^(?:CSpxSynthesizer::)?ExecuteSynthesis: synthesis (started|done), request id: (${ID});`));
       if (match) {
         add("synthesis_event", { event: match[1], synthesisRequestId: match[2] });
         return;

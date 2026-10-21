@@ -31,6 +31,9 @@ retain literal observations; review matching source before interpretation.
 Thread markers are reduced hashes, not unique object identifiers. Object
 addresses can be reused. Only IDs explicit in a record are attached to it.
 Property-bag addresses are not assumed to be recognizer/session objects.
+Result and synthesis traces log `__FUNCTION__`, which MSVC qualifies with the
+class name and GCC/Clang do not; the analyzer accepts both spellings. Property
+values are logged between quotes without escaping, so values can contain `'`.
 
 The trace clock is not guaranteed process start or UTC. Clock resets, combined
 processes, late capture and filtered logs limit reconstruction.

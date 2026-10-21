@@ -143,7 +143,7 @@ stimuli:
       client logs for support. How do I enable logging? Do not change files,
       install software or contact Azure.
     rubric:
-      - States that the static FileLogger APIs need SDK 1.43.0 or later and gives the documented legacy Speech_LogFilename property on the speech configuration for 1.38 (upgrading is at most an option, not a requirement).
+      - States that the Python FileLogger is documented as added in SDK 1.43.0, so SDK 1.38 has no static logger, and gives the documented legacy Speech_LogFilename property on the speech configuration (upgrading is at most an option, not a requirement).
       - Notes that a SpeechSynthesizer created from the configuration does not enable logging by itself, so a TTS-only app needs the documented approach of creating a recognizer from a configuration that carries the property.
       - Does not ask for keys or tokens, does not claim logging stops when an SDK object is released, and treats the log as sensitive.
     tags: *quality-tags

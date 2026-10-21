@@ -7,7 +7,9 @@ article, for exact APIs. Do not install or upgrade the SDK just to collect evide
 
 ## Native SDK logging
 
-The documented diagnostic logger APIs are available starting with SDK 1.43.0:
+Prefer the diagnostic logger APIs when the installed binding has them. Their
+availability differs by binding (see [logging APIs](logging-apis.md)), so check
+the installed version before falling back to the legacy property:
 
 | Logger | Use |
 |---|---|

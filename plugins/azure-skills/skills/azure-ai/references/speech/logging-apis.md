@@ -2,11 +2,27 @@
 
 Copied from the official
 [Enable logging in the Speech SDK](https://learn.microsoft.com/azure/ai-services/speech-service/how-to-use-logging)
-article (checked 2026-10-19); the article is authoritative if it differs. Pick the
-API for the user's language and SDK version. Loggers are process-wide; scope and
-privacy are in [collection](collection.md). `path` is the log file path.
+article and the per-language API references (checked 2026-10-21); they are
+authoritative if they differ. Pick the API for the user's language and installed
+SDK version. Loggers are process-wide; scope and privacy are in
+[collection](collection.md). `path` is the log file path.
 
-## SDK 1.43.0 or later
+## Diagnostic loggers (FileLogger, MemoryLogger, EventLogger)
+
+Availability is binding-specific. When `FileLogger` was added, per source:
+
+| Binding | Added in | Source |
+|---|---|---|
+| C++ | 1.20.0 | pinned C++ header |
+| C# | 1.20.0 | .NET API reference |
+| Java | 1.42.0 | Java API reference |
+| Python | 1.43.0 | Python API reference |
+| Others | not checked | installed package's API reference |
+
+The how-to article recommends the static loggers from 1.43.0 onward; that is
+guidance, not an availability limit for every binding. Use these loggers when
+the installed binding has them, and the [legacy property](#legacy-property)
+only when it does not.
 
 | Language | File logger | Memory logger dump |
 |---|---|---|
@@ -22,10 +38,10 @@ JavaScript uses a separate implementation and log format, so the native-format
 analyzer does not apply. For Go the article documents only the legacy property.
 EventLogger callbacks and filters are in the article's per-language samples.
 
-## Before SDK 1.43.0
+## Legacy property
 
-The article documents the legacy `Speech_LogFilename` property on the speech
-configuration:
+For a binding without the loggers above, the article documents the legacy
+`Speech_LogFilename` property on the speech configuration:
 
 | Language | Call |
 |---|---|

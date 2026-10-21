@@ -98,6 +98,29 @@ test("typed IDs preserve GUID spelling and do not count repeated STT results as 
   assert.deepEqual(report.ids.synthesisRequests, []);
 });
 
+test("result and synthesis traces are recognized with or without the class prefix", async () => {
+  // These SDK traces log __FUNCTION__, which MSVC qualifies with the class name and GCC/Clang do not.
+  for (const [result, synthesizer] of [["CSpxRecognitionResult::", "CSpxSynthesizer::"], ["", ""]]) {
+    const report = await inspect([
+      line("recognition_result.cpp", `${result}InitIntermediateResult: resultId=${A}`),
+      line("recognition_result.cpp", `${result}InitFinalResult: resultId=${B} reason=3, text='${SECRET}'`),
+      line("synthesizer.cpp", `${synthesizer}ExecuteSynthesis: synthesis started, request id: ${C}; text: ${SECRET}`),
+      line("synthesizer.cpp", `${synthesizer}ExecuteSynthesis: synthesis done, request id: ${C}; text: ${SECRET}; request hash: h`),
+    ].join("\n"));
+    assert.deepEqual(report.observations.map((entry) => entry.kind), ["recognition_result", "recognition_result", "synthesis_event", "synthesis_event"]);
+    assert.equal(report.observations[1].reasonCode, 3);
+    assert.deepEqual(report.ids.results, [A, B]);
+    assert.deepEqual(report.ids.synthesisRequests, [C]);
+    assert.ok(!JSON.stringify(report).includes(SECRET));
+  }
+});
+
+test("unqualified function names still require the expected source file", async () => {
+  const report = await inspect(line("other.cpp", `InitFinalResult: resultId=${A} reason=3, text='x'`));
+  assert.deepEqual(report.observations, []);
+  assert.equal(report.coverage.unhandledNativeRecords, 1);
+});
+
 test("TTS connection reuse does not merge two synthesis requests or imply success", async () => {
   const text = [
     line("usp_connection.cpp", `CSpxUspConnection::SetConfiguration Set UspConnection Configuration with SessionId: ${A}`),
@@ -162,6 +185,26 @@ test("read/write, conflicts and object scopes are preserved; arbitrary property 
   assert.equal(report.observations[3].value, "present_value_withheld");
   assert.equal(report.observations.at(-1).value, "value_not_allowlisted");
   assert.ok(report.observations.every((entry) => entry.scope === "object_only"));
+  assert.ok(!JSON.stringify(report).includes(SECRET));
+});
+
+test("the SDK's plural microphone value is allowlisted", async () => {
+  const report = await inspect([
+    property("AudioConfig_AudioSource", "Microphones"),
+    property("AudioConfig_AudioSource", "Stream", "0x1200"),
+  ].join("\n"));
+  assert.deepEqual(report.observations.map((entry) => entry.value), ["Microphones", "Stream"]);
+});
+
+test("values with apostrophes or newlines keep presence evidence without disclosure", async () => {
+  // The SDK logs property values between quotes without escaping them.
+  const report = await inspect([
+    property("PronunciationAssessment_ReferenceText", `I'm ${SECRET}`),
+    property("SPEECH-SynthVoice", `multi\nline ${SECRET}'s`),
+    property("SPEECH-RecoLanguage", "en'US"),
+  ].join("\n"));
+  assert.deepEqual(report.observations.map((entry) => entry.value), ["present_value_withheld", "present_value_withheld", "value_not_allowlisted"]);
+  assert.deepEqual([report.observations[1].lineStart, report.observations[1].lineEnd], [2, 3]);
   assert.ok(!JSON.stringify(report).includes(SECRET));
 });
 
