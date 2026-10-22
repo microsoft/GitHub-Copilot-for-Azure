@@ -25,13 +25,13 @@ Scaffold or develop a hosted Foundry agent project with the Azure Developer CLI 
 - Add tools (web search, AI Search, MCP, A2A) to a hosted agent.
 - Run and iterate on a hosted agent locally before deploying.
 
-For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prompt Agent with `harness.type: github_copilot_preview`, use [create-managed-harness.md](create-managed-harness.md). For deploy, use [deploy.md](../deploy/deploy.md).
+For ordinary prompt agents, use [create-prompt.md](create-prompt.md). For a Prompt Agent with `harness.type: microsoft_copilot_preview` or legacy `github_copilot_preview`, use [create-managed-harness.md](create-managed-harness.md). For deploy, use [deploy.md](../deploy/deploy.md).
 
 ## Hosted vs Prompt
 
 | | Hosted | Prompt | Managed Harness Agent |
 |--|--------|--------|-----|
-| Definition | Custom Python / .NET code | Model + instructions | Prompt agent with GitHub Copilot harness |
+| Definition | Custom Python / .NET code | Model + instructions | Prompt agent with Copilot harness |
 | Workflow | This skill | [create-prompt.md](create-prompt.md) | [create-managed-harness.md](create-managed-harness.md) |
 | Tools | Prefer Toolbox + connections | Direct tool configs | Prefer direct tools; Toolbox only when explicit |
 | Local debugging | `azd ai agent run --no-client` | Limited | No local harness runtime |

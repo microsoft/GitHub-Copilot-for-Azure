@@ -932,11 +932,11 @@ stimuli:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
 
-  - name: "GitHub Copilot harness agent workflow"
+  - name: "Copilot harness agent workflow"
     prompt: |
       Without executing any create or deploy commands, explain how you would
-      create a prompt agent with the Microsoft Foundry managed GitHub Copilot
-      harness, add web search, and deploy it. Also explain what changes if Work
+      create a prompt agent with the Microsoft Foundry managed Copilot harness,
+      add web search, and deploy it. Also explain what changes if Work
       IQ is requested but I did not provide a connection.
     tags:
       type: integration
@@ -957,9 +957,9 @@ stimuli:
           prompt: |
             Pass only if the response routes the request to the Managed Harness
             Agent azd workflow and identifies the agent as kind prompt with
-            harness type github_copilot_preview. It should initialize with
+            harness type microsoft_copilot_preview. It should initialize with
             azd ai agent init using --kind prompt and --harness
-            github_copilot_preview, use azure.yaml as the source of truth,
+            microsoft_copilot_preview, use azure.yaml as the source of truth,
             attach web_search directly rather than creating a Toolbox by
             default, deploy with azd, and state that a Work IQ connection must
             be supplied or explicitly requested for creation. Fail if it uses
@@ -972,6 +972,93 @@ stimuli:
           disallowed:
             - command: "(?i)\\bazd\\s+ai\\s+agent\\s+init\\b|\\bazd\\s+(up|provision|deploy)\\b|\\bazd\\s+ai\\s+connection\\s+create\\b|\\bazd\\s+ai\\s+toolbox\\s+create\\b"
               description: "Planning-only routing test must not create or deploy resources"
+
+  - name: "Legacy Copilot harness preservation"
+    prompt: |
+      Without executing commands or editing files, explain how you would update
+      the instructions of this existing Foundry prompt agent:
+
+      ```yaml
+      kind: prompt
+      harness:
+        type: github_copilot_preview
+      tools:
+        - type: github_copilot_toolset_preview
+          defaultConfig:
+            enabled: false
+      ```
+
+      The update must preserve compatibility and create a new agent version.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response recognizes this as a Managed Harness
+            Agent, updates it through the azd/azure.yaml workflow, and preserves
+            both legacy literal values `github_copilot_preview` and
+            `github_copilot_toolset_preview`. It must explicitly avoid
+            automatically migrating them to the Microsoft discriminator family
+            merely because the definition is read, edited, saved, redeployed,
+            or revised. Fail if it recommends normalization or replacement with
+            `microsoft_copilot_preview` or
+            `microsoft_copilot_toolset_preview`.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\s+|\\baz\\s+|\\bterraform\\s+"
+              description: "Compatibility planning test must not execute commands"
+
+  - name: "Managed harness Toolbox authentication planning"
+    prompt: |
+      Without executing commands or editing files, explain how to attach
+      version 3 of an existing Foundry Toolbox named research-tools to a
+      Managed Harness Agent. If a matching project connection does not exist,
+      include the connection contract and resulting azure.yaml MCP tool.
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+    constraints:
+      max_turns: 8
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+          prompt: |
+            Pass only if the response uses the exact versioned Toolbox MCP
+            endpoint, creates or reuses a matching RemoteTool connection with
+            UserEntraToken authentication, audience `https://ai.azure.com`,
+            target exactly equal to that endpoint, and Toolbox name/version
+            metadata. The Agent's direct MCP tool must include the same
+            `server_url`, the connection's short `project_connection_id`, and
+            default to `require_approval: always`. Fail if it recommends a
+            connectionless Toolbox MCP entry, treats authentication as
+            optional, rewrites the Hosted Agent Toolbox flow, or assumes a
+            generic MCP URL automatically creates a Toolbox connection.
+      - type: shell-command-invoked
+        config:
+          disallowed:
+            - command: "(?i)\\bazd\\s+|\\baz\\s+|\\bterraform\\s+"
+              description: "Toolbox planning test must not execute commands"
 
   # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Prompt Agents
