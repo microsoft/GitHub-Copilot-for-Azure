@@ -72,7 +72,7 @@ resources:
     startupTimeoutMinutes: 20
 
 limits:
-  maxIterations: 3
+  maxIterations: 1
   maxAnswerGenerations: 800
   maxJudgeCalls: 800
   maxDurationMinutes: 360
