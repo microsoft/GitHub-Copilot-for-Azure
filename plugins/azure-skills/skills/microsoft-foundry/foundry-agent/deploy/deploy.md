@@ -341,48 +341,7 @@ Show Agent name, version, project, model, harness, tools, optional Toolbox, depl
 
 ## Workflow -- Voice Agent (azd)
 
-Voice Agents are deployed through `azd`. Before deployment, read [create-voice](../create/create-voice.md), [common Voice invariants](../create/references/voice-agent-common.md), and the selected subtype reference linked from the creation workflow.
-
-### Step 1: Resolve and validate
-
-Classify the selected service as Prompt Voice or Hosted Voice and validate it against the authoritative subtype reference. For Hosted Voice, include both the wrapper and its named target in the deployment scope.
-
-Check current environment state:
-
-```bash
-azd env get-values
-azd ai project show --output json
-azd ai agent show --output json
-```
-
-### Step 2: Provision when required
-
-Respect the project-selection gate: if no Foundry project endpoint is configured and the user has not asked to create one, stop and ask. Run `azd provision --no-prompt` when creating a new project or provisioning model deployments / ACR infrastructure.
-
-### Step 3: Deploy
-
-- **Prompt Voice**:
-  ```bash
-  azd deploy <voice-service-name> --no-prompt
-  ```
-- **Hosted Voice**:
-  Deploy the `kind: hosted` target before or together with the `kind: voice` wrapper:
-  ```bash
-  azd deploy <target-service-name> --no-prompt
-  azd deploy <wrapper-service-name> --no-prompt
-  ```
-  (Or run `azd deploy --no-prompt` to deploy all services in dependency order.)
-
-### Step 4: Two-Stage Voice Verification
-
-1. Run `azd ai agent show --output json` and verify `"status": "active"` (or `"deployed"`).
-   - For **Hosted Voice**, verify and report the active version of **both** the `kind: hosted` target and the `kind: voice` wrapper separately.
-2. **Do not** run `azd ai agent invoke` for a Voice Agent; it does not support the `voice` protocol.
-3. Do not use generic `azd ai agent eval generate` as a Voice smoke test. Transcript evaluation has separate limits documented in [observe](../observe/observe.md).
-4. **Automated technical gate:** run the managed Voice WebSocket smoke test using [../create/scripts/smoke-test-voice.sh](../create/scripts/smoke-test-voice.sh) or [../create/scripts/smoke-test-voice.ps1](../create/scripts/smoke-test-voice.ps1). Deployment is technically verified only when the service version(s) are active and this test succeeds.
-5. **Manual experience acceptance:** provide the Voice Agent Playground URL returned by `azd ai agent show --output json` and recommend that the user test the complete microphone/audio-to-audio experience in the Foundry portal. Technical verification can pass while this manual UX validation remains pending.
-
-Follow the authoritative validation boundary in [Voice smoke testing](../create/references/voice-agent-smoke-test.md); do not attribute portal-only experience properties to the automated smoke test.
+Follow [Voice Agent deployment](references/voice-deploy.md) for Prompt Voice and Hosted Voice provisioning, deployment order, and two-stage verification.
 
 ## Workflow -- Prompt agent (MCP)
 
