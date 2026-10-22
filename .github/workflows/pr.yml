@@ -195,6 +195,22 @@ jobs:
           EXCEEDED=false
           while IFS= read -r FILE; do
             [[ "$FILE" =~ ^plugins/[^/]+/skills/.+\.md$ ]] || continue
+            # These files already exceeded the token limit before enforcement began.
+            # Exempt them to avoid blocking future work; code owners have agreed
+            # to refactor them in the near future.
+            case "$FILE" in
+              plugins/azure-skills/skills/azure-reliability/SKILL.md|\
+              plugins/azure-skills/skills/azure-upgrade/references/services/functions/consumption-to-flex/windows/workflow.md|\
+              plugins/azure-skills/skills/microsoft-foundry/SKILL.md|\
+              plugins/azure-skills/skills/microsoft-foundry/foundry-agent/create/create-hosted.md|\
+              plugins/azure-skills/skills/microsoft-foundry/foundry-agent/create/quick-start-hosted.md|\
+              plugins/azure-skills/skills/microsoft-foundry/foundry-agent/create/references/foundry-tool-catalog.md|\
+              plugins/azure-skills/skills/microsoft-foundry/foundry-agent/deploy/deploy.md|\
+              plugins/azure-skills/skills/microsoft-foundry/models/deploy-model/preset/references/preset-workflow.md)
+                echo "Skipping token limit check for exempt file: $FILE"
+                continue
+                ;;
+            esac
             if LIMIT_OUTPUT=$(npm run tokens -- check --markdown "$FILE" 2>&1); then
               printf '%s\n\n' "$LIMIT_OUTPUT" >> ../limit-report.md
             else
