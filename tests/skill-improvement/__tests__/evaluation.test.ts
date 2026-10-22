@@ -122,7 +122,7 @@ describe("answer billing propagation", () => {
           await expect(pending).rejects.toBe(processError);
           expect(captured).toMatchObject({
             finalized: false,
-            evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, fullyMeasured: 1, measuredAiCredits: 1.25 },
+            evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, fullyMeasured: 1, fullyMeasuredAiCredits: 1.25 },
           });
           return;
         }
@@ -147,7 +147,7 @@ describe("answer billing propagation", () => {
           finalized: true,
           evaluationAnswers: {
             expected: 1, observed: 1, fullyMeasured: credits === undefined ? 0 : 1,
-            measuredAiCredits: credits ?? 0,
+            fullyMeasuredAiCredits: credits ?? 0,
           },
           skillImprovement: { expected: 0 },
         });

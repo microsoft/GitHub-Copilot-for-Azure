@@ -95,10 +95,10 @@ describe("improvement-agent billing", () => {
       modelMetrics: { model: { totalNanoAiu: 21_446_710_000 } },
       agentMetrics: { main: { totalNanoAiu: 21_446_710_000 } },
     }, true);
-    expect(billing).toMatchObject({ fullyMeasured: 1, observed: 1, measuredAiCredits: 21.44671 });
+    expect(billing).toMatchObject({ fullyMeasured: 1, observed: 1, fullyMeasuredAiCredits: 21.44671 });
     expect(isBillingComplete(billing)).toBe(true);
     expect(collectSkillImprovementBilling({ totalNanoAiu: 0, aiCreditsStatus: "complete" }, true))
-      .toMatchObject({ fullyMeasured: 1, measuredAiCredits: 0 });
+      .toMatchObject({ fullyMeasured: 1, fullyMeasuredAiCredits: 0 });
   });
 
   test.each([
@@ -113,13 +113,13 @@ describe("improvement-agent billing", () => {
 
   test("requires finalization even when the provider aggregate is complete", () => {
     expect(collectSkillImprovementBilling({ totalNanoAiu: 10, aiCreditsStatus: "complete" }, false))
-      .toMatchObject({ fullyMeasured: 0, measuredAiCredits: 0, reportedAiCredits: 0.00000001 });
+      .toMatchObject({ fullyMeasured: 0, fullyMeasuredAiCredits: 0, reportedAiCredits: 0.00000001 });
   });
 
   test("preserves partial CLI aggregates without treating them as complete", () => {
     expect(collectSkillImprovementBilling({
       totalNanoAiu: 1_250_000_000, aiCreditsStatus: "partial",
-    }, true)).toMatchObject({ fullyMeasured: 0, measuredAiCredits: 0, reportedAiCredits: 1.25 });
+    }, true)).toMatchObject({ fullyMeasured: 0, fullyMeasuredAiCredits: 0, reportedAiCredits: 1.25 });
     expect(collectSkillImprovementBilling(undefined, false).reportedAiCredits).toBeNull();
     expect(collectSkillImprovementBilling({
       totalNanoAiu: 0, aiCreditsStatus: "unavailable",

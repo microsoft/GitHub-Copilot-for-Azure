@@ -232,7 +232,7 @@ function renderEvaluationAnswerBilling(report: SkillImprovementReport): string[]
     "| --- | --- | --- | ---: | ---: | ---: |",
   ];
   const billingLines = [
-    "## Evaluation answer AI-credit consumption",
+    "## Evaluation answer AI-credit usage",
     "",
     "Provider-reported `copilot_usage.totalNanoAiu` converted to credits (1e9 nano-AIU per credit). Missing or partial request billing is not zero. Vally's supported grading API does not expose judge AI-credit usage, so evaluation AIC covers answer generation only. Skill-improvement AIC is reported separately; this is not an invoice or a workflow-total cost. Credits are diagnostic, not acceptance gates; lower cost does not compensate for failed correctness.",
     "",
@@ -296,7 +296,7 @@ function renderEvaluationAnswerBilling(report: SkillImprovementReport): string[]
 
 function renderBillingCategorySummary(report: SkillImprovementReport): string[] {
   const lines = [
-    "## Phase AI-credit accounting",
+    "## AI-credit summary by phase",
     "",
     "Evaluation answer AIC covers Vally evaluation sessions through the Copilot SDK. Skill-improvement AIC covers the separate Copilot CLI invocation that edits the Skill. Evaluation answer coverage is fully billed trajectories; skill-improvement coverage is finalized CLI invocations with provider `aiCreditsStatus: complete`. CLI session aggregates include their model requests and are counted once, never again by model or arm. N/A means no invocation, not measured zero.",
     "",
@@ -315,14 +315,14 @@ function renderBillingCategorySummary(report: SkillImprovementReport): string[] 
     skillImprovement: emptyBilling("agent invocations", 0, "mixed"),
   };
   const reportedCredits = (category: BillingCategorySummary) => category.reportedAiCredits
-    ?? (category.fullyMeasured > 0 ? category.measuredAiCredits : undefined);
+    ?? (category.fullyMeasured > 0 ? category.fullyMeasuredAiCredits : undefined);
   for (const phase of report.billing) {
     totals.finalized &&= phase.finalized;
     for (const component of ["evaluationAnswers", "skillImprovement"] as const) {
       totals[component].expected += phase[component].expected;
       totals[component].observed += phase[component].observed;
       totals[component].fullyMeasured += phase[component].fullyMeasured;
-      totals[component].measuredAiCredits += phase[component].measuredAiCredits;
+      totals[component].fullyMeasuredAiCredits += phase[component].fullyMeasuredAiCredits;
       const reported = reportedCredits(phase[component]);
       if (reported !== undefined) {
         totals[component].reportedAiCredits = (totals[component].reportedAiCredits ?? 0) + reported;
@@ -332,7 +332,7 @@ function renderBillingCategorySummary(report: SkillImprovementReport): string[] 
   const credits = (component: BillingCategorySummary, finalized: boolean) => component.expected === 0
     ? "N/A"
     : finalized && isBillingComplete(component)
-      ? component.measuredAiCredits.toFixed(6)
+      ? component.fullyMeasuredAiCredits.toFixed(6)
       : reportedCredits(component) !== undefined
         ? `${reportedCredits(component)!.toFixed(6)} (partial reported subtotal)`
         : "unavailable";

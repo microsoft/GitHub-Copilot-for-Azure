@@ -76,7 +76,7 @@ describe("improvement-agent consumption collection", () => {
         const complete = format === "complete" && (outcome === "success" || outcome === "failed-finalized");
         expect(captured).toMatchObject({
           expected: 1, observed: 1, fullyMeasured: complete ? 1 : 0,
-          measuredAiCredits: complete ? 2.5 : 0,
+          fullyMeasuredAiCredits: complete ? 2.5 : 0,
         });
         if (!complete) {
           expect(captured?.reason).toBeTruthy();

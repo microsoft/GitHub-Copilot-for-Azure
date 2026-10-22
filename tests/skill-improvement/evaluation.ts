@@ -414,7 +414,7 @@ export async function runEvaluationBatch(
           throw new Error("Invalid answer trajectory billing value.");
         }
         billing.evaluationAnswers.fullyMeasured++;
-        billing.evaluationAnswers.measuredAiCredits += value;
+        billing.evaluationAnswers.fullyMeasuredAiCredits += value;
       }
     }
     onBilling?.(billing);

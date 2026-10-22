@@ -385,7 +385,7 @@ describe("skill improvement reporting", () => {
     expect(rendered).toContain("iteration-1/candidate.patch");
     expect(rendered).toContain("## Correctness and trajectory tokens");
     expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 0/1 (0.0%) | 0/2 | 130 |");
-    expect(rendered).toContain("## Evaluation answer AI-credit consumption");
+    expect(rendered).toContain("## Evaluation answer AI-credit usage");
     expect(rendered).toContain("| Phase | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total evaluation answer AIC |");
     expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 1 | 1 | 1/1 | 3.000000 | 3.000000 |");
     report.spec.experiment.repetitions = 2;
@@ -534,11 +534,11 @@ describe("skill improvement reporting", () => {
       phase, finalized: true,
       evaluationAnswers: {
         ...emptyBilling("answer trajectories", 8, "copilot_usage.totalNanoAiu"),
-        observed: 8, fullyMeasured: 8, measuredAiCredits: 4,
+        observed: 8, fullyMeasured: 8, fullyMeasuredAiCredits: 4,
       },
       skillImprovement: withAgent ? {
         ...emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
-        observed: 1, fullyMeasured: 1, measuredAiCredits: 2,
+        observed: 1, fullyMeasured: 1, fullyMeasuredAiCredits: 2,
       } : emptyBilling("agent invocations", 0, "not applicable"),
     });
     report.billing = [
@@ -557,7 +557,8 @@ describe("skill improvement reporting", () => {
     );
     expect(accounting).toContain("evaluation answers 32/32 answer trajectories; skill-improvement 1/1 agent invocations");
     expect(accounting).toContain("| Phase | Evaluation answer AIC | Skill-improvement AIC | Total reported AIC | Coverage |");
-    expect(accounting).toContain("## Evaluation answer AI-credit consumption");
+    expect(accounting).toContain("## Evaluation answer AI-credit usage");
+    expect(accounting).toContain("## AI-credit summary by phase");
     expect(accounting).toContain("| Total evaluation answer AIC |");
     expect(accounting).toContain("Vally's supported grading API does not expose judge AI-credit usage");
     expect(accounting).not.toContain("| Answer AIC |");
@@ -566,12 +567,12 @@ describe("skill improvement reporting", () => {
     expect(accounting).not.toContain("graded trajectories");
     expect(accounting).toContain("judge and Azure infrastructure costs are excluded");
     report.billing[1].skillImprovement.fullyMeasured = 0;
-    report.billing[1].skillImprovement.measuredAiCredits = 0;
+    report.billing[1].skillImprovement.fullyMeasuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain(
       "| Run total | 16.000000 | unavailable | 16.000000 (partial reported subtotal) |"
     );
     report.billing[1].skillImprovement.fullyMeasured = 1;
-    report.billing[1].skillImprovement.measuredAiCredits = 0;
+    report.billing[1].skillImprovement.fullyMeasuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain("| Run total | 16.000000 | 0.000000 | 16.000000 |");
     report.billing[1].finalized = false;
     expect(renderReportSummary(report)).toContain(
@@ -580,7 +581,7 @@ describe("skill improvement reporting", () => {
     expect(renderReportSummary(report)).toContain("incomplete attempt accounting");
     report.billing[1].finalized = true;
     report.billing[1].evaluationAnswers.fullyMeasured = 0;
-    report.billing[1].evaluationAnswers.measuredAiCredits = 0;
+    report.billing[1].evaluationAnswers.fullyMeasuredAiCredits = 0;
     report.billing[1].evaluationAnswers.reportedAiCredits = 1.25;
     report.billing[1].skillImprovement.fullyMeasured = 0;
     report.billing[1].skillImprovement.reportedAiCredits = 0.5;
@@ -597,7 +598,7 @@ describe("skill improvement reporting", () => {
     report.billing[1].evaluationAnswers.reportedAiCredits = null;
     expect(renderReportSummary(report)).toContain("| Iteration 1 | unavailable |");
     report.billing[1].evaluationAnswers.fullyMeasured = 8;
-    report.billing[1].evaluationAnswers.measuredAiCredits = 4;
+    report.billing[1].evaluationAnswers.fullyMeasuredAiCredits = 4;
     report.billing[1].skillImprovement.fullyMeasured = 1;
     report.billing[1].skillImprovement.reportedAiCredits = null;
     report.status = "failed";

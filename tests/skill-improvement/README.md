@@ -168,7 +168,7 @@ Candidate acceptance and rejection do not apply; correctness results still
 describe the baseline arms, not proof that every individual trajectory passes.
 Failed baseline runs remain **RUN FAILED**.
 
-### Tokens and evaluation answer AI credits
+### Tokens and evaluation answer AI-credit usage
 
 Skill token growth compares estimated candidate Markdown tokens, including
 references, against the original baseline, not the previous iteration.
@@ -228,7 +228,7 @@ This addresses answer reporting in
 [microsoft/mcp-pr#718](https://github.com/microsoft/mcp-pr/issues/718),
 not full workflow-credit accounting.
 
-### Phase and run credit accounting
+### AI-credit summary by phase
 
 `report.json` also persists category summaries collected as work runs, including
 available measurements from failed generation attempts and completed agent

@@ -38,11 +38,11 @@ export type BillingCategorySummary = {
   observed: number;
   /** Answers with completeAiCredits, or finalized CLI invocations with provider billing status "complete". */
   fullyMeasured: number;
-  /** Sum of AI credits for measured entities only; zero does not imply missing entities were free. */
-  measuredAiCredits: number;
+  /** Sum of AI credits for fully measured entities only; zero does not imply missing entities were free. */
+  fullyMeasuredAiCredits: number;
   /**
    * Available credits from complete and incomplete entities; null means none reported.
-   * Includes measuredAiCredits, so never add the two fields together.
+   * Includes fullyMeasuredAiCredits, so never add the two fields together.
    */
   reportedAiCredits: number | null;
   /** Billing field/provenance, or a marker such as "not applicable" or "mixed" for aggregates. */
@@ -68,7 +68,7 @@ export function emptyBilling(
   source: string,
   reason?: string,
 ): BillingCategorySummary {
-  return { unit, expected, observed: 0, fullyMeasured: 0, measuredAiCredits: 0,
+  return { unit, expected, observed: 0, fullyMeasured: 0, fullyMeasuredAiCredits: 0,
     reportedAiCredits: null, source, reason };
 }
 
@@ -102,7 +102,7 @@ export function collectSkillImprovementBilling(
     }
     if (finalized && "aiCreditsStatus" in usage && usage.aiCreditsStatus === "complete") {
       billing.fullyMeasured = 1;
-      billing.measuredAiCredits = value / NANO_AIU_PER_AI_CREDIT;
+      billing.fullyMeasuredAiCredits = value / NANO_AIU_PER_AI_CREDIT;
       delete billing.reason;
     }
   }
