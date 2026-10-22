@@ -22,7 +22,7 @@ const modelOverride = process.env.MODEL_OVERRIDE?.trim() || undefined;
 
 type BilledTrajectory = Trajectory & {
   metadata: Trajectory["metadata"] & {
-    answerBilling: EvaluationAnswerBilling;
+    evaluationAnswerBilling: EvaluationAnswerBilling;
     completionStatus: AgentMetadata["completionStatus"];
   };
 };
@@ -173,7 +173,7 @@ export class CopilotSdkAgentRunner implements Executor {
           executor: this.name,
           skillsLoaded: agentMetadata.skillsLoaded.map(ref => ref.name),
           sessionID: sessionId ?? "unknown",
-          answerBilling: evaluationAnswerBilling,
+          evaluationAnswerBilling,
           completionStatus: agentMetadata.completionStatus,
         },
         metrics: {

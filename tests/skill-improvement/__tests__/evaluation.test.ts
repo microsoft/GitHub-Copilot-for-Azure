@@ -7,7 +7,7 @@ import {
   requireCompleteGrading,
   runEvaluationBatch,
 } from "../evaluation.ts";
-import { collectEvaluationAnswerBilling, type BatchBilling } from "../billing.ts";
+import { collectEvaluationAnswerBilling, type PhaseBilling } from "../billing.ts";
 import type { SkillImprovementRunSpec } from "../config.ts";
 import { runProcess, runWithConcurrency } from "../process.ts";
 import { aggregateJudgments } from "../report.ts";
@@ -23,7 +23,7 @@ vi.mock("../process.ts", async importOriginal => {
 });
 
 describe("answer billing propagation", () => {
-  test.each<{ nanoAiu?: number; failure?: string; truncated?: boolean; workers?: number }>([
+  test.each<{ nanoAiu?: number; failure?: string; truncated?: boolean; workers?: number; partial?: boolean; interrupted?: boolean }>([
     { nanoAiu: 1_250_000_000, failure: undefined },
     { nanoAiu: 0, failure: undefined },
     { nanoAiu: undefined, failure: undefined },
@@ -32,8 +32,11 @@ describe("answer billing propagation", () => {
     { nanoAiu: 1_250_000_000, failure: "eval", truncated: true },
     { nanoAiu: 1_250_000_000, truncated: true },
     { nanoAiu: 1_250_000_000, workers: 3 },
+    { nanoAiu: 1_250_000_000, partial: true },
+    { nanoAiu: 0, partial: true },
+    { nanoAiu: 1_250_000_000, interrupted: true },
   ])(
-    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure, truncated, workers }) => {
+    "retains billing and partial attempt accounting: %s", async ({ nanoAiu, failure, truncated, workers, partial, interrupted }) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "answer-billing-"));
       const evalRoot = path.join(root, "tests", "skill-improvement", "evals", "example");
       fs.mkdirSync(evalRoot, { recursive: true });
@@ -76,7 +79,7 @@ describe("answer billing propagation", () => {
       const evaluationAnswerBilling = collectEvaluationAnswerBilling([{
         type: "assistant.usage",
         data: nanoAiu === undefined ? {} : { copilotUsage: { totalNanoAiu: nanoAiu } },
-      }]);
+      }, ...(partial ? [{ type: "assistant.usage", data: {} }] : [])], !interrupted);
       const processError = new Error(`${failure} failed`);
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         if (!options.stdoutFile) {
@@ -90,7 +93,7 @@ describe("answer billing propagation", () => {
           fs.writeFileSync(options.stdoutFile, JSON.stringify({
             type: "trial-result",
             itemId: "suite::one",
-            trajectory: { output: "answer", metadata: { answerBilling: evaluationAnswerBilling } },
+            trajectory: { output: "answer", metadata: { evaluationAnswerBilling } },
           }) + "\n" + (truncated ? '{"trajectory":\n{"type":"progress"}\n' : ""));
         } else {
           expect(args).not.toContain("--workers");
@@ -109,7 +112,7 @@ describe("answer billing propagation", () => {
         return { exitCode: 0, stdout: "", stderr: "" };
       });
       try {
-        let captured: BatchBilling | undefined;
+        let captured: PhaseBilling | undefined;
         const pending = runEvaluationBatch(
           root, root, path.join(root, "results"), spec, "baseline",
           "development", spec.experiment.conditions, Date.now() + 60_000,
@@ -119,7 +122,7 @@ describe("answer billing propagation", () => {
           await expect(pending).rejects.toBe(processError);
           expect(captured).toMatchObject({
             finalized: false,
-            evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, measured: 1, measuredAiCredits: 1.25 },
+            evaluationAnswers: { expected: truncated ? 2 : 1, observed: 1, fullyMeasured: 1, measuredAiCredits: 1.25 },
           });
           return;
         }
@@ -131,15 +134,19 @@ describe("answer billing propagation", () => {
         }
         const batch = await pending;
         expect(vi.mocked(runWithConcurrency).mock.calls.map(call => call[1])).toEqual([2, 2]);
-        const credits = nanoAiu === undefined ? undefined : nanoAiu / 1_000_000_000;
+        const reportedCredits = nanoAiu === undefined ? undefined : nanoAiu / 1_000_000_000;
+        const credits = partial || interrupted ? undefined : reportedCredits;
         expect(batch.answerGenerations).toBe(1);
         expect(batch.judgeCalls).toBe(2);
         expect(batch.trials.map(trial => trial.answerBilledCredits)).toEqual([credits, credits]);
         expect(aggregateJudgments(batch.trials)[0].answerBilledCredits).toBe(credits);
+        expect(aggregateJudgments(batch.trials)[0].answerReportedCredits).toBe(reportedCredits);
+        expect(batch.billing.evaluationAnswers.reportedAiCredits).toBe(reportedCredits ?? null);
+        expect(batch.billing.evaluationAnswers.reason).toBe(evaluationAnswerBilling.reason);
         expect(batch.billing).toMatchObject({
           finalized: true,
           evaluationAnswers: {
-            expected: 1, observed: 1, measured: credits === undefined ? 0 : 1,
+            expected: 1, observed: 1, fullyMeasured: credits === undefined ? 0 : 1,
             measuredAiCredits: credits ?? 0,
           },
           skillImprovement: { expected: 0 },

@@ -11,7 +11,7 @@ import {
 } from "./config.ts";
 import { runEvaluationBatch, type EvaluationBatch } from "./evaluation.ts";
 import { commandName, runProcess } from "./process.ts";
-import { collectSkillImprovementBilling, emptyBilling, type BatchBilling, type ComponentBilling } from "./billing.ts";
+import { collectSkillImprovementBilling, emptyBilling, type PhaseBilling, type BillingCategorySummary } from "./billing.ts";
 import {
   aggregateJudgments,
   buildFailurePacket,
@@ -217,7 +217,7 @@ export async function runImprovementAgent(
   previousCandidatePatchPath: string | undefined,
   iteration: number,
   deadline: number,
-  onBilling: (billing: ComponentBilling) => void = () => {},
+  onBilling: (billing: BillingCategorySummary) => void = () => {},
 ): Promise<void> {
   const skillDirectory = path.join(
     worktree,
@@ -287,7 +287,7 @@ export async function runImprovementAgent(
   } finally {
     fs.rmSync(localFailurePacketPath, { force: true });
     fs.rmSync(localPreviousCandidatePatchPath, { force: true });
-    let billing: ComponentBilling;
+    let billing: BillingCategorySummary;
     try {
       const events: unknown[] = fs.existsSync(eventFile)
         ? fs.readFileSync(eventFile, "utf8").split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line))
@@ -511,15 +511,15 @@ export async function executeSkillImprovement(
   const baselineWorktree = path.join(worktreeRoot, "baseline");
   const usage: Usage = { answerGenerations: 0, judgeCalls: 0 };
   const iterations: IterationReport[] = [];
-  const billing: BatchBilling[] = [];
-  const recordBilling = (name: string) => (evaluation: BatchBilling) => {
-    const existing = billing.find(batch => batch.batch === name);
+  const billing: PhaseBilling[] = [];
+  const recordBilling = (phase: string) => (evaluation: PhaseBilling) => {
+    const existing = billing.find(item => item.phase === phase);
     if (existing) {
       existing.evaluationAnswers = { ...evaluation.evaluationAnswers };
       existing.finalized = evaluation.finalized;
     } else {
       billing.push({
-        ...evaluation, batch: name,
+        ...evaluation, phase,
         evaluationAnswers: { ...evaluation.evaluationAnswers },
       });
     }
@@ -605,8 +605,8 @@ export async function executeSkillImprovement(
             failurePacket
           );
           console.log(`Running improvement agent for iteration ${iteration}...`);
-          const iterationBilling: BatchBilling = {
-            batch: `Iteration ${iteration}`,
+          const iterationBilling: PhaseBilling = {
+            phase: `Iteration ${iteration}`,
             finalized: false,
             evaluationAnswers: emptyBilling("answer trajectories", 0, "not applicable"),
             skillImprovement: emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),

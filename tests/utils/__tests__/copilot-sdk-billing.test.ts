@@ -65,8 +65,8 @@ describe("SDK answer billing completion", () => {
       expect(metadata.completionStatus).toBe(mode === "completed" ? "completed" : "aborted");
       expect(collectEvaluationAnswerBilling(metadata.events, metadata.completionStatus === "completed"))
         .toMatchObject({
-          requests: 1, billedRequests: 1,
-          billedAiCredits: mode === "completed" ? 1.25 : null,
+          usageEvents: 1, usageEventsWithBilling: 1,
+          completeAiCredits: mode === "completed" ? 1.25 : null,
         });
     }
   );

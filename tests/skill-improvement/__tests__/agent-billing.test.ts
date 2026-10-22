@@ -5,7 +5,7 @@ import { describe, expect, test, vi } from "vitest";
 import { runImprovementAgent } from "../engine.ts";
 import { loadRunSpec } from "../config.ts";
 import { runProcess } from "../process.ts";
-import type { ComponentBilling } from "../billing.ts";
+import type { BillingCategorySummary } from "../billing.ts";
 
 vi.mock("../process.ts", async importOriginal => ({
   ...await importOriginal<typeof import("../process.ts")>(),
@@ -34,7 +34,7 @@ describe("improvement-agent consumption collection", () => {
       const eventFile = path.join(root, "iteration-1-agent.jsonl");
       fs.writeFileSync(eventFile, JSON.stringify({ type: "result", exitCode: 0 }));
       const error = new Error(outcome === "timeout" ? "Timed out" : "Agent failed");
-      let captured: ComponentBilling | undefined;
+      let captured: BillingCategorySummary | undefined;
       vi.mocked(runProcess).mockImplementation(async (_command, args, options) => {
         expect(args).toContain("--usage-output-file");
         if (outcome !== "missing-usage") {
@@ -75,7 +75,7 @@ describe("improvement-agent consumption collection", () => {
         }
         const complete = format === "complete" && (outcome === "success" || outcome === "failed-finalized");
         expect(captured).toMatchObject({
-          expected: 1, observed: 1, measured: complete ? 1 : 0,
+          expected: 1, observed: 1, fullyMeasured: complete ? 1 : 0,
           measuredAiCredits: complete ? 2.5 : 0,
         });
         if (!complete) {

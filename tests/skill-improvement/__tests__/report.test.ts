@@ -17,7 +17,7 @@ import type {
   SkillImprovementRunSpec,
 } from "../config.ts";
 import type { JudgedTrial } from "../evaluation.ts";
-import { emptyBilling, type BatchBilling } from "../billing.ts";
+import { emptyBilling, type PhaseBilling } from "../billing.ts";
 import { describe, expect, test } from "vitest";
 
 const skillWithMcp = {
@@ -386,7 +386,7 @@ describe("skill improvement reporting", () => {
     expect(rendered).toContain("## Correctness and trajectory tokens");
     expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 0/1 (0.0%) | 0/2 | 130 |");
     expect(rendered).toContain("## Evaluation answer AI-credit consumption");
-    expect(rendered).toContain("| Batch | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total evaluation answer AIC |");
+    expect(rendered).toContain("| Phase | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total evaluation answer AIC |");
     expect(rendered).toContain("| Iteration 1 | model-a | Skill + MCP | 1 | 1 | 1/1 | 3.000000 | 3.000000 |");
     report.spec.experiment.repetitions = 2;
     expect(renderReportSummary(report)).toContain("| 1 | 2 | 0/1 | not measured (incomplete) | not measured (incomplete) |");
@@ -513,23 +513,37 @@ describe("skill improvement reporting", () => {
       index === 0 ? { ...trial, answerBilledCredits: undefined } : trial
     ));
     expect(renderReportSummary(report)).toContain(
-      "| Baseline | model-a | Skill + MCP | 2 | 2 | 1/2 | not measured (incomplete) | not measured (incomplete) |"
+      "| Baseline | model-a | Skill + MCP | 2 | 2 | 1/2 | not measured (incomplete) | 0.654319 (partial reported subtotal) |"
     );
 
-    const batchBilling = (batch: string, withAgent = false): BatchBilling => ({
-      batch, finalized: true,
+    // Two tests, two repetitions, and two judges must not double the reported sum.
+    for (const reported of [1.25, 0, undefined]) {
+      report.baselineTrials = aggregateJudgments(records.map(trial => ({
+        ...trial, answerBilledCredits: undefined, answerReportedCredits: reported,
+      })));
+      const renderedPartial = renderReportSummary(report);
+      const total = reported === undefined ? "not measured (incomplete)"
+        : `${(reported * 4).toFixed(6)} (partial reported subtotal)`;
+      expect(renderedPartial).toContain(
+        `| Baseline | model-a | Skill + MCP | 2 | 2 | 0/2 | not measured (incomplete) | ${total} |`
+      );
+      expect(renderReport(report)).toContain(total);
+    }
+
+    const phaseBilling = (phase: string, withAgent = false): PhaseBilling => ({
+      phase, finalized: true,
       evaluationAnswers: {
         ...emptyBilling("answer trajectories", 8, "copilot_usage.totalNanoAiu"),
-        observed: 8, measured: 8, measuredAiCredits: 4,
+        observed: 8, fullyMeasured: 8, measuredAiCredits: 4,
       },
       skillImprovement: withAgent ? {
         ...emptyBilling("agent invocations", 1, "copilot_cli.usage_output.totalNanoAiu"),
-        observed: 1, measured: 1, measuredAiCredits: 2,
+        observed: 1, fullyMeasured: 1, measuredAiCredits: 2,
       } : emptyBilling("agent invocations", 0, "not applicable"),
     });
     report.billing = [
-      batchBilling("Baseline"), batchBilling("Iteration 1", true),
-      batchBilling("Held-out baseline"), batchBilling("Held-out candidate"),
+      phaseBilling("Baseline"), phaseBilling("Iteration 1", true),
+      phaseBilling("Held-out baseline"), phaseBilling("Held-out candidate"),
     ];
     const accounting = renderReportSummary(report);
     expect(accounting).toContain(
@@ -542,7 +556,7 @@ describe("skill improvement reporting", () => {
       "| Run total | 16.000000 | 2.000000 | 18.000000 |"
     );
     expect(accounting).toContain("evaluation answers 32/32 answer trajectories; skill-improvement 1/1 agent invocations");
-    expect(accounting).toContain("| Batch | Evaluation answer AIC | Skill-improvement AIC | Total measured AIC | Coverage |");
+    expect(accounting).toContain("| Phase | Evaluation answer AIC | Skill-improvement AIC | Total reported AIC | Coverage |");
     expect(accounting).toContain("## Evaluation answer AI-credit consumption");
     expect(accounting).toContain("| Total evaluation answer AIC |");
     expect(accounting).toContain("Vally's supported grading API does not expose judge AI-credit usage");
@@ -551,23 +565,44 @@ describe("skill improvement reporting", () => {
     expect(accounting).not.toContain("Judge AIC");
     expect(accounting).not.toContain("graded trajectories");
     expect(accounting).toContain("judge and Azure infrastructure costs are excluded");
-    report.billing[1].skillImprovement.measured = 0;
+    report.billing[1].skillImprovement.fullyMeasured = 0;
     report.billing[1].skillImprovement.measuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain(
-      "| Run total | 16.000000 | unavailable | 16.000000 (measured subtotal) |"
+      "| Run total | 16.000000 | unavailable | 16.000000 (partial reported subtotal) |"
     );
-    report.billing[1].skillImprovement.measured = 1;
+    report.billing[1].skillImprovement.fullyMeasured = 1;
     report.billing[1].skillImprovement.measuredAiCredits = 0;
     expect(renderReportSummary(report)).toContain("| Run total | 16.000000 | 0.000000 | 16.000000 |");
     report.billing[1].finalized = false;
     expect(renderReportSummary(report)).toContain(
-      "| Run total | 16.000000 | 0.000000 | 16.000000 (measured subtotal) |"
+      "| Run total | 16.000000 (partial reported subtotal) | 0.000000 (partial reported subtotal) | 16.000000 (partial reported subtotal) |"
     );
     expect(renderReportSummary(report)).toContain("incomplete attempt accounting");
     report.billing[1].finalized = true;
+    report.billing[1].evaluationAnswers.fullyMeasured = 0;
+    report.billing[1].evaluationAnswers.measuredAiCredits = 0;
+    report.billing[1].evaluationAnswers.reportedAiCredits = 1.25;
+    report.billing[1].skillImprovement.fullyMeasured = 0;
+    report.billing[1].skillImprovement.reportedAiCredits = 0.5;
+    expect(renderReportSummary(report)).toContain(
+      "| Iteration 1 | 1.250000 (partial reported subtotal) | 0.500000 (partial reported subtotal) | 1.750000 (partial reported subtotal) |"
+    );
+    expect(renderReportSummary(report)).toContain(
+      "| Run total | 13.250000 (partial reported subtotal) | 0.500000 (partial reported subtotal) | 13.750000 (partial reported subtotal) |"
+    );
+    report.billing[1].evaluationAnswers.reportedAiCredits = 0;
+    expect(renderReportSummary(report)).toContain(
+      "| Iteration 1 | 0.000000 (partial reported subtotal) |"
+    );
+    report.billing[1].evaluationAnswers.reportedAiCredits = null;
+    expect(renderReportSummary(report)).toContain("| Iteration 1 | unavailable |");
+    report.billing[1].evaluationAnswers.fullyMeasured = 8;
+    report.billing[1].evaluationAnswers.measuredAiCredits = 4;
+    report.billing[1].skillImprovement.fullyMeasured = 1;
+    report.billing[1].skillImprovement.reportedAiCredits = null;
     report.status = "failed";
     expect(renderReportSummary(report)).toContain(
-      "| Run total | 16.000000 | 0.000000 | 16.000000 (measured subtotal) |"
+      "| Run total | 16.000000 (partial reported subtotal) | 0.000000 (partial reported subtotal) | 16.000000 (partial reported subtotal) |"
     );
   });
 
@@ -594,7 +629,7 @@ describe("skill improvement reporting", () => {
       terminationReason: "no-actionable-failures",
       finalAccepted: true,
       billing: [{
-        batch: "Baseline",
+        phase: "Baseline",
         finalized: true,
         evaluationAnswers: emptyBilling("answer trajectories", 1, "copilot_usage.totalNanoAiu"),
         skillImprovement: emptyBilling("agent invocations", 0, "not applicable"),
@@ -617,6 +652,7 @@ describe("skill improvement reporting", () => {
       const savedReport = JSON.parse(
         fs.readFileSync(path.join(output, "report.json"), "utf8")
       );
+      expect(savedReport.billing[0]).toHaveProperty("phase", "Baseline");
       expect(savedReport.billing[0]).toHaveProperty("evaluationAnswers");
       expect(savedReport.billing[0]).toHaveProperty("skillImprovement");
       expect(savedReport.billing[0]).not.toHaveProperty("answers");

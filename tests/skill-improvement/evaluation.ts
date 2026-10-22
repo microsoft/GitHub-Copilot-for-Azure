@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { emptyBilling, type EvaluationAnswerBilling, type BatchBilling } from "./billing.ts";
+import { emptyBilling, type EvaluationAnswerBilling, type PhaseBilling } from "./billing.ts";
 import path from "node:path";
 import type {
   EvaluationSet,
@@ -41,8 +41,7 @@ export type VallyRecord = {
   };
   trajectory?: {
     metadata?: {
-      /** Evaluation-answer billing; retain the serialized key for existing trajectories. */
-      answerBilling?: EvaluationAnswerBilling;
+      evaluationAnswerBilling?: EvaluationAnswerBilling;
     };
     output?: string;
     stimulus?: {
@@ -102,13 +101,14 @@ export type JudgedTrial = {
   targetSkillInvoked: boolean;
   totalTokens: number;
   answerBilledCredits?: number;
+  answerReportedCredits?: number;
 };
 
 export type EvaluationBatch = {
   trials: JudgedTrial[];
   answerGenerations: number;
   judgeCalls: number;
-  billing: BatchBilling;
+  billing: PhaseBilling;
 };
 
 type GenerationTask = {
@@ -353,7 +353,9 @@ async function gradeAnswers(
         (record.trajectory?.metrics?.skillActivationBreakdown?.[spec.target.skill] ?? 0) > 0,
       totalTokens: record.trajectory?.metrics?.tokenUsage?.totalTokens ?? 0,
       answerBilledCredits:
-        record.trajectory?.metadata?.answerBilling?.billedAiCredits ?? undefined,
+        record.trajectory?.metadata?.evaluationAnswerBilling?.completeAiCredits ?? undefined,
+      answerReportedCredits:
+        record.trajectory?.metadata?.evaluationAnswerBilling?.reportedAiCredits ?? undefined,
     }));
 }
 
@@ -367,7 +369,7 @@ export async function runEvaluationBatch(
   conditions: EvaluationCondition[],
   deadline: number,
   iteration?: number,
-  onBilling?: (billing: BatchBilling) => void,
+  onBilling?: (billing: PhaseBilling) => void,
 ): Promise<EvaluationBatch> {
   const tasks: GenerationTask[] = conditions.flatMap(condition =>
     spec.models.answers.flatMap(answerModel =>
@@ -378,27 +380,40 @@ export async function runEvaluationBatch(
   const expectedAnswers = tasks.reduce((total, task) =>
     total + countStimuli(evalRepoRoot, spec, [task.evalFile]) * spec.experiment.repetitions, 0
   );
-  const billing: BatchBilling = {
-    batch: phase,
+  const billing: PhaseBilling = {
+    phase,
     finalized: false,
     evaluationAnswers: emptyBilling("answer trajectories", expectedAnswers, "copilot_usage.totalNanoAiu"),
     skillImprovement: emptyBilling("agent invocations", 0, "not applicable"),
   };
   onBilling?.(billing);
+  const incompleteReasons = new Set<string>();
   const recordBilling = (records: VallyRecord[]) => {
     const answers = records.filter(record => record.type === "trial-result" || record.trajectory);
     billing.evaluationAnswers.observed += answers.length;
     for (const answer of answers) {
-      const usage = answer.trajectory?.metadata?.answerBilling;
-      const value = usage?.billedAiCredits;
+      const usage = answer.trajectory?.metadata?.evaluationAnswerBilling;
+      if (usage?.reason || !usage) {
+        incompleteReasons.add(usage?.reason ?? "Answer has no evaluation billing metadata.");
+        billing.evaluationAnswers.reason = [...incompleteReasons].join(" ");
+      }
+      const reported = usage?.reportedAiCredits;
+      if (reported !== null && reported !== undefined) {
+        if (!Number.isFinite(reported) || reported < 0) {
+          throw new Error("Invalid reported answer trajectory billing value.");
+        }
+        billing.evaluationAnswers.reportedAiCredits =
+          (billing.evaluationAnswers.reportedAiCredits ?? 0) + reported;
+      }
+      const value = usage?.completeAiCredits;
       if (value !== null && value !== undefined) {
-        if (!usage || usage.requests <= 0 || usage.requests !== usage.billedRequests) {
+        if (!usage || usage.usageEvents <= 0 || usage.usageEvents !== usage.usageEventsWithBilling) {
           throw new Error("Answer credits require complete request billing.");
         }
         if (!Number.isFinite(value) || value < 0) {
           throw new Error("Invalid answer trajectory billing value.");
         }
-        billing.evaluationAnswers.measured++;
+        billing.evaluationAnswers.fullyMeasured++;
         billing.evaluationAnswers.measuredAiCredits += value;
       }
     }
