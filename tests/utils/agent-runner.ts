@@ -50,7 +50,7 @@ export type AgentMetadata = {
    */
   tokenUsage?: TokenUsage;
 
-  /** Whether the answer run reached normal completion or was interrupted. */
+  /** Whether the evaluation answer-generation session completed normally or was interrupted. */
   completionStatus?: "completed" | "aborted";
 
   /**
