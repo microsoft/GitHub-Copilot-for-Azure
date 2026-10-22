@@ -22,6 +22,7 @@ import uuid
 
 GREETING_GRACE_SECONDS = 1.0
 DEFAULT_PROMPT = "In one short sentence, introduce yourself."
+REQUEST_METADATA_KEY = "foundry_voice_smoke_test_request"
 
 
 def positive_integer(value: str) -> int:
@@ -138,7 +139,7 @@ def acquire_token() -> str:
     raise RuntimeError("; ".join(errors))
 
 
-async def send_user_turn(ws: object, text: str) -> None:
+async def send_user_turn(ws: object, text: str, request_marker: str) -> None:
     await ws.send(
         json.dumps(
             {
@@ -151,7 +152,41 @@ async def send_user_turn(ws: object, text: str) -> None:
             }
         )
     )
-    await ws.send(json.dumps({"type": "response.create"}))
+    await ws.send(
+        json.dumps(
+            {
+                "type": "response.create",
+                "response": {
+                    "metadata": {REQUEST_METADATA_KEY: request_marker},
+                },
+            }
+        )
+    )
+
+
+def response_id(event: dict[str, object]) -> str:
+    direct_id = event.get("response_id")
+    if isinstance(direct_id, str):
+        return direct_id
+    response = event.get("response")
+    if isinstance(response, dict):
+        nested_id = response.get("id")
+        if isinstance(nested_id, str):
+            return nested_id
+    return ""
+
+
+def response_has_request_marker(
+    event: dict[str, object], request_marker: str
+) -> bool:
+    response = event.get("response")
+    if not isinstance(response, dict):
+        return False
+    metadata = response.get("metadata")
+    return (
+        isinstance(metadata, dict)
+        and metadata.get(REQUEST_METADATA_KEY) == request_marker
+    )
 
 
 async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
@@ -195,6 +230,8 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
     greeting_in_progress = False
     grace_deadline: float | None = None
     sent_turn = False
+    request_marker = uuid.uuid4().hex
+    requested_response_id = ""
     completed_status: str | None = None
 
     try:
@@ -225,7 +262,7 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
                     ):
                         remaining_grace = grace_deadline - time.monotonic()
                         if remaining_grace <= 0:
-                            await send_user_turn(ws, args.text)
+                            await send_user_turn(ws, args.text, request_marker)
                             sent_turn = True
                             continue
                         receive_timeout = min(float(args.timeout), remaining_grace)
@@ -238,7 +275,7 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
                         )
                     except (TimeoutError, asyncio.TimeoutError):
                         if session_updated and not greeting_in_progress:
-                            await send_user_turn(ws, args.text)
+                            await send_user_turn(ws, args.text, request_marker)
                             sent_turn = True
                             continue
                         raise
@@ -268,7 +305,7 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
                     elif event_type == "response.done" and greeting_in_progress:
                         greeting_in_progress = False
                         grace_deadline = None
-                        await send_user_turn(ws, args.text)
+                        await send_user_turn(ws, args.text, request_marker)
                         sent_turn = True
                     continue
 
@@ -279,6 +316,30 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
                 event_type = event.get("type", "")
                 events.append(event_type)
 
+                if event_type == "error":
+                    print(
+                        "ERROR: Voice session returned an error event: "
+                        f"{json.dumps(event)}",
+                        file=sys.stderr,
+                    )
+                    return 1
+                if event_type == "response.created":
+                    if response_has_request_marker(event, request_marker):
+                        requested_response_id = response_id(event)
+                        if not requested_response_id:
+                            print(
+                                "ERROR: Requested Voice Agent response did not "
+                                "include a response ID.",
+                                file=sys.stderr,
+                            )
+                            return 1
+                    continue
+                if (
+                    not requested_response_id
+                    or response_id(event) != requested_response_id
+                ):
+                    continue
+
                 if event_type == "response.output_audio_transcript.delta":
                     transcript.append(event.get("delta", ""))
                 elif event_type == "response.output_audio_transcript.done":
@@ -288,13 +349,6 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
                     audio_base64_characters += len(encoded_delta)
                     if args.output_audio and encoded_delta:
                         decoded_audio.extend(base64.b64decode(encoded_delta))
-                elif event_type == "error":
-                    print(
-                        "ERROR: Voice session returned an error event: "
-                        f"{json.dumps(event)}",
-                        file=sys.stderr,
-                    )
-                    return 1
                 elif event_type == "response.done":
                     completed_status = event.get("response", {}).get("status")
                     break
@@ -317,6 +371,7 @@ async def run_smoke_test(args: argparse.Namespace, ws_url_base: str) -> int:
     result = {
         "agent": args.agent_name,
         "prompt_text": args.text,
+        "response_id": requested_response_id,
         "status": completed_status,
         "transcript": text,
         "audio_base64_characters": audio_base64_characters,

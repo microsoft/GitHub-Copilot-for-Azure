@@ -109,7 +109,7 @@ When testing a Hosted Voice Agent running the official `voice-live-bridge-basic-
 
 | Exit Code | Meaning |
 |---|---|
-| `0` | Smoke test passed (`response.done` for the requested turn with `response.status == "completed"`, non-empty `response.output_audio_transcript.delta`/`done`, non-empty base64 `response.output_audio.delta`, and optional `--expected-marker` / `-ExpectedMarker` matched) or `--dry-run` / `--help` succeeded |
+| `0` | Smoke test passed (`response.done` for the uniquely tagged requested response with `response.status == "completed"`, non-empty matching `response.output_audio_transcript.delta`/`done`, non-empty matching base64 `response.output_audio.delta`, and optional `--expected-marker` / `-ExpectedMarker` matched) or `--dry-run` / `--help` succeeded |
 | `1` | Smoke test failed (authentication error, WebSocket `error` frame, non-`completed` status, empty transcript, missing expected marker, zero audio deltas, timeout, or missing `websockets` package) |
 | `2` | Usage or argument validation error (missing `--endpoint`/`-Endpoint`, missing `--agent-name`/`-AgentName`, invalid `--timeout`/`-Timeout`, or unknown option) |
 
@@ -124,9 +124,10 @@ When testing a Hosted Voice Agent running the official `voice-live-bridge-basic-
    - If no greeting begins during the grace window (such as on a no-greeting Prompt Voice agent), proceeds immediately after the grace timeout.
 3. **Send Typed Turn**:
    - Sends `{"type": "conversation.item.create", "item": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "<prompt>"}]}}`
-   - Sends `{"type": "response.create"}`
+   - Sends `response.create` with a unique metadata marker for the smoke-test turn.
 4. **Consume & Verify Requested Turn Output**:
-   - Collects transcript text from the requested turn's `response.output_audio_transcript.delta` (`delta`) and `response.output_audio_transcript.done` (`transcript`).
-   - Counts base64 audio payload characters from `response.output_audio.delta` (`delta`).
+   - Captures the marked `response.created` ID and ignores greeting or unrelated response events.
+   - Collects transcript text only from matching `response.output_audio_transcript.delta` (`delta`) and `response.output_audio_transcript.done` (`transcript`).
+   - Counts base64 audio payload characters only from matching `response.output_audio.delta` (`delta`).
    - Fails immediately on any `error` event, if `response.done` reports `response.status != "completed"`, if transcript/audio is empty, or if `--expected-marker` / `-ExpectedMarker` is absent from the transcript.
-   - Emits JSON containing `agent`, `prompt_text`, `status`, `transcript`, `audio_base64_characters`, `event_types`, and optional `expected_marker`.
+   - Emits JSON containing `agent`, `prompt_text`, `response_id`, `status`, `transcript`, `audio_base64_characters`, `event_types`, and optional `expected_marker`.
