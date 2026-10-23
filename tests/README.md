@@ -73,7 +73,7 @@ tags:
   azurePermission: read
 ```
 
-Use `azurePermission: none` for tests whose agent should not use the test subscription's Azure login. In CI, this overrides `AZURE_CONFIG_DIR` with a unique, nonexistent temporary path for each run, so Azure CLI and Azure MCP do not use the authenticated Azure config. No read-only profile is required.
+Use `azurePermission: none` for tests whose agent should not use the test subscription's Azure login. In CI, this overrides `AZURE_CONFIG_DIR` with a unique, nonexistent temporary path for each run and sets `AZURE_CLIENT_ID` to an empty string, so Azure CLI and Azure MCP do not use the authenticated Azure config or inherit the test identity's client ID. No read-only profile is required.
 
 Local runs ignore both values and use the available local Azure credentials.
 In CI, omitting the tag preserves the default Azure permissions, and a `read`
