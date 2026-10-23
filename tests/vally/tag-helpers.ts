@@ -13,6 +13,9 @@ export function getAzureEnvironment(
   tags: Record<string, string | string[]> | undefined,
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
+  if (env.CI !== "true") {
+    return {};
+  }
   const permission = tags?.azurePermission;
   if (permission === undefined) {
     return {};

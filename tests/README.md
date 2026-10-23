@@ -61,7 +61,7 @@ Local artifacts are written to `results/<test-run-name>/` and `reports/<test-run
 ### Azure permissions
 
 Add `azurePermission: read` to a stimulus's tags to use read-only Azure
-permissions for its agent run. Use this for tests that inspect resources without
+permissions for its agent run in CI. Use this for tests that inspect resources without
 creating, modifying or deleting them.
 
 ```yaml
@@ -73,7 +73,10 @@ tags:
   azurePermission: read
 ```
 
-Omitting the tag preserves the default Azure permissions. Only `read` is currently supported; other values are rejected.
+Local runs ignore this tag and use the available local Azure credentials.
+In CI, omitting the tag preserves the default Azure permissions, and a tagged
+run fails if read-only access is not configured. Only `read` is currently
+supported; other values are rejected by eval validation.
 
 ## Testing This Project
 
