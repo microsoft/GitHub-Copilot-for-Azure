@@ -3,11 +3,18 @@ import { compileEarlyTerminatePattern, getAzureEnvironment } from "../tag-helper
 
 describe("getAzureEnvironment", () => {
   const env = {
+    CI: "true",
     AZURE_READ_CONFIG_DIR: "/tmp/azure-read",
     AZURE_READ_CLIENT_ID: "read-client",
     AZURE_CONFIG_DIR: "/tmp/azure-admin",
     AZURE_CLIENT_ID: "admin-client",
   };
+
+  test.each([undefined, "", "false"])("preserves local credentials when CI is %j", (ci) => {
+    expect(getAzureEnvironment({ azurePermission: "read" }, { ...env, CI: ci })).toEqual({});
+    expect(getAzureEnvironment({ azurePermission: "read" }, { CI: ci })).toEqual({});
+    expect(getAzureEnvironment({ azurePermission: "unsupported" }, { CI: ci })).toEqual({});
+  });
 
   test("preserves the inherited identity for untagged tests", () => {
     expect(getAzureEnvironment(undefined, env)).toEqual({});
@@ -30,7 +37,7 @@ describe("getAzureEnvironment", () => {
     { AZURE_READ_CONFIG_DIR: "relative/profile", AZURE_READ_CLIENT_ID: "read-client" },
     { AZURE_READ_CONFIG_DIR: " ", AZURE_READ_CLIENT_ID: "read-client" },
   ])("fails closed when read credentials are not configured: %j", (missingEnv) => {
-    expect(() => getAzureEnvironment({ azurePermission: "read" }, missingEnv))
+    expect(() => getAzureEnvironment({ azurePermission: "read" }, { ...missingEnv, CI: "true" }))
       .toThrow("refusing to use the default Azure identity");
   });
 
