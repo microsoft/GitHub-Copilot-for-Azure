@@ -24,7 +24,7 @@ spec:
       hostNetwork: true
       containers:
         - name: web
-          image: nginx:latest
+          image: mcr.microsoft.com/azurelinux/base/nginx:1.28
           ports:
             - containerPort: 80
           securityContext:
