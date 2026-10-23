@@ -16,12 +16,15 @@ Use only these Advisor operations:
 - `advisor_metadata_list` only for the documented display-name fallback.
 
 Across every workflow below, render Advisor money with these exact labels: `Yearly potential savings`
-for yearly potential savings, `Accumulated waste` for returned cumulative `Cost`, and
+for yearly potential savings, `Cost` for returned cumulative cost, and
 `Realized savings` only for returned completed savings. Preserve `Currency` and `Pricing basis`.
-For active recommendation rows, the MCP list contract exposes `yearlyPotentialSavings`; when the
-source row contains only `dailyPotentialSavings`, that value is annualized as
-`dailyPotentialSavings × 30.4 × 12`. Never render the daily input, and never derive cost from a
-timestamp or any other rate.
+For active recommendation list rows, use the MCP list contract fields
+`properties.savings.retail.yearlyPotentialSavings` and
+`properties.savings.retail.cost`, and label the columns `Yearly potential savings` and
+`Cost`. The MCP `cost` field already matches the portal calculation; do not recompute
+it from `estimatedAccumulatedSavings`, timestamps, or another rate. When the source row contains
+only `dailyPotentialSavings`, the MCP contract annualizes it as `dailyPotentialSavings × 30.4 × 12`.
+Never render the daily input. Summary-level totals also use the `Cost` label.
 
 Current opportunity queries always use `category=Cost` and `sub-category=IdleResources`.
 Current summaries use `group-by=recommendation-type`; do not add `status` to the summary.
@@ -162,17 +165,30 @@ details".
    returned by the summary so expansion remains limited to that response.
 
 For the selected-type list, do not replay the opening discovery summary. Render every resource
-returned by MCP; never show only the first few rows or shorten the table for readability. If
+returned by MCP; never show only the first few resources or shorten the result for readability. If
 `AreResultsTruncated=true`, state that the expansion is partial and do not claim that all
 resources were shown. Start with a focused
 `## Selected recommendation` heading containing the exact recommendation type and a one-sentence
 count. Add one compact scope/pricing line identifying the resolved subscription name(s) or Service
-Group(s), then a resource table containing `Resource`, `Subscription`, `Resource group`,
-`Yearly potential savings`, and `Accumulated waste`; include `Currency` and `Pricing basis` in
-that line or table caption. Always display the friendly subscription name on every resource row
-when the scope is a Service Group or spans multiple subscriptions. Retain subscription IDs
-internally and use them visibly only when a subscription name is unavailable. Do not omit the
-`Subscription` column just because the scope line already names the Service Group.
+Group(s), then render a compact table with the existing columns:
+
+```text
+|Resource|Resource<br>group|Yearly potential<br>savings|Cost|
+|---|---|---:|---:|
+|<short resource name>|<resource group>|<amount>|<amount>|
+```
+
+Before rendering the table, sort the returned resource rows by yearly potential savings
+descending, place unavailable values last, and preserve the tool order for ties.
+
+Include `Currency` and `Pricing basis` in the scope/pricing line. Always display the friendly
+subscription name in a `Subscription` column when the scope is a Service Group or spans multiple
+subscriptions; omit that column for a single-subscription scope. Retain subscription IDs
+internally and use them visibly only when a subscription name is unavailable. Do not include full
+ARM IDs or explanatory prose inside table cells. Keep the table compact and do not add daily or
+monthly cost columns. If resource names are long, wrap the exact value within the same cell
+with `<br>` breaks; do not truncate or abbreviate it. Put full selection details below the table
+only when needed.
 Use the MCP annualized value
 described above and never add a daily or monthly cost column. For ordinary analysis, render the
 returned resources and stop with a focused next step such as inspecting another recommendation

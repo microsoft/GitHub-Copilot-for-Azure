@@ -33,12 +33,22 @@ substitute billing, Cost Management, generic inventory, or runtime KQL.
 - **Lifecycle:** use `advisor_recommendation_list` with `category=Cost`,
   `sub-category=IdleResources`, and the requested `Completed`, `Postponed`, or `Dismissed`
   status. Use `advisor_recommendation_update` only after explicit confirmation.
-- **Cost labels:** use `Yearly potential savings`, `Accumulated waste`, and `Realized savings`
+- **Completed on:** for `Completed` records, use `properties.platformStateUpdatedAt` when
+  `properties.completionType` is `SystemVerified`; otherwise use
+  `properties.customerStateUpdatedAt`, including when `completionType` is missing or unknown.
+- **Cost labels:** use `Yearly potential savings`, `Cost`, and `Realized savings`
   exactly.
-  For active recommendation rows, use the MCP-provided yearly value. When the MCP response
-  contains only `dailyPotentialSavings`, the MCP contract annualizes it as
-  `dailyPotentialSavings × 30.4 × 12`; never render the daily input. Do not infer any other
-  period or replacement value.
+  For active recommendation list rows, use the MCP-provided `yearlyPotentialSavings` and
+  `cost` values and label the columns `Yearly potential savings` and `Cost`.
+  The MCP `cost` value already matches the portal calculation; do not recompute it from
+  `estimatedAccumulatedSavings`, timestamps, or daily savings. Summary-level totals continue
+  to use the `Cost` label. When the MCP response contains only
+  `dailyPotentialSavings`, the MCP contract annualizes it as `dailyPotentialSavings × 30.4 × 12`;
+  never render the daily input.
+- **Ordering:** sort comparable recommendation types and resource rows by the applicable
+  returned savings measure in descending order. Use yearly potential savings for `New`,
+  `Postponed`, and `Dismissed`; use realized savings for `Completed`. Put unavailable values
+  last and preserve tool order for ties.
 - **Responses:** render every tool result visibly before asking a question. Keep recommendation
   types and lifecycle states separate; preserve exact Advisor identity and unavailable values.
 

@@ -7,7 +7,7 @@ Use the Azure Advisor MCP operations below. Keep the resolved scope from
 |---|---|---|
 | `advisor_recommendation_summary` | Broad current discovery | `category=Cost`, `sub-category=IdleResources`, `group-by=recommendation-type`; no status |
 | `advisor_recommendation_list` | Type expansion, artifacts, lifecycle reports, or update targeting | Always preserve scope with `category=Cost` and `sub-category=IdleResources`; use `status=New` for active candidates or the requested lifecycle status |
-| `advisor_recommendation_update` | Postpone or dismiss | Only after exact resource selection and explicit confirmation; call once per stable recommendation ID |
+| `advisor_recommendation_update` | Postpone or dismiss | Only after exact resource selection and explicit confirmation; resolve and use the stable recommendation ID internally, but do not present it as a resource ID |
 | `advisor_metadata_list` | Display-name fallback | Use only when a recognizable type is not resolved by the normal Advisor filters; disclose the fallback |
 
 ## Recovery

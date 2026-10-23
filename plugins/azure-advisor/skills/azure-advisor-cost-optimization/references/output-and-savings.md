@@ -12,12 +12,12 @@ headings and table columns in this order; do not replace it with an abbreviated 
 
 ## Savings
 - Yearly potential savings: <amount>
-- Accumulated waste: <amount>
+- Cost: <amount>
 - Currency: <currency>
 - Pricing basis: <basis>
 
 ## Recommendation types
-| Recommendation type | Affected resources | Yearly potential savings | Accumulated waste |
+| Recommendation type | Affected resources | Yearly potential savings | Cost |
 |---|---:|---:|---:|
 | <exact Advisor display name> | <count> | <amount>/year | <amount> |
 ```
@@ -31,12 +31,12 @@ internally for filtering and follow-up calls, and use an ID as the visible fallb
 subscription name is unavailable.
 
 For current opportunities and active resource lists, use only these monetary labels:
-`Yearly potential savings` and `Accumulated waste` for Advisor's cumulative
+`Yearly potential savings` and `Cost` for Advisor's cumulative
 `Cost`. Never render `daily cost`, `per-day cost`, `monthly cost`, `ongoing cost`, or
 `estimated daily cost`. For active recommendation rows, the MCP list contract annualizes
 `dailyPotentialSavings` as `dailyPotentialSavings × 30.4 × 12` and returns it as
 `yearlyPotentialSavings`; render only that yearly field. Never derive a value from a timestamp or
-any other rate. "All cost fields yearly" means no daily presentation; `Accumulated waste` remains a
+any other rate. "All cost fields yearly" means no daily presentation; `Cost` remains a
 cumulative Advisor measure and must not be relabeled as yearly savings.
 
 Do not add source links to summary, recommendation-list, lifecycle, or cost-analysis responses.
@@ -65,10 +65,10 @@ action and retain Advisor IDs internally.
 
 | Flow | Required visible fields |
 |---|---|
-| Current discovery | `Scope` with subscription(s) or Service Group(s), `Advisor found`, `Savings`, `Recommendation type`, `Affected resources`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
-| Selected-type list | `Scope` with subscription(s) or Service Group(s), exact `Recommendation type`, `Resource`, `Subscription`, `Resource group`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
+| Current discovery | `Scope` with subscription(s) or Service Group(s), `Advisor found`, `Savings`, `Recommendation type`, `Affected resources`, `Yearly potential savings`, `Cost`, `Currency`, `Pricing basis` |
+| Selected-type list | `Scope` with subscription(s) or Service Group(s), exact `Recommendation type`, `Resource`, `Subscription`, `Resource group`, `Yearly potential savings`, `Cost`, `Currency`, `Pricing basis` |
 | Completed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, `Completed resources`, `Realized savings`, resource identity, `Currency`, `Pricing basis`, completion date when returned |
-| Postponed or dismissed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, resource count, `Yearly potential savings`, `Accumulated waste`, resource identity, `Currency`, `Pricing basis` |
+| Postponed or dismissed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, resource count, `Yearly potential savings`, `Cost`, resource identity, `Currency`, `Pricing basis` |
 | Artifact handoff | exact selected resources and identity; preserve annual/cumulative values when returned; never add a daily or monthly conversion |
 
 If a required field is not returned, write `Unavailable`; do not omit it, substitute zero, or
@@ -79,7 +79,8 @@ calculate a replacement other than the MCP-defined daily-to-yearly conversion ab
 - **One resource or one recommendation type:** use a short paragraph followed by labeled lines or
   a resource card.
 - **A few related resources:** use bullets or cards when each item needs explanation.
-- **Several comparable resources or types:** use a compact table only if comparison is clearer.
+- **Several comparable resources or types:** use a compact table by default; keep it narrow and
+  avoid full IDs or prose inside cells.
 - **Many resources:** show grouped counts and totals first, then the highest-value or selected
   items; state how many remain and offer expansion. Do not silently truncate.
 - **Multiple lifecycle states:** use separate state sections, then recommendation type sections.
@@ -117,14 +118,14 @@ Commerce service group · 4 subscriptions queried · Advisor coverage complete
 
 ## Savings
 - Potential savings: $7,247.55/year
-- Accumulated waste: $2,103.80
+- Cost: $2,103.80
 - Pricing basis: Retail · Currency: USD
 
 ## Next step
 Choose a plan to inspect, or expand another recommendation type.
 ```
 
-Do not repeat the same amount in several paragraphs. Explain `Cost` as "accumulated waste"
+Do not repeat the same amount in several paragraphs. Explain `Cost` as accumulated Advisor cost
 the first time it appears. Put long resource IDs in a dedicated line only when needed for
 selection or confirmation. Keep recommendation names and resource names human-readable; keep
 stable Advisor IDs internal unless the user is confirming or requesting an artifact. End with one
@@ -138,8 +139,15 @@ Make it visually scannable:
 - Use a short title above each table, such as `Top opportunities` or `Selected resources`.
 - Keep one table focused on one purpose. Do not combine scope, lifecycle, identity, and every
   savings measure in one wide table.
-- Use friendly column names: `Plan`, `Resource group`, `Yearly potential savings`, `Accumulated waste`,
-  `Status`, and `Pricing`.
+- Keep the selected-resource columns exactly as `Resource`, `Resource group`, `Yearly potential
+  savings`, and `Cost`; add `Subscription` only for multi-subscription or Service Group scope.
+  Use compact pipe markup with no padding spaces, blank spacer rows, or spacer columns. Wrap long
+  headers and long `Resource` values inside the same cell with `<br>` breaks, including within
+  unbroken suffixes when needed. Preserve every character in resource names and IDs in order:
+  removing the presentation-only `<br>` breaks must recover the exact original value; never
+  truncate or abbreviate it.
+- Do not place full ARM IDs, explanations, or check details inside list-table cells. Show those
+  only below the table when a selected resource must be disambiguated.
 - Format monetary values consistently with currency symbols and two decimal places where the
   returned value supports it. Keep the currency code in the table caption or pricing column.
 - Sort opportunity and resource comparisons using the ordering rules above, preserving Advisor
@@ -157,15 +165,15 @@ Make it visually scannable:
 
 Preferred comparison shape:
 
-| Opportunity | Resources | Yearly potential savings | Accumulated waste | Pricing |
+| Opportunity | Resources | Yearly potential savings | Cost | Pricing |
 |---|---:|---:|---:|---|
 | Unused App Service plans | 4 | $7,247.55 | $2,103.80 | USD · Retail |
 
 Preferred resource shape:
 
-| Plan | Resource group | Yearly potential savings | Accumulated waste | Status |
-|---|---|---:|---:|---|
-| `asp-cxoaiagent-test-wu3` | `rg-cxoaiagent-test` | $875.52 | $297.60 | New |
+| Resource | Resource<br>group | Yearly potential<br>savings | Cost |
+|---|---|---:|---:|
+| `asp-cxoaiagent-test-wu3` | `rg-cxoaiagent-test` | $875.52 | $297.60 |
 
 After the table, show details only for the selected row:
 
@@ -175,7 +183,7 @@ After the table, show details only for the selected row:
 
 For lifecycle reporting, keep the same visual pattern and repeat the resolved subscription(s) or
 Service Group(s) in the scope or table heading, but change the measure labels to match the
-state: `Realized savings` for Completed, or `Yearly potential savings` and `Accumulated waste` for
+state: `Realized savings` for Completed, or `Yearly potential savings` and `Cost` for
 Postponed and Dismissed. Do not force irrelevant columns into the table.
 
 ## Current summary
@@ -211,12 +219,12 @@ The opening response for a current opportunity request must follow this order:
 
 ## Savings
 - Yearly potential savings: <amount>
-- Accumulated waste: <amount>
+- Cost: <amount>
 - Currency: <currency>
 - Pricing basis: <basis>
 
 ## Recommendation types
-| Recommendation type | Affected resources | Yearly potential savings | Accumulated waste |
+| Recommendation type | Affected resources | Yearly potential savings | Cost |
 |---|---:|---:|---:|
 | <exact Advisor display name> | <count> | <amount>/year | <amount> |
 ```
@@ -233,6 +241,10 @@ For a selected-type expansion, render every resource returned by MCP. Never show
 few rows or shorten the table for readability. If `AreResultsTruncated=true`, state that the
 expansion is partial and do not claim that all resources were shown.
 
+Use the compact resource table defined in the comparison-table guidance above. Put full IDs and
+technical evidence below the comparison only when the user requests identifiers or needs
+selection/confirmation.
+
 If the Advisor summary returns no groups and no cost aggregate, report that no matching
 recommendation groups were returned and keep monetary fields `Unavailable`. Do not convert an
 empty result, a missing cost object, or a missing currency total into `$0`, and do not claim that
@@ -243,32 +255,34 @@ for that monetary field; otherwise report `Unavailable`.
 
 Use the exact MCP-returned resource name, resource group, resource ID, and Advisor resource type.
 Keep the resolved subscription(s) or Service Group(s) visible in the scope line. When a selected
-recommendation list is returned for a Service Group or spans multiple subscriptions, include the
-applicable friendly subscription name with every resource so rows cannot be misattributed. Use the
-subscription ID only when its friendly name is unavailable. Include the Service Group in the
-scope line, not as a substitute for the per-resource subscription column.
-For one or more resources, choose labeled resource cards, bullets, prose, or the compact resource
-table defined above. Show the full resource ID and Advisor resource type when needed for
-selection, confirmation, artifact generation, or when the user requests identifiers. Do not omit
-identity details from the overall response; move them below a comparison table when necessary to
-preserve readability. Use the friendly label `Accumulated waste` for the cumulative value and do
-not expose a `Days idle` column.
+recommendation list is returned for a Service Group or spans multiple subscriptions, add the
+applicable friendly subscription name as the `Subscription` column so rows cannot be
+misattributed. Use the subscription ID only when its friendly name is unavailable. Include the
+Service Group in the scope line, not as a substitute for the per-resource subscription column.
+Always use the compact resource table defined above for one or more resources. Show the full
+resource ID and Advisor resource type below the table only when needed for selection,
+confirmation, artifact generation, or when the user requests identifiers. Use the friendly label
+`Cost` for the cumulative value and do not expose a `Days idle` column.
 
-Use Advisor/ARG-returned potential-savings and cost fields directly. For active rows, use the MCP
-annualized `yearlyPotentialSavings` value, calculated only as
-`dailyPotentialSavings × 30.4 × 12` when that is the source field. Never derive monthly values,
-elapsed-day costs, post-dismissal costs, or other monetary values from timestamps or other rates.
+Use Advisor/ARG-returned potential-savings and MCP-normalized cost fields directly. For active
+recommendation list rows, use `yearlyPotentialSavings` and `cost` from
+`properties.savings.retail` and label them `Yearly potential savings` and `Cost`.
+The MCP `cost` field already applies the portal-compatible calculation; do not derive it again
+from `estimatedAccumulatedSavings`, timestamps, or another rate. Use the MCP annualized
+`yearlyPotentialSavings` value, calculated only as `dailyPotentialSavings × 30.4 × 12` when that
+is the source field. Never derive monthly values, post-dismissal costs, or other monetary values
+from timestamps or other rates.
 Never derive a monthly equivalent by dividing a yearly value by twelve. For current opportunities
-and active resources, render only `Yearly potential savings` and `Accumulated waste`; do not render a
+and active resources, render only `Yearly potential savings` and `Cost`; do not render a
 monthly amount even if another period field is returned. For lifecycle output, use only the
 state-specific labels defined above. Any unsupported period or inferred amount is `Unavailable`.
 Missing monetary inputs remain `Unavailable`, not zero. An explicit numeric zero remains `$0`.
 Sort summary and detail rows by returned yearly savings, preserving tool order for ties.
 
-For an active resource list, every row must include `Yearly potential savings` and `Accumulated waste`
-when those values are returned. If the source has a daily value, render the MCP annualized value;
-never replace it with the daily amount. When multiple subscriptions or Service Groups are in
-scope, every row must also identify its applicable subscription or Service Group.
+For an active resource list, every row must include `Yearly potential savings` and `Cost`
+when those MCP values are returned. If the source has a daily value, render the MCP annualized
+yearly value; never replace it with the daily amount. When multiple subscriptions or Service
+Groups are in scope, every row must also identify its applicable subscription or Service Group.
 
 ## Completed lifecycle reporting
 
@@ -278,8 +292,8 @@ exact Advisor display name and do not combine resources from different recommend
 one unlabeled result. The summary fields change with the lifecycle state:
 
 - Completed: `Recommendation type`, `Completed resources`, `Realized savings`.
-- Postponed: `Recommendation type`, `Postponed resources`, `Yearly potential savings`, `Accumulated waste`.
-- Dismissed: `Recommendation type`, `Dismissed resources`, `Yearly potential savings`, `Accumulated waste`.
+- Postponed: `Recommendation type`, `Postponed resources`, `Yearly potential savings`, `Cost`.
+- Dismissed: `Recommendation type`, `Dismissed resources`, `Yearly potential savings`, `Cost`.
 
 Use only the listed Advisor/ARG-returned measures. Do not use labels such as `ongoing cost`,
 `monthly cost`, or `estimated cost` for values that are not returned with those meanings.
@@ -288,7 +302,7 @@ Every per-type resource section must preserve the common identity fields `Resour
 group`, `Resource ID`, `Advisor resource type`, `Currency`, and `Pricing basis`, whether rendered
 as prose, bullets, cards, or a table. If a table is used, place long IDs and technical fields
 below it when they would make it too wide. Postponed and Dismissed use `Yearly potential savings` and
-`Accumulated waste`, using only returned Advisor/ARG values. Completed uses `Completed on` and
+`Cost`, using only returned Advisor/ARG values. Completed uses `Completed on` and
 `Realized savings`. Do not force irrelevant columns into a lifecycle table.
 
 Show the reporting period and the lifecycle status (`Completed`) in the scope or table heading.
@@ -297,8 +311,19 @@ reporting them separately only when the user asks for out-of-period completed re
 Do not replace a missing Advisor/ARG realized-savings field with a calculation from daily potential
 savings, deletion dates, or elapsed days.
 
-For dismissed records, do not convert `lastUpdated` or `lastRefreshed` into a dismissal date and do
-not add an inferred post-dismissal cost to Advisor's returned accumulated `Cost`. Report any
+For `Completed on`, use `properties.platformStateUpdatedAt` when
+`properties.completionType` is `SystemVerified`; otherwise use
+`properties.customerStateUpdatedAt`, including when `completionType` is missing or unrecognized.
+The mark-completed PATCH does not carry a timestamp, so use the timestamp returned by Advisor/ARG.
+Do not substitute `lastUpdated`, `lastRefreshed`, or resource deletion time.
+
+For dismissed records, use returned `properties.customerStateUpdatedAt` as the UI-compatible
+`Dismissed on` value. The dismiss PATCH does not carry a timestamp; Advisor stamps this field
+when the customer state changes, and ARG returns it after propagation. The UI may temporarily
+show the browser's current UTC time immediately after the PATCH, but that provisional value is not
+authoritative for MCP output. Keep `lastUpdated`, `lastRefreshed`, `platformStateUpdatedAt`, and
+resource deletion time distinct; do not substitute any of them for `customerStateUpdatedAt`.
+Do not add an inferred post-dismissal cost to Advisor's returned accumulated `Cost`. Report any
 unsupported post-dismissal amount as `Unavailable`.
 
 Do not claim a resource has a specific charge, zero connections, dependencies, ownership,

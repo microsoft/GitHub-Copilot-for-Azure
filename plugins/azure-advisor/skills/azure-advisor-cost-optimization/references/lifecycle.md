@@ -23,14 +23,26 @@ an Advisor/ARG-returned realized-savings value when present; otherwise report `U
 `resourceDeletedOn` may be used to select records within the requested period, but must not be
 used with a daily rate to calculate a replacement savings amount.
 
+For the `Completed on` field, select the returned timestamp by `properties.completionType`:
+use `properties.platformStateUpdatedAt` for `SystemVerified`, and
+`properties.customerStateUpdatedAt` for `MarkedByUser` or when `completionType` is missing or
+unrecognized. The client does not send a completion timestamp in the mark-completed PATCH;
+Advisor stamps the applicable field. Do not use `lastUpdated`, `lastRefreshed`, or resource
+deletion time as a substitute.
+
 Use the exact monetary labels by lifecycle state: `Realized savings` for `Completed`, and
-`Yearly potential savings` plus `Accumulated waste` for `Postponed` and `Dismissed`. Never render daily,
+`Yearly potential savings` plus `Cost` for `Postponed` and `Dismissed`. Never render daily,
 per-day, monthly, ongoing, or inferred cost in a lifecycle response.
 
 For dismissed records, report Advisor's returned accumulated waste and its calculation timestamp
-when available. Do not treat `lastUpdated`, `lastRefreshed`, or another metadata timestamp as the
-dismissal time, and do not extrapolate additional post-dismissal cost without an authoritative
-dismissal timestamp and an explicitly supported calculation.
+when available. Use `properties.customerStateUpdatedAt` for the UI-compatible `Dismissed on`
+field when it is returned. The client does not send this timestamp in the dismiss PATCH; Advisor
+stamps it when the customer state changes, and ARG returns it after propagation. The UI may show a
+provisional local current-time value immediately after the PATCH, but that is not authoritative
+for MCP output. Keep `lastUpdated`, `lastRefreshed`, `platformStateUpdatedAt`, and resource
+deletion time distinct; do not substitute any of them for `customerStateUpdatedAt`. Do not
+extrapolate additional post-dismissal cost without an authoritative dismissal timestamp and an
+explicitly supported calculation.
 Aggregate the per-resource values for the requested period and pricing basis. Include completed
 resource counts, state counts, and unavailable records when returned. Do not mix historical state
 totals into a current recommendation-type summary.
@@ -40,12 +52,12 @@ recommendation types are returned, begin each lifecycle-state section with a con
 recommendation-type summary, then render one resource section per type. Choose prose, bullets,
 cards, or a table based on readability. The summary fields are lifecycle-specific:
 Completed uses `Recommendation type`, `Completed resources`, and `Realized savings`; Postponed
-uses `Recommendation type`, `Postponed resources`, `Yearly potential savings`, and `Accumulated waste`;
+uses `Recommendation type`, `Postponed resources`, `Yearly potential savings`, and `Cost`;
 Dismissed uses `Recommendation type`, `Dismissed resources`, `Yearly potential savings`, and
-`Accumulated waste`.
+`Cost`.
 For completed reporting, preserve `Resource`, `Resource group`, `Resource ID`, `Advisor resource
 type`, `Currency`, `Pricing basis`, `Completed on`, and `Realized savings` in the chosen format.
-Postponed and Dismissed use `Yearly potential savings` and `Accumulated waste` instead. Do not
+Postponed and Dismissed use `Yearly potential savings` and `Cost` instead. Do not
 flatten resources from different recommendation types into one unlabeled result.
 
 When the prompt explicitly asks what was completed, postponed, or dismissed, report the requested
