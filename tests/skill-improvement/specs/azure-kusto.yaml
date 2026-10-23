@@ -27,9 +27,9 @@ evaluations:
 
 models:
   answers:
-    - gpt-5.6-sol
-  judges:
     - gpt-6-luna
+  judges:
+    - claude-haiku-4.5
 
 experiment:
   repetitions: 1
