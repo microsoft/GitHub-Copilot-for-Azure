@@ -48,7 +48,7 @@ The `SessionStart` hook reports both startup and resume events. Plugin metadata 
 
 ## Cursor
 
-Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. It invokes the Node.js dispatcher, which selects PowerShell on Windows and Bash on macOS and Linux.
+Cursor uses the `cursor-hooks.json` hooks manifest. At runtime, Cursor replaces the `CURSOR_PLUGIN_ROOT` variable to construct the path that can resolve to the scripts. Like Claude Code, it executes the telemetry script with Bash on every platform.
 
 The `sessionStart` hook reports each new Composer conversation. Plugin metadata is read from `.cursor-plugin/plugin.json`.
 
