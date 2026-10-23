@@ -30,6 +30,7 @@ type Stimuli = {
     systemPrompt?: string;
     takeScreenshot?: string;
     requiredSkills?: string[];
+    azurePermission?: string;
   };
 };
 
@@ -44,6 +45,13 @@ type EvalSuite = {
 const REQUIRED_TAG_KEYS = ["type", "tier", "cost", "area"] as const;
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
 const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
+
+export function validateAzurePermission(value: unknown): string | undefined {
+  if (value !== undefined && value !== "read") {
+    return "tags.azurePermission must be 'read' when specified";
+  }
+  return undefined;
+}
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -484,6 +492,12 @@ export function validateStimulus(rootDir: string, _args: string[]): void {
           );
           fileHasErrors = true;
         }
+      }
+
+      const azurePermissionError = validateAzurePermission(typedStimulus.tags?.azurePermission);
+      if (azurePermissionError) {
+        reportValidationError(displayPath, stimulusIndex, typedStimulus.name, azurePermissionError);
+        fileHasErrors = true;
       }
 
       if (!validateJsonObjectTag(
