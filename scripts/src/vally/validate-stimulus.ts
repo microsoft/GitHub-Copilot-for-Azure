@@ -48,8 +48,8 @@ const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
 const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
 
 export function validateAzurePermission(value: unknown): string | undefined {
-  if (value !== undefined && value !== "read") {
-    return "tags.azurePermission must be 'read' when specified";
+  if (value !== undefined && value !== "read" && value !== "none") {
+    return "tags.azurePermission must be 'read' or 'none' when specified";
   }
   return undefined;
 }

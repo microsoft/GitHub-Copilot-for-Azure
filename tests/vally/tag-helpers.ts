@@ -2,6 +2,8 @@
  * Helper functions for extracting test related metadata from stimuli tags.
  */
 import type { SystemMessageConfig } from "@github/copilot-sdk";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
 import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
@@ -20,8 +22,11 @@ export function getAzureEnvironment(
   if (permission === undefined) {
     return {};
   }
+  if (permission === "none") {
+    return { AZURE_CONFIG_DIR: path.join(tmpdir(), `azure-no-access-${randomUUID()}`) };
+  }
   if (permission !== "read") {
-    throw new Error("tags.azurePermission must be 'read' when specified");
+    throw new Error("tags.azurePermission must be 'read' or 'none' when specified");
   }
 
   const configDir = env.AZURE_READ_CONFIG_DIR?.trim();

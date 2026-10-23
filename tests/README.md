@@ -73,9 +73,11 @@ tags:
   azurePermission: read
 ```
 
-Local runs ignore this tag and use the available local Azure credentials.
-In CI, omitting the tag preserves the default Azure permissions, and a tagged
-run fails if read-only access is not configured. Only `read` is currently
+Use `azurePermission: none` for tests whose agent should not use the test subscription's Azure login. In CI, this overrides `AZURE_CONFIG_DIR` with a unique, nonexistent temporary path for each run, so Azure CLI and Azure MCP do not use the authenticated Azure config. No read-only profile is required.
+
+Local runs ignore both values and use the available local Azure credentials.
+In CI, omitting the tag preserves the default Azure permissions, and a `read`
+run fails if read-only access is not configured. Only `read` and `none` are
 supported; other values are rejected by eval validation.
 
 ## Testing This Project
