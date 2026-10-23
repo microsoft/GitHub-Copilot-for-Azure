@@ -625,3 +625,26 @@ stimuli:
       - type: output-not-matches
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "Add-on: Day-0 planning gets no aks-skills offer"
+    prompt: "Without running commands or creating resources, plan a new production AKS cluster for a multi-tenant SaaS API, including SKU, networking, node provisioning, and upgrade strategy."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: behavior
+    rubric:
+      - "The response gives Day-0 AKS planning guidance and does not offer, recommend, or ask to install the optional aks-skills plugin or any of its skills (aks-troubleshooting, aks-known-issues, aks-network-capture, aks-gpu-inference)."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-kubernetes
+      - type: completed
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
