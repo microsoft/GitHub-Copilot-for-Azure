@@ -230,6 +230,83 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace|kubectl\\s+top|az\\s+monitor|az\\s+consumption"
 
+  - name: "AKS proactive anomaly uses historical baseline"
+    prompt: |
+      Was this Monday's cost unusual for my AKS cluster, what explains the
+      increase, and what remains uncertain? Use only this exported summary;
+      do not change anything.
+
+      Target: cluster prod-aks, resource group rg-prod, subscription
+      00000000-0000-0000-0000-000000000000. All reporting days are complete
+      UTC days from the same AKS allocation export, scope, filters, and
+      CostUSD column, in USD. For this comparison, use the mean of the four
+      preceding Mondays as the baseline:
+      - August 31, 2026: $98
+      - September 7, 2026: $102
+      - September 14, 2026: $100
+      - September 21, 2026: $100
+      - Candidate day, September 28, 2026: $160
+
+      The baseline Monday averages break down as batch namespace $20,
+      idle charges $10, and all other categories combined $70.
+      On September 28, batch was $70, idle charges were $20, and all other
+      categories combined were $70. These categories reconcile to the totals.
+      Workload history shows a batch job and associated capacity ran that day.
+      There is no autoscaler or scale-down history explaining the idle increase.
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: aks-proactive-anomaly
+    rubric:
+      - "The response calculates a $100 baseline from the four preceding Mondays and compares the $160 candidate day with that baseline, reporting a $60 or 60 percent increase. It identifies this as a candidate anomaly relative to the supplied comparable-weekday baseline, not a native anomaly score or proof of statistical significance."
+      - "The response reconciles the increase as $50 from the batch namespace and $10 from idle charges, with other categories unchanged. It distinguishes measured cost contributions from operational causation: the observed job and capacity are consistent with the batch increase, but the idle increase's cause remains unverified without autoscaler or scale-down history. It does not invent a cause for idle retention or leave any of the $60 financially unattributed. It analyzes the supplied data without changing resources."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: completed
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
+  - name: "AKS anomaly keeps one cost basis"
+    prompt: "I am checking an AKS namespace cost spike. For the same namespace and equal-length reporting periods, the older allocation export shows a total of 100 in the Cost column, labeled EUR, and the newer export shows 120 in CostUSD, labeled USD. Does that mean costs rose 20 percent? Tell me how to make a valid comparison, but do not run anything yet."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: aks-cost-basis-consistency
+    rubric:
+      - "The response rejects the claimed 20 percent increase because the allocation totals use different currencies and cost columns. It recommends obtaining both periods from the same AKS allocation cost column and currency before calculating an absolute or percentage change, without inventing an exchange rate or treating the supplied totals as comparable."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   - name: "Cost investigation uses comparable evidence"
     prompt: "Explain how you would investigate a one-day Azure cost spike without running tools. Include the baseline, drill-down order, financial dimensions, change correlation, and confidence criteria."
     config:
