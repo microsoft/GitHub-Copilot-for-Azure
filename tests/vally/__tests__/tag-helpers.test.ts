@@ -1,4 +1,7 @@
 import { describe, expect, test } from "vitest";
+import { existsSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { compileEarlyTerminatePattern, getAzureEnvironment } from "../tag-helpers.ts";
 
 describe("getAzureEnvironment", () => {
@@ -13,6 +16,8 @@ describe("getAzureEnvironment", () => {
   test.each([undefined, "", "false"])("preserves local credentials when CI is %j", (ci) => {
     expect(getAzureEnvironment({ azurePermission: "read" }, { ...env, CI: ci })).toEqual({});
     expect(getAzureEnvironment({ azurePermission: "read" }, { CI: ci })).toEqual({});
+    expect(getAzureEnvironment({ azurePermission: "none" }, { ...env, CI: ci })).toEqual({});
+    expect(getAzureEnvironment({ azurePermission: "none" }, { CI: ci })).toEqual({});
     expect(getAzureEnvironment({ azurePermission: "unsupported" }, { CI: ci })).toEqual({});
   });
 
@@ -30,6 +35,20 @@ describe("getAzureEnvironment", () => {
     expect(env.AZURE_CLIENT_ID).toBe("admin-client");
   });
 
+  test.each([env, { CI: "true" }])("selects a unique nonexistent Azure config directory for no access: %j", (parentEnv) => {
+    const first = getAzureEnvironment({ azurePermission: "none" }, parentEnv);
+    const second = getAzureEnvironment({ azurePermission: "none" }, parentEnv);
+
+    expect(Object.keys(first)).toEqual(["AZURE_CONFIG_DIR"]);
+    expect(path.isAbsolute(first.AZURE_CONFIG_DIR)).toBe(true);
+    expect(path.dirname(first.AZURE_CONFIG_DIR)).toBe(tmpdir());
+    expect(existsSync(first.AZURE_CONFIG_DIR)).toBe(false);
+    expect(existsSync(second.AZURE_CONFIG_DIR)).toBe(false);
+    expect(first.AZURE_CONFIG_DIR).not.toBe(second.AZURE_CONFIG_DIR);
+    expect(env.AZURE_CONFIG_DIR).toBe("/tmp/azure-admin");
+    expect(env.AZURE_CLIENT_ID).toBe("admin-client");
+  });
+
   test.each([
     {},
     { AZURE_READ_CLIENT_ID: "read-client" },
@@ -41,7 +60,7 @@ describe("getAzureEnvironment", () => {
       .toThrow("refusing to use the default Azure identity");
   });
 
-  test.each(["admin", "write", "none", "reed", "", ["read"]])("rejects unsupported permission tags: %j", (permission) => {
+  test.each(["admin", "write", "reed", "", ["read"], ["none"]])("rejects unsupported permission tags: %j", (permission) => {
     expect(() => getAzureEnvironment({ azurePermission: permission }, env))
       .toThrow("tags.azurePermission");
   });
