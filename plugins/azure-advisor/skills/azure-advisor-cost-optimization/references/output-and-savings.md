@@ -1,10 +1,34 @@
 # Output and savings
 
-Start every response with a clear scope statement, normally a `## Scope` heading or a concise
-`Scope:` line. Identify the exact resolved subscription(s) or Service Group(s) in that statement;
-do not rely on a resource group or resource ID alone. For broad scope, state queried, successful,
-failed, complete, partial, or truncated coverage. State the returned pricing basis and that figures
-are Advisor estimates, not invoices or actual spend.
+Use this opening summary format for every Cost + IdleResources discovery response. Keep the
+headings and table columns in this order; do not replace it with an abbreviated free-form variant:
+
+```text
+## Scope
+<resolved subscription(s) or Service Group(s)> · <coverage> · <pricing basis> · Advisor estimates, not invoices
+
+## Advisor found
+<affected-resource count> affected resources across <recommendation type count> recommendation types.
+
+## Savings
+- Yearly potential savings: <amount>
+- Accumulated waste: <amount>
+- Currency: <currency>
+- Pricing basis: <basis>
+
+## Recommendation types
+| Recommendation type | Affected resources | Yearly potential savings | Accumulated waste |
+|---|---:|---:|---:|
+| <exact Advisor display name> | <count> | <amount>/year | <amount> |
+```
+
+Identify the exact resolved subscription(s) or Service Group(s) in the scope statement; do not
+rely on a resource group or resource ID alone. For broad scope, state queried, successful, failed,
+complete, partial, or truncated coverage. State the returned pricing basis and that figures are
+Advisor estimates, not invoices or actual spend.
+Display friendly subscription names in scope text and resource tables. Retain subscription IDs
+internally for filtering and follow-up calls, and use an ID as the visible fallback only when the
+subscription name is unavailable.
 
 For current opportunities and active resource lists, use only these monetary labels:
 `Yearly potential savings` and `Accumulated waste` for Advisor's cumulative
@@ -21,9 +45,8 @@ the remediation result or its documented Microsoft Learn fallback.
 
 ## Response contract
 
-Choose the clearest format for the returned data. Headings, short prose, bullets, resource
-cards, and tables are all valid; no table is mandatory. Do not expose raw tool output or make the
-user reconstruct the conclusion from fields.
+Use the fixed discovery format above. Do not expose raw tool output or make the user reconstruct
+the conclusion from fields.
 
 Use this order when relevant:
 
@@ -43,7 +66,7 @@ action and retain Advisor IDs internally.
 | Flow | Required visible fields |
 |---|---|
 | Current discovery | `Scope` with subscription(s) or Service Group(s), `Advisor found`, `Savings`, `Recommendation type`, `Affected resources`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
-| Selected-type list | `Scope` with subscription(s) or Service Group(s), exact `Recommendation type`, `Resource`, applicable `Subscription` or `Service Group` when multiple scopes are present, `Resource group`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
+| Selected-type list | `Scope` with subscription(s) or Service Group(s), exact `Recommendation type`, `Resource`, `Subscription`, `Resource group`, `Yearly potential savings`, `Accumulated waste`, `Currency`, `Pricing basis` |
 | Completed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, `Completed resources`, `Realized savings`, resource identity, `Currency`, `Pricing basis`, completion date when returned |
 | Postponed or dismissed lifecycle | lifecycle state, `Scope` with subscription(s) or Service Group(s), `Recommendation type`, resource count, `Yearly potential savings`, `Accumulated waste`, resource identity, `Currency`, `Pricing basis` |
 | Artifact handoff | exact selected resources and identity; preserve annual/cumulative values when returned; never add a daily or monthly conversion |
@@ -160,8 +183,10 @@ Postponed and Dismissed. Do not force irrelevant columns into the table.
 Use a currency totals section and a ranked recommendation-type section. Render them as prose,
 bullets, or compact tables according to readability. Keep currencies separate and do not add a
 synthetic total row. Show yearly potential savings only. In any `Recommendation type` label, show
-only the exact MCP-returned display name; do not paraphrase, shorten, or derive it. Retain the
-exact recommendation type ID internally for the expansion request and use the display name as
+the exact MCP-returned display name as the label prefix; do not paraphrase, shorten, or derive it.
+Append the returned affected-resource count and yearly potential savings to ranked or prioritized
+labels, using `Unavailable` when Advisor returned no savings value. Retain the exact
+recommendation type ID internally for the expansion request and use the display name prefix as
 the interactive choice label. Include active affected-resource count, currency, pricing basis,
 yearly potential savings, and accumulated waste when returned.
 Describe aggregate counts as `<affected-resource count> affected resources across <recommendation
@@ -204,6 +229,10 @@ recommendation type; do not add a resource-selection prompt. Resource selection 
 actionability or remediation artifacts, postpone, dismiss, or other state-changing or handoff
 flows.
 
+For a selected-type expansion, render every resource returned by MCP. Never show only the first
+few rows or shorten the table for readability. If `AreResultsTruncated=true`, state that the
+expansion is partial and do not claim that all resources were shown.
+
 If the Advisor summary returns no groups and no cost aggregate, report that no matching
 recommendation groups were returned and keep monetary fields `Unavailable`. Do not convert an
 empty result, a missing cost object, or a missing currency total into `$0`, and do not claim that
@@ -214,8 +243,10 @@ for that monetary field; otherwise report `Unavailable`.
 
 Use the exact MCP-returned resource name, resource group, resource ID, and Advisor resource type.
 Keep the resolved subscription(s) or Service Group(s) visible in the scope line. When a selected
-recommendation list spans multiple subscriptions or scopes, include the applicable subscription
-or Service Group with each resource so rows cannot be misattributed.
+recommendation list is returned for a Service Group or spans multiple subscriptions, include the
+applicable friendly subscription name with every resource so rows cannot be misattributed. Use the
+subscription ID only when its friendly name is unavailable. Include the Service Group in the
+scope line, not as a substitute for the per-resource subscription column.
 For one or more resources, choose labeled resource cards, bullets, prose, or the compact resource
 table defined above. Show the full resource ID and Advisor resource type when needed for
 selection, confirmation, artifact generation, or when the user requests identifiers. Do not omit

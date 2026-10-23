@@ -1,7 +1,10 @@
 # Lifecycle and remediation
 
-Use `advisor_recommendation_list` directly for lifecycle reporting. In this idle-resource
-workflow, preserve `category=Cost` and `sub-category=IdleResources`. For completed realized-savings
+Use `advisor_recommendation_list` directly for lifecycle reporting. This lifecycle guidance is
+specific to the combined `category=Cost` and `sub-category=IdleResources` workflow; generic Cost,
+prioritized Cost outside `IdleResources`, cross-category, and non-Cost lifecycle requests remain
+on the generic Advisor workflow. Preserve both filters for every operation here. For completed
+realized-savings
 reporting, request `status=Completed`; for postponed or dismissed reporting, request the explicitly
 requested status. Do not call `advisor_recommendation_summary` for this lifecycle request or include unrelated
 Cost recommendation types. Keep lifecycle measures separate by currency:
@@ -51,16 +54,19 @@ states as separate sections or with an explicit lifecycle-state column. Otherwis
 pricing basis, and applicable measure; never combine realized savings with accumulated waste into
 one unlabeled total.
 
-For postpone or dismiss operations, obtain the stable recommendation identifier and exact scope.
+For postpone or dismiss operations on active idle-resource findings, obtain the stable
+recommendation identifier and exact scope.
 First resolve whether the request applies to the explicitly identified resources only or to every
 resource of the same recommendation type in the same scope. Render the known scope and target
 information before asking. If the target set is ambiguous, use `ask_user` for that focused choice
 rather than applying the update broadly.
 
-Before any state change, call `advisor_recommendation_list` directly with only active
-recommendations: `status=New`, `category=Cost`, and `sub-category=IdleResources` in the
-resolved subscription or Service Group scope. Group the returned records by recommendation type
-in the visible response, then ask which recommendation type to review. Do not call
+Before any postpone or dismiss state change, call `advisor_recommendation_list` directly with
+only active recommendations: `status=New`, `category=Cost`, and `sub-category=IdleResources` in
+the resolved subscription or Service Group scope. `Completed`, `Postponed`, and `Dismissed`
+records are lifecycle-reporting targets, not active candidates for these updates. Group the
+returned records by recommendation type in the visible response, then ask which recommendation
+type to review. Do not call
 `advisor_recommendation_summary` for this action flow.
 
 After a type is selected, show every affected resource in that type with its resource ID and
@@ -69,7 +75,8 @@ stable recommendation ID in a visible response before asking. Use `ask_user` to 
 require explicit resource selection. Never
 offer a single option that dismisses or postpones all resources across multiple recommendation
 types. Do not show or update Security or unrelated recommendation categories. The update
-operation is single-record: call it once per selected stable recommendation ID. Use the list
+operation is single-record: call it once per selected stable recommendation ID. This is required
+by the MCP update contract, not a generic batch-update assumption. Use the list
 record's stable `name` as `recommendationId`; never pass the ARM resource ID or the
 `recommendationTypeId` to the update command. A single returned resource still requires explicit
 selection.

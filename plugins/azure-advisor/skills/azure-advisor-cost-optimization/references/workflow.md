@@ -144,8 +144,8 @@ one recommendation type is returned. Sort comparable recommendation types by yea
 savings descending, with unavailable values last. The summary must be rendered as a visible
 assistant response before any follow-up tool call. When at least one recommendation type is
 returned, after that visible response MUST invoke `ask_user` exactly once to offer expansion.
-Use the
-recommendation-type display names returned by that summary as the choices, and include an
+Use the returned recommendation-type display names as choice-label prefixes, append each returned
+affected-resource count and yearly potential savings (or `Unavailable` when absent), and include an
 `Expand all recommendation types` choice in every expansion prompt, including when only one
 type is returned. Do not invoke `ask_user` before the summary is rendered, call it a second
 time for the same discovery response, call an Advisor tool and `ask_user` back-to-back, or
@@ -153,21 +153,27 @@ replace the visible summary and question with prose such as "select a type" or "
 details".
    Do not call list, render resource rows, or include affected-resource details before the user
    responds. Keep the
-   question limited to its text and choices; do not embed the summary in the question. Show
-   returned display names as choices, add the expand-all choice, and retain the corresponding exact
-   IDs internally.
+   question limited to its text and choices; do not embed the summary in the question. Preserve the
+   display name verbatim as each choice-label prefix, add the expand-all choice, and retain the
+   corresponding exact IDs internally.
 4. Only after the user selects types, call list once with the selected type ID or IDs and original
    scope and filters. Multiple resource types or recommendation IDs are preserved as supplied and
    match any value within that filter. For expand-all, pass all exact recommendation-type IDs
    returned by the summary so expansion remains limited to that response.
 
-For the selected-type list, do not replay the opening discovery summary. Start with a focused
+For the selected-type list, do not replay the opening discovery summary. Render every resource
+returned by MCP; never show only the first few rows or shorten the table for readability. If
+`AreResultsTruncated=true`, state that the expansion is partial and do not claim that all
+resources were shown. Start with a focused
 `## Selected recommendation` heading containing the exact recommendation type and a one-sentence
-count. Add one compact scope/pricing line identifying the resolved subscription(s) or Service
-Group(s), then a resource table containing `Resource`, `Resource group`, `Yearly potential
-savings`, and `Accumulated waste`; include `Currency` and `Pricing basis` in that line or table
-caption. If the list spans multiple subscriptions or scopes, include the applicable
-`Subscription` or `Service Group` on each resource row as well. Use the MCP annualized value
+count. Add one compact scope/pricing line identifying the resolved subscription name(s) or Service
+Group(s), then a resource table containing `Resource`, `Subscription`, `Resource group`,
+`Yearly potential savings`, and `Accumulated waste`; include `Currency` and `Pricing basis` in
+that line or table caption. Always display the friendly subscription name on every resource row
+when the scope is a Service Group or spans multiple subscriptions. Retain subscription IDs
+internally and use them visibly only when a subscription name is unavailable. Do not omit the
+`Subscription` column just because the scope line already names the Service Group.
+Use the MCP annualized value
 described above and never add a daily or monthly cost column. For ordinary analysis, render the
 returned resources and stop with a focused next step such as inspecting another recommendation
 type; do not invoke an additional resource-selection prompt. Resource selection is required only

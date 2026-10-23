@@ -1,6 +1,6 @@
 ---
 name: azure-advisor-cost-optimization
-description: "Analyze Azure Advisor idle-resource recommendations, savings, lifecycle actions, and remediation candidates. WHEN: unused Azure resources, idle resources, unattached disks, empty App Service plans, Advisor cost findings, wasted Azure cost, completed savings, scripts, IaC, pipelines, postpone, or dismiss."
+description: "Analyze Azure Advisor recommendations only when category=Cost and sub-category=IdleResources. Covers idle-resource savings, lifecycle reporting, and selected remediation handoffs for unused resources such as unattached disks and empty App Service plans. Generic Cost, prioritized Cost outside IdleResources, cross-category, and non-Cost requests remain on the generic Advisor workflow."
 license: MIT
 metadata:
   author: Microsoft
@@ -9,7 +9,8 @@ metadata:
 
 # Azure Advisor Cost Optimization
 
-Use only after `azure-advisor-cost-user-context` resolves scope. Use Advisor-owned operations and
+Use only after `azure-advisor-cost-user-context` resolves scope for the combined
+`category=Cost` and `sub-category=IdleResources` filter. Use Advisor-owned operations and
 preserve scope, status, currency, pricing basis, truncation, and unavailable values. Do not
 substitute billing, Cost Management, generic inventory, or runtime KQL.
 

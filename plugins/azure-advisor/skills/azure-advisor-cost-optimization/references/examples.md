@@ -2,6 +2,10 @@
 
 Use these examples as routing patterns, not fixed response templates.
 
+All examples below are limited to `category=Cost` and `sub-category=IdleResources`. Generic Cost,
+prioritized Cost outside `IdleResources`, cross-category, and non-Cost requests stay on the
+generic Advisor workflow.
+
 | User request | Route and expected next step |
 |---|---|
 | “Show unused resources and potential savings.” | Resolve scope, call the grouped `Cost` + `IdleResources` summary, show type-level results, then ask which type to expand. |
