@@ -23,7 +23,11 @@ export function getAzureEnvironment(
     return {};
   }
   if (permission === "none") {
-    return { AZURE_CONFIG_DIR: path.join(tmpdir(), `azure-no-access-${randomUUID()}`) };
+    return {
+      AZURE_CONFIG_DIR: path.join(tmpdir(), `azure-no-access-${randomUUID()}`),
+      // Overwrite AZURE_CLIENT_ID to ensure no tools can use the managed identity configured in the CI pipeline.
+      AZURE_CLIENT_ID: "",
+    };
   }
   if (permission !== "read") {
     throw new Error("tags.azurePermission must be 'read' or 'none' when specified");

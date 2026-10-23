@@ -38,8 +38,12 @@ describe("getAzureEnvironment", () => {
   test.each([env, { CI: "true" }])("selects a unique nonexistent Azure config directory for no access: %j", (parentEnv) => {
     const first = getAzureEnvironment({ azurePermission: "none" }, parentEnv);
     const second = getAzureEnvironment({ azurePermission: "none" }, parentEnv);
+    const agentEnv: NodeJS.ProcessEnv = { ...parentEnv, ...first };
 
-    expect(Object.keys(first)).toEqual(["AZURE_CONFIG_DIR"]);
+    expect(Object.keys(first)).toEqual(["AZURE_CONFIG_DIR", "AZURE_CLIENT_ID"]);
+    expect(first.AZURE_CLIENT_ID).toBe("");
+    expect(second.AZURE_CLIENT_ID).toBe("");
+    expect(agentEnv.AZURE_CLIENT_ID).toBe("");
     expect(path.isAbsolute(first.AZURE_CONFIG_DIR)).toBe(true);
     expect(path.dirname(first.AZURE_CONFIG_DIR)).toBe(tmpdir());
     expect(existsSync(first.AZURE_CONFIG_DIR)).toBe(false);
