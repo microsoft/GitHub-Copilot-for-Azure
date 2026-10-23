@@ -1,0 +1,94 @@
+name: azure-advisor-cost-user-context-eval
+description: "Validates Azure cost scope clarification and subscription/service-group context resolution."
+
+tags:
+  type: integration
+  skill: azure-advisor-cost-user-context
+
+defaults:
+  runs: 1
+  timeout: "10m"
+  executor: integration-test-agent-runner
+  model: claude-sonnet-5
+
+scoring:
+  threshold: 0.8
+
+stimuli:
+  - name: "Ask for scope before an unscoped query"
+    prompt: "Find my unused Azure resources."
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: scope-clarification
+      requiredSkills:
+        - azure-advisor-cost-user-context
+    constraints:
+      max_turns: 2
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+      - type: output-matches
+        config:
+          pattern: "(?i)all accessible subscriptions|one subscription|all.*service groups"
+
+  - name: "Resolve explicit subscription"
+    prompt: "Use subscription 00000000-0000-0000-0000-000000000000 when resolving my Azure cost-analysis scope."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scope
+      requiredSkills:
+        - azure-advisor-cost-user-context
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+      - type: output-matches
+        config:
+          pattern: "00000000-0000-0000-0000-000000000000"
+
+  - name: "Resolve all accessible subscriptions"
+    prompt: "Use all my accessible subscriptions for the Azure Advisor cost-analysis scope."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scope
+      requiredSkills:
+        - azure-advisor-cost-user-context
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+      - type: output-not-matches
+        config:
+          pattern: "(?i)default subscription only|assum(ed|ing).*default"
+
+  - name: "Resolve all Advisor Service Groups"
+    prompt: "Use all my accessible Azure Advisor Service Groups for the cost-analysis scope."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: scope
+      requiredSkills:
+        - azure-advisor-cost-user-context
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-user-context
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_service_group_scope"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)default subscription only|assum(ed|ing).*default"
