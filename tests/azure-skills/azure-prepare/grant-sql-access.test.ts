@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const scriptDirectory = fileURLToPath(new URL(
-  "../../plugins/azure-skills/skills/azure-prepare/references/services/sql-database/scripts/",
+  "../../../plugins/azure-skills/skills/azure-prepare/references/services/sql-database/scripts/",
   import.meta.url,
 ));
 
