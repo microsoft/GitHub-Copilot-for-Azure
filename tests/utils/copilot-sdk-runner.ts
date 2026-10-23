@@ -696,6 +696,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
               type: "stdio",
               command: "npx",
               args: ["-y", "@azure/mcp", "server", "start"],
+              env: runConfig.env,
               tools: ["*"]
             }
           }

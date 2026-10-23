@@ -58,6 +58,28 @@ The runner accepts additional Vally arguments. It manages output directories and
 
 Local artifacts are written to `results/<test-run-name>/` and `reports/<test-run-name>/`.
 
+### Azure permissions
+
+Add `azurePermission: read` to a stimulus's tags to use read-only Azure
+permissions for its agent run in CI. Use this for tests that inspect resources without
+creating, modifying or deleting them.
+
+```yaml
+tags:
+  type: integration
+  tier: full
+  cost: llm
+  area: response-quality
+  azurePermission: read
+```
+
+Use `azurePermission: none` for tests whose agent should not use the test subscription's Azure login. In CI, this overrides `AZURE_CONFIG_DIR` with a unique, nonexistent temporary path for each run and sets `AZURE_CLIENT_ID` to an empty string, so Azure CLI and Azure MCP do not use the authenticated Azure config or inherit the test identity's client ID. No read-only profile is required.
+
+Local runs ignore both values and use the available local Azure credentials.
+In CI, omitting the tag preserves the default Azure permissions, and a `read`
+run fails if read-only access is not configured. Only `read` and `none` are
+supported; other values are rejected by eval validation.
+
 ## Testing This Project
 
 Run the unit tests, type checker, and linter for the runner and support code:

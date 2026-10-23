@@ -1,7 +1,7 @@
 import { computeMetrics } from "@microsoft/vally";
 import { collectEvaluationAnswerBilling, type EvaluationAnswerBilling } from "../skill-improvement/billing.ts";
 import { fileURLToPath } from "url";
-import { getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
+import { getAzureEnvironment, getAzureFixtureManifestPath, getEarlyTerminateCondition, getRequiredSkillsCondition, getSkillName, getSystemPrompt, getTakeScreenshotCondition } from "./tag-helpers.ts";
 import { listPlugins, type Plugin, type SkillRef } from "../utils/skill-loader.ts";
 import { normalizeTestName } from "./utils.ts";
 import * as path from "node:path";
@@ -83,6 +83,7 @@ export class CopilotSdkAgentRunner implements Executor {
       workspace: workDir,
       env: {
         UV_CACHE_DIR: path.join(workDir, ".uv-cache"),
+        ...getAzureEnvironment(tags),
       },
       model: model,
       prompt: prompt,

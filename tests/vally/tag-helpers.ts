@@ -2,12 +2,44 @@
  * Helper functions for extracting test related metadata from stimuli tags.
  */
 import type { SystemMessageConfig } from "@github/copilot-sdk";
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
 import * as path from "node:path";
 import type { AgentMetadata } from "../utils/agent-runner.ts";
 import { isSkillInvoked, getToolCalls, getAllAssistantMessages, argsString } from "../utils/evaluate.ts";
 
 const INLINE_PATTERN_FLAGS = /^\(\?([ims]+)\)/;
 const SCOPED_INLINE_PATTERN_FLAGS = /^\(\?([ims]+):([\s\S]*)\)$/;
+
+export function getAzureEnvironment(
+  tags: Record<string, string | string[]> | undefined,
+  env: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
+  if (env.CI !== "true") {
+    return {};
+  }
+  const permission = tags?.azurePermission;
+  if (permission === undefined) {
+    return {};
+  }
+  if (permission === "none") {
+    return {
+      AZURE_CONFIG_DIR: path.join(tmpdir(), `azure-no-access-${randomUUID()}`),
+      // Overwrite AZURE_CLIENT_ID to ensure no tools can use the managed identity configured in the CI pipeline.
+      AZURE_CLIENT_ID: "",
+    };
+  }
+  if (permission !== "read") {
+    throw new Error("tags.azurePermission must be 'read' or 'none' when specified");
+  }
+
+  const configDir = env.AZURE_READ_CONFIG_DIR?.trim();
+  const clientId = env.AZURE_READ_CLIENT_ID?.trim();
+  if (!configDir || !path.isAbsolute(configDir) || !clientId) {
+    throw new Error("Read-only tests require an absolute AZURE_READ_CONFIG_DIR and AZURE_READ_CLIENT_ID; refusing to use the default Azure identity");
+  }
+  return { AZURE_CONFIG_DIR: configDir, AZURE_CLIENT_ID: clientId };
+}
 
 export function compileEarlyTerminatePattern(pattern: string): RegExp {
   const scopedInlineFlags = SCOPED_INLINE_PATTERN_FLAGS.exec(pattern);
