@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
 const scriptsDirectory = fileURLToPath(new URL(
-  "../plugins/azure-skills/skills/azure-diagnostics/scripts/",
+  "../../../plugins/azure-skills/skills/azure-diagnostics/scripts/",
   import.meta.url,
 ));
 
