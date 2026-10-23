@@ -1,5 +1,44 @@
 import { describe, expect, test } from "vitest";
-import { compileEarlyTerminatePattern } from "../tag-helpers.ts";
+import { compileEarlyTerminatePattern, getAzureEnvironment } from "../tag-helpers.ts";
+
+describe("getAzureEnvironment", () => {
+  const env = {
+    AZURE_READ_CONFIG_DIR: "/tmp/azure-read",
+    AZURE_READ_CLIENT_ID: "read-client",
+    AZURE_CONFIG_DIR: "/tmp/azure-admin",
+    AZURE_CLIENT_ID: "admin-client",
+  };
+
+  test("preserves the inherited identity for untagged tests", () => {
+    expect(getAzureEnvironment(undefined, env)).toEqual({});
+    expect(getAzureEnvironment({ area: "routing" }, env)).toEqual({});
+  });
+
+  test("selects the read profile without changing the parent environment", () => {
+    expect(getAzureEnvironment({ azurePermission: "read" }, env)).toEqual({
+      AZURE_CONFIG_DIR: "/tmp/azure-read",
+      AZURE_CLIENT_ID: "read-client",
+    });
+    expect(env.AZURE_CONFIG_DIR).toBe("/tmp/azure-admin");
+    expect(env.AZURE_CLIENT_ID).toBe("admin-client");
+  });
+
+  test.each([
+    {},
+    { AZURE_READ_CLIENT_ID: "read-client" },
+    { AZURE_READ_CONFIG_DIR: "/tmp/azure-read" },
+    { AZURE_READ_CONFIG_DIR: "relative/profile", AZURE_READ_CLIENT_ID: "read-client" },
+    { AZURE_READ_CONFIG_DIR: " ", AZURE_READ_CLIENT_ID: "read-client" },
+  ])("fails closed when read credentials are not configured: %j", (missingEnv) => {
+    expect(() => getAzureEnvironment({ azurePermission: "read" }, missingEnv))
+      .toThrow("refusing to use the default Azure identity");
+  });
+
+  test.each(["admin", "write", "none", "reed", "", ["read"]])("rejects unsupported permission tags: %j", (permission) => {
+    expect(() => getAzureEnvironment({ azurePermission: permission }, env))
+      .toThrow("tags.azurePermission");
+  });
+});
 
 describe("compileEarlyTerminatePattern", () => {
   test("compiles JavaScript-compatible patterns", () => {

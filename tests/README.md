@@ -58,6 +58,23 @@ The runner accepts additional Vally arguments. It manages output directories and
 
 Local artifacts are written to `results/<test-run-name>/` and `reports/<test-run-name>/`.
 
+### Azure permissions
+
+Add `azurePermission: read` to a stimulus's tags to use read-only Azure
+permissions for its agent run. Use this for tests that inspect resources without
+creating, modifying or deleting them.
+
+```yaml
+tags:
+  type: integration
+  tier: full
+  cost: llm
+  area: response-quality
+  azurePermission: read
+```
+
+Omitting the tag preserves the default Azure permissions. Only `read` is currently supported; other values are rejected.
+
 ## Testing This Project
 
 Run the unit tests, type checker, and linter for the runner and support code:

@@ -148,6 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_READ_CLIENT_ID: ${{ vars.AZURE_READ_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
     strategy:
@@ -184,6 +185,24 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Prepare read-only Azure profile
+        id: readonly-azure-profile
+        shell: bash
+        run: |
+          : "${AZURE_READ_CLIENT_ID:?Set AZURE_READ_CLIENT_ID in the cideploytest environment}"
+          profile_dir=$(mktemp -d "${RUNNER_TEMP}/azure-read.XXXXXX")
+          echo "config-dir=$profile_dir" >> "$GITHUB_OUTPUT"
+          echo "AZURE_READ_CONFIG_DIR=$profile_dir" >> "$GITHUB_ENV"
+
+      - name: Azure login (readonly)
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        env:
+          AZURE_CONFIG_DIR: ${{ steps.readonly-azure-profile.outputs.config-dir }}
+        with:
+          client-id: ${{ env.AZURE_READ_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
       # azure/login only fetches the OIDC access token once.
       # If a test starts after the token expires, it will fail with authentication errors.
       # This step runs code to refresh the cached OIDC access token periodically to ensure all tests have a valid access token.
@@ -199,6 +218,20 @@ jobs:
           while true; do
             token=$(curl -s -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq .value -r)
             az login --service-principal -u $AZURE_CLIENT_ID -t $AZURE_TENANT_ID --federated-token $token --output none
+            sleep 240
+          done &
+
+      - name: Refresh read-only OIDC token every 240 seconds
+        shell: bash
+        env:
+          AZURE_CONFIG_DIR: ${{ env.AZURE_READ_CONFIG_DIR }}
+        run: |
+          while true; do
+            token=$(curl --fail --silent --show-error -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" | jq -er .value)
+            echo "::add-mask::$token"
+            az login --service-principal \
+              -u "$AZURE_READ_CLIENT_ID" -t "$AZURE_TENANT_ID" --federated-token "$token" --output none
+            az account set --subscription "$AZURE_SUBSCRIPTION_ID"
             sleep 240
           done &
 

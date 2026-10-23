@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  validateAzurePermission,
   validateEarlyTerminatePatterns,
   validateRubric,
 } from "../validate-stimulus.js";
+
+describe("validateAzurePermission", () => {
+  it.each([undefined, "read"])("accepts supported permission %j", (value) => {
+    expect(validateAzurePermission(value)).toBeUndefined();
+  });
+
+  it.each(["write", "admin", "none", "", null, ["read"]])("rejects unsupported permission %j", (value) => {
+    expect(validateAzurePermission(value)).toBe("tags.azurePermission must be 'read' when specified");
+  });
+});
 
 describe("validateEarlyTerminatePatterns", () => {
   it("accepts JavaScript-compatible regular expressions", () => {
