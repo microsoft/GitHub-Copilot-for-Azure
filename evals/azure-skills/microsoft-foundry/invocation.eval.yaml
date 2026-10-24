@@ -974,6 +974,29 @@ stimuli:
               description: "Planning-only routing test must not create or deploy resources"
 
   # ═══════════════════════════════════════════════════════════════════════════
+  # Foundry Voice Agents
+  # ═══════════════════════════════════════════════════════════════════════════
+  - name: "Prompt Voice agent creation skill invocation"
+    prompt: "Help me create a Prompt Voice agent in Microsoft Foundry."
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: routing
+      earlyTerminate: '[{"type":"tool-call-result","toolPattern":"^(bash|powershell|pwsh|run_in_terminal)$","argsPattern":"check-and-setup-dependencies\\.(sh|ps1)"}]'
+    constraints:
+      max_turns: 5
+    graders:
+      - type: skill-invocation
+        config:
+          required: [microsoft-foundry]
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
+              command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
+
+  # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Prompt Agents
   # ═══════════════════════════════════════════════════════════════════════════
   - name: "Prompt agent creation skill invocation"

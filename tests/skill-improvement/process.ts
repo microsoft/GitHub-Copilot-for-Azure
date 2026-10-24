@@ -209,15 +209,27 @@ export async function runWithConcurrency<T>(
   worker: (item: T, index: number) => Promise<void>,
 ): Promise<void> {
   let nextIndex = 0;
+  let failed = false;
+  let failure: unknown;
   const workers = Array.from(
     { length: Math.min(concurrency, Math.max(items.length, 1)) },
     async () => {
-      while (nextIndex < items.length) {
+      while (!failed && nextIndex < items.length) {
         const index = nextIndex;
         nextIndex += 1;
-        await worker(items[index], index);
+        try {
+          await worker(items[index], index);
+        } catch (error: unknown) {
+          if (!failed) {
+            failure = error;
+          }
+          failed = true;
+        }
       }
     }
   );
   await Promise.all(workers);
+  if (failed) {
+    throw failure;
+  }
 }

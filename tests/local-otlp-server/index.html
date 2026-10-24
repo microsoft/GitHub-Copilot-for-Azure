@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local OTLP viewer</title>
+  <style>
+    :root { color-scheme: dark; font: 14px system-ui, sans-serif; background: #0d1117; color: #e6edf3; }
+    body { max-width: 1600px; margin: auto; padding: 24px; }
+    header, .toolbar, .stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header { justify-content: space-between; }
+    h1 { font-size: 24px; margin: 0; }
+    .muted, small { color: #9da7b3; }
+    #connection { color: #f3b95f; }
+    #connection.live { color: #56d364; }
+    .stats { margin: 24px 0; }
+    .stat { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; min-width: 130px; }
+    .stat strong { display: block; font-size: 28px; }
+    input, select, button { background: #161b22; color: inherit; border: 1px solid #48515d; border-radius: 6px; padding: 9px 12px; font: inherit; }
+    input { flex: 1; min-width: 200px; }
+    button { cursor: pointer; }
+    button:hover { background: #253144; }
+    .toolbar { margin-bottom: 16px; }
+    .layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr); gap: 16px; }
+    .panel { border: 1px solid #30363d; border-radius: 8px; background: #161b22; overflow: auto; max-height: 65vh; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { position: sticky; top: 0; background: #21262d; font-size: 12px; color: #9da7b3; }
+    td, th { padding: 12px; border-bottom: 1px solid #30363d; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover, tbody tr.selected { background: #223047; }
+    td { max-width: 300px; overflow-wrap: anywhere; }
+    .badge { color: #a5c9ff; font-size: 12px; }
+    .logs { color: #d2a8ff; } .metrics { color: #56d364; }
+    .bar { height: 4px; background: #58a6ff; margin-top: 5px; border-radius: 2px; }
+    #detail { padding: 16px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.6 ui-monospace, monospace; }
+    #empty { padding: 32px; text-align: center; }
+    footer { margin-top: 16px; line-height: 1.7; }
+    @media (max-width: 850px) { .layout { grid-template-columns: 1fr; } body { padding: 12px; } }
+  </style>
+</head>
+<body>
+  <header><h1>Local OTLP viewer</h1><span id="connection" role="status">Connecting...</span></header>
+  <p class="muted">Live traces, metrics, and logs over HTTP/JSON. Select a row to inspect its payload.</p>
+  <div class="stats">
+    <div class="stat"><strong id="requests">0</strong>retained exports</div>
+    <div class="stat"><strong id="traces">0</strong>spans</div>
+    <div class="stat"><strong id="metrics">0</strong>metrics</div>
+    <div class="stat"><strong id="logs">0</strong>log records</div>
+  </div>
+  <div class="toolbar">
+    <select id="signal" aria-label="Signal"><option value="">All signals</option><option>traces</option><option>metrics</option><option>logs</option></select>
+    <input id="search" type="search" placeholder="Filter by service, name, trace ID, or payload..." aria-label="Search telemetry">
+    <button id="pause">Pause display</button>
+    <button id="clear">Clear display</button>
+  </div>
+  <div class="layout">
+    <section class="panel" aria-label="Telemetry">
+      <table><thead><tr><th>Received / signal</th><th>Service / name</th><th>Value / duration</th></tr></thead><tbody id="rows"></tbody></table>
+      <div id="empty" class="muted">Waiting for OTLP exports...</div>
+    </section>
+    <section class="panel" aria-label="Selected payload"><pre id="detail">Select a telemetry row to inspect its resource, scope, and record.</pre></section>
+  </div>
+  <footer class="muted">
+    Receiver: <code id="endpoint"></code> &middot; POST /v1/traces, /v1/metrics, /v1/logs<br>
+    Set <code>OTEL_EXPORTER_OTLP_PROTOCOL=http/json</code>. In-memory only: server retains at most 100 exports / 4 MiB;
+    the display shows at most 1,000 records. Pause affects only the display; clear affects only this tab.
+  </footer>
+  <script>
+    const $ = id => document.getElementById(id);
+    let exports = [];
+    let paused = false;
+    let selected = "";
+    let clearedThrough = 0;
+    let framePending = false;
+    const fields = {
+      traces: ["resourceSpans", "scopeSpans", "spans"],
+      metrics: ["resourceMetrics", "scopeMetrics", "metrics"],
+      logs: ["resourceLogs", "scopeLogs", "logRecords"],
+    };
+    const array = value => Array.isArray(value) ? value : [];
+    const object = value => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+    function valueText(value) {
+      if (value == null) return "";
+      if (typeof value !== "object") return String(value);
+      for (const key of ["stringValue", "intValue", "doubleValue", "boolValue", "bytesValue"]) {
+        if (key in value) return String(value[key]);
+      }
+      return JSON.stringify(value);
+    }
+    function flatten(event) {
+      const [resourceKey, scopeKey, recordKey] = fields[event.signal];
+      const rows = [];
+      for (const rawResource of array(event.payload[resourceKey])) {
+        const resource = object(rawResource);
+        const service = object(array(object(resource.resource).attributes).find(a => object(a).key === "service.name")).value;
+        for (const rawScope of array(resource[scopeKey])) {
+          const scope = object(rawScope);
+          for (const rawRecord of array(scope[recordKey])) {
+            const record = object(rawRecord);
+            let duration = null;
+            if (/^\d+$/.test(record.startTimeUnixNano) && /^\d+$/.test(record.endTimeUnixNano)) {
+              duration = Math.max(0, Number(BigInt(record.endTimeUnixNano) - BigInt(record.startTimeUnixNano)) / 1e6);
+            }
+            const points = array(object(record.gauge || record.sum || record.histogram || record.exponentialHistogram || record.summary).dataPoints);
+            const metricValue = points.slice(0, 3).map(p => {
+              p = object(p);
+              return p.asDouble ?? p.asInt ?? (p.count !== undefined ? "count=" + p.count + ", sum=" + (p.sum ?? "-") : JSON.stringify(p));
+            }).join(", ") + (points.length > 3 ? " (+" + (points.length - 3) + " points)" : "");
+            rows.push({
+              id: event.id + ":" + rows.length, event, duration,
+              service: valueText(service) || "(unknown service)",
+              name: String(record.name || valueText(record.body) || "(unnamed)"),
+              value: event.signal === "traces" ? (duration === null ? "-" : duration.toFixed(2) + " ms") :
+                event.signal === "logs" ? String(record.severityText || record.severityNumber || "-") : metricValue || "-",
+              detail: { resource: resource.resource, scope: scope.scope, record },
+            });
+            if (rows.length >= 1000) return rows;
+          }
+        }
+      }
+      if (!rows.length) rows.push({
+        id: event.id + ":empty", event, service: "-", name: "Empty export", value: "-",
+        duration: null, detail: event.payload,
+      });
+      return rows;
+    }
+    function render() {
+      framePending = false;
+      if (paused) return;
+      const rows = [];
+      for (const event of exports.slice().reverse()) {
+        rows.push(...flatten(event).slice(0, 1000 - rows.length));
+        if (rows.length >= 1000) break;
+      }
+      $("requests").textContent = exports.length;
+      for (const signal of Object.keys(fields)) {
+        $(signal).textContent = rows.filter(r => r.event.signal === signal && !r.id.endsWith(":empty")).length;
+      }
+      const query = $("search").value.toLowerCase();
+      const filtered = rows.filter(row => (!$("signal").value || row.event.signal === $("signal").value) &&
+        (!query || JSON.stringify([row.service, row.name, row.detail]).toLowerCase().includes(query)));
+      const maxDuration = Math.max(1, ...filtered.map(row => row.duration || 0));
+      const fragment = document.createDocumentFragment();
+      for (const row of filtered) {
+        const tr = document.createElement("tr");
+        tr.tabIndex = 0;
+        tr.classList.toggle("selected", row.id === selected);
+        const time = document.createElement("td");
+        time.append(document.createTextNode(new Date(row.event.receivedAt).toLocaleTimeString()), document.createElement("br"));
+        const badge = document.createElement("span");
+        badge.className = "badge " + row.event.signal;
+        badge.textContent = row.event.signal;
+        time.append(badge);
+        const name = document.createElement("td");
+        const service = document.createElement("small");
+        service.textContent = row.service;
+        name.append(service, document.createElement("br"), document.createTextNode(row.name));
+        const value = document.createElement("td");
+        value.textContent = row.value;
+        if (row.duration !== null) {
+          const bar = document.createElement("div");
+          bar.className = "bar";
+          bar.style.width = Math.max(1, row.duration / maxDuration * 100) + "%";
+          value.append(bar);
+        }
+        const select = () => {
+          selected = row.id;
+          $("detail").textContent = JSON.stringify({ receivedAt: row.event.receivedAt, signal: row.event.signal, ...row.detail }, null, 2);
+          for (const sibling of $("rows").children) sibling.classList.remove("selected");
+          tr.classList.add("selected");
+        };
+        tr.onclick = select;
+        tr.onkeydown = event => { if (event.key === "Enter") select(); };
+        tr.append(time, name, value);
+        fragment.append(tr);
+      }
+      $("rows").replaceChildren(fragment);
+      $("empty").hidden = filtered.length > 0;
+      $("empty").textContent = exports.length ? "No matching records." : "Waiting for OTLP exports...";
+    }
+    function scheduleRender() {
+      if (!framePending) { framePending = true; requestAnimationFrame(render); }
+    }
+    function retain(events) {
+      exports = events.filter(event => event.id > clearedThrough).slice(-100);
+      let bytes = 0;
+      for (let i = exports.length - 1; i >= 0; i--) {
+        bytes += JSON.stringify(exports[i]).length;
+        if (bytes > 4 * 1024 * 1024) { exports = exports.slice(i + 1); break; }
+      }
+      scheduleRender();
+    }
+    const stream = new EventSource("/events");
+    stream.onopen = () => { $("connection").textContent = "Live"; $("connection").className = "live"; };
+    stream.onerror = () => { $("connection").textContent = "Disconnected - reconnecting..."; $("connection").className = ""; };
+    stream.addEventListener("snapshot", event => retain(JSON.parse(event.data)));
+    stream.addEventListener("telemetry", event => retain([...exports, JSON.parse(event.data)]));
+    $("signal").onchange = scheduleRender;
+    $("search").oninput = scheduleRender;
+    $("pause").onclick = () => {
+      paused = !paused;
+      $("pause").textContent = paused ? "Resume display" : "Pause display";
+      $("pause").setAttribute("aria-pressed", String(paused));
+      scheduleRender();
+    };
+    $("clear").onclick = () => {
+      clearedThrough = Math.max(clearedThrough, ...exports.map(event => event.id));
+      exports = [];
+      selected = "";
+      $("detail").textContent = "Display cleared.";
+      paused = false;
+      $("pause").textContent = "Pause display";
+      $("pause").setAttribute("aria-pressed", "false");
+      scheduleRender();
+    };
+    $("endpoint").textContent = location.origin;
+  </script>
+</body>
+</html>

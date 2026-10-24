@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { emptyBilling, type EvaluationAnswerBilling, type PhaseBilling } from "./billing.ts";
 import path from "node:path";
 import type {
   EvaluationSet,
@@ -7,6 +8,7 @@ import type {
 } from "./config.ts";
 import {
   evaluationFilesForCondition,
+  countStimuli,
   materializeEvaluationFile,
   resolveEvaluationPath,
 } from "./config.ts";
@@ -38,6 +40,9 @@ export type VallyRecord = {
     details?: GradeDetail[];
   };
   trajectory?: {
+    metadata?: {
+      evaluationAnswerBilling?: EvaluationAnswerBilling;
+    };
     output?: string;
     stimulus?: {
       name?: string;
@@ -95,12 +100,15 @@ export type JudgedTrial = {
   output: string;
   targetSkillInvoked: boolean;
   totalTokens: number;
+  answerBilledCredits?: number;
+  answerReportedCredits?: number;
 };
 
 export type EvaluationBatch = {
   trials: JudgedTrial[];
   answerGenerations: number;
   judgeCalls: number;
+  billing: PhaseBilling;
 };
 
 type GenerationTask = {
@@ -120,11 +128,24 @@ function slug(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9.-]+/g, "-").replace(/^-|-$/g, "");
 }
 
-function readJsonl(filePath: string): VallyRecord[] {
-  return fs.readFileSync(filePath, "utf8")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map(line => JSON.parse(line) as VallyRecord);
+function readJsonl(filePath: string, recover = false): VallyRecord[] {
+  const records: VallyRecord[] = [];
+  for (const [index, line] of fs.readFileSync(filePath, "utf8").split(/\r?\n/).entries()) {
+    if (!line.trim()) continue;
+    try {
+      const record: unknown = JSON.parse(line);
+      if (!record || typeof record !== "object" || Array.isArray(record)) {
+        throw new Error("Expected a JSON object.");
+      }
+      records.push(record);
+    } catch (error) {
+      if (!recover) throw error;
+      console.warn(`Unavailable answer record at ${filePath}:${index + 1}: ${
+        error instanceof Error ? error.message : String(error)
+      }`);
+    }
+  }
+  return records;
 }
 
 export function findVallyRunDirectory(root: string): string {
@@ -174,6 +195,7 @@ async function generateAnswers(
   spec: SkillImprovementRunSpec,
   task: GenerationTask,
   deadline: number,
+  recordBilling: (records: VallyRecord[]) => void,
 ): Promise<GeneratedAnswers> {
   assertBeforeDeadline(deadline);
   const testsDirectory = path.join(evalRepoRoot, "tests");
@@ -202,39 +224,52 @@ async function generateAnswers(
       `skill-improvement-${slug(task.condition.name)}-${slug(task.answerModel)}-${slug(task.evalFile)}`,
   };
 
-  await runProcess(commandName("npx"), [
-    "-y",
-    "@microsoft/vally-cli",
-    "eval",
-    "--eval-spec",
-    evalSpecFile,
-    "--executor-plugin",
-    path.join(testsDirectory, "vally", "copilot-sdk-executor.ts"),
-    "--grader-plugin",
-    path.join(testsDirectory, "vally", "vally-graders.ts"),
-    "--output-dir",
-    taskDirectory,
-    "--model",
-    task.answerModel,
-    "--runs",
-    String(spec.experiment.repetitions),
-    "--workers",
-    "1",
-    "--max-retries",
-    "0",
-    "--skip-grade",
-    "--output",
-    "jsonl",
-  ], {
-    cwd: testsDirectory,
-    env,
-    stdoutFile: answerFile,
-    stderrFile,
-    timeoutMs: Math.max(deadline - Date.now(), 1),
-  });
+  try {
+    await runProcess(commandName("npx"), [
+      "-y",
+      "@microsoft/vally-cli",
+      "eval",
+      "--eval-spec",
+      evalSpecFile,
+      "--executor-plugin",
+      path.join(testsDirectory, "vally", "copilot-sdk-executor.ts"),
+      "--grader-plugin",
+      path.join(testsDirectory, "vally", "vally-graders.ts"),
+      "--output-dir",
+      taskDirectory,
+      "--model",
+      task.answerModel,
+      "--runs",
+      String(spec.experiment.repetitions),
+      "--workers",
+      String(spec.limits.generationWorkersPerVallyProcess ?? 1),
+      "--max-retries",
+      "0",
+      "--skip-grade",
+      "--output",
+      "jsonl",
+    ], {
+      cwd: testsDirectory,
+      env,
+      stdoutFile: answerFile,
+      stderrFile,
+      timeoutMs: Math.max(deadline - Date.now(), 1),
+    });
+  } catch (error) {
+    try {
+      recordBilling(fs.existsSync(answerFile) ? readJsonl(answerFile, true) : []);
+    } catch (billingError) {
+      console.warn(`Failed to collect answer billing from ${answerFile}: ${
+        billingError instanceof Error ? billingError.message : String(billingError)
+      }`);
+    }
+    throw error;
+  }
 
+  const records = readJsonl(answerFile);
+  recordBilling(records);
   const runDirectory = findVallyRunDirectory(taskDirectory);
-  const count = readJsonl(answerFile)
+  const count = records
     .filter(record => record.type === "trial-result" || record.trajectory)
     .length;
   if (count === 0) {
@@ -317,6 +352,10 @@ async function gradeAnswers(
       targetSkillInvoked:
         (record.trajectory?.metrics?.skillActivationBreakdown?.[spec.target.skill] ?? 0) > 0,
       totalTokens: record.trajectory?.metrics?.tokenUsage?.totalTokens ?? 0,
+      answerBilledCredits:
+        record.trajectory?.metadata?.evaluationAnswerBilling?.completeAiCredits ?? undefined,
+      answerReportedCredits:
+        record.trajectory?.metadata?.evaluationAnswerBilling?.reportedAiCredits ?? undefined,
     }));
 }
 
@@ -330,6 +369,7 @@ export async function runEvaluationBatch(
   conditions: EvaluationCondition[],
   deadline: number,
   iteration?: number,
+  onBilling?: (billing: PhaseBilling) => void,
 ): Promise<EvaluationBatch> {
   const tasks: GenerationTask[] = conditions.flatMap(condition =>
     spec.models.answers.flatMap(answerModel =>
@@ -337,10 +377,52 @@ export async function runEvaluationBatch(
         .map(evalFile => ({ condition, answerModel, evalFile }))
     )
   );
+  const expectedAnswers = tasks.reduce((total, task) =>
+    total + countStimuli(evalRepoRoot, spec, [task.evalFile]) * spec.experiment.repetitions, 0
+  );
+  const billing: PhaseBilling = {
+    phase,
+    finalized: false,
+    evaluationAnswers: emptyBilling("answer trajectories", expectedAnswers, "copilot_usage.totalNanoAiu"),
+    skillImprovement: emptyBilling("agent invocations", 0, "not applicable"),
+  };
+  onBilling?.(billing);
+  const incompleteReasons = new Set<string>();
+  const recordBilling = (records: VallyRecord[]) => {
+    const answers = records.filter(record => record.type === "trial-result" || record.trajectory);
+    billing.evaluationAnswers.observed += answers.length;
+    for (const answer of answers) {
+      const usage = answer.trajectory?.metadata?.evaluationAnswerBilling;
+      if (usage?.reason || !usage) {
+        incompleteReasons.add(usage?.reason ?? "Answer has no evaluation billing metadata.");
+        billing.evaluationAnswers.reason = [...incompleteReasons].join(" ");
+      }
+      const reported = usage?.reportedAiCredits;
+      if (reported !== null && reported !== undefined) {
+        if (!Number.isFinite(reported) || reported < 0) {
+          throw new Error("Invalid reported answer trajectory billing value.");
+        }
+        billing.evaluationAnswers.reportedAiCredits =
+          (billing.evaluationAnswers.reportedAiCredits ?? 0) + reported;
+      }
+      const value = usage?.completeAiCredits;
+      if (value !== null && value !== undefined) {
+        if (!usage || usage.usageEvents <= 0 || usage.usageEvents !== usage.usageEventsWithBilling) {
+          throw new Error("Answer credits require complete request billing.");
+        }
+        if (!Number.isFinite(value) || value < 0) {
+          throw new Error("Invalid answer trajectory billing value.");
+        }
+        billing.evaluationAnswers.fullyMeasured++;
+        billing.evaluationAnswers.fullyMeasuredAiCredits += value;
+      }
+    }
+    onBilling?.(billing);
+  };
   const generated: GeneratedAnswers[] = new Array(tasks.length);
   await runWithConcurrency(
     tasks,
-    spec.limits.maxConcurrentJobs,
+    spec.limits.maxConcurrentVallyProcesses,
     async (task, index) => {
       generated[index] = await generateAnswers(
         worktree,
@@ -348,7 +430,8 @@ export async function runEvaluationBatch(
         outputRoot,
         spec,
         task,
-        deadline
+        deadline,
+        recordBilling
       );
     }
   );
@@ -359,7 +442,7 @@ export async function runEvaluationBatch(
   const judged: JudgedTrial[][] = new Array(gradingTasks.length);
   await runWithConcurrency(
     gradingTasks,
-    spec.limits.maxConcurrentJobs,
+    spec.limits.maxConcurrentVallyProcesses,
     async ({ item, judgeModel }, index) => {
       judged[index] = await gradeAnswers(
         evalRepoRoot,
@@ -374,9 +457,12 @@ export async function runEvaluationBatch(
     }
   );
 
+  billing.finalized = true;
+  onBilling?.(billing);
   return {
     trials: judged.flat(),
     answerGenerations: generated.reduce((total, item) => total + item.count, 0),
     judgeCalls: judged.flat().length,
+    billing,
   };
 }
