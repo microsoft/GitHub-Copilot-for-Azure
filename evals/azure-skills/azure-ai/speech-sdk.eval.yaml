@@ -12,7 +12,7 @@ defaults:
   timeout: "10m"
   executor: copilot-sdk-agent-runner
   model: claude-sonnet-5
-  judge_model: claude-sonnet-5
+  judge_model: gpt-6.1-sol
 
 scoring:
   threshold: 0.8
