@@ -66,4 +66,4 @@ az vm create \
 - Linux: prefer SSH keys (`~/.ssh/id_rsa.pub` or `~/.ssh/id_ed25519.pub`). Never paste private keys.
 - `--zone` is optional; omit the flag entirely (don't pass empty) for regional VMs.
 - `--tags` uses space-separated `k=v` pairs.
-- Pre-check quota: `compute_vm_check-quota` (or `az vm list-usage --location {location} -o table`).
+- Pre-check quota: `az vm list-usage --location {location} -o table`.

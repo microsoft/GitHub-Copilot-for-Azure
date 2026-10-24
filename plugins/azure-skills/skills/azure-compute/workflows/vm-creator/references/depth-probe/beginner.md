@@ -18,4 +18,4 @@ Goal: get to a working Plan Card in **≤ 2 questions**, then show defaults and 
 - **OS disk:** 30 GB Premium SSD
 - **Zone:** none (regional)
 
-If the user is in a region you haven't validated, call `compute_vm_list-skus` to confirm `Standard_D2s_v5` is available there before locking it in. If not, fall back to whatever the recommender suggests.
+If the user is in a region you haven't validated, run `az vm list-skus --location <region> --size Standard_D2s_v5` to confirm `Standard_D2s_v5` is available there before locking it in. If not, fall back to whatever the recommender suggests.
