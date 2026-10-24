@@ -1,0 +1,23 @@
+{
+  "id": "workflow-fixture-local-live",
+  "type": "readOnly",
+  "persistence": "temporary",
+  "version": 1,
+  "schemaVersion": 2,
+  "description": "Live concurrency test that creates two resource groups without deploying IaC.",
+  "bicepConfigs": [
+    {
+      "fixtureId": "workflow-fixture-local-live-primary",
+      "location": "eastus2",
+      "resourceGroupNameBase": "rg-ghcfa-wf-live-primary"
+    },
+    {
+      "fixtureId": "workflow-fixture-local-live-secondary",
+      "location": "eastus2",
+      "resourceGroupNameBase": "rg-ghcfa-wf-live-secondary"
+    }
+  ],
+  "postProvisionScript": {
+    "path": "./tag-resource-groups.ts"
+  }
+}

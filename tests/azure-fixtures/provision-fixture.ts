@@ -3,7 +3,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { randomBytes, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { basename, dirname, resolve } from "node:path";
 
 import {
@@ -14,11 +14,12 @@ import {
   type FixtureManifest,
   type JsonValue,
   type ProvisionScriptOutput,
+  createBudget,
   findFixtureResourceGroups,
-  remainingMs,
   runAz,
-  setBudget,
+  type RunBudget,
 } from "./fixture-common.ts";
+import { ResourceLock, type ResourceLockLease } from "./resource-lock.ts";
 
 /**
  * Run-scoped values available to substitution tokens in Bicep parameters.
@@ -64,11 +65,85 @@ function resolveBicepParameter(context: FixtureRunContext, parameterConfig: Bice
 const NPX_COMMAND = process.platform === "win32" ? "npx.cmd" : "npx";
 const DEFAULT_TIME_TO_LIVE_SEC = 3 * 60 * 60; // 3 hours
 const COMPLETED_TAG = "Completed";
+const MANIFEST_ID_TAG = "ManifestId";
+const FIXTURE_INSTANCE_ID_TAG = "FixtureInstanceId";
+const FIXTURE_COMPONENT_TAG = "FixtureComponent";
+const DELETE_AFTER_TAG = "DeleteAfter";
+
+/**
+ * Retention period for ready fixtures before they are considered stale.
+ */
+const READY_RETENTION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const REUSE_SAFETY_MARGIN_MS = 60 * 60 * 1000; // 1 hour
+
+/**
+ * Maximum time allowed to try acquiring the lease for a fixture.
+ */
+const LEASE_ACQUISITION_BUDGET_MS = 10 * 60 * 1000; // 10 minutes
+const STORAGE_ACCOUNT_ENV = "AZURE_FIXTURE_COORDINATION_STORAGE_ACCOUNT";
+const STORAGE_CONTAINER_ENV = "AZURE_FIXTURE_COORDINATION_CONTAINER";
 
 /**
  * Each provision script run must finish in 10 minutes.
  */
 const TOTAL_BUDGET_MS = 10 * 60 * 1000;
+const PROVISIONING_RETRY_DELAY_MS = 2 * TOTAL_BUDGET_MS;
+
+export type WorkflowResourceLockLease = Pick<
+  ResourceLockLease,
+  "assertHealthy" | "read" | "write" | "renew" | "release"
+>;
+
+export interface IResourceLock {
+  initialize(initialValue: unknown): Promise<void>;
+  acquire(): Promise<WorkflowResourceLockLease>;
+};
+
+export type ProvisioningDependencies = {
+  now(): number;
+  sleep(ms: number): Promise<void>;
+  immediate(): Promise<void>;
+  randomUUID(): string;
+  randomSuffix(): string;
+  runAz(args: string[], options?: { subjectToBudget?: boolean }): string;
+  runPostProvisionScript(
+    context: FixtureRunContext,
+    manifest: FixtureManifest,
+    manifestDir: string,
+  ): string | undefined;
+  createResourceLock(account: string, container: string, blob: string, acquisitionDeadline: number): IResourceLock;
+  log: Pick<Console, "log" | "warn" | "error">;
+  /** Isolated budget shared by this invocation's command runners. */
+  budget: RunBudget;
+  environment: NodeJS.ProcessEnv;
+  processId: number;
+  leaseAcquisitionBudgetMs: number;
+  totalBudgetMs: number;
+  provisioningRetryDelayMs: number;
+  readyRetentionMs: number;
+};
+
+function defaultProvisioningDependencies(): ProvisioningDependencies {
+  const budget = createBudget();
+  return {
+    now: Date.now,
+    sleep: (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms)),
+    immediate: () => new Promise<void>((resolvePromise) => setImmediate(resolvePromise)),
+    randomUUID,
+    randomSuffix: () => randomBytes(3).toString("hex"),
+    runAz: (args, options) => runAz(args, { ...options, budget }),
+    runPostProvisionScript: (context, manifest, manifestDir) => runPostProvisionScripts(context, manifest, manifestDir, budget),
+    createResourceLock: (account, container, blob, acquisitionDeadline) => new ResourceLock(account, container, blob, acquisitionDeadline),
+    log: console,
+    budget,
+    environment: process.env,
+    processId: process.pid,
+    leaseAcquisitionBudgetMs: LEASE_ACQUISITION_BUDGET_MS,
+    totalBudgetMs: TOTAL_BUDGET_MS,
+    provisioningRetryDelayMs: PROVISIONING_RETRY_DELAY_MS,
+    readyRetentionMs: READY_RETENTION_MS,
+  };
+}
 
 /** Formats as "MM/DD/YYYY HH:mm:ss" in UTC, the form the cleanup script expects. */
 function formatDeleteAfter(date: Date): string {
@@ -76,6 +151,34 @@ function formatDeleteAfter(date: Date): string {
   const day = `${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCDate())}/${date.getUTCFullYear()}`;
   const time = `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}`;
   return `${day} ${time}`;
+}
+
+/** Parses the cleanup script's UTC "MM/DD/YYYY HH:mm:ss" format; returns NaN when malformed or impossible (e.g. 2/30). */
+function parseDeleteAfter(value: string): number {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(value.trim());
+  if (!match) {
+    return Number.NaN;
+  }
+  const [month, day, year, hour, minute, second] = match.slice(1).map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  if (date.getUTCFullYear() !== year
+    || date.getUTCMonth() !== month - 1
+    || date.getUTCDate() !== day
+    || date.getUTCHours() !== hour
+    || date.getUTCMinutes() !== minute
+    || date.getUTCSeconds() !== second) {
+    return Number.NaN;
+  }
+  return date.getTime();
+}
+
+/** Values containing spaces need explicit quotes only when az runs through a shell (Windows). */
+function shellQuote(value: string): string {
+  return process.platform === "win32" ? `"${value}"` : value;
+}
+
+function deleteAfterTag(date: Date): string {
+  return shellQuote(`${DELETE_AFTER_TAG}=${formatDeleteAfter(date)}`);
 }
 
 function computeResourceGroupName(manifest: FixtureManifest, bicepConfig: BicepConfig, suffix: string): string {
@@ -91,18 +194,22 @@ type AzureAccount = {
 /**
  * Get the test principal ID using AZ CLI.
  */
-function getTestPrincipalId(account: AzureAccount): string {
+function getTestPrincipalId(account: AzureAccount, runCommand: ProvisioningDependencies["runAz"] = runAz): string {
   // The signed-in identity is a user locally and a federated service principal in CI.
   // They need different commands to get the principal ID.
   if (account.user?.type === "servicePrincipal" && account.user.name) {
-    return runAz(["ad", "sp", "show", "--id", account.user.name, "--query", "id", "-o", "tsv"]);
+    return runCommand(["ad", "sp", "show", "--id", account.user.name, "--query", "id", "-o", "tsv"]);
   }
-  return runAz(["ad", "signed-in-user", "show", "--query", "id", "-o", "tsv"]);
+  return runCommand(["ad", "signed-in-user", "show", "--query", "id", "-o", "tsv"]);
 }
 
-function computeRunContext(manifest: FixtureManifest): FixtureRunContext {
-  const account = JSON.parse(runAz(["account", "show", "-o", "json"])) as AzureAccount;
-  const suffix = randomBytes(3).toString("hex");
+function computeRunContext(
+  manifest: FixtureManifest,
+  dependencies?: Pick<ProvisioningDependencies, "runAz" | "randomSuffix" | "randomUUID">,
+): FixtureRunContext {
+  const runCommand = dependencies?.runAz ?? runAz;
+  const account = JSON.parse(runCommand(["account", "show", "-o", "json"])) as AzureAccount;
+  const suffix = dependencies?.randomSuffix() ?? randomBytes(3).toString("hex");
 
   const resourceGroupNames: Record<string, string> = {};
   for (const bicepConfig of manifest.bicepConfigs) {
@@ -110,20 +217,24 @@ function computeRunContext(manifest: FixtureManifest): FixtureRunContext {
   }
 
   return {
-    runId: randomUUID(),
+    runId: dependencies?.randomUUID() ?? randomUUID(),
     suffix,
     subscriptionId: account.id,
     tenantId: account.tenantId,
     resourceGroupNames,
-    testPrincipalId: getTestPrincipalId(account),
+    testPrincipalId: getTestPrincipalId(account, runCommand),
   };
 }
 
-function discoverPersistentFixtures(context: FixtureRunContext, manifest: FixtureManifest): boolean {
+function discoverPersistentFixtures(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+  runCommand: ProvisioningDependencies["runAz"],
+): boolean {
   const discoveredResourceGroups = new Map<string, string>();
 
   for (const bicepConfig of manifest.bicepConfigs) {
-    const matchingGroups = findFixtureResourceGroups(bicepConfig.fixtureId)
+    const matchingGroups = findFixtureResourceGroups(bicepConfig.fixtureId, runCommand)
       .filter((group) => group.tags[FIXTURE_VERSION_TAG] === String(manifest.version));
     const incompleteGroups = matchingGroups.filter(
       (group) => group.tags[COMPLETED_TAG]?.toLowerCase() !== "true",
@@ -165,7 +276,12 @@ function discoverPersistentFixtures(context: FixtureRunContext, manifest: Fixtur
   return true;
 }
 
-function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureManifest, manifestDir: string): string | undefined {
+function runPostProvisionScripts(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+  manifestDir: string,
+  budget: RunBudget,
+): string | undefined {
   const resourceGroupNames = Object.values(context.resourceGroupNames);
 
   if (manifest.postProvisionScript) {
@@ -175,12 +291,12 @@ function runPostProvisionScripts(context: FixtureRunContext, manifest: FixtureMa
       const stdout = execFileSync(
         NPX_COMMAND,
         ["-y", "tsx", resolve(manifestDir, scriptConfig.path), "--resource-groups", ...resourceGroupNames],
-        { encoding: "utf8", timeout: remainingMs(step), killSignal: "SIGKILL", shell: true }
+        { encoding: "utf8", timeout: budget.remainingMs(step), killSignal: "SIGKILL", shell: true }
       );
       return stdout;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ETIMEDOUT") {
-        throw new Error(`Provisioning budget of ${TOTAL_BUDGET_MS / 1000}s was exhausted during ${step}`, { cause: error });
+        throw new Error(`Provisioning time budget was exhausted during ${step}`, { cause: error });
       }
       throw error;
     }
@@ -202,26 +318,37 @@ export function runPostTestScript(context: FixtureRunContext, manifest: FixtureM
   }
 }
 
-function provision(
+function provisionBicepConfig(
   context: FixtureRunContext,
   manifest: FixtureManifest,
   bicepConfig: BicepConfig,
   manifestDir: string,
+  additionalTags: string[] = [],
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
+  now: () => number = Date.now,
 ) {
   const resourceGroupName = context.resourceGroupNames[bicepConfig.resourceGroupNameBase];
   if (!resourceGroupName) {
     throw new Error(`No resource group name was computed for base ${bicepConfig.resourceGroupNameBase}`);
   }
 
+  // Callers may supply their own DeleteAfter; emitting two would make the winner undefined.
+  const overridesDeleteAfter = additionalTags.some((tag) => tag.replace(/^"/, "").startsWith(`${DELETE_AFTER_TAG}=`));
+  const retentionTag = manifest.persistence === "permanent"
+    ? "DoNotDelete=True"
+    : overridesDeleteAfter ? undefined : deleteAfterTag(new Date(now() + DEFAULT_TIME_TO_LIVE_SEC * 1000));
   const tags = [
+    `${MANIFEST_ID_TAG}=${manifest.id}`,
     `${FIXTURE_ID_TAG}=${bicepConfig.fixtureId}`,
     `${FIXTURE_VERSION_TAG}=${manifest.version}`,
-    manifest.persist ? "DoNotDelete=True" : `"DeleteAfter=${formatDeleteAfter(new Date(Date.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))}"`, // Must wrap the argument since date string contains a space
-    "Completed=False"
+    `${FIXTURE_INSTANCE_ID_TAG}=${context.runId}`,
+    ...(retentionTag ? [retentionTag] : []),
+    "Completed=False",
+    ...additionalTags,
   ];
 
   // Create resource group
-  runAz([
+  runCommand([
     "group",
     "create",
     "--name",
@@ -233,6 +360,13 @@ function provision(
     "-o",
     "none",
   ]);
+
+  if (!bicepConfig.path) {
+    if (bicepConfig.parameters?.length) {
+      throw new Error(`Bicep parameters require a template path for ${bicepConfig.resourceGroupNameBase}`);
+    }
+    return;
+  }
 
   const parameters = new Map<string, JsonValue>();
   for (const parameterConfig of bicepConfig.parameters ?? []) {
@@ -247,7 +381,7 @@ function provision(
 
   const deploymentName = `${basename(bicepConfig.path, ".bicep")}-${context.runId.slice(0, 8)}`;
 
-  runAz([
+  runCommand([
     "deployment",
     "group",
     "create",
@@ -264,9 +398,12 @@ function provision(
   ]);
 }
 
-function markFixturesCompleted(context: FixtureRunContext) {
+function markFixturesCompleted(
+  context: FixtureRunContext,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
+) {
   for (const resourceGroupName of Object.values(context.resourceGroupNames)) {
-    runAz([
+    runCommand([
       "group",
       "update",
       "--name",
@@ -284,22 +421,284 @@ export type ProvisionManifestOutput = {
   output: string
 };
 
-export function provisionManifest(manifestPath: string, manifest: FixtureManifest): ProvisionManifestOutput {
-  try {
-    setBudget(TOTAL_BUDGET_MS);
+type CoordinationState = "Empty" | "Preparing" | "Ready";
 
-    const context = computeRunContext(manifest);
+type CoordinationRecord = {
+  state: CoordinationState;
+  manifestId: string;
+  manifestVersion: number;
+  instanceId?: string;
+  ownerWorkflowRunId?: string;
+  resourceGroups: Record<string, string>;
+  nextAttemptNotBefore?: string;
+  /** Reuse deadline, one hour before the earliest resource-group DeleteAfter. */
+  expiresAt?: string;
+};
+
+function requiredEnvironment(name: string, environment: NodeJS.ProcessEnv = process.env): string {
+  const value = environment[name]?.trim();
+  if (!value) {
+    throw new Error(`Environment variable ${name} is required to provision workflow fixtures`);
+  }
+  return value;
+}
+
+function coordinationBlobName(context: FixtureRunContext, manifest: FixtureManifest): string {
+  const identity = `${context.tenantId}/${context.subscriptionId}/${manifest.id}/${manifest.version}`;
+  return `workflow-fixtures/${createHash("sha256").update(identity).digest("hex")}.json`;
+}
+
+function errorText(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return String(error);
+  }
+  const stderr = (error as Error & { stderr?: string | Buffer }).stderr;
+  return `${error.message}\n${stderr?.toString() ?? ""}`;
+}
+
+function parseCoordinationRecord(
+  value: unknown,
+  manifest: FixtureManifest,
+): CoordinationRecord {
+  if (!value || typeof value !== "object" || !("state" in value)) {
+    throw new Error(`Workflow fixture coordination record is malformed for ${manifest.id}`);
+  }
+  const candidate = value as Partial<CoordinationRecord>;
+  if (!["Empty", "Preparing", "Ready"].includes(candidate.state ?? "")) {
+    throw new Error(`Workflow fixture coordination record has unsupported state ${String(candidate.state)}`);
+  }
+  if (candidate.state !== "Empty"
+    && (candidate.manifestId !== manifest.id || candidate.manifestVersion !== manifest.version)) {
+    throw new Error(`Workflow fixture coordination record identity does not match ${manifest.id}@${manifest.version}`);
+  }
+  return {
+    state: candidate.state as CoordinationState,
+    manifestId: manifest.id,
+    manifestVersion: manifest.version,
+    instanceId: candidate.instanceId,
+    ownerWorkflowRunId: candidate.ownerWorkflowRunId,
+    resourceGroups: candidate.resourceGroups ?? {},
+    nextAttemptNotBefore: candidate.nextAttemptNotBefore,
+    expiresAt: candidate.expiresAt,
+  };
+}
+
+function groupNameFromId(resourceGroupId: string): string {
+  const name = resourceGroupId.split("/").filter(Boolean).at(-1);
+  if (!name) {
+    throw new Error(`Invalid resource group ID in workflow fixture record: ${resourceGroupId}`);
+  }
+  return name;
+}
+
+function resourceGroupId(context: FixtureRunContext, name: string): string {
+  return `/subscriptions/${context.subscriptionId}/resourceGroups/${name}`;
+}
+
+function verifyAndSelectRecordedFixture(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+  record: CoordinationRecord,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
+  now: number = Date.now(),
+): boolean {
+  if (!record.instanceId) {
+    throw new Error(`Ready workflow fixture ${manifest.id} has no instance ID`);
+  }
+  const resourceGroupNames: Record<string, string> = {};
+  let reusable = true;
+  for (const config of manifest.bicepConfigs) {
+    const id = record.resourceGroups[config.resourceGroupNameBase];
+    if (!id) {
+      throw new Error(`Ready workflow fixture ${manifest.id} is missing component ${config.resourceGroupNameBase}`);
+    }
+    const name = groupNameFromId(id);
+    const exists = runCommand(["group", "exists", "--name", name, "-o", "tsv"]).toLowerCase() === "true";
+    if (!exists) {
+      throw new Error(`Ready workflow fixture ${manifest.id} references missing resource group ${name}; manual repair is required`);
+    }
+    const tags = JSON.parse(runCommand(["group", "show", "--name", name, "--query", "tags", "-o", "json"])) as Record<string, string>;
+    if (tags[MANIFEST_ID_TAG] !== manifest.id
+      || tags[FIXTURE_VERSION_TAG] !== String(manifest.version)
+      || tags[FIXTURE_INSTANCE_ID_TAG] !== record.instanceId
+      || tags[FIXTURE_COMPONENT_TAG] !== config.resourceGroupNameBase
+      || tags[COMPLETED_TAG]?.toLowerCase() !== "true") {
+      throw new Error(`Ready workflow fixture resource group ${name} has inconsistent ownership tags; manual repair is required`);
+    }
+    const expiration = parseDeleteAfter(tags[DELETE_AFTER_TAG] ?? "");
+    reusable &&= Number.isFinite(expiration) && expiration - REUSE_SAFETY_MARGIN_MS > now;
+    resourceGroupNames[config.resourceGroupNameBase] = name;
+  }
+  if (!reusable) {
+    return false;
+  }
+  context.runId = record.instanceId;
+  context.resourceGroupNames = resourceGroupNames;
+  return true;
+}
+
+function refreshExpiration(
+  context: FixtureRunContext,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
+  now: () => number = Date.now,
+  retentionMs = READY_RETENTION_MS,
+): string {
+  const expiresAt = new Date(Math.floor((now() + retentionMs) / 1000) * 1000);
+  let earliest = Number.POSITIVE_INFINITY;
+  for (const name of Object.values(context.resourceGroupNames)) {
+    const current = runCommand(["group", "show", "--name", name, "--query", `tags.${DELETE_AFTER_TAG}`, "-o", "tsv"]);
+    const currentExpiration = parseDeleteAfter(current);
+    if (!Number.isFinite(currentExpiration) || currentExpiration < expiresAt.getTime()) {
+      runCommand(["group", "update", "--name", name, "--set", shellQuote(`tags.${DELETE_AFTER_TAG}=${formatDeleteAfter(expiresAt)}`), "-o", "none"]);
+      earliest = Math.min(earliest, expiresAt.getTime());
+    } else {
+      earliest = Math.min(earliest, currentExpiration);
+    }
+  }
+  return new Date(earliest - REUSE_SAFETY_MARGIN_MS).toISOString();
+}
+
+type DiscoveredInstance = {
+  instanceId: string;
+  groups: Map<string, { name: string; completed: boolean; expiresAt: number }>;
+  complete: boolean;
+  reusable: boolean;
+};
+
+function discoverWorkflowFixtures(
+  manifest: FixtureManifest,
+  runCommand: ProvisioningDependencies["runAz"] = runAz,
+  now: number = Date.now(),
+): DiscoveredInstance[] {
+  const groupsByInstance = new Map<string, DiscoveredInstance["groups"]>();
+  for (const config of manifest.bicepConfigs) {
+    const groups = JSON.parse(runCommand([
+      "group",
+      "list",
+      "--tag",
+      `${FIXTURE_ID_TAG}=${config.fixtureId}`,
+      "--query",
+      "[].{name:name,tags:tags}",
+      "-o",
+      "json",
+    ])) as { name: string; tags: Record<string, string> | null }[];
+    for (const rawGroup of groups) {
+      const group = { name: rawGroup.name, tags: rawGroup.tags ?? {} };
+      if (group.tags[MANIFEST_ID_TAG] !== manifest.id
+        || group.tags[FIXTURE_VERSION_TAG] !== String(manifest.version)) {
+        continue;
+      }
+      const instanceId = group.tags[FIXTURE_INSTANCE_ID_TAG];
+      const component = group.tags[FIXTURE_COMPONENT_TAG];
+      if (!instanceId || !component || !manifest.bicepConfigs.some((item) => item.resourceGroupNameBase === component)) {
+        throw new Error(`Workflow fixture resource group ${group.name} has malformed ownership tags`);
+      }
+      const groups: DiscoveredInstance["groups"] = groupsByInstance.get(instanceId) ?? new Map();
+      const existing = groups.get(component);
+      if (existing && existing.name !== group.name) {
+        throw new Error(`Workflow fixture instance ${instanceId} has multiple groups for component ${component}`);
+      }
+      groups.set(component, {
+        name: group.name,
+        completed: group.tags[COMPLETED_TAG]?.toLowerCase() === "true",
+        expiresAt: parseDeleteAfter(group.tags[DELETE_AFTER_TAG] ?? ""),
+      });
+      groupsByInstance.set(instanceId, groups);
+    }
+  }
+  return [...groupsByInstance].map(([instanceId, groups]) => ({
+    instanceId,
+    groups,
+    complete: manifest.bicepConfigs.every((config) => groups.get(config.resourceGroupNameBase)?.completed === true),
+    reusable: [...groups.values()].every((group) =>
+      Number.isFinite(group.expiresAt) && group.expiresAt - REUSE_SAFETY_MARGIN_MS > now),
+  })).sort((left, right) => left.instanceId.localeCompare(right.instanceId));
+}
+
+function selectDiscoveredFixture(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+  instances: DiscoveredInstance[],
+  preferredInstanceId?: string,
+  logger: Pick<Console, "warn"> = console,
+): DiscoveredInstance | undefined {
+  const complete = instances.filter((instance) => instance.complete && instance.reusable);
+  const selected = complete.find((instance) => instance.instanceId === preferredInstanceId) ?? complete[0];
+  if (!selected) {
+    return undefined;
+  }
+  if (complete.length > 1) {
+    logger.warn(`Workflow fixture ${manifest.id} has duplicate complete instances; selecting ${selected.instanceId}`);
+  }
+  context.runId = selected.instanceId;
+  for (const [component, group] of selected.groups) {
+    context.resourceGroupNames[component] = group.name;
+  }
+  return selected;
+}
+
+function recordResourceGroups(context: FixtureRunContext): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(context.resourceGroupNames).map(([component, name]) => [component, resourceGroupId(context, name)]),
+  );
+}
+
+function workflowOutput(
+  context: FixtureRunContext,
+  manifest: FixtureManifest,
+): ProvisionManifestOutput {
+  const output: ProvisionScriptOutput = {
+    resourceGroups: Object.values(context.resourceGroupNames),
+    fixtureId: manifest.id,
+    fixtureVersion: manifest.version,
+    fixtureInstanceId: context.runId,
+    resourceGroupIdsByComponent: recordResourceGroups(context),
+  };
+  return { context, output: JSON.stringify(output, null, 2) };
+}
+
+/**
+ * Provisions or reuses a fixture according to its persistence policy.
+ * Omitted persistence defaults to an ad hoc fixture ("never").
+ */
+export function provision(
+  manifestPath: string,
+  manifest: FixtureManifest,
+): Promise<ProvisionManifestOutput> {
+  return provisionWithDependencies(manifestPath, manifest, defaultProvisioningDependencies());
+}
+
+export async function provisionWithDependencies(
+  manifestPath: string,
+  manifest: FixtureManifest,
+  dependencies: ProvisioningDependencies,
+): Promise<ProvisionManifestOutput> {
+  if (manifest.persistence === "temporary") {
+    return provisionTemporaryFixture(manifestPath, manifest, dependencies);
+  }
+
+  try {
+    if (manifest.persistence !== undefined && manifest.persistence !== "never" && manifest.persistence !== "permanent") {
+      throw new Error(`Unsupported fixture persistence: ${String(manifest.persistence)}`);
+    }
+    dependencies.budget.set(dependencies.totalBudgetMs);
+
+    const context = computeRunContext(manifest, dependencies);
     const manifestDir = dirname(manifestPath);
 
-    const fixturesAlreadyProvisioned = manifest.persist && discoverPersistentFixtures(context, manifest);
+    const fixturesAlreadyProvisioned = manifest.persistence === "permanent"
+      && discoverPersistentFixtures(context, manifest, dependencies.runAz);
     if (!fixturesAlreadyProvisioned) {
+      const retentionTags = manifest.persistence === "permanent"
+        ? []
+        : [deleteAfterTag(new Date(dependencies.now() + DEFAULT_TIME_TO_LIVE_SEC * 1000))];
       for (const bicepConfig of manifest.bicepConfigs) {
-        provision(context, manifest, bicepConfig, manifestDir);
+        provisionBicepConfig(context, manifest, bicepConfig, manifestDir, retentionTags, dependencies.runAz, dependencies.now);
       }
-      markFixturesCompleted(context);
+      markFixturesCompleted(context, dependencies.runAz);
     }
 
-    runPostProvisionScripts(context, manifest, manifestDir);
+    dependencies.runPostProvisionScript(context, manifest, manifestDir);
 
     // Write output
     const output: ProvisionScriptOutput = {
@@ -310,7 +709,160 @@ export function provisionManifest(manifestPath: string, manifest: FixtureManifes
       output: JSON.stringify(output, null, 2)
     };
   } catch (error) {
-    console.error(error instanceof Error ? error.message : error);
+    dependencies.log.error(error instanceof Error ? error.message : error);
     throw error;
+  }
+}
+
+async function provisionTemporaryFixture(
+  manifestPath: string,
+  manifest: FixtureManifest,
+  dependencies: ProvisioningDependencies,
+): Promise<ProvisionManifestOutput> {
+  const accountName = requiredEnvironment(STORAGE_ACCOUNT_ENV, dependencies.environment);
+  const containerName = requiredEnvironment(STORAGE_CONTAINER_ENV, dependencies.environment);
+  const acquisitionDeadline = dependencies.now() + dependencies.leaseAcquisitionBudgetMs;
+  const ownerWorkflowRunId = dependencies.environment.GITHUB_RUN_ID
+    ? `${dependencies.environment.GITHUB_RUN_ID}:${dependencies.environment.GITHUB_RUN_ATTEMPT ?? "1"}`
+    : `local:${dependencies.processId}:${dependencies.randomUUID()}`;
+  let lease: WorkflowResourceLockLease | undefined;
+  // After "Ready" is durably written the instance is valid; a release failure must not discard it.
+  const releaseAfterPublish = async () => {
+    const held = lease;
+    lease = undefined;
+    try {
+      await held?.release();
+    } catch (releaseError) {
+      dependencies.log.error(`Failed to release workflow fixture lease after publishing: ${errorText(releaseError)}`);
+    }
+  };
+  try {
+    dependencies.budget.set(dependencies.leaseAcquisitionBudgetMs + dependencies.totalBudgetMs);
+    let context = computeRunContext(manifest, dependencies);
+    const blobName = coordinationBlobName(context, manifest);
+    const lock = dependencies.createResourceLock(accountName, containerName, blobName, acquisitionDeadline);
+    await lock.initialize({ state: "Empty" });
+
+    while (true) {
+      dependencies.budget.set(Math.max(1, acquisitionDeadline - dependencies.now()));
+      lease = await lock.acquire();
+      dependencies.budget.set(dependencies.totalBudgetMs);
+      dependencies.log.log(`Acquired workflow fixture lease for ${manifest.id}@${manifest.version}; owner ${ownerWorkflowRunId}`);
+
+      const record = parseCoordinationRecord(await lease.read(), manifest);
+      if (record.state === "Ready"
+        && !(record.expiresAt && Date.parse(record.expiresAt) <= dependencies.now())
+        && verifyAndSelectRecordedFixture(context, manifest, record, dependencies.runAz, dependencies.now())) {
+        lease.assertHealthy();
+        const expiresAt = refreshExpiration(
+          context,
+          dependencies.runAz,
+          dependencies.now,
+          dependencies.readyRetentionMs,
+        );
+        await lease.renew();
+        await lease.write({ ...record, expiresAt });
+        await releaseAfterPublish();
+        return workflowOutput(context, manifest);
+      }
+
+      // It's possible that a complete instance of fixture had been created but that run failed to update the record.
+      // Explicitly discover and fix the record if it's the case.
+      const instances = discoverWorkflowFixtures(manifest, dependencies.runAz, dependencies.now());
+      const selected = selectDiscoveredFixture(context, manifest, instances, record.instanceId, dependencies.log);
+      if (selected) {
+        // Groups are only tagged Completed after post-provision succeeds, so a complete instance needs neither again.
+        await lease.renew();
+        lease.assertHealthy();
+        const expiresAt = refreshExpiration(
+          context,
+          dependencies.runAz,
+          dependencies.now,
+          dependencies.readyRetentionMs,
+        );
+        const readyRecord: CoordinationRecord = {
+          state: "Ready",
+          manifestId: manifest.id,
+          manifestVersion: manifest.version,
+          instanceId: context.runId,
+          ownerWorkflowRunId,
+          resourceGroups: recordResourceGroups(context),
+          expiresAt,
+        };
+        await lease.write(readyRecord);
+        await releaseAfterPublish();
+        return workflowOutput(context, manifest);
+      }
+
+      const retryAt = record.nextAttemptNotBefore ? Date.parse(record.nextAttemptNotBefore) : Number.NaN;
+      if (Number.isFinite(retryAt) && retryAt > dependencies.now()) {
+        await lease.release();
+        lease = undefined;
+        const waitMs = retryAt - dependencies.now();
+        if (dependencies.now() + waitMs >= acquisitionDeadline) {
+          throw new Error(`Workflow fixture ${manifest.id} cannot be retried within the acquisition budget`);
+        }
+        await dependencies.sleep(waitMs);
+        context = computeRunContext(manifest, dependencies);
+        continue;
+      }
+
+      const preparingRecord: CoordinationRecord = {
+        state: "Preparing",
+        manifestId: manifest.id,
+        manifestVersion: manifest.version,
+        instanceId: context.runId,
+        ownerWorkflowRunId,
+        resourceGroups: recordResourceGroups(context),
+        nextAttemptNotBefore: new Date(dependencies.now() + dependencies.provisioningRetryDelayMs).toISOString(),
+      };
+      await lease.write(preparingRecord);
+      dependencies.log.log(`Provisioning workflow fixture ${manifest.id} instance ${context.runId}`);
+
+      const retentionTag = deleteAfterTag(new Date(dependencies.now() + dependencies.readyRetentionMs));
+      for (const config of manifest.bicepConfigs) {
+        lease.assertHealthy();
+        provisionBicepConfig(context, manifest, config, dirname(manifestPath), [
+          `${FIXTURE_COMPONENT_TAG}=${config.resourceGroupNameBase}`,
+          retentionTag,
+        ], dependencies.runAz, dependencies.now);
+        await dependencies.immediate();
+        lease.assertHealthy();
+      }
+      dependencies.runPostProvisionScript(context, manifest, dirname(manifestPath));
+      await lease.renew();
+      lease.assertHealthy();
+      markFixturesCompleted(context, dependencies.runAz);
+      lease.assertHealthy();
+      const expiresAt = refreshExpiration(
+        context,
+        dependencies.runAz,
+        dependencies.now,
+        dependencies.readyRetentionMs,
+      );
+      const readyRecord: CoordinationRecord = {
+        state: "Ready",
+        manifestId: manifest.id,
+        manifestVersion: manifest.version,
+        instanceId: context.runId,
+        ownerWorkflowRunId,
+        resourceGroups: recordResourceGroups(context),
+        expiresAt,
+      };
+      await lease.write(readyRecord);
+      await releaseAfterPublish();
+      return workflowOutput(context, manifest);
+    }
+  } catch (error) {
+    dependencies.log.error(error instanceof Error ? error.message : error);
+    throw error;
+  } finally {
+    if (lease) {
+      try {
+        await lease.release();
+      } catch (releaseError) {
+        dependencies.log.error(`Failed to release workflow fixture lease: ${errorText(releaseError)}`);
+      }
+    }
   }
 }
