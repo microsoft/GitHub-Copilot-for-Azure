@@ -153,8 +153,8 @@ stimuli:
   # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Voice Agents
   # ═══════════════════════════════════════════════════════════════════════════
-  - name: "Prompt Voice agent creation skill invocation"
-    prompt: "Help me create a Prompt Voice agent in Microsoft Foundry using gpt-realtime and the en-US-AvaNeural voice."
+  - name: "Voice-based prompt agent creation skill invocation"
+    prompt: "Help me create a voice-based prompt agent in Microsoft Foundry using gpt-realtime and the en-US-AvaNeural voice."
     tags:
       type: integration
       tier: smoke
@@ -172,8 +172,8 @@ stimuli:
           required:
             - name: "(?i)^(bash|powershell|pwsh|run_in_terminal)$"
               command: "(?i)check-and-setup-dependencies\\.(sh|ps1)"
-  - name: "Hosted Voice agent creation skill invocation"
-    prompt: "Help me build a Hosted Voice agent in Microsoft Foundry with a Python target over Voice Live Bridge 1.0 and a managed voice wrapper."
+  - name: "Voice conversation engine creation skill invocation"
+    prompt: "Help me build a voice agent in Microsoft Foundry using a Python hosted agent as its voice conversation engine."
     tags:
       type: integration
       tier: smoke

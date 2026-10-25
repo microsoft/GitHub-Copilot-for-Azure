@@ -1,13 +1,13 @@
-# Hosted Voice YAML
+# Voice Agent with a Hosted Conversation Engine YAML
 
-Author a voice-based agent that uses a hosted text agent as its conversation engine. Apply [common invariants](voice-agent-common.md) and the [Voice Live Bridge `1.0` contract](voice-agent-hosted-bridge.md).
+Author a voice-based agent that uses a hosted text agent as its conversation engine. Apply [common invariants](voice-agent-common.md) and the [voice conversation engine contract and compatibility boundary](voice-conversation-engine.md).
 
 ## Ownership
 
 | Service | Owns |
 |---|---|
-| Hosted target (`kind: hosted`) | Model calls, instructions, tools, bounded history, Voice Live Bridge handler |
-| Managed Voice wrapper (`kind: voice`) | Audio, VAD, transcription, synthesis, greeting, managed Voice endpoint |
+| Hosted conversation engine (`kind: hosted`) | Model calls, instructions, tools, bounded history, conversation-engine protocol handler |
+| Managed voice agent (`kind: voice`) | Audio, VAD, transcription, synthesis, greeting, managed Voice endpoint |
 
 ## Minimal Shape
 
@@ -46,6 +46,8 @@ services:
     outputModalities: [audio]
 ```
 
-The wrapper must omit target-owned fields such as `model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration`, environment settings, and session policies.
+The voice agent must omit engine-owned fields such as `model`, `modelType`, `instructions`, `tools`, `protocols`, `codeConfiguration`, environment settings, and session policies.
 
-When requested wrapper settings require YAML edits, load [Voice Agent YAML settings](voice-agent-settings.md). Preserve unrelated existing wrapper fields, keep target and wrapper names distinct, and deploy the target before or together with the wrapper.
+`conversationEngine.name` identifies the hosted service in this azd project. Its optional `version` defaults to `deployed`, selecting the version deployed by the current azd environment. This CLI value is not a literal SDK/API agent version: Python uses `VoiceHostedAgentConversationEngine(name=..., version=...)` under `conversation_engine` with an actual version, or omits `version` to select the latest at connection time. Keep the `hosted_agent` discriminator unchanged.
+
+When requested voice settings require YAML edits, load [Voice Agent YAML settings](voice-agent-settings.md). Preserve unrelated existing fields, keep engine and voice agent names distinct, and deploy the engine before or together with the voice agent.

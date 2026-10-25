@@ -1,6 +1,6 @@
 # Voice Agent WebSocket Smoke-Test Reference
 
-How to verify a deployed Microsoft Foundry Voice Agent — either a **Prompt Voice Agent** or a **Hosted Voice wrapper** — over the managed Foundry `voice` WebSocket endpoint.
+How to verify a deployed Microsoft Foundry Voice Agent — either a **voice-based prompt agent** or a **voice agent with a hosted conversation engine** — over the managed Foundry `voice` WebSocket endpoint.
 
 > **Why not `azd ai agent invoke`?**
 > `azd ai agent invoke` does not support Voice Agents. Always verify them over the managed `voice` WebSocket endpoint or in the Microsoft Foundry portal (`https://ai.azure.com`). You can inspect the deployed endpoint URL with `azd ai agent endpoint show <voice-service>`.
@@ -15,7 +15,7 @@ The bundled text-driven managed Voice WebSocket client validates:
 
 - Entra authentication and WebSocket endpoint/session establishment.
 - The requested user turn, not only an optional greeting.
-- Prompt Voice reasoning, or the Hosted Voice wrapper-to-target Bridge path where applicable.
+- Voice-based prompt agent reasoning, or the connection to its hosted conversation engine where applicable.
 - A completed response with non-empty transcript and synthesized audio payload.
 - An optional deterministic transcript marker.
 
@@ -40,8 +40,8 @@ Report automated verification and manual acceptance separately. Never claim the 
   - `Authorization`: Entra access token for resource `https://ai.azure.com` (`az account get-access-token --resource https://ai.azure.com --query accessToken -o tsv`), formatted dynamically as `"{} {}".format("Bearer", token)`. Never hard-code tokens or API keys in scripts or commits.
   - `Foundry-Features: VoiceAgents=V1Preview`
 - **Target agent name**:
-  - For **Prompt Voice**: pass the Voice Agent's `name`.
-  - For **Hosted Voice**: pass the **`kind: voice` wrapper's** `name` (not the `kind: hosted` target's name) to test the full end-to-end Voice pipeline.
+  - For a **voice-based prompt agent**: pass the Voice Agent's `name`.
+  - For a **voice agent with a hosted conversation engine**: pass the **`kind: voice` agent's** `name` (not the `kind: hosted` engine's name) to test the full end-to-end Voice pipeline.
 
 ---
 
@@ -103,7 +103,7 @@ Note that PowerShell uses PascalCase parameter names (`-Endpoint`, `-AgentName`,
   -Timeout 180
 ```
 
-When testing a Hosted Voice Agent running the official `voice-live-bridge-basic-python` target (or any agent with a deterministic response), pass `--expected-marker` / `-ExpectedMarker` (for example, `--text "/help" --expected-marker "Commands:"`) to assert that the returned transcript matches the requested turn rather than a greeting.
+When testing a voice agent using the official `voice-live-bridge-basic-python` conversation engine (or any agent with a deterministic response), pass `--expected-marker` / `-ExpectedMarker` (for example, `--text "/help" --expected-marker "Commands:"`) to assert that the returned transcript matches the requested turn rather than a greeting. Keep this literal sample name unchanged; see [conversation-engine compatibility](voice-conversation-engine.md).
 
 ### Exit Codes
 
@@ -121,7 +121,7 @@ When testing a Hosted Voice Agent running the official `voice-live-bridge-basic-
 2. **Wait for `session.updated` and Optional Greeting**:
    - Waits for `session.updated`, then applies a short `1.0s` greeting-detection grace interval.
    - If a greeting response (`response.created` / `response.output_*`) starts before or during the grace window, drains the entire greeting through its `response.done` without recording greeting transcript/audio as the requested turn.
-   - If no greeting begins during the grace window (such as on a no-greeting Prompt Voice agent), proceeds immediately after the grace timeout.
+   - If no greeting begins during the grace window (such as on a no-greeting voice-based prompt agent), proceeds immediately after the grace timeout.
 3. **Send Typed Turn**:
    - Sends `{"type": "conversation.item.create", "item": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "<prompt>"}]}}`
    - Sends `response.create` with a unique metadata marker for the smoke-test turn.

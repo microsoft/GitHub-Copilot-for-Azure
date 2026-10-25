@@ -976,8 +976,8 @@ stimuli:
   # ═══════════════════════════════════════════════════════════════════════════
   # Foundry Voice Agents
   # ═══════════════════════════════════════════════════════════════════════════
-  - name: "Prompt Voice agent creation skill invocation"
-    prompt: "Help me create a Prompt Voice agent in Microsoft Foundry."
+  - name: "Voice-based prompt agent creation skill invocation"
+    prompt: "Help me create a voice-based prompt agent in Microsoft Foundry."
     tags:
       type: integration
       tier: full

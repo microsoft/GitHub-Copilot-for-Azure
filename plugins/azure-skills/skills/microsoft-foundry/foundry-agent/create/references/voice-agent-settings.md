@@ -4,9 +4,9 @@ For requested/preserved YAML settings. Use `kind: voice`; preserve unrelated fie
 
 | Owner | Settings |
 |---|---|
-| Prompt Voice | Model, instructions, inputs, audio, tools, behavior, data, telephony |
-| Hosted wrapper | Audio, voice, behavior, store only |
-| Hosted target | Model, instructions, tools, logic |
+| Voice-based prompt agent | Model, instructions, inputs, audio, tools, behavior, data, telephony |
+| Voice agent with a hosted conversation engine | Audio, voice, behavior, store only |
+| Hosted conversation engine | Model, instructions, tools, logic |
 
 ## Advanced Settings
 
