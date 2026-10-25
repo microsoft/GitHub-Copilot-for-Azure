@@ -158,6 +158,7 @@ workflow, this skill owns triage and coordinates one unified review:
 1. Confirm the target subscription, resource group, and AKS cluster. If `cost-analysis` is available, collect one billed-cost baseline for that scope and reuse it throughout the review.
 2. Evaluate the applicable rightsizing, VPA, Cluster Autoscaler, and Spot workflows.
 3. Invoke `aks-cost-optimization` when available for NAP readiness, node-pool bin packing, node-scaling bottlenecks, or Kubernetes-to-Azure storage optimization.
+4. Check for stable non-Spot demand. If present, invoke `cost-optimization` when available for commitment analysis. If the capability or evidence is unavailable, report commitment analysis as a gap. Do not recommend a purchase from this review alone.
 
 Investigate applicable levers and return one ranked report. Rank by comparable
 estimated cost impact when available; keep unknown monetary impact unknown

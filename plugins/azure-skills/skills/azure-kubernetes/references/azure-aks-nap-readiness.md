@@ -34,8 +34,10 @@ outbound-type changes.
 
 If CAS is enabled, do not recommend NAP through this base workflow. Invoke
 `aks-cost-optimization` when available to compare CAS tuning with a controlled
-CAS-to-NAP migration. Otherwise, state that CAS must be disabled before NAP and
-that coexistence or migration was not assessed.
+CAS-to-NAP migration. Otherwise, explain that migration requires either
+disabling CAS first or a temporary, explicitly approved side-by-side transition
+using the subscription-wide `AllowClusterAutoscalerAndNAP` feature and mutually
+exclusive scheduling. State that neither migration path was assessed here.
 
 ## Decide
 

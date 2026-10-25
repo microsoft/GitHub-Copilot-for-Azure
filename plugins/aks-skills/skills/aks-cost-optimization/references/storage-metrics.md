@@ -1,82 +1,77 @@
 # AKS Storage Capacity and Performance Evidence
 
-Use this workflow only for active, verified Azure Disk mappings. Reuse
-representative results already collected for the same cluster and period.
+For active, verified Azure Disk mappings. Reuse evidence for the same cluster/period.
 
 ## Capacity History
 
-Check the cluster's managed Prometheus workspace first. Use a fitting
-host-advertised Azure Monitor read or the approved Prometheus query API. Query
-the requested period, up to 30 days, with:
+Use history only for the verified current PVC/PV/disk binding. Prefer managed Prometheus
+through an approved query API. Confirm the target's unique cluster label/alias
+and use it in both selectors and groupings, replacing `cluster` if needed.
+Substitute the verified cluster value, namespace, PVC, and lookback below.
+Unresolved identity means ambiguous history, not rightsizing evidence.
+
+Use the requested period, otherwise up to 30 days, within verified binding and
+retention. Replace `<lookback>` with that duration, e.g. `30d`; never include
+samples from an earlier binding.
+
+Run instant queries at assessment end for current capacity, maximum per-series
+p95, and overall peak usage:
 
 ```promql
-max by (namespace, persistentvolumeclaim) (
-  kubelet_volume_stats_capacity_bytes
+max by (cluster, namespace, persistentvolumeclaim) (
+  kubelet_volume_stats_capacity_bytes{
+    cluster="<cluster-label-value>", namespace="<namespace>",
+    persistentvolumeclaim="<pvc>"
+  }
 )
 
-max by (namespace, persistentvolumeclaim) (
-  quantile_over_time(0.95, kubelet_volume_stats_used_bytes[30d])
+max by (cluster, namespace, persistentvolumeclaim) (
+  quantile_over_time(0.95, kubelet_volume_stats_used_bytes{
+    cluster="<cluster-label-value>", namespace="<namespace>",
+    persistentvolumeclaim="<pvc>"
+  }[<lookback>])
 )
 
-max by (namespace, persistentvolumeclaim) (
-  max_over_time(kubelet_volume_stats_used_bytes[30d])
+max by (cluster, namespace, persistentvolumeclaim) (
+  max_over_time(kubelet_volume_stats_used_bytes{
+    cluster="<cluster-label-value>", namespace="<namespace>",
+    persistentvolumeclaim="<pvc>"
+  }[<lookback>])
 )
 ```
 
-Use a range query to retain sample count and first/last timestamps. Join by
-namespace and PVC, then cross-check the result with live inventory and the
-verified PVC/PV/disk mapping. Prometheus identifies volumes only by namespace
-and PVC name. Use samples from the current PVC/PV binding only; if its start
-cannot be verified, treat the history as ambiguous.
+Report p95 as maximum per-series p95, not combined PVC-history p95; use peak
+usage and headroom for sizing. Verify representative coverage and capacity
+changes; investigate uncertain gaps over short windows. Missing/invalid data
+is unknown, not zero; never sum duplicate volume reports.
 
-If managed Prometheus history is unavailable, and Container Insights populates
-`KubePVInventory` and `InsightsMetrics`, query:
-
-```kusto
-let pv = KubePVInventory
-| where TimeGenerated >= ago(30d) and ClusterId =~ "<aks-resource-id>"
-| summarize arg_max(TimeGenerated, *) by PVCNamespace, PVCName, PVName
-| project PVCNamespace, PVCName, PVName, PVCapacityBytes;
-let usage = InsightsMetrics
-| where TimeGenerated >= ago(30d)
-| where Namespace == "container.azm.ms/pv" and Name == "pvUsedBytes"
-| extend t=todynamic(Tags)
-| where tostring(t.clusterId) =~ "<aks-resource-id>"
-| extend PVCNamespace=tostring(t.pvcNamespace), PVCName=tostring(t.pvcName),
-    PVName=tostring(t.pvName)
-| summarize p95UsedBytes=percentile(Val, 95), maxUsedBytes=max(Val),
-    samples=count(), firstSample=min(TimeGenerated),
-    lastSample=max(TimeGenerated) by PVCNamespace, PVCName, PVName;
-pv
-| join kind=leftouter usage on PVCNamespace, PVCName, PVName
-| extend p95UsedPct=round(100.0*p95UsedBytes/PVCapacityBytes, 1),
-    sampleSpanDays=datetime_diff("day", lastSample, firstSample)
-```
-
-Do not fall back to joining on PVC namespace/name when the usage-side PV name
-is missing; treat that history as ambiguous.
-
-For either source, report the requested and actual observed periods. Workspace
-retention limits the lookback. Account for growth, batch cycles, backups, recovery, and
-operational headroom. `azureblob-*` volumes do not expose this metric. Missing
-or sparse samples mean unknown utilization, not zero.
+If unavailable, use the [Container Insights query](storage-container-insights.md).
+Report requested/observed periods, retention, binding verification, coverage/gaps,
+current capacity, p95/max used bytes and aggregation basis, capacity changes,
+and growth/batch/recovery headroom. Divide by verified positive current capacity
+only when labeling percentages relative to current capacity, not historical
+utilization. Missing, sparse, ambiguous, or unrepresentative history means unknown utilization, not zero.
+ `azureblob-*` lacks Container Insights PV usage.
 
 ## Disk Performance
 
-Discover the Azure Monitor metric definitions exposed by each mapped disk.
-Query supported disk-resource metrics for read/write operations and bytes.
+Discover each disk's Azure Monitor metric definitions; query supported read/write
+operations/sec and bytes/sec. Preserve units; rates are not totals.
 
 For latency and consumed IOPS/bandwidth percentage, map the exact disk resource
 ID to each VMSS instance where it was attached and obtain its LUN from that
 instance's data-disk configuration. Query the VM instance's Data Disk Latency,
 Data Disk IOPS Consumed Percentage, and Data Disk Bandwidth Consumed Percentage
-metrics for that LUN.
+metrics for that LUN. Verify metric availability for the VM/controller.
+Check available disk throttling and VM-level saturation evidence; missing
+metrics mean unknown, not zero.
 
-Build time-aligned disk/instance/LUN attachment intervals across the lookback
-because a disk can move between nodes. Combine only verified intervals; if
+Track disk/instance/LUN attachment intervals as disks move between nodes.
+Combine only verified intervals; if
 historical attachment timing is unavailable, report incomplete performance
 history rather than attributing another disk's LUN metrics. For each source,
-collect representative average, p95 when available, and maximum values.
+report coverage, average and maximum, plus p95 of collected samples when
+supported. Label aggregation/grain: p95 of minute averages is not per-I/O p95.
 
 Compare historical demand with the candidate disk's capacity, IOPS, throughput,
 burst behavior, and the attached VM or node aggregate disk limits. A lower tier

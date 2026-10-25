@@ -307,6 +307,35 @@ stimuli:
         config:
           pattern: "(?i)fatal error|unhandled exception|stack trace"
 
+  - name: "AKS resource costs reject mixed actual and amortized USD totals"
+    prompt: "I am investigating a cost increase for the VM scale set backing my AKS cluster. The baseline week shows $100 USD in amortized cost, and the spike week shows $120 USD in actual cost. Both cover complete weeks and the same resources. Is that a 20 percent increase? Explain what reports I need to compare."
+    config:
+      runs: 1
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: response-quality
+      regression: aks-resource-cost-basis-consistency
+    rubric:
+      - "The response rejects the claimed 20 percent increase because actual and amortized costs are different bases even though both totals are USD. It recommends obtaining both periods on the same actual or amortized basis using supported resource-level Cost Management queries, keeping any parallel actual and amortized comparisons separate. If only allocation data is available, it discloses that limitation rather than inventing a query option."
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - cost-analysis
+      - type: prompt
+        config:
+          scoring: binary
+          threshold: 1
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)^(bash|powershell|shell|python|web_fetch|fetch|curl|http|rest)$"
+      - type: output-not-matches
+        config:
+          pattern: "(?i)fatal error|unhandled exception|stack trace"
+
   - name: "Cost investigation uses comparable evidence"
     prompt: "Explain how you would investigate a one-day Azure cost spike without running tools. Include the baseline, drill-down order, financial dimensions, change correlation, and confidence criteria."
     config:
