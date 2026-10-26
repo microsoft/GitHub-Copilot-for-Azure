@@ -4,7 +4,7 @@ Attach an existing Foundry Toolbox to a Managed Harness Agent through an authent
 
 ## Resolve the exact Toolbox version
 
-Create or update the Toolbox only when explicitly requested, following [Foundry Toolbox](../../../../toolbox/toolbox.md). Publish the intended version, then read its exact MCP endpoint:
+Create or update the Toolbox only when explicitly requested, following [Foundry Toolbox](../../../../toolbox/toolbox.md). Resolve the intended version's exact MCP endpoint:
 
 ```bash
 azd ai toolbox show <toolbox-name> \
