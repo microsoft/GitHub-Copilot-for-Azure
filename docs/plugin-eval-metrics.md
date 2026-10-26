@@ -6,7 +6,7 @@ This document defines the core evaluation metrics for skills in the `azure` plug
 
 Agents are designed to load skills automatically when relevant. Each skill's description should guide the model to load it in appropriate situations without explicit cues from the user, such as a slash command or a reference to the skill by name.
 
-The skill invocation success rate measures how often the agent loads a skill in response to test prompts intended to trigger it. This rate is compared against a threshold to determine whether invocation is sufficiently reliable.
+The skill invocation success rate measures how often the agent loads a skill in response to test prompts intended to trigger it. This rate is compared against a threshold (by default 75%) to determine whether invocation is sufficiently reliable.
 
 ## Skill effectiveness
 
