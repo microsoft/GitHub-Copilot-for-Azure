@@ -15,9 +15,9 @@ evaluations:
 
 models:
   answers:
-    - claude-sonnet-5
+    - gpt-5.6-sol
   judges:
-    - gpt-6.1-sol
+    - claude-sonnet-5
 
 experiment:
   repetitions: 2
