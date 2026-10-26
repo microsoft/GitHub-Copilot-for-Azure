@@ -299,8 +299,9 @@ stimuli:
       - The target table's ingestion metrics show new records
       - An authorized service identity can query and return the recent records
       - The affected operator receives HTTP 403 when running the same query
-      - The operator has the Reader role at the subscription
-      - The operator has no Log Analytics data-query role on the workspace
+      - The operator has Reader only on an application resource group
+      - The workspace is in a separate monitoring resource group where the
+        operator has no role assignment at the workspace or parent scopes
       - No workspace firewall, private endpoint, or DNS change occurred
 
       Identify the root cause, recommend a least-privilege correction, and
