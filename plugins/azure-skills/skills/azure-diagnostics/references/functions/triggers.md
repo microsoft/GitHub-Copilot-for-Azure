@@ -41,10 +41,10 @@ az storage message peek --queue-name "<queue>-poison" --account-name <account> -
 ```
 
 **After fixing the root cause, verify before bulk-replaying:**
-1. Review downstream state and logs for side effects from earlier retries. Confirm replay is idempotent, or add a deduplication/compensation guard before re-enqueuing anything.
-2. Re-enqueue one representative poison message (not the whole batch) and confirm it completes successfully.
+1. Review prior attempts' downstream state/logs and establish a safe, idempotent replay path before re-enqueuing any message.
+2. Re-enqueue one representative poison message (not the whole batch) and confirm it completes successfully without duplicate side effects.
 3. Confirm its `dequeueCount` stays at 1 (no further retries) and the function's App Insights `requests` entry shows `success == true`.
-4. Watch the `<queue>-poison` queue depth over the next few minutes/hours to confirm it stops growing for that failure signature, then replay the remaining messages in a bounded batch.
+4. Watch the `<queue>-poison` queue depth over the next few minutes/hours to confirm it stops growing for that failure signature before replaying the remaining messages in a bounded batch.
 
 ## Blob Trigger
 
