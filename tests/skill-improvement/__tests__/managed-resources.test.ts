@@ -58,7 +58,7 @@ function spec(): SkillImprovementRunSpec {
       maxAnswerGenerations: 1,
       maxJudgeCalls: 1,
       maxDurationMinutes: 1,
-      maxConcurrentJobs: 1,
+      maxConcurrentVallyProcesses: 1,
       maxSkillTokenIncreasePercent: 0,
     },
     output: {

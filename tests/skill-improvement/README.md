@@ -44,6 +44,27 @@ More arms cost more. Validate the plan before running paid evaluations. For
 - candidate generations = `P * A * R * S * I`
 - judge calls = `(baseline + candidate generations) * J`
 
+### Evaluation concurrency
+
+```yaml
+limits:
+  maxConcurrentVallyProcesses: 5
+  generationWorkersPerVallyProcess: 1
+```
+
+`maxConcurrentVallyProcesses` is a required positive integer limiting simultaneous
+Vally processes during both answer generation and grading. These are local
+processes within one runner (one Actions runner for workflow execution), not
+GitHub jobs. The old `maxConcurrentJobs` spelling is rejected; rename that field.
+
+`generationWorkersPerVallyProcess` is an optional positive integer, defaulting to `1`.
+It sets generation's `--workers` value only; it does not control a grader's
+internal concurrency. With enough queued generation tasks and scenarios, the
+maximum simultaneous answer sessions is the product of these two settings.
+For example, `5` processes with `2` workers each permit up to `10` generation
+sessions. Concurrency changes scheduling, not generation/judge budgets,
+acceptance/refinement thresholds, or the Skill-size gate.
+
 ## Decisions and evidence
 
 Pass/fail uses judge majority and response score uses the median judge score.
@@ -65,6 +86,234 @@ rather than being silently lost.
 See [Acceptance and refinement configuration](specs/README.md) for definitions,
 point calculations, tuning guidance for new and mature skills, and instructions
 for changing a run specification.
+
+### Development vs. held-out evaluations
+
+**Development tests guide the changes; held-out tests check whether the selected
+improvement generalizes.** Think of the development set as practice tests and
+the held-out set as a final exam.
+
+#### Why held-outs matter
+
+Repeatedly improving against the same examples or evaluations can produce a Skill
+that is better at those examples without being generally better. Held-out
+validation helps detect that.
+
+#### Example workflow
+
+1. Run the original Skill on the development set.
+2. Run improvement iterations on the development set.
+   - For example, iteration 3 passes development acceptance and is saved as an
+     accepted candidate. Later iterations may still run.
+3. After the iteration loop ends, run held-out tests:
+   - Once on the original Skill.
+   - Once on the selected accepted candidate.
+4. Compare those held-out results for final acceptance.
+
+```text
+Original Skill
+    |
+    v
+Evaluate on development set -> baseline for comparison
+    |
+    v
+Improvement loop (up to maxIterations)
+    Edit Skill using development feedback
+        -> evaluate on development set
+        -> check acceptance and refinement criteria
+        -> continue if iterations and actionable failures remain
+    |
+    v
+Select latest candidate that passed development acceptance
+    |
+    v
+Final held-out validation (when enabled and tests exist)
+    Original Skill ------> held-out results ---+
+                                              +--> compare -> accept or reject
+    Selected candidate --> held-out results ---+
+```
+
+Held-out validation runs after the iteration loop, not after each iteration.
+For example, if iteration 3 passes development acceptance but iterations 4 and 5
+do not, the held-out comparison uses the original Skill and iteration 3. If
+iteration 5 also passes, it is selected instead; selection uses the latest
+accepted candidate, not necessarily the highest-scoring one.
+
+Both versions run on the same held-out set at this final stage, providing a
+like-for-like comparison. Held-out validation requires it to be enabled, held-out
+tests to exist, and a candidate to have passed development acceptance.
+
+**The current runner does not feed held-out results back into the improvement
+loop.**
+
+- **Development results** guide the agent's changes across iterations.
+- **Held-out results** are used afterward to accept or reject the selected candidate.
+- If held-out validation fails, the run rejects the candidate; it does **not**
+  start another improvement iteration using those failures.
+
+Held-out results provide stronger evidence of generalization, not a guarantee.
+If those results are manually used to tune a later revision, use a fresh held-out
+set for an independent final check. See
+[Held-out acceptance fields](specs/README.md#held-out-acceptance-fields)
+for configuration.
+
+### Baseline-only evaluations
+
+Set `improvementAgent.enabled: false` to run baseline-only. A run with
+`improvementAgent.enabled: true` must configure `limits.maxIterations` to at
+least `1`; zero iterations with an enabled improvement agent is rejected during
+run-spec validation, before resource preparation or evaluation.
+The report labels a successful baseline-only run **BASELINE EVALUATION COMPLETED**.
+Candidate acceptance and rejection do not apply; correctness results still
+describe the baseline arms, not proof that every individual trajectory passes.
+Failed baseline runs remain **RUN FAILED**.
+
+### Tokens and evaluation answer AI-credit usage
+
+Skill token growth compares estimated candidate Markdown tokens, including
+references, against the original baseline, not the previous iteration.
+The engine sums Markdown characters and estimates one token per four
+characters, rounded up. This size gate is not a cost budget. Trajectory token
+usage is reported separately and includes input/output/cache usage across
+model calls, not just the final answer.
+
+**Evaluation answer AIC** measures Vally evaluation sessions using the Copilot SDK
+to generate answers with the baseline or candidate Skill.
+**Skill-improvement AIC** measures the separate Copilot CLI invocation that reads
+evaluation feedback and edits the Skill. Neither includes judge consumption.
+
+Evaluation answer trajectories store provider-reported `copilot_usage.totalNanoAiu` in
+`metadata.evaluationAnswerBilling`. Sum the `assistant.usage` request values and divide
+by **1,000,000,000** to obtain answer AI credits; do not add the shutdown
+aggregate again or infer credits from tokens or model-call counts.
+`usageEvents` counts received SDK `assistant.usage` events, not independently
+verified requests. `usageEventsWithBilling` counts those with valid billing,
+including zero. Interrupted requests may never emit an event, so matching
+counts alone do not establish completeness; callers must explicitly pass
+session completion to the collector.
+`reportedAiCredits` preserves the available event sum, while `completeAiCredits`
+is complete provider-reported consumption, not invoice charges, and is null unless
+billing and session completion are complete. Both answer and component
+`reportedAiCredits` use null when no usable billing values were reported.
+An optional `reason` explains incomplete accounting: session not completed,
+no usage events, or usage events missing billing. Missing usage is
+unknown, not zero. A provider-reported zero is a valid measurement.
+Aborted or timed-out SDK trajectories retain earlier reported credits as partial,
+because the interrupted request may be missing from the event stream.
+On failed generation, valid JSONL records are recovered for billing and malformed
+records are warned about and left unmeasured; successful generation remains strict.
+
+The summary and detailed reports keep correctness/token comparisons separate
+from a focused credit table: **Batch, Model, Arm, Tests, Repetitions, Billing
+coverage, Avg AIC / test, Total evaluation answer AIC**. Tests counts distinct prompts;
+repetitions counts configured answers per prompt. The average is per test per
+repetition. Total evaluation answer AIC includes all repetitions and is calculated from
+unrounded measurements. For example, two tests averaging 3 credits per
+repetition with two repetitions consume 12 answer credits.
+Answer usage is averaged across repeated judgment records, not summed across
+judges. Complete billing and balanced configured judge counts are required
+for a complete average and total. With incomplete billing, the average remains
+unavailable but the total column shows a **partial reported subtotal** when
+available credits can be safely deduplicated. Unbalanced judge groups are excluded;
+raw generation billing remains available in batch accounting.
+Held-out batches use the same reporting when configured.
+
+These are provider-reported answer-generation credits, not invoice charges
+or full workflow cost. Judge and improvement-agent costs are excluded.
+`iteration-<n>-agent-usage.json` records improvement-agent CLI usage;
+`improvementAgent.maxAiCredits` applies separately to each agent invocation,
+not evaluations, judges, or the whole workflow. Credits are diagnostic,
+not an acceptance gate or permission to trade away correctness.
+This addresses answer reporting in
+[microsoft/mcp-pr#718](https://github.com/microsoft/mcp-pr/issues/718),
+not full workflow-credit accounting.
+
+### AI-credit summary by phase
+
+`report.json` also persists category summaries collected as work runs, including
+available measurements from failed generation attempts and completed agent
+invocations. The phase summary has **Phase, Evaluation answer AIC, Skill-improvement AIC,
+Total reported AIC, Coverage**, with baseline,
+iteration, held-out, and run-total rows. It counts raw answer trajectories
+once, independently of grading duplication. Coverage explicitly counts
+answer trajectories and agent invocations.
+
+The code uses `EvaluationAnswerBilling`, `collectEvaluationAnswerBilling`, and
+`collectSkillImprovementBilling` to distinguish these activities. In `report.json`,
+each `PhaseBilling` uses `phase` to identify a workflow stage and contains
+`BillingCategorySummary` values under the explicit `evaluationAnswers` and
+`skillImprovement` keys. `fullyMeasured` counts units with complete measurements;
+`reportedAiCredits` separately preserves available partial subtotals.
+Individual trajectory metadata uses `metadata.evaluationAnswerBilling`.
+
+The improvement CLI's final `--usage-output-file` JSON supplies the
+authoritative session `totalNanoAiu` aggregate. Divide this once by
+1,000,000,000; never add its model/provider/agent breakdowns or shutdown totals.
+An invocation is measured only with `aiCreditsStatus: "complete"` and a
+terminal JSONL `result` containing an exit code. This supports finalized
+failed invocations as well as successes. Aggregates with provider status `partial`,
+or `complete` without finalization, are labeled partial; missing exports and
+unknown/unavailable provider status remain unavailable.
+Unreadable, truncated, or
+invalid billing exports are reported as unavailable without changing the original
+agent process outcome. Stale output files are removed before launching.
+Each invocation belongs only to its iteration,
+including iterations discarded before candidate evaluation. Baseline and
+held-out agent consumption is **N/A**, not measured zero. Internal model
+retries are included only to the extent the provider's complete aggregate
+accounts for them; the runner does not retry improvement invocations.
+
+**Judge AI credits are out of scope** because Vally's supported grading API does
+not expose judge AI-credit usage. Evaluation AIC therefore covers answer
+generation only, not judging. Skill-improvement AIC is collected separately
+from the CLI export; no judge credits are inferred from tokens.
+Totals cover answers and improvement agents only, not full-workflow consumption.
+Azure infrastructure charges and invoice costs are also excluded.
+
+A component total requires complete expected coverage. The combined amount
+is a **partial reported subtotal** whenever an applicable component is unavailable or
+attempt accounting is incomplete. It includes available credits from both complete
+and incomplete units, without extrapolating missing usage. No reported values
+means unavailable; a reported zero can still be partial. Run totals for the two
+in-scope components require complete coverage and finalized accounting on a
+completed run. Missing historical ledgers remain unavailable.
+Generation disables Vally trial retries; unreturned failed trajectories and
+unreported model retries remain coverage gaps rather than zero consumption.
+
+For example, four of five request-usage events reporting 1.25 AIC produce:
+
+| Evaluation answer AIC | Request billing coverage | Meaning |
+| --- | --- | --- |
+| 1.250000 (partial reported subtotal) | 4/5 in trajectory metadata | Available requests only; actual total unknown |
+
+Coverage in report tables still counts fully billed answer trajectories or
+finalized improvement invocations, not usage events. Event counts remain in
+`metadata.evaluationAnswerBilling.usageEvents` and `usageEventsWithBilling`.
+
+### Reading a run: baseline to iteration 1
+
+The baseline is the starting Skill. A candidate is an edited version of that
+Skill. Our engine coordinates the steps; Vally generates and grades the
+evaluation answers.
+
+| Step | What happens | Output / where to look |
+| --- | --- | --- |
+| 1. Generate baseline answers | Run eval prompts using the starting Skill and configured answer models. | `baseline/generation/` |
+| 2. Grade baseline answers | Check saved answers against eval criteria, including rubric-based judging. | `baseline/judgments/` |
+| 3. Prepare iteration 1 | The engine collects failed or judge-disputed test outcomes, judge explanations, and answer excerpts—not entire failed suites—and writes them into a packet for the improvement agent. | `iteration-1-failure-packet.md` |
+| 4. Improve the Skill | A Copilot CLI improvement agent reads the packet and edits the Skill. It does not run the evals. | `iteration-1-agent.jsonl`, `iteration-1-agent.stderr.log`, `iteration-1-agent-usage.json` |
+| 5. Save and validate candidate 1 | After the agent exits, the engine saves the edits and checks they are valid before evaluating them. | `iteration-1/candidate.patch` and `iteration-1/candidate-skill/` |
+| 6. Generate candidate answers | Run eval prompts again, now using candidate 1. | `iteration-1/generation/` |
+| 7. Grade and decide | Grade new answers. The engine decides whether to accept, retain for refinement, or reject the candidate. | `iteration-1/judgments/` and `report-summary.md` |
+| 8. Continue to iteration 2 | Prepare feedback and repeat steps 4–7. A rejected candidate does not automatically become the next starting version. | `iteration-2-failure-packet.md` and `iteration-2/...` |
+
+For later iterations, replace `iteration-1` with `iteration-n`.
+
+**You usually don't need to read the raw improvement-agent files.** Start with
+`report-summary.md` for results and `candidate.patch` for Skill changes. Open
+the improvement-agent files only to investigate its tool calls, execution
+problems, or token/AI-credit usage. They describe how the candidate was
+created—not whether it passed the evals.
 
 Each run writes:
 

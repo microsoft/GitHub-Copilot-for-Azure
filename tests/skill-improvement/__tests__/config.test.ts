@@ -64,7 +64,7 @@ function spec(): SkillImprovementRunSpec {
       maxAnswerGenerations: 100,
       maxJudgeCalls: 200,
       maxDurationMinutes: 60,
-      maxConcurrentJobs: 2,
+      maxConcurrentVallyProcesses: 2,
       maxSkillTokenIncreasePercent: 15,
     },
     output: {
@@ -75,6 +75,58 @@ function spec(): SkillImprovementRunSpec {
 }
 
 describe("skill improvement configuration", () => {
+  test("requires at least one iteration when the improvement agent is enabled", () => {
+    const invalid = spec();
+    invalid.limits.maxIterations = 0;
+    expect(() => validateRunSpec(invalid)).toThrow(
+      "improvementAgent.enabled cannot be true when limits.maxIterations is 0. "
+      + "Set limits.maxIterations to at least 1 or set improvementAgent.enabled to false."
+    );
+  });
+
+  test("accepts enabled improvement with a candidate iteration", () => {
+    const valid = spec();
+    valid.limits.maxIterations = 1;
+    expect(validateRunSpec(valid).limits.maxIterations).toBe(1);
+  });
+
+  test("accepts baseline-only evaluation when the improvement agent is disabled", () => {
+    const valid = spec();
+    valid.improvementAgent.enabled = false;
+    valid.limits.maxIterations = 0;
+    valid.heldOutAcceptance!.enabled = false;
+    expect(validateRunSpec(valid).limits.maxIterations).toBe(0);
+  });
+
+  test("accepts explicit generation workers or the default of one", () => {
+    const runSpec = spec();
+    expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBeUndefined();
+    runSpec.limits.generationWorkersPerVallyProcess = 3;
+    expect(validateRunSpec(runSpec).limits.generationWorkersPerVallyProcess).toBe(3);
+  });
+
+  test.each([0, -1, 1.5, NaN, Infinity, "2", null])(
+    "rejects invalid concurrency values %s", value => {
+      for (const field of ["maxConcurrentVallyProcesses", "generationWorkersPerVallyProcess"]) {
+        const runSpec = spec();
+        Object.assign(runSpec.limits, { [field]: value });
+        expect(() => validateRunSpec(runSpec)).toThrow(`limits.${field}`);
+      }
+    }
+  );
+
+  test("requires the renamed process limit and rejects the old spelling", () => {
+    const runSpec = spec();
+    Reflect.deleteProperty(runSpec.limits, "maxConcurrentVallyProcesses");
+    expect(() => validateRunSpec(runSpec)).toThrow("limits.maxConcurrentVallyProcesses");
+    Object.assign(runSpec.limits, { maxConcurrentJobs: 2 });
+    expect(() => validateRunSpec(runSpec)).toThrow(
+      "limits.maxConcurrentJobs has been renamed to limits.maxConcurrentVallyProcesses."
+    );
+    runSpec.limits.maxConcurrentVallyProcesses = 2;
+    expect(() => validateRunSpec(runSpec)).toThrow("has been renamed");
+  });
+
   test("configures a valid Azure Kusto improvement run", () => {
     const runSpec = loadRunSpec(fileURLToPath(
       new URL("../specs/azure-kusto.yaml", import.meta.url)
@@ -650,6 +702,7 @@ describe("skill improvement configuration", () => {
 
   test("requires a candidate iteration for held-out acceptance", () => {
     const invalid = spec();
+    invalid.improvementAgent.enabled = false;
     invalid.limits.maxIterations = 0;
     expect(() => validateRunSpec(invalid)).toThrow(
       "heldOutAcceptance requires at least one candidate iteration"

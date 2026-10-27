@@ -60,7 +60,7 @@ function spec(): SkillImprovementRunSpec {
       maxAnswerGenerations: 20,
       maxJudgeCalls: 20,
       maxDurationMinutes: 60,
-      maxConcurrentJobs: 1,
+      maxConcurrentVallyProcesses: 1,
       maxSkillTokenIncreasePercent: 15,
     },
     output: { issue: "never", draftPullRequest: "accepted-candidate-only" },

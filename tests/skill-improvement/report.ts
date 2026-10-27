@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { RunPlan, SkillImprovementRunSpec } from "./config.ts";
 import type { JudgedTrial } from "./evaluation.ts";
+import { emptyBilling, isBillingComplete, type PhaseBilling, type BillingCategorySummary } from "./billing.ts";
 
 export type AggregatedTrial = {
   condition: JudgedTrial["condition"];
@@ -24,6 +25,8 @@ export type AggregatedTrial = {
   output: string;
   targetSkillInvoked: boolean;
   totalTokens: number;
+  answerBilledCredits?: number;
+  answerReportedCredits?: number;
 };
 
 export type EvaluationSummary = {
@@ -103,6 +106,7 @@ export type IterationReport = {
 };
 
 export type SkillImprovementReport = {
+  billing?: PhaseBilling[];
   runId: string;
   generatedAt: string;
   status: "completed" | "failed";
@@ -186,7 +190,15 @@ export function aggregateJudgments(trials: JudgedTrial[]): AggregatedTrial[] {
       })),
       output: first.output,
       targetSkillInvoked: first.targetSkillInvoked,
-      totalTokens: first.totalTokens,
+      totalTokens: group.reduce((total, trial) => total + trial.totalTokens, 0) / group.length,
+      answerBilledCredits: group.every(trial => trial.answerBilledCredits !== undefined)
+        ? group.reduce((total, trial) => total + trial.answerBilledCredits!, 0) / group.length
+        : undefined,
+      answerReportedCredits: group.some(trial =>
+        trial.answerReportedCredits !== undefined || trial.answerBilledCredits !== undefined)
+        ? group.reduce((total, trial) =>
+          total + (trial.answerReportedCredits ?? trial.answerBilledCredits ?? 0), 0) / group.length
+        : undefined,
     };
   });
 }
@@ -208,6 +220,138 @@ export function summarizeTrials(trials: AggregatedTrial[]): EvaluationSummary {
     averageTokens: trials.length === 0 ? 0 : round(totalTokens / trials.length),
     judgeDisagreements: trials.filter(trial => trial.judgeDisagreement).length,
   };
+}
+
+function renderEvaluationAnswerBilling(report: SkillImprovementReport): string[] {
+  const lines = [
+    "## Correctness and trajectory tokens",
+    "",
+    "Pass counts use majority-aggregated outcomes; graded verdicts expose failures hidden by majority voting (with multiple judges these are not unique trajectories). Token means include input/output/cache usage across model calls, not just the final answer or Skill Markdown size.",
+    "",
+    "| Phase | Model | Arm | Passed outcomes | Passing graded verdicts | Mean trajectory tokens |",
+    "| --- | --- | --- | ---: | ---: | ---: |",
+  ];
+  const billingLines = [
+    "## Evaluation answer AI-credit usage",
+    "",
+    "Provider-reported `copilot_usage.totalNanoAiu` converted to credits (1e9 nano-AIU per credit). Missing or partial request billing is not zero. Vally's supported grading API does not expose judge AI-credit usage, so evaluation AIC covers answer generation only. Skill-improvement AIC is reported separately; this is not an invoice or a workflow-total cost. Credits are diagnostic, not acceptance gates; lower cost does not compensate for failed correctness.",
+    "",
+    "Tests counts distinct prompts in each row; repetitions counts configured answers per prompt. Billing coverage counts prompts with complete request billing and the expected verdict count from every judge. Avg AIC / test requires complete coverage. With incomplete billing, total evaluation answer AIC shows a partial reported subtotal where judge records can be safely deduplicated, including available requests from interrupted answers. Missing usage is not zero; the actual total is unknown. Unbalanced judge records are excluded from this subtotal; raw generation billing remains in batch accounting.",
+    "",
+    "| Phase | Model | Arm | Tests | Repetitions | Billing coverage | Avg AIC / test | Total evaluation answer AIC |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+  ];
+  const batches = [
+    { name: "Baseline", trials: report.baselineTrials },
+    ...report.iterations.filter(iteration => iteration.trials).map(iteration => ({
+      name: `Iteration ${iteration.iteration}`,
+      trials: iteration.trials!,
+    })),
+    ...(report.heldOut ? [
+      { name: "Held-out baseline", trials: report.heldOut.baselineTrials },
+      { name: "Held-out candidate", trials: report.heldOut.candidateTrials },
+    ] : []),
+  ];
+  for (const batch of batches) {
+    for (const condition of report.spec.experiment.conditions) {
+      for (const model of report.spec.models.answers) {
+        const select = (trials: AggregatedTrial[]) => trials.filter(trial =>
+          trial.condition.name === condition.name && trial.answerModel === model
+        );
+        const trials = select(batch.trials);
+        if (trials.length === 0) {
+          continue;
+        }
+        const summary = summarizeTrials(trials);
+        const judgments = trials.flatMap(trial => trial.judgments);
+        const repetitions = report.spec.experiment.repetitions;
+        const balanced = (trial: AggregatedTrial) =>
+          trial.judgments.length === repetitions * report.spec.models.judges.length
+          && report.spec.models.judges.every(judge =>
+            trial.judgments.filter(judgment => judgment.judgeModel === judge).length === repetitions
+          );
+        const measured = trials.filter(trial =>
+          trial.answerBilledCredits !== undefined && balanced(trial)
+        );
+        const complete = measured.length === trials.length;
+        const credits = measured.reduce((total, trial) => total + trial.answerBilledCredits!, 0);
+        const averageCredits = complete
+          ? (credits / trials.length).toFixed(6) : "not measured (incomplete)";
+        const reported = trials.filter(trial => balanced(trial)
+          && (trial.answerReportedCredits !== undefined || trial.answerBilledCredits !== undefined));
+        const reportedCredits = reported.reduce((total, trial) =>
+          total + (trial.answerReportedCredits ?? trial.answerBilledCredits!), 0) * repetitions;
+        const totalCredits = complete
+          ? (credits * repetitions).toFixed(6)
+          : reported.length > 0
+            ? `${reportedCredits.toFixed(6)} (partial reported subtotal)`
+            : "not measured (incomplete)";
+        lines.push(`| ${batch.name} | ${model} | ${condition.name} | ${summary.passed}/${summary.total} (${percent(summary.passRate)}) | ${judgments.filter(judgment => judgment.passed).length}/${judgments.length} | ${summary.averageTokens.toFixed(0)} |`);
+        billingLines.push(`| ${batch.name} | ${model} | ${condition.name} | ${trials.length} | ${repetitions} | ${measured.length}/${trials.length} | ${averageCredits} | ${totalCredits} |`);
+      }
+    }
+  }
+  return [...lines, "", ...billingLines];
+}
+
+function renderBillingCategorySummary(report: SkillImprovementReport): string[] {
+  const lines = [
+    "## AI-credit summary by phase",
+    "",
+    "Evaluation answer AIC covers Vally evaluation sessions through the Copilot SDK. Skill-improvement AIC covers the separate Copilot CLI invocation that edits the Skill. Evaluation answer coverage is fully billed trajectories; skill-improvement coverage is finalized CLI invocations with provider `aiCreditsStatus: complete`. CLI session aggregates include their model requests and are counted once, never again by model or arm. N/A means no invocation, not measured zero.",
+    "",
+    "Totals cover answers and improvement agents only; judge and Azure infrastructure costs are excluded, so these are not full-workflow totals or invoice charges. A partial reported subtotal includes available billing from complete and incomplete trajectories/invocations; missing usage is not zero and the actual total is unknown. Generation uses zero Vally retries; model retries are included only when the provider reports their usage. Failures or timeouts can leave additional unreported usage.",
+    "",
+    "| Phase | Evaluation answer AIC | Skill-improvement AIC | Total reported AIC | Coverage |",
+    "| --- | ---: | ---: | --- | --- |",
+  ];
+  if (!report.billing?.length) {
+    lines.push("| Run total | unavailable | unavailable | unavailable (no component ledger) | historical report: component accounting not recorded |");
+    return lines;
+  }
+  const totals: PhaseBilling = {
+    phase: "Run total", finalized: report.status === "completed",
+    evaluationAnswers: emptyBilling("answer trajectories", 0, "mixed"),
+    skillImprovement: emptyBilling("agent invocations", 0, "mixed"),
+  };
+  const reportedCredits = (category: BillingCategorySummary) => category.reportedAiCredits
+    ?? (category.fullyMeasured > 0 ? category.fullyMeasuredAiCredits : undefined);
+  for (const phase of report.billing) {
+    totals.finalized &&= phase.finalized;
+    for (const component of ["evaluationAnswers", "skillImprovement"] as const) {
+      totals[component].expected += phase[component].expected;
+      totals[component].observed += phase[component].observed;
+      totals[component].fullyMeasured += phase[component].fullyMeasured;
+      totals[component].fullyMeasuredAiCredits += phase[component].fullyMeasuredAiCredits;
+      const reported = reportedCredits(phase[component]);
+      if (reported !== undefined) {
+        totals[component].reportedAiCredits = (totals[component].reportedAiCredits ?? 0) + reported;
+      }
+    }
+  }
+  const credits = (component: BillingCategorySummary, finalized: boolean) => component.expected === 0
+    ? "N/A"
+    : finalized && isBillingComplete(component)
+      ? component.fullyMeasuredAiCredits.toFixed(6)
+      : reportedCredits(component) !== undefined
+        ? `${reportedCredits(component)!.toFixed(6)} (partial reported subtotal)`
+        : "unavailable";
+  for (const phase of [...report.billing, totals]) {
+    const components = [phase.evaluationAnswers, phase.skillImprovement];
+    const sum = components.reduce((total, category) => total + (reportedCredits(category) ?? 0), 0);
+    const complete = phase.finalized && components.every(isBillingComplete);
+    const hasReportedCredits = components.some(category => reportedCredits(category) !== undefined);
+    const total = complete ? sum.toFixed(6)
+      : hasReportedCredits ? `${sum.toFixed(6)} (partial reported subtotal)` : "unavailable";
+    const coverage = (["evaluationAnswers", "skillImprovement"] as const).map(name => {
+      const component = phase[name];
+      const label = name === "evaluationAnswers" ? "evaluation answers" : "skill-improvement";
+      return `${label} ${component.fullyMeasured}/${component.expected} ${component.unit}`
+        + (component.reason ? ` (${component.reason})` : "");
+    }).join("; ") + (phase.finalized ? "" : "; incomplete attempt accounting");
+    lines.push(`| ${phase.phase} | ${credits(phase.evaluationAnswers, phase.finalized)} | ${credits(phase.skillImprovement, phase.finalized)} | ${total} | ${coverage} |`);
+  }
+  return lines;
 }
 
 function compareGroup(
@@ -742,6 +886,8 @@ function renderChangedOutcomes(comparison: Comparison): string[] {
 }
 
 export function renderReport(report: SkillImprovementReport): string {
+  const baselineOnly = !report.spec.improvementAgent.enabled
+    || report.spec.limits.maxIterations === 0;
   const lines = [
     renderReportSummary(report).trimEnd(),
     "",
@@ -752,8 +898,12 @@ export function renderReport(report: SkillImprovementReport): string {
     `- Run ID: \`${report.runId}\``,
     `- Status: **${report.status}**`,
     `- Baseline: \`${report.baselineCommit}\``,
-    `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
-    `- Final acceptance: **${report.finalAccepted ? "passed" : "not passed"}**`,
+    ...(baselineOnly
+      ? ["- Candidate evaluation: **not configured (baseline-only run)**"]
+      : [
+        `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
+        `- Final acceptance: **${report.finalAccepted ? "passed" : "not passed"}**`,
+      ]),
     ...(report.terminationReason
       ? [`- Hill-climbing termination: \`${report.terminationReason}\``]
       : []),
@@ -768,7 +918,8 @@ export function renderReport(report: SkillImprovementReport): string {
     `- Maximum answer generations: ${report.plan.maximumAnswerGenerations}`,
     `- Maximum judge calls: ${report.plan.maximumJudgeCalls}`,
     `- Iterations: ${report.spec.limits.maxIterations}`,
-    `- Concurrent evaluation jobs: ${report.spec.limits.maxConcurrentJobs}`,
+    `- Maximum concurrent Vally processes: ${report.spec.limits.maxConcurrentVallyProcesses}`,
+    `- Generation workers per Vally process: ${report.spec.limits.generationWorkersPerVallyProcess ?? 1}`,
     "",
     "## Baseline results",
     "",
@@ -876,11 +1027,15 @@ export function renderReport(report: SkillImprovementReport): string {
 }
 
 export function renderReportSummary(report: SkillImprovementReport): string {
+  const baselineOnly = !report.spec.improvementAgent.enabled
+    || report.spec.limits.maxIterations === 0;
   const outcome = report.status === "failed"
     ? "RUN FAILED"
-    : report.finalAccepted
-      ? "ACCEPTED"
-      : "NOT ACCEPTED";
+    : baselineOnly
+      ? "BASELINE EVALUATION COMPLETED"
+      : report.finalAccepted
+        ? "ACCEPTED"
+        : "NOT ACCEPTED";
   const lines = [
     `# Final outcome: ${outcome}`,
     "",
@@ -888,7 +1043,9 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     "",
     `- Status: **${report.status}**`,
     `- Baseline: \`${report.baselineCommit}\``,
-    `- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`,
+    ...(baselineOnly
+      ? ["- Candidate evaluation: **not configured (baseline-only run)**"]
+      : [`- Best development candidate: ${report.bestCandidateCommit ? `\`${report.bestCandidateCommit}\`` : "none"}`]),
     ...(report.terminationReason
       ? [`- Hill-climbing termination: \`${report.terminationReason}\``]
       : []),
@@ -902,43 +1059,58 @@ export function renderReportSummary(report: SkillImprovementReport): string {
     "",
     ...renderBaselineArms(report),
     "",
-    "## Candidate decisions",
+    ...renderEvaluationAnswerBilling(report),
     "",
-    "| Iteration | Decision | Candidate pass rate | Improvement | Avg. answer-token change (diagnostic) | Skill Markdown token growth (gate) |",
-    "| ---: | --- | ---: | ---: | ---: | ---: |",
+    ...renderBillingCategorySummary(report),
+    "",
   ];
-  for (const iteration of report.iterations) {
-    const decision = iteration.decision;
-    const iterationDecision = decision
-      ? decision.accepted
-        ? "Accepted"
-        : iteration.refinementDecision?.retained
-          ? "Retained for refinement"
-          : "Rejected"
-      : "Not evaluated";
+  if (baselineOnly) {
     lines.push(
-      `| ${iteration.iteration} | ${iterationDecision} | `
-      + `${decision ? percent(decision.comparison.candidate.passRate) : "N/A"} | `
-      + `${decision ? `${decision.comparison.qualityImprovementPoints.toFixed(2)} points` : "N/A"} | `
-      + `${decision ? `${decision.comparison.averageAnswerTokenChangePercent.toFixed(2)}%` : "N/A"} | `
-      + `${decision ? `${decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%` : "N/A"} |`
+      "## Candidate evaluation",
+      "",
+      "No candidate iterations were configured. This report evaluates the baseline arms only; acceptance and rejection do not apply.",
+      ""
     );
+  } else {
+    lines.push(
+      "## Candidate decisions",
+      "",
+      "| Iteration | Decision | Candidate pass rate | Improvement | Avg. answer-token change (diagnostic) | Skill Markdown token growth (gate) |",
+      "| ---: | --- | ---: | ---: | ---: | ---: |"
+    );
+    for (const iteration of report.iterations) {
+      const decision = iteration.decision;
+      const iterationDecision = decision
+        ? decision.accepted
+          ? "Accepted"
+          : iteration.refinementDecision?.retained
+            ? "Retained for refinement"
+            : "Rejected"
+        : "Not evaluated";
+      lines.push(
+        `| ${iteration.iteration} | ${iterationDecision} | `
+        + `${decision ? percent(decision.comparison.candidate.passRate) : "N/A"} | `
+        + `${decision ? `${decision.comparison.qualityImprovementPoints.toFixed(2)} points` : "N/A"} | `
+        + `${decision ? `${decision.comparison.averageAnswerTokenChangePercent.toFixed(2)}%` : "N/A"} | `
+        + `${decision ? `${decision.skillMarkdownTokenIncreasePercent.toFixed(2)}%` : "N/A"} |`
+      );
+    }
+    lines.push("", "## Rejection and validation reasons", "");
+    const reasons = report.iterations.flatMap(iteration => [
+      ...iteration.validationErrors.map(reason => `- Iteration ${iteration.iteration} validation: ${reason}`),
+      ...(iteration.decision?.reasons ?? []).map(
+        reason => `- Iteration ${iteration.iteration} acceptance: ${reason}`
+      ),
+      ...(
+        iteration.refinementDecision && !iteration.refinementDecision.retained
+          ? iteration.refinementDecision.reasons.map(
+            reason => `- Iteration ${iteration.iteration} refinement: ${reason}`
+          )
+          : []
+      ),
+    ]);
+    lines.push(...(reasons.length > 0 ? reasons : ["- None"]), "");
   }
-  lines.push("", "## Rejection and validation reasons", "");
-  const reasons = report.iterations.flatMap(iteration => [
-    ...iteration.validationErrors.map(reason => `- Iteration ${iteration.iteration} validation: ${reason}`),
-    ...(iteration.decision?.reasons ?? []).map(
-      reason => `- Iteration ${iteration.iteration} acceptance: ${reason}`
-    ),
-    ...(
-      iteration.refinementDecision && !iteration.refinementDecision.retained
-        ? iteration.refinementDecision.reasons.map(
-          reason => `- Iteration ${iteration.iteration} refinement: ${reason}`
-        )
-        : []
-    ),
-  ]);
-  lines.push(...(reasons.length > 0 ? reasons : ["- None"]), "");
 
   for (const iteration of report.iterations) {
     if (!iteration.decision) {

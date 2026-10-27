@@ -872,6 +872,7 @@ export function useAgentRunner(agentRunnerConfig: AgentRunnerConfig): IAgentRunn
         );
       }
 
+      agentMetadata.completionStatus = isAborted ? "aborted" : "completed";
       return agentMetadata;
     } catch (error) {
       // Mark as complete to stop event processing

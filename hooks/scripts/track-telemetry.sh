@@ -147,7 +147,7 @@
 
 set +e  # Don't exit on errors - fail silently for privacy
 
-TELEMETRY_REPORTER_VERSION="0.1.11-gce94fceee1"
+TELEMETRY_REPORTER_VERSION="0.1.16-g03871c5229"
 
 # Skip telemetry if opted out
 if [ "${AZURE_MCP_COLLECT_TELEMETRY}" = "false" ]; then
@@ -197,8 +197,10 @@ is_owned_skill_path() {
     local targetPath="$1"
     local skillsRootNorm
     local targetPathNorm
-    skillsRootNorm=$(echo "$SKILLS_DIR" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g; s|/$||')
-    targetPathNorm=$(echo "$targetPath" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed 's|//*|/|g')
+    # Git Bash reports local paths as /c/... while Windows clients can send
+    # C:\... paths. Convert both representations to /c/... before comparing.
+    skillsRootNorm=$(echo "$SKILLS_DIR" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed -E 's|//*|/|g; s|^([a-z]):/|/\1/|; s|/$||')
+    targetPathNorm=$(echo "$targetPath" | tr '[:upper:]' '[:lower:]' | tr '\\' '/' | sed -E 's|//*|/|g; s|^([a-z]):/|/\1/|')
     [[ "$targetPathNorm" == "$skillsRootNorm/"* ]]
 }
 
