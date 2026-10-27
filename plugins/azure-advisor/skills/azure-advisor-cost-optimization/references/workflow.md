@@ -13,6 +13,7 @@ limits. This workflow covers only Advisor Cost/IdleResources.
 | Completed cleanup or historical savings | [Lifecycle](lifecycle.md): resolve All/period, summary then details; honor totals-only |
 | Completed/Postponed/Dismissed details | List with explicit status |
 | State changes/remediation artifacts | [Selection](selection-and-handoff.md), direct-list flow |
+| Explicit safety, dependency, lock, or pre-deletion checks | [Read-only prevalidation](selection-and-handoff.md#read-only-prevalidation) |
 
 Current summaries default to New except unfiltered status grouping, which includes all states.
 Historical `as-of`/`from`/`to` default summaries to Completed. Explicit status always wins,
@@ -20,6 +21,10 @@ including New with historical inputs. Preserve the effective status for expansio
 to New and has no historical inputs. A status-breakdown drill-down must select its state.
 
 ## Discover and expand
+
+Prevalidation is an explicit safety flow, not ordinary discovery or a savings estimate.
+When the exact type is already known, call prevalidation directly with preserved selections
+and scope; do not expand list/summary solely to produce another table.
 
 1. For broad discovery use prioritized summary without `group-by`; retain requested filters
    and limits. Do not introduce a family/threshold question.

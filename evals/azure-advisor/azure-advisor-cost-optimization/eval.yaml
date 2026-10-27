@@ -718,10 +718,10 @@ stimuli:
           disallowed:
             - name: "(?i)advisor_recommendation_update"
 
-  - name: "Do not invent automated safety validation"
+  - name: "Choose one recommendation type before prevalidation"
     constraints:
       max_turns: 40
-    prompt: "Are the Advisor idle resources in subscription 00000000-0000-0000-0000-000000000000 safe to delete? Do not change anything."
+    prompt: "I want read-only deletion-safety checks for idle disks and unused App Service plans in subscription 00000000-0000-0000-0000-000000000000. Ask me which one recommendation type to validate first; do not make Azure calls yet."
     tags:
       type: integration
       tier: full
@@ -736,11 +736,146 @@ stimuli:
             - azure-advisor-cost-optimization
       - type: output-matches
         config:
-          pattern: "(?i)not.*(proof|prove|guarantee)|cannot.*(verify|prove|guarantee)|not.*validated|no.*(automated|validation)"
+          pattern: "(?i)(choose|which|select).*(type|disk|plan)|(disk|plan).*(choose|which|select)"
       - type: tool-calls
         config:
           disallowed:
-            - name: "(?i)advisor_recommendation_(prevalidate|update)"
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+
+  - name: "Prevalidate an exact selection without rediscovery"
+    prompt: >-
+      Run read-only prevalidation for Advisor Cost IdleResources recommendation type
+      48eda464-1485-4dcf-a674-d0905df5054a in subscription
+      00000000-0000-0000-0000-000000000001, for only the selected resource
+      /subscriptions/00000000-0000-0000-0000-000000000001/resourceGroups/rg-demo/providers/Microsoft.Compute/disks/disk-a.
+      Require a minimum unused age of 45 days. Do not query another scope, rediscover
+      the recommendation type, generate scripts, or change anything.
+    constraints:
+      max_turns: 40
+    tags:
+      type: integration
+      tier: full
+      cost: llm
+      area: prevalidation-selection
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          required:
+            - name: "(?i)advisor_recommendation_prevalidate"
+              args:
+                recommendation-type-id: "^48eda464-1485-4dcf-a674-d0905df5054a$"
+                minimum-unused-days: "^45$"
+                resources: "(?i)Microsoft.Compute/disks/disk-a"
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Preserve supplied prevalidation verdicts and incomplete evidence"
+    prompt: >-
+      Explain this supplied read-only Advisor Cost IdleResources prevalidation result.
+      Do not query Azure, reclassify the resources, generate artifacts, or perform any action.
+      Pricing is Retail USD and minimumUnusedDays is 30. The safe array contains disk-a
+      with yearlyPotentialSavings=120, cost=null, a passed automated detection check, and
+      an outstanding manual backup confirmation. The needsReview array contains disk-b
+      with yearlyPotentialSavings=null and an unverified unused-age check because metric
+      history covers only 14 days. The blocked array contains disk-c with a failed management
+      lock check and disk-deleted with resourceDeletedOn=2026-10-24T00:00:00Z,
+      canPostponeDismiss=false, and a reason confirming an ARG Delete event and no
+      action needed. The blocked summary has deletedCount=1. Disk-deleted retains
+      a failed detection check mentioning attachment/ASR as possible stale-detection
+      causes and an unexecuted manual export-guidance check.
+      areResultsTruncated=true and unmatchedResources contains disk-missing.
+    constraints:
+      max_turns: 12
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-evidence
+      parity: response-shape
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It preserves the three returned safety buckets and shows all four resources.
+      - It explains that disk-a passed automated checks but still needs manual confirmation, without authorizing deletion.
+      - It keeps disk-b under review because 14 days cannot establish the required 30 days, and preserves unavailable pricing rather than zero.
+      - It identifies disk-c as locked and disk-deleted separately as already deleted with its supplied date, without offering lifecycle updates.
+      - It explains that no action is needed for disk-deleted and Advisor will remove the recommendation automatically within 72 hours once it refreshes, not 48 hours.
+      - It shows the deletion-history check and separately reports one already-deleted resource, without requiring attachment/ASR investigation, backups, export, or another pre-deletion task for disk-deleted.
+      - It labels known amounts Retail USD and discloses truncation and the unmatched disk-missing selection.
+      - It uses compact resource tables under all three bucket headings, a Checks performed outcome table, and expandable per-resource evidence instead of long resource cards.
+      - Failed and unverified checks remain visible in the main bucket tables; shared manual guidance is labeled not executed and not repeated for each resource.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: output-matches
+        config:
+          pattern: "(?i)Retail.*USD|USD.*Retail"
+      - type: output-matches
+        config:
+          pattern: "(?i)disk-missing"
+      - type: output-matches
+        config:
+          pattern: "(?i)72\\s*(hours|hrs)"
+      - type: output-matches
+        config:
+          pattern: "(?im)^## Checks performed\\s*$"
+      - type: output-matches
+        config:
+          pattern: "(?im)^\\|\\s*Resource\\s*\\|"
+      - type: output-matches
+        config:
+          pattern: "(?i)<details>"
+      - type: output-not-matches
+        config:
+          pattern: "(?im)^####\\s+disk-"
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
+
+  - name: "Do not infer deletion from failed detection or unreadable history"
+    prompt: >-
+      Explain this supplied Advisor Cost IdleResources prevalidation result without
+      querying Azure or changing anything. It contains two blocked disks. Disk-stale
+      has a failed scope detection check and an unverified deletion-status check because
+      Resource Graph change-history access was denied. Disk-locked has a passed detection
+      check and a failed management-lock check; no deletion probe was run for it.
+      Neither resource has resourceDeletedOn, and the blocked summary has deletedCount=0.
+      Does this mean they are already deleted and will disappear within 72 hours?
+    constraints:
+      max_turns: 1
+    tags:
+      type: integration
+      tier: smoke
+      cost: llm
+      area: prevalidation-deletion-evidence
+      requiredSkills:
+        - azure-advisor-cost-optimization
+    expected:
+      - It keeps both resources blocked and clearly states neither is confirmed already deleted.
+      - It shows the failed detection and unreadable deletion-history evidence for disk-stale and the confirmed lock for disk-locked.
+      - It does not promise automatic removal within 72 hours for either resource or turn the access failure into a pass.
+      - It does not invent a deletion date or execute a separate ARG, ARM, CLI, or lifecycle operation.
+    graders:
+      - type: skill-invocation
+        config:
+          required:
+            - azure-advisor-cost-optimization
+      - type: tool-calls
+        config:
+          disallowed:
+            - name: "(?i)advisor_recommendation_(list|summary|prevalidate|update)"
+            - name: "(?i)advisor_remediation_get"
 
   - name: "Require exact selection before remediation handoff"
     prompt: "Create a script to remove unused resources in subscription 00000000-0000-0000-0000-000000000000."

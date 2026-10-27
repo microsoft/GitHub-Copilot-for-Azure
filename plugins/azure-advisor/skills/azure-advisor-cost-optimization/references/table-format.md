@@ -90,3 +90,65 @@ payloads/links; actionability owns remediation links.
 
 Pagination selects nothing or authorizes updates. Batch confirmation follows
 [State updates](state-updates.md).
+
+## Prevalidation results
+
+Use this layout for returned safety checks, not the discovery layout or per-resource cards:
+
+```text
+**<safe count> passed automated checks; <review count> need review; <blocked count> blocked
+(<deleted count> already deleted).** Passing checks is not deletion authorization.
+**Scope:** <scope> | **Checked:** <evaluatedAt> | **Minimum unused age:** <days> days
+**Coverage:** <checked/selected counts, truncation and unmatched selections>
+**Pricing basis:** <basis> | **Currency:** <currency> | Advisor estimates, not invoices
+
+## Resources ready to delete now
+<count and returned known yearly potential savings; outstanding manual checks still apply>
+|Resource|Subscription / Resource group|Key evidence|Yearly potential savings|
+|---|---|---|---:|
+|<exact name>|<ownership>|<returned age/other distinguishing evidence>|<amount or Unavailable>|
+
+## Resources requiring additional review
+<count and returned known yearly potential savings>
+|Resource|Subscription / Resource group|Review required|Yearly potential savings|
+|---|---|---|---:|
+|<exact name>|<ownership>|<actual warning/unverified check and reason>|<amount or Unavailable>|
+
+## Resources blocked for deletion
+<count; separately identify the already-deleted count, not aggregate blocked savings>
+|Resource|Subscription / Resource group|Reason / next step|
+|---|---|---|
+|<exact name>|<ownership>|<active blocker, or confirmed deletion date and no action needed>|
+
+## Checks performed
+|Check|Outcome|Applies to / limitations|
+|---|---|---|
+|<returned check name>|<actual outcomes>|<named resources or exact returned subset>|
+
+**Manual checks - not executed:** <shared outstanding confirmations and advisory steps>
+<expandable per-resource check evidence for every resource with returned check outcomes>
+```
+
+Keep all three bucket headings; write `None.` for an empty bucket instead of an empty table.
+Omit Subscription only for a single-subscription scope. Reuse the wrapping, money and
+15-row inline-expansion rules above; never truncate identities or hide coverage/totals.
+Put warnings, unreadable evidence and active blocking reasons in the main resource tables,
+not only inside disclosures. Exclude confirmed-deleted resources from outstanding manual tasks.
+Treat returned age as "used or changed", not proven runtime usage or detachment time. Show
+the timestamp and signal only if returned; never invent their attribution.
+
+The checks-performed table covers every returned check. Group identical outcomes/explanations
+once and identify their exact resource coverage; show mixed outcomes distinctly, never claim
+"all passed" from one resource. Keep information-only checks non-gating and label manual steps
+`Manual - not executed`, not passed. A check absent from the result is not an executed check.
+Do not invent metrics for a resource type whose returned checks do not include them.
+
+After the summary, include a `<details><summary>Check evidence: <exact resource name></summary>`
+disclosure for every resource with returned check outcomes, even when the main tables summarize
+them. Use blank lines and a `Check | Outcome | Evidence` table inside each disclosure.
+Preserve every returned outcome
+and material evidence/guidance; summarize repeated boilerplate once rather than copying raw
+payloads, KQL or unrequested scripts. Keep manual confirmations separate from executed checks.
+Do not repeat full ARM/recommendation IDs unless needed for disambiguation or requested.
+Confirmed-deletion presentation and safety rules remain in
+[Prevalidation](selection-and-handoff.md#read-only-prevalidation).

@@ -2,8 +2,53 @@
 
 This skill identifies Advisor Cost/IdleResources candidates. It never deletes, resizes,
 deallocates, or reconfigures a resource. A savings estimate does not prove deletion safety.
-There is no dedicated automated pre-validation operation in this tool contract; do not promise
-completed dependency, lock, Monitor, or ownership checks.
+Explicit safety requests use the read-only prevalidation flow below. Never claim that a
+recommendation, savings estimate, or passing automated verdict authorizes deletion.
+
+## Read-only prevalidation
+
+For "safe to delete", "validate before removal", or "is this recommendation still valid":
+
+1. Reuse resolved scope/tenant and the exact recommendation type and affected resources
+   already selected by the user. If the type is unknown, use existing Cost/IdleResources
+   summary or metadata resolution, visibly show the returned types, and ask for one type.
+   Never invent a type GUID or ask for an ID that Advisor results can supply.
+2. Call `advisor_recommendation_prevalidate` for that type. Prefer full ARM IDs for selected
+   resources; names are allowed only when unambiguous. Do not silently include unselected
+   rows or change scope. Do not list the type again just to prevalidate it.
+   This tool enforces Cost/IdleResources/New internally; do not pass category or status inputs.
+3. Use the tool's verdicts without reclassification. Render three sections, even if empty:
+   `Resources ready to delete now`, `Resources requiring additional review`, and
+   `Resources blocked for deletion`, mapped to `safe`, `needsReview`, and `blocked`.
+   Explain that "ready" means automated checks passed, with manual checks still outstanding.
+   Use the [prevalidation layout](table-format.md#prevalidation-results): compact bucket tables,
+   one checks-performed summary, and expandable per-resource evidence. Do not write a long
+   card or repeat the same checklist/manual guidance for every resource. Preserve each returned
+   check's outcome, material evidence/guidance, and manual confirmations.
+4. Show bucket counts and returned Safe/NeedsReview known savings as Retail USD; omit the
+   Blocked aggregate savings line. Preserve unavailable amounts and missing-value counts.
+   Disclose truncation and unmatched selections; never call a capped subset the entire scope.
+   Recent activity, unknown signals, or insufficient history are investigation requirements,
+   not proof of inactivity. Do not infer metrics, ownership, or dependency coverage.
+5. In the blocked section, separately identify resources with a returned `resourceDeletedOn`
+   as confirmed already deleted, with their dates and the returned `deletedCount`. Show their
+   returned `reason` and honor `canPostponeDismiss=false`: no postpone, dismiss, manual completion,
+   or remediation handoff. Explain that no action is needed and Advisor will remove the
+   recommendation automatically within 72 hours once it refreshes. Keep executed-check evidence
+   visible, but do not ask for attachment/ASR investigation, backups, export, or other before-deletion
+   steps for an already-deleted resource; manual guidance is not an outstanding task for it.
+   The tool confirms deletion from a Delete event in the last 14 days of ARG change history,
+   only after a failed scope/detection check. Without `resourceDeletedOn`, that failure or an
+   unverified deletion probe means stale/unconfirmed detection, not confirmed deletion.
+   A savings timestamp, missing resource, or absent change record alone is not proof of deletion.
+   Preserve the tool's returned buckets; keep active blockers and their required investigation distinct.
+6. Never execute advisory CLI/PowerShell guidance, delete, change state, or generate remediation
+   automatically from these results. A separate remediation request uses the explicit
+   selection/confirmation handoff below. Read failures or unsupported resource-type/ID pairs
+   never become a safe verdict; dependency scans cover only visible control-plane evidence.
+
+Inspect the connected [tool contract](tools-and-recovery.md). If prevalidation is unavailable,
+report that an updated MCP server is needed; do not substitute ad hoc ARM, CLI, or KQL checks.
 
 ## Resource selection
 
@@ -22,8 +67,12 @@ Do not require an opening summary unless the user separately requested grouped d
    recommendation IDs internally except the separately labeled lifecycle selection identifiers
    required by [State updates](state-updates.md); provide full affected-resource IDs when needed to
    distinguish resources or confirm actions.
-3. Ask for selected resources or `All resources in this recommendation type`. A single row is
-   not implicitly selected. Reuse an explicit prior selection instead of asking again.
+3. Ask for selected resources or `All resources in this recommendation type` only when the
+   target set is missing. A single row is not implicitly selected. Reuse an explicit prior
+   selection. "Those requiring more work" after one prevalidation result selects its
+   `needsReview` resources only, not passing or confirmed-deleted resources; reuse their returned
+   stable recommendation IDs without another list/selection question. Ask if the referenced
+   result or bucket is ambiguous, or the exact update IDs are missing.
 4. An all-resources choice is limited to that type and scope. If the list is capped/truncated,
    disclose the partial target set and obtain explicit acceptance of only the shown resources;
    never call them every matching resource.
@@ -48,7 +97,7 @@ time and no more than two format clarifications.
 Load `azure-advisor-actionability` with the original request, exact recommendation type GUID,
 complete affected resource IDs, confirmed scope/tenant, requested format, and returned Advisor
 evidence and savings. Preserve access/truncation limitations and unresolved placeholders.
-Do not hand off unselected, Completed, Postponed, or Dismissed rows as active deletion
+Do not hand off confirmed-deleted, unselected, Completed, Postponed, or Dismissed rows as active deletion
 candidates. A separate lifecycle-specific request must be handled explicitly.
 
 The existing actionability skill retrieves `advisor_remediation_get` using only

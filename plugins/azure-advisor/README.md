@@ -11,14 +11,19 @@ This plugin includes:
 Generic Cost and other Advisor categories remain on `azure-advisor`. Cost reports explicitly show
 the tool-returned pricing basis and measure currency, currently Retail USD, rather than hardcoding
 the label or inventing contractual figures or availability lines. Advisor findings do not prove
-deletion safety, and this plugin does not add an automated pre-validation tool.
+deletion safety. Explicit safety requests use the connected Advisor read-only prevalidation
+operation when available; passing automated checks never authorizes deletion.
 
 ## Response parity checks
 
 Cost/IdleResources uses the same shared response templates on every model. The existing eval
 suite tags its supplied-result and selection cases with `parity=response-shape`, covering
-opening discovery, unavailable pricing, selected resources, Completed details, period choices
-and inline pagination. These cases do not require live Azure recommendation queries.
+opening discovery, unavailable pricing, selected resources, Completed details, period choices,
+inline pagination and compact prevalidation evidence. These cases do not require live Azure
+recommendation queries.
+
+Prevalidation uses compact tables for all three returned buckets, one checks-performed summary
+and expandable per-resource evidence.
 
 From `tests`, run the same cases against both model families:
 

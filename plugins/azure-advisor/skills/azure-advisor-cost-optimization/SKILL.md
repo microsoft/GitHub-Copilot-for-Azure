@@ -1,6 +1,6 @@
 ---
 name: azure-advisor-cost-optimization
-description: "Resolve scope and analyze Azure Advisor Cost/IdleResources findings. WHEN: \"find unused Azure resources\", \"idle-resource savings\", \"historical idle-resource savings\". Generic Cost, other subcategories, and cross-category requests use azure-advisor."
+description: "Analyze Azure Advisor Cost/IdleResources findings and prevalidate deletion safety. WHEN: \"find unused Azure resources\", \"idle-resource savings\", \"historical idle-resource savings\", \"are these idle resources safe to delete\". Generic Cost, other subcategories, and cross-category requests use azure-advisor."
 license: MIT
 metadata:
   author: Microsoft
@@ -29,6 +29,7 @@ Use the matching scenario guidance; [Reference index](references/README.md).
 | Completed/historical reports | [Lifecycle](references/lifecycle.md) |
 | State changes | [State updates](references/state-updates.md) |
 | Selection/remediation handoff | [Selection](references/selection-and-handoff.md) |
+| Explicit prevalidation/safety checks | [Selection](references/selection-and-handoff.md#read-only-prevalidation) |
 | Filters/errors | [Tools and recovery](references/tools-and-recovery.md) |
 | Routing examples | [Examples](references/examples.md) |
 
