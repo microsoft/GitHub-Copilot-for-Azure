@@ -1,0 +1,31 @@
+APP SERVICE DEPLOYMENT EVIDENCE
+
+App: orders-api
+Observed response: HTTP 503
+
+Recent deployment:
+  status: Success
+  end_time: 2026-10-06T18:42:11Z
+  artifact: orders-api.zip
+
+Startup log:
+  2026-10-06T18:42:25Z Starting container for site orders-api
+  2026-10-06T18:42:28Z Error: Cannot find module '/home/site/wwwroot/dist/server.js'
+  2026-10-06T18:42:28Z Container exited with code 1
+  2026-10-06T18:42:43Z Site startup probe failed after 15 seconds
+
+Deployment package contents:
+  package.json
+  src/server.ts
+  node_modules/
+
+package.json:
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js"
+  }
+
+Pipeline excerpt:
+  npm ci
+  zip -r orders-api.zip .
+  az webapp deploy --src-path orders-api.zip
