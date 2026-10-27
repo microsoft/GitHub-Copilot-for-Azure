@@ -11,18 +11,21 @@ evaluations:
   root: evals/azure-skills/azure-diagnostics
   development:
     - eval.yaml
+    - fixture-evidence.eval.yaml
+    - functions-troubleshooting.eval.yaml
     - response-quality.eval.yaml
     - script-invocation.eval.yaml
-  heldOut: []
+  heldOut:
+    - held-out.eval.yaml
 
 models:
   answers:
     - gpt-5.6-sol
   judges:
-    - claude-opus-4.8
+    - claude-sonnet-5
 
 experiment:
-  repetitions: 1
+  repetitions: 2
   conditions:
     - name: Skill only
       skill: enabled
@@ -37,9 +40,15 @@ improvementAgent:
 
 acceptance:
   minimumQualityImprovementPoints: 2
-  maximumEvalRegressionPoints: 5
+  maximumEvalRegressionPoints: 15
   maximumModelRegressionPoints: 5
   minimumSkillInvocationRate: 0.8
+
+heldOutAcceptance:
+  enabled: true
+  minimumQualityImprovementPoints: 0
+  maximumEvalRegressionPoints: 0
+  maximumModelRegressionPoints: 0
 
 refinement:
   minimumScoreImprovementPoints: 1
@@ -47,10 +56,11 @@ refinement:
 
 limits:
   maxIterations: 2
-  maxAnswerGenerations: 140
-  maxJudgeCalls: 140
+  maxAnswerGenerations: 512
+  maxJudgeCalls: 512
   maxDurationMinutes: 360
-  maxConcurrentJobs: 5
+  maxConcurrentVallyProcesses: 5
+  generationWorkersPerVallyProcess: 1
   maxSkillTokenIncreasePercent: 15
 
 output:

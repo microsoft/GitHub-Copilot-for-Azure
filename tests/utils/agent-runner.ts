@@ -50,6 +50,9 @@ export type AgentMetadata = {
    */
   tokenUsage?: TokenUsage;
 
+  /** Whether the evaluation answer-generation session completed normally or was interrupted. */
+  completionStatus?: "completed" | "aborted";
+
   /**
    * Number of turns that started during the run.
    */

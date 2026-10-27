@@ -140,6 +140,17 @@ services:
 
 A Managed Harness Agent has no source/runtime/container fields and no local `azd ai agent run` path. Direct Prompt Agent tools are authored in `tools[]`. Existing definitions may use legacy `github_copilot_preview`; azd recognizes both families and preserves the authored harness/toolset values. In this workflow, an existing Toolbox is attached through its exact versioned MCP endpoint plus a matching `RemoteTool` / `UserEntraToken` project connection (`audience: https://ai.azure.com`); existing Skills are referenced by name and version. Connection, Toolbox, and Skill resources are managed separately with their `azd ai` commands.
 
+### Voice Agent service blocks (`kind: voice`)
+
+Use `azd ai agent init --kind prompt-voice` for a new Prompt Voice service. For Hosted Voice, initialize from an `azure.yaml` template that defines both the hosted target and Voice wrapper, or add a Voice wrapper to an existing compatible hosted target.
+
+```bash
+azd ai agent init --no-prompt --kind prompt-voice --agent-name <agent-name> \
+  --model gpt-realtime
+```
+
+Resolve the new-versus-existing project choice before init and pass `--project-id` for an existing project. Normalize the generated YAML as directed by [create-voice](../../create/create-voice.md), then load only its selected subtype reference.
+
 ## State (azd env vars)
 
 | Variable | Read by | Where to set |
